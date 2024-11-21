@@ -1,3 +1,3 @@
-module github.com/pgEdge/controlplane
+module github.com/pgEdge/control-plane
 
 go 1.23.1
