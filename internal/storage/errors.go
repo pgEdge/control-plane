@@ -20,3 +20,11 @@ var ErrOperationConstraintViolated = errors.New("operation constraint violated")
 // ErrDuplicateKeysInTransaction indicates that the transaction contained
 // duplicate keys.
 var ErrDuplicateKeysInTransaction = errors.New("duplicate keys in transaction")
+
+// ErrWatchAlreadyInProgress indicates that the WatchOp has already been started
+// and cannot be started again until it's closed.
+var ErrWatchAlreadyInProgress = errors.New("watch already in progress")
+
+// ErrWatchUntilTimedOut indicates that the condition given to Watch.Until was
+// not met before the given timeout.
+var ErrWatchUntilTimedOut = errors.New("timed out waiting for watch condition")

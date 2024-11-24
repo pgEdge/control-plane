@@ -163,16 +163,25 @@ func DecodeGetResponse[V Value](resp *clientv3.GetResponse) ([]V, error) {
 func decodeKVs[V Value](kvs []*mvccpb.KeyValue) ([]V, error) {
 	vals := make([]V, len(kvs))
 	for idx, kv := range kvs {
-		key := string(kv.Key)
-		val, err := decodeJSON[V](kv.Value)
+		v, err := decodeKV[V](kv)
 		if err != nil {
-			return nil, fmt.Errorf("failed to decode %q: %w", key, err)
+			return nil, err
 		}
-		val.SetVersion(kv.Version)
-		vals[idx] = val
+		vals[idx] = v
 	}
 
 	return vals, nil
+}
+
+func decodeKV[V Value](kv *mvccpb.KeyValue) (V, error) {
+	var zero V
+	key := string(kv.Key)
+	val, err := decodeJSON[V](kv.Value)
+	if err != nil {
+		return zero, fmt.Errorf("failed to decode %q: %w", key, err)
+	}
+	val.SetVersion(kv.Version)
+	return val, nil
 }
 
 func decodeJSON[V any](val []byte) (V, error) {
