@@ -28,11 +28,11 @@ commands:
             - /home/circleci/go/bin
 jobs:
   test:
-    executor:
-      name: go/default
-      tag: '1.23'
+    docker:
+      - image: cimg/go:1.23.1
     steps:
       - checkout
+      - setup_remote_docker
       - use_mod_cache
       - run:
           name: Run CI checks
