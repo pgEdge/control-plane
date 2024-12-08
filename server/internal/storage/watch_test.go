@@ -79,7 +79,7 @@ func TestWatchOp(t *testing.T) {
 		watch := storage.NewWatchOp[*TestValue](client, "baz")
 
 		done := make(chan bool, 1)
-		watch.Watch(ctx, func(e *storage.Event[*TestValue]) {
+		err := watch.Watch(ctx, func(e *storage.Event[*TestValue]) {
 			expectedVal := &TestValue{
 				SomeField: "qux",
 			}
@@ -96,8 +96,9 @@ func TestWatchOp(t *testing.T) {
 
 			done <- true
 		})
+		assert.NoError(t, err)
 
-		err := storage.NewCreateOp(client, "baz", &TestValue{SomeField: "qux"}).
+		err = storage.NewCreateOp(client, "baz", &TestValue{SomeField: "qux"}).
 			Exec(ctx)
 		require.NoError(t, err)
 

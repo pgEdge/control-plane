@@ -20,7 +20,8 @@ func TestDeleteKeyOp(t *testing.T) {
 
 	t.Run("key exists", func(t *testing.T) {
 		ctx := context.Background()
-		client.Put(ctx, "foo", "bar")
+		_, err := client.Put(ctx, "foo", "bar")
+		require.NoError(t, err)
 
 		deleted, err := storage.NewDeleteKeyOp(client, "foo").Exec(ctx)
 
@@ -49,8 +50,10 @@ func TestDeletePrefixOp(t *testing.T) {
 
 	t.Run("keys exist", func(t *testing.T) {
 		ctx := context.Background()
-		client.Put(ctx, "/prefix/foo", "1")
-		client.Put(ctx, "/prefix/bar", "2")
+		_, err := client.Put(ctx, "/prefix/foo", "1")
+		require.NoError(t, err)
+		_, err = client.Put(ctx, "/prefix/bar", "2")
+		require.NoError(t, err)
 
 		deleted, err := storage.NewDeletePrefixOp(client, "/prefix").Exec(ctx)
 		assert.NoError(t, err)
