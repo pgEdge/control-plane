@@ -18,6 +18,7 @@ type Value struct {
 	CreatedAt        time.Time                  `json:"created_at"`
 	Queue            core.Queue                 `json:"queue"`
 	Metadata         *metadata.WorkflowMetadata `json:"metadata"`
+	LastLocked       *time.Time                 `json:"last_locked"`
 }
 
 func (v *Value) Version() int64 {
@@ -26,6 +27,11 @@ func (v *Value) Version() int64 {
 
 func (v *Value) SetVersion(version int64) {
 	v.version = version
+}
+
+func (v *Value) UpdateLastLocked() {
+	now := time.Now()
+	v.LastLocked = &now
 }
 
 type Store struct {

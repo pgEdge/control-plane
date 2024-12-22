@@ -1,3 +1,5 @@
+//go:build workflows_backend_test
+
 package etcd
 
 import (
@@ -17,9 +19,10 @@ import (
 )
 
 func Test_EtcdBackend(t *testing.T) {
-	var server *storagetest.EtcdTestServer
-	var client storage.EtcdClient
+	server := storagetest.NewEtcdTestServer(t)
+	defer server.Close()
 
+	var client storage.EtcdClient
 	test.BackendTest(t, func(options ...backend.BackendOption) test.TestBackend {
 		server = storagetest.NewEtcdTestServer(t)
 		client = server.Client()
@@ -33,24 +36,16 @@ func Test_EtcdBackend(t *testing.T) {
 }
 
 func Test_EtcdBackendE2E(t *testing.T) {
-	// TODO: Every test passes when run individually, and _sometimes_ they'll
-	// all pass when run together. But, I've seen an intermittent issue where
-	// the workflow executor Continue() method gets called after its Close()
-	// method has been called, which causes a panic. I suspect this is a bug in
-	// the E2E test implementation, but I'll need to follow up on it.
-	t.Skip("These tests are flaky")
+	server := storagetest.NewEtcdTestServer(t)
+	defer server.Close()
 
-	var server *storagetest.EtcdTestServer
 	var client storage.EtcdClient
-
 	test.EndToEndBackendTest(t, func(options ...backend.BackendOption) test.TestBackend {
-		server = storagetest.NewEtcdTestServer(t)
 		client = server.Client()
 
 		opts := backend.ApplyOptions(options...)
 		return NewBackend(NewStore(client, uuid.NewString()), opts)
 	}, func(b test.TestBackend) {
-		server.Close()
 		client.Close()
 	})
 }

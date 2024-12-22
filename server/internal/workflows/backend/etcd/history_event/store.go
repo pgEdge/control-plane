@@ -84,7 +84,7 @@ func (s *Store) GetAfterSequenceID(instanceID, executionID string, lastSequenceI
 		start = s.Key(instanceID, executionID, 1)
 	}
 	end := s.Key(instanceID, executionID, math.MaxInt64)
-	return storage.NewGetRangeOp[*Value](s.client, start, end)
+	return storage.NewGetRangeOp[*Value](s.client, start, end, clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend))
 }
 
 func (s *Store) Create(item *Value) storage.PutOp[*Value] {
