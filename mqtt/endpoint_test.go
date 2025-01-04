@@ -15,7 +15,11 @@ import (
 func TestConnectAndDisconnect(t *testing.T) {
 	ctx, broker := setupTestBroker(t)
 
-	endpoint, err := mqtt.New(mqtt.Config{URL: broker.URL()})
+	endpoint, err := mqtt.New(mqtt.Config{
+		Broker: mqtt.BrokerConfig{
+			URL: broker.URL(),
+		},
+	})
 	require.Nil(t, err)
 	require.Nil(t, endpoint.Connect(ctx))
 	require.Nil(t, endpoint.Disconnect(ctx))
@@ -27,7 +31,9 @@ func TestPublishAndReceive(t *testing.T) {
 	receiveChan := make(chan *mqtt.Message)
 
 	receiver, err := mqtt.New(mqtt.Config{
-		URL:           broker.URL(),
+		Broker: mqtt.BrokerConfig{
+			URL: broker.URL(),
+		},
 		AutoSubscribe: true,
 		MessageHandlers: map[string]mqtt.MessageHandler{
 			"data/#": func(ctx context.Context, msg *mqtt.Message) {
@@ -39,7 +45,11 @@ func TestPublishAndReceive(t *testing.T) {
 	require.Nil(t, receiver.Connect(ctx))
 	defer receiver.Disconnect(ctx)
 
-	sender, err := mqtt.New(mqtt.Config{URL: broker.URL()})
+	sender, err := mqtt.New(mqtt.Config{
+		Broker: mqtt.BrokerConfig{
+			URL: broker.URL(),
+		},
+	})
 	require.Nil(t, err)
 	require.Nil(t, sender.Connect(ctx))
 	defer sender.Disconnect(ctx)
@@ -66,8 +76,10 @@ func TestCall(t *testing.T) {
 
 	// Create a service that responds to commands
 	service, err := mqtt.New(mqtt.Config{
-		Username:      "service",
-		URL:           broker.URL(),
+		Broker: mqtt.BrokerConfig{
+			Username: "service",
+			URL:      broker.URL(),
+		},
 		AutoSubscribe: true,
 		RequestHandlers: map[string]mqtt.RequestHandler{
 			"cmd/echo": func(ctx context.Context, msg *mqtt.Message) (interface{}, error) {
@@ -87,8 +99,10 @@ func TestCall(t *testing.T) {
 
 	// Create a client that calls the service
 	client, err := mqtt.New(mqtt.Config{
-		Username: "client",
-		URL:      broker.URL(),
+		Broker: mqtt.BrokerConfig{
+			Username: "client",
+			URL:      broker.URL(),
+		},
 	})
 	require.Nil(t, err)
 	require.Nil(t, client.Connect(ctx))
@@ -125,8 +139,10 @@ func TestUnsupportedOperation(t *testing.T) {
 	ctx, broker := setupTestBroker(t)
 
 	service, err := mqtt.New(mqtt.Config{
-		Username: "service",
-		URL:      broker.URL(),
+		Broker: mqtt.BrokerConfig{
+			Username: "service",
+			URL:      broker.URL(),
+		},
 		// This is similar to how node service and tricorder are configured.
 		Subscriptions:   []string{"cmd/#"},
 		RequestHandlers: map[string]mqtt.RequestHandler{},
@@ -137,8 +153,10 @@ func TestUnsupportedOperation(t *testing.T) {
 
 	// Create a client that calls the service
 	client, err := mqtt.New(mqtt.Config{
-		Username: "client",
-		URL:      broker.URL(),
+		Broker: mqtt.BrokerConfig{
+			Username: "client",
+			URL:      broker.URL(),
+		},
 	})
 	require.Nil(t, err)
 	require.Nil(t, client.Connect(ctx))

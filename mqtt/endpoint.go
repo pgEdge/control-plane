@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -32,7 +31,7 @@ type Endpoint interface {
 var _ Endpoint = (*MQTTEndpoint)(nil)
 
 type MQTTEndpoint struct {
-	logger         *zerolog.Logger
+	logger         zerolog.Logger
 	router         paho.Router
 	url            string
 	username       string
@@ -48,12 +47,16 @@ type MQTTEndpoint struct {
 	handlerTimeout time.Duration
 }
 
+type BrokerConfig struct {
+	URL      string
+	ClientID string
+	Username string
+	Password string
+}
+
 type Config struct {
 	Logger          *zerolog.Logger
-	URL             string
-	ClientID        string
-	Username        string
-	Password        string
+	Broker          BrokerConfig
 	MessageHandlers map[string]MessageHandler
 	RequestHandlers map[string]RequestHandler
 	HandlerTimeout  time.Duration
@@ -65,20 +68,24 @@ type Message struct {
 	Topic   string
 	QoS     int
 	Payload []byte
+	Retain  bool
+	Expiry  time.Duration
 }
 
 type PublishFunc func(ctx context.Context, msg *Message) error
 
 type MessageHandler func(ctx context.Context, msg *Message)
 
-type RequestHandler func(ctx context.Context, msg *Message) (interface{}, error)
+type RequestHandler func(ctx context.Context, msg *Message) (any, error)
 
 type Call struct {
-	Topic    string
-	Request  interface{}
-	Response interface{}
-	QoS      int
-	MaxWait  time.Duration
+	Topic     string
+	Request   any
+	Response  any
+	QoS       int
+	MaxWait   time.Duration
+	Retain    bool
+	Unmarshal func(payload []byte, resp any) error
 }
 
 func (c *Call) Payload() ([]byte, error) {
@@ -92,7 +99,7 @@ func (c *Call) Payload() ([]byte, error) {
 }
 
 func New(config Config) (*MQTTEndpoint, error) {
-	clientID := config.ClientID
+	clientID := config.Broker.ClientID
 	if clientID == "" {
 		clientID = fmt.Sprintf("mqtt-%s", uuid.New())
 	}
@@ -101,21 +108,27 @@ func New(config Config) (*MQTTEndpoint, error) {
 	if handlerTimeout == 0 {
 		handlerTimeout = time.Minute
 	}
-	url := config.URL
+	url := config.Broker.URL
 	if url == "" {
 		return nil, errors.New("url is required")
 	}
 	if !strings.HasPrefix(url, "tls://") && !strings.HasPrefix(url, "tcp://") {
 		url = fmt.Sprintf("tls://%s:8883", url)
 	}
+	var logger zerolog.Logger
+	if config.Logger != nil {
+		logger = *config.Logger
+	} else {
+		logger = zerolog.Nop()
+	}
 	e := &MQTTEndpoint{
-		logger:         config.Logger,
+		logger:         logger,
 		url:            url,
 		clientID:       clientID,
 		responseTopic:  respTopic,
 		responseChans:  make(map[string]chan *paho.Publish),
-		username:       config.Username,
-		password:       config.Password,
+		username:       config.Broker.Username,
+		password:       config.Broker.Password,
 		handlerTimeout: handlerTimeout,
 		subs:           map[string]bool{},
 	}
@@ -140,10 +153,6 @@ func New(config Config) (*MQTTEndpoint, error) {
 	// Response handler
 	e.router.RegisterHandler(respTopic, e.handleResponse)
 	e.subs[respTopic] = true
-	if e.logger == nil {
-		logger := zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
-		e.logger = &logger
-	}
 	return e, nil
 }
 
@@ -162,16 +171,13 @@ func (e *MQTTEndpoint) Connect(ctx context.Context) error {
 	readyChan := make(chan struct{})
 	e.cm, err = autopaho.NewConnection(ctx, e.getPahoConfig(brokerURL, readyChan))
 	if err != nil {
-		e.logger.Error().Err(err).Msg("failed to create connection to mqtt broker")
 		return err
 	}
 	if err = e.cm.AwaitConnection(ctx); err != nil {
-		e.logger.Error().Err(err).Msg("failed to connect to mqtt broker")
 		return err
 	}
 	<-readyChan // Wait for the subscriptions to be ready
 	if e.subsErr != nil {
-		e.logger.Error().Err(err).Msg("failed to create mqtt subscriptions")
 		return e.subsErr
 	}
 	e.logger.Info().
@@ -226,11 +232,9 @@ func (e *MQTTEndpoint) handleRequest(msg *paho.Publish, h RequestHandler) {
 		})
 		response, err := makeResponse(msg, result, handlerErr)
 		if err != nil {
-			logger.Err(err).Msg("failed to build response")
 			return
 		}
 		if err := e.publish(handlerCtx, response); err != nil {
-			logger.Err(err).Msg("failed to send response")
 			return
 		}
 	}()
@@ -281,13 +285,17 @@ func (e *MQTTEndpoint) Call(ctx context.Context, c *Call) error {
 		Payload: payload,
 		Topic:   c.Topic,
 		QoS:     qos,
+		Retain:  c.Retain,
+		Properties: &paho.PublishProperties{
+			MessageExpiry: messageExpiry(maxWait),
+		},
 	}, maxWait)
 	if err != nil {
 		return err
 	}
 	// Unwrap either the result or the error
 	type responseWrapper struct {
-		Result json.RawMessage `json:"result"`
+		Result []byte          `json:"result"`
 		Error  json.RawMessage `json:"error"`
 	}
 	var wrapper responseWrapper
@@ -301,7 +309,13 @@ func (e *MQTTEndpoint) Call(ctx context.Context, c *Call) error {
 		}
 		return NewRpcError(errStr)
 	}
-	if err := json.Unmarshal(wrapper.Result, &c.Response); err != nil {
+
+	unmarshal := c.Unmarshal
+	if unmarshal == nil {
+		unmarshal = json.Unmarshal
+	}
+
+	if err := unmarshal(wrapper.Result, c.Response); err != nil {
 		return err
 	}
 	return nil
@@ -337,14 +351,8 @@ func (e *MQTTEndpoint) executeCall(ctx context.Context, pub *paho.Publish, maxWa
 	for {
 		select {
 		case <-time.After(maxWait):
-			e.logger.Warn().
-				Str("correlation_id", correlationID).
-				Msg("timeout while waiting on response")
 			return nil, errors.New("timeout waiting for response")
 		case <-ctx.Done():
-			e.logger.Warn().
-				Str("correlation_id", correlationID).
-				Msg("context done while waiting for response")
 			return nil, ctx.Err()
 		case resp := <-responseChan:
 			rxCorr := string(resp.Properties.CorrelationData)
@@ -389,6 +397,10 @@ func (e *MQTTEndpoint) Publish(ctx context.Context, msg *Message) error {
 		Topic:   msg.Topic,
 		Payload: msg.Payload,
 		QoS:     byte(msg.QoS),
+		Retain:  msg.Retain,
+		Properties: &paho.PublishProperties{
+			MessageExpiry: messageExpiry(msg.Expiry),
+		},
 	})
 }
 
@@ -459,10 +471,6 @@ func (e *MQTTEndpoint) getPahoConfig(brokerURL *url.URL, readyChan chan struct{}
 			if _, err := cm.Subscribe(ctx, &paho.Subscribe{
 				Subscriptions: subscriptions,
 			}); err != nil {
-				e.logger.Error().Err(err).
-					Interface("subscribed_topics", e.subs).
-					Str("response_topic", e.responseTopic).
-					Msg("failed to subscribe to topics")
 				e.subsErr = err
 			} else {
 				e.logger.Debug().
@@ -512,12 +520,12 @@ func makeErrorResponse(req *paho.Publish, err error) (*paho.Publish, error) {
 	}, nil
 }
 
-func makeResponse(req *paho.Publish, resp interface{}, err error) (*paho.Publish, error) {
+func makeResponse(req *paho.Publish, resp any, err error) (*paho.Publish, error) {
 	if err != nil {
 		return makeErrorResponse(req, err)
 	}
 	type wrapper struct {
-		Result json.RawMessage `json:"result"`
+		Result []byte `json:"result"`
 	}
 	var w wrapper
 	w.Result, err = getBytes(resp)
@@ -544,9 +552,16 @@ func makeResponse(req *paho.Publish, resp interface{}, err error) (*paho.Publish
 	}, nil
 }
 
-func getBytes(value interface{}) ([]byte, error) {
+func getBytes(value any) ([]byte, error) {
 	if bytes, ok := value.([]byte); ok {
 		return bytes, nil
 	}
 	return json.Marshal(value)
+}
+
+func messageExpiry(d time.Duration) *uint32 {
+	if d == 0 {
+		return nil
+	}
+	return paho.Uint32(uint32(d.Seconds()))
 }
