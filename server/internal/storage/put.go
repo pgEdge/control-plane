@@ -9,11 +9,6 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-// interface checks
-// var _ TxnOperation = (*PutOp[*TestValue])(nil)
-// var _ TxnOperation = (*CreateOp[*TestValue])(nil)
-// var _ TxnOperation = (*UpdateOp[*TestValue])(nil)
-
 // PutOp stores a key value pair with an optional time-to-live. This operation
 // does not enforce any version constraints.
 type putOp[V Value] struct {

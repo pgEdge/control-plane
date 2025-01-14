@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/cschleiden/go-workflows/backend"
@@ -275,6 +276,8 @@ func (b *Backend) GetWorkflowTask(ctx context.Context, queues []workflow.Queue) 
 			if err != nil {
 				return nil, fmt.Errorf("failed to get pending events: %w", err)
 			}
+			sortPendingEvents(pendingEvents)
+
 			now := time.Now()
 			var newEvents []*history.Event
 			for _, event := range pendingEvents {
@@ -288,32 +291,33 @@ func (b *Backend) GetWorkflowTask(ctx context.Context, queues []workflow.Queue) 
 				// No work to be done
 				continue
 			}
-			err = b.store.WorkflowInstanceLock.
-				Create(&workflow_instance_lock.Value{
-					WorkflowInstanceID:  instanceID,
-					WorkflowExecutionID: executionID,
-					CreatedAt:           time.Now(),
-				}).
-				WithTTL(b.options.WorkflowLockTimeout).
-				Exec(ctx)
+
+			// Updating the item lets us enforce that the item still exists in
+			// its current state when we create the lock.
+			item.UpdateLastLocked()
+
+			err = b.store.Txn(
+				b.store.WorkflowInstanceLock.
+					Create(&workflow_instance_lock.Value{
+						WorkflowInstanceID:  instanceID,
+						WorkflowExecutionID: executionID,
+						CreatedAt:           time.Now(),
+					}).
+					WithTTL(b.options.WorkflowLockTimeout),
+				b.store.WorkflowInstanceSticky.
+					Put(&workflow_instance_sticky.Value{
+						WorkflowInstanceID: instanceID,
+						CreatedAt:          time.Now(),
+						WorkerID:           b.workerID,
+					}).
+					WithTTL(b.options.StickyTimeout),
+				b.store.WorkflowQueueItem.Update(item),
+			).Commit(ctx)
 			if err != nil {
-				if errors.Is(err, storage.ErrAlreadyExists) {
-					// Another worker managed to lock this item first
-					continue
-				}
-				return nil, fmt.Errorf("failed to create workflow instance lock: %w", err)
+				// Another worker managed to lock this item first
+				continue
 			}
-			err = b.store.WorkflowInstanceSticky.
-				Put(&workflow_instance_sticky.Value{
-					WorkflowInstanceID: instanceID,
-					CreatedAt:          time.Now(),
-					WorkerID:           b.workerID,
-				}).
-				WithTTL(b.options.StickyTimeout).
-				Exec(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create workflow instance sticky: %w", err)
-			}
+
 			lastSequenceID, err := b.store.HistoryEvent.
 				GetLastSequenceID(ctx, instanceID, executionID)
 			if err != nil {
@@ -337,16 +341,32 @@ func (b *Backend) GetWorkflowTask(ctx context.Context, queues []workflow.Queue) 
 func (b *Backend) ExtendWorkflowTask(ctx context.Context, task *backend.WorkflowTask) error {
 	instanceID := task.WorkflowInstance.InstanceID
 	executionID := task.WorkflowInstance.ExecutionID
+	item, err := b.store.WorkflowQueueItem.
+		GetByKey(string(task.Queue), instanceID, executionID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get workflow queue item: %w", err)
+	}
 	lock, err := b.store.WorkflowInstanceLock.
 		GetByKey(instanceID, executionID).
 		Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get lock: %w", err)
+		// Create if not exists
+		lock = &workflow_instance_lock.Value{
+			WorkflowInstanceID:  instanceID,
+			WorkflowExecutionID: executionID,
+			CreatedAt:           time.Now(),
+		}
 	}
-	err = b.store.WorkflowInstanceLock.
-		Update(lock).
-		WithTTL(b.options.WorkflowLockTimeout).
-		Exec(ctx)
+
+	item.UpdateLastLocked()
+
+	err = b.store.Txn(
+		b.store.WorkflowInstanceLock.
+			Update(lock).
+			WithTTL(b.options.WorkflowLockTimeout),
+		b.store.WorkflowQueueItem.Update(item),
+	).Commit(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to update lock: %w", err)
 	}
@@ -377,12 +397,15 @@ func (b *Backend) CompleteWorkflowTask(
 	ops := []storage.TxnOperation{
 		b.store.WorkflowInstanceLock.DeleteByKey(instanceID, executionID),
 	}
+
 	futureEvents, err := b.store.PendingEvent.
 		GetByInstanceExecution(instanceID, executionID).
 		Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get future events: %w", err)
 	}
+	sortPendingEvents(futureEvents)
+
 	for _, event := range executedEvents {
 		ops = append(ops,
 			b.store.PendingEvent.DeleteByKey(instanceID, executionID, event.ID),
@@ -453,9 +476,8 @@ func (b *Backend) CompleteWorkflowTask(
 							Event: history.NewPendingEvent(
 								time.Now(),
 								history.EventType_SubWorkflowFailed,
-								&history.SubWorkflowFailedAttributes{
-									// TODO: Need to move workflowerrors out of internal
-									// Error: workflow.NewError(backend.ErrInstanceAlreadyExists),
+								map[string]any{
+									"error": workflow.NewError(backend.ErrInstanceAlreadyExists),
 								},
 								history.ScheduleEventID(first.WorkflowInstance.ParentEventID),
 							),
@@ -557,19 +579,24 @@ func (b *Backend) GetActivityTask(ctx context.Context, queues []workflow.Queue) 
 			if locked {
 				continue
 			}
-			err = b.store.ActivityLock.
-				Create(&activity_lock.Value{
-					WorkflowInstanceID: instanceID,
-					EventID:            item.Event.ID,
-					CreatedAt:          time.Now(),
-				}).
-				Exec(ctx)
+
+			// Updating the item lets us enforce that the item still exists in
+			// its current state when we create the lock.
+			item.UpdateLastLocked()
+
+			err = b.store.Txn(
+				b.store.ActivityLock.
+					Create(&activity_lock.Value{
+						WorkflowInstanceID: instanceID,
+						EventID:            item.Event.ID,
+						CreatedAt:          time.Now(),
+					}).
+					WithTTL(b.options.ActivityLockTimeout),
+				b.store.ActivityQueueItem.Update(item),
+			).Commit(ctx)
 			if err != nil {
-				if errors.Is(err, storage.ErrAlreadyExists) {
-					// Another worker managed to lock this first
-					continue
-				}
-				return nil, fmt.Errorf("failed to lock activity: %w", err)
+				// Another worker managed to lock this first
+				continue
 			}
 			return &backend.ActivityTask{
 				ID:               item.Event.ID,
@@ -585,16 +612,33 @@ func (b *Backend) GetActivityTask(ctx context.Context, queues []workflow.Queue) 
 }
 
 func (b *Backend) ExtendActivityTask(ctx context.Context, task *backend.ActivityTask) error {
+	item, err := b.store.ActivityQueueItem.
+		GetByKey(string(task.Queue), task.WorkflowInstance.InstanceID, task.Event.ID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get activity queue item: %w", err)
+	}
+
 	lock, err := b.store.ActivityLock.
 		GetByKey(task.WorkflowInstance.InstanceID, task.Event.ID).
 		Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get existing activity lock: %w", err)
+		// Create if not exists
+		lock = &activity_lock.Value{
+			WorkflowInstanceID: task.WorkflowInstance.InstanceID,
+			EventID:            task.Event.ID,
+			CreatedAt:          time.Now(),
+		}
 	}
-	err = b.store.ActivityLock.
-		Update(lock).
-		WithTTL(b.options.ActivityLockTimeout).
-		Exec(ctx)
+
+	item.UpdateLastLocked()
+
+	err = b.store.Txn(
+		b.store.ActivityLock.
+			Update(lock).
+			WithTTL(b.options.ActivityLockTimeout),
+		b.store.ActivityQueueItem.Update(item),
+	).Commit(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to update activity lock: %w", err)
 	}
@@ -602,11 +646,23 @@ func (b *Backend) ExtendActivityTask(ctx context.Context, task *backend.Activity
 }
 
 func (b *Backend) CompleteActivityTask(ctx context.Context, task *backend.ActivityTask, result *history.Event) error {
-	err := b.store.Txn(
+	_, err := b.store.ActivityQueueItem.
+		GetByKey(
+			string(task.Queue),
+			task.WorkflowInstance.InstanceID,
+			task.Event.ID,
+		).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("could not find pending activity: %s", task.ActivityID)
+	}
+	err = b.store.Txn(
 		b.store.ActivityLock.DeleteByKey(
 			task.WorkflowInstance.InstanceID,
 			task.Event.ID,
 		),
+		// There can be a race condition here if the task is extended during
+		// this completion operation. Completion should take precedence, so we
+		// don't enforce the version constraint in this delete.
 		b.store.ActivityQueueItem.DeleteByKey(
 			string(task.Queue),
 			task.WorkflowInstance.InstanceID,
@@ -619,7 +675,7 @@ func (b *Backend) CompleteActivityTask(ctx context.Context, task *backend.Activi
 		}),
 	).Commit(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to complete persist activity completion: %w", err)
+		return fmt.Errorf("failed to persist activity completion: %w", err)
 	}
 	return nil
 }
@@ -702,4 +758,17 @@ func (b *Backend) FeatureSupported(feature backend.Feature) bool {
 		return true
 	}
 	return false
+}
+
+func sortPendingEvents(events []*pending_event.Value) {
+	slices.SortStableFunc(events, func(a *pending_event.Value, b *pending_event.Value) int {
+		switch {
+		case a.Event.Timestamp.Before(b.Event.Timestamp):
+			return -1
+		case b.Event.Timestamp.Before(a.Event.Timestamp):
+			return 1
+		default:
+			return 0
+		}
+	})
 }

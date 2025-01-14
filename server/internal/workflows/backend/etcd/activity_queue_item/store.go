@@ -2,6 +2,7 @@ package activity_queue_item
 
 import (
 	"path"
+	"time"
 
 	"github.com/pgEdge/control-plane/server/internal/storage"
 
@@ -14,6 +15,7 @@ type Value struct {
 	WorkflowExecutionID string         `json:"workflow_execution_id"`
 	Queue               string         `json:"queue"`
 	Event               *history.Event `json:"event"`
+	LastLocked          *time.Time     `json:"last_locked"`
 }
 
 func (v *Value) Version() int64 {
@@ -22,6 +24,11 @@ func (v *Value) Version() int64 {
 
 func (v *Value) SetVersion(version int64) {
 	v.version = version
+}
+
+func (v *Value) UpdateLastLocked() {
+	now := time.Now()
+	v.LastLocked = &now
 }
 
 type Store struct {
@@ -67,7 +74,17 @@ func (s *Store) Create(item *Value) storage.PutOp[*Value] {
 	return storage.NewCreateOp(s.client, key, item)
 }
 
+func (s *Store) Update(item *Value) storage.PutOp[*Value] {
+	key := s.Key(item.Queue, item.WorkflowInstanceID, item.Event.ID)
+	return storage.NewUpdateOp(s.client, key, item)
+}
+
 func (s *Store) DeleteByKey(queue, instanceID, eventID string) storage.DeleteOp {
 	key := s.Key(queue, instanceID, eventID)
 	return storage.NewDeleteKeyOp(s.client, key)
+}
+
+func (s *Store) DeleteItem(item *Value) storage.DeleteValueOp[*Value] {
+	key := s.Key(item.Queue, item.WorkflowInstanceID, item.Event.ID)
+	return storage.NewDeleteValueOp(s.client, key, item)
 }
