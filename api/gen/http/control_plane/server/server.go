@@ -19,17 +19,17 @@ import (
 
 // Server lists the control-plane service endpoint HTTP handlers.
 type Server struct {
-	Mounts             []*MountPoint
-	InspectCluster     http.Handler
-	ListHosts          http.Handler
-	InspectHost        http.Handler
-	RemoveHost         http.Handler
-	ListDatabases      http.Handler
-	CreateDatabase     http.Handler
-	InspectDatabase    http.Handler
-	UpdateDatabase     http.Handler
-	DeleteDatabase     http.Handler
-	GenHTTPOpenapiJSON http.Handler
+	Mounts              []*MountPoint
+	InspectCluster      http.Handler
+	ListHosts           http.Handler
+	InspectHost         http.Handler
+	RemoveHost          http.Handler
+	ListDatabases       http.Handler
+	CreateDatabase      http.Handler
+	InspectDatabase     http.Handler
+	UpdateDatabase      http.Handler
+	DeleteDatabase      http.Handler
+	GenHTTPOpenapi3JSON http.Handler
 }
 
 // MountPoint holds information about the mounted endpoints.
@@ -56,12 +56,12 @@ func New(
 	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
 	errhandler func(context.Context, http.ResponseWriter, error),
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
-	fileSystemGenHTTPOpenapiJSON http.FileSystem,
+	fileSystemGenHTTPOpenapi3JSON http.FileSystem,
 ) *Server {
-	if fileSystemGenHTTPOpenapiJSON == nil {
-		fileSystemGenHTTPOpenapiJSON = http.Dir(".")
+	if fileSystemGenHTTPOpenapi3JSON == nil {
+		fileSystemGenHTTPOpenapi3JSON = http.Dir(".")
 	}
-	fileSystemGenHTTPOpenapiJSON = appendPrefix(fileSystemGenHTTPOpenapiJSON, "/gen/http")
+	fileSystemGenHTTPOpenapi3JSON = appendPrefix(fileSystemGenHTTPOpenapi3JSON, "/gen/http")
 	return &Server{
 		Mounts: []*MountPoint{
 			{"InspectCluster", "GET", "/cluster"},
@@ -73,18 +73,18 @@ func New(
 			{"InspectDatabase", "GET", "/databases/{database_id}"},
 			{"UpdateDatabase", "POST", "/databases/{database_id}"},
 			{"DeleteDatabase", "DELETE", "/databases/{database_id}"},
-			{"Serve ./gen/http/openapi.json", "GET", "/openapi.json"},
+			{"Serve ./gen/http/openapi3.json", "GET", "/openapi.json"},
 		},
-		InspectCluster:     NewInspectClusterHandler(e.InspectCluster, mux, decoder, encoder, errhandler, formatter),
-		ListHosts:          NewListHostsHandler(e.ListHosts, mux, decoder, encoder, errhandler, formatter),
-		InspectHost:        NewInspectHostHandler(e.InspectHost, mux, decoder, encoder, errhandler, formatter),
-		RemoveHost:         NewRemoveHostHandler(e.RemoveHost, mux, decoder, encoder, errhandler, formatter),
-		ListDatabases:      NewListDatabasesHandler(e.ListDatabases, mux, decoder, encoder, errhandler, formatter),
-		CreateDatabase:     NewCreateDatabaseHandler(e.CreateDatabase, mux, decoder, encoder, errhandler, formatter),
-		InspectDatabase:    NewInspectDatabaseHandler(e.InspectDatabase, mux, decoder, encoder, errhandler, formatter),
-		UpdateDatabase:     NewUpdateDatabaseHandler(e.UpdateDatabase, mux, decoder, encoder, errhandler, formatter),
-		DeleteDatabase:     NewDeleteDatabaseHandler(e.DeleteDatabase, mux, decoder, encoder, errhandler, formatter),
-		GenHTTPOpenapiJSON: http.FileServer(fileSystemGenHTTPOpenapiJSON),
+		InspectCluster:      NewInspectClusterHandler(e.InspectCluster, mux, decoder, encoder, errhandler, formatter),
+		ListHosts:           NewListHostsHandler(e.ListHosts, mux, decoder, encoder, errhandler, formatter),
+		InspectHost:         NewInspectHostHandler(e.InspectHost, mux, decoder, encoder, errhandler, formatter),
+		RemoveHost:          NewRemoveHostHandler(e.RemoveHost, mux, decoder, encoder, errhandler, formatter),
+		ListDatabases:       NewListDatabasesHandler(e.ListDatabases, mux, decoder, encoder, errhandler, formatter),
+		CreateDatabase:      NewCreateDatabaseHandler(e.CreateDatabase, mux, decoder, encoder, errhandler, formatter),
+		InspectDatabase:     NewInspectDatabaseHandler(e.InspectDatabase, mux, decoder, encoder, errhandler, formatter),
+		UpdateDatabase:      NewUpdateDatabaseHandler(e.UpdateDatabase, mux, decoder, encoder, errhandler, formatter),
+		DeleteDatabase:      NewDeleteDatabaseHandler(e.DeleteDatabase, mux, decoder, encoder, errhandler, formatter),
+		GenHTTPOpenapi3JSON: http.FileServer(fileSystemGenHTTPOpenapi3JSON),
 	}
 }
 
@@ -118,7 +118,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountInspectDatabaseHandler(mux, h.InspectDatabase)
 	MountUpdateDatabaseHandler(mux, h.UpdateDatabase)
 	MountDeleteDatabaseHandler(mux, h.DeleteDatabase)
-	MountGenHTTPOpenapiJSON(mux, h.GenHTTPOpenapiJSON)
+	MountGenHTTPOpenapi3JSON(mux, h.GenHTTPOpenapi3JSON)
 }
 
 // Mount configures the mux to serve the control-plane endpoints.
@@ -575,6 +575,8 @@ type appendFS struct {
 // passing it to the underlying fs.FS.
 func (s appendFS) Open(name string) (http.File, error) {
 	switch name {
+	case "/openapi.json":
+		name = "/openapi3.json"
 	}
 	return s.fs.Open(path.Join(s.prefix, name))
 }
@@ -585,8 +587,8 @@ func appendPrefix(fsys http.FileSystem, prefix string) http.FileSystem {
 	return appendFS{prefix: prefix, fs: fsys}
 }
 
-// MountGenHTTPOpenapiJSON configures the mux to serve GET request made to
+// MountGenHTTPOpenapi3JSON configures the mux to serve GET request made to
 // "/openapi.json".
-func MountGenHTTPOpenapiJSON(mux goahttp.Muxer, h http.Handler) {
+func MountGenHTTPOpenapi3JSON(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("GET", "/openapi.json", h.ServeHTTP)
 }

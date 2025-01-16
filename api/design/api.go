@@ -126,5 +126,5 @@ var _ = g.Service("control-plane", func() {
 	})
 
 	// Serves the OpenAPI spec as a static file
-	g.Files("/openapi.json", "./gen/http/openapi.json")
+	g.Files("/openapi.json", "./gen/http/openapi3.json")
 })

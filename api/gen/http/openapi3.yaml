@@ -2577,7 +2577,7 @@ paths:
         get:
             tags:
                 - control-plane
-            summary: Download ./gen/http/openapi.json
+            summary: Download ./gen/http/openapi3.json
             operationId: control-plane#/openapi.json
             responses:
                 "200":
