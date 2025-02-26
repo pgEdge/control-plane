@@ -8,18 +8,10 @@ import (
 )
 
 type Value struct {
-	version            int64     `json:"-"`
+	storage.StoredValue
 	WorkflowInstanceID string    `json:"workflow_instance_id"`
 	CreatedAt          time.Time `json:"created_at"`
 	WorkerID           string    `json:"worker_id"`
-}
-
-func (v *Value) Version() int64 {
-	return v.version
-}
-
-func (v *Value) SetVersion(version int64) {
-	v.version = version
 }
 
 type Store struct {

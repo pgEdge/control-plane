@@ -15,6 +15,10 @@ import (
 
 // Endpoints wraps the "control-plane" service endpoints.
 type Endpoints struct {
+	InitCluster     goa.Endpoint
+	JoinCluster     goa.Endpoint
+	GetJoinToken    goa.Endpoint
+	GetJoinOptions  goa.Endpoint
 	InspectCluster  goa.Endpoint
 	ListHosts       goa.Endpoint
 	InspectHost     goa.Endpoint
@@ -29,6 +33,10 @@ type Endpoints struct {
 // NewEndpoints wraps the methods of the "control-plane" service with endpoints.
 func NewEndpoints(s Service) *Endpoints {
 	return &Endpoints{
+		InitCluster:     NewInitClusterEndpoint(s),
+		JoinCluster:     NewJoinClusterEndpoint(s),
+		GetJoinToken:    NewGetJoinTokenEndpoint(s),
+		GetJoinOptions:  NewGetJoinOptionsEndpoint(s),
 		InspectCluster:  NewInspectClusterEndpoint(s),
 		ListHosts:       NewListHostsEndpoint(s),
 		InspectHost:     NewInspectHostEndpoint(s),
@@ -44,6 +52,10 @@ func NewEndpoints(s Service) *Endpoints {
 // Use applies the given middleware to all the "control-plane" service
 // endpoints.
 func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
+	e.InitCluster = m(e.InitCluster)
+	e.JoinCluster = m(e.JoinCluster)
+	e.GetJoinToken = m(e.GetJoinToken)
+	e.GetJoinOptions = m(e.GetJoinOptions)
 	e.InspectCluster = m(e.InspectCluster)
 	e.ListHosts = m(e.ListHosts)
 	e.InspectHost = m(e.InspectHost)
@@ -53,6 +65,40 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.InspectDatabase = m(e.InspectDatabase)
 	e.UpdateDatabase = m(e.UpdateDatabase)
 	e.DeleteDatabase = m(e.DeleteDatabase)
+}
+
+// NewInitClusterEndpoint returns an endpoint function that calls the method
+// "init-cluster" of service "control-plane".
+func NewInitClusterEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		return s.InitCluster(ctx)
+	}
+}
+
+// NewJoinClusterEndpoint returns an endpoint function that calls the method
+// "join-cluster" of service "control-plane".
+func NewJoinClusterEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*ClusterJoinToken)
+		return nil, s.JoinCluster(ctx, p)
+	}
+}
+
+// NewGetJoinTokenEndpoint returns an endpoint function that calls the method
+// "get-join-token" of service "control-plane".
+func NewGetJoinTokenEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		return s.GetJoinToken(ctx)
+	}
+}
+
+// NewGetJoinOptionsEndpoint returns an endpoint function that calls the method
+// "get-join-options" of service "control-plane".
+func NewGetJoinOptionsEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*ClusterJoinRequest)
+		return s.GetJoinOptions(ctx, p)
+	}
 }
 
 // NewInspectClusterEndpoint returns an endpoint function that calls the method
@@ -93,7 +139,12 @@ func NewRemoveHostEndpoint(s Service) goa.Endpoint {
 // "list-databases" of service "control-plane".
 func NewListDatabasesEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		return s.ListDatabases(ctx)
+		res, err := s.ListDatabases(ctx)
+		if err != nil {
+			return nil, err
+		}
+		vres := NewViewedDatabaseCollection(res, "abbreviated")
+		return vres, nil
 	}
 }
 
@@ -102,7 +153,12 @@ func NewListDatabasesEndpoint(s Service) goa.Endpoint {
 func NewCreateDatabaseEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*CreateDatabaseRequest)
-		return s.CreateDatabase(ctx, p)
+		res, err := s.CreateDatabase(ctx, p)
+		if err != nil {
+			return nil, err
+		}
+		vres := NewViewedDatabase(res, "default")
+		return vres, nil
 	}
 }
 
@@ -111,7 +167,12 @@ func NewCreateDatabaseEndpoint(s Service) goa.Endpoint {
 func NewInspectDatabaseEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*InspectDatabasePayload)
-		return s.InspectDatabase(ctx, p)
+		res, err := s.InspectDatabase(ctx, p)
+		if err != nil {
+			return nil, err
+		}
+		vres := NewViewedDatabase(res, "default")
+		return vres, nil
 	}
 }
 
@@ -120,7 +181,12 @@ func NewInspectDatabaseEndpoint(s Service) goa.Endpoint {
 func NewUpdateDatabaseEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*UpdateDatabasePayload)
-		return s.UpdateDatabase(ctx, p)
+		res, err := s.UpdateDatabase(ctx, p)
+		if err != nil {
+			return nil, err
+		}
+		vres := NewViewedDatabase(res, "default")
+		return vres, nil
 	}
 }
 

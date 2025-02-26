@@ -9,10 +9,21 @@ package controlplane
 
 import (
 	"context"
+
+	controlplaneviews "github.com/pgEdge/control-plane/api/gen/control_plane/views"
+	goa "goa.design/goa/v3/pkg"
 )
 
 // Service is the control-plane service interface.
 type Service interface {
+	// Initializes a new cluster.
+	InitCluster(context.Context) (res *ClusterJoinToken, err error)
+	// Join this host to an existing cluster.
+	JoinCluster(context.Context, *ClusterJoinToken) (err error)
+	// Gets the join token for this cluster.
+	GetJoinToken(context.Context) (res *ClusterJoinToken, err error)
+	// Internal endpoint for other cluster members seeking to join this cluster.
+	GetJoinOptions(context.Context, *ClusterJoinRequest) (res *ClusterJoinOptions, err error)
 	// Returns information about the cluster.
 	InspectCluster(context.Context) (res *Cluster, err error)
 	// Lists all hosts within the cluster.
@@ -22,7 +33,7 @@ type Service interface {
 	// Removes a host from the cluster.
 	RemoveHost(context.Context, *RemoveHostPayload) (err error)
 	// Lists all databases in the cluster.
-	ListDatabases(context.Context) (res []*Database, err error)
+	ListDatabases(context.Context) (res DatabaseCollection, err error)
 	// Creates a new database in the cluster.
 	CreateDatabase(context.Context, *CreateDatabaseRequest) (res *Database, err error)
 	// Returns information about a particular database in the cluster.
@@ -47,7 +58,7 @@ const ServiceName = "control-plane"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [9]string{"inspect-cluster", "list-hosts", "inspect-host", "remove-host", "list-databases", "create-database", "inspect-database", "update-database", "delete-database"}
+var MethodNames = [13]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "inspect-cluster", "list-hosts", "inspect-host", "remove-host", "list-databases", "create-database", "inspect-database", "update-database", "delete-database"}
 
 type BackupConfigSpec struct {
 	// The unique identifier for this backup configuration.
@@ -119,9 +130,71 @@ type Cluster struct {
 	Hosts []*Host
 }
 
+type ClusterCredentials struct {
+	// The base64-encoded CA certificate for the cluster.
+	CaCert string
+	// The base64-encoded etcd client certificate for the new cluster member.
+	ClientCert string
+	// The base64-encoded etcd client key for the new cluster member.
+	ClientKey string
+	// The base64-encoded etcd server certificate for the new cluster member.
+	ServerCert string
+	// The base64-encoded etcd server key for the new cluster member.
+	ServerKey string
+}
+
+// ClusterJoinOptions is the result type of the control-plane service
+// get-join-options method.
+type ClusterJoinOptions struct {
+	// Information about this cluster member
+	Peer *ClusterPeer
+	// Credentials for the new host joining the cluster.
+	Credentials *ClusterCredentials
+}
+
+// ClusterJoinRequest is the payload type of the control-plane service
+// get-join-options method.
+type ClusterJoinRequest struct {
+	// Token to join the cluster.
+	Token string
+	// The unique identifier for the host that's joining the cluster.
+	HostID string
+	// The hostname of the host that's joining the cluster.
+	Hostname string
+	// The IPv4 address of the host that's joining the cluster.
+	Ipv4Address string
+}
+
+// ClusterJoinToken is the result type of the control-plane service
+// init-cluster method.
+type ClusterJoinToken struct {
+	// Token to join an existing cluster.
+	Token string
+	// Existing server to join
+	ServerURL string
+}
+
+type ClusterPeer struct {
+	// The name of the cluster member.
+	Name string
+	// The Etcd peer endpoint for this cluster member.
+	PeerURL string
+	// The Etcd client endpoint for this cluster member.
+	ClientURL string
+}
+
 type ClusterStatus struct {
 	// The current state of the cluster.
 	State string
+}
+
+type ComponentStatus struct {
+	// Indicates if the component is healthy.
+	Healthy *bool
+	// Error message from any errors that occurred during the health check.
+	Error string
+	// Additional details about the component.
+	Details map[string]any
 }
 
 // CreateDatabaseRequest is the payload type of the control-plane service
@@ -143,30 +216,24 @@ type Database struct {
 	// Unique identifier for the databases's owner.
 	TenantID *string
 	// The time that the database was created.
-	CreatedAt *string
+	CreatedAt string
 	// The time that the database was last updated.
-	UpdatedAt *string
-	// Current status of the database.
-	Status *DatabaseStatus
+	UpdatedAt string
+	// Current state of the database.
+	State string
 	// All of the instances in the database.
-	Instances *Instance
+	Instances InstanceCollection
 	// The user-provided specification for the database.
 	Spec *DatabaseSpec
 }
 
-type DatabaseExtensionSpec struct {
-	// The name of the extension to install in this database.
-	Name string
-	// The version of the extension to install in this database.
-	Version *string
-}
+// DatabaseCollection is the result type of the control-plane service
+// list-databases method.
+type DatabaseCollection []*Database
 
 type DatabaseNodeSpec struct {
 	// The name of the database node.
 	Name string
-	// A unique identifier for the instance that will be created from this node
-	// specification.
-	InstanceID string
 	// The ID of the host that should run this node.
 	HostID string
 	// The major version of Postgres for this node. Overrides the Postgres version
@@ -175,17 +242,30 @@ type DatabaseNodeSpec struct {
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int
+	// The storage class to use for the database on this node. The possible values
+	// and defaults depend on the orchestrator.
+	StorageClass *string
+	// The size of the storage for this node in SI or IEC notation. Support for
+	// this value depends on the orchestrator and storage class.
+	StorageSize *string
+	// The number of CPUs to allocate for the database on this node and to use for
+	// tuning Postgres. Defaults to the number of available CPUs on the host. Can
+	// include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will
+	// be enforced depends on the orchestrator.
+	Cpus *string
+	// The amount of memory in SI or IEC notation to allocate for the database on
+	// this node and to use for tuning Postgres. Defaults to the total available
+	// memory on the host. Whether this limit will be enforced depends on the
+	// orchestrator.
+	Memory *string
 	// Read replicas for this database node.
-	ReadReplicas *DatabaseReplicaSpec
+	ReadReplicas []*DatabaseReplicaSpec
 	// Additional postgresql.conf settings for this particular node. Will be merged
 	// with the settings provided by control-plane.
 	PostgresqlConf map[string]any
 }
 
 type DatabaseReplicaSpec struct {
-	// A unique identifier for the instance that will be created from this replica
-	// specification.
-	InstanceID string
 	// The ID of the host that should run this read replica.
 	HostID string
 }
@@ -201,25 +281,34 @@ type DatabaseSpec struct {
 	Port *int
 	// Prevents deletion when true.
 	DeletionProtection *bool
+	// The storage class to use for the database. The possible values and defaults
+	// depend on the orchestrator.
+	StorageClass *string
+	// The size of the storage in SI or IEC notation. Support for this value
+	// depends on the orchestrator and storage class.
+	StorageSize *string
+	// The number of CPUs to allocate for the database and to use for tuning
+	// Postgres. Defaults to the number of available CPUs on the host. Can include
+	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
+	// enforced depends on the orchestrator.
+	Cpus *string
+	// The amount of memory in SI or IEC notation to allocate for the database and
+	// to use for tuning Postgres. Defaults to the total available memory on the
+	// host. Whether this limit will be enforced depends on the orchestrator.
+	Memory *string
 	// The Spock nodes for this database.
 	Nodes []*DatabaseNodeSpec
 	// The users to create for this database.
 	DatabaseUsers []*DatabaseUserSpec
-	// The extensions to install for this database.
-	Extensions []*DatabaseExtensionSpec
 	// The feature flags for this database.
 	Features map[string]string
 	// The backup configurations for this database.
 	BackupConfigs []*BackupConfigSpec
+	// The restore configuration for this database.
+	RestoreConfig *RestoreConfigSpec
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
 	PostgresqlConf map[string]any
-}
-
-type DatabaseStatus struct {
-	State *string
-	// The time that the database status was last updated.
-	UpdatedAt *string
 }
 
 type DatabaseUserSpec struct {
@@ -227,10 +316,12 @@ type DatabaseUserSpec struct {
 	Username string
 	// The password for this database user.
 	Password string
+	// If true, this user will be granted database ownership.
+	DbOwner *bool
+	// The attributes to assign to this database user.
+	Attributes []string
 	// The roles to assign to this database user.
 	Roles []string
-	// Enables SUPERUSER for this database user when true.
-	Superuser *bool
 }
 
 // DeleteDatabasePayload is the payload type of the control-plane service
@@ -242,31 +333,45 @@ type DeleteDatabasePayload struct {
 
 // Host is the result type of the control-plane service inspect-host method.
 type Host struct {
-	// Unique identifier for the host
+	// Unique identifier for the host.
 	ID string
-	// The type of this host
-	Type *string
-	// The cohort that this host belongs to
-	Cohort *string
+	// The orchestrator used by this host.
+	Orchestrator string
+	// The cohort that this host belongs to/
+	Cohort *HostCohort
 	// The hostname of this host.
 	Hostname string
 	// The IPv4 address of this host.
 	Ipv4Address string
-	// The configuration for this host
-	Config *HostConfiguration
-	// Current status of the host
+	// The number of CPUs on this host.
+	Cpus int
+	// The amount of memory available on this host.
+	Memory string
+	// Current status of the host.
 	Status *HostStatus
+	// The default PgEdge version for this host.
+	DefaultPgedgeVersion *PgEdgeVersion
+	// The PgEdge versions supported by this host.
+	SupportedPgedgeVersions []*PgEdgeVersion
 }
 
-type HostConfiguration struct {
-	// Enables the Vector service for metrics and log collection
-	VectorEnabled *bool
-	// Enables the Treafik load balancer
-	TraefikEnabled *bool
+type HostCohort struct {
+	// The type of cohort that the host belongs to.
+	Type string
+	// The cohort ID that the host belongs to.
+	CohortID string
+	// The member ID of the host within the cohort.
+	MemberID string
+	// Indicates if the host is a control node in the cohort.
+	ControlAvailable bool
 }
 
 type HostStatus struct {
 	State string
+	// The last time the host status was updated.
+	UpdatedAt string
+	// The status of each component of the host.
+	Components map[string]*ComponentStatus
 }
 
 // InspectDatabasePayload is the payload type of the control-plane service
@@ -287,33 +392,15 @@ type Instance struct {
 	// Unique identifier for the instance.
 	ID string
 	// The ID of the host this instance is running on.
-	HostID *string
+	HostID string
 	// The Spock node name for this instance.
-	NodeName *string
+	NodeName string
+	// The read replica name of this instance.
+	ReplicaName *string
 	// The time that the instance was created.
-	CreatedAt *string
+	CreatedAt string
 	// The time that the instance was last updated.
-	UpdatedAt *string
-	// Current status of the instance.
-	Status *InstanceStatus
-	// All interfaces that this instance serves on.
-	Interfaces []*InstanceInterface
-}
-
-type InstanceInterface struct {
-	// The type of network for this interface.
-	NetworkType *string
-	// The unique identifier of the network for this interface.
-	NetworkID *string
-	// The hostname of the instance on this interface.
-	Hostname *string
-	// The IPv4 address of the instance on this interface.
-	Ipv4Address *string
-	// The Postgres port for the instance on this interface.
-	Port *int
-}
-
-type InstanceStatus struct {
+	UpdatedAt    string
 	State        string
 	PatroniState *string
 	Role         *string
@@ -327,8 +414,30 @@ type InstanceStatus struct {
 	PostgresVersion *string
 	// The version of Spock for this instance.
 	SpockVersion *string
-	// The time that the instance status was last updated.
-	UpdatedAt *string
+	// All interfaces that this instance serves on.
+	Interfaces []*InstanceInterface
+}
+
+type InstanceCollection []*Instance
+
+type InstanceInterface struct {
+	// The type of network for this interface.
+	NetworkType string
+	// The unique identifier of the network for this interface.
+	NetworkID *string
+	// The hostname of the instance on this interface.
+	Hostname *string
+	// The IPv4 address of the instance on this interface.
+	Ipv4Address *string
+	// The Postgres port for the instance on this interface.
+	Port int
+}
+
+type PgEdgeVersion struct {
+	// The Postgres major version.
+	PostgresVersion string
+	// The Spock major version.
+	SpockVersion string
 }
 
 // RemoveHostPayload is the payload type of the control-plane service
@@ -336,6 +445,44 @@ type InstanceStatus struct {
 type RemoveHostPayload struct {
 	// ID of the host to remove.
 	HostID *string
+}
+
+type RestoreConfigSpec struct {
+	// The backup provider for this restore configuration.
+	Provider string
+	// The name of the node to restore this database from.
+	NodeName string
+	// The repository to restore this database from.
+	Repository *RestoreRepositorySpec
+}
+
+type RestoreRepositorySpec struct {
+	// The unique identifier of this repository.
+	ID string
+	// The type of this repository.
+	Type string
+	// The S3 bucket name for this repository. Only applies when type = 's3'.
+	S3Bucket *string
+	// The region of the S3 bucket for this repository. Only applies when type =
+	// 's3'.
+	S3Region *string
+	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
+	S3Endpoint *string
+	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
+	GcsBucket *string
+	// The optional GCS endpoint for this repository. Only applies when type =
+	// 'gcs'.
+	GcsEndpoint *string
+	// The Azure account name for this repository. Only applies when type = 'azure'.
+	AzureAccount *string
+	// The Azure container name for this repository. Only applies when type =
+	// 'azure'.
+	AzureContainer *string
+	// The optional Azure endpoint for this repository. Only applies when type =
+	// 'azure'.
+	AzureEndpoint *string
+	// The base path within the repository where backups are stored.
+	BasePath *string
 }
 
 // UpdateDatabasePayload is the payload type of the control-plane service
@@ -349,4 +496,883 @@ type UpdateDatabasePayload struct {
 type UpdateDatabaseRequest struct {
 	// The specification for the database.
 	Spec *DatabaseSpec
+}
+
+// MakeClusterAlreadyInitialized builds a goa.ServiceError from an error.
+func MakeClusterAlreadyInitialized(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "cluster_already_initialized", false, false, false)
+}
+
+// MakeClusterNotInitialized builds a goa.ServiceError from an error.
+func MakeClusterNotInitialized(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "cluster_not_initialized", false, false, false)
+}
+
+// MakeInvalidJoinToken builds a goa.ServiceError from an error.
+func MakeInvalidJoinToken(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "invalid_join_token", false, false, false)
+}
+
+// MakeInvalidInput builds a goa.ServiceError from an error.
+func MakeInvalidInput(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "invalid_input", false, false, false)
+}
+
+// MakeDatabaseAlreadyExists builds a goa.ServiceError from an error.
+func MakeDatabaseAlreadyExists(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "database_already_exists", false, false, false)
+}
+
+// NewDatabaseCollection initializes result type DatabaseCollection from viewed
+// result type DatabaseCollection.
+func NewDatabaseCollection(vres controlplaneviews.DatabaseCollection) DatabaseCollection {
+	var res DatabaseCollection
+	switch vres.View {
+	case "default", "":
+		res = newDatabaseCollection(vres.Projected)
+	case "abbreviated":
+		res = newDatabaseCollectionAbbreviated(vres.Projected)
+	}
+	return res
+}
+
+// NewViewedDatabaseCollection initializes viewed result type
+// DatabaseCollection from result type DatabaseCollection using the given view.
+func NewViewedDatabaseCollection(res DatabaseCollection, view string) controlplaneviews.DatabaseCollection {
+	var vres controlplaneviews.DatabaseCollection
+	switch view {
+	case "default", "":
+		p := newDatabaseCollectionView(res)
+		vres = controlplaneviews.DatabaseCollection{Projected: p, View: "default"}
+	case "abbreviated":
+		p := newDatabaseCollectionViewAbbreviated(res)
+		vres = controlplaneviews.DatabaseCollection{Projected: p, View: "abbreviated"}
+	}
+	return vres
+}
+
+// NewDatabase initializes result type Database from viewed result type
+// Database.
+func NewDatabase(vres *controlplaneviews.Database) *Database {
+	var res *Database
+	switch vres.View {
+	case "default", "":
+		res = newDatabase(vres.Projected)
+	case "abbreviated":
+		res = newDatabaseAbbreviated(vres.Projected)
+	}
+	return res
+}
+
+// NewViewedDatabase initializes viewed result type Database from result type
+// Database using the given view.
+func NewViewedDatabase(res *Database, view string) *controlplaneviews.Database {
+	var vres *controlplaneviews.Database
+	switch view {
+	case "default", "":
+		p := newDatabaseView(res)
+		vres = &controlplaneviews.Database{Projected: p, View: "default"}
+	case "abbreviated":
+		p := newDatabaseViewAbbreviated(res)
+		vres = &controlplaneviews.Database{Projected: p, View: "abbreviated"}
+	}
+	return vres
+}
+
+// newDatabaseCollection converts projected type DatabaseCollection to service
+// type DatabaseCollection.
+func newDatabaseCollection(vres controlplaneviews.DatabaseCollectionView) DatabaseCollection {
+	res := make(DatabaseCollection, len(vres))
+	for i, n := range vres {
+		res[i] = newDatabase(n)
+	}
+	return res
+}
+
+// newDatabaseCollectionAbbreviated converts projected type DatabaseCollection
+// to service type DatabaseCollection.
+func newDatabaseCollectionAbbreviated(vres controlplaneviews.DatabaseCollectionView) DatabaseCollection {
+	res := make(DatabaseCollection, len(vres))
+	for i, n := range vres {
+		res[i] = newDatabaseAbbreviated(n)
+	}
+	return res
+}
+
+// newDatabaseCollectionView projects result type DatabaseCollection to
+// projected type DatabaseCollectionView using the "default" view.
+func newDatabaseCollectionView(res DatabaseCollection) controlplaneviews.DatabaseCollectionView {
+	vres := make(controlplaneviews.DatabaseCollectionView, len(res))
+	for i, n := range res {
+		vres[i] = newDatabaseView(n)
+	}
+	return vres
+}
+
+// newDatabaseCollectionViewAbbreviated projects result type DatabaseCollection
+// to projected type DatabaseCollectionView using the "abbreviated" view.
+func newDatabaseCollectionViewAbbreviated(res DatabaseCollection) controlplaneviews.DatabaseCollectionView {
+	vres := make(controlplaneviews.DatabaseCollectionView, len(res))
+	for i, n := range res {
+		vres[i] = newDatabaseViewAbbreviated(n)
+	}
+	return vres
+}
+
+// newDatabase converts projected type Database to service type Database.
+func newDatabase(vres *controlplaneviews.DatabaseView) *Database {
+	res := &Database{
+		TenantID: vres.TenantID,
+	}
+	if vres.ID != nil {
+		res.ID = *vres.ID
+	}
+	if vres.CreatedAt != nil {
+		res.CreatedAt = *vres.CreatedAt
+	}
+	if vres.UpdatedAt != nil {
+		res.UpdatedAt = *vres.UpdatedAt
+	}
+	if vres.State != nil {
+		res.State = *vres.State
+	}
+	if vres.Spec != nil {
+		res.Spec = transformControlplaneviewsDatabaseSpecViewToDatabaseSpec(vres.Spec)
+	}
+	if vres.Instances != nil {
+		res.Instances = newInstanceCollectionAbbreviated(vres.Instances)
+	}
+	return res
+}
+
+// newDatabaseAbbreviated converts projected type Database to service type
+// Database.
+func newDatabaseAbbreviated(vres *controlplaneviews.DatabaseView) *Database {
+	res := &Database{
+		TenantID: vres.TenantID,
+	}
+	if vres.ID != nil {
+		res.ID = *vres.ID
+	}
+	if vres.CreatedAt != nil {
+		res.CreatedAt = *vres.CreatedAt
+	}
+	if vres.UpdatedAt != nil {
+		res.UpdatedAt = *vres.UpdatedAt
+	}
+	if vres.State != nil {
+		res.State = *vres.State
+	}
+	if vres.Instances != nil {
+		res.Instances = newInstanceCollectionAbbreviated(vres.Instances)
+	}
+	return res
+}
+
+// newDatabaseView projects result type Database to projected type DatabaseView
+// using the "default" view.
+func newDatabaseView(res *Database) *controlplaneviews.DatabaseView {
+	vres := &controlplaneviews.DatabaseView{
+		ID:        &res.ID,
+		TenantID:  res.TenantID,
+		CreatedAt: &res.CreatedAt,
+		UpdatedAt: &res.UpdatedAt,
+		State:     &res.State,
+	}
+	if res.Spec != nil {
+		vres.Spec = transformDatabaseSpecToControlplaneviewsDatabaseSpecView(res.Spec)
+	}
+	if res.Instances != nil {
+		vres.Instances = newInstanceCollectionViewAbbreviated(res.Instances)
+	}
+	return vres
+}
+
+// newDatabaseViewAbbreviated projects result type Database to projected type
+// DatabaseView using the "abbreviated" view.
+func newDatabaseViewAbbreviated(res *Database) *controlplaneviews.DatabaseView {
+	vres := &controlplaneviews.DatabaseView{
+		ID:        &res.ID,
+		TenantID:  res.TenantID,
+		CreatedAt: &res.CreatedAt,
+		UpdatedAt: &res.UpdatedAt,
+		State:     &res.State,
+	}
+	if res.Instances != nil {
+		vres.Instances = newInstanceCollectionViewAbbreviated(res.Instances)
+	}
+	return vres
+}
+
+// newInstanceCollection converts projected type InstanceCollection to service
+// type InstanceCollection.
+func newInstanceCollection(vres controlplaneviews.InstanceCollectionView) InstanceCollection {
+	res := make(InstanceCollection, len(vres))
+	for i, n := range vres {
+		res[i] = newInstance(n)
+	}
+	return res
+}
+
+// newInstanceCollectionAbbreviated converts projected type InstanceCollection
+// to service type InstanceCollection.
+func newInstanceCollectionAbbreviated(vres controlplaneviews.InstanceCollectionView) InstanceCollection {
+	res := make(InstanceCollection, len(vres))
+	for i, n := range vres {
+		res[i] = newInstanceAbbreviated(n)
+	}
+	return res
+}
+
+// newInstanceCollectionView projects result type InstanceCollection to
+// projected type InstanceCollectionView using the "default" view.
+func newInstanceCollectionView(res InstanceCollection) controlplaneviews.InstanceCollectionView {
+	vres := make(controlplaneviews.InstanceCollectionView, len(res))
+	for i, n := range res {
+		vres[i] = newInstanceView(n)
+	}
+	return vres
+}
+
+// newInstanceCollectionViewAbbreviated projects result type InstanceCollection
+// to projected type InstanceCollectionView using the "abbreviated" view.
+func newInstanceCollectionViewAbbreviated(res InstanceCollection) controlplaneviews.InstanceCollectionView {
+	vres := make(controlplaneviews.InstanceCollectionView, len(res))
+	for i, n := range res {
+		vres[i] = newInstanceViewAbbreviated(n)
+	}
+	return vres
+}
+
+// newInstance converts projected type Instance to service type Instance.
+func newInstance(vres *controlplaneviews.InstanceView) *Instance {
+	res := &Instance{
+		ReplicaName:     vres.ReplicaName,
+		PatroniState:    vres.PatroniState,
+		Role:            vres.Role,
+		ReadOnly:        vres.ReadOnly,
+		PendingRestart:  vres.PendingRestart,
+		PatroniPaused:   vres.PatroniPaused,
+		PostgresVersion: vres.PostgresVersion,
+		SpockVersion:    vres.SpockVersion,
+	}
+	if vres.ID != nil {
+		res.ID = *vres.ID
+	}
+	if vres.HostID != nil {
+		res.HostID = *vres.HostID
+	}
+	if vres.NodeName != nil {
+		res.NodeName = *vres.NodeName
+	}
+	if vres.CreatedAt != nil {
+		res.CreatedAt = *vres.CreatedAt
+	}
+	if vres.UpdatedAt != nil {
+		res.UpdatedAt = *vres.UpdatedAt
+	}
+	if vres.State != nil {
+		res.State = *vres.State
+	}
+	if vres.Interfaces != nil {
+		res.Interfaces = make([]*InstanceInterface, len(vres.Interfaces))
+		for i, val := range vres.Interfaces {
+			res.Interfaces[i] = transformControlplaneviewsInstanceInterfaceViewToInstanceInterface(val)
+		}
+	}
+	return res
+}
+
+// newInstanceAbbreviated converts projected type Instance to service type
+// Instance.
+func newInstanceAbbreviated(vres *controlplaneviews.InstanceView) *Instance {
+	res := &Instance{
+		ReplicaName: vres.ReplicaName,
+	}
+	if vres.ID != nil {
+		res.ID = *vres.ID
+	}
+	if vres.HostID != nil {
+		res.HostID = *vres.HostID
+	}
+	if vres.NodeName != nil {
+		res.NodeName = *vres.NodeName
+	}
+	if vres.State != nil {
+		res.State = *vres.State
+	}
+	return res
+}
+
+// newInstanceView projects result type Instance to projected type InstanceView
+// using the "default" view.
+func newInstanceView(res *Instance) *controlplaneviews.InstanceView {
+	vres := &controlplaneviews.InstanceView{
+		ID:              &res.ID,
+		HostID:          &res.HostID,
+		NodeName:        &res.NodeName,
+		ReplicaName:     res.ReplicaName,
+		CreatedAt:       &res.CreatedAt,
+		UpdatedAt:       &res.UpdatedAt,
+		State:           &res.State,
+		PatroniState:    res.PatroniState,
+		Role:            res.Role,
+		ReadOnly:        res.ReadOnly,
+		PendingRestart:  res.PendingRestart,
+		PatroniPaused:   res.PatroniPaused,
+		PostgresVersion: res.PostgresVersion,
+		SpockVersion:    res.SpockVersion,
+	}
+	if res.Interfaces != nil {
+		vres.Interfaces = make([]*controlplaneviews.InstanceInterfaceView, len(res.Interfaces))
+		for i, val := range res.Interfaces {
+			vres.Interfaces[i] = transformInstanceInterfaceToControlplaneviewsInstanceInterfaceView(val)
+		}
+	}
+	return vres
+}
+
+// newInstanceViewAbbreviated projects result type Instance to projected type
+// InstanceView using the "abbreviated" view.
+func newInstanceViewAbbreviated(res *Instance) *controlplaneviews.InstanceView {
+	vres := &controlplaneviews.InstanceView{
+		ID:          &res.ID,
+		HostID:      &res.HostID,
+		NodeName:    &res.NodeName,
+		ReplicaName: res.ReplicaName,
+		State:       &res.State,
+	}
+	return vres
+}
+
+// transformControlplaneviewsDatabaseSpecViewToDatabaseSpec builds a value of
+// type *DatabaseSpec from a value of type *controlplaneviews.DatabaseSpecView.
+func transformControlplaneviewsDatabaseSpecViewToDatabaseSpec(v *controlplaneviews.DatabaseSpecView) *DatabaseSpec {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseSpec{
+		DatabaseName:       *v.DatabaseName,
+		PostgresVersion:    v.PostgresVersion,
+		SpockVersion:       v.SpockVersion,
+		Port:               v.Port,
+		DeletionProtection: v.DeletionProtection,
+		StorageClass:       v.StorageClass,
+		StorageSize:        v.StorageSize,
+		Cpus:               v.Cpus,
+		Memory:             v.Memory,
+	}
+	if v.Nodes != nil {
+		res.Nodes = make([]*DatabaseNodeSpec, len(v.Nodes))
+		for i, val := range v.Nodes {
+			res.Nodes[i] = transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec(val)
+		}
+	} else {
+		res.Nodes = []*DatabaseNodeSpec{}
+	}
+	if v.DatabaseUsers != nil {
+		res.DatabaseUsers = make([]*DatabaseUserSpec, len(v.DatabaseUsers))
+		for i, val := range v.DatabaseUsers {
+			res.DatabaseUsers[i] = transformControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpec(val)
+		}
+	}
+	if v.Features != nil {
+		res.Features = make(map[string]string, len(v.Features))
+		for key, val := range v.Features {
+			tk := key
+			tv := val
+			res.Features[tk] = tv
+		}
+	}
+	if v.BackupConfigs != nil {
+		res.BackupConfigs = make([]*BackupConfigSpec, len(v.BackupConfigs))
+		for i, val := range v.BackupConfigs {
+			res.BackupConfigs[i] = transformControlplaneviewsBackupConfigSpecViewToBackupConfigSpec(val)
+		}
+	}
+	if v.RestoreConfig != nil {
+		res.RestoreConfig = transformControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpec(v.RestoreConfig)
+	}
+	if v.PostgresqlConf != nil {
+		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
+		for key, val := range v.PostgresqlConf {
+			tk := key
+			tv := val
+			res.PostgresqlConf[tk] = tv
+		}
+	}
+
+	return res
+}
+
+// transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec builds a
+// value of type *DatabaseNodeSpec from a value of type
+// *controlplaneviews.DatabaseNodeSpecView.
+func transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec(v *controlplaneviews.DatabaseNodeSpecView) *DatabaseNodeSpec {
+	res := &DatabaseNodeSpec{
+		Name:            *v.Name,
+		HostID:          *v.HostID,
+		PostgresVersion: v.PostgresVersion,
+		Port:            v.Port,
+		StorageClass:    v.StorageClass,
+		StorageSize:     v.StorageSize,
+		Cpus:            v.Cpus,
+		Memory:          v.Memory,
+	}
+	if v.ReadReplicas != nil {
+		res.ReadReplicas = make([]*DatabaseReplicaSpec, len(v.ReadReplicas))
+		for i, val := range v.ReadReplicas {
+			res.ReadReplicas[i] = transformControlplaneviewsDatabaseReplicaSpecViewToDatabaseReplicaSpec(val)
+		}
+	}
+	if v.PostgresqlConf != nil {
+		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
+		for key, val := range v.PostgresqlConf {
+			tk := key
+			tv := val
+			res.PostgresqlConf[tk] = tv
+		}
+	}
+
+	return res
+}
+
+// transformControlplaneviewsDatabaseReplicaSpecViewToDatabaseReplicaSpec
+// builds a value of type *DatabaseReplicaSpec from a value of type
+// *controlplaneviews.DatabaseReplicaSpecView.
+func transformControlplaneviewsDatabaseReplicaSpecViewToDatabaseReplicaSpec(v *controlplaneviews.DatabaseReplicaSpecView) *DatabaseReplicaSpec {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseReplicaSpec{
+		HostID: *v.HostID,
+	}
+
+	return res
+}
+
+// transformControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpec builds a
+// value of type *DatabaseUserSpec from a value of type
+// *controlplaneviews.DatabaseUserSpecView.
+func transformControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpec(v *controlplaneviews.DatabaseUserSpecView) *DatabaseUserSpec {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseUserSpec{
+		Username: *v.Username,
+		Password: *v.Password,
+		DbOwner:  v.DbOwner,
+	}
+	if v.Attributes != nil {
+		res.Attributes = make([]string, len(v.Attributes))
+		for i, val := range v.Attributes {
+			res.Attributes[i] = val
+		}
+	}
+	if v.Roles != nil {
+		res.Roles = make([]string, len(v.Roles))
+		for i, val := range v.Roles {
+			res.Roles[i] = val
+		}
+	}
+
+	return res
+}
+
+// transformControlplaneviewsBackupConfigSpecViewToBackupConfigSpec builds a
+// value of type *BackupConfigSpec from a value of type
+// *controlplaneviews.BackupConfigSpecView.
+func transformControlplaneviewsBackupConfigSpecViewToBackupConfigSpec(v *controlplaneviews.BackupConfigSpecView) *BackupConfigSpec {
+	if v == nil {
+		return nil
+	}
+	res := &BackupConfigSpec{
+		ID:       *v.ID,
+		Provider: *v.Provider,
+	}
+	if v.NodeNames != nil {
+		res.NodeNames = make([]string, len(v.NodeNames))
+		for i, val := range v.NodeNames {
+			res.NodeNames[i] = val
+		}
+	}
+	if v.Repositories != nil {
+		res.Repositories = make([]*BackupRepositorySpec, len(v.Repositories))
+		for i, val := range v.Repositories {
+			res.Repositories[i] = transformControlplaneviewsBackupRepositorySpecViewToBackupRepositorySpec(val)
+		}
+	}
+	if v.Schedules != nil {
+		res.Schedules = make([]*BackupScheduleSpec, len(v.Schedules))
+		for i, val := range v.Schedules {
+			res.Schedules[i] = transformControlplaneviewsBackupScheduleSpecViewToBackupScheduleSpec(val)
+		}
+	}
+
+	return res
+}
+
+// transformControlplaneviewsBackupRepositorySpecViewToBackupRepositorySpec
+// builds a value of type *BackupRepositorySpec from a value of type
+// *controlplaneviews.BackupRepositorySpecView.
+func transformControlplaneviewsBackupRepositorySpecViewToBackupRepositorySpec(v *controlplaneviews.BackupRepositorySpecView) *BackupRepositorySpec {
+	if v == nil {
+		return nil
+	}
+	res := &BackupRepositorySpec{
+		ID:                v.ID,
+		Type:              *v.Type,
+		S3Bucket:          v.S3Bucket,
+		S3Region:          v.S3Region,
+		S3Endpoint:        v.S3Endpoint,
+		GcsBucket:         v.GcsBucket,
+		GcsEndpoint:       v.GcsEndpoint,
+		AzureAccount:      v.AzureAccount,
+		AzureContainer:    v.AzureContainer,
+		AzureEndpoint:     v.AzureEndpoint,
+		RetentionFull:     v.RetentionFull,
+		RetentionFullType: v.RetentionFullType,
+		BasePath:          v.BasePath,
+	}
+
+	return res
+}
+
+// transformControlplaneviewsBackupScheduleSpecViewToBackupScheduleSpec builds
+// a value of type *BackupScheduleSpec from a value of type
+// *controlplaneviews.BackupScheduleSpecView.
+func transformControlplaneviewsBackupScheduleSpecViewToBackupScheduleSpec(v *controlplaneviews.BackupScheduleSpecView) *BackupScheduleSpec {
+	if v == nil {
+		return nil
+	}
+	res := &BackupScheduleSpec{
+		ID:             *v.ID,
+		Type:           *v.Type,
+		CronExpression: *v.CronExpression,
+	}
+
+	return res
+}
+
+// transformControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpec builds a
+// value of type *RestoreConfigSpec from a value of type
+// *controlplaneviews.RestoreConfigSpecView.
+func transformControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpec(v *controlplaneviews.RestoreConfigSpecView) *RestoreConfigSpec {
+	if v == nil {
+		return nil
+	}
+	res := &RestoreConfigSpec{
+		Provider: *v.Provider,
+		NodeName: *v.NodeName,
+	}
+	if v.Repository != nil {
+		res.Repository = transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec(v.Repository)
+	}
+
+	return res
+}
+
+// transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec
+// builds a value of type *RestoreRepositorySpec from a value of type
+// *controlplaneviews.RestoreRepositorySpecView.
+func transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec(v *controlplaneviews.RestoreRepositorySpecView) *RestoreRepositorySpec {
+	res := &RestoreRepositorySpec{
+		ID:             *v.ID,
+		Type:           *v.Type,
+		S3Bucket:       v.S3Bucket,
+		S3Region:       v.S3Region,
+		S3Endpoint:     v.S3Endpoint,
+		GcsBucket:      v.GcsBucket,
+		GcsEndpoint:    v.GcsEndpoint,
+		AzureAccount:   v.AzureAccount,
+		AzureContainer: v.AzureContainer,
+		AzureEndpoint:  v.AzureEndpoint,
+		BasePath:       v.BasePath,
+	}
+
+	return res
+}
+
+// transformDatabaseSpecToControlplaneviewsDatabaseSpecView builds a value of
+// type *controlplaneviews.DatabaseSpecView from a value of type *DatabaseSpec.
+func transformDatabaseSpecToControlplaneviewsDatabaseSpecView(v *DatabaseSpec) *controlplaneviews.DatabaseSpecView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.DatabaseSpecView{
+		DatabaseName:       &v.DatabaseName,
+		PostgresVersion:    v.PostgresVersion,
+		SpockVersion:       v.SpockVersion,
+		Port:               v.Port,
+		DeletionProtection: v.DeletionProtection,
+		StorageClass:       v.StorageClass,
+		StorageSize:        v.StorageSize,
+		Cpus:               v.Cpus,
+		Memory:             v.Memory,
+	}
+	if v.Nodes != nil {
+		res.Nodes = make([]*controlplaneviews.DatabaseNodeSpecView, len(v.Nodes))
+		for i, val := range v.Nodes {
+			res.Nodes[i] = transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView(val)
+		}
+	} else {
+		res.Nodes = []*controlplaneviews.DatabaseNodeSpecView{}
+	}
+	if v.DatabaseUsers != nil {
+		res.DatabaseUsers = make([]*controlplaneviews.DatabaseUserSpecView, len(v.DatabaseUsers))
+		for i, val := range v.DatabaseUsers {
+			res.DatabaseUsers[i] = transformDatabaseUserSpecToControlplaneviewsDatabaseUserSpecView(val)
+		}
+	}
+	if v.Features != nil {
+		res.Features = make(map[string]string, len(v.Features))
+		for key, val := range v.Features {
+			tk := key
+			tv := val
+			res.Features[tk] = tv
+		}
+	}
+	if v.BackupConfigs != nil {
+		res.BackupConfigs = make([]*controlplaneviews.BackupConfigSpecView, len(v.BackupConfigs))
+		for i, val := range v.BackupConfigs {
+			res.BackupConfigs[i] = transformBackupConfigSpecToControlplaneviewsBackupConfigSpecView(val)
+		}
+	}
+	if v.RestoreConfig != nil {
+		res.RestoreConfig = transformRestoreConfigSpecToControlplaneviewsRestoreConfigSpecView(v.RestoreConfig)
+	}
+	if v.PostgresqlConf != nil {
+		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
+		for key, val := range v.PostgresqlConf {
+			tk := key
+			tv := val
+			res.PostgresqlConf[tk] = tv
+		}
+	}
+
+	return res
+}
+
+// transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView builds a
+// value of type *controlplaneviews.DatabaseNodeSpecView from a value of type
+// *DatabaseNodeSpec.
+func transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView(v *DatabaseNodeSpec) *controlplaneviews.DatabaseNodeSpecView {
+	res := &controlplaneviews.DatabaseNodeSpecView{
+		Name:            &v.Name,
+		HostID:          &v.HostID,
+		PostgresVersion: v.PostgresVersion,
+		Port:            v.Port,
+		StorageClass:    v.StorageClass,
+		StorageSize:     v.StorageSize,
+		Cpus:            v.Cpus,
+		Memory:          v.Memory,
+	}
+	if v.ReadReplicas != nil {
+		res.ReadReplicas = make([]*controlplaneviews.DatabaseReplicaSpecView, len(v.ReadReplicas))
+		for i, val := range v.ReadReplicas {
+			res.ReadReplicas[i] = transformDatabaseReplicaSpecToControlplaneviewsDatabaseReplicaSpecView(val)
+		}
+	}
+	if v.PostgresqlConf != nil {
+		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
+		for key, val := range v.PostgresqlConf {
+			tk := key
+			tv := val
+			res.PostgresqlConf[tk] = tv
+		}
+	}
+
+	return res
+}
+
+// transformDatabaseReplicaSpecToControlplaneviewsDatabaseReplicaSpecView
+// builds a value of type *controlplaneviews.DatabaseReplicaSpecView from a
+// value of type *DatabaseReplicaSpec.
+func transformDatabaseReplicaSpecToControlplaneviewsDatabaseReplicaSpecView(v *DatabaseReplicaSpec) *controlplaneviews.DatabaseReplicaSpecView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.DatabaseReplicaSpecView{
+		HostID: &v.HostID,
+	}
+
+	return res
+}
+
+// transformDatabaseUserSpecToControlplaneviewsDatabaseUserSpecView builds a
+// value of type *controlplaneviews.DatabaseUserSpecView from a value of type
+// *DatabaseUserSpec.
+func transformDatabaseUserSpecToControlplaneviewsDatabaseUserSpecView(v *DatabaseUserSpec) *controlplaneviews.DatabaseUserSpecView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.DatabaseUserSpecView{
+		Username: &v.Username,
+		Password: &v.Password,
+		DbOwner:  v.DbOwner,
+	}
+	if v.Attributes != nil {
+		res.Attributes = make([]string, len(v.Attributes))
+		for i, val := range v.Attributes {
+			res.Attributes[i] = val
+		}
+	}
+	if v.Roles != nil {
+		res.Roles = make([]string, len(v.Roles))
+		for i, val := range v.Roles {
+			res.Roles[i] = val
+		}
+	}
+
+	return res
+}
+
+// transformBackupConfigSpecToControlplaneviewsBackupConfigSpecView builds a
+// value of type *controlplaneviews.BackupConfigSpecView from a value of type
+// *BackupConfigSpec.
+func transformBackupConfigSpecToControlplaneviewsBackupConfigSpecView(v *BackupConfigSpec) *controlplaneviews.BackupConfigSpecView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.BackupConfigSpecView{
+		ID:       &v.ID,
+		Provider: &v.Provider,
+	}
+	if v.NodeNames != nil {
+		res.NodeNames = make([]string, len(v.NodeNames))
+		for i, val := range v.NodeNames {
+			res.NodeNames[i] = val
+		}
+	}
+	if v.Repositories != nil {
+		res.Repositories = make([]*controlplaneviews.BackupRepositorySpecView, len(v.Repositories))
+		for i, val := range v.Repositories {
+			res.Repositories[i] = transformBackupRepositorySpecToControlplaneviewsBackupRepositorySpecView(val)
+		}
+	}
+	if v.Schedules != nil {
+		res.Schedules = make([]*controlplaneviews.BackupScheduleSpecView, len(v.Schedules))
+		for i, val := range v.Schedules {
+			res.Schedules[i] = transformBackupScheduleSpecToControlplaneviewsBackupScheduleSpecView(val)
+		}
+	}
+
+	return res
+}
+
+// transformBackupRepositorySpecToControlplaneviewsBackupRepositorySpecView
+// builds a value of type *controlplaneviews.BackupRepositorySpecView from a
+// value of type *BackupRepositorySpec.
+func transformBackupRepositorySpecToControlplaneviewsBackupRepositorySpecView(v *BackupRepositorySpec) *controlplaneviews.BackupRepositorySpecView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.BackupRepositorySpecView{
+		ID:                v.ID,
+		Type:              &v.Type,
+		S3Bucket:          v.S3Bucket,
+		S3Region:          v.S3Region,
+		S3Endpoint:        v.S3Endpoint,
+		GcsBucket:         v.GcsBucket,
+		GcsEndpoint:       v.GcsEndpoint,
+		AzureAccount:      v.AzureAccount,
+		AzureContainer:    v.AzureContainer,
+		AzureEndpoint:     v.AzureEndpoint,
+		RetentionFull:     v.RetentionFull,
+		RetentionFullType: v.RetentionFullType,
+		BasePath:          v.BasePath,
+	}
+
+	return res
+}
+
+// transformBackupScheduleSpecToControlplaneviewsBackupScheduleSpecView builds
+// a value of type *controlplaneviews.BackupScheduleSpecView from a value of
+// type *BackupScheduleSpec.
+func transformBackupScheduleSpecToControlplaneviewsBackupScheduleSpecView(v *BackupScheduleSpec) *controlplaneviews.BackupScheduleSpecView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.BackupScheduleSpecView{
+		ID:             &v.ID,
+		Type:           &v.Type,
+		CronExpression: &v.CronExpression,
+	}
+
+	return res
+}
+
+// transformRestoreConfigSpecToControlplaneviewsRestoreConfigSpecView builds a
+// value of type *controlplaneviews.RestoreConfigSpecView from a value of type
+// *RestoreConfigSpec.
+func transformRestoreConfigSpecToControlplaneviewsRestoreConfigSpecView(v *RestoreConfigSpec) *controlplaneviews.RestoreConfigSpecView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.RestoreConfigSpecView{
+		Provider: &v.Provider,
+		NodeName: &v.NodeName,
+	}
+	if v.Repository != nil {
+		res.Repository = transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView(v.Repository)
+	}
+
+	return res
+}
+
+// transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView
+// builds a value of type *controlplaneviews.RestoreRepositorySpecView from a
+// value of type *RestoreRepositorySpec.
+func transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView(v *RestoreRepositorySpec) *controlplaneviews.RestoreRepositorySpecView {
+	res := &controlplaneviews.RestoreRepositorySpecView{
+		ID:             &v.ID,
+		Type:           &v.Type,
+		S3Bucket:       v.S3Bucket,
+		S3Region:       v.S3Region,
+		S3Endpoint:     v.S3Endpoint,
+		GcsBucket:      v.GcsBucket,
+		GcsEndpoint:    v.GcsEndpoint,
+		AzureAccount:   v.AzureAccount,
+		AzureContainer: v.AzureContainer,
+		AzureEndpoint:  v.AzureEndpoint,
+		BasePath:       v.BasePath,
+	}
+
+	return res
+}
+
+// transformControlplaneviewsInstanceInterfaceViewToInstanceInterface builds a
+// value of type *InstanceInterface from a value of type
+// *controlplaneviews.InstanceInterfaceView.
+func transformControlplaneviewsInstanceInterfaceViewToInstanceInterface(v *controlplaneviews.InstanceInterfaceView) *InstanceInterface {
+	if v == nil {
+		return nil
+	}
+	res := &InstanceInterface{
+		NetworkType: *v.NetworkType,
+		NetworkID:   v.NetworkID,
+		Hostname:    v.Hostname,
+		Ipv4Address: v.Ipv4Address,
+		Port:        *v.Port,
+	}
+
+	return res
+}
+
+// transformInstanceInterfaceToControlplaneviewsInstanceInterfaceView builds a
+// value of type *controlplaneviews.InstanceInterfaceView from a value of type
+// *InstanceInterface.
+func transformInstanceInterfaceToControlplaneviewsInstanceInterfaceView(v *InstanceInterface) *controlplaneviews.InstanceInterfaceView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.InstanceInterfaceView{
+		NetworkType: &v.NetworkType,
+		NetworkID:   v.NetworkID,
+		Hostname:    v.Hostname,
+		Ipv4Address: v.Ipv4Address,
+		Port:        &v.Port,
+	}
+
+	return res
 }

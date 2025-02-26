@@ -14,9 +14,9 @@ import (
 
 func TestPutOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	defer server.Close()
-	client := server.Client()
-	defer client.Close()
+	// defer server.Close()
+	client := server.Client(t)
+	// defer client.Close()
 
 	t.Run("puts a value", func(t *testing.T) {
 		ctx := context.Background()
@@ -69,9 +69,9 @@ func TestPutOp(t *testing.T) {
 
 func TestCreateOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	defer server.Close()
-	client := server.Client()
-	defer client.Close()
+	// defer server.Close()
+	client := server.Client(t)
+	// defer client.Close()
 
 	t.Run("key does not exist", func(t *testing.T) {
 		ctx := context.Background()
@@ -99,9 +99,9 @@ func TestCreateOp(t *testing.T) {
 
 func TestUpdateOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	defer server.Close()
-	client := server.Client()
-	defer client.Close()
+	// defer server.Close()
+	client := server.Client(t)
+	// defer client.Close()
 
 	t.Run("valid update", func(t *testing.T) {
 		ctx := context.Background()

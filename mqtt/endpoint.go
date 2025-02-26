@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 	"sync"
 	"time"
 
@@ -98,7 +97,7 @@ func (c *Call) Payload() ([]byte, error) {
 	return json.Marshal(c.Request)
 }
 
-func New(config Config) (*MQTTEndpoint, error) {
+func New(config Config) *MQTTEndpoint {
 	clientID := config.Broker.ClientID
 	if clientID == "" {
 		clientID = fmt.Sprintf("mqtt-%s", uuid.New())
@@ -108,13 +107,6 @@ func New(config Config) (*MQTTEndpoint, error) {
 	if handlerTimeout == 0 {
 		handlerTimeout = time.Minute
 	}
-	url := config.Broker.URL
-	if url == "" {
-		return nil, errors.New("url is required")
-	}
-	if !strings.HasPrefix(url, "tls://") && !strings.HasPrefix(url, "tcp://") {
-		url = fmt.Sprintf("tls://%s:8883", url)
-	}
 	var logger zerolog.Logger
 	if config.Logger != nil {
 		logger = *config.Logger
@@ -123,7 +115,7 @@ func New(config Config) (*MQTTEndpoint, error) {
 	}
 	e := &MQTTEndpoint{
 		logger:         logger,
-		url:            url,
+		url:            config.Broker.URL,
 		clientID:       clientID,
 		responseTopic:  respTopic,
 		responseChans:  make(map[string]chan *paho.Publish),
@@ -153,7 +145,7 @@ func New(config Config) (*MQTTEndpoint, error) {
 	// Response handler
 	e.router.RegisterHandler(respTopic, e.handleResponse)
 	e.subs[respTopic] = true
-	return e, nil
+	return e
 }
 
 func (e *MQTTEndpoint) Connect(ctx context.Context) error {
@@ -164,9 +156,18 @@ func (e *MQTTEndpoint) Connect(ctx context.Context) error {
 		return errors.New("mqtt endpoint is already connected")
 	}
 	e.subsErr = nil
+	if e.url == "" {
+		return errors.New("got empty broker URL")
+	}
 	brokerURL, err := url.Parse(e.url)
 	if err != nil {
 		return fmt.Errorf("failed to parse mqtt url: %v", err)
+	}
+	if brokerURL.Scheme == "" {
+		brokerURL.Scheme = "tls"
+	}
+	if brokerURL.Port() == "" {
+		brokerURL.Host = fmt.Sprintf("%s:%d", brokerURL.Hostname(), 8883)
 	}
 	readyChan := make(chan struct{})
 	e.cm, err = autopaho.NewConnection(ctx, e.getPahoConfig(brokerURL, readyChan))

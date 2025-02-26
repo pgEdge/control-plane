@@ -13,9 +13,9 @@ import (
 
 func TestGetOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	defer server.Close()
-	client := server.Client()
-	defer client.Close()
+	// defer server.Close()
+	client := server.Client(t)
+	// defer client.Close()
 
 	t.Run("key exists", func(t *testing.T) {
 		ctx := context.Background()
@@ -42,9 +42,9 @@ func TestGetOp(t *testing.T) {
 
 func TestGetMultipleOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	defer server.Close()
-	client := server.Client()
-	defer client.Close()
+	// defer server.Close()
+	client := server.Client(t)
+	// defer client.Close()
 
 	t.Run("keys exist", func(t *testing.T) {
 		ctx := context.Background()
@@ -78,9 +78,9 @@ func TestGetMultipleOp(t *testing.T) {
 
 func TestGetPrefixOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	defer server.Close()
-	client := server.Client()
-	defer client.Close()
+	// defer server.Close()
+	client := server.Client(t)
+	// defer client.Close()
 
 	t.Run("keys exist", func(t *testing.T) {
 		ctx := context.Background()
@@ -114,9 +114,9 @@ func TestGetPrefixOp(t *testing.T) {
 
 func TestGetRangeOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	defer server.Close()
-	client := server.Client()
-	defer client.Close()
+	// defer server.Close()
+	client := server.Client(t)
+	// defer client.Close()
 
 	t.Run("keys exist", func(t *testing.T) {
 		ctx := context.Background()
@@ -155,9 +155,9 @@ func TestGetRangeOp(t *testing.T) {
 
 func TestExistsOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	defer server.Close()
-	client := server.Client()
-	defer client.Close()
+	// defer server.Close()
+	client := server.Client(t)
+	// defer client.Close()
 
 	t.Run("key exists", func(t *testing.T) {
 		ctx := context.Background()

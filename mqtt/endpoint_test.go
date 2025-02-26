@@ -15,14 +15,13 @@ import (
 func TestConnectAndDisconnect(t *testing.T) {
 	ctx, broker := setupTestBroker(t)
 
-	endpoint, err := mqtt.New(mqtt.Config{
+	endpoint := mqtt.New(mqtt.Config{
 		Broker: mqtt.BrokerConfig{
 			URL: broker.URL(),
 		},
 	})
-	require.Nil(t, err)
-	require.Nil(t, endpoint.Connect(ctx))
-	require.Nil(t, endpoint.Disconnect(ctx))
+	require.NoError(t, endpoint.Connect(ctx))
+	require.NoError(t, endpoint.Disconnect(ctx))
 }
 
 func TestPublishAndReceive(t *testing.T) {
@@ -30,7 +29,7 @@ func TestPublishAndReceive(t *testing.T) {
 
 	receiveChan := make(chan *mqtt.Message)
 
-	receiver, err := mqtt.New(mqtt.Config{
+	receiver := mqtt.New(mqtt.Config{
 		Broker: mqtt.BrokerConfig{
 			URL: broker.URL(),
 		},
@@ -41,25 +40,23 @@ func TestPublishAndReceive(t *testing.T) {
 			},
 		},
 	})
-	require.Nil(t, err)
-	require.Nil(t, receiver.Connect(ctx))
+	require.NoError(t, receiver.Connect(ctx))
 	defer receiver.Disconnect(ctx)
 
-	sender, err := mqtt.New(mqtt.Config{
+	sender := mqtt.New(mqtt.Config{
 		Broker: mqtt.BrokerConfig{
 			URL: broker.URL(),
 		},
 	})
-	require.Nil(t, err)
-	require.Nil(t, sender.Connect(ctx))
+	require.NoError(t, sender.Connect(ctx))
 	defer sender.Disconnect(ctx)
 
-	err = sender.Publish(ctx, &mqtt.Message{
+	err := sender.Publish(ctx, &mqtt.Message{
 		Topic:   "data/test",
 		Payload: []byte("HELLO"),
 		QoS:     2,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	select {
 	case msg := <-receiveChan:
@@ -75,7 +72,7 @@ func TestCall(t *testing.T) {
 	ctx, broker := setupTestBroker(t)
 
 	// Create a service that responds to commands
-	service, err := mqtt.New(mqtt.Config{
+	service := mqtt.New(mqtt.Config{
 		Broker: mqtt.BrokerConfig{
 			Username: "service",
 			URL:      broker.URL(),
@@ -93,29 +90,27 @@ func TestCall(t *testing.T) {
 			},
 		},
 	})
-	require.Nil(t, err)
-	require.Nil(t, service.Connect(ctx))
+	require.NoError(t, service.Connect(ctx))
 	defer service.Disconnect(ctx)
 
 	// Create a client that calls the service
-	client, err := mqtt.New(mqtt.Config{
+	client := mqtt.New(mqtt.Config{
 		Broker: mqtt.BrokerConfig{
 			Username: "client",
 			URL:      broker.URL(),
 		},
 	})
-	require.Nil(t, err)
-	require.Nil(t, client.Connect(ctx))
+	require.NoError(t, client.Connect(ctx))
 	defer client.Disconnect(ctx)
 
 	// cmd/echo should yield a response with the request value
 	var responseMap map[string]interface{}
-	err = client.Call(ctx, &mqtt.Call{
+	err := client.Call(ctx, &mqtt.Call{
 		Topic:    "cmd/echo",
 		Request:  map[string]interface{}{"poem": "jabberwocky"},
 		Response: &responseMap,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, map[string]interface{}{"poem": "jabberwocky"}, responseMap)
 
 	// cmd/ping should yield a "pong" response
@@ -124,7 +119,7 @@ func TestCall(t *testing.T) {
 		Topic:    "cmd/ping",
 		Response: &responseStr,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, "pong", responseStr)
 
 	// cmd/error should return an error
@@ -138,7 +133,7 @@ func TestCall(t *testing.T) {
 func TestUnsupportedOperation(t *testing.T) {
 	ctx, broker := setupTestBroker(t)
 
-	service, err := mqtt.New(mqtt.Config{
+	service := mqtt.New(mqtt.Config{
 		Broker: mqtt.BrokerConfig{
 			Username: "service",
 			URL:      broker.URL(),
@@ -147,26 +142,23 @@ func TestUnsupportedOperation(t *testing.T) {
 		Subscriptions:   []string{"cmd/#"},
 		RequestHandlers: map[string]mqtt.RequestHandler{},
 	})
-	require.Nil(t, err)
-	require.Nil(t, service.Connect(ctx))
+	require.NoError(t, service.Connect(ctx))
 	defer service.Disconnect(ctx)
 
 	// Create a client that calls the service
-	client, err := mqtt.New(mqtt.Config{
+	client := mqtt.New(mqtt.Config{
 		Broker: mqtt.BrokerConfig{
 			Username: "client",
 			URL:      broker.URL(),
 		},
 	})
-	require.Nil(t, err)
-	require.Nil(t, client.Connect(ctx))
+	require.NoError(t, client.Connect(ctx))
 	defer client.Disconnect(ctx)
 
 	// cmd/unsupported should return an "unsupported operation" error
-	err = client.Call(ctx, &mqtt.Call{
+	err := client.Call(ctx, &mqtt.Call{
 		Topic: "cmd/unsupported",
 	})
-	require.NotNil(t, err)
 	require.ErrorIs(t, err, mqtt.ErrUnsupported)
 }
 

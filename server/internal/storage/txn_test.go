@@ -13,9 +13,9 @@ import (
 
 func TestTxn(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	defer server.Close()
-	client := server.Client()
-	defer client.Close()
+	// defer server.Close()
+	client := server.Client(t)
+	// defer client.Close()
 
 	t.Run("all conditions met", func(t *testing.T) {
 		ctx := context.Background()

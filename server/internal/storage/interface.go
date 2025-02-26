@@ -22,6 +22,20 @@ type Value interface {
 	SetVersion(version int64)
 }
 
+// StoredValue is an embeddable struct that can be used to implement the Value
+// interface on other structs.
+type StoredValue struct {
+	version int64 `json:"-"`
+}
+
+func (v *StoredValue) Version() int64 {
+	return v.version
+}
+
+func (v *StoredValue) SetVersion(version int64) {
+	v.version = version
+}
+
 // TxnOperation is a storage operation that can be used in a transaction.
 type TxnOperation interface {
 	Ops(ctx context.Context) ([]clientv3.Op, error)

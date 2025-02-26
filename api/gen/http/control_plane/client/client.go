@@ -17,6 +17,22 @@ import (
 
 // Client lists the control-plane service endpoint HTTP clients.
 type Client struct {
+	// InitCluster Doer is the HTTP client used to make requests to the
+	// init-cluster endpoint.
+	InitClusterDoer goahttp.Doer
+
+	// JoinCluster Doer is the HTTP client used to make requests to the
+	// join-cluster endpoint.
+	JoinClusterDoer goahttp.Doer
+
+	// GetJoinToken Doer is the HTTP client used to make requests to the
+	// get-join-token endpoint.
+	GetJoinTokenDoer goahttp.Doer
+
+	// GetJoinOptions Doer is the HTTP client used to make requests to the
+	// get-join-options endpoint.
+	GetJoinOptionsDoer goahttp.Doer
+
 	// InspectCluster Doer is the HTTP client used to make requests to the
 	// inspect-cluster endpoint.
 	InspectClusterDoer goahttp.Doer
@@ -74,6 +90,10 @@ func NewClient(
 	restoreBody bool,
 ) *Client {
 	return &Client{
+		InitClusterDoer:     doer,
+		JoinClusterDoer:     doer,
+		GetJoinTokenDoer:    doer,
+		GetJoinOptionsDoer:  doer,
 		InspectClusterDoer:  doer,
 		ListHostsDoer:       doer,
 		InspectHostDoer:     doer,
@@ -88,6 +108,92 @@ func NewClient(
 		host:                host,
 		decoder:             dec,
 		encoder:             enc,
+	}
+}
+
+// InitCluster returns an endpoint that makes HTTP requests to the
+// control-plane service init-cluster server.
+func (c *Client) InitCluster() goa.Endpoint {
+	var (
+		decodeResponse = DecodeInitClusterResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildInitClusterRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.InitClusterDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "init-cluster", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// JoinCluster returns an endpoint that makes HTTP requests to the
+// control-plane service join-cluster server.
+func (c *Client) JoinCluster() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeJoinClusterRequest(c.encoder)
+		decodeResponse = DecodeJoinClusterResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildJoinClusterRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.JoinClusterDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "join-cluster", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GetJoinToken returns an endpoint that makes HTTP requests to the
+// control-plane service get-join-token server.
+func (c *Client) GetJoinToken() goa.Endpoint {
+	var (
+		decodeResponse = DecodeGetJoinTokenResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetJoinTokenRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetJoinTokenDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "get-join-token", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GetJoinOptions returns an endpoint that makes HTTP requests to the
+// control-plane service get-join-options server.
+func (c *Client) GetJoinOptions() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeGetJoinOptionsRequest(c.encoder)
+		decodeResponse = DecodeGetJoinOptionsResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetJoinOptionsRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetJoinOptionsDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "get-join-options", err)
+		}
+		return decodeResponse(resp)
 	}
 }
 

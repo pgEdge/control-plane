@@ -14,9 +14,242 @@ import (
 	"net/http"
 
 	controlplane "github.com/pgEdge/control-plane/api/gen/control_plane"
+	controlplaneviews "github.com/pgEdge/control-plane/api/gen/control_plane/views"
 	goahttp "goa.design/goa/v3/http"
 	goa "goa.design/goa/v3/pkg"
 )
+
+// EncodeInitClusterResponse returns an encoder for responses returned by the
+// control-plane init-cluster endpoint.
+func EncodeInitClusterResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.ClusterJoinToken)
+		enc := encoder(ctx, w)
+		body := NewInitClusterResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// EncodeInitClusterError returns an encoder for errors returned by the
+// init-cluster control-plane endpoint.
+func EncodeInitClusterError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_already_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewInitClusterClusterAlreadyInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeJoinClusterResponse returns an encoder for responses returned by the
+// control-plane join-cluster endpoint.
+func EncodeJoinClusterResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		w.WriteHeader(http.StatusNoContent)
+		return nil
+	}
+}
+
+// DecodeJoinClusterRequest returns a decoder for requests sent to the
+// control-plane join-cluster endpoint.
+func DecodeJoinClusterRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			body JoinClusterRequestBody
+			err  error
+		)
+		err = decoder(r).Decode(&body)
+		if err != nil {
+			if err == io.EOF {
+				return nil, goa.MissingPayloadError()
+			}
+			var gerr *goa.ServiceError
+			if errors.As(err, &gerr) {
+				return nil, gerr
+			}
+			return nil, goa.DecodePayloadError(err.Error())
+		}
+		err = ValidateJoinClusterRequestBody(&body)
+		if err != nil {
+			return nil, err
+		}
+		payload := NewJoinClusterClusterJoinToken(&body)
+
+		return payload, nil
+	}
+}
+
+// EncodeJoinClusterError returns an encoder for errors returned by the
+// join-cluster control-plane endpoint.
+func EncodeJoinClusterError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_already_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewJoinClusterClusterAlreadyInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeGetJoinTokenResponse returns an encoder for responses returned by the
+// control-plane get-join-token endpoint.
+func EncodeGetJoinTokenResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.ClusterJoinToken)
+		enc := encoder(ctx, w)
+		body := NewGetJoinTokenResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// EncodeGetJoinTokenError returns an encoder for errors returned by the
+// get-join-token control-plane endpoint.
+func EncodeGetJoinTokenError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetJoinTokenClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeGetJoinOptionsResponse returns an encoder for responses returned by
+// the control-plane get-join-options endpoint.
+func EncodeGetJoinOptionsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.ClusterJoinOptions)
+		enc := encoder(ctx, w)
+		body := NewGetJoinOptionsResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeGetJoinOptionsRequest returns a decoder for requests sent to the
+// control-plane get-join-options endpoint.
+func DecodeGetJoinOptionsRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			body GetJoinOptionsRequestBody
+			err  error
+		)
+		err = decoder(r).Decode(&body)
+		if err != nil {
+			if err == io.EOF {
+				return nil, goa.MissingPayloadError()
+			}
+			var gerr *goa.ServiceError
+			if errors.As(err, &gerr) {
+				return nil, gerr
+			}
+			return nil, goa.DecodePayloadError(err.Error())
+		}
+		err = ValidateGetJoinOptionsRequestBody(&body)
+		if err != nil {
+			return nil, err
+		}
+		payload := NewGetJoinOptionsClusterJoinRequest(&body)
+
+		return payload, nil
+	}
+}
+
+// EncodeGetJoinOptionsError returns an encoder for errors returned by the
+// get-join-options control-plane endpoint.
+func EncodeGetJoinOptionsError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetJoinOptionsClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "invalid_join_token":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetJoinOptionsInvalidJoinTokenResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusUnauthorized)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
 
 // EncodeInspectClusterResponse returns an encoder for responses returned by
 // the control-plane inspect-cluster endpoint.
@@ -30,6 +263,35 @@ func EncodeInspectClusterResponse(encoder func(context.Context, http.ResponseWri
 	}
 }
 
+// EncodeInspectClusterError returns an encoder for errors returned by the
+// inspect-cluster control-plane endpoint.
+func EncodeInspectClusterError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewInspectClusterClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeListHostsResponse returns an encoder for responses returned by the
 // control-plane list-hosts endpoint.
 func EncodeListHostsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
@@ -39,6 +301,35 @@ func EncodeListHostsResponse(encoder func(context.Context, http.ResponseWriter) 
 		body := NewListHostsResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
+	}
+}
+
+// EncodeListHostsError returns an encoder for errors returned by the
+// list-hosts control-plane endpoint.
+func EncodeListHostsError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListHostsClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
 	}
 }
 
@@ -70,6 +361,35 @@ func DecodeInspectHostRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 	}
 }
 
+// EncodeInspectHostError returns an encoder for errors returned by the
+// inspect-host control-plane endpoint.
+func EncodeInspectHostError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewInspectHostClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeRemoveHostResponse returns an encoder for responses returned by the
 // control-plane remove-host endpoint.
 func EncodeRemoveHostResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
@@ -95,15 +415,73 @@ func DecodeRemoveHostRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 	}
 }
 
+// EncodeRemoveHostError returns an encoder for errors returned by the
+// remove-host control-plane endpoint.
+func EncodeRemoveHostError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewRemoveHostClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeListDatabasesResponse returns an encoder for responses returned by the
 // control-plane list-databases endpoint.
 func EncodeListDatabasesResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.([]*controlplane.Database)
+		res := v.(controlplaneviews.DatabaseCollection)
 		enc := encoder(ctx, w)
-		body := NewListDatabasesResponseBody(res)
+		body := NewDatabaseResponseAbbreviatedCollection(res.Projected)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
+	}
+}
+
+// EncodeListDatabasesError returns an encoder for errors returned by the
+// list-databases control-plane endpoint.
+func EncodeListDatabasesError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListDatabasesClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
 	}
 }
 
@@ -111,9 +489,9 @@ func EncodeListDatabasesResponse(encoder func(context.Context, http.ResponseWrit
 // the control-plane create-database endpoint.
 func EncodeCreateDatabaseResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*controlplane.Database)
+		res := v.(*controlplaneviews.Database)
 		enc := encoder(ctx, w)
-		body := NewCreateDatabaseResponseBody(res)
+		body := NewCreateDatabaseResponseBody(res.Projected)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
@@ -148,13 +526,68 @@ func DecodeCreateDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 	}
 }
 
+// EncodeCreateDatabaseError returns an encoder for errors returned by the
+// create-database control-plane endpoint.
+func EncodeCreateDatabaseError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "database_already_exists":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewCreateDatabaseDatabaseAlreadyExistsResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "cluster_not_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewCreateDatabaseClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "invalid_input":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewCreateDatabaseInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeInspectDatabaseResponse returns an encoder for responses returned by
 // the control-plane inspect-database endpoint.
 func EncodeInspectDatabaseResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*controlplane.Database)
+		res := v.(*controlplaneviews.Database)
 		enc := encoder(ctx, w)
-		body := NewInspectDatabaseResponseBody(res)
+		body := NewInspectDatabaseResponseBody(res.Projected)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
@@ -176,13 +609,42 @@ func DecodeInspectDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request)
 	}
 }
 
+// EncodeInspectDatabaseError returns an encoder for errors returned by the
+// inspect-database control-plane endpoint.
+func EncodeInspectDatabaseError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewInspectDatabaseClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeUpdateDatabaseResponse returns an encoder for responses returned by
 // the control-plane update-database endpoint.
 func EncodeUpdateDatabaseResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*controlplane.Database)
+		res := v.(*controlplaneviews.Database)
 		enc := encoder(ctx, w)
-		body := NewUpdateDatabaseResponseBody(res)
+		body := NewUpdateDatabaseResponseBody(res.Projected)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
@@ -225,6 +687,35 @@ func DecodeUpdateDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 	}
 }
 
+// EncodeUpdateDatabaseError returns an encoder for errors returned by the
+// update-database control-plane endpoint.
+func EncodeUpdateDatabaseError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewUpdateDatabaseClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeDeleteDatabaseResponse returns an encoder for responses returned by
 // the control-plane delete-database endpoint.
 func EncodeDeleteDatabaseResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
@@ -250,6 +741,65 @@ func DecodeDeleteDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 	}
 }
 
+// EncodeDeleteDatabaseError returns an encoder for errors returned by the
+// delete-database control-plane endpoint.
+func EncodeDeleteDatabaseError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewDeleteDatabaseClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// marshalControlplaneClusterPeerToClusterPeerResponseBody builds a value of
+// type *ClusterPeerResponseBody from a value of type *controlplane.ClusterPeer.
+func marshalControlplaneClusterPeerToClusterPeerResponseBody(v *controlplane.ClusterPeer) *ClusterPeerResponseBody {
+	res := &ClusterPeerResponseBody{
+		Name:      v.Name,
+		PeerURL:   v.PeerURL,
+		ClientURL: v.ClientURL,
+	}
+
+	return res
+}
+
+// marshalControlplaneClusterCredentialsToClusterCredentialsResponseBody builds
+// a value of type *ClusterCredentialsResponseBody from a value of type
+// *controlplane.ClusterCredentials.
+func marshalControlplaneClusterCredentialsToClusterCredentialsResponseBody(v *controlplane.ClusterCredentials) *ClusterCredentialsResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &ClusterCredentialsResponseBody{
+		CaCert:     v.CaCert,
+		ClientCert: v.ClientCert,
+		ClientKey:  v.ClientKey,
+		ServerCert: v.ServerCert,
+		ServerKey:  v.ServerKey,
+	}
+
+	return res
+}
+
 // marshalControlplaneClusterStatusToClusterStatusResponseBody builds a value
 // of type *ClusterStatusResponseBody from a value of type
 // *controlplane.ClusterStatus.
@@ -265,32 +815,45 @@ func marshalControlplaneClusterStatusToClusterStatusResponseBody(v *controlplane
 // *HostResponseBody from a value of type *controlplane.Host.
 func marshalControlplaneHostToHostResponseBody(v *controlplane.Host) *HostResponseBody {
 	res := &HostResponseBody{
-		ID:          v.ID,
-		Type:        v.Type,
-		Cohort:      v.Cohort,
-		Hostname:    v.Hostname,
-		Ipv4Address: v.Ipv4Address,
+		ID:           v.ID,
+		Orchestrator: v.Orchestrator,
+		Hostname:     v.Hostname,
+		Ipv4Address:  v.Ipv4Address,
+		Cpus:         v.Cpus,
+		Memory:       v.Memory,
 	}
-	if v.Config != nil {
-		res.Config = marshalControlplaneHostConfigurationToHostConfigurationResponseBody(v.Config)
+	if v.Cohort != nil {
+		res.Cohort = marshalControlplaneHostCohortToHostCohortResponseBody(v.Cohort)
 	}
 	if v.Status != nil {
 		res.Status = marshalControlplaneHostStatusToHostStatusResponseBody(v.Status)
+	}
+	if v.DefaultPgedgeVersion != nil {
+		res.DefaultPgedgeVersion = marshalControlplanePgEdgeVersionToPgEdgeVersionResponseBody(v.DefaultPgedgeVersion)
+	}
+	if v.SupportedPgedgeVersions != nil {
+		res.SupportedPgedgeVersions = make([]*PgEdgeVersionResponseBody, len(v.SupportedPgedgeVersions))
+		for i, val := range v.SupportedPgedgeVersions {
+			res.SupportedPgedgeVersions[i] = marshalControlplanePgEdgeVersionToPgEdgeVersionResponseBody(val)
+		}
+	} else {
+		res.SupportedPgedgeVersions = []*PgEdgeVersionResponseBody{}
 	}
 
 	return res
 }
 
-// marshalControlplaneHostConfigurationToHostConfigurationResponseBody builds a
-// value of type *HostConfigurationResponseBody from a value of type
-// *controlplane.HostConfiguration.
-func marshalControlplaneHostConfigurationToHostConfigurationResponseBody(v *controlplane.HostConfiguration) *HostConfigurationResponseBody {
+// marshalControlplaneHostCohortToHostCohortResponseBody builds a value of type
+// *HostCohortResponseBody from a value of type *controlplane.HostCohort.
+func marshalControlplaneHostCohortToHostCohortResponseBody(v *controlplane.HostCohort) *HostCohortResponseBody {
 	if v == nil {
 		return nil
 	}
-	res := &HostConfigurationResponseBody{
-		VectorEnabled:  v.VectorEnabled,
-		TraefikEnabled: v.TraefikEnabled,
+	res := &HostCohortResponseBody{
+		Type:             v.Type,
+		CohortID:         v.CohortID,
+		MemberID:         v.MemberID,
+		ControlAvailable: v.ControlAvailable,
 	}
 
 	return res
@@ -300,7 +863,51 @@ func marshalControlplaneHostConfigurationToHostConfigurationResponseBody(v *cont
 // *HostStatusResponseBody from a value of type *controlplane.HostStatus.
 func marshalControlplaneHostStatusToHostStatusResponseBody(v *controlplane.HostStatus) *HostStatusResponseBody {
 	res := &HostStatusResponseBody{
-		State: v.State,
+		State:     v.State,
+		UpdatedAt: v.UpdatedAt,
+	}
+	if v.Components != nil {
+		res.Components = make(map[string]*ComponentStatusResponseBody, len(v.Components))
+		for key, val := range v.Components {
+			tk := key
+			if val == nil {
+				res.Components[tk] = nil
+				continue
+			}
+			res.Components[tk] = marshalControlplaneComponentStatusToComponentStatusResponseBody(val)
+		}
+	}
+
+	return res
+}
+
+// marshalControlplaneComponentStatusToComponentStatusResponseBody builds a
+// value of type *ComponentStatusResponseBody from a value of type
+// *controlplane.ComponentStatus.
+func marshalControlplaneComponentStatusToComponentStatusResponseBody(v *controlplane.ComponentStatus) *ComponentStatusResponseBody {
+	res := &ComponentStatusResponseBody{
+		Healthy: v.Healthy,
+		Error:   v.Error,
+	}
+	if v.Details != nil {
+		res.Details = make(map[string]any, len(v.Details))
+		for key, val := range v.Details {
+			tk := key
+			tv := val
+			res.Details[tk] = tv
+		}
+	}
+
+	return res
+}
+
+// marshalControlplanePgEdgeVersionToPgEdgeVersionResponseBody builds a value
+// of type *PgEdgeVersionResponseBody from a value of type
+// *controlplane.PgEdgeVersion.
+func marshalControlplanePgEdgeVersionToPgEdgeVersionResponseBody(v *controlplane.PgEdgeVersion) *PgEdgeVersionResponseBody {
+	res := &PgEdgeVersionResponseBody{
+		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
 	}
 
 	return res
@@ -310,32 +917,45 @@ func marshalControlplaneHostStatusToHostStatusResponseBody(v *controlplane.HostS
 // from a value of type *controlplane.Host.
 func marshalControlplaneHostToHostResponse(v *controlplane.Host) *HostResponse {
 	res := &HostResponse{
-		ID:          v.ID,
-		Type:        v.Type,
-		Cohort:      v.Cohort,
-		Hostname:    v.Hostname,
-		Ipv4Address: v.Ipv4Address,
+		ID:           v.ID,
+		Orchestrator: v.Orchestrator,
+		Hostname:     v.Hostname,
+		Ipv4Address:  v.Ipv4Address,
+		Cpus:         v.Cpus,
+		Memory:       v.Memory,
 	}
-	if v.Config != nil {
-		res.Config = marshalControlplaneHostConfigurationToHostConfigurationResponse(v.Config)
+	if v.Cohort != nil {
+		res.Cohort = marshalControlplaneHostCohortToHostCohortResponse(v.Cohort)
 	}
 	if v.Status != nil {
 		res.Status = marshalControlplaneHostStatusToHostStatusResponse(v.Status)
+	}
+	if v.DefaultPgedgeVersion != nil {
+		res.DefaultPgedgeVersion = marshalControlplanePgEdgeVersionToPgEdgeVersionResponse(v.DefaultPgedgeVersion)
+	}
+	if v.SupportedPgedgeVersions != nil {
+		res.SupportedPgedgeVersions = make([]*PgEdgeVersionResponse, len(v.SupportedPgedgeVersions))
+		for i, val := range v.SupportedPgedgeVersions {
+			res.SupportedPgedgeVersions[i] = marshalControlplanePgEdgeVersionToPgEdgeVersionResponse(val)
+		}
+	} else {
+		res.SupportedPgedgeVersions = []*PgEdgeVersionResponse{}
 	}
 
 	return res
 }
 
-// marshalControlplaneHostConfigurationToHostConfigurationResponse builds a
-// value of type *HostConfigurationResponse from a value of type
-// *controlplane.HostConfiguration.
-func marshalControlplaneHostConfigurationToHostConfigurationResponse(v *controlplane.HostConfiguration) *HostConfigurationResponse {
+// marshalControlplaneHostCohortToHostCohortResponse builds a value of type
+// *HostCohortResponse from a value of type *controlplane.HostCohort.
+func marshalControlplaneHostCohortToHostCohortResponse(v *controlplane.HostCohort) *HostCohortResponse {
 	if v == nil {
 		return nil
 	}
-	res := &HostConfigurationResponse{
-		VectorEnabled:  v.VectorEnabled,
-		TraefikEnabled: v.TraefikEnabled,
+	res := &HostCohortResponse{
+		Type:             v.Type,
+		CohortID:         v.CohortID,
+		MemberID:         v.MemberID,
+		ControlAvailable: v.ControlAvailable,
 	}
 
 	return res
@@ -345,313 +965,89 @@ func marshalControlplaneHostConfigurationToHostConfigurationResponse(v *controlp
 // *HostStatusResponse from a value of type *controlplane.HostStatus.
 func marshalControlplaneHostStatusToHostStatusResponse(v *controlplane.HostStatus) *HostStatusResponse {
 	res := &HostStatusResponse{
-		State: v.State,
-	}
-
-	return res
-}
-
-// marshalControlplaneDatabaseToDatabaseResponse builds a value of type
-// *DatabaseResponse from a value of type *controlplane.Database.
-func marshalControlplaneDatabaseToDatabaseResponse(v *controlplane.Database) *DatabaseResponse {
-	res := &DatabaseResponse{
-		ID:        v.ID,
-		TenantID:  v.TenantID,
-		CreatedAt: v.CreatedAt,
-		UpdatedAt: v.UpdatedAt,
-	}
-	if v.Status != nil {
-		res.Status = marshalControlplaneDatabaseStatusToDatabaseStatusResponse(v.Status)
-	}
-	if v.Instances != nil {
-		res.Instances = marshalControlplaneInstanceToInstanceResponse(v.Instances)
-	}
-	if v.Spec != nil {
-		res.Spec = marshalControlplaneDatabaseSpecToDatabaseSpecResponse(v.Spec)
-	}
-
-	return res
-}
-
-// marshalControlplaneDatabaseStatusToDatabaseStatusResponse builds a value of
-// type *DatabaseStatusResponse from a value of type
-// *controlplane.DatabaseStatus.
-func marshalControlplaneDatabaseStatusToDatabaseStatusResponse(v *controlplane.DatabaseStatus) *DatabaseStatusResponse {
-	res := &DatabaseStatusResponse{
 		State:     v.State,
 		UpdatedAt: v.UpdatedAt,
 	}
-
-	return res
-}
-
-// marshalControlplaneInstanceToInstanceResponse builds a value of type
-// *InstanceResponse from a value of type *controlplane.Instance.
-func marshalControlplaneInstanceToInstanceResponse(v *controlplane.Instance) *InstanceResponse {
-	res := &InstanceResponse{
-		ID:        v.ID,
-		HostID:    v.HostID,
-		NodeName:  v.NodeName,
-		CreatedAt: v.CreatedAt,
-		UpdatedAt: v.UpdatedAt,
-	}
-	if v.Status != nil {
-		res.Status = marshalControlplaneInstanceStatusToInstanceStatusResponse(v.Status)
-	}
-	if v.Interfaces != nil {
-		res.Interfaces = make([]*InstanceInterfaceResponse, len(v.Interfaces))
-		for i, val := range v.Interfaces {
-			res.Interfaces[i] = marshalControlplaneInstanceInterfaceToInstanceInterfaceResponse(val)
+	if v.Components != nil {
+		res.Components = make(map[string]*ComponentStatusResponse, len(v.Components))
+		for key, val := range v.Components {
+			tk := key
+			if val == nil {
+				res.Components[tk] = nil
+				continue
+			}
+			res.Components[tk] = marshalControlplaneComponentStatusToComponentStatusResponse(val)
 		}
 	}
 
 	return res
 }
 
-// marshalControlplaneInstanceStatusToInstanceStatusResponse builds a value of
-// type *InstanceStatusResponse from a value of type
-// *controlplane.InstanceStatus.
-func marshalControlplaneInstanceStatusToInstanceStatusResponse(v *controlplane.InstanceStatus) *InstanceStatusResponse {
-	res := &InstanceStatusResponse{
-		State:           v.State,
-		PatroniState:    v.PatroniState,
-		Role:            v.Role,
-		ReadOnly:        v.ReadOnly,
-		PendingRestart:  v.PendingRestart,
-		PatroniPaused:   v.PatroniPaused,
+// marshalControlplaneComponentStatusToComponentStatusResponse builds a value
+// of type *ComponentStatusResponse from a value of type
+// *controlplane.ComponentStatus.
+func marshalControlplaneComponentStatusToComponentStatusResponse(v *controlplane.ComponentStatus) *ComponentStatusResponse {
+	res := &ComponentStatusResponse{
+		Healthy: v.Healthy,
+		Error:   v.Error,
+	}
+	if v.Details != nil {
+		res.Details = make(map[string]any, len(v.Details))
+		for key, val := range v.Details {
+			tk := key
+			tv := val
+			res.Details[tk] = tv
+		}
+	}
+
+	return res
+}
+
+// marshalControlplanePgEdgeVersionToPgEdgeVersionResponse builds a value of
+// type *PgEdgeVersionResponse from a value of type *controlplane.PgEdgeVersion.
+func marshalControlplanePgEdgeVersionToPgEdgeVersionResponse(v *controlplane.PgEdgeVersion) *PgEdgeVersionResponse {
+	res := &PgEdgeVersionResponse{
 		PostgresVersion: v.PostgresVersion,
 		SpockVersion:    v.SpockVersion,
-		UpdatedAt:       v.UpdatedAt,
 	}
 
 	return res
 }
 
-// marshalControlplaneInstanceInterfaceToInstanceInterfaceResponse builds a
-// value of type *InstanceInterfaceResponse from a value of type
-// *controlplane.InstanceInterface.
-func marshalControlplaneInstanceInterfaceToInstanceInterfaceResponse(v *controlplane.InstanceInterface) *InstanceInterfaceResponse {
+// marshalControlplaneviewsDatabaseViewToDatabaseResponseAbbreviated builds a
+// value of type *DatabaseResponseAbbreviated from a value of type
+// *controlplaneviews.DatabaseView.
+func marshalControlplaneviewsDatabaseViewToDatabaseResponseAbbreviated(v *controlplaneviews.DatabaseView) *DatabaseResponseAbbreviated {
+	res := &DatabaseResponseAbbreviated{
+		ID:        *v.ID,
+		TenantID:  v.TenantID,
+		CreatedAt: *v.CreatedAt,
+		UpdatedAt: *v.UpdatedAt,
+		State:     *v.State,
+	}
+	if v.Instances != nil {
+		res.Instances = make([]*InstanceResponseAbbreviated, len(v.Instances))
+		for i, val := range v.Instances {
+			res.Instances[i] = marshalControlplaneviewsInstanceViewToInstanceResponseAbbreviated(val)
+		}
+	}
+
+	return res
+}
+
+// marshalControlplaneviewsInstanceViewToInstanceResponseAbbreviated builds a
+// value of type *InstanceResponseAbbreviated from a value of type
+// *controlplaneviews.InstanceView.
+func marshalControlplaneviewsInstanceViewToInstanceResponseAbbreviated(v *controlplaneviews.InstanceView) *InstanceResponseAbbreviated {
 	if v == nil {
 		return nil
 	}
-	res := &InstanceInterfaceResponse{
-		NetworkType: v.NetworkType,
-		NetworkID:   v.NetworkID,
-		Hostname:    v.Hostname,
-		Ipv4Address: v.Ipv4Address,
-		Port:        v.Port,
-	}
-
-	return res
-}
-
-// marshalControlplaneDatabaseSpecToDatabaseSpecResponse builds a value of type
-// *DatabaseSpecResponse from a value of type *controlplane.DatabaseSpec.
-func marshalControlplaneDatabaseSpecToDatabaseSpecResponse(v *controlplane.DatabaseSpec) *DatabaseSpecResponse {
-	if v == nil {
-		return nil
-	}
-	res := &DatabaseSpecResponse{
-		DatabaseName:       v.DatabaseName,
-		PostgresVersion:    v.PostgresVersion,
-		SpockVersion:       v.SpockVersion,
-		Port:               v.Port,
-		DeletionProtection: v.DeletionProtection,
-	}
-	if v.Nodes != nil {
-		res.Nodes = make([]*DatabaseNodeSpecResponse, len(v.Nodes))
-		for i, val := range v.Nodes {
-			res.Nodes[i] = marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecResponse(val)
-		}
-	} else {
-		res.Nodes = []*DatabaseNodeSpecResponse{}
-	}
-	if v.DatabaseUsers != nil {
-		res.DatabaseUsers = make([]*DatabaseUserSpecResponse, len(v.DatabaseUsers))
-		for i, val := range v.DatabaseUsers {
-			res.DatabaseUsers[i] = marshalControlplaneDatabaseUserSpecToDatabaseUserSpecResponse(val)
-		}
-	}
-	if v.Extensions != nil {
-		res.Extensions = make([]*DatabaseExtensionSpecResponse, len(v.Extensions))
-		for i, val := range v.Extensions {
-			res.Extensions[i] = marshalControlplaneDatabaseExtensionSpecToDatabaseExtensionSpecResponse(val)
-		}
-	}
-	if v.Features != nil {
-		res.Features = make(map[string]string, len(v.Features))
-		for key, val := range v.Features {
-			tk := key
-			tv := val
-			res.Features[tk] = tv
-		}
-	}
-	if v.BackupConfigs != nil {
-		res.BackupConfigs = make([]*BackupConfigSpecResponse, len(v.BackupConfigs))
-		for i, val := range v.BackupConfigs {
-			res.BackupConfigs[i] = marshalControlplaneBackupConfigSpecToBackupConfigSpecResponse(val)
-		}
-	}
-	if v.PostgresqlConf != nil {
-		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
-		for key, val := range v.PostgresqlConf {
-			tk := key
-			tv := val
-			res.PostgresqlConf[tk] = tv
-		}
-	}
-
-	return res
-}
-
-// marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecResponse builds a value
-// of type *DatabaseNodeSpecResponse from a value of type
-// *controlplane.DatabaseNodeSpec.
-func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecResponse(v *controlplane.DatabaseNodeSpec) *DatabaseNodeSpecResponse {
-	res := &DatabaseNodeSpecResponse{
-		Name:            v.Name,
-		InstanceID:      v.InstanceID,
-		HostID:          v.HostID,
-		PostgresVersion: v.PostgresVersion,
-		Port:            v.Port,
-	}
-	if v.ReadReplicas != nil {
-		res.ReadReplicas = marshalControlplaneDatabaseReplicaSpecToDatabaseReplicaSpecResponse(v.ReadReplicas)
-	}
-	if v.PostgresqlConf != nil {
-		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
-		for key, val := range v.PostgresqlConf {
-			tk := key
-			tv := val
-			res.PostgresqlConf[tk] = tv
-		}
-	}
-
-	return res
-}
-
-// marshalControlplaneDatabaseReplicaSpecToDatabaseReplicaSpecResponse builds a
-// value of type *DatabaseReplicaSpecResponse from a value of type
-// *controlplane.DatabaseReplicaSpec.
-func marshalControlplaneDatabaseReplicaSpecToDatabaseReplicaSpecResponse(v *controlplane.DatabaseReplicaSpec) *DatabaseReplicaSpecResponse {
-	if v == nil {
-		return nil
-	}
-	res := &DatabaseReplicaSpecResponse{
-		InstanceID: v.InstanceID,
-		HostID:     v.HostID,
-	}
-
-	return res
-}
-
-// marshalControlplaneDatabaseUserSpecToDatabaseUserSpecResponse builds a value
-// of type *DatabaseUserSpecResponse from a value of type
-// *controlplane.DatabaseUserSpec.
-func marshalControlplaneDatabaseUserSpecToDatabaseUserSpecResponse(v *controlplane.DatabaseUserSpec) *DatabaseUserSpecResponse {
-	if v == nil {
-		return nil
-	}
-	res := &DatabaseUserSpecResponse{
-		Username:  v.Username,
-		Password:  v.Password,
-		Superuser: v.Superuser,
-	}
-	if v.Roles != nil {
-		res.Roles = make([]string, len(v.Roles))
-		for i, val := range v.Roles {
-			res.Roles[i] = val
-		}
-	}
-
-	return res
-}
-
-// marshalControlplaneDatabaseExtensionSpecToDatabaseExtensionSpecResponse
-// builds a value of type *DatabaseExtensionSpecResponse from a value of type
-// *controlplane.DatabaseExtensionSpec.
-func marshalControlplaneDatabaseExtensionSpecToDatabaseExtensionSpecResponse(v *controlplane.DatabaseExtensionSpec) *DatabaseExtensionSpecResponse {
-	if v == nil {
-		return nil
-	}
-	res := &DatabaseExtensionSpecResponse{
-		Name:    v.Name,
-		Version: v.Version,
-	}
-
-	return res
-}
-
-// marshalControlplaneBackupConfigSpecToBackupConfigSpecResponse builds a value
-// of type *BackupConfigSpecResponse from a value of type
-// *controlplane.BackupConfigSpec.
-func marshalControlplaneBackupConfigSpecToBackupConfigSpecResponse(v *controlplane.BackupConfigSpec) *BackupConfigSpecResponse {
-	if v == nil {
-		return nil
-	}
-	res := &BackupConfigSpecResponse{
-		ID:       v.ID,
-		Provider: v.Provider,
-	}
-	if v.NodeNames != nil {
-		res.NodeNames = make([]string, len(v.NodeNames))
-		for i, val := range v.NodeNames {
-			res.NodeNames[i] = val
-		}
-	}
-	if v.Repositories != nil {
-		res.Repositories = make([]*BackupRepositorySpecResponse, len(v.Repositories))
-		for i, val := range v.Repositories {
-			res.Repositories[i] = marshalControlplaneBackupRepositorySpecToBackupRepositorySpecResponse(val)
-		}
-	}
-	if v.Schedules != nil {
-		res.Schedules = make([]*BackupScheduleSpecResponse, len(v.Schedules))
-		for i, val := range v.Schedules {
-			res.Schedules[i] = marshalControlplaneBackupScheduleSpecToBackupScheduleSpecResponse(val)
-		}
-	}
-
-	return res
-}
-
-// marshalControlplaneBackupRepositorySpecToBackupRepositorySpecResponse builds
-// a value of type *BackupRepositorySpecResponse from a value of type
-// *controlplane.BackupRepositorySpec.
-func marshalControlplaneBackupRepositorySpecToBackupRepositorySpecResponse(v *controlplane.BackupRepositorySpec) *BackupRepositorySpecResponse {
-	if v == nil {
-		return nil
-	}
-	res := &BackupRepositorySpecResponse{
-		ID:                v.ID,
-		Type:              v.Type,
-		S3Bucket:          v.S3Bucket,
-		S3Region:          v.S3Region,
-		S3Endpoint:        v.S3Endpoint,
-		GcsBucket:         v.GcsBucket,
-		GcsEndpoint:       v.GcsEndpoint,
-		AzureAccount:      v.AzureAccount,
-		AzureContainer:    v.AzureContainer,
-		AzureEndpoint:     v.AzureEndpoint,
-		RetentionFull:     v.RetentionFull,
-		RetentionFullType: v.RetentionFullType,
-		BasePath:          v.BasePath,
-	}
-
-	return res
-}
-
-// marshalControlplaneBackupScheduleSpecToBackupScheduleSpecResponse builds a
-// value of type *BackupScheduleSpecResponse from a value of type
-// *controlplane.BackupScheduleSpec.
-func marshalControlplaneBackupScheduleSpecToBackupScheduleSpecResponse(v *controlplane.BackupScheduleSpec) *BackupScheduleSpecResponse {
-	if v == nil {
-		return nil
-	}
-	res := &BackupScheduleSpecResponse{
-		ID:             v.ID,
-		Type:           v.Type,
-		CronExpression: v.CronExpression,
+	res := &InstanceResponseAbbreviated{
+		ID:          *v.ID,
+		HostID:      *v.HostID,
+		NodeName:    *v.NodeName,
+		ReplicaName: v.ReplicaName,
+		State:       *v.State,
 	}
 
 	return res
@@ -670,6 +1066,10 @@ func unmarshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecR
 		SpockVersion:       v.SpockVersion,
 		Port:               v.Port,
 		DeletionProtection: v.DeletionProtection,
+		StorageClass:       v.StorageClass,
+		StorageSize:        v.StorageSize,
+		Cpus:               v.Cpus,
+		Memory:             v.Memory,
 	}
 	res.Nodes = make([]*controlplane.DatabaseNodeSpec, len(v.Nodes))
 	for i, val := range v.Nodes {
@@ -679,12 +1079,6 @@ func unmarshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecR
 		res.DatabaseUsers = make([]*controlplane.DatabaseUserSpec, len(v.DatabaseUsers))
 		for i, val := range v.DatabaseUsers {
 			res.DatabaseUsers[i] = unmarshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec(val)
-		}
-	}
-	if v.Extensions != nil {
-		res.Extensions = make([]*controlplane.DatabaseExtensionSpec, len(v.Extensions))
-		for i, val := range v.Extensions {
-			res.Extensions[i] = unmarshalDatabaseExtensionSpecRequestBodyToControlplaneDatabaseExtensionSpec(val)
 		}
 	}
 	if v.Features != nil {
@@ -700,6 +1094,9 @@ func unmarshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecR
 		for i, val := range v.BackupConfigs {
 			res.BackupConfigs[i] = unmarshalBackupConfigSpecRequestBodyToControlplaneBackupConfigSpec(val)
 		}
+	}
+	if v.RestoreConfig != nil {
+		res.RestoreConfig = unmarshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec(v.RestoreConfig)
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -719,13 +1116,19 @@ func unmarshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecR
 func unmarshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *DatabaseNodeSpecRequestBody) *controlplane.DatabaseNodeSpec {
 	res := &controlplane.DatabaseNodeSpec{
 		Name:            *v.Name,
-		InstanceID:      *v.InstanceID,
 		HostID:          *v.HostID,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
+		StorageClass:    v.StorageClass,
+		StorageSize:     v.StorageSize,
+		Cpus:            v.Cpus,
+		Memory:          v.Memory,
 	}
 	if v.ReadReplicas != nil {
-		res.ReadReplicas = unmarshalDatabaseReplicaSpecRequestBodyToControlplaneDatabaseReplicaSpec(v.ReadReplicas)
+		res.ReadReplicas = make([]*controlplane.DatabaseReplicaSpec, len(v.ReadReplicas))
+		for i, val := range v.ReadReplicas {
+			res.ReadReplicas[i] = unmarshalDatabaseReplicaSpecRequestBodyToControlplaneDatabaseReplicaSpec(val)
+		}
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -747,8 +1150,7 @@ func unmarshalDatabaseReplicaSpecRequestBodyToControlplaneDatabaseReplicaSpec(v 
 		return nil
 	}
 	res := &controlplane.DatabaseReplicaSpec{
-		InstanceID: *v.InstanceID,
-		HostID:     *v.HostID,
+		HostID: *v.HostID,
 	}
 
 	return res
@@ -762,30 +1164,21 @@ func unmarshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec(v *Datab
 		return nil
 	}
 	res := &controlplane.DatabaseUserSpec{
-		Username:  *v.Username,
-		Password:  *v.Password,
-		Superuser: v.Superuser,
+		Username: *v.Username,
+		Password: *v.Password,
+		DbOwner:  v.DbOwner,
+	}
+	if v.Attributes != nil {
+		res.Attributes = make([]string, len(v.Attributes))
+		for i, val := range v.Attributes {
+			res.Attributes[i] = val
+		}
 	}
 	if v.Roles != nil {
 		res.Roles = make([]string, len(v.Roles))
 		for i, val := range v.Roles {
 			res.Roles[i] = val
 		}
-	}
-
-	return res
-}
-
-// unmarshalDatabaseExtensionSpecRequestBodyToControlplaneDatabaseExtensionSpec
-// builds a value of type *controlplane.DatabaseExtensionSpec from a value of
-// type *DatabaseExtensionSpecRequestBody.
-func unmarshalDatabaseExtensionSpecRequestBodyToControlplaneDatabaseExtensionSpec(v *DatabaseExtensionSpecRequestBody) *controlplane.DatabaseExtensionSpec {
-	if v == nil {
-		return nil
-	}
-	res := &controlplane.DatabaseExtensionSpec{
-		Name:    *v.Name,
-		Version: v.Version,
 	}
 
 	return res
@@ -866,96 +1259,83 @@ func unmarshalBackupScheduleSpecRequestBodyToControlplaneBackupScheduleSpec(v *B
 	return res
 }
 
-// marshalControlplaneDatabaseStatusToDatabaseStatusResponseBody builds a value
-// of type *DatabaseStatusResponseBody from a value of type
-// *controlplane.DatabaseStatus.
-func marshalControlplaneDatabaseStatusToDatabaseStatusResponseBody(v *controlplane.DatabaseStatus) *DatabaseStatusResponseBody {
-	res := &DatabaseStatusResponseBody{
-		State:     v.State,
-		UpdatedAt: v.UpdatedAt,
-	}
-
-	return res
-}
-
-// marshalControlplaneInstanceToInstanceResponseBody builds a value of type
-// *InstanceResponseBody from a value of type *controlplane.Instance.
-func marshalControlplaneInstanceToInstanceResponseBody(v *controlplane.Instance) *InstanceResponseBody {
-	res := &InstanceResponseBody{
-		ID:        v.ID,
-		HostID:    v.HostID,
-		NodeName:  v.NodeName,
-		CreatedAt: v.CreatedAt,
-		UpdatedAt: v.UpdatedAt,
-	}
-	if v.Status != nil {
-		res.Status = marshalControlplaneInstanceStatusToInstanceStatusResponseBody(v.Status)
-	}
-	if v.Interfaces != nil {
-		res.Interfaces = make([]*InstanceInterfaceResponseBody, len(v.Interfaces))
-		for i, val := range v.Interfaces {
-			res.Interfaces[i] = marshalControlplaneInstanceInterfaceToInstanceInterfaceResponseBody(val)
-		}
-	}
-
-	return res
-}
-
-// marshalControlplaneInstanceStatusToInstanceStatusResponseBody builds a value
-// of type *InstanceStatusResponseBody from a value of type
-// *controlplane.InstanceStatus.
-func marshalControlplaneInstanceStatusToInstanceStatusResponseBody(v *controlplane.InstanceStatus) *InstanceStatusResponseBody {
-	res := &InstanceStatusResponseBody{
-		State:           v.State,
-		PatroniState:    v.PatroniState,
-		Role:            v.Role,
-		ReadOnly:        v.ReadOnly,
-		PendingRestart:  v.PendingRestart,
-		PatroniPaused:   v.PatroniPaused,
-		PostgresVersion: v.PostgresVersion,
-		SpockVersion:    v.SpockVersion,
-		UpdatedAt:       v.UpdatedAt,
-	}
-
-	return res
-}
-
-// marshalControlplaneInstanceInterfaceToInstanceInterfaceResponseBody builds a
-// value of type *InstanceInterfaceResponseBody from a value of type
-// *controlplane.InstanceInterface.
-func marshalControlplaneInstanceInterfaceToInstanceInterfaceResponseBody(v *controlplane.InstanceInterface) *InstanceInterfaceResponseBody {
+// unmarshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec builds
+// a value of type *controlplane.RestoreConfigSpec from a value of type
+// *RestoreConfigSpecRequestBody.
+func unmarshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec(v *RestoreConfigSpecRequestBody) *controlplane.RestoreConfigSpec {
 	if v == nil {
 		return nil
 	}
-	res := &InstanceInterfaceResponseBody{
-		NetworkType: v.NetworkType,
-		NetworkID:   v.NetworkID,
-		Hostname:    v.Hostname,
-		Ipv4Address: v.Ipv4Address,
-		Port:        v.Port,
+	res := &controlplane.RestoreConfigSpec{
+		Provider: *v.Provider,
+		NodeName: *v.NodeName,
+	}
+	res.Repository = unmarshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpec(v.Repository)
+
+	return res
+}
+
+// unmarshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpec
+// builds a value of type *controlplane.RestoreRepositorySpec from a value of
+// type *RestoreRepositorySpecRequestBody.
+func unmarshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpec(v *RestoreRepositorySpecRequestBody) *controlplane.RestoreRepositorySpec {
+	res := &controlplane.RestoreRepositorySpec{
+		ID:             *v.ID,
+		Type:           *v.Type,
+		S3Bucket:       v.S3Bucket,
+		S3Region:       v.S3Region,
+		S3Endpoint:     v.S3Endpoint,
+		GcsBucket:      v.GcsBucket,
+		GcsEndpoint:    v.GcsEndpoint,
+		AzureAccount:   v.AzureAccount,
+		AzureContainer: v.AzureContainer,
+		AzureEndpoint:  v.AzureEndpoint,
+		BasePath:       v.BasePath,
 	}
 
 	return res
 }
 
-// marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody builds a value of
-// type *DatabaseSpecResponseBody from a value of type
-// *controlplane.DatabaseSpec.
-func marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody(v *controlplane.DatabaseSpec) *DatabaseSpecResponseBody {
+// marshalControlplaneviewsInstanceViewToInstanceResponseBodyAbbreviated builds
+// a value of type *InstanceResponseBodyAbbreviated from a value of type
+// *controlplaneviews.InstanceView.
+func marshalControlplaneviewsInstanceViewToInstanceResponseBodyAbbreviated(v *controlplaneviews.InstanceView) *InstanceResponseBodyAbbreviated {
+	if v == nil {
+		return nil
+	}
+	res := &InstanceResponseBodyAbbreviated{
+		ID:          *v.ID,
+		HostID:      *v.HostID,
+		NodeName:    *v.NodeName,
+		ReplicaName: v.ReplicaName,
+		State:       *v.State,
+	}
+
+	return res
+}
+
+// marshalControlplaneviewsDatabaseSpecViewToDatabaseSpecResponseBody builds a
+// value of type *DatabaseSpecResponseBody from a value of type
+// *controlplaneviews.DatabaseSpecView.
+func marshalControlplaneviewsDatabaseSpecViewToDatabaseSpecResponseBody(v *controlplaneviews.DatabaseSpecView) *DatabaseSpecResponseBody {
 	if v == nil {
 		return nil
 	}
 	res := &DatabaseSpecResponseBody{
-		DatabaseName:       v.DatabaseName,
+		DatabaseName:       *v.DatabaseName,
 		PostgresVersion:    v.PostgresVersion,
 		SpockVersion:       v.SpockVersion,
 		Port:               v.Port,
 		DeletionProtection: v.DeletionProtection,
+		StorageClass:       v.StorageClass,
+		StorageSize:        v.StorageSize,
+		Cpus:               v.Cpus,
+		Memory:             v.Memory,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*DatabaseNodeSpecResponseBody, len(v.Nodes))
 		for i, val := range v.Nodes {
-			res.Nodes[i] = marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecResponseBody(val)
+			res.Nodes[i] = marshalControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpecResponseBody(val)
 		}
 	} else {
 		res.Nodes = []*DatabaseNodeSpecResponseBody{}
@@ -963,13 +1343,7 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody(v *controlplane.D
 	if v.DatabaseUsers != nil {
 		res.DatabaseUsers = make([]*DatabaseUserSpecResponseBody, len(v.DatabaseUsers))
 		for i, val := range v.DatabaseUsers {
-			res.DatabaseUsers[i] = marshalControlplaneDatabaseUserSpecToDatabaseUserSpecResponseBody(val)
-		}
-	}
-	if v.Extensions != nil {
-		res.Extensions = make([]*DatabaseExtensionSpecResponseBody, len(v.Extensions))
-		for i, val := range v.Extensions {
-			res.Extensions[i] = marshalControlplaneDatabaseExtensionSpecToDatabaseExtensionSpecResponseBody(val)
+			res.DatabaseUsers[i] = marshalControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpecResponseBody(val)
 		}
 	}
 	if v.Features != nil {
@@ -983,8 +1357,11 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody(v *controlplane.D
 	if v.BackupConfigs != nil {
 		res.BackupConfigs = make([]*BackupConfigSpecResponseBody, len(v.BackupConfigs))
 		for i, val := range v.BackupConfigs {
-			res.BackupConfigs[i] = marshalControlplaneBackupConfigSpecToBackupConfigSpecResponseBody(val)
+			res.BackupConfigs[i] = marshalControlplaneviewsBackupConfigSpecViewToBackupConfigSpecResponseBody(val)
 		}
+	}
+	if v.RestoreConfig != nil {
+		res.RestoreConfig = marshalControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpecResponseBody(v.RestoreConfig)
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -998,19 +1375,25 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody(v *controlplane.D
 	return res
 }
 
-// marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecResponseBody builds a
-// value of type *DatabaseNodeSpecResponseBody from a value of type
-// *controlplane.DatabaseNodeSpec.
-func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecResponseBody(v *controlplane.DatabaseNodeSpec) *DatabaseNodeSpecResponseBody {
+// marshalControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpecResponseBody
+// builds a value of type *DatabaseNodeSpecResponseBody from a value of type
+// *controlplaneviews.DatabaseNodeSpecView.
+func marshalControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpecResponseBody(v *controlplaneviews.DatabaseNodeSpecView) *DatabaseNodeSpecResponseBody {
 	res := &DatabaseNodeSpecResponseBody{
-		Name:            v.Name,
-		InstanceID:      v.InstanceID,
-		HostID:          v.HostID,
+		Name:            *v.Name,
+		HostID:          *v.HostID,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
+		StorageClass:    v.StorageClass,
+		StorageSize:     v.StorageSize,
+		Cpus:            v.Cpus,
+		Memory:          v.Memory,
 	}
 	if v.ReadReplicas != nil {
-		res.ReadReplicas = marshalControlplaneDatabaseReplicaSpecToDatabaseReplicaSpecResponseBody(v.ReadReplicas)
+		res.ReadReplicas = make([]*DatabaseReplicaSpecResponseBody, len(v.ReadReplicas))
+		for i, val := range v.ReadReplicas {
+			res.ReadReplicas[i] = marshalControlplaneviewsDatabaseReplicaSpecViewToDatabaseReplicaSpecResponseBody(val)
+		}
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -1024,32 +1407,37 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecResponseBody(v *contro
 	return res
 }
 
-// marshalControlplaneDatabaseReplicaSpecToDatabaseReplicaSpecResponseBody
+// marshalControlplaneviewsDatabaseReplicaSpecViewToDatabaseReplicaSpecResponseBody
 // builds a value of type *DatabaseReplicaSpecResponseBody from a value of type
-// *controlplane.DatabaseReplicaSpec.
-func marshalControlplaneDatabaseReplicaSpecToDatabaseReplicaSpecResponseBody(v *controlplane.DatabaseReplicaSpec) *DatabaseReplicaSpecResponseBody {
+// *controlplaneviews.DatabaseReplicaSpecView.
+func marshalControlplaneviewsDatabaseReplicaSpecViewToDatabaseReplicaSpecResponseBody(v *controlplaneviews.DatabaseReplicaSpecView) *DatabaseReplicaSpecResponseBody {
 	if v == nil {
 		return nil
 	}
 	res := &DatabaseReplicaSpecResponseBody{
-		InstanceID: v.InstanceID,
-		HostID:     v.HostID,
+		HostID: *v.HostID,
 	}
 
 	return res
 }
 
-// marshalControlplaneDatabaseUserSpecToDatabaseUserSpecResponseBody builds a
-// value of type *DatabaseUserSpecResponseBody from a value of type
-// *controlplane.DatabaseUserSpec.
-func marshalControlplaneDatabaseUserSpecToDatabaseUserSpecResponseBody(v *controlplane.DatabaseUserSpec) *DatabaseUserSpecResponseBody {
+// marshalControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpecResponseBody
+// builds a value of type *DatabaseUserSpecResponseBody from a value of type
+// *controlplaneviews.DatabaseUserSpecView.
+func marshalControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpecResponseBody(v *controlplaneviews.DatabaseUserSpecView) *DatabaseUserSpecResponseBody {
 	if v == nil {
 		return nil
 	}
 	res := &DatabaseUserSpecResponseBody{
-		Username:  v.Username,
-		Password:  v.Password,
-		Superuser: v.Superuser,
+		Username: *v.Username,
+		Password: *v.Password,
+		DbOwner:  v.DbOwner,
+	}
+	if v.Attributes != nil {
+		res.Attributes = make([]string, len(v.Attributes))
+		for i, val := range v.Attributes {
+			res.Attributes[i] = val
+		}
 	}
 	if v.Roles != nil {
 		res.Roles = make([]string, len(v.Roles))
@@ -1061,31 +1449,16 @@ func marshalControlplaneDatabaseUserSpecToDatabaseUserSpecResponseBody(v *contro
 	return res
 }
 
-// marshalControlplaneDatabaseExtensionSpecToDatabaseExtensionSpecResponseBody
-// builds a value of type *DatabaseExtensionSpecResponseBody from a value of
-// type *controlplane.DatabaseExtensionSpec.
-func marshalControlplaneDatabaseExtensionSpecToDatabaseExtensionSpecResponseBody(v *controlplane.DatabaseExtensionSpec) *DatabaseExtensionSpecResponseBody {
-	if v == nil {
-		return nil
-	}
-	res := &DatabaseExtensionSpecResponseBody{
-		Name:    v.Name,
-		Version: v.Version,
-	}
-
-	return res
-}
-
-// marshalControlplaneBackupConfigSpecToBackupConfigSpecResponseBody builds a
-// value of type *BackupConfigSpecResponseBody from a value of type
-// *controlplane.BackupConfigSpec.
-func marshalControlplaneBackupConfigSpecToBackupConfigSpecResponseBody(v *controlplane.BackupConfigSpec) *BackupConfigSpecResponseBody {
+// marshalControlplaneviewsBackupConfigSpecViewToBackupConfigSpecResponseBody
+// builds a value of type *BackupConfigSpecResponseBody from a value of type
+// *controlplaneviews.BackupConfigSpecView.
+func marshalControlplaneviewsBackupConfigSpecViewToBackupConfigSpecResponseBody(v *controlplaneviews.BackupConfigSpecView) *BackupConfigSpecResponseBody {
 	if v == nil {
 		return nil
 	}
 	res := &BackupConfigSpecResponseBody{
-		ID:       v.ID,
-		Provider: v.Provider,
+		ID:       *v.ID,
+		Provider: *v.Provider,
 	}
 	if v.NodeNames != nil {
 		res.NodeNames = make([]string, len(v.NodeNames))
@@ -1096,29 +1469,29 @@ func marshalControlplaneBackupConfigSpecToBackupConfigSpecResponseBody(v *contro
 	if v.Repositories != nil {
 		res.Repositories = make([]*BackupRepositorySpecResponseBody, len(v.Repositories))
 		for i, val := range v.Repositories {
-			res.Repositories[i] = marshalControlplaneBackupRepositorySpecToBackupRepositorySpecResponseBody(val)
+			res.Repositories[i] = marshalControlplaneviewsBackupRepositorySpecViewToBackupRepositorySpecResponseBody(val)
 		}
 	}
 	if v.Schedules != nil {
 		res.Schedules = make([]*BackupScheduleSpecResponseBody, len(v.Schedules))
 		for i, val := range v.Schedules {
-			res.Schedules[i] = marshalControlplaneBackupScheduleSpecToBackupScheduleSpecResponseBody(val)
+			res.Schedules[i] = marshalControlplaneviewsBackupScheduleSpecViewToBackupScheduleSpecResponseBody(val)
 		}
 	}
 
 	return res
 }
 
-// marshalControlplaneBackupRepositorySpecToBackupRepositorySpecResponseBody
+// marshalControlplaneviewsBackupRepositorySpecViewToBackupRepositorySpecResponseBody
 // builds a value of type *BackupRepositorySpecResponseBody from a value of
-// type *controlplane.BackupRepositorySpec.
-func marshalControlplaneBackupRepositorySpecToBackupRepositorySpecResponseBody(v *controlplane.BackupRepositorySpec) *BackupRepositorySpecResponseBody {
+// type *controlplaneviews.BackupRepositorySpecView.
+func marshalControlplaneviewsBackupRepositorySpecViewToBackupRepositorySpecResponseBody(v *controlplaneviews.BackupRepositorySpecView) *BackupRepositorySpecResponseBody {
 	if v == nil {
 		return nil
 	}
 	res := &BackupRepositorySpecResponseBody{
 		ID:                v.ID,
-		Type:              v.Type,
+		Type:              *v.Type,
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
 		S3Endpoint:        v.S3Endpoint,
@@ -1135,17 +1508,56 @@ func marshalControlplaneBackupRepositorySpecToBackupRepositorySpecResponseBody(v
 	return res
 }
 
-// marshalControlplaneBackupScheduleSpecToBackupScheduleSpecResponseBody builds
-// a value of type *BackupScheduleSpecResponseBody from a value of type
-// *controlplane.BackupScheduleSpec.
-func marshalControlplaneBackupScheduleSpecToBackupScheduleSpecResponseBody(v *controlplane.BackupScheduleSpec) *BackupScheduleSpecResponseBody {
+// marshalControlplaneviewsBackupScheduleSpecViewToBackupScheduleSpecResponseBody
+// builds a value of type *BackupScheduleSpecResponseBody from a value of type
+// *controlplaneviews.BackupScheduleSpecView.
+func marshalControlplaneviewsBackupScheduleSpecViewToBackupScheduleSpecResponseBody(v *controlplaneviews.BackupScheduleSpecView) *BackupScheduleSpecResponseBody {
 	if v == nil {
 		return nil
 	}
 	res := &BackupScheduleSpecResponseBody{
-		ID:             v.ID,
-		Type:           v.Type,
-		CronExpression: v.CronExpression,
+		ID:             *v.ID,
+		Type:           *v.Type,
+		CronExpression: *v.CronExpression,
+	}
+
+	return res
+}
+
+// marshalControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpecResponseBody
+// builds a value of type *RestoreConfigSpecResponseBody from a value of type
+// *controlplaneviews.RestoreConfigSpecView.
+func marshalControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpecResponseBody(v *controlplaneviews.RestoreConfigSpecView) *RestoreConfigSpecResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &RestoreConfigSpecResponseBody{
+		Provider: *v.Provider,
+		NodeName: *v.NodeName,
+	}
+	if v.Repository != nil {
+		res.Repository = marshalControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpecResponseBody(v.Repository)
+	}
+
+	return res
+}
+
+// marshalControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpecResponseBody
+// builds a value of type *RestoreRepositorySpecResponseBody from a value of
+// type *controlplaneviews.RestoreRepositorySpecView.
+func marshalControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpecResponseBody(v *controlplaneviews.RestoreRepositorySpecView) *RestoreRepositorySpecResponseBody {
+	res := &RestoreRepositorySpecResponseBody{
+		ID:             *v.ID,
+		Type:           *v.Type,
+		S3Bucket:       v.S3Bucket,
+		S3Region:       v.S3Region,
+		S3Endpoint:     v.S3Endpoint,
+		GcsBucket:      v.GcsBucket,
+		GcsEndpoint:    v.GcsEndpoint,
+		AzureAccount:   v.AzureAccount,
+		AzureContainer: v.AzureContainer,
+		AzureEndpoint:  v.AzureEndpoint,
+		BasePath:       v.BasePath,
 	}
 
 	return res
@@ -1164,6 +1576,10 @@ func unmarshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Da
 		SpockVersion:       v.SpockVersion,
 		Port:               v.Port,
 		DeletionProtection: v.DeletionProtection,
+		StorageClass:       v.StorageClass,
+		StorageSize:        v.StorageSize,
+		Cpus:               v.Cpus,
+		Memory:             v.Memory,
 	}
 	res.Nodes = make([]*controlplane.DatabaseNodeSpec, len(v.Nodes))
 	for i, val := range v.Nodes {
@@ -1173,12 +1589,6 @@ func unmarshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Da
 		res.DatabaseUsers = make([]*controlplane.DatabaseUserSpec, len(v.DatabaseUsers))
 		for i, val := range v.DatabaseUsers {
 			res.DatabaseUsers[i] = unmarshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSpec(val)
-		}
-	}
-	if v.Extensions != nil {
-		res.Extensions = make([]*controlplane.DatabaseExtensionSpec, len(v.Extensions))
-		for i, val := range v.Extensions {
-			res.Extensions[i] = unmarshalDatabaseExtensionSpecRequestBodyRequestBodyToControlplaneDatabaseExtensionSpec(val)
 		}
 	}
 	if v.Features != nil {
@@ -1194,6 +1604,9 @@ func unmarshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Da
 		for i, val := range v.BackupConfigs {
 			res.BackupConfigs[i] = unmarshalBackupConfigSpecRequestBodyRequestBodyToControlplaneBackupConfigSpec(val)
 		}
+	}
+	if v.RestoreConfig != nil {
+		res.RestoreConfig = unmarshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSpec(v.RestoreConfig)
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -1213,13 +1626,19 @@ func unmarshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Da
 func unmarshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSpec(v *DatabaseNodeSpecRequestBodyRequestBody) *controlplane.DatabaseNodeSpec {
 	res := &controlplane.DatabaseNodeSpec{
 		Name:            *v.Name,
-		InstanceID:      *v.InstanceID,
 		HostID:          *v.HostID,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
+		StorageClass:    v.StorageClass,
+		StorageSize:     v.StorageSize,
+		Cpus:            v.Cpus,
+		Memory:          v.Memory,
 	}
 	if v.ReadReplicas != nil {
-		res.ReadReplicas = unmarshalDatabaseReplicaSpecRequestBodyRequestBodyToControlplaneDatabaseReplicaSpec(v.ReadReplicas)
+		res.ReadReplicas = make([]*controlplane.DatabaseReplicaSpec, len(v.ReadReplicas))
+		for i, val := range v.ReadReplicas {
+			res.ReadReplicas[i] = unmarshalDatabaseReplicaSpecRequestBodyRequestBodyToControlplaneDatabaseReplicaSpec(val)
+		}
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -1241,8 +1660,7 @@ func unmarshalDatabaseReplicaSpecRequestBodyRequestBodyToControlplaneDatabaseRep
 		return nil
 	}
 	res := &controlplane.DatabaseReplicaSpec{
-		InstanceID: *v.InstanceID,
-		HostID:     *v.HostID,
+		HostID: *v.HostID,
 	}
 
 	return res
@@ -1256,30 +1674,21 @@ func unmarshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSp
 		return nil
 	}
 	res := &controlplane.DatabaseUserSpec{
-		Username:  *v.Username,
-		Password:  *v.Password,
-		Superuser: v.Superuser,
+		Username: *v.Username,
+		Password: *v.Password,
+		DbOwner:  v.DbOwner,
+	}
+	if v.Attributes != nil {
+		res.Attributes = make([]string, len(v.Attributes))
+		for i, val := range v.Attributes {
+			res.Attributes[i] = val
+		}
 	}
 	if v.Roles != nil {
 		res.Roles = make([]string, len(v.Roles))
 		for i, val := range v.Roles {
 			res.Roles[i] = val
 		}
-	}
-
-	return res
-}
-
-// unmarshalDatabaseExtensionSpecRequestBodyRequestBodyToControlplaneDatabaseExtensionSpec
-// builds a value of type *controlplane.DatabaseExtensionSpec from a value of
-// type *DatabaseExtensionSpecRequestBodyRequestBody.
-func unmarshalDatabaseExtensionSpecRequestBodyRequestBodyToControlplaneDatabaseExtensionSpec(v *DatabaseExtensionSpecRequestBodyRequestBody) *controlplane.DatabaseExtensionSpec {
-	if v == nil {
-		return nil
-	}
-	res := &controlplane.DatabaseExtensionSpec{
-		Name:    *v.Name,
-		Version: v.Version,
 	}
 
 	return res
@@ -1355,6 +1764,43 @@ func unmarshalBackupScheduleSpecRequestBodyRequestBodyToControlplaneBackupSchedu
 		ID:             *v.ID,
 		Type:           *v.Type,
 		CronExpression: *v.CronExpression,
+	}
+
+	return res
+}
+
+// unmarshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSpec
+// builds a value of type *controlplane.RestoreConfigSpec from a value of type
+// *RestoreConfigSpecRequestBodyRequestBody.
+func unmarshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSpec(v *RestoreConfigSpecRequestBodyRequestBody) *controlplane.RestoreConfigSpec {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.RestoreConfigSpec{
+		Provider: *v.Provider,
+		NodeName: *v.NodeName,
+	}
+	res.Repository = unmarshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRepositorySpec(v.Repository)
+
+	return res
+}
+
+// unmarshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRepositorySpec
+// builds a value of type *controlplane.RestoreRepositorySpec from a value of
+// type *RestoreRepositorySpecRequestBodyRequestBody.
+func unmarshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRepositorySpec(v *RestoreRepositorySpecRequestBodyRequestBody) *controlplane.RestoreRepositorySpec {
+	res := &controlplane.RestoreRepositorySpec{
+		ID:             *v.ID,
+		Type:           *v.Type,
+		S3Bucket:       v.S3Bucket,
+		S3Region:       v.S3Region,
+		S3Endpoint:     v.S3Endpoint,
+		GcsBucket:      v.GcsBucket,
+		GcsEndpoint:    v.GcsEndpoint,
+		AzureAccount:   v.AzureAccount,
+		AzureContainer: v.AzureContainer,
+		AzureEndpoint:  v.AzureEndpoint,
+		BasePath:       v.BasePath,
 	}
 
 	return res
