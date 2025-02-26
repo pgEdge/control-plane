@@ -143,12 +143,15 @@ func (s *Service) CreateDatabase(ctx context.Context, req *api.CreateDatabaseReq
 		return nil, fmt.Errorf("failed to create database: %w", err)
 	}
 
-	s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
+	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
 		Queue:      core.Queue(s.cfg.HostID.String()),
 		InstanceID: uuid.NewString(),
 	}, "CreateDatabase", &workflows.CreateDatabaseInput{
 		Spec: spec,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create workflow instance: %w", err)
+	}
 
 	return databaseToAPI(db), nil
 }

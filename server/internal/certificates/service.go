@@ -20,7 +20,7 @@ import (
 // TODO: this should be configurable (and much, much shorter) once we've
 // implemented rotation.
 var (
-	certificateDuration = time.Now().AddDate(20, 0, 0).Sub(time.Now())
+	certificateDuration = time.Until(time.Now().AddDate(20, 0, 0))
 )
 
 type Service struct {

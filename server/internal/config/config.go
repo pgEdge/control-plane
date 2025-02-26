@@ -84,7 +84,7 @@ func (d DockerSwarm) validate() []error {
 	if d.DatabaseNetworksSubnetBits < 1 || d.DatabaseNetworksSubnetBits > 31 {
 		errs = append(errs, fmt.Errorf("database_networks_bits: invalid subnet bits %d", d.DatabaseNetworksSubnetBits))
 	}
-	return nil
+	return errs
 }
 
 var defaultDockerSwarm = DockerSwarm{
@@ -210,6 +210,9 @@ func (c Config) Validate() error {
 	}
 	if c.DataDir == "" {
 		errs = append(errs, errors.New("data_dir cannot be empty"))
+	}
+	for _, err := range c.HTTP.validate() {
+		errs = append(errs, fmt.Errorf("http.%w", err))
 	}
 	for _, err := range c.MQTT.validate() {
 		errs = append(errs, fmt.Errorf("mqtt.%w", err))

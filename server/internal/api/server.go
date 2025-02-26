@@ -56,6 +56,7 @@ func NewServer(cfg config.Config, logger zerolog.Logger, svc controlplane.Servic
 	}
 
 	return &Server{
+		cfg:   cfg,
 		svc:   svc,
 		http:  httpSvr,
 		mqtt:  mqttSvr,

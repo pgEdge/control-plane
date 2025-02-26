@@ -87,9 +87,9 @@ func (w *Worker) StartSwarmWorker(
 		GeneralActivities: g,
 		Config:            w.cfg,
 	}
-	// wflows :=
-	w.w.RegisterActivity(g.PartitionInstances)
-	wflows.Register(w.w)
+	if err := wflows.Register(w.w); err != nil {
+		return fmt.Errorf("failed to register workflows: %w", err)
+	}
 	w.workflows = wflows
 
 	if err := w.w.Start(ctx); err != nil {

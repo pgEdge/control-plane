@@ -155,9 +155,12 @@ func (l *loopDeviceManager) RemoveLoopDevice(ctx context.Context, mountPath stri
 
 	// Remove fstab entry if present
 	fsFile := fmt.Sprintf("%s.fs", mountPath)
-	l.fstab.Filter(func(fe FSTabEntry) bool {
+	err = l.fstab.Filter(func(fe FSTabEntry) bool {
 		return fe.Spec != fsFile && fe.File != mountPath
 	})
+	if err != nil {
+		return fmt.Errorf("failed to remove fstab entry for %q: %w", mountPath, err)
+	}
 
 	// Remove the filesystem file if present
 	exists, err = afero.Exists(l.fs, fsFile)

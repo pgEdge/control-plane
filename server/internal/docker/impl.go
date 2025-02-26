@@ -35,7 +35,7 @@ func NewDocker() (*Docker, error) {
 }
 
 func (d *Docker) Exec(ctx context.Context, containerID string, command []string) (string, error) {
-	execIDResp, err := d.client.ContainerExecCreate(ctx, containerID, types.ExecConfig{
+	execIDResp, err := d.client.ContainerExecCreate(ctx, containerID, container.ExecOptions{
 		AttachStdin:  true,
 		AttachStdout: true,
 		AttachStderr: true,
@@ -45,7 +45,7 @@ func (d *Docker) Exec(ctx context.Context, containerID string, command []string)
 	if err != nil {
 		return "", fmt.Errorf("failed to create exec: %w", errTranslate(err))
 	}
-	resp, err := d.client.ContainerExecAttach(ctx, execIDResp.ID, types.ExecStartCheck{
+	resp, err := d.client.ContainerExecAttach(ctx, execIDResp.ID, container.ExecAttachOptions{
 		Detach: false,
 		Tty:    true,
 	})

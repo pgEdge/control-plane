@@ -40,7 +40,6 @@ type App struct {
 	client     *clientv3.Client
 	apiSvc     *api.DynamicService
 	api        *api.Server
-	hostSvc    *host.Service
 	hostTicker *host.UpdateTicker
 	docker     *docker.Docker
 }

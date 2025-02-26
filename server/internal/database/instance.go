@@ -59,51 +59,51 @@ type Instance struct {
 	Spec            *InstanceSpec        `json:"spec"`
 }
 
-func instanceToStored(i *Instance) *StoredInstance {
-	return &StoredInstance{
-		InstanceID:      i.InstanceID,
-		DatabaseID:      i.DatabaseID,
-		HostID:          i.HostID,
-		ReplicaOfID:     i.ReplicaOfID,
-		TenantID:        i.TenantID,
-		DatabaseName:    i.DatabaseName,
-		NodeName:        i.NodeName,
-		ReplicaName:     i.ReplicaName,
-		PostgresVersion: i.PostgresVersion,
-		SpockVersion:    i.SpockVersion,
-		Port:            i.Port,
-		State:           i.State,
-		PatroniState:    i.PatroniState,
-		Role:            i.Role,
-		ReadOnly:        i.ReadOnly,
-		PendingRestart:  i.PendingRestart,
-		PatroniPaused:   i.PatroniPaused,
-		UpdatedAt:       i.UpdatedAt,
-		Interfaces:      i.Interfaces,
-	}
-}
+// func instanceToStored(i *Instance) *StoredInstance {
+// 	return &StoredInstance{
+// 		InstanceID:      i.InstanceID,
+// 		DatabaseID:      i.DatabaseID,
+// 		HostID:          i.HostID,
+// 		ReplicaOfID:     i.ReplicaOfID,
+// 		TenantID:        i.TenantID,
+// 		DatabaseName:    i.DatabaseName,
+// 		NodeName:        i.NodeName,
+// 		ReplicaName:     i.ReplicaName,
+// 		PostgresVersion: i.PostgresVersion,
+// 		SpockVersion:    i.SpockVersion,
+// 		Port:            i.Port,
+// 		State:           i.State,
+// 		PatroniState:    i.PatroniState,
+// 		Role:            i.Role,
+// 		ReadOnly:        i.ReadOnly,
+// 		PendingRestart:  i.PendingRestart,
+// 		PatroniPaused:   i.PatroniPaused,
+// 		UpdatedAt:       i.UpdatedAt,
+// 		Interfaces:      i.Interfaces,
+// 	}
+// }
 
-func storedToInstance(i *StoredInstance, spec *InstanceSpec) *Instance {
-	return &Instance{
-		InstanceID:      i.InstanceID,
-		DatabaseID:      i.DatabaseID,
-		HostID:          i.HostID,
-		ReplicaOfID:     i.ReplicaOfID,
-		DatabaseName:    i.DatabaseName,
-		NodeName:        i.NodeName,
-		ReplicaName:     i.ReplicaName,
-		PostgresVersion: i.PostgresVersion,
-		TenantID:        i.TenantID,
-		SpockVersion:    i.SpockVersion,
-		Port:            i.Port,
-		State:           i.State,
-		PatroniState:    i.PatroniState,
-		Role:            i.Role,
-		ReadOnly:        i.ReadOnly,
-		PendingRestart:  i.PendingRestart,
-		PatroniPaused:   i.PatroniPaused,
-		UpdatedAt:       i.UpdatedAt,
-		Interfaces:      i.Interfaces,
-		Spec:            spec,
-	}
-}
+// func storedToInstance(i *StoredInstance, spec *InstanceSpec) *Instance {
+// 	return &Instance{
+// 		InstanceID:      i.InstanceID,
+// 		DatabaseID:      i.DatabaseID,
+// 		HostID:          i.HostID,
+// 		ReplicaOfID:     i.ReplicaOfID,
+// 		DatabaseName:    i.DatabaseName,
+// 		NodeName:        i.NodeName,
+// 		ReplicaName:     i.ReplicaName,
+// 		PostgresVersion: i.PostgresVersion,
+// 		TenantID:        i.TenantID,
+// 		SpockVersion:    i.SpockVersion,
+// 		Port:            i.Port,
+// 		State:           i.State,
+// 		PatroniState:    i.PatroniState,
+// 		Role:            i.Role,
+// 		ReadOnly:        i.ReadOnly,
+// 		PendingRestart:  i.PendingRestart,
+// 		PatroniPaused:   i.PatroniPaused,
+// 		UpdatedAt:       i.UpdatedAt,
+// 		Interfaces:      i.Interfaces,
+// 		Spec:            spec,
+// 	}
+// }

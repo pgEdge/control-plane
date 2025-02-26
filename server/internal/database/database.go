@@ -37,13 +37,13 @@ func databaseToStored(d *Database) *StoredDatabase {
 	}
 }
 
-func storedToDatabase(d *StoredDatabase, instances []*Instance) *Database {
-	return &Database{
-		DatabaseID: d.DatabaseID,
-		TenantID:   d.TenantID,
-		CreatedAt:  d.CreatedAt,
-		UpdatedAt:  d.UpdatedAt,
-		State:      d.State,
-		Instances:  instances,
-	}
-}
+// func storedToDatabase(d *StoredDatabase, instances []*Instance) *Database {
+// 	return &Database{
+// 		DatabaseID: d.DatabaseID,
+// 		TenantID:   d.TenantID,
+// 		CreatedAt:  d.CreatedAt,
+// 		UpdatedAt:  d.UpdatedAt,
+// 		State:      d.State,
+// 		Instances:  instances,
+// 	}
+// }

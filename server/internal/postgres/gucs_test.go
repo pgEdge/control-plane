@@ -152,7 +152,7 @@ func TestDefaultTunableGUCs(t *testing.T) {
 		{
 			name:        "n2-highmem-4/100 3 node",       // Equitable distribution of DE cluster
 			memBytes:    32 * (1024 * 1024 * 1024) / 100, // ~328MB
-			cpus:        4 / 100,
+			cpus:        4.0 / 100,
 			clusterSize: 3,
 			expected: map[string]any{
 				"autovacuum_max_workers":       3,
