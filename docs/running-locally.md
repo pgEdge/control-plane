@@ -21,7 +21,6 @@ to test different configurations.
       - [`pipx`](#pipx)
       - [Ansible](#ansible)
       - [Restish](#restish)
-      - [Local network access](#local-network-access)
   - [Initialize the cluster](#initialize-the-cluster)
   - [Start and populate the local image registry](#start-and-populate-the-local-image-registry)
   - [Start the Control Plane server on each instance](#start-the-control-plane-server-on-each-instance)
@@ -90,6 +89,9 @@ pipx ensurepath
 sudo pipx ensurepath --global # optional to allow pipx actions with --global argument
 ```
 
+Be sure to restart your terminal session after running the `ensurepath` commands
+so that the profile changes take effect.
+
 #### Ansible
 
 We're using Ansible to configure the Vagrant boxes and install software on them.
@@ -113,7 +115,7 @@ brew install danielgtaylor/restish/restish
 
 After installation, modify the configuration file to add entries for the local
 Control Plane instances. On MacOS, this file will be
-`~/Library/Application Support/restish/config.json`. See
+`~/Library/Application Support/restish/apis.json`. See
 [the configuration page](https://rest.sh/#/configuration) to find the
 configuration file location for non-MacOS systems.
 
@@ -149,14 +151,6 @@ configuration file location for non-MacOS systems.
   }
 }
 ```
-
-#### Local network access
-
-Whichever terminal program you use will need to be able to access local network
-devices to connect to the Vagrant VMs by IP address. Open the `System Settings`
-application, click `Privacy and Security` on the left-hand side, then scroll
-down and click on `Local Network`. Make sure your terminal program (e.g. iTerm2,
-VSCode, etc.) is enabled in this list.
 
 ## Initialize the cluster
 
@@ -253,6 +247,17 @@ restish control-plane-local-2 join-cluster "$(restish control-plane-local-1 get-
 restish control-plane-local-3 join-cluster "$(restish control-plane-local-1 get-join-token)"
 restish control-plane-local-1 create-database '{"spec":{"database_name":"my_app","port":5432,"database_users":[{"username":"admin","password":"password","attributes":["SUPERUSER","LOGIN"]},{"username":"app","password":"password","attributes":["LOGIN"],"roles":["pgedge_application"]}],"nodes":[{"name":"n1","host_id":"8f6e5455-e228-4e2e-9129-a86cba1437c8"},{"name":"n2","host_id":"36dcd7ff-9f04-476e-ac6f-5495d075607d"},{"name":"n3","host_id":"fa461a39-5867-4a72-9923-dd7ce91e1eab"}]}}'
 ```
+
+> [!NOTE] For MacOS users
+> If you're running a recent version of MacOS, you might be prompted to grant
+> local network access to your terminal program when you run these commands. You
+> must allow that access for `restish` to be able to contact the VMs. If you do
+> not grant it, you'll likely see a `no route to host` error or similar. If you
+> run into this problem, you can grant local network access after the fact by
+> doing the following: open the `System Settings` application, clicking `Privacy
+> and Security` on the left-hand side, scroll down and click on `Local Network`,
+> then make sure that your terminal program (e.g. iTerm2, VSCode, etc.) is
+> enabled in the list of applications.
 
 It will take a minute or two to create the database, so don't be alarmed if you
 don't see new log messages during this time. Once you see the
