@@ -3,7 +3,6 @@ package postgres_test
 import (
 	"testing"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/pgEdge/control-plane/server/internal/postgres"
@@ -27,11 +26,8 @@ func TestCreateUserRole(t *testing.T) {
 			},
 			expected: postgres.Statements{
 				{SQL: `CREATE ROLE "app"`},
-				{
-					SQL:  `ALTER ROLE "app" WITH PASSWORD @password;`,
-					Args: pgx.NamedArgs{"password": "password"},
-				},
-				{SQL: `ALTER ROLE "app" WITH "LOGIN";`},
+				{SQL: `ALTER ROLE "app" WITH PASSWORD 'password';`},
+				{SQL: `ALTER ROLE "app" WITH LOGIN;`},
 				{SQL: `GRANT "pgedge_application" TO "app" WITH INHERIT TRUE;`},
 			},
 		},
@@ -47,13 +43,10 @@ func TestCreateUserRole(t *testing.T) {
 			},
 			expected: postgres.Statements{
 				{SQL: `CREATE ROLE "admin"`},
-				{
-					SQL:  `ALTER ROLE "admin" WITH PASSWORD @password;`,
-					Args: pgx.NamedArgs{"password": "password"},
-				},
-				{SQL: `ALTER ROLE "admin" WITH "LOGIN";`},
-				{SQL: `ALTER ROLE "admin" WITH "CREATEDB";`},
-				{SQL: `ALTER ROLE "admin" WITH "CREATEROLE";`},
+				{SQL: `ALTER ROLE "admin" WITH PASSWORD 'password';`},
+				{SQL: `ALTER ROLE "admin" WITH LOGIN;`},
+				{SQL: `ALTER ROLE "admin" WITH CREATEDB;`},
+				{SQL: `ALTER ROLE "admin" WITH CREATEROLE;`},
 				{SQL: `ALTER DATABASE "northwind" OWNER TO "admin";`},
 				{SQL: `GRANT "pgedge_superuser" TO "admin" WITH INHERIT TRUE;`},
 			},
@@ -69,12 +62,9 @@ func TestCreateUserRole(t *testing.T) {
 			},
 			expected: postgres.Statements{
 				{SQL: `CREATE ROLE "admin"`},
-				{
-					SQL:  `ALTER ROLE "admin" WITH PASSWORD @password;`,
-					Args: pgx.NamedArgs{"password": "password"},
-				},
-				{SQL: `ALTER ROLE "admin" WITH "LOGIN";`},
-				{SQL: `ALTER ROLE "admin" WITH "SUPERUSER";`},
+				{SQL: `ALTER ROLE "admin" WITH PASSWORD 'password';`},
+				{SQL: `ALTER ROLE "admin" WITH LOGIN;`},
+				{SQL: `ALTER ROLE "admin" WITH SUPERUSER;`},
 				{SQL: `ALTER DATABASE "northwind" OWNER TO "admin";`},
 			},
 		},
