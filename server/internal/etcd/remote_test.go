@@ -14,6 +14,8 @@ import (
 )
 
 func TestRemoteEtcd(t *testing.T) {
+	t.Skip("Remote etcd storage is currently disabled. We'll re-enable this test when we add it back in.")
+
 	serverA, serverB, serverC := testCluster(t)
 
 	remote, err := etcd.NewRemoteEtcd(config.Config{
