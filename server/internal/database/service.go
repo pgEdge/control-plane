@@ -41,10 +41,7 @@ func (s *Service) CreateDatabase(ctx context.Context, spec *Spec) (*Database, er
 	var hostIDs []uuid.UUID
 	// First pass to build out hostID list
 	for _, node := range spec.Nodes {
-		hostIDs = append(hostIDs, node.HostID)
-		for _, replica := range node.ReadReplicas {
-			hostIDs = append(hostIDs, replica.HostID)
-		}
+		hostIDs = append(hostIDs, node.HostIDs...)
 	}
 	hosts, err := s.hostSvc.GetHosts(ctx, hostIDs)
 	if err != nil {
@@ -73,18 +70,20 @@ func (s *Service) CreateDatabase(ctx context.Context, spec *Spec) (*Database, er
 		}
 	}
 	// Second pass on nodes to validate node-level overrides
-	for _, node := range spec.Nodes {
-		h, ok := hostsByID[node.HostID]
-		if !ok {
-			return nil, fmt.Errorf("host %s not found in host list", node.HostID)
-		}
-		if node.PostgresVersion != "" {
-			nodeVersion, err := host.NewPgEdgeVersion(node.PostgresVersion, spec.SpockVersion)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse versions from node %s spec: %w", node.Name, err)
+	for idx, node := range spec.Nodes {
+		for _, hostID := range node.HostIDs {
+			h, ok := hostsByID[hostID]
+			if !ok {
+				return nil, fmt.Errorf("host %s not found in host list", hostID)
 			}
-			if !h.Supports(nodeVersion) {
-				return nil, fmt.Errorf("host %s does not support version combination: postgres=%s, spock=%s", h.ID, nodeVersion.PostgresVersion, nodeVersion.SpockVersion)
+			if node.PostgresVersion != "" {
+				nodeVersion, err := host.NewPgEdgeVersion(node.PostgresVersion, spec.SpockVersion)
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse versions from nodes[%d] spec: %w", idx, err)
+				}
+				if !h.Supports(nodeVersion) {
+					return nil, fmt.Errorf("host %s does not support version combination: postgres=%s, spock=%s", h.ID, nodeVersion.PostgresVersion, nodeVersion.SpockVersion)
+				}
 			}
 		}
 	}

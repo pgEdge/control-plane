@@ -60,8 +60,6 @@ type InstanceView struct {
 	HostID *string
 	// The Spock node name for this instance.
 	NodeName *string
-	// The read replica name of this instance.
-	ReplicaName *string
 	// The time that the instance was created.
 	CreatedAt *string
 	// The time that the instance was last updated.
@@ -130,8 +128,8 @@ type DatabaseSpecView struct {
 	DatabaseUsers []*DatabaseUserSpecView
 	// The feature flags for this database.
 	Features map[string]string
-	// The backup configurations for this database.
-	BackupConfigs []*BackupConfigSpecView
+	// The backup configuration for this database.
+	BackupConfig *BackupConfigSpecView
 	// The restore configuration for this database.
 	RestoreConfig *RestoreConfigSpecView
 	// Additional postgresql.conf settings. Will be merged with the settings
@@ -143,8 +141,10 @@ type DatabaseSpecView struct {
 type DatabaseNodeSpecView struct {
 	// The name of the database node.
 	Name *string
-	// The ID of the host that should run this node.
-	HostID *string
+	// The IDs of the hosts that should run this node. When multiple hosts are
+	// specified, one host will chosen as a primary and the others will be read
+	// replicas.
+	HostIds []string
 	// The major version of Postgres for this node. Overrides the Postgres version
 	// set in the DatabaseSpec.
 	PostgresVersion *string
@@ -167,41 +167,18 @@ type DatabaseNodeSpecView struct {
 	// memory on the host. Whether this limit will be enforced depends on the
 	// orchestrator.
 	Memory *string
-	// Read replicas for this database node.
-	ReadReplicas []*DatabaseReplicaSpecView
 	// Additional postgresql.conf settings for this particular node. Will be merged
 	// with the settings provided by control-plane.
 	PostgresqlConf map[string]any
-}
-
-// DatabaseReplicaSpecView is a type that runs validations on a projected type.
-type DatabaseReplicaSpecView struct {
-	// The ID of the host that should run this read replica.
-	HostID *string
-}
-
-// DatabaseUserSpecView is a type that runs validations on a projected type.
-type DatabaseUserSpecView struct {
-	// The username for this database user.
-	Username *string
-	// The password for this database user.
-	Password *string
-	// If true, this user will be granted database ownership.
-	DbOwner *bool
-	// The attributes to assign to this database user.
-	Attributes []string
-	// The roles to assign to this database user.
-	Roles []string
+	// The backup configuration for this node. Overrides the backup configuration
+	// set in the DatabaseSpec.
+	BackupConfig *BackupConfigSpecView
 }
 
 // BackupConfigSpecView is a type that runs validations on a projected type.
 type BackupConfigSpecView struct {
 	// The unique identifier for this backup configuration.
 	ID *string
-	// The names of the nodes where this backup configuration should be applied.
-	// The configuration will apply to all nodes when this field is empty or
-	// unspecified.
-	NodeNames []string
 	// The backup provider for this backup configuration.
 	Provider *string
 	// The repositories for this backup configuration.
@@ -252,6 +229,20 @@ type BackupScheduleSpecView struct {
 	Type *string
 	// The cron expression for this schedule.
 	CronExpression *string
+}
+
+// DatabaseUserSpecView is a type that runs validations on a projected type.
+type DatabaseUserSpecView struct {
+	// The username for this database user.
+	Username *string
+	// The password for this database user.
+	Password *string
+	// If true, this user will be granted database ownership.
+	DbOwner *bool
+	// The attributes to assign to this database user.
+	Attributes []string
+	// The roles to assign to this database user.
+	Roles []string
 }
 
 // RestoreConfigSpecView is a type that runs validations on a projected type.
@@ -344,7 +335,6 @@ var (
 			"id",
 			"host_id",
 			"node_name",
-			"replica_name",
 			"created_at",
 			"updated_at",
 			"state",
@@ -361,7 +351,6 @@ var (
 			"id",
 			"host_id",
 			"node_name",
-			"replica_name",
 			"state",
 		},
 	}
@@ -371,7 +360,6 @@ var (
 			"id",
 			"host_id",
 			"node_name",
-			"replica_name",
 			"created_at",
 			"updated_at",
 			"state",
@@ -388,7 +376,6 @@ var (
 			"id",
 			"host_id",
 			"node_name",
-			"replica_name",
 			"state",
 		},
 	}
@@ -690,11 +677,9 @@ func ValidateDatabaseSpecView(result *DatabaseSpecView) (err error) {
 			}
 		}
 	}
-	for _, e := range result.BackupConfigs {
-		if e != nil {
-			if err2 := ValidateBackupConfigSpecView(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if result.BackupConfig != nil {
+		if err2 := ValidateBackupConfigSpecView(result.BackupConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	if result.RestoreConfig != nil {
@@ -711,47 +696,27 @@ func ValidateDatabaseNodeSpecView(result *DatabaseNodeSpecView) (err error) {
 	if result.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "result"))
 	}
-	if result.HostID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "result"))
+	if result.HostIds == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "result"))
 	}
-	if result.HostID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.host_id", *result.HostID, goa.FormatUUID))
+	if result.Name != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.name", *result.Name, "n[0-9]+"))
+	}
+	if len(result.HostIds) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.host_ids", result.HostIds, len(result.HostIds), 1, true))
+	}
+	for _, e := range result.HostIds {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.host_ids[*]", e, goa.FormatUUID))
 	}
 	if result.PostgresVersion != nil {
 		if !(*result.PostgresVersion == "16" || *result.PostgresVersion == "17") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.postgres_version", *result.PostgresVersion, []any{"16", "17"}))
 		}
 	}
-	for _, e := range result.ReadReplicas {
-		if e != nil {
-			if err2 := ValidateDatabaseReplicaSpecView(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if result.BackupConfig != nil {
+		if err2 := ValidateBackupConfigSpecView(result.BackupConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
-	}
-	return
-}
-
-// ValidateDatabaseReplicaSpecView runs the validations defined on
-// DatabaseReplicaSpecView.
-func ValidateDatabaseReplicaSpecView(result *DatabaseReplicaSpecView) (err error) {
-	if result.HostID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "result"))
-	}
-	if result.HostID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.host_id", *result.HostID, goa.FormatUUID))
-	}
-	return
-}
-
-// ValidateDatabaseUserSpecView runs the validations defined on
-// DatabaseUserSpecView.
-func ValidateDatabaseUserSpecView(result *DatabaseUserSpecView) (err error) {
-	if result.Username == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("username", "result"))
-	}
-	if result.Password == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("password", "result"))
 	}
 	return
 }
@@ -825,6 +790,18 @@ func ValidateBackupScheduleSpecView(result *BackupScheduleSpecView) (err error) 
 		if !(*result.Type == "full" || *result.Type == "incr") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.type", *result.Type, []any{"full", "incr"}))
 		}
+	}
+	return
+}
+
+// ValidateDatabaseUserSpecView runs the validations defined on
+// DatabaseUserSpecView.
+func ValidateDatabaseUserSpecView(result *DatabaseUserSpecView) (err error) {
+	if result.Username == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("username", "result"))
+	}
+	if result.Password == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("password", "result"))
 	}
 	return
 }

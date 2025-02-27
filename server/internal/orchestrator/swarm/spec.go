@@ -46,9 +46,6 @@ func DatabaseServiceSpec(
 	if instance.TenantID != nil {
 		labels["pgedge.tenant.id"] = instance.TenantID.String()
 	}
-	if instance.ReplicaName != "" {
-		labels["pgedge.replica.name"] = instance.ReplicaName
-	}
 
 	return swarm.ServiceSpec{
 		TaskTemplate: swarm.TaskSpec{
@@ -56,7 +53,7 @@ func DatabaseServiceSpec(
 				Image:    images.PgEdgeImage,
 				Labels:   labels,
 				Args:     []string{"/opt/pgedge/configs/patroni.yaml"},
-				Hostname: instance.DatabaseID.String() + "_postgres-" + instance.NodeName + instance.ReplicaName,
+				Hostname: instance.Hostname(),
 				Env: []string{
 					"PATRONICTL_CONFIG_FILE=/opt/pgedge/configs/patroni.yaml",
 				},
@@ -96,9 +93,6 @@ func DatabaseServiceSpec(
 				},
 				{
 					Target: options.DatabaseNetworkID,
-					Aliases: []string{
-						"postgres-" + instance.NodeName + instance.ReplicaName,
-					},
 				},
 			},
 			Placement: &swarm.Placement{
@@ -135,7 +129,7 @@ func DatabaseServiceSpec(
 			},
 		},
 		Annotations: swarm.Annotations{
-			Name:   instance.DatabaseID.String() + "_postgres-" + instance.NodeName + instance.ReplicaName,
+			Name:   instance.Hostname(),
 			Labels: labels,
 		},
 	}, nil

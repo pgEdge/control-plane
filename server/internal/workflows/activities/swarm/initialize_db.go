@@ -19,8 +19,8 @@ import (
 // const SwarmCreateDBService = "SwarmCreateDBService"
 
 type InitializeDBInput struct {
-	Instance     *database.InstanceSpec `json:"spec"`
-	AllNodeNames []string               `json:"all_node_names"`
+	Instance     *database.InstanceSpec   `json:"spec"`
+	AllPrimaries []*database.InstanceSpec `json:"all_primaries"`
 }
 
 func (i *InitializeDBInput) Validate() error {
@@ -53,19 +53,6 @@ func (a *Activities) InitializeDB(ctx context.Context, input *InitializeDBInput)
 	if err := input.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input: %w", err)
 	}
-
-	// var container types.Container
-	// err := utils.Retry(5, time.Second, func() error {
-	// 	c, err := swarm.GetPostgresContainer(ctx, a.Docker, input.Instance.InstanceID)
-	// 	if err != nil {
-	// 		return fmt.Errorf("failed to get postgres container: %w", err)
-	// 	}
-	// 	container = c
-	// 	return nil
-	// })
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	container, err := swarm.GetPostgresContainer(ctx, a.Docker, input.Instance.InstanceID)
 	if err != nil {
@@ -121,7 +108,7 @@ func (a *Activities) InitializeDB(ctx context.Context, input *InitializeDBInput)
 		return nil, fmt.Errorf("failed to get connection to db %q: %w", input.Instance.DatabaseName, err)
 	}
 	err = postgres.InitializePgEdgeExtensions(input.Instance.NodeName, &postgres.DSN{
-		Host:        "postgres-" + input.Instance.NodeName,
+		Host:        input.Instance.HostnameWithDomain(),
 		Port:        5432,
 		DBName:      input.Instance.DatabaseName,
 		User:        "pgedge",
@@ -160,17 +147,17 @@ func (a *Activities) InitializeDB(ctx context.Context, input *InitializeDBInput)
 		}
 	}
 
-	var peerNames []string
-	for _, nodeName := range input.AllNodeNames {
-		if nodeName != input.Instance.NodeName {
-			peerNames = append(peerNames, nodeName)
+	var peers []*database.InstanceSpec
+	for _, instance := range input.AllPrimaries {
+		if instance.NodeName != input.Instance.NodeName {
+			peers = append(peers, instance)
 		}
 	}
 
-	for _, peerName := range peerNames {
+	for _, peer := range peers {
 		err = utils.Retry(5, time.Second, func() error {
-			_, err := postgres.CreateSubscription(input.Instance.NodeName, peerName, &postgres.DSN{
-				Host:        "postgres-" + peerName,
+			_, err := postgres.CreateSubscription(input.Instance.NodeName, peer.NodeName, &postgres.DSN{
+				Host:        peer.HostnameWithDomain(),
 				Port:        5432,
 				DBName:      input.Instance.DatabaseName,
 				User:        "pgedge",
@@ -179,7 +166,7 @@ func (a *Activities) InitializeDB(ctx context.Context, input *InitializeDBInput)
 				SSLRootCert: "/opt/pgedge/certificates/postgres/ca.crt",
 			}).Exec(ctx, conn)
 			if err != nil {
-				return fmt.Errorf("failed to create subscription to peer %q: %w", peerName, err)
+				return fmt.Errorf("failed to create subscription to peer %q: %w", peer.Hostname(), err)
 			}
 			return nil
 		})

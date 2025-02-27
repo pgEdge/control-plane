@@ -4,8 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"slices"
-	"strings"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/host"
@@ -13,30 +12,18 @@ import (
 
 var ErrHostNotInDBSpec = errors.New("host not in db spec")
 
-type ReadReplica struct {
-	HostID uuid.UUID `json:"host_id"`
-}
-
 type Node struct {
 	Name             string         `json:"name"`
-	HostID           uuid.UUID      `json:"host_id"`
+	HostIDs          []uuid.UUID    `json:"host_ids"`
 	PostgresVersion  string         `json:"postgres_version"`
 	Port             int            `json:"port"`
 	StorageClass     string         `json:"storage_class"`
 	StorageSizeBytes uint64         `json:"storage_size"`
 	CPUs             float64        `json:"cpus"`
 	MemoryBytes      uint64         `json:"memory"`
-	ReadReplicas     []*ReadReplica `json:"read_replicas"`
 	PostgreSQLConf   map[string]any `json:"postgresql_conf"`
+	BackupConfig     *BackupConfig  `json:"backup_config"`
 }
-
-// type UserType string
-
-// const (
-// 	UserTypeApplication         UserType = "application"
-// 	UserTypeApplicationReadOnly UserType = "application_read_only"
-// 	UserTypeAdmin               UserType = "admin"
-// )
 
 type User struct {
 	Username   string   `json:"username"`
@@ -44,8 +31,6 @@ type User struct {
 	DBOwner    bool     `json:"db_owner,omitempty"`
 	Attributes []string `json:"attributes,omitempty"`
 	Roles      []string `json:"roles,omitempty"`
-	// Type      UserType `json:"type"`
-	// Superuser bool     `json:"superuser,omitempty"`
 }
 
 type Extension struct {
@@ -107,7 +92,6 @@ type BackupSchedule struct {
 type BackupConfig struct {
 	ID           string              `json:"id"`
 	Provider     BackupProvider      `json:"provider"`
-	Nodes        []string            `json:"nodes"`
 	Repositories []*BackupRepository `json:"repositories"`
 	Schedules    []*BackupSchedule   `json:"schedules"`
 }
@@ -132,18 +116,14 @@ type Spec struct {
 	Nodes              []*Node           `json:"nodes"`
 	DatabaseUsers      []*User           `json:"database_users"`
 	Features           map[string]string `json:"features"`
-	BackupConfigs      []*BackupConfig   `json:"backup_config"`
+	BackupConfig       *BackupConfig     `json:"backup_config"`
 	RestoreConfig      *RestoreConfig    `json:"restore_config"`
 	PostgreSQLConf     map[string]any    `json:"postgresql_conf"`
 }
 
-func InstanceIDFor(hostID, databaseID uuid.UUID, nodeName, replicaName string) uuid.UUID {
+func InstanceIDFor(hostID, databaseID uuid.UUID, nodeName string) uuid.UUID {
 	space := uuid.UUID(hostID)
-	components := []string{databaseID.String(), nodeName}
-	if replicaName != "" {
-		components = append(components, replicaName)
-	}
-	data := []byte(strings.Join(components, ":"))
+	data := []byte(databaseID.String() + ":" + nodeName)
 	return uuid.NewSHA1(space, data)
 }
 
@@ -152,10 +132,9 @@ type InstanceSpec struct {
 	TenantID         *uuid.UUID          `json:"tenant_id,omitempty"`
 	DatabaseID       uuid.UUID           `json:"database_id"`
 	HostID           uuid.UUID           `json:"host_id"`
-	ReplicaOfID      uuid.UUID           `json:"replica_of_id,omitempty"`
 	DatabaseName     string              `json:"database_name"`
 	NodeName         string              `json:"node_name"`
-	ReplicaName      string              `json:"replica_name,omitempty"`
+	NodeOrdinal      int                 `json:"node_ordinal"`
 	PgEdgeVersion    *host.PgEdgeVersion `json:"pg_edge_version"`
 	Port             int                 `json:"port"`
 	StorageClass     string              `json:"storage_class"`
@@ -164,20 +143,37 @@ type InstanceSpec struct {
 	MemoryBytes      uint64              `json:"memory"`
 	DatabaseUsers    []*User             `json:"database_users"`
 	Features         map[string]string   `json:"features"`
-	BackupConfig     []*BackupConfig     `json:"backup_config"`
+	BackupConfig     *BackupConfig       `json:"backup_config"`
 	RestoreConfig    *RestoreConfig      `json:"restore_config"`
 	PostgreSQLConf   map[string]any      `json:"postgresql_conf"`
-	// ReadReplicas     []*InstanceSpec   `json:"read_replicas"`
 }
 
-func (s *Spec) InstanceSpecs() ([]*InstanceSpec, error) {
-	var specs []*InstanceSpec
+func (i *InstanceSpec) Hostname() string {
+	return fmt.Sprintf("postgres-%s-%s", i.NodeName, i.InstanceID)
+}
+
+func (i *InstanceSpec) HostnameWithDomain() string {
+	return fmt.Sprintf("%s.%s-database", i.Hostname(), i.DatabaseID)
+}
+
+type NodeInstances struct {
+	NodeName  string          `json:"node_name"`
+	Instances []*InstanceSpec `json:"instances"`
+}
+
+func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 	specVersion, err := host.NewPgEdgeVersion(s.PostgresVersion, s.SpockVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse version from spec: %w", err)
 	}
 
-	for _, node := range s.Nodes {
+	nodes := make([]*NodeInstances, len(s.Nodes))
+	for nodeIdx, node := range s.Nodes {
+		nodeOrdinal, err := extractOrdinal(node.Name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract ordinal from node name: %w", err)
+		}
+
 		// Respect node-level overrides
 		nodeVersion := specVersion
 		if node.PostgresVersion != "" {
@@ -206,49 +202,24 @@ func (s *Spec) InstanceSpecs() ([]*InstanceSpec, error) {
 		if node.MemoryBytes > 0 {
 			memoryBytes = node.MemoryBytes
 		}
+		backupConfig := s.BackupConfig
+		if node.BackupConfig != nil {
+			backupConfig = node.BackupConfig
+		}
 		// Create a merged PostgreSQL configuration with node-level overrides
 		postgresqlConf := maps.Clone(s.PostgreSQLConf)
 		maps.Copy(node.PostgreSQLConf, postgresqlConf)
 
-		var backupConfigs []*BackupConfig
-		for _, bc := range s.BackupConfigs {
-			if len(bc.Nodes) == 0 || slices.Contains(bc.Nodes, node.Name) {
-				backupConfigs = append(backupConfigs, bc)
-			}
-		}
-
-		spec := &InstanceSpec{
-			InstanceID:       InstanceIDFor(node.HostID, s.DatabaseID, node.Name, ""),
-			TenantID:         s.TenantID,
-			DatabaseID:       s.DatabaseID,
-			HostID:           node.HostID,
-			DatabaseName:     s.DatabaseName,
-			NodeName:         node.Name,
-			PgEdgeVersion:    nodeVersion,
-			Port:             port,
-			StorageClass:     storageClass,
-			StorageSizeBytes: storageSizeBytes,
-			CPUs:             cpus,
-			MemoryBytes:      memoryBytes,
-			DatabaseUsers:    s.DatabaseUsers,
-			Features:         s.Features,
-			BackupConfig:     backupConfigs,
-			RestoreConfig:    s.RestoreConfig,
-			PostgreSQLConf:   postgresqlConf,
-		}
-
-		var replicas []*InstanceSpec
-		for idx, r := range node.ReadReplicas {
-			replicaName := fmt.Sprintf("r%d", idx+1)
-			replica := &InstanceSpec{
-				InstanceID:       InstanceIDFor(r.HostID, s.DatabaseID, node.Name, replicaName),
+		instances := make([]*InstanceSpec, len(node.HostIDs))
+		for hostIdx, hostID := range node.HostIDs {
+			instances[hostIdx] = &InstanceSpec{
+				InstanceID:       InstanceIDFor(hostID, s.DatabaseID, node.Name),
 				TenantID:         s.TenantID,
 				DatabaseID:       s.DatabaseID,
-				HostID:           r.HostID,
-				ReplicaOfID:      spec.InstanceID,
+				HostID:           hostID,
 				DatabaseName:     s.DatabaseName,
 				NodeName:         node.Name,
-				ReplicaName:      replicaName,
+				NodeOrdinal:      nodeOrdinal,
 				PgEdgeVersion:    nodeVersion,
 				Port:             port,
 				StorageClass:     storageClass,
@@ -257,16 +228,27 @@ func (s *Spec) InstanceSpecs() ([]*InstanceSpec, error) {
 				MemoryBytes:      memoryBytes,
 				DatabaseUsers:    s.DatabaseUsers,
 				Features:         s.Features,
-				BackupConfig:     backupConfigs,
+				BackupConfig:     backupConfig,
 				RestoreConfig:    s.RestoreConfig,
 				PostgreSQLConf:   postgresqlConf,
 			}
-			replicas = append(replicas, replica)
 		}
-		// spec.ReadReplicas = replicas
 
-		specs = append(specs, spec)
-		specs = append(specs, replicas...)
+		nodes[nodeIdx] = &NodeInstances{
+			NodeName:  node.Name,
+			Instances: instances,
+		}
 	}
-	return specs, nil
+	return nodes, nil
+}
+
+func extractOrdinal(name string) (int, error) {
+	if len(name) < 2 {
+		return 0, fmt.Errorf("invalid name: %s", name)
+	}
+	ordinal, err := strconv.Atoi(name[1:])
+	if err != nil {
+		return 0, fmt.Errorf("invalid name: %s", name)
+	}
+	return ordinal, nil
 }

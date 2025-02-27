@@ -97,7 +97,6 @@ func instanceToAPI(i *database.Instance) *api.Instance {
 		ID:              i.InstanceID.String(),
 		HostID:          i.HostID.String(),
 		NodeName:        i.NodeName,
-		ReplicaName:     utils.NillablePointerTo(i.ReplicaName),
 		CreatedAt:       i.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:       i.UpdatedAt.Format(time.RFC3339),
 		State:           string(i.State),
@@ -115,23 +114,21 @@ func instanceToAPI(i *database.Instance) *api.Instance {
 func databaseNodesToAPI(nodes []*database.Node) []*api.DatabaseNodeSpec {
 	apiNodes := make([]*api.DatabaseNodeSpec, len(nodes))
 	for i, node := range nodes {
-		apiReplicas := make([]*api.DatabaseReplicaSpec, len(node.ReadReplicas))
-		for i, replica := range node.ReadReplicas {
-			apiReplicas[i] = &api.DatabaseReplicaSpec{
-				HostID: replica.HostID.String(),
-			}
+		hostIDs := make([]string, len(node.HostIDs))
+		for j, hostID := range node.HostIDs {
+			hostIDs[j] = hostID.String()
 		}
 		apiNodes[i] = &api.DatabaseNodeSpec{
 			Name:            node.Name,
-			HostID:          node.HostID.String(),
+			HostIds:         hostIDs,
 			PostgresVersion: utils.NillablePointerTo(node.PostgresVersion),
 			Port:            utils.NillablePointerTo(node.Port),
 			StorageClass:    utils.NillablePointerTo(node.StorageClass),
 			StorageSize:     utils.NillablePointerTo(humanizeBytes(node.StorageSizeBytes)),
 			Cpus:            utils.NillablePointerTo(humanizeCPUs(node.CPUs)),
 			Memory:          utils.NillablePointerTo(humanizeBytes(node.MemoryBytes)),
-			ReadReplicas:    apiReplicas,
 			PostgresqlConf:  node.PostgreSQLConf,
+			BackupConfig:    backupConfigToAPI(node.BackupConfig),
 		}
 	}
 	return apiNodes
@@ -151,45 +148,43 @@ func databaseUsersToAPI(users []*database.User) []*api.DatabaseUserSpec {
 	return apiUsers
 }
 
-func backupConfigsToAPI(configs []*database.BackupConfig) []*api.BackupConfigSpec {
-	apiConfigs := make([]*api.BackupConfigSpec, len(configs))
-	for i, config := range configs {
-		repositories := make([]*api.BackupRepositorySpec, len(config.Repositories))
-		for j, repo := range config.Repositories {
-			repositories[j] = &api.BackupRepositorySpec{
-				ID:                utils.PointerTo(repo.ID.String()),
-				Type:              string(repo.Type),
-				S3Bucket:          repo.S3Bucket,
-				S3Region:          repo.S3Region,
-				S3Endpoint:        repo.S3Endpoint,
-				GcsBucket:         repo.GCSBucket,
-				GcsEndpoint:       repo.GCSEndpoint,
-				AzureAccount:      repo.AzureAccount,
-				AzureContainer:    repo.AzureContainer,
-				AzureEndpoint:     repo.AzureEndpoint,
-				RetentionFull:     repo.RetentionFull,
-				RetentionFullType: stringifyPtr(repo.RetentionFullType),
-				BasePath:          repo.BasePath,
-			}
-		}
-		schedules := make([]*api.BackupScheduleSpec, len(config.Schedules))
-		for j, schedule := range config.Schedules {
-			schedules[j] = &api.BackupScheduleSpec{
-				ID:             schedule.ID,
-				Type:           string(schedule.Type),
-				CronExpression: schedule.CronExpression,
-			}
-		}
-
-		apiConfigs[i] = &api.BackupConfigSpec{
-			ID:           config.ID,
-			NodeNames:    config.Nodes,
-			Provider:     string(config.Provider),
-			Repositories: repositories,
-			Schedules:    schedules,
+func backupConfigToAPI(config *database.BackupConfig) *api.BackupConfigSpec {
+	if config == nil {
+		return nil
+	}
+	repositories := make([]*api.BackupRepositorySpec, len(config.Repositories))
+	for i, repo := range config.Repositories {
+		repositories[i] = &api.BackupRepositorySpec{
+			ID:                utils.PointerTo(repo.ID.String()),
+			Type:              string(repo.Type),
+			S3Bucket:          repo.S3Bucket,
+			S3Region:          repo.S3Region,
+			S3Endpoint:        repo.S3Endpoint,
+			GcsBucket:         repo.GCSBucket,
+			GcsEndpoint:       repo.GCSEndpoint,
+			AzureAccount:      repo.AzureAccount,
+			AzureContainer:    repo.AzureContainer,
+			AzureEndpoint:     repo.AzureEndpoint,
+			RetentionFull:     repo.RetentionFull,
+			RetentionFullType: stringifyPtr(repo.RetentionFullType),
+			BasePath:          repo.BasePath,
 		}
 	}
-	return apiConfigs
+	schedules := make([]*api.BackupScheduleSpec, len(config.Schedules))
+	for i, schedule := range config.Schedules {
+		schedules[i] = &api.BackupScheduleSpec{
+			ID:             schedule.ID,
+			Type:           string(schedule.Type),
+			CronExpression: schedule.CronExpression,
+		}
+	}
+
+	return &api.BackupConfigSpec{
+		ID:           config.ID,
+		Provider:     string(config.Provider),
+		Repositories: repositories,
+		Schedules:    schedules,
+	}
 }
 
 func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
@@ -206,7 +201,7 @@ func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 		Nodes:              databaseNodesToAPI(d.Nodes),
 		DatabaseUsers:      databaseUsersToAPI(d.DatabaseUsers),
 		Features:           d.Features,
-		BackupConfigs:      backupConfigsToAPI(d.BackupConfigs),
+		BackupConfig:       backupConfigToAPI(d.BackupConfig),
 		PostgresqlConf:     d.PostgreSQLConf,
 	}
 }
@@ -242,86 +237,75 @@ func apiToDatabaseNodes(apiNodes []*api.DatabaseNodeSpec) ([]*database.Node, err
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse memory: %w", err)
 		}
-		hostID, err := uuid.Parse(apiNode.HostID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse host ID: %w", err)
-		}
-		readReplicas := make([]*database.ReadReplica, len(apiNode.ReadReplicas))
-		for i, replica := range apiNode.ReadReplicas {
-			replicaHost, err := uuid.Parse(replica.HostID)
+		hostIDs := make([]uuid.UUID, len(apiNode.HostIds))
+		for i, hostID := range apiNode.HostIds {
+			parsedHostID, err := uuid.Parse(hostID)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse replica host ID: %w", err)
+				return nil, fmt.Errorf("failed to parse host ID: %w", err)
 			}
-			readReplicas[i] = &database.ReadReplica{
-				HostID: replicaHost,
-			}
+			hostIDs[i] = parsedHostID
+		}
+		backupConfig, err := apiToBackupConfig(apiNode.BackupConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse backup config: %w", err)
 		}
 		nodes[i] = &database.Node{
 			Name:             apiNode.Name,
-			HostID:           hostID,
+			HostIDs:          hostIDs,
 			PostgresVersion:  utils.FromPointer(apiNode.PostgresVersion),
 			Port:             utils.FromPointer(apiNode.Port),
 			StorageClass:     utils.FromPointer(apiNode.StorageClass),
 			StorageSizeBytes: storageSize,
 			CPUs:             cpus,
 			MemoryBytes:      memory,
-			ReadReplicas:     readReplicas,
 			PostgreSQLConf:   apiNode.PostgresqlConf,
+			BackupConfig:     backupConfig,
 		}
 	}
 	return nodes, nil
 }
 
-func apiToBackupConfigs(apiConfigs []*api.BackupConfigSpec) ([]*database.BackupConfig, error) {
-	configs := make([]*database.BackupConfig, len(apiConfigs))
-	for i, apiConfig := range apiConfigs {
-		repositories := make([]*database.BackupRepository, len(apiConfig.Repositories))
-		for j, apiRepo := range apiConfig.Repositories {
-			// repoID := uuid.Nil
-			// if apiRepo.ID != nil {
+func apiToBackupConfig(apiConfig *api.BackupConfigSpec) (*database.BackupConfig, error) {
+	if apiConfig == nil {
+		return nil, nil
+	}
 
-			// 	repoID, err = uuid.Parse(*apiRepo.ID)
-			// 	if err != nil {
-			// 		return nil, fmt.Errorf("failed to parse repository ID: %w", err)
-			// 	}
-			// }
-			repoID, err := parseUUIDPtr(apiRepo.ID)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse repository ID: %w", err)
-			}
-			repositories[j] = &database.BackupRepository{
-				ID:                repoID,
-				Type:              database.BackupRepositoryType(apiRepo.Type),
-				S3Bucket:          apiRepo.S3Bucket,
-				S3Region:          apiRepo.S3Region,
-				S3Endpoint:        apiRepo.S3Endpoint,
-				GCSBucket:         apiRepo.GcsBucket,
-				GCSEndpoint:       apiRepo.GcsEndpoint,
-				AzureAccount:      apiRepo.AzureAccount,
-				AzureContainer:    apiRepo.AzureContainer,
-				AzureEndpoint:     apiRepo.AzureEndpoint,
-				RetentionFull:     apiRepo.RetentionFull,
-				RetentionFullType: parsePtr[database.RetentionFullType](apiRepo.RetentionFullType),
-				BasePath:          apiRepo.BasePath,
-			}
+	repositories := make([]*database.BackupRepository, len(apiConfig.Repositories))
+	for i, apiRepo := range apiConfig.Repositories {
+		repoID, err := parseUUIDPtr(apiRepo.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse repository ID: %w", err)
 		}
-		schedules := make([]*database.BackupSchedule, len(apiConfig.Schedules))
-		for j, apiSchedule := range apiConfig.Schedules {
-			schedules[j] = &database.BackupSchedule{
-				ID:             apiSchedule.ID,
-				Type:           database.BackupScheduleType(apiSchedule.Type),
-				CronExpression: apiSchedule.CronExpression,
-			}
-		}
-		configs[i] = &database.BackupConfig{
-			ID:           apiConfig.ID,
-			Nodes:        apiConfig.NodeNames,
-			Provider:     database.BackupProvider(apiConfig.Provider),
-			Repositories: repositories,
-			Schedules:    schedules,
+		repositories[i] = &database.BackupRepository{
+			ID:                repoID,
+			Type:              database.BackupRepositoryType(apiRepo.Type),
+			S3Bucket:          apiRepo.S3Bucket,
+			S3Region:          apiRepo.S3Region,
+			S3Endpoint:        apiRepo.S3Endpoint,
+			GCSBucket:         apiRepo.GcsBucket,
+			GCSEndpoint:       apiRepo.GcsEndpoint,
+			AzureAccount:      apiRepo.AzureAccount,
+			AzureContainer:    apiRepo.AzureContainer,
+			AzureEndpoint:     apiRepo.AzureEndpoint,
+			RetentionFull:     apiRepo.RetentionFull,
+			RetentionFullType: parsePtr[database.RetentionFullType](apiRepo.RetentionFullType),
+			BasePath:          apiRepo.BasePath,
 		}
 	}
-	return configs, nil
+	schedules := make([]*database.BackupSchedule, len(apiConfig.Schedules))
+	for j, apiSchedule := range apiConfig.Schedules {
+		schedules[j] = &database.BackupSchedule{
+			ID:             apiSchedule.ID,
+			Type:           database.BackupScheduleType(apiSchedule.Type),
+			CronExpression: apiSchedule.CronExpression,
+		}
+	}
+	return &database.BackupConfig{
+		ID:           apiConfig.ID,
+		Provider:     database.BackupProvider(apiConfig.Provider),
+		Repositories: repositories,
+		Schedules:    schedules,
+	}, nil
 }
 
 func apiToRestoreConfig(apiConfig *api.RestoreConfigSpec) (*database.RestoreConfig, error) {
@@ -337,13 +321,6 @@ func apiToRestoreConfig(apiConfig *api.RestoreConfigSpec) (*database.RestoreConf
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse repository ID: %w", err)
 	}
-	// repoID := uuid.Nil
-	// if apiConfig.Repository.ID != nil {
-	// 	repoID, err := uuid.Parse(*apiConfig.Repository.ID)
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("failed to parse repository ID: %w", err)
-	// 	}
-	// }
 	return &database.RestoreConfig{
 		Provider: database.BackupProvider(apiConfig.Provider),
 		Repository: database.BackupRepository{
@@ -401,7 +378,7 @@ func apiToDatabaseSpec(id, tID *string, apiSpec *api.DatabaseSpec) (*database.Sp
 			Roles:      apiUser.Roles,
 		}
 	}
-	backupConfigs, err := apiToBackupConfigs(apiSpec.BackupConfigs)
+	backupConfig, err := apiToBackupConfig(apiSpec.BackupConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse backup configs: %w", err)
 	}
@@ -424,7 +401,7 @@ func apiToDatabaseSpec(id, tID *string, apiSpec *api.DatabaseSpec) (*database.Sp
 		Nodes:              nodes,
 		DatabaseUsers:      users,
 		Features:           apiSpec.Features,
-		BackupConfigs:      backupConfigs,
+		BackupConfig:       backupConfig,
 		PostgreSQLConf:     apiSpec.PostgresqlConf,
 		RestoreConfig:      restoreConfig,
 	}, nil

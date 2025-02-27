@@ -1043,11 +1043,10 @@ func marshalControlplaneviewsInstanceViewToInstanceResponseAbbreviated(v *contro
 		return nil
 	}
 	res := &InstanceResponseAbbreviated{
-		ID:          *v.ID,
-		HostID:      *v.HostID,
-		NodeName:    *v.NodeName,
-		ReplicaName: v.ReplicaName,
-		State:       *v.State,
+		ID:       *v.ID,
+		HostID:   *v.HostID,
+		NodeName: *v.NodeName,
+		State:    *v.State,
 	}
 
 	return res
@@ -1089,11 +1088,8 @@ func unmarshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecR
 			res.Features[tk] = tv
 		}
 	}
-	if v.BackupConfigs != nil {
-		res.BackupConfigs = make([]*controlplane.BackupConfigSpec, len(v.BackupConfigs))
-		for i, val := range v.BackupConfigs {
-			res.BackupConfigs[i] = unmarshalBackupConfigSpecRequestBodyToControlplaneBackupConfigSpec(val)
-		}
+	if v.BackupConfig != nil {
+		res.BackupConfig = unmarshalBackupConfigSpecRequestBodyToControlplaneBackupConfigSpec(v.BackupConfig)
 	}
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = unmarshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec(v.RestoreConfig)
@@ -1116,7 +1112,6 @@ func unmarshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecR
 func unmarshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *DatabaseNodeSpecRequestBody) *controlplane.DatabaseNodeSpec {
 	res := &controlplane.DatabaseNodeSpec{
 		Name:            *v.Name,
-		HostID:          *v.HostID,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
 		StorageClass:    v.StorageClass,
@@ -1124,11 +1119,9 @@ func unmarshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *Datab
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
-	if v.ReadReplicas != nil {
-		res.ReadReplicas = make([]*controlplane.DatabaseReplicaSpec, len(v.ReadReplicas))
-		for i, val := range v.ReadReplicas {
-			res.ReadReplicas[i] = unmarshalDatabaseReplicaSpecRequestBodyToControlplaneDatabaseReplicaSpec(val)
-		}
+	res.HostIds = make([]string, len(v.HostIds))
+	for i, val := range v.HostIds {
+		res.HostIds[i] = val
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -1138,47 +1131,8 @@ func unmarshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *Datab
 			res.PostgresqlConf[tk] = tv
 		}
 	}
-
-	return res
-}
-
-// unmarshalDatabaseReplicaSpecRequestBodyToControlplaneDatabaseReplicaSpec
-// builds a value of type *controlplane.DatabaseReplicaSpec from a value of
-// type *DatabaseReplicaSpecRequestBody.
-func unmarshalDatabaseReplicaSpecRequestBodyToControlplaneDatabaseReplicaSpec(v *DatabaseReplicaSpecRequestBody) *controlplane.DatabaseReplicaSpec {
-	if v == nil {
-		return nil
-	}
-	res := &controlplane.DatabaseReplicaSpec{
-		HostID: *v.HostID,
-	}
-
-	return res
-}
-
-// unmarshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec builds a
-// value of type *controlplane.DatabaseUserSpec from a value of type
-// *DatabaseUserSpecRequestBody.
-func unmarshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec(v *DatabaseUserSpecRequestBody) *controlplane.DatabaseUserSpec {
-	if v == nil {
-		return nil
-	}
-	res := &controlplane.DatabaseUserSpec{
-		Username: *v.Username,
-		Password: *v.Password,
-		DbOwner:  v.DbOwner,
-	}
-	if v.Attributes != nil {
-		res.Attributes = make([]string, len(v.Attributes))
-		for i, val := range v.Attributes {
-			res.Attributes[i] = val
-		}
-	}
-	if v.Roles != nil {
-		res.Roles = make([]string, len(v.Roles))
-		for i, val := range v.Roles {
-			res.Roles[i] = val
-		}
+	if v.BackupConfig != nil {
+		res.BackupConfig = unmarshalBackupConfigSpecRequestBodyToControlplaneBackupConfigSpec(v.BackupConfig)
 	}
 
 	return res
@@ -1194,12 +1148,6 @@ func unmarshalBackupConfigSpecRequestBodyToControlplaneBackupConfigSpec(v *Backu
 	res := &controlplane.BackupConfigSpec{
 		ID:       *v.ID,
 		Provider: *v.Provider,
-	}
-	if v.NodeNames != nil {
-		res.NodeNames = make([]string, len(v.NodeNames))
-		for i, val := range v.NodeNames {
-			res.NodeNames[i] = val
-		}
 	}
 	if v.Repositories != nil {
 		res.Repositories = make([]*controlplane.BackupRepositorySpec, len(v.Repositories))
@@ -1259,6 +1207,34 @@ func unmarshalBackupScheduleSpecRequestBodyToControlplaneBackupScheduleSpec(v *B
 	return res
 }
 
+// unmarshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec builds a
+// value of type *controlplane.DatabaseUserSpec from a value of type
+// *DatabaseUserSpecRequestBody.
+func unmarshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec(v *DatabaseUserSpecRequestBody) *controlplane.DatabaseUserSpec {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.DatabaseUserSpec{
+		Username: *v.Username,
+		Password: *v.Password,
+		DbOwner:  v.DbOwner,
+	}
+	if v.Attributes != nil {
+		res.Attributes = make([]string, len(v.Attributes))
+		for i, val := range v.Attributes {
+			res.Attributes[i] = val
+		}
+	}
+	if v.Roles != nil {
+		res.Roles = make([]string, len(v.Roles))
+		for i, val := range v.Roles {
+			res.Roles[i] = val
+		}
+	}
+
+	return res
+}
+
 // unmarshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec builds
 // a value of type *controlplane.RestoreConfigSpec from a value of type
 // *RestoreConfigSpecRequestBody.
@@ -1304,11 +1280,10 @@ func marshalControlplaneviewsInstanceViewToInstanceResponseBodyAbbreviated(v *co
 		return nil
 	}
 	res := &InstanceResponseBodyAbbreviated{
-		ID:          *v.ID,
-		HostID:      *v.HostID,
-		NodeName:    *v.NodeName,
-		ReplicaName: v.ReplicaName,
-		State:       *v.State,
+		ID:       *v.ID,
+		HostID:   *v.HostID,
+		NodeName: *v.NodeName,
+		State:    *v.State,
 	}
 
 	return res
@@ -1354,11 +1329,8 @@ func marshalControlplaneviewsDatabaseSpecViewToDatabaseSpecResponseBody(v *contr
 			res.Features[tk] = tv
 		}
 	}
-	if v.BackupConfigs != nil {
-		res.BackupConfigs = make([]*BackupConfigSpecResponseBody, len(v.BackupConfigs))
-		for i, val := range v.BackupConfigs {
-			res.BackupConfigs[i] = marshalControlplaneviewsBackupConfigSpecViewToBackupConfigSpecResponseBody(val)
-		}
+	if v.BackupConfig != nil {
+		res.BackupConfig = marshalControlplaneviewsBackupConfigSpecViewToBackupConfigSpecResponseBody(v.BackupConfig)
 	}
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = marshalControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpecResponseBody(v.RestoreConfig)
@@ -1381,7 +1353,6 @@ func marshalControlplaneviewsDatabaseSpecViewToDatabaseSpecResponseBody(v *contr
 func marshalControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpecResponseBody(v *controlplaneviews.DatabaseNodeSpecView) *DatabaseNodeSpecResponseBody {
 	res := &DatabaseNodeSpecResponseBody{
 		Name:            *v.Name,
-		HostID:          *v.HostID,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
 		StorageClass:    v.StorageClass,
@@ -1389,11 +1360,13 @@ func marshalControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpecResponseBody(
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
-	if v.ReadReplicas != nil {
-		res.ReadReplicas = make([]*DatabaseReplicaSpecResponseBody, len(v.ReadReplicas))
-		for i, val := range v.ReadReplicas {
-			res.ReadReplicas[i] = marshalControlplaneviewsDatabaseReplicaSpecViewToDatabaseReplicaSpecResponseBody(val)
+	if v.HostIds != nil {
+		res.HostIds = make([]string, len(v.HostIds))
+		for i, val := range v.HostIds {
+			res.HostIds[i] = val
 		}
+	} else {
+		res.HostIds = []string{}
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -1403,47 +1376,8 @@ func marshalControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpecResponseBody(
 			res.PostgresqlConf[tk] = tv
 		}
 	}
-
-	return res
-}
-
-// marshalControlplaneviewsDatabaseReplicaSpecViewToDatabaseReplicaSpecResponseBody
-// builds a value of type *DatabaseReplicaSpecResponseBody from a value of type
-// *controlplaneviews.DatabaseReplicaSpecView.
-func marshalControlplaneviewsDatabaseReplicaSpecViewToDatabaseReplicaSpecResponseBody(v *controlplaneviews.DatabaseReplicaSpecView) *DatabaseReplicaSpecResponseBody {
-	if v == nil {
-		return nil
-	}
-	res := &DatabaseReplicaSpecResponseBody{
-		HostID: *v.HostID,
-	}
-
-	return res
-}
-
-// marshalControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpecResponseBody
-// builds a value of type *DatabaseUserSpecResponseBody from a value of type
-// *controlplaneviews.DatabaseUserSpecView.
-func marshalControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpecResponseBody(v *controlplaneviews.DatabaseUserSpecView) *DatabaseUserSpecResponseBody {
-	if v == nil {
-		return nil
-	}
-	res := &DatabaseUserSpecResponseBody{
-		Username: *v.Username,
-		Password: *v.Password,
-		DbOwner:  v.DbOwner,
-	}
-	if v.Attributes != nil {
-		res.Attributes = make([]string, len(v.Attributes))
-		for i, val := range v.Attributes {
-			res.Attributes[i] = val
-		}
-	}
-	if v.Roles != nil {
-		res.Roles = make([]string, len(v.Roles))
-		for i, val := range v.Roles {
-			res.Roles[i] = val
-		}
+	if v.BackupConfig != nil {
+		res.BackupConfig = marshalControlplaneviewsBackupConfigSpecViewToBackupConfigSpecResponseBody(v.BackupConfig)
 	}
 
 	return res
@@ -1459,12 +1393,6 @@ func marshalControlplaneviewsBackupConfigSpecViewToBackupConfigSpecResponseBody(
 	res := &BackupConfigSpecResponseBody{
 		ID:       *v.ID,
 		Provider: *v.Provider,
-	}
-	if v.NodeNames != nil {
-		res.NodeNames = make([]string, len(v.NodeNames))
-		for i, val := range v.NodeNames {
-			res.NodeNames[i] = val
-		}
 	}
 	if v.Repositories != nil {
 		res.Repositories = make([]*BackupRepositorySpecResponseBody, len(v.Repositories))
@@ -1519,6 +1447,34 @@ func marshalControlplaneviewsBackupScheduleSpecViewToBackupScheduleSpecResponseB
 		ID:             *v.ID,
 		Type:           *v.Type,
 		CronExpression: *v.CronExpression,
+	}
+
+	return res
+}
+
+// marshalControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpecResponseBody
+// builds a value of type *DatabaseUserSpecResponseBody from a value of type
+// *controlplaneviews.DatabaseUserSpecView.
+func marshalControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpecResponseBody(v *controlplaneviews.DatabaseUserSpecView) *DatabaseUserSpecResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseUserSpecResponseBody{
+		Username: *v.Username,
+		Password: *v.Password,
+		DbOwner:  v.DbOwner,
+	}
+	if v.Attributes != nil {
+		res.Attributes = make([]string, len(v.Attributes))
+		for i, val := range v.Attributes {
+			res.Attributes[i] = val
+		}
+	}
+	if v.Roles != nil {
+		res.Roles = make([]string, len(v.Roles))
+		for i, val := range v.Roles {
+			res.Roles[i] = val
+		}
 	}
 
 	return res
@@ -1599,11 +1555,8 @@ func unmarshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Da
 			res.Features[tk] = tv
 		}
 	}
-	if v.BackupConfigs != nil {
-		res.BackupConfigs = make([]*controlplane.BackupConfigSpec, len(v.BackupConfigs))
-		for i, val := range v.BackupConfigs {
-			res.BackupConfigs[i] = unmarshalBackupConfigSpecRequestBodyRequestBodyToControlplaneBackupConfigSpec(val)
-		}
+	if v.BackupConfig != nil {
+		res.BackupConfig = unmarshalBackupConfigSpecRequestBodyRequestBodyToControlplaneBackupConfigSpec(v.BackupConfig)
 	}
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = unmarshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSpec(v.RestoreConfig)
@@ -1626,7 +1579,6 @@ func unmarshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Da
 func unmarshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSpec(v *DatabaseNodeSpecRequestBodyRequestBody) *controlplane.DatabaseNodeSpec {
 	res := &controlplane.DatabaseNodeSpec{
 		Name:            *v.Name,
-		HostID:          *v.HostID,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
 		StorageClass:    v.StorageClass,
@@ -1634,11 +1586,9 @@ func unmarshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSp
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
-	if v.ReadReplicas != nil {
-		res.ReadReplicas = make([]*controlplane.DatabaseReplicaSpec, len(v.ReadReplicas))
-		for i, val := range v.ReadReplicas {
-			res.ReadReplicas[i] = unmarshalDatabaseReplicaSpecRequestBodyRequestBodyToControlplaneDatabaseReplicaSpec(val)
-		}
+	res.HostIds = make([]string, len(v.HostIds))
+	for i, val := range v.HostIds {
+		res.HostIds[i] = val
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -1648,47 +1598,8 @@ func unmarshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSp
 			res.PostgresqlConf[tk] = tv
 		}
 	}
-
-	return res
-}
-
-// unmarshalDatabaseReplicaSpecRequestBodyRequestBodyToControlplaneDatabaseReplicaSpec
-// builds a value of type *controlplane.DatabaseReplicaSpec from a value of
-// type *DatabaseReplicaSpecRequestBodyRequestBody.
-func unmarshalDatabaseReplicaSpecRequestBodyRequestBodyToControlplaneDatabaseReplicaSpec(v *DatabaseReplicaSpecRequestBodyRequestBody) *controlplane.DatabaseReplicaSpec {
-	if v == nil {
-		return nil
-	}
-	res := &controlplane.DatabaseReplicaSpec{
-		HostID: *v.HostID,
-	}
-
-	return res
-}
-
-// unmarshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSpec
-// builds a value of type *controlplane.DatabaseUserSpec from a value of type
-// *DatabaseUserSpecRequestBodyRequestBody.
-func unmarshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSpec(v *DatabaseUserSpecRequestBodyRequestBody) *controlplane.DatabaseUserSpec {
-	if v == nil {
-		return nil
-	}
-	res := &controlplane.DatabaseUserSpec{
-		Username: *v.Username,
-		Password: *v.Password,
-		DbOwner:  v.DbOwner,
-	}
-	if v.Attributes != nil {
-		res.Attributes = make([]string, len(v.Attributes))
-		for i, val := range v.Attributes {
-			res.Attributes[i] = val
-		}
-	}
-	if v.Roles != nil {
-		res.Roles = make([]string, len(v.Roles))
-		for i, val := range v.Roles {
-			res.Roles[i] = val
-		}
+	if v.BackupConfig != nil {
+		res.BackupConfig = unmarshalBackupConfigSpecRequestBodyRequestBodyToControlplaneBackupConfigSpec(v.BackupConfig)
 	}
 
 	return res
@@ -1704,12 +1615,6 @@ func unmarshalBackupConfigSpecRequestBodyRequestBodyToControlplaneBackupConfigSp
 	res := &controlplane.BackupConfigSpec{
 		ID:       *v.ID,
 		Provider: *v.Provider,
-	}
-	if v.NodeNames != nil {
-		res.NodeNames = make([]string, len(v.NodeNames))
-		for i, val := range v.NodeNames {
-			res.NodeNames[i] = val
-		}
 	}
 	if v.Repositories != nil {
 		res.Repositories = make([]*controlplane.BackupRepositorySpec, len(v.Repositories))
@@ -1764,6 +1669,34 @@ func unmarshalBackupScheduleSpecRequestBodyRequestBodyToControlplaneBackupSchedu
 		ID:             *v.ID,
 		Type:           *v.Type,
 		CronExpression: *v.CronExpression,
+	}
+
+	return res
+}
+
+// unmarshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSpec
+// builds a value of type *controlplane.DatabaseUserSpec from a value of type
+// *DatabaseUserSpecRequestBodyRequestBody.
+func unmarshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSpec(v *DatabaseUserSpecRequestBodyRequestBody) *controlplane.DatabaseUserSpec {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.DatabaseUserSpec{
+		Username: *v.Username,
+		Password: *v.Password,
+		DbOwner:  v.DbOwner,
+	}
+	if v.Attributes != nil {
+		res.Attributes = make([]string, len(v.Attributes))
+		for i, val := range v.Attributes {
+			res.Attributes[i] = val
+		}
+	}
+	if v.Roles != nil {
+		res.Roles = make([]string, len(v.Roles))
+		for i, val := range v.Roles {
+			res.Roles[i] = val
+		}
 	}
 
 	return res
