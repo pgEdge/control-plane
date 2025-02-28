@@ -1,0 +1,363 @@
+package pgbackrest_test
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
+)
+
+func TestWriteConfig(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		opts          pgbackrest.ConfigOptions
+		expectedLines []string
+	}{
+		{
+			name: "s3 auto",
+			opts: pgbackrest.ConfigOptions{
+				DatabaseID: uuid.MustParse("706fd161-8df5-4ddd-b25a-f85d8b7bb033"),
+				NodeName:   "n1",
+				PgDataPath: "/opt/pgedge/data",
+				HostUser:   "pgedge-db",
+				User:       "pgedge",
+				Repositories: []*database.BackupRepository{
+					{
+						ID:       "0c28ad6e-233b-4ca7-ae60-4214e3a5356d",
+						Type:     database.BackupRepositoryTypeS3,
+						S3Bucket: "backups",
+						S3Region: "us-east-1",
+					},
+				},
+			},
+			expectedLines: []string{
+				"[global]",
+				"log-level-console         = info",
+				"repo1-cipher-type         = none",
+				"repo1-path                = /databases/706fd161-8df5-4ddd-b25a-f85d8b7bb033/0c28ad6e-233b-4ca7-ae60-4214e3a5356d/n1",
+				"repo1-retention-full      = 7",
+				"repo1-retention-full-type = time",
+				"repo1-s3-bucket           = backups",
+				"repo1-s3-endpoint         = s3.us-east-1.amazonaws.com",
+				"repo1-s3-key-type         = auto",
+				"repo1-s3-region           = us-east-1",
+				"repo1-type                = s3",
+				"start-fast                = y",
+				"",
+				"[db]",
+				"pg1-host-user = pgedge-db",
+				"pg1-path      = /opt/pgedge/data",
+				"pg1-user      = pgedge",
+				"",
+			},
+		},
+		{
+			name: "s3 shared",
+			opts: pgbackrest.ConfigOptions{
+				DatabaseID: uuid.MustParse("706fd161-8df5-4ddd-b25a-f85d8b7bb033"),
+				NodeName:   "n1",
+				PgDataPath: "/opt/pgedge/data",
+				HostUser:   "pgedge-db",
+				User:       "pgedge",
+				Repositories: []*database.BackupRepository{
+					{
+						ID:                "0c28ad6e-233b-4ca7-ae60-4214e3a5356d",
+						Type:              database.BackupRepositoryTypeS3,
+						S3Bucket:          "backups",
+						S3Endpoint:        "minio.cluster.local",
+						S3Key:             "minio-key",
+						S3KeySecret:       "minio-secret",
+						BasePath:          "/backups",
+						RetentionFullType: database.RetentionFullTypeCount,
+						RetentionFull:     5,
+					},
+				},
+			},
+			expectedLines: []string{
+				"[global]",
+				"log-level-console         = info",
+				"repo1-cipher-type         = none",
+				"repo1-path                = /backups/databases/706fd161-8df5-4ddd-b25a-f85d8b7bb033/0c28ad6e-233b-4ca7-ae60-4214e3a5356d/n1",
+				"repo1-retention-full      = 5",
+				"repo1-retention-full-type = count",
+				"repo1-s3-bucket           = backups",
+				"repo1-s3-endpoint         = minio.cluster.local",
+				"repo1-s3-key              = minio-key",
+				"repo1-s3-key-secret       = minio-secret",
+				"repo1-s3-key-type         = shared",
+				"repo1-type                = s3",
+				"start-fast                = y",
+				"",
+				"[db]",
+				"pg1-host-user = pgedge-db",
+				"pg1-path      = /opt/pgedge/data",
+				"pg1-user      = pgedge",
+				"",
+			},
+		},
+		{
+			name: "s3 custom",
+			opts: pgbackrest.ConfigOptions{
+				DatabaseID: uuid.MustParse("706fd161-8df5-4ddd-b25a-f85d8b7bb033"),
+				NodeName:   "n1",
+				PgDataPath: "/opt/pgedge/data",
+				HostUser:   "pgedge-db",
+				User:       "pgedge",
+				Repositories: []*database.BackupRepository{
+					{
+						ID:       "0c28ad6e-233b-4ca7-ae60-4214e3a5356d",
+						Type:     database.BackupRepositoryTypeS3,
+						S3Bucket: "backups",
+						S3Region: "us-east-1",
+						CustomOptions: map[string]string{
+							"cipher-type": "aes-256-cbc",
+							// The repo9 prefix will be sanitized when we're computing the key.
+							"repo9-cipher-pass": "zWaf6XtpjIVZC5444yXB+cgFDFl7MxGlgkZSaoPvTGirhPygu4jOKOXf9LO4vjfO",
+						},
+					},
+				},
+			},
+			expectedLines: []string{
+				"[global]",
+				"log-level-console         = info",
+				"repo1-cipher-pass         = zWaf6XtpjIVZC5444yXB+cgFDFl7MxGlgkZSaoPvTGirhPygu4jOKOXf9LO4vjfO",
+				"repo1-cipher-type         = aes-256-cbc",
+				"repo1-path                = /databases/706fd161-8df5-4ddd-b25a-f85d8b7bb033/0c28ad6e-233b-4ca7-ae60-4214e3a5356d/n1",
+				"repo1-retention-full      = 7",
+				"repo1-retention-full-type = time",
+				"repo1-s3-bucket           = backups",
+				"repo1-s3-endpoint         = s3.us-east-1.amazonaws.com",
+				"repo1-s3-key-type         = auto",
+				"repo1-s3-region           = us-east-1",
+				"repo1-type                = s3",
+				"start-fast                = y",
+				"",
+				"[db]",
+				"pg1-host-user = pgedge-db",
+				"pg1-path      = /opt/pgedge/data",
+				"pg1-user      = pgedge",
+				"",
+			},
+		},
+		{
+			name: "s3 multi",
+			opts: pgbackrest.ConfigOptions{
+				DatabaseID: uuid.MustParse("706fd161-8df5-4ddd-b25a-f85d8b7bb033"),
+				NodeName:   "n1",
+				PgDataPath: "/opt/pgedge/data",
+				HostUser:   "pgedge-db",
+				User:       "pgedge",
+				Repositories: []*database.BackupRepository{
+					{
+						ID:       "time-retention",
+						Type:     database.BackupRepositoryTypeS3,
+						S3Bucket: "backups",
+						S3Region: "us-east-1",
+					},
+					{
+						ID:                "count-retention",
+						Type:              database.BackupRepositoryTypeS3,
+						S3Bucket:          "backups",
+						S3Region:          "us-east-1",
+						RetentionFullType: database.RetentionFullTypeCount,
+						RetentionFull:     30,
+					},
+				},
+			},
+			expectedLines: []string{
+				"[global]",
+				"log-level-console         = info",
+				"repo1-cipher-type         = none",
+				"repo1-path                = /databases/706fd161-8df5-4ddd-b25a-f85d8b7bb033/time-retention/n1",
+				"repo1-retention-full      = 7",
+				"repo1-retention-full-type = time",
+				"repo1-s3-bucket           = backups",
+				"repo1-s3-endpoint         = s3.us-east-1.amazonaws.com",
+				"repo1-s3-key-type         = auto",
+				"repo1-s3-region           = us-east-1",
+				"repo1-type                = s3",
+				"repo2-cipher-type         = none",
+				"repo2-path                = /databases/706fd161-8df5-4ddd-b25a-f85d8b7bb033/count-retention/n1",
+				"repo2-retention-full      = 30",
+				"repo2-retention-full-type = count",
+				"repo2-s3-bucket           = backups",
+				"repo2-s3-endpoint         = s3.us-east-1.amazonaws.com",
+				"repo2-s3-key-type         = auto",
+				"repo2-s3-region           = us-east-1",
+				"repo2-type                = s3",
+				"start-fast                = y",
+				"",
+				"[db]",
+				"pg1-host-user = pgedge-db",
+				"pg1-path      = /opt/pgedge/data",
+				"pg1-user      = pgedge",
+				"",
+			},
+		},
+		{
+			name: "gcs auto",
+			opts: pgbackrest.ConfigOptions{
+				DatabaseID: uuid.MustParse("706fd161-8df5-4ddd-b25a-f85d8b7bb033"),
+				NodeName:   "n1",
+				PgDataPath: "/opt/pgedge/data",
+				HostUser:   "pgedge-db",
+				User:       "pgedge",
+				Repositories: []*database.BackupRepository{
+					{
+						ID:        "0c28ad6e-233b-4ca7-ae60-4214e3a5356d",
+						Type:      database.BackupRepositoryTypeGCS,
+						GCSBucket: "backups",
+					},
+				},
+			},
+			expectedLines: []string{
+				"[global]",
+				"log-level-console         = info",
+				"repo1-cipher-type         = none",
+				"repo1-gcs-bucket          = backups",
+				"repo1-gcs-endpoint        = storage.googleapis.com",
+				"repo1-gcs-key-type        = auto",
+				"repo1-path                = /databases/706fd161-8df5-4ddd-b25a-f85d8b7bb033/0c28ad6e-233b-4ca7-ae60-4214e3a5356d/n1",
+				"repo1-retention-full      = 7",
+				"repo1-retention-full-type = time",
+				"repo1-type                = gcs",
+				"start-fast                = y",
+				"",
+				"[db]",
+				"pg1-host-user = pgedge-db",
+				"pg1-path      = /opt/pgedge/data",
+				"pg1-user      = pgedge",
+				"",
+			},
+		},
+		{
+			name: "gcs shared",
+			opts: pgbackrest.ConfigOptions{
+				DatabaseID: uuid.MustParse("706fd161-8df5-4ddd-b25a-f85d8b7bb033"),
+				NodeName:   "n1",
+				PgDataPath: "/opt/pgedge/data",
+				HostUser:   "pgedge-db",
+				User:       "pgedge",
+				Repositories: []*database.BackupRepository{
+					{
+						ID:        "0c28ad6e-233b-4ca7-ae60-4214e3a5356d",
+						Type:      database.BackupRepositoryTypeGCS,
+						GCSBucket: "backups",
+						GCSKey:    "gcs-key",
+					},
+				},
+			},
+			expectedLines: []string{
+				"[global]",
+				"log-level-console         = info",
+				"repo1-cipher-type         = none",
+				"repo1-gcs-bucket          = backups",
+				"repo1-gcs-endpoint        = storage.googleapis.com",
+				"repo1-gcs-key             = gcs-key",
+				"repo1-gcs-key-type        = shared",
+				"repo1-path                = /databases/706fd161-8df5-4ddd-b25a-f85d8b7bb033/0c28ad6e-233b-4ca7-ae60-4214e3a5356d/n1",
+				"repo1-retention-full      = 7",
+				"repo1-retention-full-type = time",
+				"repo1-type                = gcs",
+				"start-fast                = y",
+				"",
+				"[db]",
+				"pg1-host-user = pgedge-db",
+				"pg1-path      = /opt/pgedge/data",
+				"pg1-user      = pgedge",
+				"",
+			},
+		},
+		{
+			name: "azure auto",
+			opts: pgbackrest.ConfigOptions{
+				DatabaseID: uuid.MustParse("706fd161-8df5-4ddd-b25a-f85d8b7bb033"),
+				NodeName:   "n1",
+				PgDataPath: "/opt/pgedge/data",
+				HostUser:   "pgedge-db",
+				User:       "pgedge",
+				Repositories: []*database.BackupRepository{
+					{
+						ID:             "0c28ad6e-233b-4ca7-ae60-4214e3a5356d",
+						Type:           database.BackupRepositoryTypeAzure,
+						AzureAccount:   "backups-account",
+						AzureContainer: "backups",
+					},
+				},
+			},
+			expectedLines: []string{
+				"[global]",
+				"log-level-console         = info",
+				"repo1-azure-account       = backups-account",
+				"repo1-azure-container     = backups",
+				"repo1-azure-endpoint      = blob.core.windows.net",
+				"repo1-azure-key-type      = auto",
+				"repo1-azure-uri-style     = host",
+				"repo1-cipher-type         = none",
+				"repo1-path                = /databases/706fd161-8df5-4ddd-b25a-f85d8b7bb033/0c28ad6e-233b-4ca7-ae60-4214e3a5356d/n1",
+				"repo1-retention-full      = 7",
+				"repo1-retention-full-type = time",
+				"repo1-type                = azure",
+				"start-fast                = y",
+				"",
+				"[db]",
+				"pg1-host-user = pgedge-db",
+				"pg1-path      = /opt/pgedge/data",
+				"pg1-user      = pgedge",
+				"",
+			},
+		},
+		{
+			name: "azure shared",
+			opts: pgbackrest.ConfigOptions{
+				DatabaseID: uuid.MustParse("706fd161-8df5-4ddd-b25a-f85d8b7bb033"),
+				NodeName:   "n1",
+				PgDataPath: "/opt/pgedge/data",
+				HostUser:   "pgedge-db",
+				User:       "pgedge",
+				Repositories: []*database.BackupRepository{
+					{
+						ID:             "0c28ad6e-233b-4ca7-ae60-4214e3a5356d",
+						Type:           database.BackupRepositoryTypeAzure,
+						AzureAccount:   "backups-account",
+						AzureContainer: "backups",
+						AzureKey:       "azure-key",
+					},
+				},
+			},
+			expectedLines: []string{
+				"[global]",
+				"log-level-console         = info",
+				"repo1-azure-account       = backups-account",
+				"repo1-azure-container     = backups",
+				"repo1-azure-endpoint      = blob.core.windows.net",
+				"repo1-azure-key           = azure-key",
+				"repo1-azure-key-type      = shared",
+				"repo1-azure-uri-style     = host",
+				"repo1-cipher-type         = none",
+				"repo1-path                = /databases/706fd161-8df5-4ddd-b25a-f85d8b7bb033/0c28ad6e-233b-4ca7-ae60-4214e3a5356d/n1",
+				"repo1-retention-full      = 7",
+				"repo1-retention-full-type = time",
+				"repo1-type                = azure",
+				"start-fast                = y",
+				"",
+				"[db]",
+				"pg1-host-user = pgedge-db",
+				"pg1-path      = /opt/pgedge/data",
+				"pg1-user      = pgedge",
+				"",
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var b strings.Builder
+			err := pgbackrest.WriteConfig(&b, tc.opts)
+			assert.NoError(t, err)
+			assert.Equal(t, strings.Join(tc.expectedLines, "\n"), b.String())
+		})
+	}
+}

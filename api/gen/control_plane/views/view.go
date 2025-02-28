@@ -198,11 +198,19 @@ type BackupRepositorySpecView struct {
 	S3Region *string
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
 	S3Endpoint *string
+	// An optional AWS access key ID to use for this repository. If not provided,
+	// pgbackrest will use the default credential provider chain.
+	S3Key *string
+	// The corresponding secret for the AWS access key ID in s3_key.
+	S3KeySecret *string
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
 	GcsEndpoint *string
+	// Optional base64-encoded private key data. If omitted, pgbackrest will use
+	// the service account attached to the instance profile.
+	GcsKey *string
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string
 	// The Azure container name for this repository. Only applies when type =
@@ -211,6 +219,9 @@ type BackupRepositorySpecView struct {
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
 	AzureEndpoint *string
+	// An optional Azure storage account access key to use for this repository. If
+	// not provided, pgbackrest will use the VM's managed identity.
+	AzureKey *string
 	// The count of full backups to retain or the time to retain full backups.
 	RetentionFull *int
 	// The type of measure used for retention_full.
@@ -249,8 +260,13 @@ type DatabaseUserSpecView struct {
 type RestoreConfigSpecView struct {
 	// The backup provider for this restore configuration.
 	Provider *string
+	// The ID of the database to restore this database from.
+	DatabaseID *string
 	// The name of the node to restore this database from.
 	NodeName *string
+	// The name of the database in this repository. This database will be renamed
+	// to the database_name in the DatabaseSpec.
+	DatabaseName *string
 	// The repository to restore this database from.
 	Repository *RestoreRepositorySpecView
 }
@@ -269,11 +285,19 @@ type RestoreRepositorySpecView struct {
 	S3Region *string
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
 	S3Endpoint *string
+	// An optional AWS access key ID to use for this repository. If not provided,
+	// pgbackrest will use the default credential provider chain.
+	S3Key *string
+	// The corresponding secret for the AWS access key ID in s3_key.
+	S3KeySecret *string
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
 	GcsEndpoint *string
+	// Optional base64-encoded private key data. If omitted, pgbackrest will use
+	// the service account attached to the instance profile.
+	GcsKey *string
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string
 	// The Azure container name for this repository. Only applies when type =
@@ -282,6 +306,9 @@ type RestoreRepositorySpecView struct {
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
 	AzureEndpoint *string
+	// An optional Azure storage account access key to use for this repository. If
+	// not provided, pgbackrest will use the VM's managed identity.
+	AzureKey *string
 	// The base path within the repository where backups are stored.
 	BasePath *string
 	// Additional options to apply to this repository.
@@ -808,8 +835,14 @@ func ValidateRestoreConfigSpecView(result *RestoreConfigSpecView) (err error) {
 	if result.Provider == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("provider", "result"))
 	}
+	if result.DatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "result"))
+	}
 	if result.NodeName == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("node_name", "result"))
+	}
+	if result.DatabaseName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_name", "result"))
 	}
 	if result.Repository == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "result"))

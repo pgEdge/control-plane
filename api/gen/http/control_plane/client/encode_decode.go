@@ -1524,11 +1524,15 @@ func unmarshalBackupRepositorySpecResponseToControlplaneviewsBackupRepositorySpe
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
 		S3Endpoint:        v.S3Endpoint,
+		S3Key:             v.S3Key,
+		S3KeySecret:       v.S3KeySecret,
 		GcsBucket:         v.GcsBucket,
 		GcsEndpoint:       v.GcsEndpoint,
+		GcsKey:            v.GcsKey,
 		AzureAccount:      v.AzureAccount,
 		AzureContainer:    v.AzureContainer,
 		AzureEndpoint:     v.AzureEndpoint,
+		AzureKey:          v.AzureKey,
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
@@ -1597,8 +1601,10 @@ func unmarshalRestoreConfigSpecResponseToControlplaneviewsRestoreConfigSpecView(
 		return nil
 	}
 	res := &controlplaneviews.RestoreConfigSpecView{
-		Provider: v.Provider,
-		NodeName: v.NodeName,
+		Provider:     v.Provider,
+		DatabaseID:   v.DatabaseID,
+		NodeName:     v.NodeName,
+		DatabaseName: v.DatabaseName,
 	}
 	res.Repository = unmarshalRestoreRepositorySpecResponseToControlplaneviewsRestoreRepositorySpecView(v.Repository)
 
@@ -1615,11 +1621,15 @@ func unmarshalRestoreRepositorySpecResponseToControlplaneviewsRestoreRepositoryS
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
 		S3Endpoint:     v.S3Endpoint,
+		S3Key:          v.S3Key,
+		S3KeySecret:    v.S3KeySecret,
 		GcsBucket:      v.GcsBucket,
 		GcsEndpoint:    v.GcsEndpoint,
+		GcsKey:         v.GcsKey,
 		AzureAccount:   v.AzureAccount,
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
+		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
 	}
 	if v.CustomOptions != nil {
@@ -1767,11 +1777,15 @@ func marshalControlplaneBackupRepositorySpecToBackupRepositorySpecRequestBody(v 
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
 		S3Endpoint:        v.S3Endpoint,
+		S3Key:             v.S3Key,
+		S3KeySecret:       v.S3KeySecret,
 		GcsBucket:         v.GcsBucket,
 		GcsEndpoint:       v.GcsEndpoint,
+		GcsKey:            v.GcsKey,
 		AzureAccount:      v.AzureAccount,
 		AzureContainer:    v.AzureContainer,
 		AzureEndpoint:     v.AzureEndpoint,
+		AzureKey:          v.AzureKey,
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
@@ -1840,8 +1854,10 @@ func marshalControlplaneRestoreConfigSpecToRestoreConfigSpecRequestBody(v *contr
 		return nil
 	}
 	res := &RestoreConfigSpecRequestBody{
-		Provider: v.Provider,
-		NodeName: v.NodeName,
+		Provider:     v.Provider,
+		DatabaseID:   v.DatabaseID,
+		NodeName:     v.NodeName,
+		DatabaseName: v.DatabaseName,
 	}
 	if v.Repository != nil {
 		res.Repository = marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecRequestBody(v.Repository)
@@ -1860,11 +1876,15 @@ func marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecRequestBody(
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
 		S3Endpoint:     v.S3Endpoint,
+		S3Key:          v.S3Key,
+		S3KeySecret:    v.S3KeySecret,
 		GcsBucket:      v.GcsBucket,
 		GcsEndpoint:    v.GcsEndpoint,
+		GcsKey:         v.GcsKey,
 		AzureAccount:   v.AzureAccount,
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
+		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
 	}
 	if v.CustomOptions != nil {
@@ -2012,11 +2032,15 @@ func marshalBackupRepositorySpecRequestBodyToControlplaneBackupRepositorySpec(v 
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
 		S3Endpoint:        v.S3Endpoint,
+		S3Key:             v.S3Key,
+		S3KeySecret:       v.S3KeySecret,
 		GcsBucket:         v.GcsBucket,
 		GcsEndpoint:       v.GcsEndpoint,
+		GcsKey:            v.GcsKey,
 		AzureAccount:      v.AzureAccount,
 		AzureContainer:    v.AzureContainer,
 		AzureEndpoint:     v.AzureEndpoint,
+		AzureKey:          v.AzureKey,
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
@@ -2085,8 +2109,10 @@ func marshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec(v *Resto
 		return nil
 	}
 	res := &controlplane.RestoreConfigSpec{
-		Provider: v.Provider,
-		NodeName: v.NodeName,
+		Provider:     v.Provider,
+		DatabaseID:   v.DatabaseID,
+		NodeName:     v.NodeName,
+		DatabaseName: v.DatabaseName,
 	}
 	if v.Repository != nil {
 		res.Repository = marshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpec(v.Repository)
@@ -2105,11 +2131,15 @@ func marshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpec(
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
 		S3Endpoint:     v.S3Endpoint,
+		S3Key:          v.S3Key,
+		S3KeySecret:    v.S3KeySecret,
 		GcsBucket:      v.GcsBucket,
 		GcsEndpoint:    v.GcsEndpoint,
+		GcsKey:         v.GcsKey,
 		AzureAccount:   v.AzureAccount,
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
+		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
 	}
 	if v.CustomOptions != nil {
@@ -2266,11 +2296,15 @@ func unmarshalBackupRepositorySpecResponseBodyToControlplaneviewsBackupRepositor
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
 		S3Endpoint:        v.S3Endpoint,
+		S3Key:             v.S3Key,
+		S3KeySecret:       v.S3KeySecret,
 		GcsBucket:         v.GcsBucket,
 		GcsEndpoint:       v.GcsEndpoint,
+		GcsKey:            v.GcsKey,
 		AzureAccount:      v.AzureAccount,
 		AzureContainer:    v.AzureContainer,
 		AzureEndpoint:     v.AzureEndpoint,
+		AzureKey:          v.AzureKey,
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
@@ -2339,8 +2373,10 @@ func unmarshalRestoreConfigSpecResponseBodyToControlplaneviewsRestoreConfigSpecV
 		return nil
 	}
 	res := &controlplaneviews.RestoreConfigSpecView{
-		Provider: v.Provider,
-		NodeName: v.NodeName,
+		Provider:     v.Provider,
+		DatabaseID:   v.DatabaseID,
+		NodeName:     v.NodeName,
+		DatabaseName: v.DatabaseName,
 	}
 	res.Repository = unmarshalRestoreRepositorySpecResponseBodyToControlplaneviewsRestoreRepositorySpecView(v.Repository)
 
@@ -2357,11 +2393,15 @@ func unmarshalRestoreRepositorySpecResponseBodyToControlplaneviewsRestoreReposit
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
 		S3Endpoint:     v.S3Endpoint,
+		S3Key:          v.S3Key,
+		S3KeySecret:    v.S3KeySecret,
 		GcsBucket:      v.GcsBucket,
 		GcsEndpoint:    v.GcsEndpoint,
+		GcsKey:         v.GcsKey,
 		AzureAccount:   v.AzureAccount,
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
+		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
 	}
 	if v.CustomOptions != nil {
@@ -2509,11 +2549,15 @@ func marshalControlplaneBackupRepositorySpecToBackupRepositorySpecRequestBodyReq
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
 		S3Endpoint:        v.S3Endpoint,
+		S3Key:             v.S3Key,
+		S3KeySecret:       v.S3KeySecret,
 		GcsBucket:         v.GcsBucket,
 		GcsEndpoint:       v.GcsEndpoint,
+		GcsKey:            v.GcsKey,
 		AzureAccount:      v.AzureAccount,
 		AzureContainer:    v.AzureContainer,
 		AzureEndpoint:     v.AzureEndpoint,
+		AzureKey:          v.AzureKey,
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
@@ -2582,8 +2626,10 @@ func marshalControlplaneRestoreConfigSpecToRestoreConfigSpecRequestBodyRequestBo
 		return nil
 	}
 	res := &RestoreConfigSpecRequestBodyRequestBody{
-		Provider: v.Provider,
-		NodeName: v.NodeName,
+		Provider:     v.Provider,
+		DatabaseID:   v.DatabaseID,
+		NodeName:     v.NodeName,
+		DatabaseName: v.DatabaseName,
 	}
 	if v.Repository != nil {
 		res.Repository = marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecRequestBodyRequestBody(v.Repository)
@@ -2602,11 +2648,15 @@ func marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecRequestBodyR
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
 		S3Endpoint:     v.S3Endpoint,
+		S3Key:          v.S3Key,
+		S3KeySecret:    v.S3KeySecret,
 		GcsBucket:      v.GcsBucket,
 		GcsEndpoint:    v.GcsEndpoint,
+		GcsKey:         v.GcsKey,
 		AzureAccount:   v.AzureAccount,
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
+		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
 	}
 	if v.CustomOptions != nil {
@@ -2754,11 +2804,15 @@ func marshalBackupRepositorySpecRequestBodyRequestBodyToControlplaneBackupReposi
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
 		S3Endpoint:        v.S3Endpoint,
+		S3Key:             v.S3Key,
+		S3KeySecret:       v.S3KeySecret,
 		GcsBucket:         v.GcsBucket,
 		GcsEndpoint:       v.GcsEndpoint,
+		GcsKey:            v.GcsKey,
 		AzureAccount:      v.AzureAccount,
 		AzureContainer:    v.AzureContainer,
 		AzureEndpoint:     v.AzureEndpoint,
+		AzureKey:          v.AzureKey,
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
@@ -2827,8 +2881,10 @@ func marshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSp
 		return nil
 	}
 	res := &controlplane.RestoreConfigSpec{
-		Provider: v.Provider,
-		NodeName: v.NodeName,
+		Provider:     v.Provider,
+		DatabaseID:   v.DatabaseID,
+		NodeName:     v.NodeName,
+		DatabaseName: v.DatabaseName,
 	}
 	if v.Repository != nil {
 		res.Repository = marshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRepositorySpec(v.Repository)
@@ -2847,11 +2903,15 @@ func marshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRepo
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
 		S3Endpoint:     v.S3Endpoint,
+		S3Key:          v.S3Key,
+		S3KeySecret:    v.S3KeySecret,
 		GcsBucket:      v.GcsBucket,
 		GcsEndpoint:    v.GcsEndpoint,
+		GcsKey:         v.GcsKey,
 		AzureAccount:   v.AzureAccount,
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
+		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
 	}
 	if v.CustomOptions != nil {

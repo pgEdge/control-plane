@@ -795,11 +795,19 @@ type BackupRepositorySpecResponseBody struct {
 	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
 	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	// An optional AWS access key ID to use for this repository. If not provided,
+	// pgbackrest will use the default credential provider chain.
+	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	// The corresponding secret for the AWS access key ID in s3_key.
+	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
 	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	// Optional base64-encoded private key data. If omitted, pgbackrest will use
+	// the service account attached to the instance profile.
+	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
 	// The Azure container name for this repository. Only applies when type =
@@ -808,6 +816,9 @@ type BackupRepositorySpecResponseBody struct {
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	// An optional Azure storage account access key to use for this repository. If
+	// not provided, pgbackrest will use the VM's managed identity.
+	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
 	// The count of full backups to retain or the time to retain full backups.
 	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
 	// The type of measure used for retention_full.
@@ -848,8 +859,13 @@ type DatabaseUserSpecResponseBody struct {
 type RestoreConfigSpecResponseBody struct {
 	// The backup provider for this restore configuration.
 	Provider string `form:"provider" json:"provider" xml:"provider"`
+	// The ID of the database to restore this database from.
+	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
 	// The name of the node to restore this database from.
 	NodeName string `form:"node_name" json:"node_name" xml:"node_name"`
+	// The name of the database in this repository. This database will be renamed
+	// to the database_name in the DatabaseSpec.
+	DatabaseName string `form:"database_name" json:"database_name" xml:"database_name"`
 	// The repository to restore this database from.
 	Repository *RestoreRepositorySpecResponseBody `form:"repository" json:"repository" xml:"repository"`
 }
@@ -868,11 +884,19 @@ type RestoreRepositorySpecResponseBody struct {
 	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
 	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	// An optional AWS access key ID to use for this repository. If not provided,
+	// pgbackrest will use the default credential provider chain.
+	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	// The corresponding secret for the AWS access key ID in s3_key.
+	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
 	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	// Optional base64-encoded private key data. If omitted, pgbackrest will use
+	// the service account attached to the instance profile.
+	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
 	// The Azure container name for this repository. Only applies when type =
@@ -881,6 +905,9 @@ type RestoreRepositorySpecResponseBody struct {
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	// An optional Azure storage account access key to use for this repository. If
+	// not provided, pgbackrest will use the VM's managed identity.
+	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
 	// The base path within the repository where backups are stored.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
 	// Additional options to apply to this repository.
@@ -991,11 +1018,19 @@ type BackupRepositorySpecRequestBody struct {
 	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
 	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	// An optional AWS access key ID to use for this repository. If not provided,
+	// pgbackrest will use the default credential provider chain.
+	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	// The corresponding secret for the AWS access key ID in s3_key.
+	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
 	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	// Optional base64-encoded private key data. If omitted, pgbackrest will use
+	// the service account attached to the instance profile.
+	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
 	// The Azure container name for this repository. Only applies when type =
@@ -1004,6 +1039,9 @@ type BackupRepositorySpecRequestBody struct {
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	// An optional Azure storage account access key to use for this repository. If
+	// not provided, pgbackrest will use the VM's managed identity.
+	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
 	// The count of full backups to retain or the time to retain full backups.
 	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
 	// The type of measure used for retention_full.
@@ -1042,8 +1080,13 @@ type DatabaseUserSpecRequestBody struct {
 type RestoreConfigSpecRequestBody struct {
 	// The backup provider for this restore configuration.
 	Provider *string `form:"provider,omitempty" json:"provider,omitempty" xml:"provider,omitempty"`
+	// The ID of the database to restore this database from.
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
 	// The name of the node to restore this database from.
 	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The name of the database in this repository. This database will be renamed
+	// to the database_name in the DatabaseSpec.
+	DatabaseName *string `form:"database_name,omitempty" json:"database_name,omitempty" xml:"database_name,omitempty"`
 	// The repository to restore this database from.
 	Repository *RestoreRepositorySpecRequestBody `form:"repository,omitempty" json:"repository,omitempty" xml:"repository,omitempty"`
 }
@@ -1062,11 +1105,19 @@ type RestoreRepositorySpecRequestBody struct {
 	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
 	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	// An optional AWS access key ID to use for this repository. If not provided,
+	// pgbackrest will use the default credential provider chain.
+	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	// The corresponding secret for the AWS access key ID in s3_key.
+	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
 	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	// Optional base64-encoded private key data. If omitted, pgbackrest will use
+	// the service account attached to the instance profile.
+	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
 	// The Azure container name for this repository. Only applies when type =
@@ -1075,6 +1126,9 @@ type RestoreRepositorySpecRequestBody struct {
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	// An optional Azure storage account access key to use for this repository. If
+	// not provided, pgbackrest will use the VM's managed identity.
+	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
 	// The base path within the repository where backups are stored.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
 	// Additional options to apply to this repository.
@@ -1188,11 +1242,19 @@ type BackupRepositorySpecRequestBodyRequestBody struct {
 	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
 	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	// An optional AWS access key ID to use for this repository. If not provided,
+	// pgbackrest will use the default credential provider chain.
+	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	// The corresponding secret for the AWS access key ID in s3_key.
+	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
 	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	// Optional base64-encoded private key data. If omitted, pgbackrest will use
+	// the service account attached to the instance profile.
+	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
 	// The Azure container name for this repository. Only applies when type =
@@ -1201,6 +1263,9 @@ type BackupRepositorySpecRequestBodyRequestBody struct {
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	// An optional Azure storage account access key to use for this repository. If
+	// not provided, pgbackrest will use the VM's managed identity.
+	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
 	// The count of full backups to retain or the time to retain full backups.
 	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
 	// The type of measure used for retention_full.
@@ -1242,8 +1307,13 @@ type DatabaseUserSpecRequestBodyRequestBody struct {
 type RestoreConfigSpecRequestBodyRequestBody struct {
 	// The backup provider for this restore configuration.
 	Provider *string `form:"provider,omitempty" json:"provider,omitempty" xml:"provider,omitempty"`
+	// The ID of the database to restore this database from.
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
 	// The name of the node to restore this database from.
 	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The name of the database in this repository. This database will be renamed
+	// to the database_name in the DatabaseSpec.
+	DatabaseName *string `form:"database_name,omitempty" json:"database_name,omitempty" xml:"database_name,omitempty"`
 	// The repository to restore this database from.
 	Repository *RestoreRepositorySpecRequestBodyRequestBody `form:"repository,omitempty" json:"repository,omitempty" xml:"repository,omitempty"`
 }
@@ -1262,11 +1332,19 @@ type RestoreRepositorySpecRequestBodyRequestBody struct {
 	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
 	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	// An optional AWS access key ID to use for this repository. If not provided,
+	// pgbackrest will use the default credential provider chain.
+	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	// The corresponding secret for the AWS access key ID in s3_key.
+	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
 	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	// Optional base64-encoded private key data. If omitted, pgbackrest will use
+	// the service account attached to the instance profile.
+	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
 	// The Azure container name for this repository. Only applies when type =
@@ -1275,6 +1353,9 @@ type RestoreRepositorySpecRequestBodyRequestBody struct {
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	// An optional Azure storage account access key to use for this repository. If
+	// not provided, pgbackrest will use the VM's managed identity.
+	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
 	// The base path within the repository where backups are stored.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
 	// Additional options to apply to this repository.
@@ -2007,8 +2088,14 @@ func ValidateRestoreConfigSpecRequestBody(body *RestoreConfigSpecRequestBody) (e
 	if body.Provider == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("provider", "body"))
 	}
+	if body.DatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	}
 	if body.NodeName == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("node_name", "body"))
+	}
+	if body.DatabaseName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_name", "body"))
 	}
 	if body.Repository == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
@@ -2202,8 +2289,14 @@ func ValidateRestoreConfigSpecRequestBodyRequestBody(body *RestoreConfigSpecRequ
 	if body.Provider == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("provider", "body"))
 	}
+	if body.DatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	}
 	if body.NodeName == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("node_name", "body"))
+	}
+	if body.DatabaseName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_name", "body"))
 	}
 	if body.Repository == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))

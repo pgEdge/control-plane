@@ -1,21 +1,26 @@
 package swarm
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
 
 	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/docker/docker/api/types/network"
 	"github.com/google/uuid"
+
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/docker"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
+	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities/general"
 )
 
@@ -67,16 +72,6 @@ func (a *Activities) WriteInstanceConfigs(ctx context.Context, input *WriteInsta
 	if err := input.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input: %w", err)
 	}
-
-	// paths := HostPathsFor(cfg, input.Spec)
-
-	// // path := filepath.Join(cfg.DataDir, input.Name)
-	// if err := a.Fs.MkdirAll(input.HostPaths.Configs.Dir, 0o700); err != nil {
-	// 	return fmt.Errorf("failed to make configs directory: %w", err)
-	// }
-	// if err := a.Fs.MkdirAll(input.HostPaths.Certificates.Dir, 0o700); err != nil {
-	// 	return fmt.Errorf("failed to make configs directory: %w", err)
-	// }
 
 	etcdCreds, err := a.Etcd.AddInstanceUser(ctx, etcd.InstanceUserOptions{
 		InstanceID: input.Spec.InstanceID,
@@ -181,37 +176,6 @@ func (a *Activities) WriteInstanceConfigs(ctx context.Context, input *WriteInsta
 		return nil, fmt.Errorf("failed to create postgres certificates directory: %w", err)
 	}
 
-	// err = afero.WriteFile(a.Fs, input.HostPaths.Certificates.CACert, a.CertService.CACert(), 0o644)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to write CA certificate: %w", err)
-	// }
-	// err = afero.WriteFile(a.Fs, input.HostPaths.Certificates.ServerCert, serverPrincipal.CertPEM, 0o600)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to write server cert: %w", err)
-	// }
-	// err = afero.WriteFile(a.Fs, input.HostPaths.Certificates.ServerKey, serverPrincipal.KeyPEM, 0o600)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to write server cert: %w", err)
-	// }
-
-	// err = afero.WriteFile(a.Fs, input.HostPaths.Certificates.SuperuserCert, superuserPrincipal.CertPEM, 0o600)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to write superuser cert: %w", err)
-	// }
-	// err = afero.WriteFile(a.Fs, input.HostPaths.Certificates.SuperuserKey, superuserPrincipal.KeyPEM, 0o600)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to write superuser key: %w", err)
-	// }
-
-	// err = afero.WriteFile(a.Fs, input.HostPaths.Certificates.PatroniReplicatorCert, replicatorPrincipal.CertPEM, 0o600)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to write replicator cert: %w", err)
-	// }
-	// err = afero.WriteFile(a.Fs, input.HostPaths.Certificates.PatroniReplicatorKey, replicatorPrincipal.KeyPEM, 0o600)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to write replicator key: %w", err)
-	// }
-
 	// Using the default bridge network to avoid this issue:
 	// https://github.com/moby/moby/issues/37087
 	bridge, err := a.Docker.NetworkInspect(ctx, "bridge", network.InspectOptions{
@@ -256,26 +220,91 @@ func (a *Activities) WriteInstanceConfigs(ctx context.Context, input *WriteInsta
 		Children: []filesystem.TreeNode{
 			&filesystem.File{
 				Path:     "patroni.yaml",
-				Mode:     0o644,
+				Mode:     0o600,
 				Contents: patroniYaml,
 				Owner:    &filesystem.Owner{User: input.Owner.User, Group: input.Owner.Group},
 			},
 		},
 	}
+	if input.Spec.BackupConfig != nil && input.Spec.BackupConfig.Provider == database.BackupProviderPgBackrest {
+		// GCS keys are provided as base64-encoded strings, but pgBackRest
+		// expects them as files. We need to decode them, write them to disk,
+		// and replace the key with a filepath.
+		for idx, repo := range input.Spec.BackupConfig.Repositories {
+			if repo.Type == database.BackupRepositoryTypeGCS && repo.GCSKey != "" {
+				keyFile, err := gcsKeyFile(idx, input.Spec.RestoreConfig.Repository.GCSKey, input.Owner)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create GCS key file: %w", err)
+				}
+				configs.Children = append(configs.Children, keyFile)
+				input.Spec.BackupConfig.Repositories[idx].GCSKey = filepath.Join("/opt/pgedge/configs", keyFile.Path)
+			}
+		}
+
+		var b bytes.Buffer
+		if err := pgbackrest.WriteConfig(&b, pgbackrest.ConfigOptions{
+			Repositories: input.Spec.BackupConfig.Repositories,
+			DatabaseID:   input.Spec.DatabaseID,
+			NodeName:     input.Spec.NodeName,
+			PgDataPath:   "/opt/pgedge/data",
+			HostUser:     "pgedge",
+			User:         "pgedge",
+		}); err != nil {
+			return nil, fmt.Errorf("failed to generate pgBackRest backup configuration: %w", err)
+		}
+		configs.Children = append(configs.Children, &filesystem.File{
+			Path:     "pgbackrest.backup.conf",
+			Mode:     0o600,
+			Contents: b.Bytes(),
+			Owner:    &filesystem.Owner{User: input.Owner.User, Group: input.Owner.Group},
+		})
+	}
+	if input.Spec.RestoreConfig != nil && input.Spec.RestoreConfig.Provider == database.BackupProviderPgBackrest {
+		if input.Spec.RestoreConfig.Repository.Type == database.BackupRepositoryTypeGCS && input.Spec.RestoreConfig.Repository.GCSKey != "" {
+			keyFile, err := gcsKeyFile(0, input.Spec.RestoreConfig.Repository.GCSKey, input.Owner)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create GCS key file: %w", err)
+			}
+			configs.Children = append(configs.Children, keyFile)
+			input.Spec.RestoreConfig.Repository.GCSKey = filepath.Join("/opt/pgedge/configs", keyFile.Path)
+		}
+
+		var b bytes.Buffer
+		if err := pgbackrest.WriteConfig(&b, pgbackrest.ConfigOptions{
+			Repositories: []*database.BackupRepository{&input.Spec.RestoreConfig.Repository},
+			DatabaseID:   input.Spec.RestoreConfig.DatabaseID,
+			NodeName:     input.Spec.RestoreConfig.NodeName,
+			PgDataPath:   "/opt/pgedge/data",
+			HostUser:     "pgedge",
+			User:         "pgedge",
+		}); err != nil {
+			return nil, fmt.Errorf("failed to generate pgBackRest restore configuration: %w", err)
+		}
+		configs.Children = append(configs.Children, &filesystem.File{
+			Path:     "pgbackrest.restore.conf",
+			Mode:     0o600,
+			Contents: b.Bytes(),
+			Owner:    &filesystem.Owner{User: input.Owner.User, Group: input.Owner.Group},
+		})
+
+	}
+
 	if err := configs.Create(ctx, a.Fs, a.Run, ""); err != nil {
 		return nil, fmt.Errorf("failed to create configs directory: %w", err)
 	}
 
-	// err = afero.WriteFile(a.Fs, input.HostPaths.Configs.PatroniYAML, patroniYaml, 0o600)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to write Patroni YAML: %w", err)
-	// }
-
-	// // This is safe to run every time because Owner.String() returns ":" if
-	// // neither group nor user are specified.
-	// if _, err := a.Run(ctx, "sudo", "chown", "-R", input.Owner.String(), input.HostPaths.Configs.Dir, input.HostPaths.Certificates.Dir); err != nil {
-	// 	return fmt.Errorf("failed to change mount path ownership: %w", err)
-	// }
-
 	return &WriteInstanceConfigsOutput{}, nil
+}
+
+func gcsKeyFile(repoIdx int, key string, owner general.Owner) (*filesystem.File, error) {
+	contents, err := base64.StdEncoding.DecodeString(key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode GCS key: %w", err)
+	}
+	return &filesystem.File{
+		Path:     fmt.Sprintf("repo%d-gcs-key.json", repoIdx+1),
+		Mode:     0o600,
+		Contents: contents,
+		Owner:    &filesystem.Owner{User: owner.User, Group: owner.Group},
+	}, nil
 }

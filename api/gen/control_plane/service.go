@@ -81,11 +81,19 @@ type BackupRepositorySpec struct {
 	S3Region *string
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
 	S3Endpoint *string
+	// An optional AWS access key ID to use for this repository. If not provided,
+	// pgbackrest will use the default credential provider chain.
+	S3Key *string
+	// The corresponding secret for the AWS access key ID in s3_key.
+	S3KeySecret *string
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
 	GcsEndpoint *string
+	// Optional base64-encoded private key data. If omitted, pgbackrest will use
+	// the service account attached to the instance profile.
+	GcsKey *string
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string
 	// The Azure container name for this repository. Only applies when type =
@@ -94,6 +102,9 @@ type BackupRepositorySpec struct {
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
 	AzureEndpoint *string
+	// An optional Azure storage account access key to use for this repository. If
+	// not provided, pgbackrest will use the VM's managed identity.
+	AzureKey *string
 	// The count of full backups to retain or the time to retain full backups.
 	RetentionFull *int
 	// The type of measure used for retention_full.
@@ -442,8 +453,13 @@ type RemoveHostPayload struct {
 type RestoreConfigSpec struct {
 	// The backup provider for this restore configuration.
 	Provider string
+	// The ID of the database to restore this database from.
+	DatabaseID string
 	// The name of the node to restore this database from.
 	NodeName string
+	// The name of the database in this repository. This database will be renamed
+	// to the database_name in the DatabaseSpec.
+	DatabaseName string
 	// The repository to restore this database from.
 	Repository *RestoreRepositorySpec
 }
@@ -460,11 +476,19 @@ type RestoreRepositorySpec struct {
 	S3Region *string
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
 	S3Endpoint *string
+	// An optional AWS access key ID to use for this repository. If not provided,
+	// pgbackrest will use the default credential provider chain.
+	S3Key *string
+	// The corresponding secret for the AWS access key ID in s3_key.
+	S3KeySecret *string
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
 	GcsEndpoint *string
+	// Optional base64-encoded private key data. If omitted, pgbackrest will use
+	// the service account attached to the instance profile.
+	GcsKey *string
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string
 	// The Azure container name for this repository. Only applies when type =
@@ -473,6 +497,9 @@ type RestoreRepositorySpec struct {
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
 	AzureEndpoint *string
+	// An optional Azure storage account access key to use for this repository. If
+	// not provided, pgbackrest will use the VM's managed identity.
+	AzureKey *string
 	// The base path within the repository where backups are stored.
 	BasePath *string
 	// Additional options to apply to this repository.
@@ -966,11 +993,15 @@ func transformControlplaneviewsBackupRepositorySpecViewToBackupRepositorySpec(v 
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
 		S3Endpoint:        v.S3Endpoint,
+		S3Key:             v.S3Key,
+		S3KeySecret:       v.S3KeySecret,
 		GcsBucket:         v.GcsBucket,
 		GcsEndpoint:       v.GcsEndpoint,
+		GcsKey:            v.GcsKey,
 		AzureAccount:      v.AzureAccount,
 		AzureContainer:    v.AzureContainer,
 		AzureEndpoint:     v.AzureEndpoint,
+		AzureKey:          v.AzureKey,
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
@@ -1039,8 +1070,10 @@ func transformControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpec(v *contr
 		return nil
 	}
 	res := &RestoreConfigSpec{
-		Provider: *v.Provider,
-		NodeName: *v.NodeName,
+		Provider:     *v.Provider,
+		DatabaseID:   *v.DatabaseID,
+		NodeName:     *v.NodeName,
+		DatabaseName: *v.DatabaseName,
 	}
 	if v.Repository != nil {
 		res.Repository = transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec(v.Repository)
@@ -1059,11 +1092,15 @@ func transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec(
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
 		S3Endpoint:     v.S3Endpoint,
+		S3Key:          v.S3Key,
+		S3KeySecret:    v.S3KeySecret,
 		GcsBucket:      v.GcsBucket,
 		GcsEndpoint:    v.GcsEndpoint,
+		GcsKey:         v.GcsKey,
 		AzureAccount:   v.AzureAccount,
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
+		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
 	}
 	if v.CustomOptions != nil {
@@ -1210,11 +1247,15 @@ func transformBackupRepositorySpecToControlplaneviewsBackupRepositorySpecView(v 
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
 		S3Endpoint:        v.S3Endpoint,
+		S3Key:             v.S3Key,
+		S3KeySecret:       v.S3KeySecret,
 		GcsBucket:         v.GcsBucket,
 		GcsEndpoint:       v.GcsEndpoint,
+		GcsKey:            v.GcsKey,
 		AzureAccount:      v.AzureAccount,
 		AzureContainer:    v.AzureContainer,
 		AzureEndpoint:     v.AzureEndpoint,
+		AzureKey:          v.AzureKey,
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
@@ -1283,8 +1324,10 @@ func transformRestoreConfigSpecToControlplaneviewsRestoreConfigSpecView(v *Resto
 		return nil
 	}
 	res := &controlplaneviews.RestoreConfigSpecView{
-		Provider: &v.Provider,
-		NodeName: &v.NodeName,
+		Provider:     &v.Provider,
+		DatabaseID:   &v.DatabaseID,
+		NodeName:     &v.NodeName,
+		DatabaseName: &v.DatabaseName,
 	}
 	if v.Repository != nil {
 		res.Repository = transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView(v.Repository)
@@ -1303,11 +1346,15 @@ func transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView(
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
 		S3Endpoint:     v.S3Endpoint,
+		S3Key:          v.S3Key,
+		S3KeySecret:    v.S3KeySecret,
 		GcsBucket:      v.GcsBucket,
 		GcsEndpoint:    v.GcsEndpoint,
+		GcsKey:         v.GcsKey,
 		AzureAccount:   v.AzureAccount,
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
+		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
 	}
 	if v.CustomOptions != nil {
