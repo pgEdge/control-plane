@@ -737,6 +737,9 @@ func (b *Backend) GetStats(ctx context.Context) (*backend.Stats, error) {
 }
 
 func (b *Backend) Tracer() trace.Tracer {
+	if b.options.TracerProvider == nil {
+		return nil
+	}
 	return b.options.TracerProvider.Tracer("workflows-etcd-backend")
 }
 

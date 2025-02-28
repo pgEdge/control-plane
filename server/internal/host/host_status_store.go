@@ -1,0 +1,71 @@
+package host
+
+import (
+	"path"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/pgEdge/control-plane/server/internal/common"
+	"github.com/pgEdge/control-plane/server/internal/storage"
+)
+
+type StoredHostStatus struct {
+	storage.StoredValue
+	HostID     uuid.UUID                         `json:"host_id"`
+	UpdatedAt  time.Time                         `json:"updated_at"`
+	State      HostState                         `json:"state"`
+	Components map[string]common.ComponentStatus `json:"components"`
+}
+
+type HostStatusStore struct {
+	client storage.EtcdClient
+	root   string
+}
+
+func NewHostStatusStore(client storage.EtcdClient, root string) *HostStatusStore {
+	return &HostStatusStore{
+		client: client,
+		root:   root,
+	}
+}
+
+func (s *HostStatusStore) Prefix() string {
+	return path.Join("/", s.root, "host_statuses")
+}
+
+func (s *HostStatusStore) Key(hostID uuid.UUID) string {
+	return path.Join(s.Prefix(), hostID.String())
+}
+
+func (s *HostStatusStore) GetByKey(hostID uuid.UUID) storage.GetOp[*StoredHostStatus] {
+	key := s.Key(hostID)
+	return storage.NewGetOp[*StoredHostStatus](s.client, key)
+}
+
+func (s *HostStatusStore) GetByKeys(hostIDs ...uuid.UUID) storage.GetMultipleOp[*StoredHostStatus] {
+	keys := make([]string, len(hostIDs))
+	for idx, hostID := range hostIDs {
+		keys[idx] = s.Key(hostID)
+	}
+	return storage.NewGetMultipleOp[*StoredHostStatus](s.client, keys)
+}
+
+func (s *HostStatusStore) GetAll() storage.GetMultipleOp[*StoredHostStatus] {
+	prefix := s.Prefix()
+	return storage.NewGetPrefixOp[*StoredHostStatus](s.client, prefix)
+}
+
+func (s *HostStatusStore) Create(item *StoredHostStatus) storage.PutOp[*StoredHostStatus] {
+	key := s.Key(item.HostID)
+	return storage.NewCreateOp(s.client, key, item)
+}
+
+func (s *HostStatusStore) Put(item *StoredHostStatus) storage.PutOp[*StoredHostStatus] {
+	key := s.Key(item.HostID)
+	return storage.NewPutOp(s.client, key, item)
+}
+
+func (s *HostStatusStore) DeleteByKey(hostID uuid.UUID) storage.DeleteOp {
+	key := s.Key(hostID)
+	return storage.NewDeleteKeyOp(s.client, key)
+}

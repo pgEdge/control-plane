@@ -12,21 +12,13 @@ import (
 )
 
 type Value struct {
-	version          int64                      `json:"-"`
+	storage.StoredValue
 	WorkflowInstance *workflow.Instance         `json:"workflow_instance"`
 	State            core.WorkflowInstanceState `json:"state"`
 	CreatedAt        time.Time                  `json:"created_at"`
 	Queue            core.Queue                 `json:"queue"`
 	Metadata         *metadata.WorkflowMetadata `json:"metadata"`
 	LastLocked       *time.Time                 `json:"last_locked"`
-}
-
-func (v *Value) Version() int64 {
-	return v.version
-}
-
-func (v *Value) SetVersion(version int64) {
-	v.version = version
 }
 
 func (v *Value) UpdateLastLocked() {

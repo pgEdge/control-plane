@@ -2,3 +2,8 @@
 .scratch
 
 *-results.xml
+control-plane
+.terraform
+
+.vagrant
+vagrant-ssh.cfg

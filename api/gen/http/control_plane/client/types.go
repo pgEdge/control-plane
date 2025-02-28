@@ -9,8 +9,31 @@ package client
 
 import (
 	controlplane "github.com/pgEdge/control-plane/api/gen/control_plane"
+	controlplaneviews "github.com/pgEdge/control-plane/api/gen/control_plane/views"
 	goa "goa.design/goa/v3/pkg"
 )
+
+// JoinClusterRequestBody is the type of the "control-plane" service
+// "join-cluster" endpoint HTTP request body.
+type JoinClusterRequestBody struct {
+	// Token to join an existing cluster.
+	Token string `form:"token" json:"token" xml:"token"`
+	// Existing server to join
+	ServerURL string `form:"server_url" json:"server_url" xml:"server_url"`
+}
+
+// GetJoinOptionsRequestBody is the type of the "control-plane" service
+// "get-join-options" endpoint HTTP request body.
+type GetJoinOptionsRequestBody struct {
+	// Token to join the cluster.
+	Token string `form:"token" json:"token" xml:"token"`
+	// The unique identifier for the host that's joining the cluster.
+	HostID string `form:"host_id" json:"host_id" xml:"host_id"`
+	// The hostname of the host that's joining the cluster.
+	Hostname string `form:"hostname" json:"hostname" xml:"hostname"`
+	// The IPv4 address of the host that's joining the cluster.
+	Ipv4Address string `form:"ipv4_address" json:"ipv4_address" xml:"ipv4_address"`
+}
 
 // CreateDatabaseRequestBody is the type of the "control-plane" service
 // "create-database" endpoint HTTP request body.
@@ -28,6 +51,33 @@ type CreateDatabaseRequestBody struct {
 type UpdateDatabaseRequestBody struct {
 	// The specification for the database.
 	Spec *DatabaseSpecRequestBodyRequestBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
+}
+
+// InitClusterResponseBody is the type of the "control-plane" service
+// "init-cluster" endpoint HTTP response body.
+type InitClusterResponseBody struct {
+	// Token to join an existing cluster.
+	Token *string `form:"token,omitempty" json:"token,omitempty" xml:"token,omitempty"`
+	// Existing server to join
+	ServerURL *string `form:"server_url,omitempty" json:"server_url,omitempty" xml:"server_url,omitempty"`
+}
+
+// GetJoinTokenResponseBody is the type of the "control-plane" service
+// "get-join-token" endpoint HTTP response body.
+type GetJoinTokenResponseBody struct {
+	// Token to join an existing cluster.
+	Token *string `form:"token,omitempty" json:"token,omitempty" xml:"token,omitempty"`
+	// Existing server to join
+	ServerURL *string `form:"server_url,omitempty" json:"server_url,omitempty" xml:"server_url,omitempty"`
+}
+
+// GetJoinOptionsResponseBody is the type of the "control-plane" service
+// "get-join-options" endpoint HTTP response body.
+type GetJoinOptionsResponseBody struct {
+	// Information about this cluster member
+	Peer *ClusterPeerResponseBody `form:"peer,omitempty" json:"peer,omitempty" xml:"peer,omitempty"`
+	// Credentials for the new host joining the cluster.
+	Credentials *ClusterCredentialsResponseBody `form:"credentials,omitempty" json:"credentials,omitempty" xml:"credentials,omitempty"`
 }
 
 // InspectClusterResponseBody is the type of the "control-plane" service
@@ -50,20 +100,26 @@ type ListHostsResponseBody []*HostResponse
 // InspectHostResponseBody is the type of the "control-plane" service
 // "inspect-host" endpoint HTTP response body.
 type InspectHostResponseBody struct {
-	// Unique identifier for the host
+	// Unique identifier for the host.
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// The type of this host
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The cohort that this host belongs to
-	Cohort *string `form:"cohort,omitempty" json:"cohort,omitempty" xml:"cohort,omitempty"`
+	// The orchestrator used by this host.
+	Orchestrator *string `form:"orchestrator,omitempty" json:"orchestrator,omitempty" xml:"orchestrator,omitempty"`
+	// The cohort that this host belongs to/
+	Cohort *HostCohortResponseBody `form:"cohort,omitempty" json:"cohort,omitempty" xml:"cohort,omitempty"`
 	// The hostname of this host.
 	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
 	// The IPv4 address of this host.
 	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
-	// The configuration for this host
-	Config *HostConfigurationResponseBody `form:"config,omitempty" json:"config,omitempty" xml:"config,omitempty"`
-	// Current status of the host
+	// The number of CPUs on this host.
+	Cpus *int `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory available on this host.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	// Current status of the host.
 	Status *HostStatusResponseBody `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// The default PgEdge version for this host.
+	DefaultPgedgeVersion *PgEdgeVersionResponseBody `form:"default_pgedge_version,omitempty" json:"default_pgedge_version,omitempty" xml:"default_pgedge_version,omitempty"`
+	// The PgEdge versions supported by this host.
+	SupportedPgedgeVersions []*PgEdgeVersionResponseBody `form:"supported_pgedge_versions,omitempty" json:"supported_pgedge_versions,omitempty" xml:"supported_pgedge_versions,omitempty"`
 }
 
 // ListDatabasesResponseBody is the type of the "control-plane" service
@@ -81,10 +137,10 @@ type CreateDatabaseResponseBody struct {
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The time that the database was last updated.
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-	// Current status of the database.
-	Status *DatabaseStatusResponseBody `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// Current state of the database.
+	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
 	// All of the instances in the database.
-	Instances *InstanceResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	Instances InstanceResponseBodyAbbreviatedCollection `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
 }
@@ -100,10 +156,10 @@ type InspectDatabaseResponseBody struct {
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The time that the database was last updated.
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-	// Current status of the database.
-	Status *DatabaseStatusResponseBody `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// Current state of the database.
+	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
 	// All of the instances in the database.
-	Instances *InstanceResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	Instances InstanceResponseBodyAbbreviatedCollection `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
 }
@@ -119,12 +175,341 @@ type UpdateDatabaseResponseBody struct {
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The time that the database was last updated.
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-	// Current status of the database.
-	Status *DatabaseStatusResponseBody `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// Current state of the database.
+	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
 	// All of the instances in the database.
-	Instances *InstanceResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	Instances InstanceResponseBodyAbbreviatedCollection `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
+}
+
+// InitClusterClusterAlreadyInitializedResponseBody is the type of the
+// "control-plane" service "init-cluster" endpoint HTTP response body for the
+// "cluster_already_initialized" error.
+type InitClusterClusterAlreadyInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// JoinClusterClusterAlreadyInitializedResponseBody is the type of the
+// "control-plane" service "join-cluster" endpoint HTTP response body for the
+// "cluster_already_initialized" error.
+type JoinClusterClusterAlreadyInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// GetJoinTokenClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "get-join-token" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type GetJoinTokenClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// GetJoinOptionsClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "get-join-options" endpoint HTTP response body for
+// the "cluster_not_initialized" error.
+type GetJoinOptionsClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// GetJoinOptionsInvalidJoinTokenResponseBody is the type of the
+// "control-plane" service "get-join-options" endpoint HTTP response body for
+// the "invalid_join_token" error.
+type GetJoinOptionsInvalidJoinTokenResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// InspectClusterClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "inspect-cluster" endpoint HTTP response body for
+// the "cluster_not_initialized" error.
+type InspectClusterClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// ListHostsClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "list-hosts" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type ListHostsClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// InspectHostClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "inspect-host" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type InspectHostClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// RemoveHostClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "remove-host" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type RemoveHostClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// ListDatabasesClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "list-databases" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type ListDatabasesClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// CreateDatabaseDatabaseAlreadyExistsResponseBody is the type of the
+// "control-plane" service "create-database" endpoint HTTP response body for
+// the "database_already_exists" error.
+type CreateDatabaseDatabaseAlreadyExistsResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// CreateDatabaseClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "create-database" endpoint HTTP response body for
+// the "cluster_not_initialized" error.
+type CreateDatabaseClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// CreateDatabaseInvalidInputResponseBody is the type of the "control-plane"
+// service "create-database" endpoint HTTP response body for the
+// "invalid_input" error.
+type CreateDatabaseInvalidInputResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// InspectDatabaseClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "inspect-database" endpoint HTTP response body for
+// the "cluster_not_initialized" error.
+type InspectDatabaseClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// UpdateDatabaseClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "update-database" endpoint HTTP response body for
+// the "cluster_not_initialized" error.
+type UpdateDatabaseClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// DeleteDatabaseClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "delete-database" endpoint HTTP response body for
+// the "cluster_not_initialized" error.
+type DeleteDatabaseClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// ClusterPeerResponseBody is used to define fields on response body types.
+type ClusterPeerResponseBody struct {
+	// The name of the cluster member.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The Etcd peer endpoint for this cluster member.
+	PeerURL *string `form:"peer_url,omitempty" json:"peer_url,omitempty" xml:"peer_url,omitempty"`
+	// The Etcd client endpoint for this cluster member.
+	ClientURL *string `form:"client_url,omitempty" json:"client_url,omitempty" xml:"client_url,omitempty"`
+}
+
+// ClusterCredentialsResponseBody is used to define fields on response body
+// types.
+type ClusterCredentialsResponseBody struct {
+	// The base64-encoded CA certificate for the cluster.
+	CaCert *string `form:"ca_cert,omitempty" json:"ca_cert,omitempty" xml:"ca_cert,omitempty"`
+	// The base64-encoded etcd client certificate for the new cluster member.
+	ClientCert *string `form:"client_cert,omitempty" json:"client_cert,omitempty" xml:"client_cert,omitempty"`
+	// The base64-encoded etcd client key for the new cluster member.
+	ClientKey *string `form:"client_key,omitempty" json:"client_key,omitempty" xml:"client_key,omitempty"`
+	// The base64-encoded etcd server certificate for the new cluster member.
+	ServerCert *string `form:"server_cert,omitempty" json:"server_cert,omitempty" xml:"server_cert,omitempty"`
+	// The base64-encoded etcd server key for the new cluster member.
+	ServerKey *string `form:"server_key,omitempty" json:"server_key,omitempty" xml:"server_key,omitempty"`
 }
 
 // ClusterStatusResponseBody is used to define fields on response body types.
@@ -135,65 +520,128 @@ type ClusterStatusResponseBody struct {
 
 // HostResponseBody is used to define fields on response body types.
 type HostResponseBody struct {
-	// Unique identifier for the host
+	// Unique identifier for the host.
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// The type of this host
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The cohort that this host belongs to
-	Cohort *string `form:"cohort,omitempty" json:"cohort,omitempty" xml:"cohort,omitempty"`
+	// The orchestrator used by this host.
+	Orchestrator *string `form:"orchestrator,omitempty" json:"orchestrator,omitempty" xml:"orchestrator,omitempty"`
+	// The cohort that this host belongs to/
+	Cohort *HostCohortResponseBody `form:"cohort,omitempty" json:"cohort,omitempty" xml:"cohort,omitempty"`
 	// The hostname of this host.
 	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
 	// The IPv4 address of this host.
 	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
-	// The configuration for this host
-	Config *HostConfigurationResponseBody `form:"config,omitempty" json:"config,omitempty" xml:"config,omitempty"`
-	// Current status of the host
+	// The number of CPUs on this host.
+	Cpus *int `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory available on this host.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	// Current status of the host.
 	Status *HostStatusResponseBody `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// The default PgEdge version for this host.
+	DefaultPgedgeVersion *PgEdgeVersionResponseBody `form:"default_pgedge_version,omitempty" json:"default_pgedge_version,omitempty" xml:"default_pgedge_version,omitempty"`
+	// The PgEdge versions supported by this host.
+	SupportedPgedgeVersions []*PgEdgeVersionResponseBody `form:"supported_pgedge_versions,omitempty" json:"supported_pgedge_versions,omitempty" xml:"supported_pgedge_versions,omitempty"`
 }
 
-// HostConfigurationResponseBody is used to define fields on response body
-// types.
-type HostConfigurationResponseBody struct {
-	// Enables the Vector service for metrics and log collection
-	VectorEnabled *bool `form:"vector_enabled,omitempty" json:"vector_enabled,omitempty" xml:"vector_enabled,omitempty"`
-	// Enables the Treafik load balancer
-	TraefikEnabled *bool `form:"traefik_enabled,omitempty" json:"traefik_enabled,omitempty" xml:"traefik_enabled,omitempty"`
+// HostCohortResponseBody is used to define fields on response body types.
+type HostCohortResponseBody struct {
+	// The type of cohort that the host belongs to.
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// The cohort ID that the host belongs to.
+	CohortID *string `form:"cohort_id,omitempty" json:"cohort_id,omitempty" xml:"cohort_id,omitempty"`
+	// The member ID of the host within the cohort.
+	MemberID *string `form:"member_id,omitempty" json:"member_id,omitempty" xml:"member_id,omitempty"`
+	// Indicates if the host is a control node in the cohort.
+	ControlAvailable *bool `form:"control_available,omitempty" json:"control_available,omitempty" xml:"control_available,omitempty"`
 }
 
 // HostStatusResponseBody is used to define fields on response body types.
 type HostStatusResponseBody struct {
 	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
+	// The last time the host status was updated.
+	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
+	// The status of each component of the host.
+	Components map[string]*ComponentStatusResponseBody `form:"components,omitempty" json:"components,omitempty" xml:"components,omitempty"`
+}
+
+// ComponentStatusResponseBody is used to define fields on response body types.
+type ComponentStatusResponseBody struct {
+	// Indicates if the component is healthy.
+	Healthy *bool `form:"healthy,omitempty" json:"healthy,omitempty" xml:"healthy,omitempty"`
+	// Error message from any errors that occurred during the health check.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	// Additional details about the component.
+	Details map[string]any `form:"details,omitempty" json:"details,omitempty" xml:"details,omitempty"`
+}
+
+// PgEdgeVersionResponseBody is used to define fields on response body types.
+type PgEdgeVersionResponseBody struct {
+	// The Postgres major version.
+	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
+	// The Spock major version.
+	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
 }
 
 // HostResponse is used to define fields on response body types.
 type HostResponse struct {
-	// Unique identifier for the host
+	// Unique identifier for the host.
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// The type of this host
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The cohort that this host belongs to
-	Cohort *string `form:"cohort,omitempty" json:"cohort,omitempty" xml:"cohort,omitempty"`
+	// The orchestrator used by this host.
+	Orchestrator *string `form:"orchestrator,omitempty" json:"orchestrator,omitempty" xml:"orchestrator,omitempty"`
+	// The cohort that this host belongs to/
+	Cohort *HostCohortResponse `form:"cohort,omitempty" json:"cohort,omitempty" xml:"cohort,omitempty"`
 	// The hostname of this host.
 	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
 	// The IPv4 address of this host.
 	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
-	// The configuration for this host
-	Config *HostConfigurationResponse `form:"config,omitempty" json:"config,omitempty" xml:"config,omitempty"`
-	// Current status of the host
+	// The number of CPUs on this host.
+	Cpus *int `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory available on this host.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	// Current status of the host.
 	Status *HostStatusResponse `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// The default PgEdge version for this host.
+	DefaultPgedgeVersion *PgEdgeVersionResponse `form:"default_pgedge_version,omitempty" json:"default_pgedge_version,omitempty" xml:"default_pgedge_version,omitempty"`
+	// The PgEdge versions supported by this host.
+	SupportedPgedgeVersions []*PgEdgeVersionResponse `form:"supported_pgedge_versions,omitempty" json:"supported_pgedge_versions,omitempty" xml:"supported_pgedge_versions,omitempty"`
 }
 
-// HostConfigurationResponse is used to define fields on response body types.
-type HostConfigurationResponse struct {
-	// Enables the Vector service for metrics and log collection
-	VectorEnabled *bool `form:"vector_enabled,omitempty" json:"vector_enabled,omitempty" xml:"vector_enabled,omitempty"`
-	// Enables the Treafik load balancer
-	TraefikEnabled *bool `form:"traefik_enabled,omitempty" json:"traefik_enabled,omitempty" xml:"traefik_enabled,omitempty"`
+// HostCohortResponse is used to define fields on response body types.
+type HostCohortResponse struct {
+	// The type of cohort that the host belongs to.
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// The cohort ID that the host belongs to.
+	CohortID *string `form:"cohort_id,omitempty" json:"cohort_id,omitempty" xml:"cohort_id,omitempty"`
+	// The member ID of the host within the cohort.
+	MemberID *string `form:"member_id,omitempty" json:"member_id,omitempty" xml:"member_id,omitempty"`
+	// Indicates if the host is a control node in the cohort.
+	ControlAvailable *bool `form:"control_available,omitempty" json:"control_available,omitempty" xml:"control_available,omitempty"`
 }
 
 // HostStatusResponse is used to define fields on response body types.
 type HostStatusResponse struct {
 	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
+	// The last time the host status was updated.
+	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
+	// The status of each component of the host.
+	Components map[string]*ComponentStatusResponse `form:"components,omitempty" json:"components,omitempty" xml:"components,omitempty"`
+}
+
+// ComponentStatusResponse is used to define fields on response body types.
+type ComponentStatusResponse struct {
+	// Indicates if the component is healthy.
+	Healthy *bool `form:"healthy,omitempty" json:"healthy,omitempty" xml:"healthy,omitempty"`
+	// Error message from any errors that occurred during the health check.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	// Additional details about the component.
+	Details map[string]any `form:"details,omitempty" json:"details,omitempty" xml:"details,omitempty"`
+}
+
+// PgEdgeVersionResponse is used to define fields on response body types.
+type PgEdgeVersionResponse struct {
+	// The Postgres major version.
+	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
+	// The Spock major version.
+	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
 }
 
 // DatabaseResponse is used to define fields on response body types.
@@ -206,20 +654,16 @@ type DatabaseResponse struct {
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The time that the database was last updated.
 	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-	// Current status of the database.
-	Status *DatabaseStatusResponse `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// Current state of the database.
+	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
 	// All of the instances in the database.
-	Instances *InstanceResponse `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	Instances InstanceCollectionResponse `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecResponse `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
 }
 
-// DatabaseStatusResponse is used to define fields on response body types.
-type DatabaseStatusResponse struct {
-	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
-	// The time that the database status was last updated.
-	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-}
+// InstanceCollectionResponse is used to define fields on response body types.
+type InstanceCollectionResponse []*InstanceResponse
 
 // InstanceResponse is used to define fields on response body types.
 type InstanceResponse struct {
@@ -229,18 +673,12 @@ type InstanceResponse struct {
 	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
 	// The Spock node name for this instance.
 	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The read replica name of this instance.
+	ReplicaName *string `form:"replica_name,omitempty" json:"replica_name,omitempty" xml:"replica_name,omitempty"`
 	// The time that the instance was created.
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The time that the instance was last updated.
-	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-	// Current status of the instance.
-	Status *InstanceStatusResponse `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// All interfaces that this instance serves on.
-	Interfaces []*InstanceInterfaceResponse `form:"interfaces,omitempty" json:"interfaces,omitempty" xml:"interfaces,omitempty"`
-}
-
-// InstanceStatusResponse is used to define fields on response body types.
-type InstanceStatusResponse struct {
+	UpdatedAt    *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
 	State        *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
 	PatroniState *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
 	Role         *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
@@ -254,8 +692,8 @@ type InstanceStatusResponse struct {
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
 	// The version of Spock for this instance.
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
-	// The time that the instance status was last updated.
-	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
+	// All interfaces that this instance serves on.
+	Interfaces []*InstanceInterfaceResponse `form:"interfaces,omitempty" json:"interfaces,omitempty" xml:"interfaces,omitempty"`
 }
 
 // InstanceInterfaceResponse is used to define fields on response body types.
@@ -284,16 +722,31 @@ type DatabaseSpecResponse struct {
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// Prevents deletion when true.
 	DeletionProtection *bool `form:"deletion_protection,omitempty" json:"deletion_protection,omitempty" xml:"deletion_protection,omitempty"`
+	// The storage class to use for the database. The possible values and defaults
+	// depend on the orchestrator.
+	StorageClass *string `form:"storage_class,omitempty" json:"storage_class,omitempty" xml:"storage_class,omitempty"`
+	// The size of the storage in SI or IEC notation. Support for this value
+	// depends on the orchestrator and storage class.
+	StorageSize *string `form:"storage_size,omitempty" json:"storage_size,omitempty" xml:"storage_size,omitempty"`
+	// The number of CPUs to allocate for the database and to use for tuning
+	// Postgres. Defaults to the number of available CPUs on the host. Can include
+	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
+	// enforced depends on the orchestrator.
+	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory in SI or IEC notation to allocate for the database and
+	// to use for tuning Postgres. Defaults to the total available memory on the
+	// host. Whether this limit will be enforced depends on the orchestrator.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// The Spock nodes for this database.
 	Nodes []*DatabaseNodeSpecResponse `form:"nodes,omitempty" json:"nodes,omitempty" xml:"nodes,omitempty"`
 	// The users to create for this database.
 	DatabaseUsers []*DatabaseUserSpecResponse `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
-	// The extensions to install for this database.
-	Extensions []*DatabaseExtensionSpecResponse `form:"extensions,omitempty" json:"extensions,omitempty" xml:"extensions,omitempty"`
 	// The feature flags for this database.
 	Features map[string]string `form:"features,omitempty" json:"features,omitempty" xml:"features,omitempty"`
 	// The backup configurations for this database.
 	BackupConfigs []*BackupConfigSpecResponse `form:"backup_configs,omitempty" json:"backup_configs,omitempty" xml:"backup_configs,omitempty"`
+	// The restore configuration for this database.
+	RestoreConfig *RestoreConfigSpecResponse `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
@@ -303,9 +756,6 @@ type DatabaseSpecResponse struct {
 type DatabaseNodeSpecResponse struct {
 	// The name of the database node.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// A unique identifier for the instance that will be created from this node
-	// specification.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
 	// The ID of the host that should run this node.
 	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
 	// The major version of Postgres for this node. Overrides the Postgres version
@@ -314,8 +764,24 @@ type DatabaseNodeSpecResponse struct {
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	// The storage class to use for the database on this node. The possible values
+	// and defaults depend on the orchestrator.
+	StorageClass *string `form:"storage_class,omitempty" json:"storage_class,omitempty" xml:"storage_class,omitempty"`
+	// The size of the storage for this node in SI or IEC notation. Support for
+	// this value depends on the orchestrator and storage class.
+	StorageSize *string `form:"storage_size,omitempty" json:"storage_size,omitempty" xml:"storage_size,omitempty"`
+	// The number of CPUs to allocate for the database on this node and to use for
+	// tuning Postgres. Defaults to the number of available CPUs on the host. Can
+	// include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will
+	// be enforced depends on the orchestrator.
+	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory in SI or IEC notation to allocate for the database on
+	// this node and to use for tuning Postgres. Defaults to the total available
+	// memory on the host. Whether this limit will be enforced depends on the
+	// orchestrator.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// Read replicas for this database node.
-	ReadReplicas *DatabaseReplicaSpecResponse `form:"read_replicas,omitempty" json:"read_replicas,omitempty" xml:"read_replicas,omitempty"`
+	ReadReplicas []*DatabaseReplicaSpecResponse `form:"read_replicas,omitempty" json:"read_replicas,omitempty" xml:"read_replicas,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
 	// with the settings provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
@@ -323,9 +789,6 @@ type DatabaseNodeSpecResponse struct {
 
 // DatabaseReplicaSpecResponse is used to define fields on response body types.
 type DatabaseReplicaSpecResponse struct {
-	// A unique identifier for the instance that will be created from this replica
-	// specification.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
 	// The ID of the host that should run this read replica.
 	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
 }
@@ -336,19 +799,12 @@ type DatabaseUserSpecResponse struct {
 	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
 	// The password for this database user.
 	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
+	// If true, this user will be granted database ownership.
+	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
+	// The attributes to assign to this database user.
+	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
 	// The roles to assign to this database user.
 	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
-	// Enables SUPERUSER for this database user when true.
-	Superuser *bool `form:"superuser,omitempty" json:"superuser,omitempty" xml:"superuser,omitempty"`
-}
-
-// DatabaseExtensionSpecResponse is used to define fields on response body
-// types.
-type DatabaseExtensionSpecResponse struct {
-	// The name of the extension to install in this database.
-	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// The version of the extension to install in this database.
-	Version *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
 }
 
 // BackupConfigSpecResponse is used to define fields on response body types.
@@ -411,6 +867,47 @@ type BackupScheduleSpecResponse struct {
 	CronExpression *string `form:"cron_expression,omitempty" json:"cron_expression,omitempty" xml:"cron_expression,omitempty"`
 }
 
+// RestoreConfigSpecResponse is used to define fields on response body types.
+type RestoreConfigSpecResponse struct {
+	// The backup provider for this restore configuration.
+	Provider *string `form:"provider,omitempty" json:"provider,omitempty" xml:"provider,omitempty"`
+	// The name of the node to restore this database from.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The repository to restore this database from.
+	Repository *RestoreRepositorySpecResponse `form:"repository,omitempty" json:"repository,omitempty" xml:"repository,omitempty"`
+}
+
+// RestoreRepositorySpecResponse is used to define fields on response body
+// types.
+type RestoreRepositorySpecResponse struct {
+	// The unique identifier of this repository.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// The type of this repository.
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// The S3 bucket name for this repository. Only applies when type = 's3'.
+	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
+	// The region of the S3 bucket for this repository. Only applies when type =
+	// 's3'.
+	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
+	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
+	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
+	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
+	// The optional GCS endpoint for this repository. Only applies when type =
+	// 'gcs'.
+	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	// The Azure account name for this repository. Only applies when type = 'azure'.
+	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
+	// The Azure container name for this repository. Only applies when type =
+	// 'azure'.
+	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
+	// The optional Azure endpoint for this repository. Only applies when type =
+	// 'azure'.
+	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	// The base path within the repository where backups are stored.
+	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+}
+
 // DatabaseSpecRequestBody is used to define fields on request body types.
 type DatabaseSpecRequestBody struct {
 	// The name of the Postgres database.
@@ -423,16 +920,31 @@ type DatabaseSpecRequestBody struct {
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// Prevents deletion when true.
 	DeletionProtection *bool `form:"deletion_protection,omitempty" json:"deletion_protection,omitempty" xml:"deletion_protection,omitempty"`
+	// The storage class to use for the database. The possible values and defaults
+	// depend on the orchestrator.
+	StorageClass *string `form:"storage_class,omitempty" json:"storage_class,omitempty" xml:"storage_class,omitempty"`
+	// The size of the storage in SI or IEC notation. Support for this value
+	// depends on the orchestrator and storage class.
+	StorageSize *string `form:"storage_size,omitempty" json:"storage_size,omitempty" xml:"storage_size,omitempty"`
+	// The number of CPUs to allocate for the database and to use for tuning
+	// Postgres. Defaults to the number of available CPUs on the host. Can include
+	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
+	// enforced depends on the orchestrator.
+	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory in SI or IEC notation to allocate for the database and
+	// to use for tuning Postgres. Defaults to the total available memory on the
+	// host. Whether this limit will be enforced depends on the orchestrator.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// The Spock nodes for this database.
 	Nodes []*DatabaseNodeSpecRequestBody `form:"nodes" json:"nodes" xml:"nodes"`
 	// The users to create for this database.
 	DatabaseUsers []*DatabaseUserSpecRequestBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
-	// The extensions to install for this database.
-	Extensions []*DatabaseExtensionSpecRequestBody `form:"extensions,omitempty" json:"extensions,omitempty" xml:"extensions,omitempty"`
 	// The feature flags for this database.
 	Features map[string]string `form:"features,omitempty" json:"features,omitempty" xml:"features,omitempty"`
 	// The backup configurations for this database.
 	BackupConfigs []*BackupConfigSpecRequestBody `form:"backup_configs,omitempty" json:"backup_configs,omitempty" xml:"backup_configs,omitempty"`
+	// The restore configuration for this database.
+	RestoreConfig *RestoreConfigSpecRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
@@ -442,9 +954,6 @@ type DatabaseSpecRequestBody struct {
 type DatabaseNodeSpecRequestBody struct {
 	// The name of the database node.
 	Name string `form:"name" json:"name" xml:"name"`
-	// A unique identifier for the instance that will be created from this node
-	// specification.
-	InstanceID string `form:"instance_id" json:"instance_id" xml:"instance_id"`
 	// The ID of the host that should run this node.
 	HostID string `form:"host_id" json:"host_id" xml:"host_id"`
 	// The major version of Postgres for this node. Overrides the Postgres version
@@ -453,8 +962,24 @@ type DatabaseNodeSpecRequestBody struct {
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	// The storage class to use for the database on this node. The possible values
+	// and defaults depend on the orchestrator.
+	StorageClass *string `form:"storage_class,omitempty" json:"storage_class,omitempty" xml:"storage_class,omitempty"`
+	// The size of the storage for this node in SI or IEC notation. Support for
+	// this value depends on the orchestrator and storage class.
+	StorageSize *string `form:"storage_size,omitempty" json:"storage_size,omitempty" xml:"storage_size,omitempty"`
+	// The number of CPUs to allocate for the database on this node and to use for
+	// tuning Postgres. Defaults to the number of available CPUs on the host. Can
+	// include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will
+	// be enforced depends on the orchestrator.
+	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory in SI or IEC notation to allocate for the database on
+	// this node and to use for tuning Postgres. Defaults to the total available
+	// memory on the host. Whether this limit will be enforced depends on the
+	// orchestrator.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// Read replicas for this database node.
-	ReadReplicas *DatabaseReplicaSpecRequestBody `form:"read_replicas,omitempty" json:"read_replicas,omitempty" xml:"read_replicas,omitempty"`
+	ReadReplicas []*DatabaseReplicaSpecRequestBody `form:"read_replicas,omitempty" json:"read_replicas,omitempty" xml:"read_replicas,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
 	// with the settings provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
@@ -463,9 +988,6 @@ type DatabaseNodeSpecRequestBody struct {
 // DatabaseReplicaSpecRequestBody is used to define fields on request body
 // types.
 type DatabaseReplicaSpecRequestBody struct {
-	// A unique identifier for the instance that will be created from this replica
-	// specification.
-	InstanceID string `form:"instance_id" json:"instance_id" xml:"instance_id"`
 	// The ID of the host that should run this read replica.
 	HostID string `form:"host_id" json:"host_id" xml:"host_id"`
 }
@@ -476,19 +998,12 @@ type DatabaseUserSpecRequestBody struct {
 	Username string `form:"username" json:"username" xml:"username"`
 	// The password for this database user.
 	Password string `form:"password" json:"password" xml:"password"`
+	// If true, this user will be granted database ownership.
+	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
+	// The attributes to assign to this database user.
+	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
 	// The roles to assign to this database user.
 	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
-	// Enables SUPERUSER for this database user when true.
-	Superuser *bool `form:"superuser,omitempty" json:"superuser,omitempty" xml:"superuser,omitempty"`
-}
-
-// DatabaseExtensionSpecRequestBody is used to define fields on request body
-// types.
-type DatabaseExtensionSpecRequestBody struct {
-	// The name of the extension to install in this database.
-	Name string `form:"name" json:"name" xml:"name"`
-	// The version of the extension to install in this database.
-	Version *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
 }
 
 // BackupConfigSpecRequestBody is used to define fields on request body types.
@@ -552,63 +1067,63 @@ type BackupScheduleSpecRequestBody struct {
 	CronExpression string `form:"cron_expression" json:"cron_expression" xml:"cron_expression"`
 }
 
-// DatabaseStatusResponseBody is used to define fields on response body types.
-type DatabaseStatusResponseBody struct {
-	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
-	// The time that the database status was last updated.
-	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
+// RestoreConfigSpecRequestBody is used to define fields on request body types.
+type RestoreConfigSpecRequestBody struct {
+	// The backup provider for this restore configuration.
+	Provider string `form:"provider" json:"provider" xml:"provider"`
+	// The name of the node to restore this database from.
+	NodeName string `form:"node_name" json:"node_name" xml:"node_name"`
+	// The repository to restore this database from.
+	Repository *RestoreRepositorySpecRequestBody `form:"repository" json:"repository" xml:"repository"`
 }
 
-// InstanceResponseBody is used to define fields on response body types.
-type InstanceResponseBody struct {
+// RestoreRepositorySpecRequestBody is used to define fields on request body
+// types.
+type RestoreRepositorySpecRequestBody struct {
+	// The unique identifier of this repository.
+	ID string `form:"id" json:"id" xml:"id"`
+	// The type of this repository.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The S3 bucket name for this repository. Only applies when type = 's3'.
+	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
+	// The region of the S3 bucket for this repository. Only applies when type =
+	// 's3'.
+	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
+	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
+	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
+	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
+	// The optional GCS endpoint for this repository. Only applies when type =
+	// 'gcs'.
+	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	// The Azure account name for this repository. Only applies when type = 'azure'.
+	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
+	// The Azure container name for this repository. Only applies when type =
+	// 'azure'.
+	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
+	// The optional Azure endpoint for this repository. Only applies when type =
+	// 'azure'.
+	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	// The base path within the repository where backups are stored.
+	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+}
+
+// InstanceResponseBodyAbbreviatedCollection is used to define fields on
+// response body types.
+type InstanceResponseBodyAbbreviatedCollection []*InstanceResponseBodyAbbreviated
+
+// InstanceResponseBodyAbbreviated is used to define fields on response body
+// types.
+type InstanceResponseBodyAbbreviated struct {
 	// Unique identifier for the instance.
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// The ID of the host this instance is running on.
 	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
 	// The Spock node name for this instance.
 	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The time that the instance was created.
-	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
-	// The time that the instance was last updated.
-	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-	// Current status of the instance.
-	Status *InstanceStatusResponseBody `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// All interfaces that this instance serves on.
-	Interfaces []*InstanceInterfaceResponseBody `form:"interfaces,omitempty" json:"interfaces,omitempty" xml:"interfaces,omitempty"`
-}
-
-// InstanceStatusResponseBody is used to define fields on response body types.
-type InstanceStatusResponseBody struct {
-	State        *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
-	PatroniState *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
-	Role         *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
-	// True if this instance is in read-only mode.
-	ReadOnly *bool `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
-	// True if this instance is pending to be restarted from a configuration change.
-	PendingRestart *bool `form:"pending_restart,omitempty" json:"pending_restart,omitempty" xml:"pending_restart,omitempty"`
-	// True if Patroni has been paused for this instance.
-	PatroniPaused *bool `form:"patroni_paused,omitempty" json:"patroni_paused,omitempty" xml:"patroni_paused,omitempty"`
-	// The version of Postgres for this instance.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
-	// The version of Spock for this instance.
-	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
-	// The time that the instance status was last updated.
-	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-}
-
-// InstanceInterfaceResponseBody is used to define fields on response body
-// types.
-type InstanceInterfaceResponseBody struct {
-	// The type of network for this interface.
-	NetworkType *string `form:"network_type,omitempty" json:"network_type,omitempty" xml:"network_type,omitempty"`
-	// The unique identifier of the network for this interface.
-	NetworkID *string `form:"network_id,omitempty" json:"network_id,omitempty" xml:"network_id,omitempty"`
-	// The hostname of the instance on this interface.
-	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
-	// The IPv4 address of the instance on this interface.
-	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
-	// The Postgres port for the instance on this interface.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	// The read replica name of this instance.
+	ReplicaName *string `form:"replica_name,omitempty" json:"replica_name,omitempty" xml:"replica_name,omitempty"`
+	State       *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
 }
 
 // DatabaseSpecResponseBody is used to define fields on response body types.
@@ -623,16 +1138,31 @@ type DatabaseSpecResponseBody struct {
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// Prevents deletion when true.
 	DeletionProtection *bool `form:"deletion_protection,omitempty" json:"deletion_protection,omitempty" xml:"deletion_protection,omitempty"`
+	// The storage class to use for the database. The possible values and defaults
+	// depend on the orchestrator.
+	StorageClass *string `form:"storage_class,omitempty" json:"storage_class,omitempty" xml:"storage_class,omitempty"`
+	// The size of the storage in SI or IEC notation. Support for this value
+	// depends on the orchestrator and storage class.
+	StorageSize *string `form:"storage_size,omitempty" json:"storage_size,omitempty" xml:"storage_size,omitempty"`
+	// The number of CPUs to allocate for the database and to use for tuning
+	// Postgres. Defaults to the number of available CPUs on the host. Can include
+	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
+	// enforced depends on the orchestrator.
+	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory in SI or IEC notation to allocate for the database and
+	// to use for tuning Postgres. Defaults to the total available memory on the
+	// host. Whether this limit will be enforced depends on the orchestrator.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// The Spock nodes for this database.
 	Nodes []*DatabaseNodeSpecResponseBody `form:"nodes,omitempty" json:"nodes,omitempty" xml:"nodes,omitempty"`
 	// The users to create for this database.
 	DatabaseUsers []*DatabaseUserSpecResponseBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
-	// The extensions to install for this database.
-	Extensions []*DatabaseExtensionSpecResponseBody `form:"extensions,omitempty" json:"extensions,omitempty" xml:"extensions,omitempty"`
 	// The feature flags for this database.
 	Features map[string]string `form:"features,omitempty" json:"features,omitempty" xml:"features,omitempty"`
 	// The backup configurations for this database.
 	BackupConfigs []*BackupConfigSpecResponseBody `form:"backup_configs,omitempty" json:"backup_configs,omitempty" xml:"backup_configs,omitempty"`
+	// The restore configuration for this database.
+	RestoreConfig *RestoreConfigSpecResponseBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
@@ -642,9 +1172,6 @@ type DatabaseSpecResponseBody struct {
 type DatabaseNodeSpecResponseBody struct {
 	// The name of the database node.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// A unique identifier for the instance that will be created from this node
-	// specification.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
 	// The ID of the host that should run this node.
 	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
 	// The major version of Postgres for this node. Overrides the Postgres version
@@ -653,8 +1180,24 @@ type DatabaseNodeSpecResponseBody struct {
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	// The storage class to use for the database on this node. The possible values
+	// and defaults depend on the orchestrator.
+	StorageClass *string `form:"storage_class,omitempty" json:"storage_class,omitempty" xml:"storage_class,omitempty"`
+	// The size of the storage for this node in SI or IEC notation. Support for
+	// this value depends on the orchestrator and storage class.
+	StorageSize *string `form:"storage_size,omitempty" json:"storage_size,omitempty" xml:"storage_size,omitempty"`
+	// The number of CPUs to allocate for the database on this node and to use for
+	// tuning Postgres. Defaults to the number of available CPUs on the host. Can
+	// include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will
+	// be enforced depends on the orchestrator.
+	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory in SI or IEC notation to allocate for the database on
+	// this node and to use for tuning Postgres. Defaults to the total available
+	// memory on the host. Whether this limit will be enforced depends on the
+	// orchestrator.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// Read replicas for this database node.
-	ReadReplicas *DatabaseReplicaSpecResponseBody `form:"read_replicas,omitempty" json:"read_replicas,omitempty" xml:"read_replicas,omitempty"`
+	ReadReplicas []*DatabaseReplicaSpecResponseBody `form:"read_replicas,omitempty" json:"read_replicas,omitempty" xml:"read_replicas,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
 	// with the settings provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
@@ -663,9 +1206,6 @@ type DatabaseNodeSpecResponseBody struct {
 // DatabaseReplicaSpecResponseBody is used to define fields on response body
 // types.
 type DatabaseReplicaSpecResponseBody struct {
-	// A unique identifier for the instance that will be created from this replica
-	// specification.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
 	// The ID of the host that should run this read replica.
 	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
 }
@@ -676,19 +1216,12 @@ type DatabaseUserSpecResponseBody struct {
 	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
 	// The password for this database user.
 	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
+	// If true, this user will be granted database ownership.
+	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
+	// The attributes to assign to this database user.
+	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
 	// The roles to assign to this database user.
 	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
-	// Enables SUPERUSER for this database user when true.
-	Superuser *bool `form:"superuser,omitempty" json:"superuser,omitempty" xml:"superuser,omitempty"`
-}
-
-// DatabaseExtensionSpecResponseBody is used to define fields on response body
-// types.
-type DatabaseExtensionSpecResponseBody struct {
-	// The name of the extension to install in this database.
-	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// The version of the extension to install in this database.
-	Version *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
 }
 
 // BackupConfigSpecResponseBody is used to define fields on response body types.
@@ -753,6 +1286,48 @@ type BackupScheduleSpecResponseBody struct {
 	CronExpression *string `form:"cron_expression,omitempty" json:"cron_expression,omitempty" xml:"cron_expression,omitempty"`
 }
 
+// RestoreConfigSpecResponseBody is used to define fields on response body
+// types.
+type RestoreConfigSpecResponseBody struct {
+	// The backup provider for this restore configuration.
+	Provider *string `form:"provider,omitempty" json:"provider,omitempty" xml:"provider,omitempty"`
+	// The name of the node to restore this database from.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The repository to restore this database from.
+	Repository *RestoreRepositorySpecResponseBody `form:"repository,omitempty" json:"repository,omitempty" xml:"repository,omitempty"`
+}
+
+// RestoreRepositorySpecResponseBody is used to define fields on response body
+// types.
+type RestoreRepositorySpecResponseBody struct {
+	// The unique identifier of this repository.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// The type of this repository.
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// The S3 bucket name for this repository. Only applies when type = 's3'.
+	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
+	// The region of the S3 bucket for this repository. Only applies when type =
+	// 's3'.
+	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
+	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
+	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
+	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
+	// The optional GCS endpoint for this repository. Only applies when type =
+	// 'gcs'.
+	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	// The Azure account name for this repository. Only applies when type = 'azure'.
+	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
+	// The Azure container name for this repository. Only applies when type =
+	// 'azure'.
+	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
+	// The optional Azure endpoint for this repository. Only applies when type =
+	// 'azure'.
+	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	// The base path within the repository where backups are stored.
+	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+}
+
 // DatabaseSpecRequestBodyRequestBody is used to define fields on request body
 // types.
 type DatabaseSpecRequestBodyRequestBody struct {
@@ -766,16 +1341,31 @@ type DatabaseSpecRequestBodyRequestBody struct {
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// Prevents deletion when true.
 	DeletionProtection *bool `form:"deletion_protection,omitempty" json:"deletion_protection,omitempty" xml:"deletion_protection,omitempty"`
+	// The storage class to use for the database. The possible values and defaults
+	// depend on the orchestrator.
+	StorageClass *string `form:"storage_class,omitempty" json:"storage_class,omitempty" xml:"storage_class,omitempty"`
+	// The size of the storage in SI or IEC notation. Support for this value
+	// depends on the orchestrator and storage class.
+	StorageSize *string `form:"storage_size,omitempty" json:"storage_size,omitempty" xml:"storage_size,omitempty"`
+	// The number of CPUs to allocate for the database and to use for tuning
+	// Postgres. Defaults to the number of available CPUs on the host. Can include
+	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
+	// enforced depends on the orchestrator.
+	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory in SI or IEC notation to allocate for the database and
+	// to use for tuning Postgres. Defaults to the total available memory on the
+	// host. Whether this limit will be enforced depends on the orchestrator.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// The Spock nodes for this database.
 	Nodes []*DatabaseNodeSpecRequestBodyRequestBody `form:"nodes" json:"nodes" xml:"nodes"`
 	// The users to create for this database.
 	DatabaseUsers []*DatabaseUserSpecRequestBodyRequestBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
-	// The extensions to install for this database.
-	Extensions []*DatabaseExtensionSpecRequestBodyRequestBody `form:"extensions,omitempty" json:"extensions,omitempty" xml:"extensions,omitempty"`
 	// The feature flags for this database.
 	Features map[string]string `form:"features,omitempty" json:"features,omitempty" xml:"features,omitempty"`
 	// The backup configurations for this database.
 	BackupConfigs []*BackupConfigSpecRequestBodyRequestBody `form:"backup_configs,omitempty" json:"backup_configs,omitempty" xml:"backup_configs,omitempty"`
+	// The restore configuration for this database.
+	RestoreConfig *RestoreConfigSpecRequestBodyRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
@@ -786,9 +1376,6 @@ type DatabaseSpecRequestBodyRequestBody struct {
 type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// The name of the database node.
 	Name string `form:"name" json:"name" xml:"name"`
-	// A unique identifier for the instance that will be created from this node
-	// specification.
-	InstanceID string `form:"instance_id" json:"instance_id" xml:"instance_id"`
 	// The ID of the host that should run this node.
 	HostID string `form:"host_id" json:"host_id" xml:"host_id"`
 	// The major version of Postgres for this node. Overrides the Postgres version
@@ -797,8 +1384,24 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	// The storage class to use for the database on this node. The possible values
+	// and defaults depend on the orchestrator.
+	StorageClass *string `form:"storage_class,omitempty" json:"storage_class,omitempty" xml:"storage_class,omitempty"`
+	// The size of the storage for this node in SI or IEC notation. Support for
+	// this value depends on the orchestrator and storage class.
+	StorageSize *string `form:"storage_size,omitempty" json:"storage_size,omitempty" xml:"storage_size,omitempty"`
+	// The number of CPUs to allocate for the database on this node and to use for
+	// tuning Postgres. Defaults to the number of available CPUs on the host. Can
+	// include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will
+	// be enforced depends on the orchestrator.
+	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory in SI or IEC notation to allocate for the database on
+	// this node and to use for tuning Postgres. Defaults to the total available
+	// memory on the host. Whether this limit will be enforced depends on the
+	// orchestrator.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// Read replicas for this database node.
-	ReadReplicas *DatabaseReplicaSpecRequestBodyRequestBody `form:"read_replicas,omitempty" json:"read_replicas,omitempty" xml:"read_replicas,omitempty"`
+	ReadReplicas []*DatabaseReplicaSpecRequestBodyRequestBody `form:"read_replicas,omitempty" json:"read_replicas,omitempty" xml:"read_replicas,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
 	// with the settings provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
@@ -807,9 +1410,6 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 // DatabaseReplicaSpecRequestBodyRequestBody is used to define fields on
 // request body types.
 type DatabaseReplicaSpecRequestBodyRequestBody struct {
-	// A unique identifier for the instance that will be created from this replica
-	// specification.
-	InstanceID string `form:"instance_id" json:"instance_id" xml:"instance_id"`
 	// The ID of the host that should run this read replica.
 	HostID string `form:"host_id" json:"host_id" xml:"host_id"`
 }
@@ -821,19 +1421,12 @@ type DatabaseUserSpecRequestBodyRequestBody struct {
 	Username string `form:"username" json:"username" xml:"username"`
 	// The password for this database user.
 	Password string `form:"password" json:"password" xml:"password"`
+	// If true, this user will be granted database ownership.
+	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
+	// The attributes to assign to this database user.
+	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
 	// The roles to assign to this database user.
 	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
-	// Enables SUPERUSER for this database user when true.
-	Superuser *bool `form:"superuser,omitempty" json:"superuser,omitempty" xml:"superuser,omitempty"`
-}
-
-// DatabaseExtensionSpecRequestBodyRequestBody is used to define fields on
-// request body types.
-type DatabaseExtensionSpecRequestBodyRequestBody struct {
-	// The name of the extension to install in this database.
-	Name string `form:"name" json:"name" xml:"name"`
-	// The version of the extension to install in this database.
-	Version *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
 }
 
 // BackupConfigSpecRequestBodyRequestBody is used to define fields on request
@@ -899,6 +1492,70 @@ type BackupScheduleSpecRequestBodyRequestBody struct {
 	CronExpression string `form:"cron_expression" json:"cron_expression" xml:"cron_expression"`
 }
 
+// RestoreConfigSpecRequestBodyRequestBody is used to define fields on request
+// body types.
+type RestoreConfigSpecRequestBodyRequestBody struct {
+	// The backup provider for this restore configuration.
+	Provider string `form:"provider" json:"provider" xml:"provider"`
+	// The name of the node to restore this database from.
+	NodeName string `form:"node_name" json:"node_name" xml:"node_name"`
+	// The repository to restore this database from.
+	Repository *RestoreRepositorySpecRequestBodyRequestBody `form:"repository" json:"repository" xml:"repository"`
+}
+
+// RestoreRepositorySpecRequestBodyRequestBody is used to define fields on
+// request body types.
+type RestoreRepositorySpecRequestBodyRequestBody struct {
+	// The unique identifier of this repository.
+	ID string `form:"id" json:"id" xml:"id"`
+	// The type of this repository.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The S3 bucket name for this repository. Only applies when type = 's3'.
+	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
+	// The region of the S3 bucket for this repository. Only applies when type =
+	// 's3'.
+	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
+	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
+	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
+	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
+	// The optional GCS endpoint for this repository. Only applies when type =
+	// 'gcs'.
+	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	// The Azure account name for this repository. Only applies when type = 'azure'.
+	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
+	// The Azure container name for this repository. Only applies when type =
+	// 'azure'.
+	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
+	// The optional Azure endpoint for this repository. Only applies when type =
+	// 'azure'.
+	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	// The base path within the repository where backups are stored.
+	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+}
+
+// NewJoinClusterRequestBody builds the HTTP request body from the payload of
+// the "join-cluster" endpoint of the "control-plane" service.
+func NewJoinClusterRequestBody(p *controlplane.ClusterJoinToken) *JoinClusterRequestBody {
+	body := &JoinClusterRequestBody{
+		Token:     p.Token,
+		ServerURL: p.ServerURL,
+	}
+	return body
+}
+
+// NewGetJoinOptionsRequestBody builds the HTTP request body from the payload
+// of the "get-join-options" endpoint of the "control-plane" service.
+func NewGetJoinOptionsRequestBody(p *controlplane.ClusterJoinRequest) *GetJoinOptionsRequestBody {
+	body := &GetJoinOptionsRequestBody{
+		Token:       p.Token,
+		HostID:      p.HostID,
+		Hostname:    p.Hostname,
+		Ipv4Address: p.Ipv4Address,
+	}
+	return body
+}
+
 // NewCreateDatabaseRequestBody builds the HTTP request body from the payload
 // of the "create-database" endpoint of the "control-plane" service.
 func NewCreateDatabaseRequestBody(p *controlplane.CreateDatabaseRequest) *CreateDatabaseRequestBody {
@@ -922,6 +1579,115 @@ func NewUpdateDatabaseRequestBody(p *controlplane.UpdateDatabasePayload) *Update
 	return body
 }
 
+// NewInitClusterClusterJoinTokenOK builds a "control-plane" service
+// "init-cluster" endpoint result from a HTTP "OK" response.
+func NewInitClusterClusterJoinTokenOK(body *InitClusterResponseBody) *controlplane.ClusterJoinToken {
+	v := &controlplane.ClusterJoinToken{
+		Token:     *body.Token,
+		ServerURL: *body.ServerURL,
+	}
+
+	return v
+}
+
+// NewInitClusterClusterAlreadyInitialized builds a control-plane service
+// init-cluster endpoint cluster_already_initialized error.
+func NewInitClusterClusterAlreadyInitialized(body *InitClusterClusterAlreadyInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewJoinClusterClusterAlreadyInitialized builds a control-plane service
+// join-cluster endpoint cluster_already_initialized error.
+func NewJoinClusterClusterAlreadyInitialized(body *JoinClusterClusterAlreadyInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewGetJoinTokenClusterJoinTokenOK builds a "control-plane" service
+// "get-join-token" endpoint result from a HTTP "OK" response.
+func NewGetJoinTokenClusterJoinTokenOK(body *GetJoinTokenResponseBody) *controlplane.ClusterJoinToken {
+	v := &controlplane.ClusterJoinToken{
+		Token:     *body.Token,
+		ServerURL: *body.ServerURL,
+	}
+
+	return v
+}
+
+// NewGetJoinTokenClusterNotInitialized builds a control-plane service
+// get-join-token endpoint cluster_not_initialized error.
+func NewGetJoinTokenClusterNotInitialized(body *GetJoinTokenClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewGetJoinOptionsClusterJoinOptionsOK builds a "control-plane" service
+// "get-join-options" endpoint result from a HTTP "OK" response.
+func NewGetJoinOptionsClusterJoinOptionsOK(body *GetJoinOptionsResponseBody) *controlplane.ClusterJoinOptions {
+	v := &controlplane.ClusterJoinOptions{}
+	v.Peer = unmarshalClusterPeerResponseBodyToControlplaneClusterPeer(body.Peer)
+	if body.Credentials != nil {
+		v.Credentials = unmarshalClusterCredentialsResponseBodyToControlplaneClusterCredentials(body.Credentials)
+	}
+
+	return v
+}
+
+// NewGetJoinOptionsClusterNotInitialized builds a control-plane service
+// get-join-options endpoint cluster_not_initialized error.
+func NewGetJoinOptionsClusterNotInitialized(body *GetJoinOptionsClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewGetJoinOptionsInvalidJoinToken builds a control-plane service
+// get-join-options endpoint invalid_join_token error.
+func NewGetJoinOptionsInvalidJoinToken(body *GetJoinOptionsInvalidJoinTokenResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
 // NewInspectClusterClusterOK builds a "control-plane" service
 // "inspect-cluster" endpoint result from a HTTP "OK" response.
 func NewInspectClusterClusterOK(body *InspectClusterResponseBody) *controlplane.Cluster {
@@ -938,6 +1704,21 @@ func NewInspectClusterClusterOK(body *InspectClusterResponseBody) *controlplane.
 	return v
 }
 
+// NewInspectClusterClusterNotInitialized builds a control-plane service
+// inspect-cluster endpoint cluster_not_initialized error.
+func NewInspectClusterClusterNotInitialized(body *InspectClusterClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
 // NewListHostsHostOK builds a "control-plane" service "list-hosts" endpoint
 // result from a HTTP "OK" response.
 func NewListHostsHostOK(body []*HostResponse) []*controlplane.Host {
@@ -949,30 +1730,96 @@ func NewListHostsHostOK(body []*HostResponse) []*controlplane.Host {
 	return v
 }
 
-// NewInspectHostHostOK builds a "control-plane" service "inspect-host"
-// endpoint result from a HTTP "OK" response.
-func NewInspectHostHostOK(body *InspectHostResponseBody) *controlplane.Host {
-	v := &controlplane.Host{
-		ID:          *body.ID,
-		Type:        body.Type,
-		Cohort:      body.Cohort,
-		Hostname:    *body.Hostname,
-		Ipv4Address: *body.Ipv4Address,
+// NewListHostsClusterNotInitialized builds a control-plane service list-hosts
+// endpoint cluster_not_initialized error.
+func NewListHostsClusterNotInitialized(body *ListHostsClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
 	}
-	if body.Config != nil {
-		v.Config = unmarshalHostConfigurationResponseBodyToControlplaneHostConfiguration(body.Config)
-	}
-	v.Status = unmarshalHostStatusResponseBodyToControlplaneHostStatus(body.Status)
 
 	return v
 }
 
-// NewListDatabasesDatabaseOK builds a "control-plane" service "list-databases"
+// NewInspectHostHostOK builds a "control-plane" service "inspect-host"
 // endpoint result from a HTTP "OK" response.
-func NewListDatabasesDatabaseOK(body []*DatabaseResponse) []*controlplane.Database {
-	v := make([]*controlplane.Database, len(body))
+func NewInspectHostHostOK(body *InspectHostResponseBody) *controlplane.Host {
+	v := &controlplane.Host{
+		ID:           *body.ID,
+		Orchestrator: *body.Orchestrator,
+		Hostname:     *body.Hostname,
+		Ipv4Address:  *body.Ipv4Address,
+		Cpus:         *body.Cpus,
+		Memory:       *body.Memory,
+	}
+	if body.Cohort != nil {
+		v.Cohort = unmarshalHostCohortResponseBodyToControlplaneHostCohort(body.Cohort)
+	}
+	v.Status = unmarshalHostStatusResponseBodyToControlplaneHostStatus(body.Status)
+	v.DefaultPgedgeVersion = unmarshalPgEdgeVersionResponseBodyToControlplanePgEdgeVersion(body.DefaultPgedgeVersion)
+	v.SupportedPgedgeVersions = make([]*controlplane.PgEdgeVersion, len(body.SupportedPgedgeVersions))
+	for i, val := range body.SupportedPgedgeVersions {
+		v.SupportedPgedgeVersions[i] = unmarshalPgEdgeVersionResponseBodyToControlplanePgEdgeVersion(val)
+	}
+
+	return v
+}
+
+// NewInspectHostClusterNotInitialized builds a control-plane service
+// inspect-host endpoint cluster_not_initialized error.
+func NewInspectHostClusterNotInitialized(body *InspectHostClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewRemoveHostClusterNotInitialized builds a control-plane service
+// remove-host endpoint cluster_not_initialized error.
+func NewRemoveHostClusterNotInitialized(body *RemoveHostClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewListDatabasesDatabaseCollectionOK builds a "control-plane" service
+// "list-databases" endpoint result from a HTTP "OK" response.
+func NewListDatabasesDatabaseCollectionOK(body ListDatabasesResponseBody) controlplaneviews.DatabaseCollectionView {
+	v := make([]*controlplaneviews.DatabaseView, len(body))
 	for i, val := range body {
-		v[i] = unmarshalDatabaseResponseToControlplaneDatabase(val)
+		v[i] = unmarshalDatabaseResponseToControlplaneviewsDatabaseView(val)
+	}
+
+	return v
+}
+
+// NewListDatabasesClusterNotInitialized builds a control-plane service
+// list-databases endpoint cluster_not_initialized error.
+func NewListDatabasesClusterNotInitialized(body *ListDatabasesClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
 	}
 
 	return v
@@ -980,17 +1827,67 @@ func NewListDatabasesDatabaseOK(body []*DatabaseResponse) []*controlplane.Databa
 
 // NewCreateDatabaseDatabaseOK builds a "control-plane" service
 // "create-database" endpoint result from a HTTP "OK" response.
-func NewCreateDatabaseDatabaseOK(body *CreateDatabaseResponseBody) *controlplane.Database {
-	v := &controlplane.Database{
-		ID:        *body.ID,
+func NewCreateDatabaseDatabaseOK(body *CreateDatabaseResponseBody) *controlplaneviews.DatabaseView {
+	v := &controlplaneviews.DatabaseView{
+		ID:        body.ID,
 		TenantID:  body.TenantID,
 		CreatedAt: body.CreatedAt,
 		UpdatedAt: body.UpdatedAt,
+		State:     body.State,
 	}
-	v.Status = unmarshalDatabaseStatusResponseBodyToControlplaneDatabaseStatus(body.Status)
-	v.Instances = unmarshalInstanceResponseBodyToControlplaneInstance(body.Instances)
+	if body.Instances != nil {
+		v.Instances = make([]*controlplaneviews.InstanceView, len(body.Instances))
+		for i, val := range body.Instances {
+			v.Instances[i] = unmarshalInstanceResponseBodyAbbreviatedToControlplaneviewsInstanceView(val)
+		}
+	}
 	if body.Spec != nil {
-		v.Spec = unmarshalDatabaseSpecResponseBodyToControlplaneDatabaseSpec(body.Spec)
+		v.Spec = unmarshalDatabaseSpecResponseBodyToControlplaneviewsDatabaseSpecView(body.Spec)
+	}
+
+	return v
+}
+
+// NewCreateDatabaseDatabaseAlreadyExists builds a control-plane service
+// create-database endpoint database_already_exists error.
+func NewCreateDatabaseDatabaseAlreadyExists(body *CreateDatabaseDatabaseAlreadyExistsResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewCreateDatabaseClusterNotInitialized builds a control-plane service
+// create-database endpoint cluster_not_initialized error.
+func NewCreateDatabaseClusterNotInitialized(body *CreateDatabaseClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewCreateDatabaseInvalidInput builds a control-plane service create-database
+// endpoint invalid_input error.
+func NewCreateDatabaseInvalidInput(body *CreateDatabaseInvalidInputResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
 	}
 
 	return v
@@ -998,17 +1895,37 @@ func NewCreateDatabaseDatabaseOK(body *CreateDatabaseResponseBody) *controlplane
 
 // NewInspectDatabaseDatabaseOK builds a "control-plane" service
 // "inspect-database" endpoint result from a HTTP "OK" response.
-func NewInspectDatabaseDatabaseOK(body *InspectDatabaseResponseBody) *controlplane.Database {
-	v := &controlplane.Database{
-		ID:        *body.ID,
+func NewInspectDatabaseDatabaseOK(body *InspectDatabaseResponseBody) *controlplaneviews.DatabaseView {
+	v := &controlplaneviews.DatabaseView{
+		ID:        body.ID,
 		TenantID:  body.TenantID,
 		CreatedAt: body.CreatedAt,
 		UpdatedAt: body.UpdatedAt,
+		State:     body.State,
 	}
-	v.Status = unmarshalDatabaseStatusResponseBodyToControlplaneDatabaseStatus(body.Status)
-	v.Instances = unmarshalInstanceResponseBodyToControlplaneInstance(body.Instances)
+	if body.Instances != nil {
+		v.Instances = make([]*controlplaneviews.InstanceView, len(body.Instances))
+		for i, val := range body.Instances {
+			v.Instances[i] = unmarshalInstanceResponseBodyAbbreviatedToControlplaneviewsInstanceView(val)
+		}
+	}
 	if body.Spec != nil {
-		v.Spec = unmarshalDatabaseSpecResponseBodyToControlplaneDatabaseSpec(body.Spec)
+		v.Spec = unmarshalDatabaseSpecResponseBodyToControlplaneviewsDatabaseSpecView(body.Spec)
+	}
+
+	return v
+}
+
+// NewInspectDatabaseClusterNotInitialized builds a control-plane service
+// inspect-database endpoint cluster_not_initialized error.
+func NewInspectDatabaseClusterNotInitialized(body *InspectDatabaseClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
 	}
 
 	return v
@@ -1016,20 +1933,104 @@ func NewInspectDatabaseDatabaseOK(body *InspectDatabaseResponseBody) *controlpla
 
 // NewUpdateDatabaseDatabaseOK builds a "control-plane" service
 // "update-database" endpoint result from a HTTP "OK" response.
-func NewUpdateDatabaseDatabaseOK(body *UpdateDatabaseResponseBody) *controlplane.Database {
-	v := &controlplane.Database{
-		ID:        *body.ID,
+func NewUpdateDatabaseDatabaseOK(body *UpdateDatabaseResponseBody) *controlplaneviews.DatabaseView {
+	v := &controlplaneviews.DatabaseView{
+		ID:        body.ID,
 		TenantID:  body.TenantID,
 		CreatedAt: body.CreatedAt,
 		UpdatedAt: body.UpdatedAt,
+		State:     body.State,
 	}
-	v.Status = unmarshalDatabaseStatusResponseBodyToControlplaneDatabaseStatus(body.Status)
-	v.Instances = unmarshalInstanceResponseBodyToControlplaneInstance(body.Instances)
+	if body.Instances != nil {
+		v.Instances = make([]*controlplaneviews.InstanceView, len(body.Instances))
+		for i, val := range body.Instances {
+			v.Instances[i] = unmarshalInstanceResponseBodyAbbreviatedToControlplaneviewsInstanceView(val)
+		}
+	}
 	if body.Spec != nil {
-		v.Spec = unmarshalDatabaseSpecResponseBodyToControlplaneDatabaseSpec(body.Spec)
+		v.Spec = unmarshalDatabaseSpecResponseBodyToControlplaneviewsDatabaseSpecView(body.Spec)
 	}
 
 	return v
+}
+
+// NewUpdateDatabaseClusterNotInitialized builds a control-plane service
+// update-database endpoint cluster_not_initialized error.
+func NewUpdateDatabaseClusterNotInitialized(body *UpdateDatabaseClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewDeleteDatabaseClusterNotInitialized builds a control-plane service
+// delete-database endpoint cluster_not_initialized error.
+func NewDeleteDatabaseClusterNotInitialized(body *DeleteDatabaseClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// ValidateInitClusterResponseBody runs the validations defined on
+// Init-ClusterResponseBody
+func ValidateInitClusterResponseBody(body *InitClusterResponseBody) (err error) {
+	if body.Token == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("token", "body"))
+	}
+	if body.ServerURL == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("server_url", "body"))
+	}
+	if body.ServerURL != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.server_url", *body.ServerURL, goa.FormatURI))
+	}
+	return
+}
+
+// ValidateGetJoinTokenResponseBody runs the validations defined on
+// Get-Join-TokenResponseBody
+func ValidateGetJoinTokenResponseBody(body *GetJoinTokenResponseBody) (err error) {
+	if body.Token == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("token", "body"))
+	}
+	if body.ServerURL == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("server_url", "body"))
+	}
+	if body.ServerURL != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.server_url", *body.ServerURL, goa.FormatURI))
+	}
+	return
+}
+
+// ValidateGetJoinOptionsResponseBody runs the validations defined on
+// Get-Join-OptionsResponseBody
+func ValidateGetJoinOptionsResponseBody(body *GetJoinOptionsResponseBody) (err error) {
+	if body.Peer == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("peer", "body"))
+	}
+	if body.Peer != nil {
+		if err2 := ValidateClusterPeerResponseBody(body.Peer); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.Credentials != nil {
+		if err2 := ValidateClusterCredentialsResponseBody(body.Credentials); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
 }
 
 // ValidateInspectClusterResponseBody runs the validations defined on
@@ -1046,6 +2047,12 @@ func ValidateInspectClusterResponseBody(body *InspectClusterResponseBody) (err e
 	}
 	if body.Hosts == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("hosts", "body"))
+	}
+	if body.ID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+	}
+	if body.TenantID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.tenant_id", *body.TenantID, goa.FormatUUID))
 	}
 	if body.Status != nil {
 		if err2 := ValidateClusterStatusResponseBody(body.Status); err2 != nil {
@@ -1068,8 +2075,8 @@ func ValidateInspectHostResponseBody(body *InspectHostResponseBody) (err error) 
 	if body.ID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
 	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	if body.Orchestrator == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("orchestrator", "body"))
 	}
 	if body.Hostname == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("hostname", "body"))
@@ -1077,9 +2084,27 @@ func ValidateInspectHostResponseBody(body *InspectHostResponseBody) (err error) 
 	if body.Ipv4Address == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("ipv4_address", "body"))
 	}
-	if body.Type != nil {
-		if !(*body.Type == "swarm" || *body.Type == "systemd") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"swarm", "systemd"}))
+	if body.Cpus == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("cpus", "body"))
+	}
+	if body.Memory == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("memory", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.DefaultPgedgeVersion == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("default_pgedge_version", "body"))
+	}
+	if body.SupportedPgedgeVersions == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("supported_pgedge_versions", "body"))
+	}
+	if body.ID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+	}
+	if body.Cohort != nil {
+		if err2 := ValidateHostCohortResponseBody(body.Cohort); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	if body.Ipv4Address != nil {
@@ -1090,113 +2115,446 @@ func ValidateInspectHostResponseBody(body *InspectHostResponseBody) (err error) 
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	return
-}
-
-// ValidateCreateDatabaseResponseBody runs the validations defined on
-// Create-DatabaseResponseBody
-func ValidateCreateDatabaseResponseBody(body *CreateDatabaseResponseBody) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.Instances == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("instances", "body"))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.UpdatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
-	}
-	if body.Status != nil {
-		if err2 := ValidateDatabaseStatusResponseBody(body.Status); err2 != nil {
+	if body.DefaultPgedgeVersion != nil {
+		if err2 := ValidatePgEdgeVersionResponseBody(body.DefaultPgedgeVersion); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if body.Instances != nil {
-		if err2 := ValidateInstanceResponseBody(body.Instances); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Spec != nil {
-		if err2 := ValidateDatabaseSpecResponseBody(body.Spec); err2 != nil {
-			err = goa.MergeErrors(err, err2)
+	for _, e := range body.SupportedPgedgeVersions {
+		if e != nil {
+			if err2 := ValidatePgEdgeVersionResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	return
 }
 
-// ValidateInspectDatabaseResponseBody runs the validations defined on
-// Inspect-DatabaseResponseBody
-func ValidateInspectDatabaseResponseBody(body *InspectDatabaseResponseBody) (err error) {
+// ValidateInitClusterClusterAlreadyInitializedResponseBody runs the
+// validations defined on init-cluster_cluster_already_initialized_response_body
+func ValidateInitClusterClusterAlreadyInitializedResponseBody(body *InitClusterClusterAlreadyInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
 	if body.ID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
 	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Instances == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("instances", "body"))
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
 	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
 	}
-	if body.UpdatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
-	}
-	if body.Status != nil {
-		if err2 := ValidateDatabaseStatusResponseBody(body.Status); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Instances != nil {
-		if err2 := ValidateInstanceResponseBody(body.Instances); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Spec != nil {
-		if err2 := ValidateDatabaseSpecResponseBody(body.Spec); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
 	}
 	return
 }
 
-// ValidateUpdateDatabaseResponseBody runs the validations defined on
-// Update-DatabaseResponseBody
-func ValidateUpdateDatabaseResponseBody(body *UpdateDatabaseResponseBody) (err error) {
+// ValidateJoinClusterClusterAlreadyInitializedResponseBody runs the
+// validations defined on join-cluster_cluster_already_initialized_response_body
+func ValidateJoinClusterClusterAlreadyInitializedResponseBody(body *JoinClusterClusterAlreadyInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
 	if body.ID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
 	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Instances == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("instances", "body"))
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
 	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
 	}
-	if body.UpdatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
 	}
-	if body.Status != nil {
-		if err2 := ValidateDatabaseStatusResponseBody(body.Status); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
+	return
+}
+
+// ValidateGetJoinTokenClusterNotInitializedResponseBody runs the validations
+// defined on get-join-token_cluster_not_initialized_response_body
+func ValidateGetJoinTokenClusterNotInitializedResponseBody(body *GetJoinTokenClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Instances != nil {
-		if err2 := ValidateInstanceResponseBody(body.Instances); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
 	}
-	if body.Spec != nil {
-		if err2 := ValidateDatabaseSpecResponseBody(body.Spec); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateGetJoinOptionsClusterNotInitializedResponseBody runs the validations
+// defined on get-join-options_cluster_not_initialized_response_body
+func ValidateGetJoinOptionsClusterNotInitializedResponseBody(body *GetJoinOptionsClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateGetJoinOptionsInvalidJoinTokenResponseBody runs the validations
+// defined on get-join-options_invalid_join_token_response_body
+func ValidateGetJoinOptionsInvalidJoinTokenResponseBody(body *GetJoinOptionsInvalidJoinTokenResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateInspectClusterClusterNotInitializedResponseBody runs the validations
+// defined on inspect-cluster_cluster_not_initialized_response_body
+func ValidateInspectClusterClusterNotInitializedResponseBody(body *InspectClusterClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateListHostsClusterNotInitializedResponseBody runs the validations
+// defined on list-hosts_cluster_not_initialized_response_body
+func ValidateListHostsClusterNotInitializedResponseBody(body *ListHostsClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateInspectHostClusterNotInitializedResponseBody runs the validations
+// defined on inspect-host_cluster_not_initialized_response_body
+func ValidateInspectHostClusterNotInitializedResponseBody(body *InspectHostClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateRemoveHostClusterNotInitializedResponseBody runs the validations
+// defined on remove-host_cluster_not_initialized_response_body
+func ValidateRemoveHostClusterNotInitializedResponseBody(body *RemoveHostClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateListDatabasesClusterNotInitializedResponseBody runs the validations
+// defined on list-databases_cluster_not_initialized_response_body
+func ValidateListDatabasesClusterNotInitializedResponseBody(body *ListDatabasesClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateCreateDatabaseDatabaseAlreadyExistsResponseBody runs the validations
+// defined on create-database_database_already_exists_response_body
+func ValidateCreateDatabaseDatabaseAlreadyExistsResponseBody(body *CreateDatabaseDatabaseAlreadyExistsResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateCreateDatabaseClusterNotInitializedResponseBody runs the validations
+// defined on create-database_cluster_not_initialized_response_body
+func ValidateCreateDatabaseClusterNotInitializedResponseBody(body *CreateDatabaseClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateCreateDatabaseInvalidInputResponseBody runs the validations defined
+// on create-database_invalid_input_response_body
+func ValidateCreateDatabaseInvalidInputResponseBody(body *CreateDatabaseInvalidInputResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateInspectDatabaseClusterNotInitializedResponseBody runs the
+// validations defined on inspect-database_cluster_not_initialized_response_body
+func ValidateInspectDatabaseClusterNotInitializedResponseBody(body *InspectDatabaseClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateUpdateDatabaseClusterNotInitializedResponseBody runs the validations
+// defined on update-database_cluster_not_initialized_response_body
+func ValidateUpdateDatabaseClusterNotInitializedResponseBody(body *UpdateDatabaseClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateDeleteDatabaseClusterNotInitializedResponseBody runs the validations
+// defined on delete-database_cluster_not_initialized_response_body
+func ValidateDeleteDatabaseClusterNotInitializedResponseBody(body *DeleteDatabaseClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateClusterPeerResponseBody runs the validations defined on
+// ClusterPeerResponseBody
+func ValidateClusterPeerResponseBody(body *ClusterPeerResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.PeerURL == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("peer_url", "body"))
+	}
+	if body.ClientURL == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("client_url", "body"))
+	}
+	if body.Name != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.name", *body.Name, goa.FormatUUID))
+	}
+	if body.PeerURL != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.peer_url", *body.PeerURL, goa.FormatURI))
+	}
+	if body.ClientURL != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.client_url", *body.ClientURL, goa.FormatURI))
+	}
+	return
+}
+
+// ValidateClusterCredentialsResponseBody runs the validations defined on
+// ClusterCredentialsResponseBody
+func ValidateClusterCredentialsResponseBody(body *ClusterCredentialsResponseBody) (err error) {
+	if body.CaCert == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("ca_cert", "body"))
+	}
+	if body.ClientCert == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("client_cert", "body"))
+	}
+	if body.ClientKey == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("client_key", "body"))
+	}
+	if body.ServerCert == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("server_cert", "body"))
+	}
+	if body.ServerKey == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("server_key", "body"))
 	}
 	return
 }
@@ -1220,8 +2578,8 @@ func ValidateHostResponseBody(body *HostResponseBody) (err error) {
 	if body.ID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
 	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	if body.Orchestrator == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("orchestrator", "body"))
 	}
 	if body.Hostname == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("hostname", "body"))
@@ -1229,9 +2587,27 @@ func ValidateHostResponseBody(body *HostResponseBody) (err error) {
 	if body.Ipv4Address == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("ipv4_address", "body"))
 	}
-	if body.Type != nil {
-		if !(*body.Type == "swarm" || *body.Type == "systemd") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"swarm", "systemd"}))
+	if body.Cpus == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("cpus", "body"))
+	}
+	if body.Memory == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("memory", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.DefaultPgedgeVersion == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("default_pgedge_version", "body"))
+	}
+	if body.SupportedPgedgeVersions == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("supported_pgedge_versions", "body"))
+	}
+	if body.ID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+	}
+	if body.Cohort != nil {
+		if err2 := ValidateHostCohortResponseBody(body.Cohort); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	if body.Ipv4Address != nil {
@@ -1242,6 +2618,36 @@ func ValidateHostResponseBody(body *HostResponseBody) (err error) {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
+	if body.DefaultPgedgeVersion != nil {
+		if err2 := ValidatePgEdgeVersionResponseBody(body.DefaultPgedgeVersion); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	for _, e := range body.SupportedPgedgeVersions {
+		if e != nil {
+			if err2 := ValidatePgEdgeVersionResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateHostCohortResponseBody runs the validations defined on
+// HostCohortResponseBody
+func ValidateHostCohortResponseBody(body *HostCohortResponseBody) (err error) {
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.CohortID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("cohort_id", "body"))
+	}
+	if body.MemberID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("member_id", "body"))
+	}
+	if body.ControlAvailable == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("control_available", "body"))
+	}
 	return
 }
 
@@ -1251,10 +2657,50 @@ func ValidateHostStatusResponseBody(body *HostStatusResponseBody) (err error) {
 	if body.State == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
 	}
+	if body.UpdatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("updated_at", "body"))
+	}
+	if body.Components == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("components", "body"))
+	}
 	if body.State != nil {
-		if !(*body.State == "available" || *body.State == "unreachable" || *body.State == "error") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"available", "unreachable", "error"}))
+		if !(*body.State == "healthy" || *body.State == "unreachable" || *body.State == "degraded" || *body.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"healthy", "unreachable", "degraded", "unknown"}))
 		}
+	}
+	if body.UpdatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
+	}
+	for _, v := range body.Components {
+		if v != nil {
+			if err2 := ValidateComponentStatusResponseBody(v); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateComponentStatusResponseBody runs the validations defined on
+// ComponentStatusResponseBody
+func ValidateComponentStatusResponseBody(body *ComponentStatusResponseBody) (err error) {
+	if body.Error == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("error", "body"))
+	}
+	if body.Details == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("details", "body"))
+	}
+	return
+}
+
+// ValidatePgEdgeVersionResponseBody runs the validations defined on
+// PgEdgeVersionResponseBody
+func ValidatePgEdgeVersionResponseBody(body *PgEdgeVersionResponseBody) (err error) {
+	if body.PostgresVersion == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("postgres_version", "body"))
+	}
+	if body.SpockVersion == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("spock_version", "body"))
 	}
 	return
 }
@@ -1264,8 +2710,8 @@ func ValidateHostResponse(body *HostResponse) (err error) {
 	if body.ID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
 	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	if body.Orchestrator == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("orchestrator", "body"))
 	}
 	if body.Hostname == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("hostname", "body"))
@@ -1273,9 +2719,27 @@ func ValidateHostResponse(body *HostResponse) (err error) {
 	if body.Ipv4Address == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("ipv4_address", "body"))
 	}
-	if body.Type != nil {
-		if !(*body.Type == "swarm" || *body.Type == "systemd") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"swarm", "systemd"}))
+	if body.Cpus == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("cpus", "body"))
+	}
+	if body.Memory == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("memory", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.DefaultPgedgeVersion == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("default_pgedge_version", "body"))
+	}
+	if body.SupportedPgedgeVersions == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("supported_pgedge_versions", "body"))
+	}
+	if body.ID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+	}
+	if body.Cohort != nil {
+		if err2 := ValidateHostCohortResponse(body.Cohort); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	if body.Ipv4Address != nil {
@@ -1286,6 +2750,35 @@ func ValidateHostResponse(body *HostResponse) (err error) {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
+	if body.DefaultPgedgeVersion != nil {
+		if err2 := ValidatePgEdgeVersionResponse(body.DefaultPgedgeVersion); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	for _, e := range body.SupportedPgedgeVersions {
+		if e != nil {
+			if err2 := ValidatePgEdgeVersionResponse(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateHostCohortResponse runs the validations defined on HostCohortResponse
+func ValidateHostCohortResponse(body *HostCohortResponse) (err error) {
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.CohortID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("cohort_id", "body"))
+	}
+	if body.MemberID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("member_id", "body"))
+	}
+	if body.ControlAvailable == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("control_available", "body"))
+	}
 	return
 }
 
@@ -1294,10 +2787,50 @@ func ValidateHostStatusResponse(body *HostStatusResponse) (err error) {
 	if body.State == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
 	}
+	if body.UpdatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("updated_at", "body"))
+	}
+	if body.Components == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("components", "body"))
+	}
 	if body.State != nil {
-		if !(*body.State == "available" || *body.State == "unreachable" || *body.State == "error") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"available", "unreachable", "error"}))
+		if !(*body.State == "healthy" || *body.State == "unreachable" || *body.State == "degraded" || *body.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"healthy", "unreachable", "degraded", "unknown"}))
 		}
+	}
+	if body.UpdatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
+	}
+	for _, v := range body.Components {
+		if v != nil {
+			if err2 := ValidateComponentStatusResponse(v); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateComponentStatusResponse runs the validations defined on
+// ComponentStatusResponse
+func ValidateComponentStatusResponse(body *ComponentStatusResponse) (err error) {
+	if body.Error == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("error", "body"))
+	}
+	if body.Details == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("details", "body"))
+	}
+	return
+}
+
+// ValidatePgEdgeVersionResponse runs the validations defined on
+// PgEdgeVersionResponse
+func ValidatePgEdgeVersionResponse(body *PgEdgeVersionResponse) (err error) {
+	if body.PostgresVersion == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("postgres_version", "body"))
+	}
+	if body.SpockVersion == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("spock_version", "body"))
 	}
 	return
 }
@@ -1307,11 +2840,20 @@ func ValidateDatabaseResponse(body *DatabaseResponse) (err error) {
 	if body.ID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
 	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	if body.CreatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
 	}
-	if body.Instances == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("instances", "body"))
+	if body.UpdatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("updated_at", "body"))
+	}
+	if body.State == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
+	}
+	if body.ID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+	}
+	if body.TenantID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.tenant_id", *body.TenantID, goa.FormatUUID))
 	}
 	if body.CreatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
@@ -1319,13 +2861,13 @@ func ValidateDatabaseResponse(body *DatabaseResponse) (err error) {
 	if body.UpdatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
 	}
-	if body.Status != nil {
-		if err2 := ValidateDatabaseStatusResponse(body.Status); err2 != nil {
-			err = goa.MergeErrors(err, err2)
+	if body.State != nil {
+		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "available" || *body.State == "deleting" || *body.State == "degraded" || *body.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "available", "deleting", "degraded", "unknown"}))
 		}
 	}
 	if body.Instances != nil {
-		if err2 := ValidateInstanceResponse(body.Instances); err2 != nil {
+		if err2 := ValidateInstanceCollectionResponse(body.Instances); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -1337,16 +2879,15 @@ func ValidateDatabaseResponse(body *DatabaseResponse) (err error) {
 	return
 }
 
-// ValidateDatabaseStatusResponse runs the validations defined on
-// DatabaseStatusResponse
-func ValidateDatabaseStatusResponse(body *DatabaseStatusResponse) (err error) {
-	if body.State != nil {
-		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "available" || *body.State == "error") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "available", "error"}))
+// ValidateInstanceCollectionResponse runs the validations defined on
+// InstanceCollectionResponse
+func ValidateInstanceCollectionResponse(body InstanceCollectionResponse) (err error) {
+	for _, e := range body {
+		if e != nil {
+			if err2 := ValidateInstanceResponse(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
-	}
-	if body.UpdatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
 	}
 	return
 }
@@ -1356,8 +2897,26 @@ func ValidateInstanceResponse(body *InstanceResponse) (err error) {
 	if body.ID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
 	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	if body.HostID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "body"))
+	}
+	if body.NodeName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("node_name", "body"))
+	}
+	if body.CreatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
+	}
+	if body.UpdatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("updated_at", "body"))
+	}
+	if body.State == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
+	}
+	if body.ID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+	}
+	if body.HostID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
 	}
 	if body.CreatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
@@ -1365,30 +2924,9 @@ func ValidateInstanceResponse(body *InstanceResponse) (err error) {
 	if body.UpdatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
 	}
-	if body.Status != nil {
-		if err2 := ValidateInstanceStatusResponse(body.Status); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	for _, e := range body.Interfaces {
-		if e != nil {
-			if err2 := ValidateInstanceInterfaceResponse(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	return
-}
-
-// ValidateInstanceStatusResponse runs the validations defined on
-// InstanceStatusResponse
-func ValidateInstanceStatusResponse(body *InstanceStatusResponse) (err error) {
-	if body.State == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
-	}
 	if body.State != nil {
-		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "backing_up" || *body.State == "available" || *body.State == "error") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "backing_up", "available", "error"}))
+		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "backing_up" || *body.State == "restoring" || *body.State == "deleting" || *body.State == "available" || *body.State == "degraded" || *body.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "backing_up", "restoring", "deleting", "available", "degraded", "unknown"}))
 		}
 	}
 	if body.PatroniState != nil {
@@ -1401,8 +2939,12 @@ func ValidateInstanceStatusResponse(body *InstanceStatusResponse) (err error) {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.role", *body.Role, []any{"replica", "primary"}))
 		}
 	}
-	if body.UpdatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
+	for _, e := range body.Interfaces {
+		if e != nil {
+			if err2 := ValidateInstanceInterfaceResponse(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
 	}
 	return
 }
@@ -1410,6 +2952,12 @@ func ValidateInstanceStatusResponse(body *InstanceStatusResponse) (err error) {
 // ValidateInstanceInterfaceResponse runs the validations defined on
 // InstanceInterfaceResponse
 func ValidateInstanceInterfaceResponse(body *InstanceInterfaceResponse) (err error) {
+	if body.NetworkType == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("network_type", "body"))
+	}
+	if body.Port == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("port", "body"))
+	}
 	if body.NetworkType != nil {
 		if !(*body.NetworkType == "docker" || *body.NetworkType == "host") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.network_type", *body.NetworkType, []any{"docker", "host"}))
@@ -1454,18 +3002,16 @@ func ValidateDatabaseSpecResponse(body *DatabaseSpecResponse) (err error) {
 			}
 		}
 	}
-	for _, e := range body.Extensions {
-		if e != nil {
-			if err2 := ValidateDatabaseExtensionSpecResponse(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
 	for _, e := range body.BackupConfigs {
 		if e != nil {
 			if err2 := ValidateBackupConfigSpecResponse(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
+		}
+	}
+	if body.RestoreConfig != nil {
+		if err2 := ValidateRestoreConfigSpecResponse(body.RestoreConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -1477,20 +3023,22 @@ func ValidateDatabaseNodeSpecResponse(body *DatabaseNodeSpecResponse) (err error
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.InstanceID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("instance_id", "body"))
-	}
 	if body.HostID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "body"))
+	}
+	if body.HostID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
 	}
 	if body.PostgresVersion != nil {
 		if !(*body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"16", "17"}))
 		}
 	}
-	if body.ReadReplicas != nil {
-		if err2 := ValidateDatabaseReplicaSpecResponse(body.ReadReplicas); err2 != nil {
-			err = goa.MergeErrors(err, err2)
+	for _, e := range body.ReadReplicas {
+		if e != nil {
+			if err2 := ValidateDatabaseReplicaSpecResponse(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	return
@@ -1499,11 +3047,11 @@ func ValidateDatabaseNodeSpecResponse(body *DatabaseNodeSpecResponse) (err error
 // ValidateDatabaseReplicaSpecResponse runs the validations defined on
 // DatabaseReplicaSpecResponse
 func ValidateDatabaseReplicaSpecResponse(body *DatabaseReplicaSpecResponse) (err error) {
-	if body.InstanceID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("instance_id", "body"))
-	}
 	if body.HostID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "body"))
+	}
+	if body.HostID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
 	}
 	return
 }
@@ -1516,15 +3064,6 @@ func ValidateDatabaseUserSpecResponse(body *DatabaseUserSpecResponse) (err error
 	}
 	if body.Password == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("password", "body"))
-	}
-	return
-}
-
-// ValidateDatabaseExtensionSpecResponse runs the validations defined on
-// DatabaseExtensionSpecResponse
-func ValidateDatabaseExtensionSpecResponse(body *DatabaseExtensionSpecResponse) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
 	return
 }
@@ -1566,6 +3105,9 @@ func ValidateBackupRepositorySpecResponse(body *BackupRepositorySpecResponse) (e
 	if body.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
+	if body.ID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"s3", "gcs", "azure"}))
@@ -1594,6 +3136,51 @@ func ValidateBackupScheduleSpecResponse(body *BackupScheduleSpecResponse) (err e
 	if body.Type != nil {
 		if !(*body.Type == "full" || *body.Type == "incr") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"full", "incr"}))
+		}
+	}
+	return
+}
+
+// ValidateRestoreConfigSpecResponse runs the validations defined on
+// RestoreConfigSpecResponse
+func ValidateRestoreConfigSpecResponse(body *RestoreConfigSpecResponse) (err error) {
+	if body.Provider == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("provider", "body"))
+	}
+	if body.NodeName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("node_name", "body"))
+	}
+	if body.Repository == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
+	}
+	if body.Provider != nil {
+		if !(*body.Provider == "pgbackrest" || *body.Provider == "pg_dump") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.provider", *body.Provider, []any{"pgbackrest", "pg_dump"}))
+		}
+	}
+	if body.Repository != nil {
+		if err2 := ValidateRestoreRepositorySpecResponse(body.Repository); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateRestoreRepositorySpecResponse runs the validations defined on
+// RestoreRepositorySpecResponse
+func ValidateRestoreRepositorySpecResponse(body *RestoreRepositorySpecResponse) (err error) {
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.ID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+	}
+	if body.Type != nil {
+		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"s3", "gcs", "azure"}))
 		}
 	}
 	return
@@ -1629,17 +3216,37 @@ func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) 
 			}
 		}
 	}
+	if body.RestoreConfig != nil {
+		if err2 := ValidateRestoreConfigSpecRequestBody(body.RestoreConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
 	return
 }
 
 // ValidateDatabaseNodeSpecRequestBody runs the validations defined on
 // DatabaseNodeSpecRequestBody
 func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err error) {
+	err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", body.HostID, goa.FormatUUID))
 	if body.PostgresVersion != nil {
 		if !(*body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"16", "17"}))
 		}
 	}
+	for _, e := range body.ReadReplicas {
+		if e != nil {
+			if err2 := ValidateDatabaseReplicaSpecRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateDatabaseReplicaSpecRequestBody runs the validations defined on
+// DatabaseReplicaSpecRequestBody
+func ValidateDatabaseReplicaSpecRequestBody(body *DatabaseReplicaSpecRequestBody) (err error) {
+	err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", body.HostID, goa.FormatUUID))
 	return
 }
 
@@ -1669,6 +3276,9 @@ func ValidateBackupConfigSpecRequestBody(body *BackupConfigSpecRequestBody) (err
 // ValidateBackupRepositorySpecRequestBody runs the validations defined on
 // BackupRepositorySpecRequestBody
 func ValidateBackupRepositorySpecRequestBody(body *BackupRepositorySpecRequestBody) (err error) {
+	if body.ID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+	}
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure"}))
 	}
@@ -1689,43 +3299,39 @@ func ValidateBackupScheduleSpecRequestBody(body *BackupScheduleSpecRequestBody) 
 	return
 }
 
-// ValidateDatabaseStatusResponseBody runs the validations defined on
-// DatabaseStatusResponseBody
-func ValidateDatabaseStatusResponseBody(body *DatabaseStatusResponseBody) (err error) {
-	if body.State != nil {
-		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "available" || *body.State == "error") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "available", "error"}))
-		}
+// ValidateRestoreConfigSpecRequestBody runs the validations defined on
+// RestoreConfigSpecRequestBody
+func ValidateRestoreConfigSpecRequestBody(body *RestoreConfigSpecRequestBody) (err error) {
+	if body.Repository == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
 	}
-	if body.UpdatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
+	if !(body.Provider == "pgbackrest" || body.Provider == "pg_dump") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.provider", body.Provider, []any{"pgbackrest", "pg_dump"}))
+	}
+	if body.Repository != nil {
+		if err2 := ValidateRestoreRepositorySpecRequestBody(body.Repository); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
 	}
 	return
 }
 
-// ValidateInstanceResponseBody runs the validations defined on
-// InstanceResponseBody
-func ValidateInstanceResponseBody(body *InstanceResponseBody) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+// ValidateRestoreRepositorySpecRequestBody runs the validations defined on
+// RestoreRepositorySpecRequestBody
+func ValidateRestoreRepositorySpecRequestBody(body *RestoreRepositorySpecRequestBody) (err error) {
+	err = goa.MergeErrors(err, goa.ValidateFormat("body.id", body.ID, goa.FormatUUID))
+	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure"}))
 	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.UpdatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
-	}
-	if body.Status != nil {
-		if err2 := ValidateInstanceStatusResponseBody(body.Status); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	for _, e := range body.Interfaces {
+	return
+}
+
+// ValidateInstanceResponseBodyAbbreviatedCollection runs the validations
+// defined on InstanceResponseBodyAbbreviatedCollection
+func ValidateInstanceResponseBodyAbbreviatedCollection(body InstanceResponseBodyAbbreviatedCollection) (err error) {
+	for _, e := range body {
 		if e != nil {
-			if err2 := ValidateInstanceInterfaceResponseBody(e); err2 != nil {
+			if err2 := ValidateInstanceResponseBodyAbbreviated(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -1733,43 +3339,31 @@ func ValidateInstanceResponseBody(body *InstanceResponseBody) (err error) {
 	return
 }
 
-// ValidateInstanceStatusResponseBody runs the validations defined on
-// InstanceStatusResponseBody
-func ValidateInstanceStatusResponseBody(body *InstanceStatusResponseBody) (err error) {
+// ValidateInstanceResponseBodyAbbreviated runs the validations defined on
+// InstanceResponseBodyAbbreviated
+func ValidateInstanceResponseBodyAbbreviated(body *InstanceResponseBodyAbbreviated) (err error) {
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.HostID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "body"))
+	}
+	if body.NodeName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("node_name", "body"))
+	}
 	if body.State == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
 	}
+	if body.ID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+	}
+	if body.HostID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
+	}
 	if body.State != nil {
-		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "backing_up" || *body.State == "available" || *body.State == "error") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "backing_up", "available", "error"}))
+		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "backing_up" || *body.State == "restoring" || *body.State == "deleting" || *body.State == "available" || *body.State == "degraded" || *body.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "backing_up", "restoring", "deleting", "available", "degraded", "unknown"}))
 		}
-	}
-	if body.PatroniState != nil {
-		if !(*body.PatroniState == "stopping" || *body.PatroniState == "stopped" || *body.PatroniState == "stop failed" || *body.PatroniState == "crashed" || *body.PatroniState == "running" || *body.PatroniState == "starting" || *body.PatroniState == "start failed" || *body.PatroniState == "restarting" || *body.PatroniState == "restart failed" || *body.PatroniState == "initializing new cluster" || *body.PatroniState == "initdb failed" || *body.PatroniState == "running custom bootstrap script" || *body.PatroniState == "custom bootstrap failed" || *body.PatroniState == "creating replica" || *body.PatroniState == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.patroni_state", *body.PatroniState, []any{"stopping", "stopped", "stop failed", "crashed", "running", "starting", "start failed", "restarting", "restart failed", "initializing new cluster", "initdb failed", "running custom bootstrap script", "custom bootstrap failed", "creating replica", "unknown"}))
-		}
-	}
-	if body.Role != nil {
-		if !(*body.Role == "replica" || *body.Role == "primary") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.role", *body.Role, []any{"replica", "primary"}))
-		}
-	}
-	if body.UpdatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
-	}
-	return
-}
-
-// ValidateInstanceInterfaceResponseBody runs the validations defined on
-// InstanceInterfaceResponseBody
-func ValidateInstanceInterfaceResponseBody(body *InstanceInterfaceResponseBody) (err error) {
-	if body.NetworkType != nil {
-		if !(*body.NetworkType == "docker" || *body.NetworkType == "host") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.network_type", *body.NetworkType, []any{"docker", "host"}))
-		}
-	}
-	if body.Ipv4Address != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
 	}
 	return
 }
@@ -1807,18 +3401,16 @@ func ValidateDatabaseSpecResponseBody(body *DatabaseSpecResponseBody) (err error
 			}
 		}
 	}
-	for _, e := range body.Extensions {
-		if e != nil {
-			if err2 := ValidateDatabaseExtensionSpecResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
 	for _, e := range body.BackupConfigs {
 		if e != nil {
 			if err2 := ValidateBackupConfigSpecResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
+		}
+	}
+	if body.RestoreConfig != nil {
+		if err2 := ValidateRestoreConfigSpecResponseBody(body.RestoreConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -1830,20 +3422,22 @@ func ValidateDatabaseNodeSpecResponseBody(body *DatabaseNodeSpecResponseBody) (e
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.InstanceID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("instance_id", "body"))
-	}
 	if body.HostID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "body"))
+	}
+	if body.HostID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
 	}
 	if body.PostgresVersion != nil {
 		if !(*body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"16", "17"}))
 		}
 	}
-	if body.ReadReplicas != nil {
-		if err2 := ValidateDatabaseReplicaSpecResponseBody(body.ReadReplicas); err2 != nil {
-			err = goa.MergeErrors(err, err2)
+	for _, e := range body.ReadReplicas {
+		if e != nil {
+			if err2 := ValidateDatabaseReplicaSpecResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	return
@@ -1852,11 +3446,11 @@ func ValidateDatabaseNodeSpecResponseBody(body *DatabaseNodeSpecResponseBody) (e
 // ValidateDatabaseReplicaSpecResponseBody runs the validations defined on
 // DatabaseReplicaSpecResponseBody
 func ValidateDatabaseReplicaSpecResponseBody(body *DatabaseReplicaSpecResponseBody) (err error) {
-	if body.InstanceID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("instance_id", "body"))
-	}
 	if body.HostID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "body"))
+	}
+	if body.HostID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
 	}
 	return
 }
@@ -1869,15 +3463,6 @@ func ValidateDatabaseUserSpecResponseBody(body *DatabaseUserSpecResponseBody) (e
 	}
 	if body.Password == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("password", "body"))
-	}
-	return
-}
-
-// ValidateDatabaseExtensionSpecResponseBody runs the validations defined on
-// DatabaseExtensionSpecResponseBody
-func ValidateDatabaseExtensionSpecResponseBody(body *DatabaseExtensionSpecResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
 	return
 }
@@ -1919,6 +3504,9 @@ func ValidateBackupRepositorySpecResponseBody(body *BackupRepositorySpecResponse
 	if body.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
+	if body.ID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"s3", "gcs", "azure"}))
@@ -1947,6 +3535,51 @@ func ValidateBackupScheduleSpecResponseBody(body *BackupScheduleSpecResponseBody
 	if body.Type != nil {
 		if !(*body.Type == "full" || *body.Type == "incr") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"full", "incr"}))
+		}
+	}
+	return
+}
+
+// ValidateRestoreConfigSpecResponseBody runs the validations defined on
+// RestoreConfigSpecResponseBody
+func ValidateRestoreConfigSpecResponseBody(body *RestoreConfigSpecResponseBody) (err error) {
+	if body.Provider == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("provider", "body"))
+	}
+	if body.NodeName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("node_name", "body"))
+	}
+	if body.Repository == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
+	}
+	if body.Provider != nil {
+		if !(*body.Provider == "pgbackrest" || *body.Provider == "pg_dump") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.provider", *body.Provider, []any{"pgbackrest", "pg_dump"}))
+		}
+	}
+	if body.Repository != nil {
+		if err2 := ValidateRestoreRepositorySpecResponseBody(body.Repository); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateRestoreRepositorySpecResponseBody runs the validations defined on
+// RestoreRepositorySpecResponseBody
+func ValidateRestoreRepositorySpecResponseBody(body *RestoreRepositorySpecResponseBody) (err error) {
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.ID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+	}
+	if body.Type != nil {
+		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"s3", "gcs", "azure"}))
 		}
 	}
 	return
@@ -1982,17 +3615,37 @@ func ValidateDatabaseSpecRequestBodyRequestBody(body *DatabaseSpecRequestBodyReq
 			}
 		}
 	}
+	if body.RestoreConfig != nil {
+		if err2 := ValidateRestoreConfigSpecRequestBodyRequestBody(body.RestoreConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
 	return
 }
 
 // ValidateDatabaseNodeSpecRequestBodyRequestBody runs the validations defined
 // on DatabaseNodeSpecRequestBodyRequestBody
 func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecRequestBodyRequestBody) (err error) {
+	err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", body.HostID, goa.FormatUUID))
 	if body.PostgresVersion != nil {
 		if !(*body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"16", "17"}))
 		}
 	}
+	for _, e := range body.ReadReplicas {
+		if e != nil {
+			if err2 := ValidateDatabaseReplicaSpecRequestBodyRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateDatabaseReplicaSpecRequestBodyRequestBody runs the validations
+// defined on DatabaseReplicaSpecRequestBodyRequestBody
+func ValidateDatabaseReplicaSpecRequestBodyRequestBody(body *DatabaseReplicaSpecRequestBodyRequestBody) (err error) {
+	err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", body.HostID, goa.FormatUUID))
 	return
 }
 
@@ -2022,6 +3675,9 @@ func ValidateBackupConfigSpecRequestBodyRequestBody(body *BackupConfigSpecReques
 // ValidateBackupRepositorySpecRequestBodyRequestBody runs the validations
 // defined on BackupRepositorySpecRequestBodyRequestBody
 func ValidateBackupRepositorySpecRequestBodyRequestBody(body *BackupRepositorySpecRequestBodyRequestBody) (err error) {
+	if body.ID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+	}
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure"}))
 	}
@@ -2038,6 +3694,33 @@ func ValidateBackupRepositorySpecRequestBodyRequestBody(body *BackupRepositorySp
 func ValidateBackupScheduleSpecRequestBodyRequestBody(body *BackupScheduleSpecRequestBodyRequestBody) (err error) {
 	if !(body.Type == "full" || body.Type == "incr") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"full", "incr"}))
+	}
+	return
+}
+
+// ValidateRestoreConfigSpecRequestBodyRequestBody runs the validations defined
+// on RestoreConfigSpecRequestBodyRequestBody
+func ValidateRestoreConfigSpecRequestBodyRequestBody(body *RestoreConfigSpecRequestBodyRequestBody) (err error) {
+	if body.Repository == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
+	}
+	if !(body.Provider == "pgbackrest" || body.Provider == "pg_dump") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.provider", body.Provider, []any{"pgbackrest", "pg_dump"}))
+	}
+	if body.Repository != nil {
+		if err2 := ValidateRestoreRepositorySpecRequestBodyRequestBody(body.Repository); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateRestoreRepositorySpecRequestBodyRequestBody runs the validations
+// defined on RestoreRepositorySpecRequestBodyRequestBody
+func ValidateRestoreRepositorySpecRequestBodyRequestBody(body *RestoreRepositorySpecRequestBodyRequestBody) (err error) {
+	err = goa.MergeErrors(err, goa.ValidateFormat("body.id", body.ID, goa.FormatUUID))
+	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure"}))
 	}
 	return
 }

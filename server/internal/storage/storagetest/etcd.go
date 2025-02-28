@@ -17,55 +17,53 @@ import (
 )
 
 type EtcdTestServer struct {
-	t         testing.TB
+	// t         testing.TB
 	etcd      *embed.Etcd
 	dir       string
 	clientURL string
 }
 
-func (s *EtcdTestServer) Client() storage.EtcdClient {
+func (s *EtcdTestServer) Client(t testing.TB) storage.EtcdClient {
 	client, err := clientv3.New(clientv3.Config{
 		Logger:      zap.NewNop(),
 		Endpoints:   []string{s.clientURL},
 		DialTimeout: 5 * time.Second,
 	})
 	if err != nil {
-		s.t.Fatal(err)
+		t.Fatal(err)
 	}
+	t.Cleanup(func() {
+		client.Close()
+	})
 	return client
 }
 
-func (s *EtcdTestServer) Close() {
-	s.etcd.Close()
+// func (s *EtcdTestServer) Close() {
+// 	s.etcd.Close()
 
-	if s.dir != "" {
-		if err := os.RemoveAll(s.dir); err != nil {
-			fmt.Printf("failed to remove data dir %q: %v\n", s.dir, err)
-		}
-	}
-}
+// 	if s.dir != "" {
+// 		if err := os.RemoveAll(s.dir); err != nil {
+// 			fmt.Printf("failed to remove data dir %q: %v\n", s.dir, err)
+// 		}
+// 	}
+// }
 
 func NewEtcdTestServer(t testing.TB) *EtcdTestServer {
 	t.Helper()
 
-	dir, err := os.MkdirTemp(os.TempDir(), "etcd-test-server")
-	if err != nil {
-		t.Fatal(err)
-	}
+	dir := TempDir(t)
+	// dir, err := os.MkdirTemp(os.TempDir(), "etcd-test-server")
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
 
-	clientPort, err := getFreePort()
-	if err != nil {
-		t.Fatal(err)
-	}
+	clientPort := GetFreePort(t)
 	clientURL := url.URL{
 		Scheme: "http",
 		Host:   fmt.Sprintf("127.0.0.1:%d", clientPort),
 	}
 
-	peerPort, err := getFreePort()
-	if err != nil {
-		t.Fatal(err)
-	}
+	peerPort := GetFreePort(t)
 	peerURL := url.URL{
 		Scheme: "http",
 		Host:   fmt.Sprintf("127.0.0.1:%d", peerPort),
@@ -99,11 +97,14 @@ func NewEtcdTestServer(t testing.TB) *EtcdTestServer {
 		t.Fatal(err)
 	}
 
+	t.Cleanup(func() {
+		e.Close()
+	})
+
 	// Blocks until ready
 	select {
 	case <-e.Server.ReadyNotify():
 		return &EtcdTestServer{
-			t:         t,
 			etcd:      e,
 			dir:       dir,
 			clientURL: clientURL.String(),
@@ -116,14 +117,32 @@ func NewEtcdTestServer(t testing.TB) *EtcdTestServer {
 	return nil
 }
 
-func getFreePort() (port int, err error) {
-	var a *net.TCPAddr
-	if a, err = net.ResolveTCPAddr("tcp", "localhost:0"); err == nil {
-		var l *net.TCPListener
-		if l, err = net.ListenTCP("tcp", a); err == nil {
-			defer l.Close()
-			return l.Addr().(*net.TCPAddr).Port, nil
-		}
+func GetFreePort(t testing.TB) int {
+	t.Helper()
+
+	a, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		t.Fatal(err)
 	}
-	return
+	l, err := net.ListenTCP("tcp", a)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port
+}
+
+func TempDir(t testing.TB) string {
+	t.Helper()
+
+	dir, err := os.MkdirTemp(os.TempDir(), "embedded-etcd")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		os.RemoveAll(dir)
+	})
+
+	return dir
 }

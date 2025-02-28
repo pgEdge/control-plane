@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/rs/zerolog"
 )
 
 // HTTPServer is an HTTP server that communicates over MQTT. It works by reading
@@ -22,17 +24,16 @@ type HTTPServerConfig struct {
 	Broker         BrokerConfig
 	HandlerTimeout time.Duration
 	Handler        http.Handler
+	Logger         *zerolog.Logger
 }
 
-func NewHTTPServer(config HTTPServerConfig) (*HTTPServer, error) {
-	endpoint, err := New(Config{
+func NewHTTPServer(config HTTPServerConfig) *HTTPServer {
+	endpoint := New(Config{
 		Broker:         config.Broker,
 		HandlerTimeout: config.HandlerTimeout,
 		Subscriptions:  []string{config.Topic},
+		Logger:         config.Logger,
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	svr := &HTTPServer{
 		endpoint: endpoint,
@@ -40,7 +41,7 @@ func NewHTTPServer(config HTTPServerConfig) (*HTTPServer, error) {
 	}
 	endpoint.RegisterRequestHandler(config.Topic, svr.handleRequest)
 
-	return svr, nil
+	return svr
 }
 
 func (s *HTTPServer) Start(ctx context.Context) error {
@@ -88,20 +89,17 @@ type HTTPDoerConfig struct {
 	Retain  bool
 }
 
-func NewHTTPDoer(config HTTPDoerConfig) (*HTTPDoer, error) {
-	endpoint, err := New(Config{
+func NewHTTPDoer(config HTTPDoerConfig) *HTTPDoer {
+	endpoint := New(Config{
 		Broker: config.Broker,
 	})
-	if err != nil {
-		return nil, err
-	}
 	return &HTTPDoer{
 		topic:    config.Topic,
 		endpoint: endpoint,
 		maxWait:  config.MaxWait,
 		qos:      config.QoS,
 		retain:   config.Retain,
-	}, nil
+	}
 }
 
 func (d *HTTPDoer) Connect(ctx context.Context) error {

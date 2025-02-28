@@ -13,9 +13,9 @@ import (
 
 func TestWatchOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	defer server.Close()
-	client := server.Client()
-	defer client.Close()
+	// defer server.Close()
+	client := server.Client(t)
+	// defer client.Close()
 
 	t.Run("Until", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {

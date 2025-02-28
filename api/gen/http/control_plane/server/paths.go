@@ -11,6 +11,26 @@ import (
 	"fmt"
 )
 
+// InitClusterControlPlanePath returns the URL path to the control-plane service init-cluster HTTP endpoint.
+func InitClusterControlPlanePath() string {
+	return "/cluster/init"
+}
+
+// JoinClusterControlPlanePath returns the URL path to the control-plane service join-cluster HTTP endpoint.
+func JoinClusterControlPlanePath() string {
+	return "/cluster/join"
+}
+
+// GetJoinTokenControlPlanePath returns the URL path to the control-plane service get-join-token HTTP endpoint.
+func GetJoinTokenControlPlanePath() string {
+	return "/cluster/join-token"
+}
+
+// GetJoinOptionsControlPlanePath returns the URL path to the control-plane service get-join-options HTTP endpoint.
+func GetJoinOptionsControlPlanePath() string {
+	return "/internal/cluster/join-options"
+}
+
 // InspectClusterControlPlanePath returns the URL path to the control-plane service inspect-cluster HTTP endpoint.
 func InspectClusterControlPlanePath() string {
 	return "/cluster"

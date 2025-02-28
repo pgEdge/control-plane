@@ -14,9 +14,9 @@ import (
 
 func TestDeleteKeyOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	defer server.Close()
-	client := server.Client()
-	defer client.Close()
+	// defer server.Close()
+	client := server.Client(t)
+	// defer client.Close()
 
 	t.Run("key exists", func(t *testing.T) {
 		ctx := context.Background()
@@ -44,9 +44,9 @@ func TestDeleteKeyOp(t *testing.T) {
 
 func TestDeletePrefixOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	defer server.Close()
-	client := server.Client()
-	defer client.Close()
+	// defer server.Close()
+	client := server.Client(t)
+	// defer client.Close()
 
 	t.Run("keys exist", func(t *testing.T) {
 		ctx := context.Background()
@@ -75,9 +75,9 @@ func TestDeletePrefixOp(t *testing.T) {
 
 func TestDeleteValueOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	defer server.Close()
-	client := server.Client()
-	defer client.Close()
+	// defer server.Close()
+	client := server.Client(t)
+	// defer client.Close()
 
 	t.Run("key exists", func(t *testing.T) {
 		ctx := context.Background()

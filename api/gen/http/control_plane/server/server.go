@@ -19,17 +19,21 @@ import (
 
 // Server lists the control-plane service endpoint HTTP handlers.
 type Server struct {
-	Mounts             []*MountPoint
-	InspectCluster     http.Handler
-	ListHosts          http.Handler
-	InspectHost        http.Handler
-	RemoveHost         http.Handler
-	ListDatabases      http.Handler
-	CreateDatabase     http.Handler
-	InspectDatabase    http.Handler
-	UpdateDatabase     http.Handler
-	DeleteDatabase     http.Handler
-	GenHTTPOpenapiJSON http.Handler
+	Mounts              []*MountPoint
+	InitCluster         http.Handler
+	JoinCluster         http.Handler
+	GetJoinToken        http.Handler
+	GetJoinOptions      http.Handler
+	InspectCluster      http.Handler
+	ListHosts           http.Handler
+	InspectHost         http.Handler
+	RemoveHost          http.Handler
+	ListDatabases       http.Handler
+	CreateDatabase      http.Handler
+	InspectDatabase     http.Handler
+	UpdateDatabase      http.Handler
+	DeleteDatabase      http.Handler
+	GenHTTPOpenapi3JSON http.Handler
 }
 
 // MountPoint holds information about the mounted endpoints.
@@ -56,14 +60,18 @@ func New(
 	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
 	errhandler func(context.Context, http.ResponseWriter, error),
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
-	fileSystemGenHTTPOpenapiJSON http.FileSystem,
+	fileSystemGenHTTPOpenapi3JSON http.FileSystem,
 ) *Server {
-	if fileSystemGenHTTPOpenapiJSON == nil {
-		fileSystemGenHTTPOpenapiJSON = http.Dir(".")
+	if fileSystemGenHTTPOpenapi3JSON == nil {
+		fileSystemGenHTTPOpenapi3JSON = http.Dir(".")
 	}
-	fileSystemGenHTTPOpenapiJSON = appendPrefix(fileSystemGenHTTPOpenapiJSON, "/gen/http")
+	fileSystemGenHTTPOpenapi3JSON = appendPrefix(fileSystemGenHTTPOpenapi3JSON, "/gen/http")
 	return &Server{
 		Mounts: []*MountPoint{
+			{"InitCluster", "GET", "/cluster/init"},
+			{"JoinCluster", "POST", "/cluster/join"},
+			{"GetJoinToken", "GET", "/cluster/join-token"},
+			{"GetJoinOptions", "POST", "/internal/cluster/join-options"},
 			{"InspectCluster", "GET", "/cluster"},
 			{"ListHosts", "GET", "/hosts"},
 			{"InspectHost", "GET", "/hosts/{host_id}"},
@@ -73,18 +81,22 @@ func New(
 			{"InspectDatabase", "GET", "/databases/{database_id}"},
 			{"UpdateDatabase", "POST", "/databases/{database_id}"},
 			{"DeleteDatabase", "DELETE", "/databases/{database_id}"},
-			{"Serve ./gen/http/openapi.json", "GET", "/openapi.json"},
+			{"Serve ./gen/http/openapi3.json", "GET", "/openapi.json"},
 		},
-		InspectCluster:     NewInspectClusterHandler(e.InspectCluster, mux, decoder, encoder, errhandler, formatter),
-		ListHosts:          NewListHostsHandler(e.ListHosts, mux, decoder, encoder, errhandler, formatter),
-		InspectHost:        NewInspectHostHandler(e.InspectHost, mux, decoder, encoder, errhandler, formatter),
-		RemoveHost:         NewRemoveHostHandler(e.RemoveHost, mux, decoder, encoder, errhandler, formatter),
-		ListDatabases:      NewListDatabasesHandler(e.ListDatabases, mux, decoder, encoder, errhandler, formatter),
-		CreateDatabase:     NewCreateDatabaseHandler(e.CreateDatabase, mux, decoder, encoder, errhandler, formatter),
-		InspectDatabase:    NewInspectDatabaseHandler(e.InspectDatabase, mux, decoder, encoder, errhandler, formatter),
-		UpdateDatabase:     NewUpdateDatabaseHandler(e.UpdateDatabase, mux, decoder, encoder, errhandler, formatter),
-		DeleteDatabase:     NewDeleteDatabaseHandler(e.DeleteDatabase, mux, decoder, encoder, errhandler, formatter),
-		GenHTTPOpenapiJSON: http.FileServer(fileSystemGenHTTPOpenapiJSON),
+		InitCluster:         NewInitClusterHandler(e.InitCluster, mux, decoder, encoder, errhandler, formatter),
+		JoinCluster:         NewJoinClusterHandler(e.JoinCluster, mux, decoder, encoder, errhandler, formatter),
+		GetJoinToken:        NewGetJoinTokenHandler(e.GetJoinToken, mux, decoder, encoder, errhandler, formatter),
+		GetJoinOptions:      NewGetJoinOptionsHandler(e.GetJoinOptions, mux, decoder, encoder, errhandler, formatter),
+		InspectCluster:      NewInspectClusterHandler(e.InspectCluster, mux, decoder, encoder, errhandler, formatter),
+		ListHosts:           NewListHostsHandler(e.ListHosts, mux, decoder, encoder, errhandler, formatter),
+		InspectHost:         NewInspectHostHandler(e.InspectHost, mux, decoder, encoder, errhandler, formatter),
+		RemoveHost:          NewRemoveHostHandler(e.RemoveHost, mux, decoder, encoder, errhandler, formatter),
+		ListDatabases:       NewListDatabasesHandler(e.ListDatabases, mux, decoder, encoder, errhandler, formatter),
+		CreateDatabase:      NewCreateDatabaseHandler(e.CreateDatabase, mux, decoder, encoder, errhandler, formatter),
+		InspectDatabase:     NewInspectDatabaseHandler(e.InspectDatabase, mux, decoder, encoder, errhandler, formatter),
+		UpdateDatabase:      NewUpdateDatabaseHandler(e.UpdateDatabase, mux, decoder, encoder, errhandler, formatter),
+		DeleteDatabase:      NewDeleteDatabaseHandler(e.DeleteDatabase, mux, decoder, encoder, errhandler, formatter),
+		GenHTTPOpenapi3JSON: http.FileServer(fileSystemGenHTTPOpenapi3JSON),
 	}
 }
 
@@ -93,6 +105,10 @@ func (s *Server) Service() string { return "control-plane" }
 
 // Use wraps the server handlers with the given middleware.
 func (s *Server) Use(m func(http.Handler) http.Handler) {
+	s.InitCluster = m(s.InitCluster)
+	s.JoinCluster = m(s.JoinCluster)
+	s.GetJoinToken = m(s.GetJoinToken)
+	s.GetJoinOptions = m(s.GetJoinOptions)
 	s.InspectCluster = m(s.InspectCluster)
 	s.ListHosts = m(s.ListHosts)
 	s.InspectHost = m(s.InspectHost)
@@ -109,6 +125,10 @@ func (s *Server) MethodNames() []string { return controlplane.MethodNames[:] }
 
 // Mount configures the mux to serve the control-plane endpoints.
 func Mount(mux goahttp.Muxer, h *Server) {
+	MountInitClusterHandler(mux, h.InitCluster)
+	MountJoinClusterHandler(mux, h.JoinCluster)
+	MountGetJoinTokenHandler(mux, h.GetJoinToken)
+	MountGetJoinOptionsHandler(mux, h.GetJoinOptions)
 	MountInspectClusterHandler(mux, h.InspectCluster)
 	MountListHostsHandler(mux, h.ListHosts)
 	MountInspectHostHandler(mux, h.InspectHost)
@@ -118,12 +138,202 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountInspectDatabaseHandler(mux, h.InspectDatabase)
 	MountUpdateDatabaseHandler(mux, h.UpdateDatabase)
 	MountDeleteDatabaseHandler(mux, h.DeleteDatabase)
-	MountGenHTTPOpenapiJSON(mux, h.GenHTTPOpenapiJSON)
+	MountGenHTTPOpenapi3JSON(mux, h.GenHTTPOpenapi3JSON)
 }
 
 // Mount configures the mux to serve the control-plane endpoints.
 func (s *Server) Mount(mux goahttp.Muxer) {
 	Mount(mux, s)
+}
+
+// MountInitClusterHandler configures the mux to serve the "control-plane"
+// service "init-cluster" endpoint.
+func MountInitClusterHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/cluster/init", f)
+}
+
+// NewInitClusterHandler creates a HTTP handler which loads the HTTP request
+// and calls the "control-plane" service "init-cluster" endpoint.
+func NewInitClusterHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		encodeResponse = EncodeInitClusterResponse(encoder)
+		encodeError    = EncodeInitClusterError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "init-cluster")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
+		var err error
+		res, err := endpoint(ctx, nil)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountJoinClusterHandler configures the mux to serve the "control-plane"
+// service "join-cluster" endpoint.
+func MountJoinClusterHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/cluster/join", f)
+}
+
+// NewJoinClusterHandler creates a HTTP handler which loads the HTTP request
+// and calls the "control-plane" service "join-cluster" endpoint.
+func NewJoinClusterHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeJoinClusterRequest(mux, decoder)
+		encodeResponse = EncodeJoinClusterResponse(encoder)
+		encodeError    = EncodeJoinClusterError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "join-cluster")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountGetJoinTokenHandler configures the mux to serve the "control-plane"
+// service "get-join-token" endpoint.
+func MountGetJoinTokenHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/cluster/join-token", f)
+}
+
+// NewGetJoinTokenHandler creates a HTTP handler which loads the HTTP request
+// and calls the "control-plane" service "get-join-token" endpoint.
+func NewGetJoinTokenHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		encodeResponse = EncodeGetJoinTokenResponse(encoder)
+		encodeError    = EncodeGetJoinTokenError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-join-token")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
+		var err error
+		res, err := endpoint(ctx, nil)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountGetJoinOptionsHandler configures the mux to serve the "control-plane"
+// service "get-join-options" endpoint.
+func MountGetJoinOptionsHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/internal/cluster/join-options", f)
+}
+
+// NewGetJoinOptionsHandler creates a HTTP handler which loads the HTTP request
+// and calls the "control-plane" service "get-join-options" endpoint.
+func NewGetJoinOptionsHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeGetJoinOptionsRequest(mux, decoder)
+		encodeResponse = EncodeGetJoinOptionsResponse(encoder)
+		encodeError    = EncodeGetJoinOptionsError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-join-options")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
 }
 
 // MountInspectClusterHandler configures the mux to serve the "control-plane"
@@ -150,7 +360,7 @@ func NewInspectClusterHandler(
 ) http.Handler {
 	var (
 		encodeResponse = EncodeInspectClusterResponse(encoder)
-		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+		encodeError    = EncodeInspectClusterError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
@@ -194,7 +404,7 @@ func NewListHostsHandler(
 ) http.Handler {
 	var (
 		encodeResponse = EncodeListHostsResponse(encoder)
-		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+		encodeError    = EncodeListHostsError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
@@ -239,7 +449,7 @@ func NewInspectHostHandler(
 	var (
 		decodeRequest  = DecodeInspectHostRequest(mux, decoder)
 		encodeResponse = EncodeInspectHostResponse(encoder)
-		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+		encodeError    = EncodeInspectHostError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
@@ -290,7 +500,7 @@ func NewRemoveHostHandler(
 	var (
 		decodeRequest  = DecodeRemoveHostRequest(mux, decoder)
 		encodeResponse = EncodeRemoveHostResponse(encoder)
-		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+		encodeError    = EncodeRemoveHostError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
@@ -340,7 +550,7 @@ func NewListDatabasesHandler(
 ) http.Handler {
 	var (
 		encodeResponse = EncodeListDatabasesResponse(encoder)
-		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+		encodeError    = EncodeListDatabasesError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
@@ -385,7 +595,7 @@ func NewCreateDatabaseHandler(
 	var (
 		decodeRequest  = DecodeCreateDatabaseRequest(mux, decoder)
 		encodeResponse = EncodeCreateDatabaseResponse(encoder)
-		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+		encodeError    = EncodeCreateDatabaseError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
@@ -436,7 +646,7 @@ func NewInspectDatabaseHandler(
 	var (
 		decodeRequest  = DecodeInspectDatabaseRequest(mux, decoder)
 		encodeResponse = EncodeInspectDatabaseResponse(encoder)
-		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+		encodeError    = EncodeInspectDatabaseError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
@@ -487,7 +697,7 @@ func NewUpdateDatabaseHandler(
 	var (
 		decodeRequest  = DecodeUpdateDatabaseRequest(mux, decoder)
 		encodeResponse = EncodeUpdateDatabaseResponse(encoder)
-		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+		encodeError    = EncodeUpdateDatabaseError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
@@ -538,7 +748,7 @@ func NewDeleteDatabaseHandler(
 	var (
 		decodeRequest  = DecodeDeleteDatabaseRequest(mux, decoder)
 		encodeResponse = EncodeDeleteDatabaseResponse(encoder)
-		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+		encodeError    = EncodeDeleteDatabaseError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
@@ -575,6 +785,8 @@ type appendFS struct {
 // passing it to the underlying fs.FS.
 func (s appendFS) Open(name string) (http.File, error) {
 	switch name {
+	case "/openapi.json":
+		name = "/openapi3.json"
 	}
 	return s.fs.Open(path.Join(s.prefix, name))
 }
@@ -585,8 +797,8 @@ func appendPrefix(fsys http.FileSystem, prefix string) http.FileSystem {
 	return appendFS{prefix: prefix, fs: fsys}
 }
 
-// MountGenHTTPOpenapiJSON configures the mux to serve GET request made to
+// MountGenHTTPOpenapi3JSON configures the mux to serve GET request made to
 // "/openapi.json".
-func MountGenHTTPOpenapiJSON(mux goahttp.Muxer, h http.Handler) {
+func MountGenHTTPOpenapi3JSON(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("GET", "/openapi.json", h.ServeHTTP)
 }

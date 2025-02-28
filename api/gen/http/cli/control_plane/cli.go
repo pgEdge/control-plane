@@ -22,13 +22,13 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `control-plane (inspect-cluster|list-hosts|inspect-host|remove-host|list-databases|create-database|inspect-database|update-database|delete-database)
+	return `control-plane (init-cluster|join-cluster|get-join-token|get-join-options|inspect-cluster|list-hosts|inspect-host|remove-host|list-databases|create-database|inspect-database|update-database|delete-database)
 `
 }
 
 // UsageExamples produces an example of a valid invocation of the CLI tool.
 func UsageExamples() string {
-	return os.Args[0] + ` control-plane inspect-cluster` + "\n" +
+	return os.Args[0] + ` control-plane init-cluster` + "\n" +
 		""
 }
 
@@ -43,6 +43,16 @@ func ParseEndpoint(
 ) (goa.Endpoint, any, error) {
 	var (
 		controlPlaneFlags = flag.NewFlagSet("control-plane", flag.ContinueOnError)
+
+		controlPlaneInitClusterFlags = flag.NewFlagSet("init-cluster", flag.ExitOnError)
+
+		controlPlaneJoinClusterFlags    = flag.NewFlagSet("join-cluster", flag.ExitOnError)
+		controlPlaneJoinClusterBodyFlag = controlPlaneJoinClusterFlags.String("body", "REQUIRED", "")
+
+		controlPlaneGetJoinTokenFlags = flag.NewFlagSet("get-join-token", flag.ExitOnError)
+
+		controlPlaneGetJoinOptionsFlags    = flag.NewFlagSet("get-join-options", flag.ExitOnError)
+		controlPlaneGetJoinOptionsBodyFlag = controlPlaneGetJoinOptionsFlags.String("body", "REQUIRED", "")
 
 		controlPlaneInspectClusterFlags = flag.NewFlagSet("inspect-cluster", flag.ExitOnError)
 
@@ -70,6 +80,10 @@ func ParseEndpoint(
 		controlPlaneDeleteDatabaseDatabaseIDFlag = controlPlaneDeleteDatabaseFlags.String("database-id", "REQUIRED", "ID of the database to delete.")
 	)
 	controlPlaneFlags.Usage = controlPlaneUsage
+	controlPlaneInitClusterFlags.Usage = controlPlaneInitClusterUsage
+	controlPlaneJoinClusterFlags.Usage = controlPlaneJoinClusterUsage
+	controlPlaneGetJoinTokenFlags.Usage = controlPlaneGetJoinTokenUsage
+	controlPlaneGetJoinOptionsFlags.Usage = controlPlaneGetJoinOptionsUsage
 	controlPlaneInspectClusterFlags.Usage = controlPlaneInspectClusterUsage
 	controlPlaneListHostsFlags.Usage = controlPlaneListHostsUsage
 	controlPlaneInspectHostFlags.Usage = controlPlaneInspectHostUsage
@@ -114,6 +128,18 @@ func ParseEndpoint(
 		switch svcn {
 		case "control-plane":
 			switch epn {
+			case "init-cluster":
+				epf = controlPlaneInitClusterFlags
+
+			case "join-cluster":
+				epf = controlPlaneJoinClusterFlags
+
+			case "get-join-token":
+				epf = controlPlaneGetJoinTokenFlags
+
+			case "get-join-options":
+				epf = controlPlaneGetJoinOptionsFlags
+
 			case "inspect-cluster":
 				epf = controlPlaneInspectClusterFlags
 
@@ -166,6 +192,16 @@ func ParseEndpoint(
 		case "control-plane":
 			c := controlplanec.NewClient(scheme, host, doer, enc, dec, restore)
 			switch epn {
+			case "init-cluster":
+				endpoint = c.InitCluster()
+			case "join-cluster":
+				endpoint = c.JoinCluster()
+				data, err = controlplanec.BuildJoinClusterPayload(*controlPlaneJoinClusterBodyFlag)
+			case "get-join-token":
+				endpoint = c.GetJoinToken()
+			case "get-join-options":
+				endpoint = c.GetJoinOptions()
+				data, err = controlplanec.BuildGetJoinOptionsPayload(*controlPlaneGetJoinOptionsBodyFlag)
 			case "inspect-cluster":
 				endpoint = c.InspectCluster()
 			case "list-hosts":
@@ -208,6 +244,10 @@ Usage:
     %[1]s [globalflags] control-plane COMMAND [flags]
 
 COMMAND:
+    init-cluster: Initializes a new cluster.
+    join-cluster: Join this host to an existing cluster.
+    get-join-token: Gets the join token for this cluster.
+    get-join-options: Internal endpoint for other cluster members seeking to join this cluster.
     inspect-cluster: Returns information about the cluster.
     list-hosts: Lists all hosts within the cluster.
     inspect-host: Returns information about a particular host in the cluster.
@@ -222,6 +262,56 @@ Additional help:
     %[1]s control-plane COMMAND --help
 `, os.Args[0])
 }
+func controlPlaneInitClusterUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane init-cluster
+
+Initializes a new cluster.
+
+Example:
+    %[1]s control-plane init-cluster
+`, os.Args[0])
+}
+
+func controlPlaneJoinClusterUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane join-cluster -body JSON
+
+Join this host to an existing cluster.
+    -body JSON: 
+
+Example:
+    %[1]s control-plane join-cluster --body '{
+      "server_url": "http://192.168.1.1:3000",
+      "token": "PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd"
+   }'
+`, os.Args[0])
+}
+
+func controlPlaneGetJoinTokenUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane get-join-token
+
+Gets the join token for this cluster.
+
+Example:
+    %[1]s control-plane get-join-token
+`, os.Args[0])
+}
+
+func controlPlaneGetJoinOptionsUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane get-join-options -body JSON
+
+Internal endpoint for other cluster members seeking to join this cluster.
+    -body JSON: 
+
+Example:
+    %[1]s control-plane get-join-options --body '{
+      "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
+      "hostname": "ip-10-1-0-113.ec2.internal",
+      "ipv4_address": "10.1.0.113",
+      "token": "PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd"
+   }'
+`, os.Args[0])
+}
+
 func controlPlaneInspectClusterUsage() {
 	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane inspect-cluster
 
@@ -339,58 +429,6 @@ Example:
                      "cron_expression": "0 6 * * ?",
                      "id": "daily-full-backup",
                      "type": "full"
-                  }
-               ]
-            },
-            {
-               "id": "default",
-               "node_names": [
-                  "n1",
-                  "n3"
-               ],
-               "provider": "pgbackrest",
-               "repositories": [
-                  {
-                     "azure_account": "pgedge-backups",
-                     "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "azure_endpoint": "blob.core.usgovcloudapi.net",
-                     "base_path": "/backups",
-                     "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "gcs_endpoint": "localhost",
-                     "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                     "retention_full": 2,
-                     "retention_full_type": "count",
-                     "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                     "s3_region": "us-east-1",
-                     "type": "s3"
-                  },
-                  {
-                     "azure_account": "pgedge-backups",
-                     "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "azure_endpoint": "blob.core.usgovcloudapi.net",
-                     "base_path": "/backups",
-                     "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "gcs_endpoint": "localhost",
-                     "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                     "retention_full": 2,
-                     "retention_full_type": "count",
-                     "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                     "s3_region": "us-east-1",
-                     "type": "s3"
-                  }
-               ],
-               "schedules": [
-                  {
-                     "cron_expression": "0 6 * * ?",
-                     "id": "daily-full-backup",
-                     "type": "full"
-                  },
-                  {
-                     "cron_expression": "0 6 * * ?",
-                     "id": "daily-full-backup",
-                     "type": "full"
                   },
                   {
                      "cron_expression": "0 6 * * ?",
@@ -453,6 +491,11 @@ Example:
                      "cron_expression": "0 6 * * ?",
                      "id": "daily-full-backup",
                      "type": "full"
+                  },
+                  {
+                     "cron_expression": "0 6 * * ?",
+                     "id": "daily-full-backup",
+                     "type": "full"
                   }
                ]
             },
@@ -496,6 +539,11 @@ Example:
                   }
                ],
                "schedules": [
+                  {
+                     "cron_expression": "0 6 * * ?",
+                     "id": "daily-full-backup",
+                     "type": "full"
+                  },
                   {
                      "cron_expression": "0 6 * * ?",
                      "id": "daily-full-backup",
@@ -514,105 +562,150 @@ Example:
                ]
             }
          ],
+         "cpus": "500m",
          "database_name": "northwind",
          "database_users": [
             {
+               "attributes": [
+                  "LOGIN",
+                  "CREATEDB",
+                  "CREATEROLE"
+               ],
+               "db_owner": false,
                "password": "secret",
                "roles": [
-                  "application_read_only"
+                  "pgedge_superuser"
                ],
-               "superuser": true,
                "username": "admin"
             },
             {
+               "attributes": [
+                  "LOGIN",
+                  "CREATEDB",
+                  "CREATEROLE"
+               ],
+               "db_owner": false,
                "password": "secret",
                "roles": [
-                  "application_read_only"
+                  "pgedge_superuser"
                ],
-               "superuser": true,
                "username": "admin"
             },
             {
+               "attributes": [
+                  "LOGIN",
+                  "CREATEDB",
+                  "CREATEROLE"
+               ],
+               "db_owner": false,
                "password": "secret",
                "roles": [
-                  "application_read_only"
+                  "pgedge_superuser"
                ],
-               "superuser": true,
-               "username": "admin"
-            },
-            {
-               "password": "secret",
-               "roles": [
-                  "application_read_only"
-               ],
-               "superuser": true,
                "username": "admin"
             }
          ],
          "deletion_protection": true,
-         "extensions": [
-            {
-               "name": "postgis",
-               "version": "1.2.3"
-            },
-            {
-               "name": "postgis",
-               "version": "1.2.3"
-            },
-            {
-               "name": "postgis",
-               "version": "1.2.3"
-            },
-            {
-               "name": "postgis",
-               "version": "1.2.3"
-            }
-         ],
          "features": {
             "some_feature": "enabled"
          },
+         "memory": "500M",
          "nodes": [
             {
+               "cpus": "500m",
                "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-               "instance_id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
+               "memory": "500M",
                "name": "n1",
                "port": 5432,
                "postgres_version": "17",
                "postgresql_conf": {
                   "max_connections": 1000
                },
-               "read_replicas": {
-                  "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-                  "instance_id": "5ec51c55-0921-445e-9d5b-32f5fb5dfbae"
-               }
+               "read_replicas": [
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  },
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  },
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  }
+               ],
+               "storage_class": "loop_device",
+               "storage_size": "500GiB"
             },
             {
+               "cpus": "500m",
                "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-               "instance_id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
+               "memory": "500M",
                "name": "n1",
                "port": 5432,
                "postgres_version": "17",
                "postgresql_conf": {
                   "max_connections": 1000
                },
-               "read_replicas": {
-                  "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-                  "instance_id": "5ec51c55-0921-445e-9d5b-32f5fb5dfbae"
-               }
+               "read_replicas": [
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  },
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  },
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  }
+               ],
+               "storage_class": "loop_device",
+               "storage_size": "500GiB"
             },
             {
+               "cpus": "500m",
                "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-               "instance_id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
+               "memory": "500M",
                "name": "n1",
                "port": 5432,
                "postgres_version": "17",
                "postgresql_conf": {
                   "max_connections": 1000
                },
-               "read_replicas": {
-                  "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-                  "instance_id": "5ec51c55-0921-445e-9d5b-32f5fb5dfbae"
-               }
+               "read_replicas": [
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  },
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  },
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  }
+               ],
+               "storage_class": "loop_device",
+               "storage_size": "500GiB"
+            },
+            {
+               "cpus": "500m",
+               "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
+               "memory": "500M",
+               "name": "n1",
+               "port": 5432,
+               "postgres_version": "17",
+               "postgresql_conf": {
+                  "max_connections": 1000
+               },
+               "read_replicas": [
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  },
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  },
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  }
+               ],
+               "storage_class": "loop_device",
+               "storage_size": "500GiB"
             }
          ],
          "port": 5432,
@@ -620,7 +713,26 @@ Example:
          "postgresql_conf": {
             "max_connections": 1000
          },
-         "spock_version": "4"
+         "restore_config": {
+            "node_name": "n1",
+            "provider": "pgbackrest",
+            "repository": {
+               "azure_account": "pgedge-backups",
+               "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+               "azure_endpoint": "blob.core.usgovcloudapi.net",
+               "base_path": "/backups",
+               "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+               "gcs_endpoint": "localhost",
+               "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
+               "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+               "s3_endpoint": "s3.us-east-1.amazonaws.com",
+               "s3_region": "us-east-1",
+               "type": "s3"
+            }
+         },
+         "spock_version": "4",
+         "storage_class": "loop_device",
+         "storage_size": "500GiB"
       },
       "tenant_id": "8210ec10-2dca-406c-ac4a-0661d2189954"
    }'
@@ -686,34 +798,9 @@ Example:
                      "s3_endpoint": "s3.us-east-1.amazonaws.com",
                      "s3_region": "us-east-1",
                      "type": "s3"
-                  },
-                  {
-                     "azure_account": "pgedge-backups",
-                     "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "azure_endpoint": "blob.core.usgovcloudapi.net",
-                     "base_path": "/backups",
-                     "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "gcs_endpoint": "localhost",
-                     "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                     "retention_full": 2,
-                     "retention_full_type": "count",
-                     "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                     "s3_region": "us-east-1",
-                     "type": "s3"
                   }
                ],
                "schedules": [
-                  {
-                     "cron_expression": "0 6 * * ?",
-                     "id": "daily-full-backup",
-                     "type": "full"
-                  },
-                  {
-                     "cron_expression": "0 6 * * ?",
-                     "id": "daily-full-backup",
-                     "type": "full"
-                  },
                   {
                      "cron_expression": "0 6 * * ?",
                      "id": "daily-full-backup",
@@ -763,34 +850,9 @@ Example:
                      "s3_endpoint": "s3.us-east-1.amazonaws.com",
                      "s3_region": "us-east-1",
                      "type": "s3"
-                  },
-                  {
-                     "azure_account": "pgedge-backups",
-                     "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "azure_endpoint": "blob.core.usgovcloudapi.net",
-                     "base_path": "/backups",
-                     "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "gcs_endpoint": "localhost",
-                     "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                     "retention_full": 2,
-                     "retention_full_type": "count",
-                     "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                     "s3_region": "us-east-1",
-                     "type": "s3"
                   }
                ],
                "schedules": [
-                  {
-                     "cron_expression": "0 6 * * ?",
-                     "id": "daily-full-backup",
-                     "type": "full"
-                  },
-                  {
-                     "cron_expression": "0 6 * * ?",
-                     "id": "daily-full-backup",
-                     "type": "full"
-                  },
                   {
                      "cron_expression": "0 6 * * ?",
                      "id": "daily-full-backup",
@@ -840,111 +902,9 @@ Example:
                      "s3_endpoint": "s3.us-east-1.amazonaws.com",
                      "s3_region": "us-east-1",
                      "type": "s3"
-                  },
-                  {
-                     "azure_account": "pgedge-backups",
-                     "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "azure_endpoint": "blob.core.usgovcloudapi.net",
-                     "base_path": "/backups",
-                     "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "gcs_endpoint": "localhost",
-                     "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                     "retention_full": 2,
-                     "retention_full_type": "count",
-                     "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                     "s3_region": "us-east-1",
-                     "type": "s3"
                   }
                ],
                "schedules": [
-                  {
-                     "cron_expression": "0 6 * * ?",
-                     "id": "daily-full-backup",
-                     "type": "full"
-                  },
-                  {
-                     "cron_expression": "0 6 * * ?",
-                     "id": "daily-full-backup",
-                     "type": "full"
-                  },
-                  {
-                     "cron_expression": "0 6 * * ?",
-                     "id": "daily-full-backup",
-                     "type": "full"
-                  },
-                  {
-                     "cron_expression": "0 6 * * ?",
-                     "id": "daily-full-backup",
-                     "type": "full"
-                  }
-               ]
-            },
-            {
-               "id": "default",
-               "node_names": [
-                  "n1",
-                  "n3"
-               ],
-               "provider": "pgbackrest",
-               "repositories": [
-                  {
-                     "azure_account": "pgedge-backups",
-                     "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "azure_endpoint": "blob.core.usgovcloudapi.net",
-                     "base_path": "/backups",
-                     "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "gcs_endpoint": "localhost",
-                     "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                     "retention_full": 2,
-                     "retention_full_type": "count",
-                     "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                     "s3_region": "us-east-1",
-                     "type": "s3"
-                  },
-                  {
-                     "azure_account": "pgedge-backups",
-                     "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "azure_endpoint": "blob.core.usgovcloudapi.net",
-                     "base_path": "/backups",
-                     "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "gcs_endpoint": "localhost",
-                     "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                     "retention_full": 2,
-                     "retention_full_type": "count",
-                     "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                     "s3_region": "us-east-1",
-                     "type": "s3"
-                  },
-                  {
-                     "azure_account": "pgedge-backups",
-                     "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "azure_endpoint": "blob.core.usgovcloudapi.net",
-                     "base_path": "/backups",
-                     "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "gcs_endpoint": "localhost",
-                     "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                     "retention_full": 2,
-                     "retention_full_type": "count",
-                     "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                     "s3_region": "us-east-1",
-                     "type": "s3"
-                  }
-               ],
-               "schedules": [
-                  {
-                     "cron_expression": "0 6 * * ?",
-                     "id": "daily-full-backup",
-                     "type": "full"
-                  },
-                  {
-                     "cron_expression": "0 6 * * ?",
-                     "id": "daily-full-backup",
-                     "type": "full"
-                  },
                   {
                      "cron_expression": "0 6 * * ?",
                      "id": "daily-full-backup",
@@ -958,107 +918,139 @@ Example:
                ]
             }
          ],
+         "cpus": "500m",
          "database_name": "northwind",
          "database_users": [
             {
+               "attributes": [
+                  "LOGIN",
+                  "CREATEDB",
+                  "CREATEROLE"
+               ],
+               "db_owner": false,
                "password": "secret",
                "roles": [
-                  "application_read_only"
+                  "pgedge_superuser"
                ],
-               "superuser": true,
                "username": "admin"
             },
             {
+               "attributes": [
+                  "LOGIN",
+                  "CREATEDB",
+                  "CREATEROLE"
+               ],
+               "db_owner": false,
                "password": "secret",
                "roles": [
-                  "application_read_only"
+                  "pgedge_superuser"
                ],
-               "superuser": true,
                "username": "admin"
             },
             {
+               "attributes": [
+                  "LOGIN",
+                  "CREATEDB",
+                  "CREATEROLE"
+               ],
+               "db_owner": false,
                "password": "secret",
                "roles": [
-                  "application_read_only"
+                  "pgedge_superuser"
                ],
-               "superuser": true,
+               "username": "admin"
+            },
+            {
+               "attributes": [
+                  "LOGIN",
+                  "CREATEDB",
+                  "CREATEROLE"
+               ],
+               "db_owner": false,
+               "password": "secret",
+               "roles": [
+                  "pgedge_superuser"
+               ],
                "username": "admin"
             }
          ],
          "deletion_protection": true,
-         "extensions": [
-            {
-               "name": "postgis",
-               "version": "1.2.3"
-            },
-            {
-               "name": "postgis",
-               "version": "1.2.3"
-            },
-            {
-               "name": "postgis",
-               "version": "1.2.3"
-            }
-         ],
          "features": {
             "some_feature": "enabled"
          },
+         "memory": "500M",
          "nodes": [
             {
+               "cpus": "500m",
                "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-               "instance_id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
+               "memory": "500M",
                "name": "n1",
                "port": 5432,
                "postgres_version": "17",
                "postgresql_conf": {
                   "max_connections": 1000
                },
-               "read_replicas": {
-                  "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-                  "instance_id": "5ec51c55-0921-445e-9d5b-32f5fb5dfbae"
-               }
+               "read_replicas": [
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  },
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  },
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  }
+               ],
+               "storage_class": "loop_device",
+               "storage_size": "500GiB"
             },
             {
+               "cpus": "500m",
                "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-               "instance_id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
+               "memory": "500M",
                "name": "n1",
                "port": 5432,
                "postgres_version": "17",
                "postgresql_conf": {
                   "max_connections": 1000
                },
-               "read_replicas": {
-                  "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-                  "instance_id": "5ec51c55-0921-445e-9d5b-32f5fb5dfbae"
-               }
+               "read_replicas": [
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  },
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  },
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  }
+               ],
+               "storage_class": "loop_device",
+               "storage_size": "500GiB"
             },
             {
+               "cpus": "500m",
                "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-               "instance_id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
+               "memory": "500M",
                "name": "n1",
                "port": 5432,
                "postgres_version": "17",
                "postgresql_conf": {
                   "max_connections": 1000
                },
-               "read_replicas": {
-                  "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-                  "instance_id": "5ec51c55-0921-445e-9d5b-32f5fb5dfbae"
-               }
-            },
-            {
-               "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-               "instance_id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
-               "name": "n1",
-               "port": 5432,
-               "postgres_version": "17",
-               "postgresql_conf": {
-                  "max_connections": 1000
-               },
-               "read_replicas": {
-                  "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-                  "instance_id": "5ec51c55-0921-445e-9d5b-32f5fb5dfbae"
-               }
+               "read_replicas": [
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  },
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  },
+                  {
+                     "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  }
+               ],
+               "storage_class": "loop_device",
+               "storage_size": "500GiB"
             }
          ],
          "port": 5432,
@@ -1066,7 +1058,26 @@ Example:
          "postgresql_conf": {
             "max_connections": 1000
          },
-         "spock_version": "4"
+         "restore_config": {
+            "node_name": "n1",
+            "provider": "pgbackrest",
+            "repository": {
+               "azure_account": "pgedge-backups",
+               "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+               "azure_endpoint": "blob.core.usgovcloudapi.net",
+               "base_path": "/backups",
+               "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+               "gcs_endpoint": "localhost",
+               "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
+               "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+               "s3_endpoint": "s3.us-east-1.amazonaws.com",
+               "s3_region": "us-east-1",
+               "type": "s3"
+            }
+         },
+         "spock_version": "4",
+         "storage_class": "loop_device",
+         "storage_size": "500GiB"
       }
    }' --database-id "02f1a7db-fca8-4521-b57a-2a375c1ced51"
 `, os.Args[0])

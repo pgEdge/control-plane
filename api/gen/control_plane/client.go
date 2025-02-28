@@ -15,6 +15,10 @@ import (
 
 // Client is the "control-plane" service client.
 type Client struct {
+	InitClusterEndpoint     goa.Endpoint
+	JoinClusterEndpoint     goa.Endpoint
+	GetJoinTokenEndpoint    goa.Endpoint
+	GetJoinOptionsEndpoint  goa.Endpoint
 	InspectClusterEndpoint  goa.Endpoint
 	ListHostsEndpoint       goa.Endpoint
 	InspectHostEndpoint     goa.Endpoint
@@ -27,8 +31,12 @@ type Client struct {
 }
 
 // NewClient initializes a "control-plane" service client given the endpoints.
-func NewClient(inspectCluster, listHosts, inspectHost, removeHost, listDatabases, createDatabase, inspectDatabase, updateDatabase, deleteDatabase goa.Endpoint) *Client {
+func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, inspectCluster, listHosts, inspectHost, removeHost, listDatabases, createDatabase, inspectDatabase, updateDatabase, deleteDatabase goa.Endpoint) *Client {
 	return &Client{
+		InitClusterEndpoint:     initCluster,
+		JoinClusterEndpoint:     joinCluster,
+		GetJoinTokenEndpoint:    getJoinToken,
+		GetJoinOptionsEndpoint:  getJoinOptions,
 		InspectClusterEndpoint:  inspectCluster,
 		ListHostsEndpoint:       listHosts,
 		InspectHostEndpoint:     inspectHost,
@@ -41,8 +49,62 @@ func NewClient(inspectCluster, listHosts, inspectHost, removeHost, listDatabases
 	}
 }
 
+// InitCluster calls the "init-cluster" endpoint of the "control-plane" service.
+// InitCluster may return the following errors:
+//   - "cluster_already_initialized" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) InitCluster(ctx context.Context) (res *ClusterJoinToken, err error) {
+	var ires any
+	ires, err = c.InitClusterEndpoint(ctx, nil)
+	if err != nil {
+		return
+	}
+	return ires.(*ClusterJoinToken), nil
+}
+
+// JoinCluster calls the "join-cluster" endpoint of the "control-plane" service.
+// JoinCluster may return the following errors:
+//   - "cluster_already_initialized" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) JoinCluster(ctx context.Context, p *ClusterJoinToken) (err error) {
+	_, err = c.JoinClusterEndpoint(ctx, p)
+	return
+}
+
+// GetJoinToken calls the "get-join-token" endpoint of the "control-plane"
+// service.
+// GetJoinToken may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) GetJoinToken(ctx context.Context) (res *ClusterJoinToken, err error) {
+	var ires any
+	ires, err = c.GetJoinTokenEndpoint(ctx, nil)
+	if err != nil {
+		return
+	}
+	return ires.(*ClusterJoinToken), nil
+}
+
+// GetJoinOptions calls the "get-join-options" endpoint of the "control-plane"
+// service.
+// GetJoinOptions may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "invalid_join_token" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) GetJoinOptions(ctx context.Context, p *ClusterJoinRequest) (res *ClusterJoinOptions, err error) {
+	var ires any
+	ires, err = c.GetJoinOptionsEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*ClusterJoinOptions), nil
+}
+
 // InspectCluster calls the "inspect-cluster" endpoint of the "control-plane"
 // service.
+// InspectCluster may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - error: internal error
 func (c *Client) InspectCluster(ctx context.Context) (res *Cluster, err error) {
 	var ires any
 	ires, err = c.InspectClusterEndpoint(ctx, nil)
@@ -53,6 +115,9 @@ func (c *Client) InspectCluster(ctx context.Context) (res *Cluster, err error) {
 }
 
 // ListHosts calls the "list-hosts" endpoint of the "control-plane" service.
+// ListHosts may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - error: internal error
 func (c *Client) ListHosts(ctx context.Context) (res []*Host, err error) {
 	var ires any
 	ires, err = c.ListHostsEndpoint(ctx, nil)
@@ -63,6 +128,9 @@ func (c *Client) ListHosts(ctx context.Context) (res []*Host, err error) {
 }
 
 // InspectHost calls the "inspect-host" endpoint of the "control-plane" service.
+// InspectHost may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - error: internal error
 func (c *Client) InspectHost(ctx context.Context, p *InspectHostPayload) (res *Host, err error) {
 	var ires any
 	ires, err = c.InspectHostEndpoint(ctx, p)
@@ -73,6 +141,9 @@ func (c *Client) InspectHost(ctx context.Context, p *InspectHostPayload) (res *H
 }
 
 // RemoveHost calls the "remove-host" endpoint of the "control-plane" service.
+// RemoveHost may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - error: internal error
 func (c *Client) RemoveHost(ctx context.Context, p *RemoveHostPayload) (err error) {
 	_, err = c.RemoveHostEndpoint(ctx, p)
 	return
@@ -80,17 +151,25 @@ func (c *Client) RemoveHost(ctx context.Context, p *RemoveHostPayload) (err erro
 
 // ListDatabases calls the "list-databases" endpoint of the "control-plane"
 // service.
-func (c *Client) ListDatabases(ctx context.Context) (res []*Database, err error) {
+// ListDatabases may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) ListDatabases(ctx context.Context) (res DatabaseCollection, err error) {
 	var ires any
 	ires, err = c.ListDatabasesEndpoint(ctx, nil)
 	if err != nil {
 		return
 	}
-	return ires.([]*Database), nil
+	return ires.(DatabaseCollection), nil
 }
 
 // CreateDatabase calls the "create-database" endpoint of the "control-plane"
 // service.
+// CreateDatabase may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
+//   - "database_already_exists" (type *goa.ServiceError)
+//   - error: internal error
 func (c *Client) CreateDatabase(ctx context.Context, p *CreateDatabaseRequest) (res *Database, err error) {
 	var ires any
 	ires, err = c.CreateDatabaseEndpoint(ctx, p)
@@ -102,6 +181,9 @@ func (c *Client) CreateDatabase(ctx context.Context, p *CreateDatabaseRequest) (
 
 // InspectDatabase calls the "inspect-database" endpoint of the "control-plane"
 // service.
+// InspectDatabase may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - error: internal error
 func (c *Client) InspectDatabase(ctx context.Context, p *InspectDatabasePayload) (res *Database, err error) {
 	var ires any
 	ires, err = c.InspectDatabaseEndpoint(ctx, p)
@@ -113,6 +195,9 @@ func (c *Client) InspectDatabase(ctx context.Context, p *InspectDatabasePayload)
 
 // UpdateDatabase calls the "update-database" endpoint of the "control-plane"
 // service.
+// UpdateDatabase may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - error: internal error
 func (c *Client) UpdateDatabase(ctx context.Context, p *UpdateDatabasePayload) (res *Database, err error) {
 	var ires any
 	ires, err = c.UpdateDatabaseEndpoint(ctx, p)
@@ -124,6 +209,9 @@ func (c *Client) UpdateDatabase(ctx context.Context, p *UpdateDatabasePayload) (
 
 // DeleteDatabase calls the "delete-database" endpoint of the "control-plane"
 // service.
+// DeleteDatabase may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - error: internal error
 func (c *Client) DeleteDatabase(ctx context.Context, p *DeleteDatabasePayload) (err error) {
 	_, err = c.DeleteDatabaseEndpoint(ctx, p)
 	return
