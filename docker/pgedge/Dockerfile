@@ -27,7 +27,7 @@ dnf install -y epel-release dnf
 dnf config-manager --set-enabled crb
 dnf update -y --allowerasing
 xargs dnf install -y < /usr/share/pgedge/packages.txt
-pip install 'python-json-logger>=2.0.2'
+pip install 'python-json-logger==3.2.1'
 dnf remove -y python3-pip
 dnf clean all
 
