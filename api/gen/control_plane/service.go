@@ -61,8 +61,6 @@ const ServiceName = "control-plane"
 var MethodNames = [13]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "inspect-cluster", "list-hosts", "inspect-host", "remove-host", "list-databases", "create-database", "inspect-database", "update-database", "delete-database"}
 
 type BackupConfigSpec struct {
-	// The unique identifier for this backup configuration.
-	ID string
 	// The backup provider for this backup configuration.
 	Provider string
 	// The repositories for this backup configuration.
@@ -102,6 +100,8 @@ type BackupRepositorySpec struct {
 	RetentionFullType *string
 	// The base path within the repository to store backups.
 	BasePath *string
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string
 }
 
 type BackupScheduleSpec struct {
@@ -450,7 +450,7 @@ type RestoreConfigSpec struct {
 
 type RestoreRepositorySpec struct {
 	// The unique identifier of this repository.
-	ID string
+	ID *string
 	// The type of this repository.
 	Type string
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
@@ -475,6 +475,8 @@ type RestoreRepositorySpec struct {
 	AzureEndpoint *string
 	// The base path within the repository where backups are stored.
 	BasePath *string
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string
 }
 
 // UpdateDatabasePayload is the payload type of the control-plane service
@@ -933,7 +935,6 @@ func transformControlplaneviewsBackupConfigSpecViewToBackupConfigSpec(v *control
 		return nil
 	}
 	res := &BackupConfigSpec{
-		ID:       *v.ID,
 		Provider: *v.Provider,
 	}
 	if v.Repositories != nil {
@@ -973,6 +974,14 @@ func transformControlplaneviewsBackupRepositorySpecViewToBackupRepositorySpec(v 
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -1045,7 +1054,7 @@ func transformControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpec(v *contr
 // *controlplaneviews.RestoreRepositorySpecView.
 func transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec(v *controlplaneviews.RestoreRepositorySpecView) *RestoreRepositorySpec {
 	res := &RestoreRepositorySpec{
-		ID:             *v.ID,
+		ID:             v.ID,
 		Type:           *v.Type,
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
@@ -1056,6 +1065,14 @@ func transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec(
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
 		BasePath:       v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -1162,7 +1179,6 @@ func transformBackupConfigSpecToControlplaneviewsBackupConfigSpecView(v *BackupC
 		return nil
 	}
 	res := &controlplaneviews.BackupConfigSpecView{
-		ID:       &v.ID,
 		Provider: &v.Provider,
 	}
 	if v.Repositories != nil {
@@ -1202,6 +1218,14 @@ func transformBackupRepositorySpecToControlplaneviewsBackupRepositorySpecView(v 
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -1274,7 +1298,7 @@ func transformRestoreConfigSpecToControlplaneviewsRestoreConfigSpecView(v *Resto
 // value of type *RestoreRepositorySpec.
 func transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView(v *RestoreRepositorySpec) *controlplaneviews.RestoreRepositorySpecView {
 	res := &controlplaneviews.RestoreRepositorySpecView{
-		ID:             &v.ID,
+		ID:             v.ID,
 		Type:           &v.Type,
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
@@ -1285,6 +1309,14 @@ func transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView(
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
 		BasePath:       v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res

@@ -314,10 +314,6 @@ definitions:
         title: BackupConfigSpec
         type: object
         properties:
-            id:
-                type: string
-                description: The unique identifier for this backup configuration.
-                example: default
             provider:
                 type: string
                 description: The backup provider for this backup configuration.
@@ -335,6 +331,9 @@ definitions:
                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       azure_endpoint: blob.core.usgovcloudapi.net
                       base_path: /backups
+                      custom_options:
+                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                        storage-upload-chunk-size: 5MiB
                       gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       gcs_endpoint: localhost
                       id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -348,6 +347,9 @@ definitions:
                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       azure_endpoint: blob.core.usgovcloudapi.net
                       base_path: /backups
+                      custom_options:
+                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                        storage-upload-chunk-size: 5MiB
                       gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       gcs_endpoint: localhost
                       id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -361,6 +363,9 @@ definitions:
                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       azure_endpoint: blob.core.usgovcloudapi.net
                       base_path: /backups
+                      custom_options:
+                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                        storage-upload-chunk-size: 5MiB
                       gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       gcs_endpoint: localhost
                       id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -374,6 +379,9 @@ definitions:
                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       azure_endpoint: blob.core.usgovcloudapi.net
                       base_path: /backups
+                      custom_options:
+                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                        storage-upload-chunk-size: 5MiB
                       gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       gcs_endpoint: localhost
                       id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -395,14 +403,22 @@ definitions:
                     - cron_expression: 0 6 * * ?
                       id: daily-full-backup
                       type: full
+                    - cron_expression: 0 6 * * ?
+                      id: daily-full-backup
+                      type: full
+                    - cron_expression: 0 6 * * ?
+                      id: daily-full-backup
+                      type: full
         example:
-            id: default
             provider: pgbackrest
             repositories:
                 - azure_account: pgedge-backups
                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                   azure_endpoint: blob.core.usgovcloudapi.net
                   base_path: /backups
+                  custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                    storage-upload-chunk-size: 5MiB
                   gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                   gcs_endpoint: localhost
                   id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -416,6 +432,9 @@ definitions:
                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                   azure_endpoint: blob.core.usgovcloudapi.net
                   base_path: /backups
+                  custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                    storage-upload-chunk-size: 5MiB
                   gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                   gcs_endpoint: localhost
                   id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -429,6 +448,9 @@ definitions:
                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                   azure_endpoint: blob.core.usgovcloudapi.net
                   base_path: /backups
+                  custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                    storage-upload-chunk-size: 5MiB
                   gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                   gcs_endpoint: localhost
                   id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -452,7 +474,6 @@ definitions:
                   id: daily-full-backup
                   type: full
         required:
-            - id
             - provider
     BackupRepositorySpec:
         title: BackupRepositorySpec
@@ -474,6 +495,15 @@ definitions:
                 type: string
                 description: The base path within the repository to store backups.
                 example: /backups
+            custom_options:
+                type: object
+                description: Additional options to apply to this repository.
+                example:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                    storage-upload-chunk-size: 5MiB
+                additionalProperties:
+                    type: string
+                    example: Illo rerum aliquam asperiores tempore.
             gcs_bucket:
                 type: string
                 description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -486,7 +516,6 @@ definitions:
                 type: string
                 description: The unique identifier of this repository.
                 example: f6b84a99-5e91-4203-be1e-131fe82e5984
-                format: uuid
             retention_full:
                 type: integer
                 description: The count of full backups to retain or the time to retain full backups.
@@ -524,6 +553,9 @@ definitions:
             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
             azure_endpoint: blob.core.usgovcloudapi.net
             base_path: /backups
+            custom_options:
+                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                storage-upload-chunk-size: 5MiB
             gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
             gcs_endpoint: localhost
             id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -923,7 +955,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: false
+                example: true
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -939,19 +971,19 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: false
+                example: true
             timeout:
                 type: boolean
                 description: Is the error a timeout?
                 example: false
         description: create-database_cluster_not_initialized_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
-            timeout: false
+            temporary: false
+            timeout: true
         required:
             - name
             - id
@@ -982,19 +1014,19 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: false
+                example: true
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: false
+                example: true
         description: create-database_database_already_exists_response_body result type (default view)
         example:
             fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
-            timeout: false
+            temporary: true
+            timeout: true
         required:
             - name
             - id
@@ -1009,7 +1041,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: true
+                example: false
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -1037,7 +1069,7 @@ definitions:
             message: parameter 'p' must be an integer
             name: bad_request
             temporary: true
-            timeout: true
+            timeout: false
         required:
             - name
             - id
@@ -1107,13 +1139,15 @@ definitions:
                   state: backing_up
             spec:
                 backup_config:
-                    id: default
                     provider: pgbackrest
                     repositories:
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1127,6 +1161,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1140,6 +1177,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1198,13 +1238,15 @@ definitions:
                 memory: 500M
                 nodes:
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1218,6 +1260,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1231,6 +1276,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1266,13 +1314,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1286,6 +1336,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1299,6 +1352,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1334,13 +1390,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1354,6 +1412,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1367,6 +1428,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1402,13 +1466,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1422,6 +1488,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1435,6 +1504,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1481,6 +1553,8 @@ definitions:
                         azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         azure_endpoint: blob.core.usgovcloudapi.net
                         base_path: /backups
+                        custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
                         gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         gcs_endpoint: localhost
                         id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1491,7 +1565,7 @@ definitions:
                 spock_version: "4"
                 storage_class: loop_device
                 storage_size: 500GiB
-            state: deleting
+            state: unknown
             tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
             updated_at: "2025-01-01T02:30:00Z"
         required:
@@ -1527,13 +1601,15 @@ definitions:
                   state: backing_up
               spec:
                 backup_config:
-                    id: default
                     provider: pgbackrest
                     repositories:
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1547,6 +1623,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1560,6 +1639,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1618,13 +1700,15 @@ definitions:
                 memory: 500M
                 nodes:
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1638,6 +1722,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1651,6 +1738,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1686,13 +1776,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1706,6 +1798,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1719,6 +1814,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1754,13 +1852,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1774,6 +1874,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1787,6 +1890,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1822,13 +1928,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1842,6 +1950,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1855,6 +1966,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1901,6 +2015,8 @@ definitions:
                         azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         azure_endpoint: blob.core.usgovcloudapi.net
                         base_path: /backups
+                        custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
                         gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         gcs_endpoint: localhost
                         id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1935,13 +2051,15 @@ definitions:
                   state: backing_up
               spec:
                 backup_config:
-                    id: default
                     provider: pgbackrest
                     repositories:
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1955,6 +2073,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -1968,6 +2089,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2026,13 +2150,15 @@ definitions:
                 memory: 500M
                 nodes:
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2046,6 +2172,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2059,6 +2188,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2094,13 +2226,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2114,6 +2248,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2127,6 +2264,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2162,13 +2302,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2182,6 +2324,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2195,6 +2340,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2230,13 +2378,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2250,6 +2400,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2263,6 +2416,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2309,6 +2465,8 @@ definitions:
                         azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         azure_endpoint: blob.core.usgovcloudapi.net
                         base_path: /backups
+                        custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
                         gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         gcs_endpoint: localhost
                         id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2343,13 +2501,15 @@ definitions:
                   state: backing_up
               spec:
                 backup_config:
-                    id: default
                     provider: pgbackrest
                     repositories:
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2363,6 +2523,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2376,6 +2539,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2434,13 +2600,15 @@ definitions:
                 memory: 500M
                 nodes:
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2454,6 +2622,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2467,6 +2638,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2502,13 +2676,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2522,6 +2698,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2535,6 +2714,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2570,13 +2752,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2590,6 +2774,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2603,6 +2790,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2638,13 +2828,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2658,6 +2850,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2671,6 +2866,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2717,6 +2915,8 @@ definitions:
                         azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         azure_endpoint: blob.core.usgovcloudapi.net
                         base_path: /backups
+                        custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
                         gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         gcs_endpoint: localhost
                         id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2751,13 +2951,15 @@ definitions:
                   state: backing_up
               spec:
                 backup_config:
-                    id: default
                     provider: pgbackrest
                     repositories:
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2771,6 +2973,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2784,6 +2989,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2842,13 +3050,15 @@ definitions:
                 memory: 500M
                 nodes:
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2862,6 +3072,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2875,6 +3088,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2910,13 +3126,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2930,6 +3148,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2943,6 +3164,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2978,13 +3202,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -2998,6 +3224,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3011,6 +3240,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3046,13 +3278,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3066,6 +3300,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3079,6 +3316,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3125,6 +3365,8 @@ definitions:
                         azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         azure_endpoint: blob.core.usgovcloudapi.net
                         base_path: /backups
+                        custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
                         gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         gcs_endpoint: localhost
                         id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3145,7 +3387,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: true
+                example: false
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -3161,18 +3403,18 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: false
+                example: true
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
+                example: false
         description: delete-database_cluster_not_initialized_response_body result type (default view)
         example:
             fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
+            temporary: true
             timeout: true
         required:
             - name
@@ -3317,7 +3559,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: false
+                example: true
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -3340,11 +3582,11 @@ definitions:
                 example: true
         description: inspect-database_cluster_not_initialized_response_body result type (default view)
         example:
-            fault: false
+            fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
+            temporary: false
             timeout: true
         required:
             - name
@@ -3415,13 +3657,15 @@ definitions:
                   state: backing_up
             spec:
                 backup_config:
-                    id: default
                     provider: pgbackrest
                     repositories:
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3435,6 +3679,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3448,6 +3695,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3506,13 +3756,15 @@ definitions:
                 memory: 500M
                 nodes:
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3526,6 +3778,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3539,6 +3794,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3574,13 +3832,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3594,6 +3854,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3607,6 +3870,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3642,13 +3908,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3662,6 +3930,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3675,6 +3946,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3710,13 +3984,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3730,6 +4006,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3743,6 +4022,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3789,6 +4071,8 @@ definitions:
                         azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         azure_endpoint: blob.core.usgovcloudapi.net
                         base_path: /backups
+                        custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
                         gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         gcs_endpoint: localhost
                         id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -3799,7 +4083,7 @@ definitions:
                 spock_version: "4"
                 storage_class: loop_device
                 storage_size: 500GiB
-            state: available
+            state: creating
             tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
             updated_at: "2025-01-01T02:30:00Z"
         required:
@@ -4029,7 +4313,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: true
+                example: false
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -4045,14 +4329,14 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: true
+                example: false
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: false
+                example: true
         description: update-database_cluster_not_initialized_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
@@ -4086,7 +4370,7 @@ definitions:
             state:
                 type: string
                 description: Current state of the database.
-                example: degraded
+                example: unknown
                 enum:
                     - creating
                     - modifying
@@ -4127,13 +4411,15 @@ definitions:
                   state: backing_up
             spec:
                 backup_config:
-                    id: default
                     provider: pgbackrest
                     repositories:
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4147,6 +4433,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4160,6 +4449,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4218,13 +4510,15 @@ definitions:
                 memory: 500M
                 nodes:
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4238,6 +4532,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4251,6 +4548,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4286,13 +4586,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4306,6 +4608,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4319,6 +4624,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4354,13 +4662,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4374,6 +4684,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4387,6 +4700,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4422,13 +4738,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4442,6 +4760,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4455,6 +4776,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4501,6 +4825,8 @@ definitions:
                         azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         azure_endpoint: blob.core.usgovcloudapi.net
                         base_path: /backups
+                        custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
                         gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         gcs_endpoint: localhost
                         id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4511,7 +4837,7 @@ definitions:
                 spock_version: "4"
                 storage_class: loop_device
                 storage_size: 500GiB
-            state: deleting
+            state: creating
             tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
             updated_at: "2025-01-01T02:30:00Z"
         required:
@@ -4539,13 +4865,15 @@ definitions:
             id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
             spec:
                 backup_config:
-                    id: default
                     provider: pgbackrest
                     repositories:
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4559,6 +4887,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4572,6 +4903,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4624,13 +4958,15 @@ definitions:
                 memory: 500M
                 nodes:
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4644,6 +4980,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4657,6 +4996,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4686,13 +5028,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4706,6 +5050,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4719,6 +5066,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4748,13 +5098,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4768,6 +5120,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4781,6 +5136,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4810,13 +5168,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4830,6 +5190,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4843,6 +5206,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4883,6 +5249,8 @@ definitions:
                         azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         azure_endpoint: blob.core.usgovcloudapi.net
                         base_path: /backups
+                        custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
                         gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         gcs_endpoint: localhost
                         id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4951,13 +5319,15 @@ definitions:
                 example: 500GiB
         example:
             backup_config:
-                id: default
                 provider: pgbackrest
                 repositories:
                     - azure_account: pgedge-backups
                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       azure_endpoint: blob.core.usgovcloudapi.net
                       base_path: /backups
+                      custom_options:
+                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                        storage-upload-chunk-size: 5MiB
                       gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       gcs_endpoint: localhost
                       id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4971,6 +5341,9 @@ definitions:
                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       azure_endpoint: blob.core.usgovcloudapi.net
                       base_path: /backups
+                      custom_options:
+                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                        storage-upload-chunk-size: 5MiB
                       gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       gcs_endpoint: localhost
                       id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -4984,6 +5357,9 @@ definitions:
                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       azure_endpoint: blob.core.usgovcloudapi.net
                       base_path: /backups
+                      custom_options:
+                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                        storage-upload-chunk-size: 5MiB
                       gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       gcs_endpoint: localhost
                       id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5008,6 +5384,8 @@ definitions:
                       type: full
             cpus: 500m
             host_ids:
+                - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                 - de3b1388-1f0c-42f1-a86c-59ab72f255ec
             memory: 500M
             name: n1
@@ -5133,15 +5511,6 @@ definitions:
                       roles:
                         - pgedge_superuser
                       username: admin
-                    - attributes:
-                        - LOGIN
-                        - CREATEDB
-                        - CREATEROLE
-                      db_owner: false
-                      password: secret
-                      roles:
-                        - pgedge_superuser
-                      username: admin
             deletion_protection:
                 type: boolean
                 description: Prevents deletion when true.
@@ -5153,7 +5522,7 @@ definitions:
                     some_feature: enabled
                 additionalProperties:
                     type: string
-                    example: Quia debitis in non quam numquam.
+                    example: Quam numquam amet labore non cumque.
             memory:
                 type: string
                 description: The amount of memory in SI or IEC notation to allocate for the database and to use for tuning Postgres. Defaults to the total available memory on the host. Whether this limit will be enforced depends on the orchestrator.
@@ -5165,13 +5534,15 @@ definitions:
                 description: The Spock nodes for this database.
                 example:
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5185,6 +5556,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5198,6 +5572,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5233,13 +5610,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5253,6 +5632,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5266,74 +5648,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_region: us-east-1
-                              type: s3
-                        schedules:
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
-                      cpus: 500m
-                      host_ids:
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      memory: 500M
-                      name: n1
-                      port: 5432
-                      postgres_version: "17"
-                      postgresql_conf:
-                        max_connections: 1000
-                      storage_class: loop_device
-                      storage_size: 500GiB
-                    - backup_config:
-                        id: default
-                        provider: pgbackrest
-                        repositories:
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              base_path: /backups
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_region: us-east-1
-                              type: s3
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              base_path: /backups
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_region: us-east-1
-                              type: s3
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5404,13 +5721,15 @@ definitions:
                 example: 500GiB
         example:
             backup_config:
-                id: default
                 provider: pgbackrest
                 repositories:
                     - azure_account: pgedge-backups
                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       azure_endpoint: blob.core.usgovcloudapi.net
                       base_path: /backups
+                      custom_options:
+                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                        storage-upload-chunk-size: 5MiB
                       gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       gcs_endpoint: localhost
                       id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5424,6 +5743,9 @@ definitions:
                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       azure_endpoint: blob.core.usgovcloudapi.net
                       base_path: /backups
+                      custom_options:
+                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                        storage-upload-chunk-size: 5MiB
                       gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       gcs_endpoint: localhost
                       id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5437,6 +5759,9 @@ definitions:
                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       azure_endpoint: blob.core.usgovcloudapi.net
                       base_path: /backups
+                      custom_options:
+                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                        storage-upload-chunk-size: 5MiB
                       gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       gcs_endpoint: localhost
                       id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5480,19 +5805,39 @@ definitions:
                   roles:
                     - pgedge_superuser
                   username: admin
+                - attributes:
+                    - LOGIN
+                    - CREATEDB
+                    - CREATEROLE
+                  db_owner: false
+                  password: secret
+                  roles:
+                    - pgedge_superuser
+                  username: admin
+                - attributes:
+                    - LOGIN
+                    - CREATEDB
+                    - CREATEROLE
+                  db_owner: false
+                  password: secret
+                  roles:
+                    - pgedge_superuser
+                  username: admin
             deletion_protection: true
             features:
                 some_feature: enabled
             memory: 500M
             nodes:
                 - backup_config:
-                    id: default
                     provider: pgbackrest
                     repositories:
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5506,6 +5851,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5519,6 +5867,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5554,13 +5905,15 @@ definitions:
                   storage_class: loop_device
                   storage_size: 500GiB
                 - backup_config:
-                    id: default
                     provider: pgbackrest
                     repositories:
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5574,6 +5927,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5587,6 +5943,85 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
+                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          gcs_endpoint: localhost
+                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                          retention_full: 2
+                          retention_full_type: count
+                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          s3_endpoint: s3.us-east-1.amazonaws.com
+                          s3_region: us-east-1
+                          type: s3
+                    schedules:
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                  cpus: 500m
+                  host_ids:
+                    - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                    - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  memory: 500M
+                  name: n1
+                  port: 5432
+                  postgres_version: "17"
+                  postgresql_conf:
+                    max_connections: 1000
+                  storage_class: loop_device
+                  storage_size: 500GiB
+                - backup_config:
+                    provider: pgbackrest
+                    repositories:
+                        - azure_account: pgedge-backups
+                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          azure_endpoint: blob.core.usgovcloudapi.net
+                          base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
+                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          gcs_endpoint: localhost
+                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                          retention_full: 2
+                          retention_full_type: count
+                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          s3_endpoint: s3.us-east-1.amazonaws.com
+                          s3_region: us-east-1
+                          type: s3
+                        - azure_account: pgedge-backups
+                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          azure_endpoint: blob.core.usgovcloudapi.net
+                          base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
+                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          gcs_endpoint: localhost
+                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                          retention_full: 2
+                          retention_full_type: count
+                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          s3_endpoint: s3.us-east-1.amazonaws.com
+                          s3_region: us-east-1
+                          type: s3
+                        - azure_account: pgedge-backups
+                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          azure_endpoint: blob.core.usgovcloudapi.net
+                          base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5633,6 +6068,8 @@ definitions:
                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                     azure_endpoint: blob.core.usgovcloudapi.net
                     base_path: /backups
+                    custom_options:
+                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
                     gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                     gcs_endpoint: localhost
                     id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -5654,7 +6091,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Id aut id voluptates ut.
+                    example: Velit autem illum.
                 description: The attributes to assign to this database user.
                 example:
                     - LOGIN
@@ -5663,7 +6100,7 @@ definitions:
             db_owner:
                 type: boolean
                 description: If true, this user will be granted database ownership.
-                example: false
+                example: true
             password:
                 type: string
                 description: The password for this database user.
@@ -5672,7 +6109,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Velit autem illum.
+                    example: Aut expedita quia.
                 description: The roles to assign to this database user.
                 example:
                     - pgedge_superuser
@@ -5685,7 +6122,7 @@ definitions:
                 - LOGIN
                 - CREATEDB
                 - CREATEROLE
-            db_owner: true
+            db_owner: false
             password: secret
             roles:
                 - pgedge_superuser
@@ -6056,6 +6493,8 @@ definitions:
                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                 azure_endpoint: blob.core.usgovcloudapi.net
                 base_path: /backups
+                custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
                 gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                 gcs_endpoint: localhost
                 id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6087,6 +6526,14 @@ definitions:
                 type: string
                 description: The base path within the repository where backups are stored.
                 example: /backups
+            custom_options:
+                type: object
+                description: Additional options to apply to this repository.
+                example:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                additionalProperties:
+                    type: string
+                    example: Velit ipsam deserunt sed inventore quis.
             gcs_bucket:
                 type: string
                 description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -6099,7 +6546,6 @@ definitions:
                 type: string
                 description: The unique identifier of this repository.
                 example: f6b84a99-5e91-4203-be1e-131fe82e5984
-                format: uuid
             s3_bucket:
                 type: string
                 description: The S3 bucket name for this repository. Only applies when type = 's3'.
@@ -6125,6 +6571,8 @@ definitions:
             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
             azure_endpoint: blob.core.usgovcloudapi.net
             base_path: /backups
+            custom_options:
+                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
             gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
             gcs_endpoint: localhost
             id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6133,7 +6581,6 @@ definitions:
             s3_region: us-east-1
             type: s3
         required:
-            - id
             - type
     UpdateDatabaseRequest:
         title: UpdateDatabaseRequest
@@ -6144,13 +6591,15 @@ definitions:
         example:
             spec:
                 backup_config:
-                    id: default
                     provider: pgbackrest
                     repositories:
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6164,6 +6613,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6177,6 +6629,9 @@ definitions:
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
                           base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
                           gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           gcs_endpoint: localhost
                           id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6241,13 +6696,15 @@ definitions:
                 memory: 500M
                 nodes:
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6261,6 +6718,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6274,6 +6734,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6305,13 +6768,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6325,6 +6790,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6338,6 +6806,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6369,13 +6840,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6389,6 +6862,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6402,6 +6878,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6433,13 +6912,15 @@ definitions:
                       storage_class: loop_device
                       storage_size: 500GiB
                     - backup_config:
-                        id: default
                         provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6453,6 +6934,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6466,6 +6950,9 @@ definitions:
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
                               base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
                               gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               gcs_endpoint: localhost
                               id: f6b84a99-5e91-4203-be1e-131fe82e5984
@@ -6508,6 +6995,8 @@ definitions:
                         azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         azure_endpoint: blob.core.usgovcloudapi.net
                         base_path: /backups
+                        custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
                         gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                         gcs_endpoint: localhost
                         id: f6b84a99-5e91-4203-be1e-131fe82e5984

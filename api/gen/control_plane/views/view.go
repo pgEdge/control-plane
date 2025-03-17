@@ -177,8 +177,6 @@ type DatabaseNodeSpecView struct {
 
 // BackupConfigSpecView is a type that runs validations on a projected type.
 type BackupConfigSpecView struct {
-	// The unique identifier for this backup configuration.
-	ID *string
 	// The backup provider for this backup configuration.
 	Provider *string
 	// The repositories for this backup configuration.
@@ -219,6 +217,8 @@ type BackupRepositorySpecView struct {
 	RetentionFullType *string
 	// The base path within the repository to store backups.
 	BasePath *string
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string
 }
 
 // BackupScheduleSpecView is a type that runs validations on a projected type.
@@ -284,6 +284,8 @@ type RestoreRepositorySpecView struct {
 	AzureEndpoint *string
 	// The base path within the repository where backups are stored.
 	BasePath *string
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string
 }
 
 var (
@@ -724,9 +726,6 @@ func ValidateDatabaseNodeSpecView(result *DatabaseNodeSpecView) (err error) {
 // ValidateBackupConfigSpecView runs the validations defined on
 // BackupConfigSpecView.
 func ValidateBackupConfigSpecView(result *BackupConfigSpecView) (err error) {
-	if result.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "result"))
-	}
 	if result.Provider == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("provider", "result"))
 	}
@@ -757,9 +756,6 @@ func ValidateBackupConfigSpecView(result *BackupConfigSpecView) (err error) {
 func ValidateBackupRepositorySpecView(result *BackupRepositorySpecView) (err error) {
 	if result.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "result"))
-	}
-	if result.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.id", *result.ID, goa.FormatUUID))
 	}
 	if result.Type != nil {
 		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure") {
@@ -834,14 +830,8 @@ func ValidateRestoreConfigSpecView(result *RestoreConfigSpecView) (err error) {
 // ValidateRestoreRepositorySpecView runs the validations defined on
 // RestoreRepositorySpecView.
 func ValidateRestoreRepositorySpecView(result *RestoreRepositorySpecView) (err error) {
-	if result.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "result"))
-	}
 	if result.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "result"))
-	}
-	if result.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.id", *result.ID, goa.FormatUUID))
 	}
 	if result.Type != nil {
 		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure") {

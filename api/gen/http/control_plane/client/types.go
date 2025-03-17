@@ -790,8 +790,6 @@ type DatabaseNodeSpecResponse struct {
 
 // BackupConfigSpecResponse is used to define fields on response body types.
 type BackupConfigSpecResponse struct {
-	// The unique identifier for this backup configuration.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// The backup provider for this backup configuration.
 	Provider *string `form:"provider,omitempty" json:"provider,omitempty" xml:"provider,omitempty"`
 	// The repositories for this backup configuration.
@@ -832,6 +830,8 @@ type BackupRepositorySpecResponse struct {
 	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
 	// The base path within the repository to store backups.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
 // BackupScheduleSpecResponse is used to define fields on response body types.
@@ -897,6 +897,8 @@ type RestoreRepositorySpecResponse struct {
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
 	// The base path within the repository where backups are stored.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
 // DatabaseSpecRequestBody is used to define fields on request body types.
@@ -981,8 +983,6 @@ type DatabaseNodeSpecRequestBody struct {
 
 // BackupConfigSpecRequestBody is used to define fields on request body types.
 type BackupConfigSpecRequestBody struct {
-	// The unique identifier for this backup configuration.
-	ID string `form:"id" json:"id" xml:"id"`
 	// The backup provider for this backup configuration.
 	Provider string `form:"provider" json:"provider" xml:"provider"`
 	// The repositories for this backup configuration.
@@ -1024,6 +1024,8 @@ type BackupRepositorySpecRequestBody struct {
 	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
 	// The base path within the repository to store backups.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
 // BackupScheduleSpecRequestBody is used to define fields on request body types.
@@ -1064,7 +1066,7 @@ type RestoreConfigSpecRequestBody struct {
 // types.
 type RestoreRepositorySpecRequestBody struct {
 	// The unique identifier of this repository.
-	ID string `form:"id" json:"id" xml:"id"`
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// The type of this repository.
 	Type string `form:"type" json:"type" xml:"type"`
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
@@ -1089,6 +1091,8 @@ type RestoreRepositorySpecRequestBody struct {
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
 	// The base path within the repository where backups are stored.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
 // InstanceResponseBodyAbbreviatedCollection is used to define fields on
@@ -1189,8 +1193,6 @@ type DatabaseNodeSpecResponseBody struct {
 
 // BackupConfigSpecResponseBody is used to define fields on response body types.
 type BackupConfigSpecResponseBody struct {
-	// The unique identifier for this backup configuration.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// The backup provider for this backup configuration.
 	Provider *string `form:"provider,omitempty" json:"provider,omitempty" xml:"provider,omitempty"`
 	// The repositories for this backup configuration.
@@ -1232,6 +1234,8 @@ type BackupRepositorySpecResponseBody struct {
 	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
 	// The base path within the repository to store backups.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
 // BackupScheduleSpecResponseBody is used to define fields on response body
@@ -1299,6 +1303,8 @@ type RestoreRepositorySpecResponseBody struct {
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
 	// The base path within the repository where backups are stored.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
 // DatabaseSpecRequestBodyRequestBody is used to define fields on request body
@@ -1386,8 +1392,6 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 // BackupConfigSpecRequestBodyRequestBody is used to define fields on request
 // body types.
 type BackupConfigSpecRequestBodyRequestBody struct {
-	// The unique identifier for this backup configuration.
-	ID string `form:"id" json:"id" xml:"id"`
 	// The backup provider for this backup configuration.
 	Provider string `form:"provider" json:"provider" xml:"provider"`
 	// The repositories for this backup configuration.
@@ -1429,6 +1433,8 @@ type BackupRepositorySpecRequestBodyRequestBody struct {
 	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
 	// The base path within the repository to store backups.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
 // BackupScheduleSpecRequestBodyRequestBody is used to define fields on request
@@ -1472,7 +1478,7 @@ type RestoreConfigSpecRequestBodyRequestBody struct {
 // request body types.
 type RestoreRepositorySpecRequestBodyRequestBody struct {
 	// The unique identifier of this repository.
-	ID string `form:"id" json:"id" xml:"id"`
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// The type of this repository.
 	Type string `form:"type" json:"type" xml:"type"`
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
@@ -1497,6 +1503,8 @@ type RestoreRepositorySpecRequestBodyRequestBody struct {
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
 	// The base path within the repository where backups are stored.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
 // NewJoinClusterRequestBody builds the HTTP request body from the payload of
@@ -3014,9 +3022,6 @@ func ValidateDatabaseNodeSpecResponse(body *DatabaseNodeSpecResponse) (err error
 // ValidateBackupConfigSpecResponse runs the validations defined on
 // BackupConfigSpecResponse
 func ValidateBackupConfigSpecResponse(body *BackupConfigSpecResponse) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Provider == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("provider", "body"))
 	}
@@ -3047,9 +3052,6 @@ func ValidateBackupConfigSpecResponse(body *BackupConfigSpecResponse) (err error
 func ValidateBackupRepositorySpecResponse(body *BackupRepositorySpecResponse) (err error) {
 	if body.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure") {
@@ -3124,14 +3126,8 @@ func ValidateRestoreConfigSpecResponse(body *RestoreConfigSpecResponse) (err err
 // ValidateRestoreRepositorySpecResponse runs the validations defined on
 // RestoreRepositorySpecResponse
 func ValidateRestoreRepositorySpecResponse(body *RestoreRepositorySpecResponse) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure") {
@@ -3229,9 +3225,6 @@ func ValidateBackupConfigSpecRequestBody(body *BackupConfigSpecRequestBody) (err
 // ValidateBackupRepositorySpecRequestBody runs the validations defined on
 // BackupRepositorySpecRequestBody
 func ValidateBackupRepositorySpecRequestBody(body *BackupRepositorySpecRequestBody) (err error) {
-	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
-	}
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure"}))
 	}
@@ -3272,7 +3265,6 @@ func ValidateRestoreConfigSpecRequestBody(body *RestoreConfigSpecRequestBody) (e
 // ValidateRestoreRepositorySpecRequestBody runs the validations defined on
 // RestoreRepositorySpecRequestBody
 func ValidateRestoreRepositorySpecRequestBody(body *RestoreRepositorySpecRequestBody) (err error) {
-	err = goa.MergeErrors(err, goa.ValidateFormat("body.id", body.ID, goa.FormatUUID))
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure"}))
 	}
@@ -3401,9 +3393,6 @@ func ValidateDatabaseNodeSpecResponseBody(body *DatabaseNodeSpecResponseBody) (e
 // ValidateBackupConfigSpecResponseBody runs the validations defined on
 // BackupConfigSpecResponseBody
 func ValidateBackupConfigSpecResponseBody(body *BackupConfigSpecResponseBody) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Provider == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("provider", "body"))
 	}
@@ -3434,9 +3423,6 @@ func ValidateBackupConfigSpecResponseBody(body *BackupConfigSpecResponseBody) (e
 func ValidateBackupRepositorySpecResponseBody(body *BackupRepositorySpecResponseBody) (err error) {
 	if body.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure") {
@@ -3511,14 +3497,8 @@ func ValidateRestoreConfigSpecResponseBody(body *RestoreConfigSpecResponseBody) 
 // ValidateRestoreRepositorySpecResponseBody runs the validations defined on
 // RestoreRepositorySpecResponseBody
 func ValidateRestoreRepositorySpecResponseBody(body *RestoreRepositorySpecResponseBody) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure") {
@@ -3616,9 +3596,6 @@ func ValidateBackupConfigSpecRequestBodyRequestBody(body *BackupConfigSpecReques
 // ValidateBackupRepositorySpecRequestBodyRequestBody runs the validations
 // defined on BackupRepositorySpecRequestBodyRequestBody
 func ValidateBackupRepositorySpecRequestBodyRequestBody(body *BackupRepositorySpecRequestBodyRequestBody) (err error) {
-	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
-	}
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure"}))
 	}
@@ -3659,7 +3636,6 @@ func ValidateRestoreConfigSpecRequestBodyRequestBody(body *RestoreConfigSpecRequ
 // ValidateRestoreRepositorySpecRequestBodyRequestBody runs the validations
 // defined on RestoreRepositorySpecRequestBodyRequestBody
 func ValidateRestoreRepositorySpecRequestBodyRequestBody(body *RestoreRepositorySpecRequestBodyRequestBody) (err error) {
-	err = goa.MergeErrors(err, goa.ValidateFormat("body.id", body.ID, goa.FormatUUID))
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure"}))
 	}

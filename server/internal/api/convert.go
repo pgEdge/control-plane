@@ -155,7 +155,7 @@ func backupConfigToAPI(config *database.BackupConfig) *api.BackupConfigSpec {
 	repositories := make([]*api.BackupRepositorySpec, len(config.Repositories))
 	for i, repo := range config.Repositories {
 		repositories[i] = &api.BackupRepositorySpec{
-			ID:                utils.PointerTo(repo.ID.String()),
+			ID:                repo.ID,
 			Type:              string(repo.Type),
 			S3Bucket:          repo.S3Bucket,
 			S3Region:          repo.S3Region,
@@ -180,7 +180,6 @@ func backupConfigToAPI(config *database.BackupConfig) *api.BackupConfigSpec {
 	}
 
 	return &api.BackupConfigSpec{
-		ID:           config.ID,
 		Provider:     string(config.Provider),
 		Repositories: repositories,
 		Schedules:    schedules,
@@ -272,12 +271,8 @@ func apiToBackupConfig(apiConfig *api.BackupConfigSpec) (*database.BackupConfig,
 
 	repositories := make([]*database.BackupRepository, len(apiConfig.Repositories))
 	for i, apiRepo := range apiConfig.Repositories {
-		repoID, err := parseUUIDPtr(apiRepo.ID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse repository ID: %w", err)
-		}
 		repositories[i] = &database.BackupRepository{
-			ID:                repoID,
+			ID:                apiRepo.ID,
 			Type:              database.BackupRepositoryType(apiRepo.Type),
 			S3Bucket:          apiRepo.S3Bucket,
 			S3Region:          apiRepo.S3Region,
@@ -301,7 +296,6 @@ func apiToBackupConfig(apiConfig *api.BackupConfigSpec) (*database.BackupConfig,
 		}
 	}
 	return &database.BackupConfig{
-		ID:           apiConfig.ID,
 		Provider:     database.BackupProvider(apiConfig.Provider),
 		Repositories: repositories,
 		Schedules:    schedules,
@@ -317,14 +311,10 @@ func apiToRestoreConfig(apiConfig *api.RestoreConfigSpec) (*database.RestoreConf
 			Provider: database.BackupProvider(apiConfig.Provider),
 		}, nil
 	}
-	repoID, err := uuid.Parse(apiConfig.Repository.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse repository ID: %w", err)
-	}
 	return &database.RestoreConfig{
 		Provider: database.BackupProvider(apiConfig.Provider),
 		Repository: database.BackupRepository{
-			ID:             repoID,
+			ID:             apiConfig.Repository.ID,
 			Type:           database.BackupRepositoryType(apiConfig.Repository.Type),
 			S3Bucket:       apiConfig.Repository.S3Bucket,
 			S3Region:       apiConfig.Repository.S3Region,

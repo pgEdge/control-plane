@@ -1493,7 +1493,6 @@ func unmarshalBackupConfigSpecResponseToControlplaneviewsBackupConfigSpecView(v 
 		return nil
 	}
 	res := &controlplaneviews.BackupConfigSpecView{
-		ID:       v.ID,
 		Provider: v.Provider,
 	}
 	if v.Repositories != nil {
@@ -1533,6 +1532,14 @@ func unmarshalBackupRepositorySpecResponseToControlplaneviewsBackupRepositorySpe
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -1614,6 +1621,14 @@ func unmarshalRestoreRepositorySpecResponseToControlplaneviewsRestoreRepositoryS
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
 		BasePath:       v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -1721,7 +1736,6 @@ func marshalControlplaneBackupConfigSpecToBackupConfigSpecRequestBody(v *control
 		return nil
 	}
 	res := &BackupConfigSpecRequestBody{
-		ID:       v.ID,
 		Provider: v.Provider,
 	}
 	if v.Repositories != nil {
@@ -1761,6 +1775,14 @@ func marshalControlplaneBackupRepositorySpecToBackupRepositorySpecRequestBody(v 
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -1844,6 +1866,14 @@ func marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecRequestBody(
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
 		BasePath:       v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -1951,7 +1981,6 @@ func marshalBackupConfigSpecRequestBodyToControlplaneBackupConfigSpec(v *BackupC
 		return nil
 	}
 	res := &controlplane.BackupConfigSpec{
-		ID:       v.ID,
 		Provider: v.Provider,
 	}
 	if v.Repositories != nil {
@@ -1991,6 +2020,14 @@ func marshalBackupRepositorySpecRequestBodyToControlplaneBackupRepositorySpec(v 
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -2074,6 +2111,14 @@ func marshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpec(
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
 		BasePath:       v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -2190,7 +2235,6 @@ func unmarshalBackupConfigSpecResponseBodyToControlplaneviewsBackupConfigSpecVie
 		return nil
 	}
 	res := &controlplaneviews.BackupConfigSpecView{
-		ID:       v.ID,
 		Provider: v.Provider,
 	}
 	if v.Repositories != nil {
@@ -2230,6 +2274,14 @@ func unmarshalBackupRepositorySpecResponseBodyToControlplaneviewsBackupRepositor
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -2311,6 +2363,14 @@ func unmarshalRestoreRepositorySpecResponseBodyToControlplaneviewsRestoreReposit
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
 		BasePath:       v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -2418,7 +2478,6 @@ func marshalControlplaneBackupConfigSpecToBackupConfigSpecRequestBodyRequestBody
 		return nil
 	}
 	res := &BackupConfigSpecRequestBodyRequestBody{
-		ID:       v.ID,
 		Provider: v.Provider,
 	}
 	if v.Repositories != nil {
@@ -2458,6 +2517,14 @@ func marshalControlplaneBackupRepositorySpecToBackupRepositorySpecRequestBodyReq
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -2541,6 +2608,14 @@ func marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecRequestBodyR
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
 		BasePath:       v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -2648,7 +2723,6 @@ func marshalBackupConfigSpecRequestBodyRequestBodyToControlplaneBackupConfigSpec
 		return nil
 	}
 	res := &controlplane.BackupConfigSpec{
-		ID:       v.ID,
 		Provider: v.Provider,
 	}
 	if v.Repositories != nil {
@@ -2688,6 +2762,14 @@ func marshalBackupRepositorySpecRequestBodyRequestBodyToControlplaneBackupReposi
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -2771,6 +2853,14 @@ func marshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRepo
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
 		BasePath:       v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res

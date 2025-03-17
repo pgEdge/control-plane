@@ -101,7 +101,6 @@ var DatabaseUserSpec = g.Type("DatabaseUserSpec", func() {
 
 var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
 	g.Attribute("id", g.String, func() {
-		g.Format(g.FormatUUID)
 		g.Description("The unique identifier of this repository.")
 		g.Example("f6b84a99-5e91-4203-be1e-131fe82e5984")
 	})
@@ -155,6 +154,13 @@ var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
 		g.Description("The base path within the repository to store backups.")
 		g.Example("/backups")
 	})
+	g.Attribute("custom_options", g.MapOf(g.String, g.String), func() {
+		g.Description("Additional options to apply to this repository.")
+		g.Example(map[string]any{
+			"storage-upload-chunk-size": "5MiB",
+			"s3-kms-key-id":             "1234abcd-12ab-34cd-56ef-1234567890ab",
+		})
+	})
 
 	g.Required("type")
 })
@@ -178,10 +184,6 @@ var BackupScheduleSpec = g.Type("BackupScheduleSpec", func() {
 })
 
 var BackupConfigSpec = g.Type("BackupConfigSpec", func() {
-	g.Attribute("id", g.String, func() {
-		g.Description("The unique identifier for this backup configuration.")
-		g.Example("default")
-	})
 	g.Attribute("provider", g.String, func() {
 		g.Description("The backup provider for this backup configuration.")
 		g.Enum("pgbackrest", "pg_dump")
@@ -194,12 +196,11 @@ var BackupConfigSpec = g.Type("BackupConfigSpec", func() {
 		g.Description("The schedules for this backup configuration.")
 	})
 
-	g.Required("id", "provider")
+	g.Required("provider")
 })
 
 var RestoreRepositorySpec = g.Type("RestoreRepositorySpec", func() {
 	g.Attribute("id", g.String, func() {
-		g.Format(g.FormatUUID)
 		g.Description("The unique identifier of this repository.")
 		g.Example("f6b84a99-5e91-4203-be1e-131fe82e5984")
 	})
@@ -244,8 +245,14 @@ var RestoreRepositorySpec = g.Type("RestoreRepositorySpec", func() {
 		g.Description("The base path within the repository where backups are stored.")
 		g.Example("/backups")
 	})
+	g.Attribute("custom_options", g.MapOf(g.String, g.String), func() {
+		g.Description("Additional options to apply to this repository.")
+		g.Example(map[string]any{
+			"s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+		})
+	})
 
-	g.Required("id", "type")
+	g.Required("type")
 })
 
 var RestoreConfigSpec = g.Type("RestoreConfigSpec", func() {

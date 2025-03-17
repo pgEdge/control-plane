@@ -1146,7 +1146,6 @@ func unmarshalBackupConfigSpecRequestBodyToControlplaneBackupConfigSpec(v *Backu
 		return nil
 	}
 	res := &controlplane.BackupConfigSpec{
-		ID:       *v.ID,
 		Provider: *v.Provider,
 	}
 	if v.Repositories != nil {
@@ -1186,6 +1185,14 @@ func unmarshalBackupRepositorySpecRequestBodyToControlplaneBackupRepositorySpec(
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -1256,7 +1263,7 @@ func unmarshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec(v *Res
 // type *RestoreRepositorySpecRequestBody.
 func unmarshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpec(v *RestoreRepositorySpecRequestBody) *controlplane.RestoreRepositorySpec {
 	res := &controlplane.RestoreRepositorySpec{
-		ID:             *v.ID,
+		ID:             v.ID,
 		Type:           *v.Type,
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
@@ -1267,6 +1274,14 @@ func unmarshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpe
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
 		BasePath:       v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -1391,7 +1406,6 @@ func marshalControlplaneviewsBackupConfigSpecViewToBackupConfigSpecResponseBody(
 		return nil
 	}
 	res := &BackupConfigSpecResponseBody{
-		ID:       *v.ID,
 		Provider: *v.Provider,
 	}
 	if v.Repositories != nil {
@@ -1431,6 +1445,14 @@ func marshalControlplaneviewsBackupRepositorySpecViewToBackupRepositorySpecRespo
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -1503,7 +1525,7 @@ func marshalControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpecResponseBod
 // type *controlplaneviews.RestoreRepositorySpecView.
 func marshalControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpecResponseBody(v *controlplaneviews.RestoreRepositorySpecView) *RestoreRepositorySpecResponseBody {
 	res := &RestoreRepositorySpecResponseBody{
-		ID:             *v.ID,
+		ID:             v.ID,
 		Type:           *v.Type,
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
@@ -1514,6 +1536,14 @@ func marshalControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpecRes
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
 		BasePath:       v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -1613,7 +1643,6 @@ func unmarshalBackupConfigSpecRequestBodyRequestBodyToControlplaneBackupConfigSp
 		return nil
 	}
 	res := &controlplane.BackupConfigSpec{
-		ID:       *v.ID,
 		Provider: *v.Provider,
 	}
 	if v.Repositories != nil {
@@ -1653,6 +1682,14 @@ func unmarshalBackupRepositorySpecRequestBodyRequestBodyToControlplaneBackupRepo
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -1723,7 +1760,7 @@ func unmarshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfig
 // type *RestoreRepositorySpecRequestBodyRequestBody.
 func unmarshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRepositorySpec(v *RestoreRepositorySpecRequestBodyRequestBody) *controlplane.RestoreRepositorySpec {
 	res := &controlplane.RestoreRepositorySpec{
-		ID:             *v.ID,
+		ID:             v.ID,
 		Type:           *v.Type,
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
@@ -1734,6 +1771,14 @@ func unmarshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRe
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
 		BasePath:       v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res

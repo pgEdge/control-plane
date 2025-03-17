@@ -375,7 +375,6 @@ Example:
       "id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
       "spec": {
          "backup_config": {
-            "id": "default",
             "provider": "pgbackrest",
             "repositories": [
                {
@@ -383,6 +382,10 @@ Example:
                   "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                   "azure_endpoint": "blob.core.usgovcloudapi.net",
                   "base_path": "/backups",
+                  "custom_options": {
+                     "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                     "storage-upload-chunk-size": "5MiB"
+                  },
                   "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                   "gcs_endpoint": "localhost",
                   "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -398,6 +401,10 @@ Example:
                   "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                   "azure_endpoint": "blob.core.usgovcloudapi.net",
                   "base_path": "/backups",
+                  "custom_options": {
+                     "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                     "storage-upload-chunk-size": "5MiB"
+                  },
                   "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                   "gcs_endpoint": "localhost",
                   "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -413,6 +420,10 @@ Example:
                   "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                   "azure_endpoint": "blob.core.usgovcloudapi.net",
                   "base_path": "/backups",
+                  "custom_options": {
+                     "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                     "storage-upload-chunk-size": "5MiB"
+                  },
                   "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                   "gcs_endpoint": "localhost",
                   "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -488,7 +499,6 @@ Example:
          "nodes": [
             {
                "backup_config": {
-                  "id": "default",
                   "provider": "pgbackrest",
                   "repositories": [
                      {
@@ -496,6 +506,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -511,6 +525,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -526,6 +544,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -567,7 +589,6 @@ Example:
             },
             {
                "backup_config": {
-                  "id": "default",
                   "provider": "pgbackrest",
                   "repositories": [
                      {
@@ -575,6 +596,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -590,6 +615,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -605,6 +634,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -646,7 +679,6 @@ Example:
             },
             {
                "backup_config": {
-                  "id": "default",
                   "provider": "pgbackrest",
                   "repositories": [
                      {
@@ -654,6 +686,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -669,6 +705,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -684,6 +724,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -725,7 +769,6 @@ Example:
             },
             {
                "backup_config": {
-                  "id": "default",
                   "provider": "pgbackrest",
                   "repositories": [
                      {
@@ -733,6 +776,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -748,6 +795,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -763,6 +814,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -816,6 +871,9 @@ Example:
                "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                "azure_endpoint": "blob.core.usgovcloudapi.net",
                "base_path": "/backups",
+               "custom_options": {
+                  "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
+               },
                "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                "gcs_endpoint": "localhost",
                "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -856,7 +914,6 @@ Example:
     %[1]s control-plane update-database --body '{
       "spec": {
          "backup_config": {
-            "id": "default",
             "provider": "pgbackrest",
             "repositories": [
                {
@@ -864,6 +921,10 @@ Example:
                   "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                   "azure_endpoint": "blob.core.usgovcloudapi.net",
                   "base_path": "/backups",
+                  "custom_options": {
+                     "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                     "storage-upload-chunk-size": "5MiB"
+                  },
                   "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                   "gcs_endpoint": "localhost",
                   "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -879,6 +940,10 @@ Example:
                   "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                   "azure_endpoint": "blob.core.usgovcloudapi.net",
                   "base_path": "/backups",
+                  "custom_options": {
+                     "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                     "storage-upload-chunk-size": "5MiB"
+                  },
                   "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                   "gcs_endpoint": "localhost",
                   "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -894,6 +959,10 @@ Example:
                   "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                   "azure_endpoint": "blob.core.usgovcloudapi.net",
                   "base_path": "/backups",
+                  "custom_options": {
+                     "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                     "storage-upload-chunk-size": "5MiB"
+                  },
                   "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                   "gcs_endpoint": "localhost",
                   "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -987,7 +1056,6 @@ Example:
          "nodes": [
             {
                "backup_config": {
-                  "id": "default",
                   "provider": "pgbackrest",
                   "repositories": [
                      {
@@ -995,6 +1063,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -1010,6 +1082,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -1025,6 +1101,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -1070,7 +1150,6 @@ Example:
             },
             {
                "backup_config": {
-                  "id": "default",
                   "provider": "pgbackrest",
                   "repositories": [
                      {
@@ -1078,6 +1157,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -1093,6 +1176,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -1108,6 +1195,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -1153,7 +1244,6 @@ Example:
             },
             {
                "backup_config": {
-                  "id": "default",
                   "provider": "pgbackrest",
                   "repositories": [
                      {
@@ -1161,6 +1251,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -1176,6 +1270,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -1191,6 +1289,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -1236,7 +1338,6 @@ Example:
             },
             {
                "backup_config": {
-                  "id": "default",
                   "provider": "pgbackrest",
                   "repositories": [
                      {
@@ -1244,6 +1345,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -1259,6 +1364,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -1274,6 +1383,10 @@ Example:
                         "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "azure_endpoint": "blob.core.usgovcloudapi.net",
                         "base_path": "/backups",
+                        "custom_options": {
+                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                           "storage-upload-chunk-size": "5MiB"
+                        },
                         "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                         "gcs_endpoint": "localhost",
                         "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
@@ -1331,6 +1444,9 @@ Example:
                "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                "azure_endpoint": "blob.core.usgovcloudapi.net",
                "base_path": "/backups",
+               "custom_options": {
+                  "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
+               },
                "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
                "gcs_endpoint": "localhost",
                "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
