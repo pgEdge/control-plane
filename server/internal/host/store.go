@@ -2,15 +2,16 @@ package host
 
 import (
 	"github.com/pgEdge/control-plane/server/internal/storage"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type Store struct {
-	client     storage.EtcdClient
+	client     *clientv3.Client
 	Host       *HostStore
 	HostStatus *HostStatusStore
 }
 
-func NewStore(client storage.EtcdClient, root string) *Store {
+func NewStore(client *clientv3.Client, root string) *Store {
 	return &Store{
 		client:     client,
 		Host:       NewHostStore(client, root),

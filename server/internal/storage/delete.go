@@ -8,13 +8,13 @@ import (
 )
 
 type deleteKeyOp struct {
-	client  EtcdClient
+	client  *clientv3.Client
 	key     string
 	options []clientv3.OpOption
 }
 
 // NewDeleteKeyOp returns an operation that deletes a single value by key.
-func NewDeleteKeyOp(client EtcdClient, key string, options ...clientv3.OpOption) DeleteOp {
+func NewDeleteKeyOp(client *clientv3.Client, key string, options ...clientv3.OpOption) DeleteOp {
 	return &deleteKeyOp{
 		client:  client,
 		key:     key,
@@ -30,7 +30,7 @@ func (o *deleteKeyOp) Cmps() []clientv3.Cmp {
 	return nil
 }
 
-// Exec returns true if the value was successfully deleted.
+// Exec returns the number of records deleted.
 func (o *deleteKeyOp) Exec(ctx context.Context) (int64, error) {
 	resp, err := o.client.Delete(ctx, o.key, o.options...)
 	if err != nil {
@@ -41,14 +41,14 @@ func (o *deleteKeyOp) Exec(ctx context.Context) (int64, error) {
 }
 
 type deletePrefixOp struct {
-	client  EtcdClient
+	client  *clientv3.Client
 	prefix  string
 	options []clientv3.OpOption
 }
 
 // NewDeletePrefixOp returns an operation that deletes a multiple values by
 // prefix.
-func NewDeletePrefixOp(client EtcdClient, prefix string, options ...clientv3.OpOption) DeleteOp {
+func NewDeletePrefixOp(client *clientv3.Client, prefix string, options ...clientv3.OpOption) DeleteOp {
 	return &deletePrefixOp{
 		client:  client,
 		prefix:  prefix,
@@ -79,7 +79,7 @@ func (o *deletePrefixOp) Exec(ctx context.Context) (int64, error) {
 }
 
 type deleteValueOp[V Value] struct {
-	client  EtcdClient
+	client  *clientv3.Client
 	key     string
 	val     V
 	options []clientv3.OpOption
@@ -88,7 +88,7 @@ type deleteValueOp[V Value] struct {
 // NewDeleteValueOp deletes a single value if its version matches the given
 // value's version. Its Exec method will return an ErrValueVersionMismatch if
 // the stored value version did not match the given value version.
-func NewDeleteValueOp[V Value](client EtcdClient, key string, val V, options ...clientv3.OpOption) DeleteValueOp[V] {
+func NewDeleteValueOp[V Value](client *clientv3.Client, key string, val V, options ...clientv3.OpOption) DeleteValueOp[V] {
 	return &deleteValueOp[V]{
 		client:  client,
 		key:     key,

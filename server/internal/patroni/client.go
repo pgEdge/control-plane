@@ -2,10 +2,12 @@ package patroni
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"path"
 	"time"
 )
@@ -94,6 +96,8 @@ type InstanceStatus struct {
 	FailsafeModeIsActive *bool `json:"failsafe_mode_is_active,omitempty"`
 	// Epoch timestamp DCS was last reached by Patroni
 	DCSLastSeen *int64 `json:"dcs_last_seen,omitempty"`
+	// True if PostgreSQL needs to be restarted to get new configuration
+	PendingRestart *bool `json:"pending_restart,omitempty"`
 }
 
 type ClusterRole string
@@ -111,7 +115,7 @@ type ClusterMember struct {
 	// by this key
 	Name *string `json:"name,omitempty"`
 	// The role of this member in the cluster
-	Role *ClusterRole `json:"cluster_role,omitempty"`
+	Role *ClusterRole `json:"role,omitempty"`
 	// The state of this member
 	State *State `json:"state,omitempty"`
 	// REST API URL based on restapi->connect_address configuration
@@ -130,6 +134,10 @@ type ClusterMember struct {
 	Tags map[string]any `json:"tags,omitempty"`
 	// replication lag, if applicable
 	Lag *int64 `json:"lag,omitempty"`
+}
+
+func (m *ClusterMember) IsLeader() bool {
+	return m.Role != nil && *m.Role == ClusterRoleLeader
 }
 
 type ScheduledSwitchover struct {
@@ -312,11 +320,11 @@ type Restart struct {
 // }
 
 type Client struct {
-	baseURL string
+	baseURL *url.URL
 	client  *http.Client
 }
 
-func NewClient(baseURL string, client *http.Client) *Client {
+func NewClient(baseURL *url.URL, client *http.Client) *Client {
 	if client == nil {
 		client = http.DefaultClient
 	}
@@ -326,8 +334,21 @@ func NewClient(baseURL string, client *http.Client) *Client {
 	}
 }
 
-func (c *Client) GetInstanceStatus() (*InstanceStatus, error) {
-	resp, err := c.client.Get(path.Join(c.baseURL, "patroni"))
+func (c *Client) endpoint(pathElements ...string) string {
+	endpoint := &url.URL{
+		Scheme: c.baseURL.Scheme,
+		Host:   c.baseURL.Host,
+		Path:   path.Join(pathElements...),
+	}
+	return endpoint.String()
+}
+
+func (c *Client) GetInstanceStatus(ctx context.Context) (*InstanceStatus, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint("patroni"), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GET /patroni request: %w", err)
+	}
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance status: %w", err)
 	}
@@ -343,8 +364,12 @@ func (c *Client) GetInstanceStatus() (*InstanceStatus, error) {
 	return &status, nil
 }
 
-func (c *Client) GetClusterStatus() (*ClusterState, error) {
-	resp, err := c.client.Get(path.Join(c.baseURL, "cluster"))
+func (c *Client) GetClusterStatus(ctx context.Context) (*ClusterState, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint("cluster"), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GET /cluster request: %w", err)
+	}
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cluster status: %w", err)
 	}
@@ -360,8 +385,12 @@ func (c *Client) GetClusterStatus() (*ClusterState, error) {
 	return &status, nil
 }
 
-func (c *Client) GetDynamicConfig() (*DynamicConfig, error) {
-	resp, err := c.client.Get(path.Join(c.baseURL, "config"))
+func (c *Client) GetDynamicConfig(ctx context.Context) (*DynamicConfig, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint("config"), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GET /config request: %w", err)
+	}
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get dynamic config: %w", err)
 	}
@@ -377,14 +406,14 @@ func (c *Client) GetDynamicConfig() (*DynamicConfig, error) {
 	return &config, nil
 }
 
-func (c *Client) PatchDynamicConfig(config *DynamicConfig) (*DynamicConfig, error) {
+func (c *Client) PatchDynamicConfig(ctx context.Context, config *DynamicConfig) (*DynamicConfig, error) {
 	data, err := json.Marshal(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal dynamic config: %w", err)
 	}
-	req, err := http.NewRequest(http.MethodPatch, path.Join(c.baseURL, "config"), bytes.NewReader(data))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.endpoint("config"), bytes.NewReader(data))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create PATCH request: %w", err)
+		return nil, fmt.Errorf("failed to create PATCH /config request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.client.Do(req)
@@ -403,14 +432,14 @@ func (c *Client) PatchDynamicConfig(config *DynamicConfig) (*DynamicConfig, erro
 	return &updatedConfig, nil
 }
 
-func (c *Client) ScheduleSwitchover(switchover *Switchover) error {
+func (c *Client) ScheduleSwitchover(ctx context.Context, switchover *Switchover) error {
 	data, err := json.Marshal(switchover)
 	if err != nil {
 		return fmt.Errorf("failed to marshal switchover: %w", err)
 	}
-	req, err := http.NewRequest(http.MethodPost, path.Join(c.baseURL, "switchover"), bytes.NewReader(data))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint("switchover"), bytes.NewReader(data))
 	if err != nil {
-		return fmt.Errorf("failed to create POST request: %w", err)
+		return fmt.Errorf("failed to create POST /switchover request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.client.Do(req)
@@ -425,10 +454,10 @@ func (c *Client) ScheduleSwitchover(switchover *Switchover) error {
 	return nil
 }
 
-func (c *Client) CancelSwitchover() error {
-	req, err := http.NewRequest(http.MethodDelete, path.Join(c.baseURL, "switchover"), nil)
+func (c *Client) CancelSwitchover(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.endpoint("switchover"), nil)
 	if err != nil {
-		return fmt.Errorf("failed to create DELETE request: %w", err)
+		return fmt.Errorf("failed to create DELETE /switchover request: %w", err)
 	}
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -442,14 +471,14 @@ func (c *Client) CancelSwitchover() error {
 	return nil
 }
 
-func (c *Client) InitiateFailover(failover *Failover) error {
+func (c *Client) InitiateFailover(ctx context.Context, failover *Failover) error {
 	data, err := json.Marshal(failover)
 	if err != nil {
 		return fmt.Errorf("failed to marshal failover: %w", err)
 	}
-	req, err := http.NewRequest(http.MethodPost, path.Join(c.baseURL, "failover"), bytes.NewReader(data))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint("failover"), bytes.NewReader(data))
 	if err != nil {
-		return fmt.Errorf("failed to create POST request: %w", err)
+		return fmt.Errorf("failed to create POST /failover request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.client.Do(req)
@@ -464,14 +493,14 @@ func (c *Client) InitiateFailover(failover *Failover) error {
 	return nil
 }
 
-func (c *Client) ScheduleRestart(restart *Restart) error {
+func (c *Client) ScheduleRestart(ctx context.Context, restart *Restart) error {
 	data, err := json.Marshal(restart)
 	if err != nil {
 		return fmt.Errorf("failed to marshal restart: %w", err)
 	}
-	req, err := http.NewRequest(http.MethodPost, path.Join(c.baseURL, "restart"), bytes.NewReader(data))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint("restart"), bytes.NewReader(data))
 	if err != nil {
-		return fmt.Errorf("failed to create POST request: %w", err)
+		return fmt.Errorf("failed to create POST /restart request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.client.Do(req)
@@ -486,10 +515,10 @@ func (c *Client) ScheduleRestart(restart *Restart) error {
 	return nil
 }
 
-func (c *Client) CancelRestart() error {
-	req, err := http.NewRequest(http.MethodDelete, path.Join(c.baseURL, "restart"), nil)
+func (c *Client) CancelRestart(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.endpoint("restart"), nil)
 	if err != nil {
-		return fmt.Errorf("failed to create DELETE request: %w", err)
+		return fmt.Errorf("failed to create DELETE /restart request: %w", err)
 	}
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -503,10 +532,10 @@ func (c *Client) CancelRestart() error {
 	return nil
 }
 
-func (c *Client) Reload() error {
-	req, err := http.NewRequest(http.MethodPost, path.Join(c.baseURL, "reload"), nil)
+func (c *Client) Reload(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint("reload"), nil)
 	if err != nil {
-		return fmt.Errorf("failed to create POST request: %w", err)
+		return fmt.Errorf("failed to create POST /reload request: %w", err)
 	}
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -520,10 +549,10 @@ func (c *Client) Reload() error {
 	return nil
 }
 
-func (c *Client) Reinitialize() error {
-	req, err := http.NewRequest(http.MethodPost, path.Join(c.baseURL, "reinitialize"), nil)
+func (c *Client) Reinitialize(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint("reinitialize"), nil)
 	if err != nil {
-		return fmt.Errorf("failed to create POST request: %w", err)
+		return fmt.Errorf("failed to create POST /reinitialize request: %w", err)
 	}
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -537,10 +566,10 @@ func (c *Client) Reinitialize() error {
 	return nil
 }
 
-func (c *Client) Liveness() error {
-	req, err := http.NewRequest(http.MethodGet, path.Join(c.baseURL, "liveness"), nil)
+func (c *Client) Liveness(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint("liveness"), nil)
 	if err != nil {
-		return fmt.Errorf("failed to create GET request: %w", err)
+		return fmt.Errorf("failed to create GET /liveness request: %w", err)
 	}
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -554,10 +583,10 @@ func (c *Client) Liveness() error {
 	return nil
 }
 
-func (c *Client) Readiness() error {
-	req, err := http.NewRequest(http.MethodGet, path.Join(c.baseURL, "readiness"), nil)
+func (c *Client) Readiness(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint("readiness"), nil)
 	if err != nil {
-		return fmt.Errorf("failed to create GET request: %w", err)
+		return fmt.Errorf("failed to create GET /readiness request: %w", err)
 	}
 	resp, err := c.client.Do(req)
 	if err != nil {

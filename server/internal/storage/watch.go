@@ -13,14 +13,14 @@ import (
 
 type watchOp[V Value] struct {
 	mu      sync.Mutex
-	client  EtcdClient
+	client  *clientv3.Client
 	key     string
 	options []clientv3.OpOption
 	ch      clientv3.WatchChan
 	cancel  context.CancelFunc
 }
 
-func NewWatchOp[V Value](client EtcdClient, key string, options ...clientv3.OpOption) WatchOp[V] {
+func NewWatchOp[V Value](client *clientv3.Client, key string, options ...clientv3.OpOption) WatchOp[V] {
 	return &watchOp[V]{
 		client:  client,
 		key:     key,
@@ -28,7 +28,7 @@ func NewWatchOp[V Value](client EtcdClient, key string, options ...clientv3.OpOp
 	}
 }
 
-func NewWatchPrefixOp[V Value](client EtcdClient, key string, options ...clientv3.OpOption) WatchOp[V] {
+func NewWatchPrefixOp[V Value](client *clientv3.Client, key string, options ...clientv3.OpOption) WatchOp[V] {
 	allOptions := []clientv3.OpOption{clientv3.WithPrefix()}
 	allOptions = append(allOptions, options...)
 

@@ -9,6 +9,12 @@ import (
 
 type Executor interface {
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, arguments ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, arguments ...any) pgx.Row
+}
+
+type IStatement interface {
+	Exec(ctx context.Context, conn Executor) error
 }
 
 type Statement struct {
@@ -16,18 +22,72 @@ type Statement struct {
 	Args pgx.NamedArgs
 }
 
-func (s Statement) Exec(ctx context.Context, conn Executor) (pgconn.CommandTag, error) {
-	return conn.Exec(ctx, s.SQL, s.Args)
+func (s Statement) Exec(ctx context.Context, conn Executor) error {
+	_, err := conn.Exec(ctx, s.SQL, s.Args)
+	return err
 }
 
-type Statements []Statement
+type Statements []IStatement
 
 func (s Statements) Exec(ctx context.Context, conn Executor) error {
 	for _, stmt := range s {
-		_, err := stmt.Exec(ctx, conn)
-		if err != nil {
+		if err := stmt.Exec(ctx, conn); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+type Query[T any] struct {
+	SQL  string
+	Args pgx.NamedArgs
+}
+
+func (q Query[T]) Row(ctx context.Context, conn Executor) (T, error) {
+	var result T
+	row := conn.QueryRow(ctx, q.SQL, q.Args)
+	if err := row.Scan(&result); err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
+func (q Query[T]) Rows(ctx context.Context, conn Executor) ([]T, error) {
+	rows, err := conn.Query(ctx, q.SQL, q.Args)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []T
+	for rows.Next() {
+		var result T
+		if err := rows.Scan(&result); err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
+type ConditionalStatement struct {
+	If   Query[bool]
+	Then Statement
+}
+
+func (s ConditionalStatement) Exec(ctx context.Context, conn Executor) error {
+	condition, err := s.If.Row(ctx, conn)
+	if err != nil {
+		return err
+	}
+	if condition {
+		return s.Then.Exec(ctx, conn)
+	} else {
+		return nil
+	}
 }

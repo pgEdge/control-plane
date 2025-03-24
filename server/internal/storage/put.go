@@ -12,14 +12,14 @@ import (
 // PutOp stores a key value pair with an optional time-to-live. This operation
 // does not enforce any version constraints.
 type putOp[V Value] struct {
-	client  EtcdClient
+	client  *clientv3.Client
 	key     string
 	val     V
 	ttl     *time.Duration
 	options []clientv3.OpOption
 }
 
-func NewPutOp[V Value](client EtcdClient, key string, val V, options ...clientv3.OpOption) PutOp[V] {
+func NewPutOp[V Value](client *clientv3.Client, key string, val V, options ...clientv3.OpOption) PutOp[V] {
 	return &putOp[V]{
 		client:  client,
 		key:     key,
@@ -57,14 +57,14 @@ func (o *putOp[V]) Exec(ctx context.Context) error {
 // CreateOp creates a key value pair with an optional time-to-live. This
 // operation will fail with ErrAlreadyExists if the given key already exists.
 type createOp[V Value] struct {
-	client  EtcdClient
+	client  *clientv3.Client
 	key     string
 	val     V
 	ttl     *time.Duration
 	options []clientv3.OpOption
 }
 
-func NewCreateOp[V Value](client EtcdClient, key string, val V, options ...clientv3.OpOption) PutOp[V] {
+func NewCreateOp[V Value](client *clientv3.Client, key string, val V, options ...clientv3.OpOption) PutOp[V] {
 	return &createOp[V]{
 		client:  client,
 		key:     key,
@@ -109,14 +109,14 @@ func (o *createOp[V]) Exec(ctx context.Context) error {
 // time-to-live. This operation will fail with ErrValueVersionMismatch if the
 // stored value's version does not match the given value's version.
 type updateOp[V Value] struct {
-	client  EtcdClient
+	client  *clientv3.Client
 	key     string
 	val     V
 	ttl     *time.Duration
 	options []clientv3.OpOption
 }
 
-func NewUpdateOp[V Value](client EtcdClient, key string, val V, options ...clientv3.OpOption) PutOp[V] {
+func NewUpdateOp[V Value](client *clientv3.Client, key string, val V, options ...clientv3.OpOption) PutOp[V] {
 	return &updateOp[V]{
 		client:  client,
 		key:     key,
@@ -131,7 +131,6 @@ func (o *updateOp[V]) Ops(ctx context.Context) ([]clientv3.Op, error) {
 
 func (o *updateOp[V]) Cmps() []clientv3.Cmp {
 	return []clientv3.Cmp{
-		clientv3.Compare(clientv3.Version(o.key), ">", 0),
 		clientv3.Compare(clientv3.Version(o.key), "=", o.val.Version()),
 	}
 }
@@ -170,7 +169,7 @@ func encodeJSON(val any) (string, error) {
 
 func putOps[V Value](
 	ctx context.Context,
-	client EtcdClient,
+	client *clientv3.Client,
 	key string,
 	val V,
 	ttl *time.Duration,

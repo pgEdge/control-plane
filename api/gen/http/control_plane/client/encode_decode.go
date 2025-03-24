@@ -10,6 +10,7 @@ package client
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -362,6 +363,7 @@ func (c *Client) BuildInspectClusterRequest(ctx context.Context, v any) (*http.R
 // response body should be restored after having been read.
 // DecodeInspectClusterResponse may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
 //   - error: internal error
 func DecodeInspectClusterResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -407,6 +409,20 @@ func DecodeInspectClusterResponse(decoder func(*http.Response) goahttp.Decoder, 
 				return nil, goahttp.ErrValidationError("control-plane", "inspect-cluster", err)
 			}
 			return nil, NewInspectClusterClusterNotInitialized(&body)
+		case http.StatusNotFound:
+			var (
+				body InspectClusterNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "inspect-cluster", err)
+			}
+			err = ValidateInspectClusterNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "inspect-cluster", err)
+			}
+			return nil, NewInspectClusterNotFound(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "inspect-cluster", resp.StatusCode, string(body))
@@ -524,6 +540,7 @@ func (c *Client) BuildInspectHostRequest(ctx context.Context, v any) (*http.Requ
 // response body should be restored after having been read.
 // DecodeInspectHostResponse may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
 //   - error: internal error
 func DecodeInspectHostResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -569,6 +586,20 @@ func DecodeInspectHostResponse(decoder func(*http.Response) goahttp.Decoder, res
 				return nil, goahttp.ErrValidationError("control-plane", "inspect-host", err)
 			}
 			return nil, NewInspectHostClusterNotInitialized(&body)
+		case http.StatusNotFound:
+			var (
+				body InspectHostNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "inspect-host", err)
+			}
+			err = ValidateInspectHostNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "inspect-host", err)
+			}
+			return nil, NewInspectHostNotFound(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "inspect-host", resp.StatusCode, string(body))
@@ -608,6 +639,7 @@ func (c *Client) BuildRemoveHostRequest(ctx context.Context, v any) (*http.Reque
 // response body should be restored after having been read.
 // DecodeRemoveHostResponse may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
 //   - error: internal error
 func DecodeRemoveHostResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -640,6 +672,20 @@ func DecodeRemoveHostResponse(decoder func(*http.Response) goahttp.Decoder, rest
 				return nil, goahttp.ErrValidationError("control-plane", "remove-host", err)
 			}
 			return nil, NewRemoveHostClusterNotInitialized(&body)
+		case http.StatusNotFound:
+			var (
+				body RemoveHostNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "remove-host", err)
+			}
+			err = ValidateRemoveHostNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "remove-host", err)
+			}
+			return nil, NewRemoveHostNotFound(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "remove-host", resp.StatusCode, string(body))
@@ -880,6 +926,7 @@ func (c *Client) BuildInspectDatabaseRequest(ctx context.Context, v any) (*http.
 // the response body should be restored after having been read.
 // DecodeInspectDatabaseResponse may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
 //   - error: internal error
 func DecodeInspectDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -927,6 +974,20 @@ func DecodeInspectDatabaseResponse(decoder func(*http.Response) goahttp.Decoder,
 				return nil, goahttp.ErrValidationError("control-plane", "inspect-database", err)
 			}
 			return nil, NewInspectDatabaseClusterNotInitialized(&body)
+		case http.StatusNotFound:
+			var (
+				body InspectDatabaseNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "inspect-database", err)
+			}
+			err = ValidateInspectDatabaseNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "inspect-database", err)
+			}
+			return nil, NewInspectDatabaseNotFound(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "inspect-database", resp.StatusCode, string(body))
@@ -969,6 +1030,11 @@ func EncodeUpdateDatabaseRequest(encoder func(*http.Request) goahttp.Encoder) fu
 		if !ok {
 			return goahttp.ErrInvalidType("control-plane", "update-database", "*controlplane.UpdateDatabasePayload", v)
 		}
+		values := req.URL.Query()
+		if p.ForceUpdate != nil {
+			values.Add("force_update", fmt.Sprintf("%v", *p.ForceUpdate))
+		}
+		req.URL.RawQuery = values.Encode()
 		body := NewUpdateDatabaseRequestBody(p)
 		if err := encoder(req).Encode(&body); err != nil {
 			return goahttp.ErrEncodingError("control-plane", "update-database", err)
@@ -982,6 +1048,7 @@ func EncodeUpdateDatabaseRequest(encoder func(*http.Request) goahttp.Encoder) fu
 // response body should be restored after having been read.
 // DecodeUpdateDatabaseResponse may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
 //   - error: internal error
 func DecodeUpdateDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -1029,6 +1096,20 @@ func DecodeUpdateDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, 
 				return nil, goahttp.ErrValidationError("control-plane", "update-database", err)
 			}
 			return nil, NewUpdateDatabaseClusterNotInitialized(&body)
+		case http.StatusNotFound:
+			var (
+				body UpdateDatabaseNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "update-database", err)
+			}
+			err = ValidateUpdateDatabaseNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "update-database", err)
+			}
+			return nil, NewUpdateDatabaseNotFound(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "update-database", resp.StatusCode, string(body))
@@ -1068,6 +1149,7 @@ func (c *Client) BuildDeleteDatabaseRequest(ctx context.Context, v any) (*http.R
 // response body should be restored after having been read.
 // DecodeDeleteDatabaseResponse may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
 //   - error: internal error
 func DecodeDeleteDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -1100,6 +1182,20 @@ func DecodeDeleteDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, 
 				return nil, goahttp.ErrValidationError("control-plane", "delete-database", err)
 			}
 			return nil, NewDeleteDatabaseClusterNotInitialized(&body)
+		case http.StatusNotFound:
+			var (
+				body DeleteDatabaseNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "delete-database", err)
+			}
+			err = ValidateDeleteDatabaseNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "delete-database", err)
+			}
+			return nil, NewDeleteDatabaseNotFound(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "delete-database", resp.StatusCode, string(body))

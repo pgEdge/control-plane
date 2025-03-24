@@ -49,6 +49,8 @@ type CreateDatabaseRequestBody struct {
 // UpdateDatabaseRequestBody is the type of the "control-plane" service
 // "update-database" endpoint HTTP request body.
 type UpdateDatabaseRequestBody struct {
+	// Unique identifier for the databases's owner.
+	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
 	// The specification for the database.
 	Spec *DatabaseSpecRequestBodyRequestBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
 }
@@ -297,6 +299,25 @@ type InspectClusterClusterNotInitializedResponseBody struct {
 	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
+// InspectClusterNotFoundResponseBody is the type of the "control-plane"
+// service "inspect-cluster" endpoint HTTP response body for the "not_found"
+// error.
+type InspectClusterNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
 // ListHostsClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "list-hosts" endpoint HTTP response body for the
 // "cluster_not_initialized" error.
@@ -335,10 +356,46 @@ type InspectHostClusterNotInitializedResponseBody struct {
 	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
+// InspectHostNotFoundResponseBody is the type of the "control-plane" service
+// "inspect-host" endpoint HTTP response body for the "not_found" error.
+type InspectHostNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
 // RemoveHostClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "remove-host" endpoint HTTP response body for the
 // "cluster_not_initialized" error.
 type RemoveHostClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// RemoveHostNotFoundResponseBody is the type of the "control-plane" service
+// "remove-host" endpoint HTTP response body for the "not_found" error.
+type RemoveHostNotFoundResponseBody struct {
 	// Name is the name of this class of errors.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -449,6 +506,25 @@ type InspectDatabaseClusterNotInitializedResponseBody struct {
 	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
+// InspectDatabaseNotFoundResponseBody is the type of the "control-plane"
+// service "inspect-database" endpoint HTTP response body for the "not_found"
+// error.
+type InspectDatabaseNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
 // UpdateDatabaseClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "update-database" endpoint HTTP response body for
 // the "cluster_not_initialized" error.
@@ -468,10 +544,48 @@ type UpdateDatabaseClusterNotInitializedResponseBody struct {
 	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
+// UpdateDatabaseNotFoundResponseBody is the type of the "control-plane"
+// service "update-database" endpoint HTTP response body for the "not_found"
+// error.
+type UpdateDatabaseNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
 // DeleteDatabaseClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "delete-database" endpoint HTTP response body for
 // the "cluster_not_initialized" error.
 type DeleteDatabaseClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// DeleteDatabaseNotFoundResponseBody is the type of the "control-plane"
+// service "delete-database" endpoint HTTP response body for the "not_found"
+// error.
+type DeleteDatabaseNotFoundResponseBody struct {
 	// Name is the name of this class of errors.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -1653,7 +1767,9 @@ func NewCreateDatabaseRequestBody(p *controlplane.CreateDatabaseRequest) *Create
 // NewUpdateDatabaseRequestBody builds the HTTP request body from the payload
 // of the "update-database" endpoint of the "control-plane" service.
 func NewUpdateDatabaseRequestBody(p *controlplane.UpdateDatabasePayload) *UpdateDatabaseRequestBody {
-	body := &UpdateDatabaseRequestBody{}
+	body := &UpdateDatabaseRequestBody{
+		TenantID: p.Request.TenantID,
+	}
 	if p.Request.Spec != nil {
 		body.Spec = marshalControlplaneDatabaseSpecToDatabaseSpecRequestBodyRequestBody(p.Request.Spec)
 	}
@@ -1800,6 +1916,21 @@ func NewInspectClusterClusterNotInitialized(body *InspectClusterClusterNotInitia
 	return v
 }
 
+// NewInspectClusterNotFound builds a control-plane service inspect-cluster
+// endpoint not_found error.
+func NewInspectClusterNotFound(body *InspectClusterNotFoundResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
 // NewListHostsHostOK builds a "control-plane" service "list-hosts" endpoint
 // result from a HTTP "OK" response.
 func NewListHostsHostOK(body []*HostResponse) []*controlplane.Host {
@@ -1865,9 +1996,39 @@ func NewInspectHostClusterNotInitialized(body *InspectHostClusterNotInitializedR
 	return v
 }
 
+// NewInspectHostNotFound builds a control-plane service inspect-host endpoint
+// not_found error.
+func NewInspectHostNotFound(body *InspectHostNotFoundResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
 // NewRemoveHostClusterNotInitialized builds a control-plane service
 // remove-host endpoint cluster_not_initialized error.
 func NewRemoveHostClusterNotInitialized(body *RemoveHostClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewRemoveHostNotFound builds a control-plane service remove-host endpoint
+// not_found error.
+func NewRemoveHostNotFound(body *RemoveHostNotFoundResponseBody) *goa.ServiceError {
 	v := &goa.ServiceError{
 		Name:      *body.Name,
 		ID:        *body.ID,
@@ -2012,6 +2173,21 @@ func NewInspectDatabaseClusterNotInitialized(body *InspectDatabaseClusterNotInit
 	return v
 }
 
+// NewInspectDatabaseNotFound builds a control-plane service inspect-database
+// endpoint not_found error.
+func NewInspectDatabaseNotFound(body *InspectDatabaseNotFoundResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
 // NewUpdateDatabaseDatabaseOK builds a "control-plane" service
 // "update-database" endpoint result from a HTTP "OK" response.
 func NewUpdateDatabaseDatabaseOK(body *UpdateDatabaseResponseBody) *controlplaneviews.DatabaseView {
@@ -2050,9 +2226,39 @@ func NewUpdateDatabaseClusterNotInitialized(body *UpdateDatabaseClusterNotInitia
 	return v
 }
 
+// NewUpdateDatabaseNotFound builds a control-plane service update-database
+// endpoint not_found error.
+func NewUpdateDatabaseNotFound(body *UpdateDatabaseNotFoundResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
 // NewDeleteDatabaseClusterNotInitialized builds a control-plane service
 // delete-database endpoint cluster_not_initialized error.
 func NewDeleteDatabaseClusterNotInitialized(body *DeleteDatabaseClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewDeleteDatabaseNotFound builds a control-plane service delete-database
+// endpoint not_found error.
+func NewDeleteDatabaseNotFound(body *DeleteDatabaseNotFoundResponseBody) *goa.ServiceError {
 	v := &goa.ServiceError{
 		Name:      *body.Name,
 		ID:        *body.ID,
@@ -2355,6 +2561,30 @@ func ValidateInspectClusterClusterNotInitializedResponseBody(body *InspectCluste
 	return
 }
 
+// ValidateInspectClusterNotFoundResponseBody runs the validations defined on
+// inspect-cluster_not_found_response_body
+func ValidateInspectClusterNotFoundResponseBody(body *InspectClusterNotFoundResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
 // ValidateListHostsClusterNotInitializedResponseBody runs the validations
 // defined on list-hosts_cluster_not_initialized_response_body
 func ValidateListHostsClusterNotInitializedResponseBody(body *ListHostsClusterNotInitializedResponseBody) (err error) {
@@ -2403,9 +2633,57 @@ func ValidateInspectHostClusterNotInitializedResponseBody(body *InspectHostClust
 	return
 }
 
+// ValidateInspectHostNotFoundResponseBody runs the validations defined on
+// inspect-host_not_found_response_body
+func ValidateInspectHostNotFoundResponseBody(body *InspectHostNotFoundResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
 // ValidateRemoveHostClusterNotInitializedResponseBody runs the validations
 // defined on remove-host_cluster_not_initialized_response_body
 func ValidateRemoveHostClusterNotInitializedResponseBody(body *RemoveHostClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateRemoveHostNotFoundResponseBody runs the validations defined on
+// remove-host_not_found_response_body
+func ValidateRemoveHostNotFoundResponseBody(body *RemoveHostNotFoundResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
@@ -2547,6 +2825,30 @@ func ValidateInspectDatabaseClusterNotInitializedResponseBody(body *InspectDatab
 	return
 }
 
+// ValidateInspectDatabaseNotFoundResponseBody runs the validations defined on
+// inspect-database_not_found_response_body
+func ValidateInspectDatabaseNotFoundResponseBody(body *InspectDatabaseNotFoundResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
 // ValidateUpdateDatabaseClusterNotInitializedResponseBody runs the validations
 // defined on update-database_cluster_not_initialized_response_body
 func ValidateUpdateDatabaseClusterNotInitializedResponseBody(body *UpdateDatabaseClusterNotInitializedResponseBody) (err error) {
@@ -2571,9 +2873,57 @@ func ValidateUpdateDatabaseClusterNotInitializedResponseBody(body *UpdateDatabas
 	return
 }
 
+// ValidateUpdateDatabaseNotFoundResponseBody runs the validations defined on
+// update-database_not_found_response_body
+func ValidateUpdateDatabaseNotFoundResponseBody(body *UpdateDatabaseNotFoundResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
 // ValidateDeleteDatabaseClusterNotInitializedResponseBody runs the validations
 // defined on delete-database_cluster_not_initialized_response_body
 func ValidateDeleteDatabaseClusterNotInitializedResponseBody(body *DeleteDatabaseClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateDeleteDatabaseNotFoundResponseBody runs the validations defined on
+// delete-database_not_found_response_body
+func ValidateDeleteDatabaseNotFoundResponseBody(body *DeleteDatabaseNotFoundResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}

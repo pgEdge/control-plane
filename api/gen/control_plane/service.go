@@ -511,10 +511,14 @@ type RestoreRepositorySpec struct {
 type UpdateDatabasePayload struct {
 	// ID of the database to update.
 	DatabaseID *string
-	Request    *UpdateDatabaseRequest
+	// Force update the database even if the spec is the same.
+	ForceUpdate *bool
+	Request     *UpdateDatabaseRequest
 }
 
 type UpdateDatabaseRequest struct {
+	// Unique identifier for the databases's owner.
+	TenantID *string
 	// The specification for the database.
 	Spec *DatabaseSpec
 }
@@ -532,6 +536,11 @@ func MakeClusterNotInitialized(err error) *goa.ServiceError {
 // MakeInvalidJoinToken builds a goa.ServiceError from an error.
 func MakeInvalidJoinToken(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "invalid_join_token", false, false, false)
+}
+
+// MakeNotFound builds a goa.ServiceError from an error.
+func MakeNotFound(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "not_found", false, false, false)
 }
 
 // MakeInvalidInput builds a goa.ServiceError from an error.

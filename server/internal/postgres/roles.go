@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+
+	"github.com/jackc/pgx/v5"
 )
 
 var defaultSchemas = []string{"public", "spock", "pg_catalog", "information_schema"}
@@ -24,8 +26,16 @@ func CreateUserRole(opts UserRoleOptions) (Statements, error) {
 	}
 
 	statements := Statements{
-		Statement{
-			SQL: fmt.Sprintf("CREATE ROLE %q", opts.Name),
+		ConditionalStatement{
+			If: Query[bool]{
+				SQL: "SELECT NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = @name);",
+				Args: pgx.NamedArgs{
+					"name": opts.Name,
+				},
+			},
+			Then: Statement{
+				SQL: fmt.Sprintf("CREATE ROLE %q", opts.Name),
+			},
 		},
 	}
 	if opts.Password != "" {
@@ -80,8 +90,13 @@ func CreateBuiltInRoles(opts BuiltinRoleOptions) (Statements, error) {
 
 func CreateApplicationRole(opts BuiltinRoleOptions) Statements {
 	statements := Statements{
-		Statement{
-			SQL: "CREATE ROLE pgedge_application WITH NOLOGIN;",
+		ConditionalStatement{
+			If: Query[bool]{
+				SQL: "SELECT NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'pgedge_application');",
+			},
+			Then: Statement{
+				SQL: "CREATE ROLE pgedge_application WITH NOLOGIN;",
+			},
 		},
 		dbConnect(opts.DBName, "pgedge_application"),
 	}
@@ -95,8 +110,13 @@ func CreateApplicationRole(opts BuiltinRoleOptions) Statements {
 
 func CreateApplicationReadOnlyRole(opts BuiltinRoleOptions) Statements {
 	statements := Statements{
-		Statement{
-			SQL: "CREATE ROLE pgedge_application_read_only WITH NOLOGIN;",
+		ConditionalStatement{
+			If: Query[bool]{
+				SQL: "SELECT NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'pgedge_application');",
+			},
+			Then: Statement{
+				SQL: "CREATE ROLE pgedge_application_read_only WITH NOLOGIN;",
+			},
 		},
 		dbConnect(opts.DBName, "pgedge_application_read_only"),
 	}
@@ -122,8 +142,13 @@ func CreatePgEdgeSuperuserRole(opts BuiltinRoleOptions) (Statements, error) {
 	}
 
 	statements := Statements{
-		Statement{
-			SQL: "CREATE ROLE pgedge_superuser WITH NOLOGIN;",
+		ConditionalStatement{
+			If: Query[bool]{
+				SQL: "SELECT NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'pgedge_superuser');",
+			},
+			Then: Statement{
+				SQL: "CREATE ROLE pgedge_superuser WITH NOLOGIN;",
+			},
 		},
 		Statement{
 			SQL: "GRANT SET ON PARAMETER " + superuserParameters() + " TO pgedge_superuser;",

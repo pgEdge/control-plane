@@ -361,7 +361,7 @@ func apiToRestoreConfig(apiConfig *api.RestoreConfigSpec) (*database.RestoreConf
 		DatabaseID:   databaseID,
 		NodeName:     apiConfig.NodeName,
 		DatabaseName: apiConfig.DatabaseName,
-		Repository: database.BackupRepository{
+		Repository: &database.BackupRepository{
 			ID:             utils.FromPointer(apiConfig.Repository.ID),
 			Type:           database.BackupRepositoryType(apiConfig.Repository.Type),
 			S3Bucket:       utils.FromPointer(apiConfig.Repository.S3Bucket),

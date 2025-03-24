@@ -20,6 +20,7 @@ require (
 	github.com/pgEdge/control-plane/api v0.0.0
 	github.com/pgEdge/control-plane/mqtt v0.0.0
 	github.com/rs/zerolog v1.33.0
+	github.com/samber/do v1.6.0
 	github.com/samber/slog-zerolog/v2 v2.7.3
 	github.com/spf13/afero v1.8.2
 	github.com/spf13/cobra v1.8.1
@@ -33,6 +34,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.34.0
 	go.uber.org/zap v1.27.0
 	goa.design/goa/v3 v3.19.1
+	gonum.org/v1/gonum v0.16.0
 	gopkg.in/ini.v1 v1.67.0
 )
 
@@ -114,9 +116,9 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/net v0.34.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
 	google.golang.org/genproto v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect

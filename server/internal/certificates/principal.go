@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/pgEdge/control-plane/server/internal/storage"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type Principal struct {
@@ -22,11 +23,11 @@ type StoredPrincipal struct {
 }
 
 type PrincipalStore struct {
-	client storage.EtcdClient
+	client *clientv3.Client
 	root   string
 }
 
-func NewPrincipalStore(client storage.EtcdClient, root string) *PrincipalStore {
+func NewPrincipalStore(client *clientv3.Client, root string) *PrincipalStore {
 	return &PrincipalStore{
 		client: client,
 		root:   root,
@@ -59,6 +60,11 @@ func (s *PrincipalStore) Create(item *StoredPrincipal) storage.PutOp[*StoredPrin
 func (s *PrincipalStore) Update(item *StoredPrincipal) storage.PutOp[*StoredPrincipal] {
 	key := s.Key(item.ID)
 	return storage.NewUpdateOp(s.client, key, item)
+}
+
+func (s *PrincipalStore) DeleteByKey(certificateID string) storage.DeleteOp {
+	key := s.Key(certificateID)
+	return storage.NewDeleteKeyOp(s.client, key)
 }
 
 func PrincipalToStored(p *Principal) *StoredPrincipal {

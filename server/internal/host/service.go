@@ -13,6 +13,11 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
+type Orchestrator interface {
+	PopulateHost(ctx context.Context, h *Host) error
+	PopulateHostStatus(ctx context.Context, h *HostStatus) error
+}
+
 type Service struct {
 	cfg          config.Config
 	etcd         *etcd.EmbeddedEtcd

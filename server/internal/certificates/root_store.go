@@ -9,6 +9,7 @@ import (
 	"path"
 
 	"github.com/pgEdge/control-plane/server/internal/storage"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type StoredCA struct {
@@ -19,11 +20,11 @@ type StoredCA struct {
 }
 
 type CAStore struct {
-	client storage.EtcdClient
+	client *clientv3.Client
 	root   string
 }
 
-func NewCAStore(client storage.EtcdClient, root string) *CAStore {
+func NewCAStore(client *clientv3.Client, root string) *CAStore {
 	return &CAStore{
 		client: client,
 		root:   root,

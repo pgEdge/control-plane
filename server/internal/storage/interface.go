@@ -7,12 +7,6 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-type EtcdClient interface {
-	clientv3.KV
-	clientv3.Lease
-	clientv3.Watcher
-}
-
 // Value is the interface that all stored values must adhere to. Values must be
 // JSON-serializable and have a 'version' field that they expose through the
 // methods on this interface. The 'version' field should be omitted from the

@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	clientv3 "go.etcd.io/etcd/client/v3"
+
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
@@ -33,11 +35,11 @@ type StoredInstance struct {
 }
 
 type InstanceStore struct {
-	client storage.EtcdClient
+	client *clientv3.Client
 	root   string
 }
 
-func NewInstanceStore(client storage.EtcdClient, root string) *InstanceStore {
+func NewInstanceStore(client *clientv3.Client, root string) *InstanceStore {
 	return &InstanceStore{
 		client: client,
 		root:   root,

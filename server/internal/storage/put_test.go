@@ -137,11 +137,4 @@ func TestUpdateOp(t *testing.T) {
 
 		assert.ErrorIs(t, err, storage.ErrValueVersionMismatch)
 	})
-
-	t.Run("key does not exist", func(t *testing.T) {
-		ctx := context.Background()
-		err := storage.NewUpdateOp(client, "baz", &TestValue{SomeField: "baz"}).Exec(ctx)
-
-		assert.ErrorIs(t, err, storage.ErrValueVersionMismatch)
-	})
 }

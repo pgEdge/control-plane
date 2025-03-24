@@ -1,0 +1,111 @@
+package swarm
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/docker"
+	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/samber/do"
+)
+
+var _ resource.Resource = (*PostgresService)(nil)
+
+const ResourceTypePostgresService resource.Type = "swarm.postgres_service"
+
+func PostgresServiceResourceIdentifier(instanceID uuid.UUID) resource.Identifier {
+	return resource.Identifier{
+		ID:   instanceID.String(),
+		Type: ResourceTypePostgresService,
+	}
+}
+
+type PostgresService struct {
+	Instance    *database.InstanceSpec `json:"instance"`
+	CohortID    string                 `json:"cohort_id"`
+	ServiceName string                 `json:"service_name"`
+	ServiceID   string                 `json:"service_id"`
+}
+
+func (s *PostgresService) Identifier() resource.Identifier {
+	return PostgresServiceResourceIdentifier(s.Instance.InstanceID)
+}
+
+func (s *PostgresService) Executor() resource.Executor {
+	return resource.Executor{
+		Type: resource.ExecutorTypeCohort,
+		ID:   s.CohortID,
+	}
+}
+
+func (s *PostgresService) Dependencies() []resource.Identifier {
+	return []resource.Identifier{
+		PostgresServiceSpecResourceIdentifier(s.Instance.InstanceID),
+	}
+}
+
+func (s *PostgresService) Refresh(ctx context.Context, rc *resource.Context) error {
+	client, err := do.Invoke[*docker.Docker](rc.Injector)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.ServiceInspect(ctx, s.ServiceName)
+	if errors.Is(err, docker.ErrNotFound) {
+		return resource.ErrNotFound
+	} else if err != nil {
+		return fmt.Errorf("failed to inspect postgres service: %w", err)
+	}
+	s.ServiceID = resp.ID
+
+	return nil
+}
+
+func (s *PostgresService) Create(ctx context.Context, rc *resource.Context) error {
+	client, err := do.Invoke[*docker.Docker](rc.Injector)
+	if err != nil {
+		return err
+	}
+
+	specResourceID := PostgresServiceSpecResourceIdentifier(s.Instance.InstanceID)
+	spec, err := resource.FromContext[*PostgresServiceSpecResource](rc, specResourceID)
+	if err != nil {
+		return fmt.Errorf("failed to get postgres service spec from state: %w", err)
+	}
+
+	serviceID, err := client.ServiceDeploy(ctx, spec.Spec)
+	if err != nil {
+		return fmt.Errorf("failed to deploy postgres service: %w", err)
+	}
+
+	s.ServiceID = serviceID
+
+	// TODO: this might need to be a lot longer if we use Patroni's bootstrap
+	// functionality to restore from backup or from another node.
+	if err := client.WaitForService(ctx, serviceID, 5*time.Minute); err != nil {
+		return fmt.Errorf("failed to wait for postgres service to start: %w", err)
+	}
+
+	return nil
+}
+
+func (s *PostgresService) Update(ctx context.Context, rc *resource.Context) error {
+	return s.Create(ctx, rc)
+}
+
+func (s *PostgresService) Delete(ctx context.Context, rc *resource.Context) error {
+	client, err := do.Invoke[*docker.Docker](rc.Injector)
+	if err != nil {
+		return err
+	}
+
+	if err := client.ServiceRemove(ctx, s.ServiceName); err != nil {
+		return fmt.Errorf("failed to remove postgres service: %w", err)
+	}
+
+	return nil
+}

@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	clientv3 "go.etcd.io/etcd/client/v3"
+
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
@@ -18,11 +20,11 @@ type StoredDatabase struct {
 }
 
 type DatabaseStore struct {
-	client storage.EtcdClient
+	client *clientv3.Client
 	root   string
 }
 
-func NewDatabaseStore(client storage.EtcdClient, root string) *DatabaseStore {
+func NewDatabaseStore(client *clientv3.Client, root string) *DatabaseStore {
 	return &DatabaseStore{
 		client: client,
 		root:   root,
@@ -67,10 +69,10 @@ func (s *DatabaseStore) Create(item *StoredDatabase) storage.PutOp[*StoredDataba
 
 func (s *DatabaseStore) Update(item *StoredDatabase) storage.PutOp[*StoredDatabase] {
 	key := s.Key(item.DatabaseID)
-	return storage.NewCreateOp(s.client, key, item)
+	return storage.NewUpdateOp(s.client, key, item)
 }
 
-func (s *DatabaseStore) Delete(item *StoredDatabase) storage.PutOp[*StoredDatabase] {
+func (s *DatabaseStore) Delete(item *StoredDatabase) storage.DeleteValueOp[*StoredDatabase] {
 	key := s.Key(item.DatabaseID)
-	return storage.NewCreateOp(s.client, key, item)
+	return storage.NewDeleteValueOp(s.client, key, item)
 }

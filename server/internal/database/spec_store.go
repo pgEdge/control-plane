@@ -4,6 +4,8 @@ import (
 	"path"
 
 	"github.com/google/uuid"
+	clientv3 "go.etcd.io/etcd/client/v3"
+
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
@@ -13,11 +15,11 @@ type StoredSpec struct {
 }
 
 type SpecStore struct {
-	client storage.EtcdClient
+	client *clientv3.Client
 	root   string
 }
 
-func NewSpecStore(client storage.EtcdClient, root string) *SpecStore {
+func NewSpecStore(client *clientv3.Client, root string) *SpecStore {
 	return &SpecStore{
 		client: client,
 		root:   root,
@@ -62,10 +64,10 @@ func (s *SpecStore) Create(item *StoredSpec) storage.PutOp[*StoredSpec] {
 
 func (s *SpecStore) Update(item *StoredSpec) storage.PutOp[*StoredSpec] {
 	key := s.Key(item.DatabaseID)
-	return storage.NewCreateOp(s.client, key, item)
+	return storage.NewUpdateOp(s.client, key, item)
 }
 
-func (s *SpecStore) Delete(item *StoredSpec) storage.PutOp[*StoredSpec] {
+func (s *SpecStore) Delete(item *StoredSpec) storage.DeleteValueOp[*StoredSpec] {
 	key := s.Key(item.DatabaseID)
-	return storage.NewCreateOp(s.client, key, item)
+	return storage.NewDeleteValueOp(s.client, key, item)
 }

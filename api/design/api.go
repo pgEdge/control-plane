@@ -21,11 +21,13 @@ var _ = g.API("control-plane", func() {
 	g.Error("cluster_not_initialized")
 	g.Error("invalid_join_token")
 	g.Error("invalid_input")
+	g.Error("not_found")
 	g.HTTP(func() {
 		g.Response("cluster_already_initialized", http.StatusConflict)
 		g.Response("cluster_not_initialized", http.StatusConflict)
 		g.Response("invalid_join_token", http.StatusUnauthorized)
 		g.Response("invalid_input", http.StatusBadRequest)
+		g.Response("not_found", http.StatusNotFound)
 	})
 })
 
@@ -87,6 +89,7 @@ var _ = g.Service("control-plane", func() {
 		g.Description("Returns information about the cluster.")
 		g.Result(Cluster)
 		g.Error("cluster_not_initialized")
+		g.Error("not_found")
 
 		g.HTTP(func() {
 			g.GET("/cluster")
@@ -113,6 +116,7 @@ var _ = g.Service("control-plane", func() {
 		})
 		g.Result(Host)
 		g.Error("cluster_not_initialized")
+		g.Error("not_found")
 
 		g.HTTP(func() {
 			g.GET("/hosts/{host_id}")
@@ -128,6 +132,7 @@ var _ = g.Service("control-plane", func() {
 			})
 		})
 		g.Error("cluster_not_initialized")
+		g.Error("not_found")
 
 		g.HTTP(func() {
 			g.DELETE("/hosts/{host_id}")
@@ -174,6 +179,7 @@ var _ = g.Service("control-plane", func() {
 			g.View("default")
 		})
 		g.Error("cluster_not_initialized")
+		g.Error("not_found")
 
 		g.HTTP(func() {
 			g.GET("/databases/{database_id}")
@@ -187,15 +193,21 @@ var _ = g.Service("control-plane", func() {
 				g.Description("ID of the database to update.")
 				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
+			g.Attribute("force_update", g.Boolean, func() {
+				g.Description("Force update the database even if the spec is the same.")
+				g.Example(true)
+			})
 			g.Attribute("request", UpdateDatabaseRequest)
 		})
 		g.Result(Database, func() {
 			g.View("default")
 		})
 		g.Error("cluster_not_initialized")
+		g.Error("not_found")
 
 		g.HTTP(func() {
 			g.POST("/databases/{database_id}")
+			g.Param("force_update")
 			g.Body("request")
 		})
 	})
@@ -209,6 +221,7 @@ var _ = g.Service("control-plane", func() {
 			})
 		})
 		g.Error("cluster_not_initialized")
+		g.Error("not_found")
 
 		g.HTTP(func() {
 			g.DELETE("/databases/{database_id}")

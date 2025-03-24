@@ -1,16 +1,13 @@
 package swarm
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/swarm"
 
-	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
-	"github.com/pgEdge/control-plane/server/internal/host"
 )
 
 type Paths struct {
@@ -21,21 +18,17 @@ type Paths struct {
 
 type HostOptions struct {
 	// BridgeNetworkID   string
+	ServiceName       string
 	DatabaseNetworkID string
 	Paths             Paths
+	Images            *Images
+	CohortMemberID    string
 }
 
 func DatabaseServiceSpec(
-	host *host.Host,
-	cfg config.Config,
 	instance *database.InstanceSpec,
 	options *HostOptions,
 ) (swarm.ServiceSpec, error) {
-	images, err := GetImages(cfg, instance.PgEdgeVersion)
-	if err != nil {
-		return swarm.ServiceSpec{}, fmt.Errorf("could not find matching image: %w", err)
-	}
-
 	labels := map[string]string{
 		"pgedge.host.id":     instance.HostID.String(),
 		"pgedge.database.id": instance.DatabaseID.String(),
@@ -50,7 +43,7 @@ func DatabaseServiceSpec(
 	return swarm.ServiceSpec{
 		TaskTemplate: swarm.TaskSpec{
 			ContainerSpec: &swarm.ContainerSpec{
-				Image:    images.PgEdgeImage,
+				Image:    options.Images.PgEdgeImage,
 				Labels:   labels,
 				Args:     []string{"/opt/pgedge/configs/patroni.yaml"},
 				Hostname: instance.Hostname(),
@@ -97,7 +90,7 @@ func DatabaseServiceSpec(
 			},
 			Placement: &swarm.Placement{
 				Constraints: []string{
-					"node.id==" + host.Cohort.MemberID,
+					"node.id==" + options.CohortMemberID,
 				},
 			},
 			Resources: &swarm.ResourceRequirements{
@@ -129,7 +122,7 @@ func DatabaseServiceSpec(
 			},
 		},
 		Annotations: swarm.Annotations{
-			Name:   instance.Hostname(),
+			Name:   options.ServiceName,
 			Labels: labels,
 		},
 	}, nil

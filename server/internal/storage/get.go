@@ -10,13 +10,13 @@ import (
 )
 
 type getOp[V Value] struct {
-	client  EtcdClient
+	client  *clientv3.Client
 	key     string
 	options []clientv3.OpOption
 }
 
 // NewGetOp returns an operation that returns a single value by key.
-func NewGetOp[V Value](client EtcdClient, key string, options ...clientv3.OpOption) GetOp[V] {
+func NewGetOp[V Value](client *clientv3.Client, key string, options ...clientv3.OpOption) GetOp[V] {
 	return &getOp[V]{
 		client:  client,
 		key:     key,
@@ -42,13 +42,13 @@ func (o *getOp[V]) Exec(ctx context.Context) (V, error) {
 }
 
 type getMultipleOp[V Value] struct {
-	client  EtcdClient
+	client  *clientv3.Client
 	keys    []string
 	options []clientv3.OpOption
 }
 
 // NewGetMultipleOp returns an operation that returns multiple values by key.
-func NewGetMultipleOp[V Value](client EtcdClient, keys []string, options ...clientv3.OpOption) GetMultipleOp[V] {
+func NewGetMultipleOp[V Value](client *clientv3.Client, keys []string, options ...clientv3.OpOption) GetMultipleOp[V] {
 	return &getMultipleOp[V]{
 		client:  client,
 		keys:    keys,
@@ -80,13 +80,13 @@ func (o *getMultipleOp[V]) Exec(ctx context.Context) ([]V, error) {
 }
 
 type getPrefixOp[V Value] struct {
-	client  EtcdClient
+	client  *clientv3.Client
 	prefix  string
 	options []clientv3.OpOption
 }
 
 // NewGetPrefixOp returns an operation that returns multiple values by prefix.
-func NewGetPrefixOp[V Value](client EtcdClient, prefix string, options ...clientv3.OpOption) GetMultipleOp[V] {
+func NewGetPrefixOp[V Value](client *clientv3.Client, prefix string, options ...clientv3.OpOption) GetMultipleOp[V] {
 	return &getPrefixOp[V]{
 		client:  client,
 		prefix:  prefix,
@@ -107,13 +107,13 @@ func (o *getPrefixOp[V]) Exec(ctx context.Context) ([]V, error) {
 type getRangeOp[V Value] struct {
 	start   string
 	end     string
-	client  EtcdClient
+	client  *clientv3.Client
 	options []clientv3.OpOption
 }
 
 // NewGetRangeOp returns an operation that returns values in the range
 // [start, end).
-func NewGetRangeOp[V Value](client EtcdClient, start, end string, options ...clientv3.OpOption) GetMultipleOp[V] {
+func NewGetRangeOp[V Value](client *clientv3.Client, start, end string, options ...clientv3.OpOption) GetMultipleOp[V] {
 	return &getRangeOp[V]{
 		client:  client,
 		start:   start,
@@ -133,12 +133,12 @@ func (o *getRangeOp[V]) Exec(ctx context.Context) ([]V, error) {
 }
 
 type existsOp struct {
-	client EtcdClient
+	client *clientv3.Client
 	key    string
 }
 
 // NewExistsOp returns an operation that returns true if a key exists.
-func NewExistsOp(client EtcdClient, key string) ExistsOp {
+func NewExistsOp(client *clientv3.Client, key string) ExistsOp {
 	return &existsOp{
 		client: client,
 		key:    key,
