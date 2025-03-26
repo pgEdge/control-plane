@@ -300,7 +300,24 @@ func (d *Docker) ContainerList(ctx context.Context, opts container.ListOptions) 
 	return containers, nil
 }
 
-// The docker errors don't annoying to check further up in the stack since they
+func (d *Docker) GetContainerByLabels(ctx context.Context, labels map[string]string) (types.Container, error) {
+	var f []filters.KeyValuePair
+	for key, value := range labels {
+		f = append(f, filters.Arg("label", key+"="+value))
+	}
+	matches, err := d.ContainerList(ctx, container.ListOptions{
+		Filters: filters.NewArgs(f...),
+	})
+	if err != nil {
+		return types.Container{}, fmt.Errorf("failed to find matching containers: %w", err)
+	}
+	if len(matches) == 0 {
+		return types.Container{}, fmt.Errorf("%w: no matching containers found", ErrNotFound)
+	}
+	return matches[0], nil
+}
+
+// The docker errors are annoying to check further up in the stack since they
 // rely on type checks. Wrapping them in our own errors makes it easier for
 // callers to explicitly handle specific errors.
 func errTranslate(err error) error {

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## [4.0.10-3] - 2025-03-20
+
+### Changed
+
+#### All variants
+
+- Changed host user to `postgres`
+
 ## [4.0.10-2] - 2025-02-27
 
 ### Changed

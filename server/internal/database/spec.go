@@ -197,6 +197,7 @@ type InstanceSpec struct {
 	BackupConfig     *BackupConfig       `json:"backup_config"`
 	RestoreConfig    *RestoreConfig      `json:"restore_config"`
 	PostgreSQLConf   map[string]any      `json:"postgresql_conf"`
+	EnableBackups    bool                `json:"enable_backups"`
 }
 
 func (i *InstanceSpec) Hostname() string {
@@ -205,6 +206,10 @@ func (i *InstanceSpec) Hostname() string {
 
 func (i *InstanceSpec) HostnameWithDomain() string {
 	return fmt.Sprintf("%s.%s-database", i.Hostname(), i.DatabaseID)
+}
+
+func (i *InstanceSpec) UsesPgBackRest() bool {
+	return i.BackupConfig != nil && i.BackupConfig.Provider == BackupProviderPgBackrest
 }
 
 type NodeInstances struct {
@@ -282,6 +287,10 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				BackupConfig:     backupConfig,
 				RestoreConfig:    s.RestoreConfig,
 				PostgreSQLConf:   postgresqlConf,
+				// By default, we'll choose the last host in the list to run
+				// backups. We'll want to incorporate the current state of the
+				// cluster into this decision when we implement updates.
+				EnableBackups: backupConfig != nil && hostIdx == len(node.HostIDs)-1,
 			}
 		}
 

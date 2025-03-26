@@ -7,6 +7,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 )
 
 type NetworkInfo struct {
@@ -113,5 +114,15 @@ func HostPathsFor(cfg config.Config, spec *database.InstanceSpec) HostPaths {
 		Data:         NewDataPaths(instanceDir),
 		Configs:      NewConfigPaths(instanceDir),
 		Certificates: NewCertificatePaths(instanceDir),
+	}
+}
+
+func pgbackrestBackupCmd(command string, args ...string) pgbackrest.Cmd {
+	return pgbackrest.Cmd{
+		PgBackrestCmd: "/usr/bin/pgbackrest",
+		Config:        "/opt/pgedge/configs/pgbackrest.backup.conf",
+		Stanza:        "db",
+		Command:       command,
+		Args:          args,
 	}
 }
