@@ -61,12 +61,6 @@ const ServiceName = "control-plane"
 var MethodNames = [13]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "inspect-cluster", "list-hosts", "inspect-host", "remove-host", "list-databases", "create-database", "inspect-database", "update-database", "delete-database"}
 
 type BackupConfigSpec struct {
-	// The unique identifier for this backup configuration.
-	ID string
-	// The names of the nodes where this backup configuration should be applied.
-	// The configuration will apply to all nodes when this field is empty or
-	// unspecified.
-	NodeNames []string
 	// The backup provider for this backup configuration.
 	Provider string
 	// The repositories for this backup configuration.
@@ -106,6 +100,8 @@ type BackupRepositorySpec struct {
 	RetentionFullType *string
 	// The base path within the repository to store backups.
 	BasePath *string
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string
 }
 
 type BackupScheduleSpec struct {
@@ -234,8 +230,10 @@ type DatabaseCollection []*Database
 type DatabaseNodeSpec struct {
 	// The name of the database node.
 	Name string
-	// The ID of the host that should run this node.
-	HostID string
+	// The IDs of the hosts that should run this node. When multiple hosts are
+	// specified, one host will chosen as a primary and the others will be read
+	// replicas.
+	HostIds []string
 	// The major version of Postgres for this node. Overrides the Postgres version
 	// set in the DatabaseSpec.
 	PostgresVersion *string
@@ -258,16 +256,12 @@ type DatabaseNodeSpec struct {
 	// memory on the host. Whether this limit will be enforced depends on the
 	// orchestrator.
 	Memory *string
-	// Read replicas for this database node.
-	ReadReplicas []*DatabaseReplicaSpec
 	// Additional postgresql.conf settings for this particular node. Will be merged
 	// with the settings provided by control-plane.
 	PostgresqlConf map[string]any
-}
-
-type DatabaseReplicaSpec struct {
-	// The ID of the host that should run this read replica.
-	HostID string
+	// The backup configuration for this node. Overrides the backup configuration
+	// set in the DatabaseSpec.
+	BackupConfig *BackupConfigSpec
 }
 
 type DatabaseSpec struct {
@@ -302,8 +296,8 @@ type DatabaseSpec struct {
 	DatabaseUsers []*DatabaseUserSpec
 	// The feature flags for this database.
 	Features map[string]string
-	// The backup configurations for this database.
-	BackupConfigs []*BackupConfigSpec
+	// The backup configuration for this database.
+	BackupConfig *BackupConfigSpec
 	// The restore configuration for this database.
 	RestoreConfig *RestoreConfigSpec
 	// Additional postgresql.conf settings. Will be merged with the settings
@@ -395,8 +389,6 @@ type Instance struct {
 	HostID string
 	// The Spock node name for this instance.
 	NodeName string
-	// The read replica name of this instance.
-	ReplicaName *string
 	// The time that the instance was created.
 	CreatedAt string
 	// The time that the instance was last updated.
@@ -458,7 +450,7 @@ type RestoreConfigSpec struct {
 
 type RestoreRepositorySpec struct {
 	// The unique identifier of this repository.
-	ID string
+	ID *string
 	// The type of this repository.
 	Type string
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
@@ -483,6 +475,8 @@ type RestoreRepositorySpec struct {
 	AzureEndpoint *string
 	// The base path within the repository where backups are stored.
 	BasePath *string
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string
 }
 
 // UpdateDatabasePayload is the payload type of the control-plane service
@@ -747,7 +741,6 @@ func newInstanceCollectionViewAbbreviated(res InstanceCollection) controlplanevi
 // newInstance converts projected type Instance to service type Instance.
 func newInstance(vres *controlplaneviews.InstanceView) *Instance {
 	res := &Instance{
-		ReplicaName:     vres.ReplicaName,
 		PatroniState:    vres.PatroniState,
 		Role:            vres.Role,
 		ReadOnly:        vres.ReadOnly,
@@ -786,9 +779,7 @@ func newInstance(vres *controlplaneviews.InstanceView) *Instance {
 // newInstanceAbbreviated converts projected type Instance to service type
 // Instance.
 func newInstanceAbbreviated(vres *controlplaneviews.InstanceView) *Instance {
-	res := &Instance{
-		ReplicaName: vres.ReplicaName,
-	}
+	res := &Instance{}
 	if vres.ID != nil {
 		res.ID = *vres.ID
 	}
@@ -811,7 +802,6 @@ func newInstanceView(res *Instance) *controlplaneviews.InstanceView {
 		ID:              &res.ID,
 		HostID:          &res.HostID,
 		NodeName:        &res.NodeName,
-		ReplicaName:     res.ReplicaName,
 		CreatedAt:       &res.CreatedAt,
 		UpdatedAt:       &res.UpdatedAt,
 		State:           &res.State,
@@ -836,11 +826,10 @@ func newInstanceView(res *Instance) *controlplaneviews.InstanceView {
 // InstanceView using the "abbreviated" view.
 func newInstanceViewAbbreviated(res *Instance) *controlplaneviews.InstanceView {
 	vres := &controlplaneviews.InstanceView{
-		ID:          &res.ID,
-		HostID:      &res.HostID,
-		NodeName:    &res.NodeName,
-		ReplicaName: res.ReplicaName,
-		State:       &res.State,
+		ID:       &res.ID,
+		HostID:   &res.HostID,
+		NodeName: &res.NodeName,
+		State:    &res.State,
 	}
 	return vres
 }
@@ -884,11 +873,8 @@ func transformControlplaneviewsDatabaseSpecViewToDatabaseSpec(v *controlplanevie
 			res.Features[tk] = tv
 		}
 	}
-	if v.BackupConfigs != nil {
-		res.BackupConfigs = make([]*BackupConfigSpec, len(v.BackupConfigs))
-		for i, val := range v.BackupConfigs {
-			res.BackupConfigs[i] = transformControlplaneviewsBackupConfigSpecViewToBackupConfigSpec(val)
-		}
+	if v.BackupConfig != nil {
+		res.BackupConfig = transformControlplaneviewsBackupConfigSpecViewToBackupConfigSpec(v.BackupConfig)
 	}
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = transformControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpec(v.RestoreConfig)
@@ -911,7 +897,6 @@ func transformControlplaneviewsDatabaseSpecViewToDatabaseSpec(v *controlplanevie
 func transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec(v *controlplaneviews.DatabaseNodeSpecView) *DatabaseNodeSpec {
 	res := &DatabaseNodeSpec{
 		Name:            *v.Name,
-		HostID:          *v.HostID,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
 		StorageClass:    v.StorageClass,
@@ -919,11 +904,13 @@ func transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec(v *control
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
-	if v.ReadReplicas != nil {
-		res.ReadReplicas = make([]*DatabaseReplicaSpec, len(v.ReadReplicas))
-		for i, val := range v.ReadReplicas {
-			res.ReadReplicas[i] = transformControlplaneviewsDatabaseReplicaSpecViewToDatabaseReplicaSpec(val)
+	if v.HostIds != nil {
+		res.HostIds = make([]string, len(v.HostIds))
+		for i, val := range v.HostIds {
+			res.HostIds[i] = val
 		}
+	} else {
+		res.HostIds = []string{}
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -933,47 +920,8 @@ func transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec(v *control
 			res.PostgresqlConf[tk] = tv
 		}
 	}
-
-	return res
-}
-
-// transformControlplaneviewsDatabaseReplicaSpecViewToDatabaseReplicaSpec
-// builds a value of type *DatabaseReplicaSpec from a value of type
-// *controlplaneviews.DatabaseReplicaSpecView.
-func transformControlplaneviewsDatabaseReplicaSpecViewToDatabaseReplicaSpec(v *controlplaneviews.DatabaseReplicaSpecView) *DatabaseReplicaSpec {
-	if v == nil {
-		return nil
-	}
-	res := &DatabaseReplicaSpec{
-		HostID: *v.HostID,
-	}
-
-	return res
-}
-
-// transformControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpec builds a
-// value of type *DatabaseUserSpec from a value of type
-// *controlplaneviews.DatabaseUserSpecView.
-func transformControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpec(v *controlplaneviews.DatabaseUserSpecView) *DatabaseUserSpec {
-	if v == nil {
-		return nil
-	}
-	res := &DatabaseUserSpec{
-		Username: *v.Username,
-		Password: *v.Password,
-		DbOwner:  v.DbOwner,
-	}
-	if v.Attributes != nil {
-		res.Attributes = make([]string, len(v.Attributes))
-		for i, val := range v.Attributes {
-			res.Attributes[i] = val
-		}
-	}
-	if v.Roles != nil {
-		res.Roles = make([]string, len(v.Roles))
-		for i, val := range v.Roles {
-			res.Roles[i] = val
-		}
+	if v.BackupConfig != nil {
+		res.BackupConfig = transformControlplaneviewsBackupConfigSpecViewToBackupConfigSpec(v.BackupConfig)
 	}
 
 	return res
@@ -987,14 +935,7 @@ func transformControlplaneviewsBackupConfigSpecViewToBackupConfigSpec(v *control
 		return nil
 	}
 	res := &BackupConfigSpec{
-		ID:       *v.ID,
 		Provider: *v.Provider,
-	}
-	if v.NodeNames != nil {
-		res.NodeNames = make([]string, len(v.NodeNames))
-		for i, val := range v.NodeNames {
-			res.NodeNames[i] = val
-		}
 	}
 	if v.Repositories != nil {
 		res.Repositories = make([]*BackupRepositorySpec, len(v.Repositories))
@@ -1034,6 +975,14 @@ func transformControlplaneviewsBackupRepositorySpecViewToBackupRepositorySpec(v 
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
 	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
+	}
 
 	return res
 }
@@ -1049,6 +998,34 @@ func transformControlplaneviewsBackupScheduleSpecViewToBackupScheduleSpec(v *con
 		ID:             *v.ID,
 		Type:           *v.Type,
 		CronExpression: *v.CronExpression,
+	}
+
+	return res
+}
+
+// transformControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpec builds a
+// value of type *DatabaseUserSpec from a value of type
+// *controlplaneviews.DatabaseUserSpecView.
+func transformControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpec(v *controlplaneviews.DatabaseUserSpecView) *DatabaseUserSpec {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseUserSpec{
+		Username: *v.Username,
+		Password: *v.Password,
+		DbOwner:  v.DbOwner,
+	}
+	if v.Attributes != nil {
+		res.Attributes = make([]string, len(v.Attributes))
+		for i, val := range v.Attributes {
+			res.Attributes[i] = val
+		}
+	}
+	if v.Roles != nil {
+		res.Roles = make([]string, len(v.Roles))
+		for i, val := range v.Roles {
+			res.Roles[i] = val
+		}
 	}
 
 	return res
@@ -1077,7 +1054,7 @@ func transformControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpec(v *contr
 // *controlplaneviews.RestoreRepositorySpecView.
 func transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec(v *controlplaneviews.RestoreRepositorySpecView) *RestoreRepositorySpec {
 	res := &RestoreRepositorySpec{
-		ID:             *v.ID,
+		ID:             v.ID,
 		Type:           *v.Type,
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
@@ -1088,6 +1065,14 @@ func transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec(
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
 		BasePath:       v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res
@@ -1132,11 +1117,8 @@ func transformDatabaseSpecToControlplaneviewsDatabaseSpecView(v *DatabaseSpec) *
 			res.Features[tk] = tv
 		}
 	}
-	if v.BackupConfigs != nil {
-		res.BackupConfigs = make([]*controlplaneviews.BackupConfigSpecView, len(v.BackupConfigs))
-		for i, val := range v.BackupConfigs {
-			res.BackupConfigs[i] = transformBackupConfigSpecToControlplaneviewsBackupConfigSpecView(val)
-		}
+	if v.BackupConfig != nil {
+		res.BackupConfig = transformBackupConfigSpecToControlplaneviewsBackupConfigSpecView(v.BackupConfig)
 	}
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = transformRestoreConfigSpecToControlplaneviewsRestoreConfigSpecView(v.RestoreConfig)
@@ -1159,7 +1141,6 @@ func transformDatabaseSpecToControlplaneviewsDatabaseSpecView(v *DatabaseSpec) *
 func transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView(v *DatabaseNodeSpec) *controlplaneviews.DatabaseNodeSpecView {
 	res := &controlplaneviews.DatabaseNodeSpecView{
 		Name:            &v.Name,
-		HostID:          &v.HostID,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
 		StorageClass:    v.StorageClass,
@@ -1167,11 +1148,13 @@ func transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView(v *Databas
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
-	if v.ReadReplicas != nil {
-		res.ReadReplicas = make([]*controlplaneviews.DatabaseReplicaSpecView, len(v.ReadReplicas))
-		for i, val := range v.ReadReplicas {
-			res.ReadReplicas[i] = transformDatabaseReplicaSpecToControlplaneviewsDatabaseReplicaSpecView(val)
+	if v.HostIds != nil {
+		res.HostIds = make([]string, len(v.HostIds))
+		for i, val := range v.HostIds {
+			res.HostIds[i] = val
 		}
+	} else {
+		res.HostIds = []string{}
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -1181,47 +1164,8 @@ func transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView(v *Databas
 			res.PostgresqlConf[tk] = tv
 		}
 	}
-
-	return res
-}
-
-// transformDatabaseReplicaSpecToControlplaneviewsDatabaseReplicaSpecView
-// builds a value of type *controlplaneviews.DatabaseReplicaSpecView from a
-// value of type *DatabaseReplicaSpec.
-func transformDatabaseReplicaSpecToControlplaneviewsDatabaseReplicaSpecView(v *DatabaseReplicaSpec) *controlplaneviews.DatabaseReplicaSpecView {
-	if v == nil {
-		return nil
-	}
-	res := &controlplaneviews.DatabaseReplicaSpecView{
-		HostID: &v.HostID,
-	}
-
-	return res
-}
-
-// transformDatabaseUserSpecToControlplaneviewsDatabaseUserSpecView builds a
-// value of type *controlplaneviews.DatabaseUserSpecView from a value of type
-// *DatabaseUserSpec.
-func transformDatabaseUserSpecToControlplaneviewsDatabaseUserSpecView(v *DatabaseUserSpec) *controlplaneviews.DatabaseUserSpecView {
-	if v == nil {
-		return nil
-	}
-	res := &controlplaneviews.DatabaseUserSpecView{
-		Username: &v.Username,
-		Password: &v.Password,
-		DbOwner:  v.DbOwner,
-	}
-	if v.Attributes != nil {
-		res.Attributes = make([]string, len(v.Attributes))
-		for i, val := range v.Attributes {
-			res.Attributes[i] = val
-		}
-	}
-	if v.Roles != nil {
-		res.Roles = make([]string, len(v.Roles))
-		for i, val := range v.Roles {
-			res.Roles[i] = val
-		}
+	if v.BackupConfig != nil {
+		res.BackupConfig = transformBackupConfigSpecToControlplaneviewsBackupConfigSpecView(v.BackupConfig)
 	}
 
 	return res
@@ -1235,14 +1179,7 @@ func transformBackupConfigSpecToControlplaneviewsBackupConfigSpecView(v *BackupC
 		return nil
 	}
 	res := &controlplaneviews.BackupConfigSpecView{
-		ID:       &v.ID,
 		Provider: &v.Provider,
-	}
-	if v.NodeNames != nil {
-		res.NodeNames = make([]string, len(v.NodeNames))
-		for i, val := range v.NodeNames {
-			res.NodeNames[i] = val
-		}
 	}
 	if v.Repositories != nil {
 		res.Repositories = make([]*controlplaneviews.BackupRepositorySpecView, len(v.Repositories))
@@ -1282,6 +1219,14 @@ func transformBackupRepositorySpecToControlplaneviewsBackupRepositorySpecView(v 
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
 	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
+	}
 
 	return res
 }
@@ -1297,6 +1242,34 @@ func transformBackupScheduleSpecToControlplaneviewsBackupScheduleSpecView(v *Bac
 		ID:             &v.ID,
 		Type:           &v.Type,
 		CronExpression: &v.CronExpression,
+	}
+
+	return res
+}
+
+// transformDatabaseUserSpecToControlplaneviewsDatabaseUserSpecView builds a
+// value of type *controlplaneviews.DatabaseUserSpecView from a value of type
+// *DatabaseUserSpec.
+func transformDatabaseUserSpecToControlplaneviewsDatabaseUserSpecView(v *DatabaseUserSpec) *controlplaneviews.DatabaseUserSpecView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.DatabaseUserSpecView{
+		Username: &v.Username,
+		Password: &v.Password,
+		DbOwner:  v.DbOwner,
+	}
+	if v.Attributes != nil {
+		res.Attributes = make([]string, len(v.Attributes))
+		for i, val := range v.Attributes {
+			res.Attributes[i] = val
+		}
+	}
+	if v.Roles != nil {
+		res.Roles = make([]string, len(v.Roles))
+		for i, val := range v.Roles {
+			res.Roles[i] = val
+		}
 	}
 
 	return res
@@ -1325,7 +1298,7 @@ func transformRestoreConfigSpecToControlplaneviewsRestoreConfigSpecView(v *Resto
 // value of type *RestoreRepositorySpec.
 func transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView(v *RestoreRepositorySpec) *controlplaneviews.RestoreRepositorySpecView {
 	res := &controlplaneviews.RestoreRepositorySpecView{
-		ID:             &v.ID,
+		ID:             v.ID,
 		Type:           &v.Type,
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
@@ -1336,6 +1309,14 @@ func transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView(
 		AzureContainer: v.AzureContainer,
 		AzureEndpoint:  v.AzureEndpoint,
 		BasePath:       v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
 	}
 
 	return res

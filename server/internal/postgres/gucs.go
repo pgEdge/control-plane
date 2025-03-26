@@ -1,10 +1,7 @@
 package postgres
 
 import (
-	"fmt"
 	"math"
-	"regexp"
-	"strconv"
 )
 
 func DefaultGUCs() map[string]any {
@@ -35,20 +32,10 @@ func Spock4DefaultGUCs() map[string]any {
 	}
 }
 
-func SnowflakeLolorGUCs(nodeName string) (map[string]any, error) {
-	re := regexp.MustCompile(`\d+`)
-	matches := re.FindStringSubmatch(nodeName)
-	if len(matches) == 0 {
-		return nil, fmt.Errorf("node name %q does not contain a node number", nodeName)
-	}
-	suffix := matches[0]
-	nodeNum, err := strconv.Atoi(suffix)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse node number from %q: %w", suffix, err)
-	}
+func SnowflakeLolorGUCs(nodeOrdinal int) (map[string]any, error) {
 	return map[string]any{
-		"snowflake.node": nodeNum,
-		"lolor.node":     nodeNum,
+		"snowflake.node": nodeOrdinal,
+		"lolor.node":     nodeOrdinal,
 	}, nil
 }
 

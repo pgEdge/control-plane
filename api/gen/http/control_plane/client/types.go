@@ -673,8 +673,6 @@ type InstanceResponse struct {
 	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
 	// The Spock node name for this instance.
 	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The read replica name of this instance.
-	ReplicaName *string `form:"replica_name,omitempty" json:"replica_name,omitempty" xml:"replica_name,omitempty"`
 	// The time that the instance was created.
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The time that the instance was last updated.
@@ -743,8 +741,8 @@ type DatabaseSpecResponse struct {
 	DatabaseUsers []*DatabaseUserSpecResponse `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
 	// The feature flags for this database.
 	Features map[string]string `form:"features,omitempty" json:"features,omitempty" xml:"features,omitempty"`
-	// The backup configurations for this database.
-	BackupConfigs []*BackupConfigSpecResponse `form:"backup_configs,omitempty" json:"backup_configs,omitempty" xml:"backup_configs,omitempty"`
+	// The backup configuration for this database.
+	BackupConfig *BackupConfigSpecResponse `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
 	// The restore configuration for this database.
 	RestoreConfig *RestoreConfigSpecResponse `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
 	// Additional postgresql.conf settings. Will be merged with the settings
@@ -756,8 +754,10 @@ type DatabaseSpecResponse struct {
 type DatabaseNodeSpecResponse struct {
 	// The name of the database node.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// The ID of the host that should run this node.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// The IDs of the hosts that should run this node. When multiple hosts are
+	// specified, one host will chosen as a primary and the others will be read
+	// replicas.
+	HostIds []string `form:"host_ids,omitempty" json:"host_ids,omitempty" xml:"host_ids,omitempty"`
 	// The major version of Postgres for this node. Overrides the Postgres version
 	// set in the DatabaseSpec.
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
@@ -780,41 +780,16 @@ type DatabaseNodeSpecResponse struct {
 	// memory on the host. Whether this limit will be enforced depends on the
 	// orchestrator.
 	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
-	// Read replicas for this database node.
-	ReadReplicas []*DatabaseReplicaSpecResponse `form:"read_replicas,omitempty" json:"read_replicas,omitempty" xml:"read_replicas,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
 	// with the settings provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
-}
-
-// DatabaseReplicaSpecResponse is used to define fields on response body types.
-type DatabaseReplicaSpecResponse struct {
-	// The ID of the host that should run this read replica.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-}
-
-// DatabaseUserSpecResponse is used to define fields on response body types.
-type DatabaseUserSpecResponse struct {
-	// The username for this database user.
-	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
-	// The password for this database user.
-	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
-	// If true, this user will be granted database ownership.
-	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
-	// The attributes to assign to this database user.
-	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
-	// The roles to assign to this database user.
-	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
+	// The backup configuration for this node. Overrides the backup configuration
+	// set in the DatabaseSpec.
+	BackupConfig *BackupConfigSpecResponse `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
 }
 
 // BackupConfigSpecResponse is used to define fields on response body types.
 type BackupConfigSpecResponse struct {
-	// The unique identifier for this backup configuration.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// The names of the nodes where this backup configuration should be applied.
-	// The configuration will apply to all nodes when this field is empty or
-	// unspecified.
-	NodeNames []string `form:"node_names,omitempty" json:"node_names,omitempty" xml:"node_names,omitempty"`
 	// The backup provider for this backup configuration.
 	Provider *string `form:"provider,omitempty" json:"provider,omitempty" xml:"provider,omitempty"`
 	// The repositories for this backup configuration.
@@ -855,6 +830,8 @@ type BackupRepositorySpecResponse struct {
 	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
 	// The base path within the repository to store backups.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
 // BackupScheduleSpecResponse is used to define fields on response body types.
@@ -865,6 +842,20 @@ type BackupScheduleSpecResponse struct {
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	// The cron expression for this schedule.
 	CronExpression *string `form:"cron_expression,omitempty" json:"cron_expression,omitempty" xml:"cron_expression,omitempty"`
+}
+
+// DatabaseUserSpecResponse is used to define fields on response body types.
+type DatabaseUserSpecResponse struct {
+	// The username for this database user.
+	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	// The password for this database user.
+	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
+	// If true, this user will be granted database ownership.
+	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
+	// The attributes to assign to this database user.
+	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
+	// The roles to assign to this database user.
+	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
 }
 
 // RestoreConfigSpecResponse is used to define fields on response body types.
@@ -906,6 +897,8 @@ type RestoreRepositorySpecResponse struct {
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
 	// The base path within the repository where backups are stored.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
 // DatabaseSpecRequestBody is used to define fields on request body types.
@@ -941,8 +934,8 @@ type DatabaseSpecRequestBody struct {
 	DatabaseUsers []*DatabaseUserSpecRequestBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
 	// The feature flags for this database.
 	Features map[string]string `form:"features,omitempty" json:"features,omitempty" xml:"features,omitempty"`
-	// The backup configurations for this database.
-	BackupConfigs []*BackupConfigSpecRequestBody `form:"backup_configs,omitempty" json:"backup_configs,omitempty" xml:"backup_configs,omitempty"`
+	// The backup configuration for this database.
+	BackupConfig *BackupConfigSpecRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
 	// The restore configuration for this database.
 	RestoreConfig *RestoreConfigSpecRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
 	// Additional postgresql.conf settings. Will be merged with the settings
@@ -954,8 +947,10 @@ type DatabaseSpecRequestBody struct {
 type DatabaseNodeSpecRequestBody struct {
 	// The name of the database node.
 	Name string `form:"name" json:"name" xml:"name"`
-	// The ID of the host that should run this node.
-	HostID string `form:"host_id" json:"host_id" xml:"host_id"`
+	// The IDs of the hosts that should run this node. When multiple hosts are
+	// specified, one host will chosen as a primary and the others will be read
+	// replicas.
+	HostIds []string `form:"host_ids" json:"host_ids" xml:"host_ids"`
 	// The major version of Postgres for this node. Overrides the Postgres version
 	// set in the DatabaseSpec.
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
@@ -978,42 +973,16 @@ type DatabaseNodeSpecRequestBody struct {
 	// memory on the host. Whether this limit will be enforced depends on the
 	// orchestrator.
 	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
-	// Read replicas for this database node.
-	ReadReplicas []*DatabaseReplicaSpecRequestBody `form:"read_replicas,omitempty" json:"read_replicas,omitempty" xml:"read_replicas,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
 	// with the settings provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
-}
-
-// DatabaseReplicaSpecRequestBody is used to define fields on request body
-// types.
-type DatabaseReplicaSpecRequestBody struct {
-	// The ID of the host that should run this read replica.
-	HostID string `form:"host_id" json:"host_id" xml:"host_id"`
-}
-
-// DatabaseUserSpecRequestBody is used to define fields on request body types.
-type DatabaseUserSpecRequestBody struct {
-	// The username for this database user.
-	Username string `form:"username" json:"username" xml:"username"`
-	// The password for this database user.
-	Password string `form:"password" json:"password" xml:"password"`
-	// If true, this user will be granted database ownership.
-	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
-	// The attributes to assign to this database user.
-	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
-	// The roles to assign to this database user.
-	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
+	// The backup configuration for this node. Overrides the backup configuration
+	// set in the DatabaseSpec.
+	BackupConfig *BackupConfigSpecRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
 }
 
 // BackupConfigSpecRequestBody is used to define fields on request body types.
 type BackupConfigSpecRequestBody struct {
-	// The unique identifier for this backup configuration.
-	ID string `form:"id" json:"id" xml:"id"`
-	// The names of the nodes where this backup configuration should be applied.
-	// The configuration will apply to all nodes when this field is empty or
-	// unspecified.
-	NodeNames []string `form:"node_names,omitempty" json:"node_names,omitempty" xml:"node_names,omitempty"`
 	// The backup provider for this backup configuration.
 	Provider string `form:"provider" json:"provider" xml:"provider"`
 	// The repositories for this backup configuration.
@@ -1055,6 +1024,8 @@ type BackupRepositorySpecRequestBody struct {
 	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
 	// The base path within the repository to store backups.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
 // BackupScheduleSpecRequestBody is used to define fields on request body types.
@@ -1065,6 +1036,20 @@ type BackupScheduleSpecRequestBody struct {
 	Type string `form:"type" json:"type" xml:"type"`
 	// The cron expression for this schedule.
 	CronExpression string `form:"cron_expression" json:"cron_expression" xml:"cron_expression"`
+}
+
+// DatabaseUserSpecRequestBody is used to define fields on request body types.
+type DatabaseUserSpecRequestBody struct {
+	// The username for this database user.
+	Username string `form:"username" json:"username" xml:"username"`
+	// The password for this database user.
+	Password string `form:"password" json:"password" xml:"password"`
+	// If true, this user will be granted database ownership.
+	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
+	// The attributes to assign to this database user.
+	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
+	// The roles to assign to this database user.
+	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
 }
 
 // RestoreConfigSpecRequestBody is used to define fields on request body types.
@@ -1081,7 +1066,7 @@ type RestoreConfigSpecRequestBody struct {
 // types.
 type RestoreRepositorySpecRequestBody struct {
 	// The unique identifier of this repository.
-	ID string `form:"id" json:"id" xml:"id"`
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// The type of this repository.
 	Type string `form:"type" json:"type" xml:"type"`
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
@@ -1106,6 +1091,8 @@ type RestoreRepositorySpecRequestBody struct {
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
 	// The base path within the repository where backups are stored.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
 // InstanceResponseBodyAbbreviatedCollection is used to define fields on
@@ -1121,9 +1108,7 @@ type InstanceResponseBodyAbbreviated struct {
 	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
 	// The Spock node name for this instance.
 	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The read replica name of this instance.
-	ReplicaName *string `form:"replica_name,omitempty" json:"replica_name,omitempty" xml:"replica_name,omitempty"`
-	State       *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
+	State    *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
 }
 
 // DatabaseSpecResponseBody is used to define fields on response body types.
@@ -1159,8 +1144,8 @@ type DatabaseSpecResponseBody struct {
 	DatabaseUsers []*DatabaseUserSpecResponseBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
 	// The feature flags for this database.
 	Features map[string]string `form:"features,omitempty" json:"features,omitempty" xml:"features,omitempty"`
-	// The backup configurations for this database.
-	BackupConfigs []*BackupConfigSpecResponseBody `form:"backup_configs,omitempty" json:"backup_configs,omitempty" xml:"backup_configs,omitempty"`
+	// The backup configuration for this database.
+	BackupConfig *BackupConfigSpecResponseBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
 	// The restore configuration for this database.
 	RestoreConfig *RestoreConfigSpecResponseBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
 	// Additional postgresql.conf settings. Will be merged with the settings
@@ -1172,8 +1157,10 @@ type DatabaseSpecResponseBody struct {
 type DatabaseNodeSpecResponseBody struct {
 	// The name of the database node.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// The ID of the host that should run this node.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// The IDs of the hosts that should run this node. When multiple hosts are
+	// specified, one host will chosen as a primary and the others will be read
+	// replicas.
+	HostIds []string `form:"host_ids,omitempty" json:"host_ids,omitempty" xml:"host_ids,omitempty"`
 	// The major version of Postgres for this node. Overrides the Postgres version
 	// set in the DatabaseSpec.
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
@@ -1196,42 +1183,16 @@ type DatabaseNodeSpecResponseBody struct {
 	// memory on the host. Whether this limit will be enforced depends on the
 	// orchestrator.
 	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
-	// Read replicas for this database node.
-	ReadReplicas []*DatabaseReplicaSpecResponseBody `form:"read_replicas,omitempty" json:"read_replicas,omitempty" xml:"read_replicas,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
 	// with the settings provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
-}
-
-// DatabaseReplicaSpecResponseBody is used to define fields on response body
-// types.
-type DatabaseReplicaSpecResponseBody struct {
-	// The ID of the host that should run this read replica.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-}
-
-// DatabaseUserSpecResponseBody is used to define fields on response body types.
-type DatabaseUserSpecResponseBody struct {
-	// The username for this database user.
-	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
-	// The password for this database user.
-	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
-	// If true, this user will be granted database ownership.
-	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
-	// The attributes to assign to this database user.
-	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
-	// The roles to assign to this database user.
-	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
+	// The backup configuration for this node. Overrides the backup configuration
+	// set in the DatabaseSpec.
+	BackupConfig *BackupConfigSpecResponseBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
 }
 
 // BackupConfigSpecResponseBody is used to define fields on response body types.
 type BackupConfigSpecResponseBody struct {
-	// The unique identifier for this backup configuration.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// The names of the nodes where this backup configuration should be applied.
-	// The configuration will apply to all nodes when this field is empty or
-	// unspecified.
-	NodeNames []string `form:"node_names,omitempty" json:"node_names,omitempty" xml:"node_names,omitempty"`
 	// The backup provider for this backup configuration.
 	Provider *string `form:"provider,omitempty" json:"provider,omitempty" xml:"provider,omitempty"`
 	// The repositories for this backup configuration.
@@ -1273,6 +1234,8 @@ type BackupRepositorySpecResponseBody struct {
 	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
 	// The base path within the repository to store backups.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
 // BackupScheduleSpecResponseBody is used to define fields on response body
@@ -1284,6 +1247,20 @@ type BackupScheduleSpecResponseBody struct {
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
 	// The cron expression for this schedule.
 	CronExpression *string `form:"cron_expression,omitempty" json:"cron_expression,omitempty" xml:"cron_expression,omitempty"`
+}
+
+// DatabaseUserSpecResponseBody is used to define fields on response body types.
+type DatabaseUserSpecResponseBody struct {
+	// The username for this database user.
+	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	// The password for this database user.
+	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
+	// If true, this user will be granted database ownership.
+	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
+	// The attributes to assign to this database user.
+	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
+	// The roles to assign to this database user.
+	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
 }
 
 // RestoreConfigSpecResponseBody is used to define fields on response body
@@ -1326,6 +1303,8 @@ type RestoreRepositorySpecResponseBody struct {
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
 	// The base path within the repository where backups are stored.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
 // DatabaseSpecRequestBodyRequestBody is used to define fields on request body
@@ -1362,8 +1341,8 @@ type DatabaseSpecRequestBodyRequestBody struct {
 	DatabaseUsers []*DatabaseUserSpecRequestBodyRequestBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
 	// The feature flags for this database.
 	Features map[string]string `form:"features,omitempty" json:"features,omitempty" xml:"features,omitempty"`
-	// The backup configurations for this database.
-	BackupConfigs []*BackupConfigSpecRequestBodyRequestBody `form:"backup_configs,omitempty" json:"backup_configs,omitempty" xml:"backup_configs,omitempty"`
+	// The backup configuration for this database.
+	BackupConfig *BackupConfigSpecRequestBodyRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
 	// The restore configuration for this database.
 	RestoreConfig *RestoreConfigSpecRequestBodyRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
 	// Additional postgresql.conf settings. Will be merged with the settings
@@ -1376,8 +1355,10 @@ type DatabaseSpecRequestBodyRequestBody struct {
 type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// The name of the database node.
 	Name string `form:"name" json:"name" xml:"name"`
-	// The ID of the host that should run this node.
-	HostID string `form:"host_id" json:"host_id" xml:"host_id"`
+	// The IDs of the hosts that should run this node. When multiple hosts are
+	// specified, one host will chosen as a primary and the others will be read
+	// replicas.
+	HostIds []string `form:"host_ids" json:"host_ids" xml:"host_ids"`
 	// The major version of Postgres for this node. Overrides the Postgres version
 	// set in the DatabaseSpec.
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
@@ -1400,44 +1381,17 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// memory on the host. Whether this limit will be enforced depends on the
 	// orchestrator.
 	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
-	// Read replicas for this database node.
-	ReadReplicas []*DatabaseReplicaSpecRequestBodyRequestBody `form:"read_replicas,omitempty" json:"read_replicas,omitempty" xml:"read_replicas,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
 	// with the settings provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
-}
-
-// DatabaseReplicaSpecRequestBodyRequestBody is used to define fields on
-// request body types.
-type DatabaseReplicaSpecRequestBodyRequestBody struct {
-	// The ID of the host that should run this read replica.
-	HostID string `form:"host_id" json:"host_id" xml:"host_id"`
-}
-
-// DatabaseUserSpecRequestBodyRequestBody is used to define fields on request
-// body types.
-type DatabaseUserSpecRequestBodyRequestBody struct {
-	// The username for this database user.
-	Username string `form:"username" json:"username" xml:"username"`
-	// The password for this database user.
-	Password string `form:"password" json:"password" xml:"password"`
-	// If true, this user will be granted database ownership.
-	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
-	// The attributes to assign to this database user.
-	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
-	// The roles to assign to this database user.
-	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
+	// The backup configuration for this node. Overrides the backup configuration
+	// set in the DatabaseSpec.
+	BackupConfig *BackupConfigSpecRequestBodyRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
 }
 
 // BackupConfigSpecRequestBodyRequestBody is used to define fields on request
 // body types.
 type BackupConfigSpecRequestBodyRequestBody struct {
-	// The unique identifier for this backup configuration.
-	ID string `form:"id" json:"id" xml:"id"`
-	// The names of the nodes where this backup configuration should be applied.
-	// The configuration will apply to all nodes when this field is empty or
-	// unspecified.
-	NodeNames []string `form:"node_names,omitempty" json:"node_names,omitempty" xml:"node_names,omitempty"`
 	// The backup provider for this backup configuration.
 	Provider string `form:"provider" json:"provider" xml:"provider"`
 	// The repositories for this backup configuration.
@@ -1479,6 +1433,8 @@ type BackupRepositorySpecRequestBodyRequestBody struct {
 	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
 	// The base path within the repository to store backups.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
 // BackupScheduleSpecRequestBodyRequestBody is used to define fields on request
@@ -1490,6 +1446,21 @@ type BackupScheduleSpecRequestBodyRequestBody struct {
 	Type string `form:"type" json:"type" xml:"type"`
 	// The cron expression for this schedule.
 	CronExpression string `form:"cron_expression" json:"cron_expression" xml:"cron_expression"`
+}
+
+// DatabaseUserSpecRequestBodyRequestBody is used to define fields on request
+// body types.
+type DatabaseUserSpecRequestBodyRequestBody struct {
+	// The username for this database user.
+	Username string `form:"username" json:"username" xml:"username"`
+	// The password for this database user.
+	Password string `form:"password" json:"password" xml:"password"`
+	// If true, this user will be granted database ownership.
+	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
+	// The attributes to assign to this database user.
+	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
+	// The roles to assign to this database user.
+	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
 }
 
 // RestoreConfigSpecRequestBodyRequestBody is used to define fields on request
@@ -1507,7 +1478,7 @@ type RestoreConfigSpecRequestBodyRequestBody struct {
 // request body types.
 type RestoreRepositorySpecRequestBodyRequestBody struct {
 	// The unique identifier of this repository.
-	ID string `form:"id" json:"id" xml:"id"`
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// The type of this repository.
 	Type string `form:"type" json:"type" xml:"type"`
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
@@ -1532,6 +1503,8 @@ type RestoreRepositorySpecRequestBodyRequestBody struct {
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
 	// The base path within the repository where backups are stored.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
 // NewJoinClusterRequestBody builds the HTTP request body from the payload of
@@ -3002,11 +2975,9 @@ func ValidateDatabaseSpecResponse(body *DatabaseSpecResponse) (err error) {
 			}
 		}
 	}
-	for _, e := range body.BackupConfigs {
-		if e != nil {
-			if err2 := ValidateBackupConfigSpecResponse(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if body.BackupConfig != nil {
+		if err2 := ValidateBackupConfigSpecResponse(body.BackupConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	if body.RestoreConfig != nil {
@@ -3023,47 +2994,27 @@ func ValidateDatabaseNodeSpecResponse(body *DatabaseNodeSpecResponse) (err error
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.HostID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "body"))
+	if body.HostIds == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
 	}
-	if body.HostID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
+	if body.Name != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.name", *body.Name, "n[0-9]+"))
+	}
+	if len(body.HostIds) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
+	}
+	for _, e := range body.HostIds {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_ids[*]", e, goa.FormatUUID))
 	}
 	if body.PostgresVersion != nil {
 		if !(*body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"16", "17"}))
 		}
 	}
-	for _, e := range body.ReadReplicas {
-		if e != nil {
-			if err2 := ValidateDatabaseReplicaSpecResponse(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if body.BackupConfig != nil {
+		if err2 := ValidateBackupConfigSpecResponse(body.BackupConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
-	}
-	return
-}
-
-// ValidateDatabaseReplicaSpecResponse runs the validations defined on
-// DatabaseReplicaSpecResponse
-func ValidateDatabaseReplicaSpecResponse(body *DatabaseReplicaSpecResponse) (err error) {
-	if body.HostID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "body"))
-	}
-	if body.HostID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
-	}
-	return
-}
-
-// ValidateDatabaseUserSpecResponse runs the validations defined on
-// DatabaseUserSpecResponse
-func ValidateDatabaseUserSpecResponse(body *DatabaseUserSpecResponse) (err error) {
-	if body.Username == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
-	}
-	if body.Password == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("password", "body"))
 	}
 	return
 }
@@ -3071,9 +3022,6 @@ func ValidateDatabaseUserSpecResponse(body *DatabaseUserSpecResponse) (err error
 // ValidateBackupConfigSpecResponse runs the validations defined on
 // BackupConfigSpecResponse
 func ValidateBackupConfigSpecResponse(body *BackupConfigSpecResponse) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Provider == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("provider", "body"))
 	}
@@ -3104,9 +3052,6 @@ func ValidateBackupConfigSpecResponse(body *BackupConfigSpecResponse) (err error
 func ValidateBackupRepositorySpecResponse(body *BackupRepositorySpecResponse) (err error) {
 	if body.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure") {
@@ -3141,6 +3086,18 @@ func ValidateBackupScheduleSpecResponse(body *BackupScheduleSpecResponse) (err e
 	return
 }
 
+// ValidateDatabaseUserSpecResponse runs the validations defined on
+// DatabaseUserSpecResponse
+func ValidateDatabaseUserSpecResponse(body *DatabaseUserSpecResponse) (err error) {
+	if body.Username == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
+	}
+	if body.Password == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("password", "body"))
+	}
+	return
+}
+
 // ValidateRestoreConfigSpecResponse runs the validations defined on
 // RestoreConfigSpecResponse
 func ValidateRestoreConfigSpecResponse(body *RestoreConfigSpecResponse) (err error) {
@@ -3169,14 +3126,8 @@ func ValidateRestoreConfigSpecResponse(body *RestoreConfigSpecResponse) (err err
 // ValidateRestoreRepositorySpecResponse runs the validations defined on
 // RestoreRepositorySpecResponse
 func ValidateRestoreRepositorySpecResponse(body *RestoreRepositorySpecResponse) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure") {
@@ -3209,11 +3160,9 @@ func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) 
 			}
 		}
 	}
-	for _, e := range body.BackupConfigs {
-		if e != nil {
-			if err2 := ValidateBackupConfigSpecRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if body.BackupConfig != nil {
+		if err2 := ValidateBackupConfigSpecRequestBody(body.BackupConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	if body.RestoreConfig != nil {
@@ -3227,26 +3176,26 @@ func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) 
 // ValidateDatabaseNodeSpecRequestBody runs the validations defined on
 // DatabaseNodeSpecRequestBody
 func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err error) {
-	err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", body.HostID, goa.FormatUUID))
+	if body.HostIds == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
+	}
+	err = goa.MergeErrors(err, goa.ValidatePattern("body.name", body.Name, "n[0-9]+"))
+	if len(body.HostIds) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
+	}
+	for _, e := range body.HostIds {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_ids[*]", e, goa.FormatUUID))
+	}
 	if body.PostgresVersion != nil {
 		if !(*body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"16", "17"}))
 		}
 	}
-	for _, e := range body.ReadReplicas {
-		if e != nil {
-			if err2 := ValidateDatabaseReplicaSpecRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if body.BackupConfig != nil {
+		if err2 := ValidateBackupConfigSpecRequestBody(body.BackupConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
-	return
-}
-
-// ValidateDatabaseReplicaSpecRequestBody runs the validations defined on
-// DatabaseReplicaSpecRequestBody
-func ValidateDatabaseReplicaSpecRequestBody(body *DatabaseReplicaSpecRequestBody) (err error) {
-	err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", body.HostID, goa.FormatUUID))
 	return
 }
 
@@ -3276,9 +3225,6 @@ func ValidateBackupConfigSpecRequestBody(body *BackupConfigSpecRequestBody) (err
 // ValidateBackupRepositorySpecRequestBody runs the validations defined on
 // BackupRepositorySpecRequestBody
 func ValidateBackupRepositorySpecRequestBody(body *BackupRepositorySpecRequestBody) (err error) {
-	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
-	}
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure"}))
 	}
@@ -3319,7 +3265,6 @@ func ValidateRestoreConfigSpecRequestBody(body *RestoreConfigSpecRequestBody) (e
 // ValidateRestoreRepositorySpecRequestBody runs the validations defined on
 // RestoreRepositorySpecRequestBody
 func ValidateRestoreRepositorySpecRequestBody(body *RestoreRepositorySpecRequestBody) (err error) {
-	err = goa.MergeErrors(err, goa.ValidateFormat("body.id", body.ID, goa.FormatUUID))
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure"}))
 	}
@@ -3401,11 +3346,9 @@ func ValidateDatabaseSpecResponseBody(body *DatabaseSpecResponseBody) (err error
 			}
 		}
 	}
-	for _, e := range body.BackupConfigs {
-		if e != nil {
-			if err2 := ValidateBackupConfigSpecResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if body.BackupConfig != nil {
+		if err2 := ValidateBackupConfigSpecResponseBody(body.BackupConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	if body.RestoreConfig != nil {
@@ -3422,47 +3365,27 @@ func ValidateDatabaseNodeSpecResponseBody(body *DatabaseNodeSpecResponseBody) (e
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.HostID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "body"))
+	if body.HostIds == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
 	}
-	if body.HostID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
+	if body.Name != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.name", *body.Name, "n[0-9]+"))
+	}
+	if len(body.HostIds) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
+	}
+	for _, e := range body.HostIds {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_ids[*]", e, goa.FormatUUID))
 	}
 	if body.PostgresVersion != nil {
 		if !(*body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"16", "17"}))
 		}
 	}
-	for _, e := range body.ReadReplicas {
-		if e != nil {
-			if err2 := ValidateDatabaseReplicaSpecResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if body.BackupConfig != nil {
+		if err2 := ValidateBackupConfigSpecResponseBody(body.BackupConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
-	}
-	return
-}
-
-// ValidateDatabaseReplicaSpecResponseBody runs the validations defined on
-// DatabaseReplicaSpecResponseBody
-func ValidateDatabaseReplicaSpecResponseBody(body *DatabaseReplicaSpecResponseBody) (err error) {
-	if body.HostID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "body"))
-	}
-	if body.HostID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
-	}
-	return
-}
-
-// ValidateDatabaseUserSpecResponseBody runs the validations defined on
-// DatabaseUserSpecResponseBody
-func ValidateDatabaseUserSpecResponseBody(body *DatabaseUserSpecResponseBody) (err error) {
-	if body.Username == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
-	}
-	if body.Password == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("password", "body"))
 	}
 	return
 }
@@ -3470,9 +3393,6 @@ func ValidateDatabaseUserSpecResponseBody(body *DatabaseUserSpecResponseBody) (e
 // ValidateBackupConfigSpecResponseBody runs the validations defined on
 // BackupConfigSpecResponseBody
 func ValidateBackupConfigSpecResponseBody(body *BackupConfigSpecResponseBody) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Provider == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("provider", "body"))
 	}
@@ -3503,9 +3423,6 @@ func ValidateBackupConfigSpecResponseBody(body *BackupConfigSpecResponseBody) (e
 func ValidateBackupRepositorySpecResponseBody(body *BackupRepositorySpecResponseBody) (err error) {
 	if body.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure") {
@@ -3540,6 +3457,18 @@ func ValidateBackupScheduleSpecResponseBody(body *BackupScheduleSpecResponseBody
 	return
 }
 
+// ValidateDatabaseUserSpecResponseBody runs the validations defined on
+// DatabaseUserSpecResponseBody
+func ValidateDatabaseUserSpecResponseBody(body *DatabaseUserSpecResponseBody) (err error) {
+	if body.Username == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
+	}
+	if body.Password == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("password", "body"))
+	}
+	return
+}
+
 // ValidateRestoreConfigSpecResponseBody runs the validations defined on
 // RestoreConfigSpecResponseBody
 func ValidateRestoreConfigSpecResponseBody(body *RestoreConfigSpecResponseBody) (err error) {
@@ -3568,14 +3497,8 @@ func ValidateRestoreConfigSpecResponseBody(body *RestoreConfigSpecResponseBody) 
 // ValidateRestoreRepositorySpecResponseBody runs the validations defined on
 // RestoreRepositorySpecResponseBody
 func ValidateRestoreRepositorySpecResponseBody(body *RestoreRepositorySpecResponseBody) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure") {
@@ -3608,11 +3531,9 @@ func ValidateDatabaseSpecRequestBodyRequestBody(body *DatabaseSpecRequestBodyReq
 			}
 		}
 	}
-	for _, e := range body.BackupConfigs {
-		if e != nil {
-			if err2 := ValidateBackupConfigSpecRequestBodyRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if body.BackupConfig != nil {
+		if err2 := ValidateBackupConfigSpecRequestBodyRequestBody(body.BackupConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	if body.RestoreConfig != nil {
@@ -3626,26 +3547,26 @@ func ValidateDatabaseSpecRequestBodyRequestBody(body *DatabaseSpecRequestBodyReq
 // ValidateDatabaseNodeSpecRequestBodyRequestBody runs the validations defined
 // on DatabaseNodeSpecRequestBodyRequestBody
 func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecRequestBodyRequestBody) (err error) {
-	err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", body.HostID, goa.FormatUUID))
+	if body.HostIds == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
+	}
+	err = goa.MergeErrors(err, goa.ValidatePattern("body.name", body.Name, "n[0-9]+"))
+	if len(body.HostIds) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
+	}
+	for _, e := range body.HostIds {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_ids[*]", e, goa.FormatUUID))
+	}
 	if body.PostgresVersion != nil {
 		if !(*body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"16", "17"}))
 		}
 	}
-	for _, e := range body.ReadReplicas {
-		if e != nil {
-			if err2 := ValidateDatabaseReplicaSpecRequestBodyRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if body.BackupConfig != nil {
+		if err2 := ValidateBackupConfigSpecRequestBodyRequestBody(body.BackupConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
-	return
-}
-
-// ValidateDatabaseReplicaSpecRequestBodyRequestBody runs the validations
-// defined on DatabaseReplicaSpecRequestBodyRequestBody
-func ValidateDatabaseReplicaSpecRequestBodyRequestBody(body *DatabaseReplicaSpecRequestBodyRequestBody) (err error) {
-	err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", body.HostID, goa.FormatUUID))
 	return
 }
 
@@ -3675,9 +3596,6 @@ func ValidateBackupConfigSpecRequestBodyRequestBody(body *BackupConfigSpecReques
 // ValidateBackupRepositorySpecRequestBodyRequestBody runs the validations
 // defined on BackupRepositorySpecRequestBodyRequestBody
 func ValidateBackupRepositorySpecRequestBodyRequestBody(body *BackupRepositorySpecRequestBodyRequestBody) (err error) {
-	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
-	}
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure"}))
 	}
@@ -3718,7 +3636,6 @@ func ValidateRestoreConfigSpecRequestBodyRequestBody(body *RestoreConfigSpecRequ
 // ValidateRestoreRepositorySpecRequestBodyRequestBody runs the validations
 // defined on RestoreRepositorySpecRequestBodyRequestBody
 func ValidateRestoreRepositorySpecRequestBodyRequestBody(body *RestoreRepositorySpecRequestBodyRequestBody) (err error) {
-	err = goa.MergeErrors(err, goa.ValidateFormat("body.id", body.ID, goa.FormatUUID))
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure"}))
 	}

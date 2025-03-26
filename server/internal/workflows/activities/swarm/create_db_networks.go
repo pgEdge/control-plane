@@ -80,7 +80,7 @@ func (a *Activities) CreateDBNetworks(ctx context.Context, input *CreateDBNetwor
 	// 	Gateway: bridgeSubnet.Addr().Next(),
 	// }
 
-	database := fmt.Sprintf("%s_database", input.DatabaseID)
+	database := fmt.Sprintf("%s-database", input.DatabaseID)
 	databaseSubnet, err := a.IPAM.AllocateDatabaseSubnet(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to allocate bridge subnet: %w", err)

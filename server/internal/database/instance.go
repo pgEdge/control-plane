@@ -40,10 +40,9 @@ type Instance struct {
 	TenantID        *uuid.UUID           `json:"tenant_id,omitempty"`
 	DatabaseID      uuid.UUID            `json:"database_id"`
 	HostID          uuid.UUID            `json:"host_id"`
-	ReplicaOfID     uuid.UUID            `json:"replica_of_id,omitempty"`
 	DatabaseName    string               `json:"database_name"`
 	NodeName        string               `json:"node_name"`
-	ReplicaName     string               `json:"replica_name,omitempty"`
+	NodeOrdinal     int                  `json:"node_ordinal"`
 	PostgresVersion string               `json:"postgres_version"`
 	SpockVersion    string               `json:"spock_version"`
 	Port            int                  `json:"port"`
@@ -56,7 +55,6 @@ type Instance struct {
 	CreatedAt       time.Time            `json:"created_at"`
 	UpdatedAt       time.Time            `json:"updated_at"`
 	Interfaces      []*InstanceInterface `json:"interfaces"`
-	Spec            *InstanceSpec        `json:"spec"`
 }
 
 // func instanceToStored(i *Instance) *StoredInstance {
@@ -64,10 +62,10 @@ type Instance struct {
 // 		InstanceID:      i.InstanceID,
 // 		DatabaseID:      i.DatabaseID,
 // 		HostID:          i.HostID,
-// 		ReplicaOfID:     i.ReplicaOfID,
 // 		TenantID:        i.TenantID,
 // 		DatabaseName:    i.DatabaseName,
 // 		NodeName:        i.NodeName,
+// 		NodeOrdinal:     i.NodeOrdinal,
 // 		ReplicaName:     i.ReplicaName,
 // 		PostgresVersion: i.PostgresVersion,
 // 		SpockVersion:    i.SpockVersion,
@@ -88,9 +86,9 @@ type Instance struct {
 // 		InstanceID:      i.InstanceID,
 // 		DatabaseID:      i.DatabaseID,
 // 		HostID:          i.HostID,
-// 		ReplicaOfID:     i.ReplicaOfID,
 // 		DatabaseName:    i.DatabaseName,
 // 		NodeName:        i.NodeName,
+// 		NodeOrdinal:     i.NodeOrdinal,
 // 		ReplicaName:     i.ReplicaName,
 // 		PostgresVersion: i.PostgresVersion,
 // 		TenantID:        i.TenantID,
@@ -104,6 +102,5 @@ type Instance struct {
 // 		PatroniPaused:   i.PatroniPaused,
 // 		UpdatedAt:       i.UpdatedAt,
 // 		Interfaces:      i.Interfaces,
-// 		Spec:            spec,
 // 	}
 // }

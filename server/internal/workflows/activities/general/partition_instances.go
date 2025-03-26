@@ -36,7 +36,7 @@ type PartitionInstancesOutput struct {
 }
 
 func (a *Activities) PartitionInstances(ctx context.Context, input *PartitionInstancesInput) (*PartitionInstancesOutput, error) {
-	instances, err := input.Spec.InstanceSpecs()
+	nodes, err := input.Spec.NodeInstances()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance specs: %w", err)
 	}
@@ -57,81 +57,31 @@ func (a *Activities) PartitionInstances(ctx context.Context, input *PartitionIns
 
 	primaryHostPartitions := map[uuid.UUID]*HostPartition{}
 	replicaHostPartitions := map[uuid.UUID]*HostPartition{}
-	for _, instance := range instances {
-		host, ok := hostsByID[instance.HostID]
-		if !ok {
-			return nil, fmt.Errorf("host %q not found", instance.HostID)
-		}
+	for _, node := range nodes {
+		for idx, instance := range node.Instances {
+			host, ok := hostsByID[instance.HostID]
+			if !ok {
+				return nil, fmt.Errorf("host %q not found", instance.HostID)
+			}
 
-		var partition *HostPartition
-		if instance.ReplicaOfID != uuid.Nil {
-			partition, ok = replicaHostPartitions[instance.ReplicaOfID]
-			if !ok {
-				partition = &HostPartition{Host: host}
-				replicaHostPartitions[instance.ReplicaOfID] = partition
+			var partition *HostPartition
+			if idx == 0 {
+				// Elect the first host in the list as the primary.
+				partition, ok = primaryHostPartitions[instance.HostID]
+				if !ok {
+					partition = &HostPartition{Host: host}
+					primaryHostPartitions[instance.HostID] = partition
+				}
+			} else {
+				partition, ok = replicaHostPartitions[instance.HostID]
+				if !ok {
+					partition = &HostPartition{Host: host}
+					replicaHostPartitions[instance.HostID] = partition
+				}
 			}
-		} else {
-			partition, ok = primaryHostPartitions[instance.HostID]
-			if !ok {
-				partition = &HostPartition{Host: host}
-				primaryHostPartitions[instance.HostID] = partition
-			}
+			partition.Instances = append(partition.Instances, instance)
 		}
-		partition.Instances = append(partition.Instances, instance)
 	}
-
-	// primaryCohorts := map[string]*CohortPartition{}
-	// for id, partition := range primaryHostPartitions {
-	// 	cohort := partition.Host.Cohort
-	// 	if cohort == nil {
-	// 		primaryCohorts[id.String()] = &CohortPartition{
-	// 			Cohort: nil,
-	// 			Hosts:  []*HostPartition{partition},
-	// 		}
-	// 	} else {
-	// 		cp, ok := primaryCohorts[cohort.CohortID]
-	// 		if !ok {
-	// 			cp = &CohortPartition{
-	// 				Cohort: cohort,
-	// 				Hosts:  []*HostPartition{partition},
-	// 			}
-	// 			primaryCohorts[cohort.CohortID] = cp
-	// 		} else {
-	// 			cp.Hosts = append(cp.Hosts, partition)
-	// 		}
-	// 	}
-	// }
-
-	// replicaCohorts := map[string]*CohortPartition{}
-	// for id, partition := range replicaHostPartitions {
-	// 	cohort := partition.Host.Cohort
-	// 	if cohort == nil {
-	// 		replicaCohorts[id.String()] = &CohortPartition{
-	// 			Cohort: nil,
-	// 			Hosts:  []*HostPartition{partition},
-	// 		}
-	// 	} else {
-	// 		cp, ok := replicaCohorts[cohort.CohortID]
-	// 		if !ok {
-	// 			cp = &CohortPartition{
-	// 				Cohort: cohort,
-	// 				Hosts:  []*HostPartition{partition},
-	// 			}
-	// 			replicaCohorts[cohort.CohortID] = cp
-	// 		} else {
-	// 			cp.Hosts = append(cp.Hosts, partition)
-	// 		}
-	// 	}
-	// }
-
-	// primaries := make([]*CohortPartition, 0, len(primaryCohorts))
-	// for _, p := range primaryCohorts {
-	// 	primaries = append(primaries, p)
-	// }
-	// replicas := make([]*CohortPartition, 0, len(replicaCohorts))
-	// for _, r := range replicaCohorts {
-	// 	replicas = append(replicas, r)
-	// }
 
 	primaries, err := groupByCohort(input.Spec, primaryHostPartitions, managers)
 	if err != nil {

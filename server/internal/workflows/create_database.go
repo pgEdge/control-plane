@@ -58,9 +58,11 @@ func (w *Workflows) CreateDatabase(ctx workflow.Context, input *CreateDatabaseIn
 		}
 	}
 
-	var nodeNames []string
-	for _, node := range input.Spec.Nodes {
-		nodeNames = append(nodeNames, node.Name)
+	allPrimaries := []*database.InstanceSpec{}
+	for _, partition := range partitions.Primaries {
+		for _, hostPartition := range partition.Hosts {
+			allPrimaries = append(allPrimaries, hostPartition.Instances...)
+		}
 	}
 
 	// Crosswire the primary instances
@@ -75,7 +77,7 @@ func (w *Workflows) CreateDatabase(ctx workflow.Context, input *CreateDatabaseIn
 				for _, instance := range hostPartition.Instances {
 					futures = append(futures, w.SwarmWorkflows.Swarm.ExecuteInitializeDB(ctx, hostPartition.Host.ID, &swarm_activities.InitializeDBInput{
 						Instance:     instance,
-						AllNodeNames: nodeNames,
+						AllPrimaries: allPrimaries,
 					}))
 				}
 			}

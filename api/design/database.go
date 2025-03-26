@@ -5,11 +5,6 @@ import (
 )
 
 var DatabaseReplicaSpec = g.Type("DatabaseReplicaSpec", func() {
-	// g.Attribute("instance_id", g.String, func() {
-	// 	g.Format(g.FormatUUID)
-	// 	g.Description("A unique identifier for the instance that will be created from this replica specification.")
-	// 	g.Example("5ec51c55-0921-445e-9d5b-32f5fb5dfbae")
-	// })
 	g.Attribute("host_id", g.String, func() {
 		g.Format(g.FormatUUID)
 		g.Description("The ID of the host that should run this read replica.")
@@ -19,20 +14,21 @@ var DatabaseReplicaSpec = g.Type("DatabaseReplicaSpec", func() {
 	g.Required("host_id")
 })
 
+var HostIDs = g.ArrayOf(g.String, func() {
+	g.Format(g.FormatUUID)
+	g.Example("de3b1388-1f0c-42f1-a86c-59ab72f255ec")
+})
+
 var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
+	// TODO: Validation to enforce that node names are unique within a database.
 	g.Attribute("name", g.String, func() {
 		g.Description("The name of the database node.")
+		g.Pattern("n[0-9]+")
 		g.Example("n1")
 	})
-	// g.Attribute("instance_id", g.String, func() {
-	// 	g.Format(g.FormatUUID)
-	// 	g.Description("A unique identifier for the instance that will be created from this node specification.")
-	// 	g.Example("a67cbb36-c3c3-49c9-8aac-f4a0438a883d")
-	// })
-	g.Attribute("host_id", g.String, func() {
-		g.Format(g.FormatUUID)
-		g.Description("The ID of the host that should run this node.")
-		g.Example("de3b1388-1f0c-42f1-a86c-59ab72f255ec")
+	g.Attribute("host_ids", HostIDs, func() {
+		g.Description("The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary and the others will be read replicas.")
+		g.MinLength(1)
 	})
 	g.Attribute("postgres_version", g.String, func() {
 		g.Description("The major version of Postgres for this node. Overrides the Postgres version set in the DatabaseSpec.")
@@ -63,17 +59,17 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 		g.Example("16GiB")
 		g.Example("500M")
 	})
-	g.Attribute("read_replicas", g.ArrayOf(DatabaseReplicaSpec), func() {
-		g.Description("Read replicas for this database node.")
-	})
 	g.Attribute("postgresql_conf", g.MapOf(g.String, g.Any), func() {
 		g.Description("Additional postgresql.conf settings for this particular node. Will be merged with the settings provided by control-plane.")
 		g.Example(map[string]any{
 			"max_connections": 1000,
 		})
 	})
+	g.Attribute("backup_config", BackupConfigSpec, func() {
+		g.Description("The backup configuration for this node. Overrides the backup configuration set in the DatabaseSpec.")
+	})
 
-	g.Required("name", "host_id")
+	g.Required("name", "host_ids")
 })
 
 var DatabaseUserSpec = g.Type("DatabaseUserSpec", func() {
@@ -105,7 +101,6 @@ var DatabaseUserSpec = g.Type("DatabaseUserSpec", func() {
 
 var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
 	g.Attribute("id", g.String, func() {
-		g.Format(g.FormatUUID)
 		g.Description("The unique identifier of this repository.")
 		g.Example("f6b84a99-5e91-4203-be1e-131fe82e5984")
 	})
@@ -159,6 +154,13 @@ var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
 		g.Description("The base path within the repository to store backups.")
 		g.Example("/backups")
 	})
+	g.Attribute("custom_options", g.MapOf(g.String, g.String), func() {
+		g.Description("Additional options to apply to this repository.")
+		g.Example(map[string]any{
+			"storage-upload-chunk-size": "5MiB",
+			"s3-kms-key-id":             "1234abcd-12ab-34cd-56ef-1234567890ab",
+		})
+	})
 
 	g.Required("type")
 })
@@ -182,14 +184,6 @@ var BackupScheduleSpec = g.Type("BackupScheduleSpec", func() {
 })
 
 var BackupConfigSpec = g.Type("BackupConfigSpec", func() {
-	g.Attribute("id", g.String, func() {
-		g.Description("The unique identifier for this backup configuration.")
-		g.Example("default")
-	})
-	g.Attribute("node_names", g.ArrayOf(g.String), func() {
-		g.Description("The names of the nodes where this backup configuration should be applied. The configuration will apply to all nodes when this field is empty or unspecified.")
-		g.Example([]string{"n1", "n3"})
-	})
 	g.Attribute("provider", g.String, func() {
 		g.Description("The backup provider for this backup configuration.")
 		g.Enum("pgbackrest", "pg_dump")
@@ -202,12 +196,11 @@ var BackupConfigSpec = g.Type("BackupConfigSpec", func() {
 		g.Description("The schedules for this backup configuration.")
 	})
 
-	g.Required("id", "provider")
+	g.Required("provider")
 })
 
 var RestoreRepositorySpec = g.Type("RestoreRepositorySpec", func() {
 	g.Attribute("id", g.String, func() {
-		g.Format(g.FormatUUID)
 		g.Description("The unique identifier of this repository.")
 		g.Example("f6b84a99-5e91-4203-be1e-131fe82e5984")
 	})
@@ -252,8 +245,14 @@ var RestoreRepositorySpec = g.Type("RestoreRepositorySpec", func() {
 		g.Description("The base path within the repository where backups are stored.")
 		g.Example("/backups")
 	})
+	g.Attribute("custom_options", g.MapOf(g.String, g.String), func() {
+		g.Description("Additional options to apply to this repository.")
+		g.Example(map[string]any{
+			"s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+		})
+	})
 
-	g.Required("id", "type")
+	g.Required("type")
 })
 
 var RestoreConfigSpec = g.Type("RestoreConfigSpec", func() {
@@ -328,8 +327,8 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 			"some_feature": "enabled",
 		})
 	})
-	g.Attribute("backup_configs", g.ArrayOf(BackupConfigSpec), func() {
-		g.Description("The backup configurations for this database.")
+	g.Attribute("backup_config", BackupConfigSpec, func() {
+		g.Description("The backup configuration for this database.")
 	})
 	g.Attribute("restore_config", RestoreConfigSpec, func() {
 		g.Description("The restore configuration for this database.")
@@ -407,40 +406,6 @@ var Database = g.ResultType("Database", func() {
 
 	g.Required("id", "created_at", "updated_at", "state")
 })
-
-// var Database = g.Type("Database", func() {
-// 	g.Attribute("id", g.String, func() {
-// 		g.Format(g.FormatUUID)
-// 		g.Description("Unique identifier for the database.")
-// 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
-// 	})
-// 	g.Attribute("tenant_id", g.String, func() {
-// 		g.Format(g.FormatUUID)
-// 		g.Description("Unique identifier for the databases's owner.")
-// 		g.Example("8210ec10-2dca-406c-ac4a-0661d2189954")
-// 	})
-// 	g.Attribute("created_at", g.String, func() {
-// 		g.Format(g.FormatDateTime)
-// 		g.Description("The time that the database was created.")
-// 		g.Example("2025-01-01T01:30:00Z")
-// 	})
-// 	g.Attribute("updated_at", g.String, func() {
-// 		g.Format(g.FormatDateTime)
-// 		g.Description("The time that the database was last updated.")
-// 		g.Example("2025-01-01T02:30:00Z")
-// 	})
-// 	g.Attribute("status", DatabaseStatus, func() {
-// 		g.Description("Current status of the database.")
-// 	})
-// 	g.Attribute("instances", Instance, func() {
-// 		g.Description("All of the instances in the database.")
-// 	})
-// 	g.Attribute("spec", DatabaseSpec, func() {
-// 		g.Description("The user-provided specification for the database.")
-// 	})
-
-// 	g.Required("id", "status", "instances")
-// })
 
 var CreateDatabaseRequest = g.Type("CreateDatabaseRequest", func() {
 	g.Attribute("id", g.String, func() {
