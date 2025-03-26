@@ -1,0 +1,162 @@
+package pgbackrest
+
+import (
+	"fmt"
+	"io"
+	"maps"
+	"path"
+	"regexp"
+	"slices"
+	"strconv"
+
+	"gopkg.in/ini.v1"
+
+	"github.com/google/uuid"
+	"github.com/pgEdge/control-plane/server/internal/database"
+)
+
+type ConfigOptions struct {
+	DatabaseID   uuid.UUID
+	NodeName     string
+	PgDataPath   string
+	HostUser     string
+	User         string
+	SocketPath   string
+	Repositories []*database.BackupRepository
+}
+
+func WriteConfig(w io.Writer, opts ConfigOptions) error {
+	global := map[string]string{
+		"start-fast":        "y",
+		"log-level-console": "info",
+	}
+
+	global["start-fast"] = "y"
+	global["log-level-console"] = "info"
+
+	for idx, repo := range opts.Repositories {
+		repo = repo.WithDefaults()
+		global[repoKey(idx, "path")] = repoPath(opts.DatabaseID, repo.BasePath, opts.NodeName, repo.ID)
+		global[repoKey(idx, "type")] = string(repo.Type)
+		global[repoKey(idx, "cipher-type")] = "none"
+		global[repoKey(idx, "retention-full")] = strconv.Itoa(repo.RetentionFull)
+		global[repoKey(idx, "retention-full-type")] = string(repo.RetentionFullType)
+
+		switch repo.Type {
+		case database.BackupRepositoryTypeS3:
+			writeS3Repo(idx, repo, global)
+		case database.BackupRepositoryTypeGCS:
+			writeGCSRepo(idx, repo, global)
+		case database.BackupRepositoryTypeAzure:
+			writeAzureRepo(idx, repo, global)
+		default:
+			return fmt.Errorf("unsupported repository type: %q", repo.Type)
+		}
+
+		// Custom options written at the end to allow for overrides.
+		writeCustomOptions(idx, repo, global)
+	}
+
+	db := map[string]string{
+		"pg1-path":      opts.PgDataPath,
+		"pg1-host-user": opts.HostUser,
+		"pg1-user":      opts.User,
+	}
+
+	if opts.SocketPath != "" {
+		db["pg1-socket-path"] = opts.SocketPath
+	}
+
+	file := ini.Empty()
+
+	globalSection, err := file.NewSection("global")
+	if err != nil {
+		return fmt.Errorf("failed to add 'global' section: %w", err)
+	}
+	if err := populateSection(globalSection, global); err != nil {
+		return fmt.Errorf("failed to populate 'global' section: %w", err)
+	}
+
+	dbSection, err := file.NewSection("db")
+	if err != nil {
+		return fmt.Errorf("failed to add 'db' section: %w", err)
+	}
+	if err := populateSection(dbSection, db); err != nil {
+		return fmt.Errorf("failed to populate 'db' section: %w", err)
+	}
+
+	if _, err := file.WriteTo(w); err != nil {
+		return fmt.Errorf("failed to write config: %w", err)
+	}
+
+	return nil
+}
+
+func writeS3Repo(idx int, repo *database.BackupRepository, contents map[string]string) {
+	contents[repoKey(idx, "s3-bucket")] = repo.S3Bucket
+	contents[repoKey(idx, "s3-endpoint")] = repo.S3Endpoint
+	if repo.S3Region != "" {
+		contents[repoKey(idx, "s3-region")] = repo.S3Region
+	}
+	if repo.S3Key != "" {
+		contents[repoKey(idx, "s3-key-type")] = "shared"
+		contents[repoKey(idx, "s3-key")] = repo.S3Key
+		contents[repoKey(idx, "s3-key-secret")] = repo.S3KeySecret
+	} else {
+		contents[repoKey(idx, "s3-key-type")] = "auto"
+	}
+}
+
+func writeGCSRepo(idx int, repo *database.BackupRepository, contents map[string]string) {
+	contents[repoKey(idx, "gcs-bucket")] = repo.GCSBucket
+	contents[repoKey(idx, "gcs-endpoint")] = repo.GCSEndpoint
+	if repo.GCSKey != "" {
+		contents[repoKey(idx, "gcs-key-type")] = "shared"
+		contents[repoKey(idx, "gcs-key")] = repo.GCSKey
+	} else {
+		contents[repoKey(idx, "gcs-key-type")] = "auto"
+	}
+}
+
+func writeAzureRepo(idx int, repo *database.BackupRepository, contents map[string]string) {
+	contents[repoKey(idx, "azure-account")] = repo.AzureAccount
+	contents[repoKey(idx, "azure-container")] = repo.AzureContainer
+	contents[repoKey(idx, "azure-endpoint")] = repo.AzureEndpoint
+	contents[repoKey(idx, "azure-uri-style")] = "host"
+	if repo.AzureKey != "" {
+		contents[repoKey(idx, "azure-key-type")] = "shared"
+		contents[repoKey(idx, "azure-key")] = repo.AzureKey
+	} else {
+		contents[repoKey(idx, "azure-key-type")] = "auto"
+	}
+}
+
+var repoPrefixRegex = regexp.MustCompile(`^repo\d+-`)
+
+func writeCustomOptions(idx int, repo *database.BackupRepository, contents map[string]string) {
+	for key, value := range repo.CustomOptions {
+		// Sanitize the keys in case someone preemptively added the repoN prefix.
+		key = repoPrefixRegex.ReplaceAllString(key, "")
+		contents[repoKey(idx, key)] = value
+	}
+}
+
+func populateSection(section *ini.Section, contents map[string]string) error {
+	// We want to sort the keys so that the output is deterministic. This makes
+	// testing easier.
+	for _, key := range slices.Sorted(maps.Keys(contents)) {
+		value := contents[key]
+		if _, err := section.NewKey(key, value); err != nil {
+			return fmt.Errorf("failed to add key %q: %w", key, err)
+		}
+	}
+	return nil
+}
+
+func repoKey(idx int, key string) string {
+	return fmt.Sprintf("repo%d-%s", idx+1, key)
+}
+
+func repoPath(databaseID uuid.UUID, basePath, nodeName, repoID string) string {
+	return path.Join("/", basePath, "databases", databaseID.String(), repoID, nodeName)
+}

@@ -155,19 +155,24 @@ func backupConfigToAPI(config *database.BackupConfig) *api.BackupConfigSpec {
 	repositories := make([]*api.BackupRepositorySpec, len(config.Repositories))
 	for i, repo := range config.Repositories {
 		repositories[i] = &api.BackupRepositorySpec{
-			ID:                repo.ID,
+			ID:                utils.NillablePointerTo(repo.ID),
 			Type:              string(repo.Type),
-			S3Bucket:          repo.S3Bucket,
-			S3Region:          repo.S3Region,
-			S3Endpoint:        repo.S3Endpoint,
-			GcsBucket:         repo.GCSBucket,
-			GcsEndpoint:       repo.GCSEndpoint,
-			AzureAccount:      repo.AzureAccount,
-			AzureContainer:    repo.AzureContainer,
-			AzureEndpoint:     repo.AzureEndpoint,
-			RetentionFull:     repo.RetentionFull,
-			RetentionFullType: stringifyPtr(repo.RetentionFullType),
-			BasePath:          repo.BasePath,
+			S3Bucket:          utils.NillablePointerTo(repo.S3Bucket),
+			S3Region:          utils.NillablePointerTo(repo.S3Region),
+			S3Endpoint:        utils.NillablePointerTo(repo.S3Endpoint),
+			S3Key:             utils.NillablePointerTo(repo.S3Key),
+			S3KeySecret:       utils.NillablePointerTo(repo.S3KeySecret),
+			GcsBucket:         utils.NillablePointerTo(repo.GCSBucket),
+			GcsEndpoint:       utils.NillablePointerTo(repo.GCSEndpoint),
+			GcsKey:            utils.NillablePointerTo(repo.GCSKey),
+			AzureAccount:      utils.NillablePointerTo(repo.AzureAccount),
+			AzureContainer:    utils.NillablePointerTo(repo.AzureContainer),
+			AzureEndpoint:     utils.NillablePointerTo(repo.AzureEndpoint),
+			AzureKey:          utils.NillablePointerTo(repo.AzureKey),
+			RetentionFull:     utils.NillablePointerTo(repo.RetentionFull),
+			RetentionFullType: utils.NillablePointerTo(string(repo.RetentionFullType)),
+			BasePath:          utils.NillablePointerTo(repo.BasePath),
+			CustomOptions:     repo.CustomOptions,
 		}
 	}
 	schedules := make([]*api.BackupScheduleSpec, len(config.Schedules))
@@ -186,6 +191,36 @@ func backupConfigToAPI(config *database.BackupConfig) *api.BackupConfigSpec {
 	}
 }
 
+func restoreConfigToAPI(config *database.RestoreConfig) *api.RestoreConfigSpec {
+	if config == nil {
+		return nil
+	}
+	return &api.RestoreConfigSpec{
+		Provider:     string(config.Provider),
+		DatabaseID:   config.DatabaseID.String(),
+		NodeName:     config.NodeName,
+		DatabaseName: config.DatabaseName,
+		Repository: &api.RestoreRepositorySpec{
+			ID:             utils.NillablePointerTo(config.Repository.ID),
+			Type:           string(config.Repository.Type),
+			S3Bucket:       utils.NillablePointerTo(config.Repository.S3Bucket),
+			S3Region:       utils.NillablePointerTo(config.Repository.S3Region),
+			S3Endpoint:     utils.NillablePointerTo(config.Repository.S3Endpoint),
+			S3Key:          utils.NillablePointerTo(config.Repository.S3Key),
+			S3KeySecret:    utils.NillablePointerTo(config.Repository.S3KeySecret),
+			GcsBucket:      utils.NillablePointerTo(config.Repository.GCSBucket),
+			GcsEndpoint:    utils.NillablePointerTo(config.Repository.GCSEndpoint),
+			GcsKey:         utils.NillablePointerTo(config.Repository.GCSKey),
+			AzureAccount:   utils.NillablePointerTo(config.Repository.AzureAccount),
+			AzureContainer: utils.NillablePointerTo(config.Repository.AzureContainer),
+			AzureEndpoint:  utils.NillablePointerTo(config.Repository.AzureEndpoint),
+			AzureKey:       utils.NillablePointerTo(config.Repository.AzureKey),
+			BasePath:       utils.NillablePointerTo(config.Repository.BasePath),
+			CustomOptions:  config.Repository.CustomOptions,
+		},
+	}
+}
+
 func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 	return &api.DatabaseSpec{
 		DatabaseName:       d.DatabaseName,
@@ -201,6 +236,7 @@ func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 		DatabaseUsers:      databaseUsersToAPI(d.DatabaseUsers),
 		Features:           d.Features,
 		BackupConfig:       backupConfigToAPI(d.BackupConfig),
+		RestoreConfig:      restoreConfigToAPI(d.RestoreConfig),
 		PostgresqlConf:     d.PostgreSQLConf,
 	}
 }
@@ -272,19 +308,24 @@ func apiToBackupConfig(apiConfig *api.BackupConfigSpec) (*database.BackupConfig,
 	repositories := make([]*database.BackupRepository, len(apiConfig.Repositories))
 	for i, apiRepo := range apiConfig.Repositories {
 		repositories[i] = &database.BackupRepository{
-			ID:                apiRepo.ID,
+			ID:                utils.FromPointer(apiRepo.ID),
 			Type:              database.BackupRepositoryType(apiRepo.Type),
-			S3Bucket:          apiRepo.S3Bucket,
-			S3Region:          apiRepo.S3Region,
-			S3Endpoint:        apiRepo.S3Endpoint,
-			GCSBucket:         apiRepo.GcsBucket,
-			GCSEndpoint:       apiRepo.GcsEndpoint,
-			AzureAccount:      apiRepo.AzureAccount,
-			AzureContainer:    apiRepo.AzureContainer,
-			AzureEndpoint:     apiRepo.AzureEndpoint,
-			RetentionFull:     apiRepo.RetentionFull,
-			RetentionFullType: parsePtr[database.RetentionFullType](apiRepo.RetentionFullType),
-			BasePath:          apiRepo.BasePath,
+			S3Bucket:          utils.FromPointer(apiRepo.S3Bucket),
+			S3Region:          utils.FromPointer(apiRepo.S3Region),
+			S3Endpoint:        utils.FromPointer(apiRepo.S3Endpoint),
+			S3Key:             utils.FromPointer(apiRepo.S3Key),
+			S3KeySecret:       utils.FromPointer(apiRepo.S3KeySecret),
+			GCSBucket:         utils.FromPointer(apiRepo.GcsBucket),
+			GCSEndpoint:       utils.FromPointer(apiRepo.GcsEndpoint),
+			GCSKey:            utils.FromPointer(apiRepo.GcsKey),
+			AzureAccount:      utils.FromPointer(apiRepo.AzureAccount),
+			AzureContainer:    utils.FromPointer(apiRepo.AzureContainer),
+			AzureEndpoint:     utils.FromPointer(apiRepo.AzureEndpoint),
+			AzureKey:          utils.FromPointer(apiRepo.AzureKey),
+			RetentionFull:     utils.FromPointer(apiRepo.RetentionFull),
+			RetentionFullType: database.RetentionFullType(utils.FromPointer(apiRepo.RetentionFullType)),
+			BasePath:          utils.FromPointer(apiRepo.BasePath),
+			CustomOptions:     apiRepo.CustomOptions,
 		}
 	}
 	schedules := make([]*database.BackupSchedule, len(apiConfig.Schedules))
@@ -311,20 +352,32 @@ func apiToRestoreConfig(apiConfig *api.RestoreConfigSpec) (*database.RestoreConf
 			Provider: database.BackupProvider(apiConfig.Provider),
 		}, nil
 	}
+	databaseID, err := uuid.Parse(apiConfig.DatabaseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse database ID: %w", err)
+	}
 	return &database.RestoreConfig{
-		Provider: database.BackupProvider(apiConfig.Provider),
+		Provider:     database.BackupProvider(apiConfig.Provider),
+		DatabaseID:   databaseID,
+		NodeName:     apiConfig.NodeName,
+		DatabaseName: apiConfig.DatabaseName,
 		Repository: database.BackupRepository{
-			ID:             apiConfig.Repository.ID,
+			ID:             utils.FromPointer(apiConfig.Repository.ID),
 			Type:           database.BackupRepositoryType(apiConfig.Repository.Type),
-			S3Bucket:       apiConfig.Repository.S3Bucket,
-			S3Region:       apiConfig.Repository.S3Region,
-			S3Endpoint:     apiConfig.Repository.S3Endpoint,
-			GCSBucket:      apiConfig.Repository.GcsBucket,
-			GCSEndpoint:    apiConfig.Repository.GcsEndpoint,
-			AzureAccount:   apiConfig.Repository.AzureAccount,
-			AzureContainer: apiConfig.Repository.AzureContainer,
-			AzureEndpoint:  apiConfig.Repository.AzureEndpoint,
-			BasePath:       apiConfig.Repository.BasePath,
+			S3Bucket:       utils.FromPointer(apiConfig.Repository.S3Bucket),
+			S3Region:       utils.FromPointer(apiConfig.Repository.S3Region),
+			S3Endpoint:     utils.FromPointer(apiConfig.Repository.S3Endpoint),
+			S3Key:          utils.FromPointer(apiConfig.Repository.S3Key),
+			S3KeySecret:    utils.FromPointer(apiConfig.Repository.S3KeySecret),
+			GCSBucket:      utils.FromPointer(apiConfig.Repository.GcsBucket),
+			GCSEndpoint:    utils.FromPointer(apiConfig.Repository.GcsEndpoint),
+			GCSKey:         utils.FromPointer(apiConfig.Repository.GcsKey),
+			AzureAccount:   utils.FromPointer(apiConfig.Repository.AzureAccount),
+			AzureContainer: utils.FromPointer(apiConfig.Repository.AzureContainer),
+			AzureEndpoint:  utils.FromPointer(apiConfig.Repository.AzureEndpoint),
+			AzureKey:       utils.FromPointer(apiConfig.Repository.AzureKey),
+			BasePath:       utils.FromPointer(apiConfig.Repository.BasePath),
+			CustomOptions:  apiConfig.Repository.CustomOptions,
 		},
 	}, nil
 }
@@ -466,19 +519,4 @@ func stringifyStringerPtr[T stringer](v *T) *string {
 		return nil
 	}
 	return utils.PointerTo((*v).String())
-}
-
-func stringifyPtr[T ~string](v *T) *string {
-	if v == nil {
-		return nil
-	}
-	return utils.PointerTo(string(*v))
-}
-
-func parsePtr[T ~string](v *string) *T {
-	if v == nil {
-		return nil
-	}
-	t := T(*v)
-	return &t
 }

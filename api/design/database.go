@@ -121,6 +121,14 @@ var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
 		g.Description("The optional S3 endpoint for this repository. Only applies when type = 's3'.")
 		g.Example("s3.us-east-1.amazonaws.com")
 	})
+	g.Attribute("s3_key", g.String, func() {
+		g.Description("An optional AWS access key ID to use for this repository. If not provided, pgbackrest will use the default credential provider chain.")
+		g.Example("AKIAIOSFODNN7EXAMPLE")
+	})
+	g.Attribute("s3_key_secret", g.String, func() {
+		g.Description("The corresponding secret for the AWS access key ID in s3_key.")
+		g.Example("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
+	})
 	g.Attribute("gcs_bucket", g.String, func() {
 		g.Description("The GCS bucket name for this repository. Only applies when type = 'gcs'.")
 		g.Example("pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1")
@@ -128,6 +136,10 @@ var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
 	g.Attribute("gcs_endpoint", g.String, func() {
 		g.Description("The optional GCS endpoint for this repository. Only applies when type = 'gcs'.")
 		g.Example("localhost")
+	})
+	g.Attribute("gcs_key", g.String, func() {
+		g.Description("Optional base64-encoded private key data. If omitted, pgbackrest will use the service account attached to the instance profile.")
+		g.Example("ZXhhbXBsZSBnY3Mga2V5Cg==")
 	})
 	g.Attribute("azure_account", g.String, func() {
 		g.Description("The Azure account name for this repository. Only applies when type = 'azure'.")
@@ -140,6 +152,10 @@ var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
 	g.Attribute("azure_endpoint", g.String, func() {
 		g.Description("The optional Azure endpoint for this repository. Only applies when type = 'azure'.")
 		g.Example("blob.core.usgovcloudapi.net")
+	})
+	g.Attribute("azure_key", g.String, func() {
+		g.Description("An optional Azure storage account access key to use for this repository. If not provided, pgbackrest will use the VM's managed identity.")
+		g.Example("YXpLZXk=")
 	})
 	g.Attribute("retention_full", g.Int, func() {
 		g.Description("The count of full backups to retain or the time to retain full backups.")
@@ -221,6 +237,14 @@ var RestoreRepositorySpec = g.Type("RestoreRepositorySpec", func() {
 		g.Description("The optional S3 endpoint for this repository. Only applies when type = 's3'.")
 		g.Example("s3.us-east-1.amazonaws.com")
 	})
+	g.Attribute("s3_key", g.String, func() {
+		g.Description("An optional AWS access key ID to use for this repository. If not provided, pgbackrest will use the default credential provider chain.")
+		g.Example("AKIAIOSFODNN7EXAMPLE")
+	})
+	g.Attribute("s3_key_secret", g.String, func() {
+		g.Description("The corresponding secret for the AWS access key ID in s3_key.")
+		g.Example("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
+	})
 	g.Attribute("gcs_bucket", g.String, func() {
 		g.Description("The GCS bucket name for this repository. Only applies when type = 'gcs'.")
 		g.Example("pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1")
@@ -228,6 +252,10 @@ var RestoreRepositorySpec = g.Type("RestoreRepositorySpec", func() {
 	g.Attribute("gcs_endpoint", g.String, func() {
 		g.Description("The optional GCS endpoint for this repository. Only applies when type = 'gcs'.")
 		g.Example("localhost")
+	})
+	g.Attribute("gcs_key", g.String, func() {
+		g.Description("Optional base64-encoded private key data. If omitted, pgbackrest will use the service account attached to the instance profile.")
+		g.Example("ZXhhbXBsZSBnY3Mga2V5Cg==")
 	})
 	g.Attribute("azure_account", g.String, func() {
 		g.Description("The Azure account name for this repository. Only applies when type = 'azure'.")
@@ -240,6 +268,10 @@ var RestoreRepositorySpec = g.Type("RestoreRepositorySpec", func() {
 	g.Attribute("azure_endpoint", g.String, func() {
 		g.Description("The optional Azure endpoint for this repository. Only applies when type = 'azure'.")
 		g.Example("blob.core.usgovcloudapi.net")
+	})
+	g.Attribute("azure_key", g.String, func() {
+		g.Description("An optional Azure storage account access key to use for this repository. If not provided, pgbackrest will use the VM's managed identity.")
+		g.Example("YXpLZXk=")
 	})
 	g.Attribute("base_path", g.String, func() {
 		g.Description("The base path within the repository where backups are stored.")
@@ -261,15 +293,23 @@ var RestoreConfigSpec = g.Type("RestoreConfigSpec", func() {
 		g.Enum("pgbackrest", "pg_dump")
 		g.Example("pgbackrest")
 	})
+	g.Attribute("database_id", g.String, func() {
+		g.Description("The ID of the database to restore this database from.")
+		g.Example("6c8e43ee-26ea-47b8-a8f8-89897e0137bd")
+	})
 	g.Attribute("node_name", g.String, func() {
 		g.Description("The name of the node to restore this database from.")
 		g.Example("n1")
+	})
+	g.Attribute("database_name", g.String, func() {
+		g.Description("The name of the database in this repository. This database will be renamed to the database_name in the DatabaseSpec.")
+		g.Example("northwind")
 	})
 	g.Attribute("repository", RestoreRepositorySpec, func() {
 		g.Description("The repository to restore this database from.")
 	})
 
-	g.Required("provider", "node_name", "repository")
+	g.Required("provider", "database_id", "node_name", "database_name", "repository")
 })
 
 var DatabaseSpec = g.Type("DatabaseSpec", func() {

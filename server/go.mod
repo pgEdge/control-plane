@@ -33,6 +33,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.34.0
 	go.uber.org/zap v1.27.0
 	goa.design/goa/v3 v3.19.1
+	gopkg.in/ini.v1 v1.67.0
 )
 
 require (
