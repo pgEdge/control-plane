@@ -247,7 +247,7 @@ func (a *Activities) WriteInstanceConfigs(ctx context.Context, input *WriteInsta
 			DatabaseID:   input.Spec.DatabaseID,
 			NodeName:     input.Spec.NodeName,
 			PgDataPath:   "/opt/pgedge/data",
-			HostUser:     "pgedge",
+			HostUser:     "postgres",
 			User:         "pgedge",
 		}); err != nil {
 			return nil, fmt.Errorf("failed to generate pgBackRest backup configuration: %w", err)
@@ -275,7 +275,7 @@ func (a *Activities) WriteInstanceConfigs(ctx context.Context, input *WriteInsta
 			DatabaseID:   input.Spec.RestoreConfig.DatabaseID,
 			NodeName:     input.Spec.RestoreConfig.NodeName,
 			PgDataPath:   "/opt/pgedge/data",
-			HostUser:     "pgedge",
+			HostUser:     "postgres",
 			User:         "pgedge",
 		}); err != nil {
 			return nil, fmt.Errorf("failed to generate pgBackRest restore configuration: %w", err)

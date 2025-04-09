@@ -4,7 +4,7 @@ ARG REPO_BASE_URL
 ARG RELEASE_CHANNEL
 ARG POSTGRES_VERSION
 ARG IMAGE_VERSION
-ARG PGEDGE_USER_ID="1020"
+ARG POSTGRES_USER_ID="1020"
 
 COPY packagelists/pg${POSTGRES_VERSION}_${IMAGE_VERSION}.txt /usr/share/pgedge/packages.txt
 
@@ -15,7 +15,7 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-useradd -u ${PGEDGE_USER_ID} -m pgedge -s /bin/bash
+useradd -u ${POSTGRES_USER_ID} -m postgres -s /bin/bash
 
 curl -Ls ${REPO_BASE_URL}/repos/yum/install-repos.sh \
     | REPO_BASE_URL=${REPO_BASE_URL} \
@@ -31,11 +31,9 @@ pip install 'python-json-logger==3.2.1'
 dnf remove -y python3-pip
 dnf clean all
 
-chown pgedge:pgedge /run/postgresql
-
 EOF
 
-USER pgedge
+USER postgres
 
 ENV PG_MAJOR=${POSTGRES_VERSION}
 ENV PATH=$PATH:/usr/pgsql-${POSTGRES_VERSION}/bin

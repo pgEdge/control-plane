@@ -119,6 +119,15 @@ func (w *Workflows) CreateInstance(ctx workflow.Context, input *CreateInstanceIn
 		return fmt.Errorf("failed to create database service: %w", err)
 	}
 
+	if input.Instance.EnableBackups && input.Instance.UsesPgBackRest() {
+		_, err = w.Swarm.ExecuteCreatePgBackRestStanza(ctx, input.Host.ID, &swarm.CreatePgBackRestStanzaInput{
+			Instance: input.Instance,
+		}).Get(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to create pgBackRest stanza: %w", err)
+		}
+	}
+
 	logger.Info("successfully created instance")
 
 	// TODO: should gather instance info from running container and wait for

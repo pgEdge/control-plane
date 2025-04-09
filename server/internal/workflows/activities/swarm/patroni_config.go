@@ -33,6 +33,12 @@ func PatroniConfig(input *WriteInstanceConfigsInput, bridgeInfo *docker.NetworkI
 		"ssl_cert_file":            "/opt/pgedge/certificates/postgres/server.crt",
 		"ssl_key_file":             "/opt/pgedge/certificates/postgres/server.key",
 	})
+	if input.Spec.UsesPgBackRest() {
+		maps.Copy(parameters, map[string]any{
+			"archive_mode":    "on",
+			"archive_command": pgbackrestBackupCmd("archive-push", `"%p"`).String(),
+		})
+	}
 	snowflakeLolorGUCs, err := postgres.SnowflakeLolorGUCs(input.Spec.NodeOrdinal)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate snowflake/lolor GUCs: %w", err)
@@ -108,6 +114,7 @@ func PatroniConfig(input *WriteInstanceConfigsInput, bridgeInfo *docker.NetworkI
 			DataDir:        utils.PointerTo("/opt/pgedge/data"),
 			Parameters:     &parameters,
 			Listen:         utils.PointerTo("*:5432"),
+			Callbacks:      &patroni.Callbacks{},
 			Authentication: &patroni.Authentication{
 				Superuser: &patroni.User{
 					Username:    utils.PointerTo("pgedge"),

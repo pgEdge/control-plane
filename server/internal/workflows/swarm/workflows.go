@@ -22,6 +22,7 @@ func (w *Workflows) Register(work *worker.Worker) error {
 		work.RegisterActivity(w.Swarm.CreateBridgeConfig),
 		work.RegisterActivity(w.Swarm.CreateDBNetworks),
 		work.RegisterActivity(w.Swarm.CreateDBService),
+		work.RegisterActivity(w.Swarm.CreatePgBackRestStanza),
 		work.RegisterActivity(w.Swarm.WriteInstanceConfigs),
 		work.RegisterActivity(w.Swarm.GetServiceSpec),
 		work.RegisterActivity(w.Swarm.InitializeDB),
