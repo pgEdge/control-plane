@@ -16,8 +16,10 @@ func NewSet[T comparable](elements ...T) Set[T] {
 }
 
 // Add adds an element to the set.
-func (s Set[T]) Add(element T) {
-	s[element] = true
+func (s Set[T]) Add(elements ...T) {
+	for _, element := range elements {
+		s[element] = true
+	}
 }
 
 // Remove removes an element to the set.

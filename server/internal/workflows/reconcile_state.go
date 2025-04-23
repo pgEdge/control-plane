@@ -64,11 +64,11 @@ func (w *Workflows) ReconcileState(ctx workflow.Context, input *ReconcileStateIn
 		}
 	}()
 
-	if err := w.applyEvents(ctx, input.DatabaseID, current, planOutput.Events); err != nil {
+	if err := w.applyEvents(ctx, input.DatabaseID, current, planOutput.Plan); err != nil {
 		return nil, fmt.Errorf("failed to apply events: %w", err)
 	}
 
-	logger.Info("successfully generated plan")
+	logger.Info("successfully reconciled database state")
 
 	return &ReconcileStateOutput{
 		Updated: current,

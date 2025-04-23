@@ -16,6 +16,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/docker"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -189,6 +190,19 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		OwnerGID: o.cfg.DatabaseOwnerUID,
 	}
 
+	// patroni resources - used to clean up etcd on deletion
+	patroniCluster := &PatroniCluster{
+		ClusterID:        o.cfg.ClusterID,
+		DatabaseID:       spec.DatabaseID,
+		NodeName:         spec.NodeName,
+		PatroniNamespace: patroni.Namespace(spec.DatabaseID, spec.NodeName),
+	}
+	patroniMember := &PatroniMember{
+		ClusterID:  o.cfg.ClusterID,
+		NodeName:   spec.NodeName,
+		InstanceID: spec.InstanceID,
+	}
+
 	// file resources
 	etcdCreds := &EtcdCreds{
 		InstanceID: spec.InstanceID,
@@ -289,6 +303,8 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 
 	resources, err := database.NewInstanceResources(instance, []resource.Resource{
 		databaseNetwork,
+		patroniCluster,
+		patroniMember,
 		instanceDir,
 		dataDir,
 		configsDir,

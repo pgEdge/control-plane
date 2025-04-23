@@ -99,8 +99,29 @@ func (n *node) ID() int64 {
 
 // CreationOrdered returns a sequence of resources in the order they should be
 // created. In this order dependencies are returned before dependents.
-func (s *State) CreationOrdered() (iter.Seq[*ResourceData], error) {
-	graph, err := s.graph()
+func (s *State) CreationOrdered(ignoreMissingDeps bool) (iter.Seq[*ResourceData], error) {
+	return s.topoIter(graphOptions{
+		ignoreMissingDeps: ignoreMissingDeps,
+		creationOrdered:   true,
+	})
+}
+
+// DeletionOrdered returns a sequence of resources in the order they should be
+// deleted. In this order dependents are returned before dependencies.
+func (s *State) DeletionOrdered(ignoreMissingDeps bool) (iter.Seq[*ResourceData], error) {
+	return s.topoIter(graphOptions{
+		ignoreMissingDeps: ignoreMissingDeps,
+		creationOrdered:   false,
+	})
+}
+
+type graphOptions struct {
+	ignoreMissingDeps bool
+	creationOrdered   bool
+}
+
+func (s *State) topoIter(opts graphOptions) (iter.Seq[*ResourceData], error) {
+	graph, err := s.graph(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -118,29 +139,7 @@ func (s *State) CreationOrdered() (iter.Seq[*ResourceData], error) {
 	}, nil
 }
 
-// DeletionOrdered returns a sequence of resources in the order they should be
-// deleted. In this order dependents are returned before dependencies.
-func (s *State) DeletionOrdered() (iter.Seq[*ResourceData], error) {
-	graph, err := s.graph()
-	if err != nil {
-		return nil, err
-	}
-	sorted, err := topo.Sort(graph)
-	if err != nil {
-		return nil, fmt.Errorf("failed to sort resource graph: %w", err)
-	}
-	return func(yield func(data *ResourceData) bool) {
-		for i := len(sorted) - 1; i >= 0; i-- {
-			n := sorted[i]
-			resource := n.(*node).resource
-			if !yield(resource) {
-				return
-			}
-		}
-	}, nil
-}
-
-func (s *State) graph() (*simple.DirectedGraph, error) {
+func (s *State) graph(opts graphOptions) (*simple.DirectedGraph, error) {
 	nodeIDs := map[Identifier]int64{}
 	graph := simple.NewDirectedGraph()
 	currID := int64(1)
@@ -164,85 +163,168 @@ func (s *State) graph() (*simple.DirectedGraph, error) {
 				fromID, ok := nodeIDs[dep]
 				from := graph.Node(fromID)
 				if !ok {
-					return nil, fmt.Errorf("dependency of %s not found: %s", resource.Identifier, dep)
+					if opts.ignoreMissingDeps {
+						continue
+					} else {
+						return nil, fmt.Errorf("dependency of %s not found: %s", resource.Identifier, dep)
+					}
 				}
 				// gonum's topological sort returns in 'from' to 'to' order.
 				// So modeling from dependency to dependent gets us the order we
 				// want for creates and updates.
-				graph.SetEdge(simple.Edge{
-					T: to,
-					F: from,
-				})
+				if opts.creationOrdered {
+					graph.SetEdge(simple.Edge{
+						T: to,
+						F: from,
+					})
+				} else {
+					// For deletion order we need to reverse the edge.
+					graph.SetEdge(simple.Edge{
+						T: from,
+						F: to,
+					})
+				}
 			}
 		}
 	}
 	return graph, nil
 }
 
-func (s *State) PlanRefresh() ([]*Event, error) {
-	resources, err := s.CreationOrdered()
+func (s *State) PlanRefresh() ([][]*Event, error) {
+	resources, err := s.CreationOrdered(true)
 	if err != nil {
 		return nil, err
 	}
-	var events []*Event
+	var phases [][]*Event
+	var phase []*Event
+	dependenciesTmp := ds.NewSet[Identifier]()
 	for resource := range resources {
-		events = append(events, &Event{
+		if slices.ContainsFunc(resource.Dependencies, dependenciesTmp.Has) {
+			// This resource has dependencies in the current phase, so it
+			// will need to be a new phase.
+			phases = append(phases, phase)
+			phase = []*Event{}
+			dependenciesTmp = ds.NewSet[Identifier]()
+		}
+		phase = append(phase, &Event{
 			Type:     EventTypeRefresh,
 			Resource: resource,
 		})
+		dependenciesTmp.Add(resource.Identifier)
 	}
-	return events, nil
+	// Make sure to add the last phase if it has any events.
+	if len(phase) > 0 {
+		phases = append(phases, phase)
+	}
+	return phases, nil
 }
 
-func (s *State) Plan(desired *State, forceUpdate bool) ([]*Event, error) {
-	desiredSorted, err := desired.CreationOrdered()
+func (s *State) Plan(desired *State, forceUpdate bool) ([][]*Event, error) {
+	creates, err := s.planCreates(desired, forceUpdate)
 	if err != nil {
 		return nil, err
 	}
-	var events []*Event
-	// Keep track of updated resources so that we can update their dependents.
-	updated := ds.NewSet[Identifier]()
+	deletes, err := s.planDeletes(desired)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(creates, deletes...), nil
+}
+
+func (s *State) planCreates(desired *State, forceUpdate bool) ([][]*Event, error) {
+	desiredSorted, err := desired.CreationOrdered(false)
+	if err != nil {
+		return nil, err
+	}
+	var phases [][]*Event
+	var phase []*Event
+	// Keeps track of all modified resources so that we can update their
+	// dependents.
+	modified := ds.NewSet[Identifier]()
+	// Used to split into a new phase when we encounter a resource that's
+	// dependent on a previous resource.
+	dependenciesTmp := ds.NewSet[Identifier]()
 	for resource := range desiredSorted {
+		var event *Event
+
 		currentResource, ok := s.Get(resource.Identifier)
 		if !ok || currentResource.NeedsCreate {
-			events = append(events, &Event{
+			event = &Event{
 				Type:     EventTypeCreate,
 				Resource: resource,
-			})
+			}
 		} else if forceUpdate || !bytes.Equal(currentResource.Attributes, resource.Attributes) {
-			events = append(events, &Event{
+			event = &Event{
 				Type:     EventTypeUpdate,
 				Resource: resource,
-			})
-			updated.Add(resource.Identifier)
-		} else {
+			}
+			// updated.Add(resource.Identifier)
+		} else if slices.ContainsFunc(resource.Dependencies, modified.Has) {
 			// If one of this resource's dependencies has been updated, we need
 			// to update it as well.
-			if slices.ContainsFunc(resource.Dependencies, updated.Has) {
-				events = append(events, &Event{
-					Type:     EventTypeUpdate,
-					Resource: resource,
-				})
-				updated.Add(resource.Identifier)
+			event = &Event{
+				Type:     EventTypeUpdate,
+				Resource: resource,
 			}
 		}
+
+		if event != nil {
+			if slices.ContainsFunc(event.Resource.Dependencies, dependenciesTmp.Has) {
+				// This resource has dependencies in the current phase, so it
+				// will need to be a new phase.
+				phases = append(phases, phase)
+				phase = nil
+				dependenciesTmp = ds.NewSet[Identifier]()
+			}
+			phase = append(phase, event)
+			dependenciesTmp.Add(resource.Identifier)
+			modified.Add(resource.Identifier)
+		}
 	}
-	currentSorted, err := s.DeletionOrdered()
+	// Make sure to add the last phase if it has any events.
+	if len(phase) > 0 {
+		phases = append(phases, phase)
+	}
+	return phases, nil
+}
+
+func (s *State) planDeletes(desired *State) ([][]*Event, error) {
+	currentSorted, err := s.DeletionOrdered(true)
 	if err != nil {
 		return nil, err
 	}
+	var phases [][]*Event
+	var phase []*Event
+	// Used to split into a new phase when we encounter a resource that is a
+	// dependency of a previous resource.
+	dependentsTmp := ds.NewSet[Identifier]()
 	// Go in reverse order for deletes so that dependents get deleted before
 	// their dependencies.
 	for resource := range currentSorted {
-		_, ok := desired.Get(resource.Identifier)
-		if !ok {
-			events = append(events, &Event{
-				Type:     EventTypeDelete,
-				Resource: resource,
-			})
+		if _, ok := desired.Get(resource.Identifier); ok {
+			// This resource exists in the desired state, so we don't want to
+			// delete it.
+			continue
 		}
+		if dependentsTmp.Has(resource.Identifier) {
+			// This resource is a dependency of a resource in the current phase,
+			// so it will need to be a new phase.
+			phases = append(phases, phase)
+			phase = []*Event{}
+			dependentsTmp = ds.NewSet[Identifier]()
+		}
+		phase = append(phase, &Event{
+			Type:     EventTypeDelete,
+			Resource: resource,
+		})
+		dependentsTmp.Add(resource.Dependencies...)
 	}
-	return events, nil
+	// Make sure to add the last phase if it has any events.
+	if len(phase) > 0 {
+		phases = append(phases, phase)
+	}
+	return phases, nil
 }
 
 func (s *State) AddResource(resource Resource) error {

@@ -64,6 +64,8 @@ func (c *PatroniConfig) Dependencies() []resource.Identifier {
 		filesystem.DirResourceIdentifier(c.ParentID),
 		NetworkResourceIdentifier(c.DatabaseNetworkName),
 		EtcdCredsIdentifier(c.Spec.InstanceID),
+		PatroniMemberResourceIdentifier(c.Spec.InstanceID),
+		PatroniClusterResourceIdentifier(c.Spec.NodeName),
 	}
 }
 

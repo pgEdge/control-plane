@@ -19,9 +19,9 @@ type PlanInput struct {
 }
 
 type PlanOutput struct {
-	Current *resource.State   `json:"current"`
-	Desired *resource.State   `json:"desired"`
-	Events  []*resource.Event `json:"events"`
+	Current *resource.State     `json:"current"`
+	Desired *resource.State     `json:"desired"`
+	Plan    [][]*resource.Event `json:"plan"`
 }
 
 func (w *Workflows) ExecutePlan(
@@ -52,7 +52,7 @@ func (w *Workflows) Plan(ctx workflow.Context, input *PlanInput) (*PlanOutput, e
 		return nil, fmt.Errorf("failed to plan refresh: %w", err)
 	}
 
-	if err := w.applyEvents(ctx, input.DatabaseID, current, planRefreshOutput.Events); err != nil {
+	if err := w.applyEvents(ctx, input.DatabaseID, current, planRefreshOutput.Plan); err != nil {
 		return nil, fmt.Errorf("failed to apply refresh events: %w", err)
 	}
 
@@ -71,6 +71,6 @@ func (w *Workflows) Plan(ctx workflow.Context, input *PlanInput) (*PlanOutput, e
 	return &PlanOutput{
 		Current: current,
 		Desired: desired,
-		Events:  planOutput.Events,
+		Plan:    planOutput.Plan,
 	}, nil
 }

@@ -17,7 +17,7 @@ type PlanRefreshInput struct {
 }
 
 type PlanRefreshOutput struct {
-	Events []*resource.Event `json:"events"`
+	Plan [][]*resource.Event `json:"plan"`
 }
 
 func (a *Activities) ExecutePlanRefresh(
@@ -45,6 +45,6 @@ func (a *Activities) PlanRefresh(ctx context.Context, input *PlanRefreshInput) (
 	}
 
 	return &PlanRefreshOutput{
-		Events: plan,
+		Plan: plan,
 	}, nil
 }

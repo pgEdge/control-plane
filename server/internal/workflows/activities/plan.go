@@ -19,7 +19,7 @@ type PlanInput struct {
 }
 
 type PlanOutput struct {
-	Events []*resource.Event `json:"events"`
+	Plan [][]*resource.Event `json:"plan"`
 }
 
 func (a *Activities) ExecutePlan(
@@ -47,6 +47,6 @@ func (a *Activities) Plan(ctx context.Context, input *PlanInput) (*PlanOutput, e
 	}
 
 	return &PlanOutput{
-		Events: plan,
+		Plan: plan,
 	}, nil
 }
