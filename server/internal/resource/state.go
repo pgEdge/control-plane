@@ -8,7 +8,6 @@ import (
 	"slices"
 
 	"gonum.org/v1/gonum/graph/simple"
-	"gonum.org/v1/gonum/graph/topo"
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
 )
@@ -99,7 +98,7 @@ func (n *node) ID() int64 {
 
 // CreationOrdered returns a sequence of resources in the order they should be
 // created. In this order dependencies are returned before dependents.
-func (s *State) CreationOrdered(ignoreMissingDeps bool) (iter.Seq[*ResourceData], error) {
+func (s *State) CreationOrdered(ignoreMissingDeps bool) (iter.Seq[[]*ResourceData], error) {
 	return s.topoIter(graphOptions{
 		ignoreMissingDeps: ignoreMissingDeps,
 		creationOrdered:   true,
@@ -108,7 +107,7 @@ func (s *State) CreationOrdered(ignoreMissingDeps bool) (iter.Seq[*ResourceData]
 
 // DeletionOrdered returns a sequence of resources in the order they should be
 // deleted. In this order dependents are returned before dependencies.
-func (s *State) DeletionOrdered(ignoreMissingDeps bool) (iter.Seq[*ResourceData], error) {
+func (s *State) DeletionOrdered(ignoreMissingDeps bool) (iter.Seq[[]*ResourceData], error) {
 	return s.topoIter(graphOptions{
 		ignoreMissingDeps: ignoreMissingDeps,
 		creationOrdered:   false,
@@ -120,19 +119,23 @@ type graphOptions struct {
 	creationOrdered   bool
 }
 
-func (s *State) topoIter(opts graphOptions) (iter.Seq[*ResourceData], error) {
+func (s *State) topoIter(opts graphOptions) (iter.Seq[[]*ResourceData], error) {
 	graph, err := s.graph(opts)
 	if err != nil {
 		return nil, err
 	}
-	sorted, err := topo.Sort(graph)
+	sorted, err := layeredTopoSort(graph)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sort resource graph: %w", err)
 	}
-	return func(yield func(data *ResourceData) bool) {
-		for _, n := range sorted {
-			resource := n.(*node).resource
-			if !yield(resource) {
+	return func(yield func(data []*ResourceData) bool) {
+		for _, layer := range sorted {
+			resources := make([]*ResourceData, len(layer))
+			for i, n := range layer {
+				resource := n.(*node).resource
+				resources[i] = resource
+			}
+			if !yield(resources) {
 				return
 			}
 		}
@@ -169,7 +172,7 @@ func (s *State) graph(opts graphOptions) (*simple.DirectedGraph, error) {
 						return nil, fmt.Errorf("dependency of %s not found: %s", resource.Identifier, dep)
 					}
 				}
-				// gonum's topological sort returns in 'from' to 'to' order.
+				// Our layered topological sort returns in 'from' to 'to' order.
 				// So modeling from dependency to dependent gets us the order we
 				// want for creates and updates.
 				if opts.creationOrdered {
@@ -191,29 +194,19 @@ func (s *State) graph(opts graphOptions) (*simple.DirectedGraph, error) {
 }
 
 func (s *State) PlanRefresh() ([][]*Event, error) {
-	resources, err := s.CreationOrdered(true)
+	layers, err := s.CreationOrdered(true)
 	if err != nil {
 		return nil, err
 	}
 	var phases [][]*Event
-	var phase []*Event
-	dependenciesTmp := ds.NewSet[Identifier]()
-	for resource := range resources {
-		if slices.ContainsFunc(resource.Dependencies, dependenciesTmp.Has) {
-			// This resource has dependencies in the current phase, so it
-			// will need to be a new phase.
-			phases = append(phases, phase)
-			phase = []*Event{}
-			dependenciesTmp = ds.NewSet[Identifier]()
+	for layer := range layers {
+		phase := make([]*Event, len(layer))
+		for i, resource := range layer {
+			phase[i] = &Event{
+				Type:     EventTypeRefresh,
+				Resource: resource,
+			}
 		}
-		phase = append(phase, &Event{
-			Type:     EventTypeRefresh,
-			Resource: resource,
-		})
-		dependenciesTmp.Add(resource.Identifier)
-	}
-	// Make sure to add the last phase if it has any events.
-	if len(phase) > 0 {
 		phases = append(phases, phase)
 	}
 	return phases, nil
@@ -233,96 +226,77 @@ func (s *State) Plan(desired *State, forceUpdate bool) ([][]*Event, error) {
 }
 
 func (s *State) planCreates(desired *State, forceUpdate bool) ([][]*Event, error) {
-	desiredSorted, err := desired.CreationOrdered(false)
+	layers, err := desired.CreationOrdered(false)
 	if err != nil {
 		return nil, err
 	}
 	var phases [][]*Event
-	var phase []*Event
+
 	// Keeps track of all modified resources so that we can update their
 	// dependents.
 	modified := ds.NewSet[Identifier]()
-	// Used to split into a new phase when we encounter a resource that's
-	// dependent on a previous resource.
-	dependenciesTmp := ds.NewSet[Identifier]()
-	for resource := range desiredSorted {
-		var event *Event
+	for layer := range layers {
+		var phase []*Event
 
-		currentResource, ok := s.Get(resource.Identifier)
-		if !ok || currentResource.NeedsCreate {
-			event = &Event{
-				Type:     EventTypeCreate,
-				Resource: resource,
+		for _, resource := range layer {
+			var event *Event
+
+			currentResource, ok := s.Get(resource.Identifier)
+			if !ok || currentResource.NeedsCreate {
+				event = &Event{
+					Type:     EventTypeCreate,
+					Resource: resource,
+				}
+			} else if forceUpdate || !bytes.Equal(currentResource.Attributes, resource.Attributes) {
+				event = &Event{
+					Type:     EventTypeUpdate,
+					Resource: resource,
+				}
+			} else if slices.ContainsFunc(resource.Dependencies, modified.Has) {
+				// If one of this resource's dependencies has been updated, we need
+				// to update it as well.
+				event = &Event{
+					Type:     EventTypeUpdate,
+					Resource: resource,
+				}
 			}
-		} else if forceUpdate || !bytes.Equal(currentResource.Attributes, resource.Attributes) {
-			event = &Event{
-				Type:     EventTypeUpdate,
-				Resource: resource,
-			}
-			// updated.Add(resource.Identifier)
-		} else if slices.ContainsFunc(resource.Dependencies, modified.Has) {
-			// If one of this resource's dependencies has been updated, we need
-			// to update it as well.
-			event = &Event{
-				Type:     EventTypeUpdate,
-				Resource: resource,
+
+			if event != nil {
+				phase = append(phase, event)
+				modified.Add(resource.Identifier)
 			}
 		}
 
-		if event != nil {
-			if slices.ContainsFunc(event.Resource.Dependencies, dependenciesTmp.Has) {
-				// This resource has dependencies in the current phase, so it
-				// will need to be a new phase.
-				phases = append(phases, phase)
-				phase = nil
-				dependenciesTmp = ds.NewSet[Identifier]()
-			}
-			phase = append(phase, event)
-			dependenciesTmp.Add(resource.Identifier)
-			modified.Add(resource.Identifier)
+		if len(phase) > 0 {
+			phases = append(phases, phase)
 		}
-	}
-	// Make sure to add the last phase if it has any events.
-	if len(phase) > 0 {
-		phases = append(phases, phase)
 	}
 	return phases, nil
 }
 
 func (s *State) planDeletes(desired *State) ([][]*Event, error) {
-	currentSorted, err := s.DeletionOrdered(true)
+	layers, err := s.DeletionOrdered(true)
 	if err != nil {
 		return nil, err
 	}
 	var phases [][]*Event
-	var phase []*Event
-	// Used to split into a new phase when we encounter a resource that is a
-	// dependency of a previous resource.
-	dependentsTmp := ds.NewSet[Identifier]()
-	// Go in reverse order for deletes so that dependents get deleted before
-	// their dependencies.
-	for resource := range currentSorted {
-		if _, ok := desired.Get(resource.Identifier); ok {
-			// This resource exists in the desired state, so we don't want to
-			// delete it.
-			continue
+	for layer := range layers {
+		var phase []*Event
+
+		for _, resource := range layer {
+			if _, ok := desired.Get(resource.Identifier); ok {
+				// This resource exists in the desired state, so we don't want to
+				// delete it.
+				continue
+			}
+			phase = append(phase, &Event{
+				Type:     EventTypeDelete,
+				Resource: resource,
+			})
 		}
-		if dependentsTmp.Has(resource.Identifier) {
-			// This resource is a dependency of a resource in the current phase,
-			// so it will need to be a new phase.
+		if len(phase) > 0 {
 			phases = append(phases, phase)
-			phase = []*Event{}
-			dependentsTmp = ds.NewSet[Identifier]()
 		}
-		phase = append(phase, &Event{
-			Type:     EventTypeDelete,
-			Resource: resource,
-		})
-		dependentsTmp.Add(resource.Dependencies...)
-	}
-	// Make sure to add the last phase if it has any events.
-	if len(phase) > 0 {
-		phases = append(phases, phase)
 	}
 	return phases, nil
 }

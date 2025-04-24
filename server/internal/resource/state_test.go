@@ -129,9 +129,6 @@ func TestState(t *testing.T) {
 			assert.Equal(t, expected, plan)
 		})
 		t.Run("from nonempty state", func(t *testing.T) {
-			// registry := resource.NewRegistry()
-			// resource.RegisterResource[*TestResource](*registry, "test_resource")
-
 			resource1 := &testResource{
 				identifier: testResourceID("test1"),
 				dependencies: []resource.Identifier{
@@ -184,9 +181,6 @@ func TestState(t *testing.T) {
 			assert.Equal(t, expected, plan)
 		})
 		t.Run("with update", func(t *testing.T) {
-			// registry := resource.NewRegistry()
-			// resource.RegisterResource[*TestResource](*registry, "test_resource")
-
 			resource1 := &testResource{
 				identifier: testResourceID("test1"),
 				dependencies: []resource.Identifier{
@@ -251,9 +245,6 @@ func TestState(t *testing.T) {
 			assert.Equal(t, expected, plan)
 		})
 		t.Run("to empty state", func(t *testing.T) {
-			// registry := resource.NewRegistry()
-			// resource.RegisterResource[*TestResource](*registry, "test_resource")
-
 			resource1 := &testResource{
 				identifier: testResourceID("test1"),
 				dependencies: []resource.Identifier{
@@ -318,27 +309,44 @@ func TestState(t *testing.T) {
 					testResourceID("test2"),
 				},
 			}
+			resource1Data, err := resource.ToResourceData(resource1)
+			require.NoError(t, err)
+
 			resource2 := &testResource{
 				identifier: testResourceID("test2"),
 			}
+			resource2Data, err := resource.ToResourceData(resource2)
+			require.NoError(t, err)
+
 			resource3 := &testResource{
 				identifier: testResourceID("test3"),
 				dependencies: []resource.Identifier{
 					testResourceID("test4"),
 				},
 			}
+			resource3Data, err := resource.ToResourceData(resource3)
+			require.NoError(t, err)
+
 			resource4 := &testResource{
 				identifier: testResourceID("test4"),
 			}
+			resource4Data, err := resource.ToResourceData(resource4)
+			require.NoError(t, err)
+
 			resource5 := &testResource{
 				identifier: testResourceID("test5"),
 			}
+			resource5Data, err := resource.ToResourceData(resource5)
+			require.NoError(t, err)
+
 			resource6 := &testResource{
 				identifier: testResourceID("test6"),
 				dependencies: []resource.Identifier{
 					testResourceID("test5"),
 				},
 			}
+			resource6Data, err := resource.ToResourceData(resource6)
+			require.NoError(t, err)
 
 			current := resource.NewState()
 			desired := resource.NewState()
@@ -354,18 +362,47 @@ func TestState(t *testing.T) {
 			plan, err := current.Plan(desired, false)
 			assert.NoError(t, err)
 
-			// The number and content of each phase is non-deterministic because
-			// of map iteration. But, we can still validate that dependencies
-			// are created first and deleted last.
-			phaseIndices := map[resource.Identifier]int{}
-			for i, phase := range plan {
-				for _, event := range phase {
-					phaseIndices[event.Resource.Identifier] = i
-				}
+			// The order of the content of each phase is non-deterministic
+			// because of map iteration.
+			expected := [][]*resource.Event{
+				{
+					{
+						Type:     resource.EventTypeCreate,
+						Resource: resource2Data,
+					},
+					{
+						Type:     resource.EventTypeCreate,
+						Resource: resource4Data,
+					},
+				},
+				{
+					{
+						Type:     resource.EventTypeCreate,
+						Resource: resource1Data,
+					},
+					{
+						Type:     resource.EventTypeCreate,
+						Resource: resource3Data,
+					},
+				},
+				{
+					{
+						Type:     resource.EventTypeDelete,
+						Resource: resource6Data,
+					},
+				},
+				{
+					{
+						Type:     resource.EventTypeDelete,
+						Resource: resource5Data,
+					},
+				},
 			}
-			assert.Less(t, phaseIndices[resource2.identifier], phaseIndices[resource1.identifier])
-			assert.Less(t, phaseIndices[resource4.identifier], phaseIndices[resource3.identifier])
-			assert.Less(t, phaseIndices[resource6.identifier], phaseIndices[resource5.identifier])
+
+			assert.Len(t, plan, len(expected))
+			for i, phase := range plan {
+				assert.ElementsMatch(t, expected[i], phase)
+			}
 		})
 		t.Run("missing create dependency", func(t *testing.T) {
 			resource1 := &testResource{
