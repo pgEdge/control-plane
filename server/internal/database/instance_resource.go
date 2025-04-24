@@ -135,6 +135,8 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 	if err != nil {
 		return fmt.Errorf("failed to connect to database %q: %w", r.Spec.DatabaseName, err)
 	}
+	defer conn.Close(ctx)
+
 	err = postgres.InitializePgEdgeExtensions(r.Spec.NodeName, &postgres.DSN{
 		Host:        connInfo.PeerHost,
 		Port:        connInfo.PeerPort,
