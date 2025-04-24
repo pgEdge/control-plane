@@ -28,6 +28,14 @@ type PatroniMember struct {
 	InstanceID uuid.UUID `json:"instance_id"`
 }
 
+func (p *PatroniMember) ResourceVersion() string {
+	return "1"
+}
+
+func (p *PatroniMember) DiffIgnore() []string {
+	return nil
+}
+
 func (p *PatroniMember) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeCluster,

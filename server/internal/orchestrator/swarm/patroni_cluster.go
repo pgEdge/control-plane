@@ -28,6 +28,14 @@ type PatroniCluster struct {
 	PatroniNamespace string    `json:"patroni_namespace"`
 }
 
+func (p *PatroniCluster) ResourceVersion() string {
+	return "1"
+}
+
+func (p *PatroniCluster) DiffIgnore() []string {
+	return nil
+}
+
 func (p *PatroniCluster) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeCluster,

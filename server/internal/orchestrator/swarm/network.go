@@ -40,6 +40,18 @@ type Network struct {
 	Gateway   netip.Addr   `json:"gateway"`
 }
 
+func (n *Network) ResourceVersion() string {
+	return "1"
+}
+
+func (n *Network) DiffIgnore() []string {
+	return []string{
+		"/network_id",
+		"/subnet",
+		"/gateway",
+	}
+}
+
 func (n *Network) Identifier() resource.Identifier {
 	return NetworkResourceIdentifier(n.Name)
 }

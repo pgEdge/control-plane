@@ -26,6 +26,16 @@ type NodeResource struct {
 	PrimaryInstanceID uuid.UUID   `json:"primary_instance_id"`
 }
 
+func (n *NodeResource) ResourceVersion() string {
+	return "1"
+}
+
+func (n *NodeResource) DiffIgnore() []string {
+	return []string{
+		"/primary_instance_id",
+	}
+}
+
 func (n *NodeResource) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeCluster,

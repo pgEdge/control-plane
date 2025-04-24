@@ -452,6 +452,27 @@ func TestState(t *testing.T) {
 			}
 			assert.Equal(t, expected, plan)
 		})
+
+		t.Run("ignored attributes", func(t *testing.T) {
+			currentResource := &testResource{
+				SomeIgnoredAttribute: "ignored",
+				identifier:           testResourceID("test1"),
+			}
+			desiredResource := &testResource{
+				identifier: testResourceID("test1"),
+			}
+
+			current := resource.NewState()
+			desired := resource.NewState()
+
+			current.AddResource(currentResource)
+			desired.AddResource(desiredResource)
+
+			plan, err := current.Plan(desired, false)
+			assert.NoError(t, err)
+
+			assert.Empty(t, plan)
+		})
 	})
 }
 
@@ -463,9 +484,20 @@ func testResourceID(id string) resource.Identifier {
 }
 
 type testResource struct {
-	SomeAttribute string `json:"some_attribute"`
-	identifier    resource.Identifier
-	dependencies  []resource.Identifier
+	SomeAttribute        string `json:"some_attribute"`
+	SomeIgnoredAttribute string `json:"some_ignored_attribute"`
+	identifier           resource.Identifier
+	dependencies         []resource.Identifier
+}
+
+func (r *testResource) ResourceVersion() string {
+	return "1"
+}
+
+func (r *testResource) DiffIgnore() []string {
+	return []string{
+		"/some_ignored_attribute",
+	}
 }
 
 func (r *testResource) Executor() resource.Executor {

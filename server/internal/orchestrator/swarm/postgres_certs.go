@@ -40,6 +40,22 @@ type PostgresCerts struct {
 	ReplicationKey   []byte    `json:"replication_key"`
 }
 
+func (c *PostgresCerts) ResourceVersion() string {
+	return "1"
+}
+
+func (c *PostgresCerts) DiffIgnore() []string {
+	return []string{
+		"/ca_cert",
+		"/server_cert",
+		"/server_key",
+		"/superuser_cert",
+		"/superuser_key",
+		"/replication_cert",
+		"/replication_key",
+	}
+}
+
 func (c *PostgresCerts) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeHost,

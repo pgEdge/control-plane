@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/samber/do"
+	"github.com/wI2L/jsondiff"
 )
 
 var ErrNotFound = fmt.Errorf("resource not found")
@@ -32,11 +33,32 @@ func (r Identifier) String() string {
 }
 
 type ResourceData struct {
-	NeedsCreate  bool            `json:"needs_create"`
-	Executor     Executor        `json:"executor"`
-	Identifier   Identifier      `json:"identifier"`
-	Attributes   json.RawMessage `json:"attributes"`
-	Dependencies []Identifier    `json:"dependencies"`
+	NeedsCreate     bool            `json:"needs_create"`
+	Executor        Executor        `json:"executor"`
+	Identifier      Identifier      `json:"identifier"`
+	Attributes      json.RawMessage `json:"attributes"`
+	Dependencies    []Identifier    `json:"dependencies"`
+	DiffIgnore      []string        `json:"diff_ignore"`
+	ResourceVersion string          `json:"resource_version"`
+}
+
+func (r *ResourceData) Differs(other *ResourceData) (bool, error) {
+	if r.ResourceVersion != other.ResourceVersion {
+		return true, nil
+	}
+	diff, err := jsondiff.CompareJSON(
+		r.Attributes,
+		other.Attributes,
+		jsondiff.Ignores(r.DiffIgnore...),
+	)
+	if err != nil {
+		return false, fmt.Errorf("failed to compare resource attributes: %w", err)
+	}
+	if len(diff) > 0 {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 type Context struct {
@@ -71,6 +93,8 @@ type Resource interface {
 	Create(ctx context.Context, rc *Context) error
 	Update(ctx context.Context, rc *Context) error
 	Delete(ctx context.Context, rc *Context) error
+	DiffIgnore() []string
+	ResourceVersion() string
 }
 
 func ToResourceData(resource Resource) (*ResourceData, error) {
@@ -79,10 +103,12 @@ func ToResourceData(resource Resource) (*ResourceData, error) {
 		return nil, fmt.Errorf("failed to marshal resource attributes: %w", err)
 	}
 	return &ResourceData{
-		Executor:     resource.Executor(),
-		Identifier:   resource.Identifier(),
-		Attributes:   attributes,
-		Dependencies: resource.Dependencies(),
+		Executor:        resource.Executor(),
+		Identifier:      resource.Identifier(),
+		Attributes:      attributes,
+		Dependencies:    resource.Dependencies(),
+		DiffIgnore:      resource.DiffIgnore(),
+		ResourceVersion: resource.ResourceVersion(),
 	}, nil
 }
 

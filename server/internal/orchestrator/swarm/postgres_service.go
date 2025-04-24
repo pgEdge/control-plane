@@ -31,6 +31,16 @@ type PostgresService struct {
 	ServiceID   string                 `json:"service_id"`
 }
 
+func (s *PostgresService) ResourceVersion() string {
+	return "1"
+}
+
+func (s *PostgresService) DiffIgnore() []string {
+	return []string{
+		"/service_id",
+	}
+}
+
 func (s *PostgresService) Identifier() resource.Identifier {
 	return PostgresServiceResourceIdentifier(s.Instance.InstanceID)
 }

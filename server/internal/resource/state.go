@@ -1,7 +1,6 @@
 package resource
 
 import (
-	"bytes"
 	"fmt"
 	"iter"
 	"maps"
@@ -247,17 +246,21 @@ func (s *State) planCreates(desired *State, forceUpdate bool) ([][]*Event, error
 					Type:     EventTypeCreate,
 					Resource: resource,
 				}
-			} else if forceUpdate || !bytes.Equal(currentResource.Attributes, resource.Attributes) {
+			} else if forceUpdate || slices.ContainsFunc(resource.Dependencies, modified.Has) {
 				event = &Event{
 					Type:     EventTypeUpdate,
 					Resource: resource,
 				}
-			} else if slices.ContainsFunc(resource.Dependencies, modified.Has) {
-				// If one of this resource's dependencies has been updated, we need
-				// to update it as well.
-				event = &Event{
-					Type:     EventTypeUpdate,
-					Resource: resource,
+			} else {
+				differs, err := resource.Differs(currentResource)
+				if err != nil {
+					return nil, fmt.Errorf("failed to compare resource %s: %w", resource.Identifier, err)
+				}
+				if differs {
+					event = &Event{
+						Type:     EventTypeUpdate,
+						Resource: resource,
+					}
 				}
 			}
 

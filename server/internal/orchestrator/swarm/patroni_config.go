@@ -45,7 +45,14 @@ type PatroniConfig struct {
 	OwnerUID            int                    `json:"owner_uid"`
 	OwnerGID            int                    `json:"owner_gid"`
 	InstanceHostname    string                 `json:"instance_hostname"`
-	Config              *patroni.Config        `json:"config"`
+}
+
+func (c *PatroniConfig) ResourceVersion() string {
+	return "1"
+}
+
+func (c *PatroniConfig) DiffIgnore() []string {
+	return nil
 }
 
 func (c *PatroniConfig) Executor() resource.Executor {
@@ -139,7 +146,6 @@ func (c *PatroniConfig) Create(ctx context.Context, rc *resource.Context) error 
 	if err != nil {
 		return fmt.Errorf("failed to generate patroni config: %w", err)
 	}
-	c.Config = config
 
 	content, err := json.Marshal(config)
 	if err != nil {

@@ -38,7 +38,14 @@ type PgBackRestConfig struct {
 	Name         string                       `json:"name"`
 	OwnerUID     int                          `json:"owner_uid"`
 	OwnerGID     int                          `json:"owner_gid"`
-	Contents     []byte                       `json:"contents"`
+}
+
+func (c *PgBackRestConfig) ResourceVersion() string {
+	return "1"
+}
+
+func (c *PgBackRestConfig) DiffIgnore() []string {
+	return nil
 }
 
 func (c *PgBackRestConfig) Executor() resource.Executor {
@@ -69,11 +76,10 @@ func (c *PgBackRestConfig) Refresh(ctx context.Context, rc *resource.Context) er
 		return fmt.Errorf("failed to get parent full path: %w", err)
 	}
 
-	contents, err := readResourceFile(fs, filepath.Join(parentFullPath, c.Name))
+	_, err = readResourceFile(fs, filepath.Join(parentFullPath, c.Name))
 	if err != nil {
 		return fmt.Errorf("failed to read pgbackrest config: %w", err)
 	}
-	c.Contents = contents
 
 	return nil
 }

@@ -44,6 +44,20 @@ type EtcdCreds struct {
 	ClientKey  []byte    `json:"server_key"`
 }
 
+func (c *EtcdCreds) ResourceVersion() string {
+	return "1"
+}
+
+func (c *EtcdCreds) DiffIgnore() []string {
+	return []string{
+		"/username",
+		"/password",
+		"/ca_cert",
+		"/server_cert",
+		"/server_key",
+	}
+}
+
 func (c *EtcdCreds) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeHost,

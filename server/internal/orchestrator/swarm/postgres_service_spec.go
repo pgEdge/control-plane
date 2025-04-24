@@ -38,6 +38,16 @@ type PostgresServiceSpecResource struct {
 	CertificatesDirID   string                 `json:"certificates_dir_id"`
 }
 
+func (s *PostgresServiceSpecResource) ResourceVersion() string {
+	return "1"
+}
+
+func (s *PostgresServiceSpecResource) DiffIgnore() []string {
+	return []string{
+		"/spec",
+	}
+}
+
 func (s *PostgresServiceSpecResource) Identifier() resource.Identifier {
 	return PostgresServiceSpecResourceIdentifier(s.Instance.InstanceID)
 }

@@ -26,7 +26,14 @@ func SubscriptionResourceIdentifier(subscriberNode, providerNode string) resourc
 type SubscriptionResource struct {
 	SubscriberNode string `json:"subscriber_node"`
 	ProviderNode   string `json:"provider_node"`
-	SubscriptionID uint32 `json:"subscription_id"`
+}
+
+func (s *SubscriptionResource) ResourceVersion() string {
+	return "1"
+}
+
+func (s *SubscriptionResource) DiffIgnore() []string {
+	return nil
 }
 
 func (s *SubscriptionResource) Executor() resource.Executor {
@@ -56,14 +63,13 @@ func (s *SubscriptionResource) Refresh(ctx context.Context, rc *resource.Context
 	if err != nil {
 		return fmt.Errorf("failed to connect to database %q: %w", subscriber.Spec.DatabaseName, err)
 	}
-	subID, err := postgres.GetSubscriptionID(s.SubscriberNode, s.ProviderNode).Row(ctx, conn)
+	_, err = postgres.GetSubscriptionID(s.SubscriberNode, s.ProviderNode).Row(ctx, conn)
 	if errors.Is(err, pgx.ErrNoRows) {
 		// subscription does not exist
 		return resource.ErrNotFound
 	} else if err != nil {
 		return fmt.Errorf("failed to get subscription ID %q: %w", s.SubscriberNode, err)
 	}
-	s.SubscriptionID = subID
 
 	return nil
 }
@@ -95,11 +101,10 @@ func (s *SubscriptionResource) Create(ctx context.Context, rc *resource.Context)
 		return fmt.Errorf("failed to create subscription %q: %w", s.SubscriberNode, err)
 	}
 
-	subID, err := postgres.GetSubscriptionID(s.SubscriberNode, s.ProviderNode).Row(ctx, conn)
+	_, err = postgres.GetSubscriptionID(s.SubscriberNode, s.ProviderNode).Row(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to get subscription ID %q: %w", s.SubscriberNode, err)
 	}
-	s.SubscriptionID = subID
 
 	return nil
 }

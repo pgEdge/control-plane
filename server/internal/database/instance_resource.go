@@ -35,6 +35,17 @@ type InstanceResource struct {
 	ConnectionInfo           *ConnectionInfo       `json:"connection_info"`
 }
 
+func (r *InstanceResource) ResourceVersion() string {
+	return "1"
+}
+
+func (r *InstanceResource) DiffIgnore() []string {
+	return []string{
+		"/primary_instance_id",
+		"/connection_info",
+	}
+}
+
 func (r *InstanceResource) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeHost,

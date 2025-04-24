@@ -35,6 +35,16 @@ type DirResource struct {
 	FullPath string      `json:"full_path"`
 }
 
+func (d *DirResource) ResourceVersion() string {
+	return "1"
+}
+
+func (d *DirResource) DiffIgnore() []string {
+	return []string{
+		"/full_path",
+	}
+}
+
 func (d *DirResource) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeHost,
