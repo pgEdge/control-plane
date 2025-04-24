@@ -137,6 +137,24 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 	}
 	defer conn.Close(ctx)
 
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	enabled, err := postgres.IsSpockEnabled().Row(ctx, tx)
+	if err != nil {
+		return fmt.Errorf("failed to check if spock is enabled: %w", err)
+	}
+
+	if enabled {
+		err = postgres.EnableRepairMode().Exec(ctx, tx)
+		if err != nil {
+			return fmt.Errorf("failed to enable repair mode: %w", err)
+		}
+	}
+
 	err = postgres.InitializePgEdgeExtensions(r.Spec.NodeName, &postgres.DSN{
 		Host:        connInfo.PeerHost,
 		Port:        connInfo.PeerPort,
@@ -154,7 +172,7 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 		DBName:    r.Spec.DatabaseName,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create built-in roles: %w", err)
+		return fmt.Errorf("failed to generate built-in role statements: %w", err)
 	}
 	if err := roleStatements.Exec(ctx, conn); err != nil {
 		return fmt.Errorf("failed to create built-in roles: %w", err)
@@ -175,6 +193,10 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 		if err := statement.Exec(ctx, conn); err != nil {
 			return fmt.Errorf("failed to create user role %q: %w", user.Username, err)
 		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil

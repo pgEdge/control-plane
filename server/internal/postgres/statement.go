@@ -77,7 +77,7 @@ func (q Query[T]) Rows(ctx context.Context, conn Executor) ([]T, error) {
 
 type ConditionalStatement struct {
 	If   Query[bool]
-	Then Statement
+	Then IStatement
 }
 
 func (s ConditionalStatement) Exec(ctx context.Context, conn Executor) error {

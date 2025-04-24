@@ -3,3 +3,7 @@ issues:
     - path: (.+)_test.go
       linters:
         - errcheck
+    - linters:
+        - errcheck
+      # allow defer statements without error checks
+      source: "^\\s*defer\\s+"

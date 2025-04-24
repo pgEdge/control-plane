@@ -6,6 +6,18 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+func IsSpockEnabled() Query[bool] {
+	return Query[bool]{
+		SQL: "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_extension WHERE extname = 'spock');",
+	}
+}
+
+func EnableRepairMode() Statement {
+	return Statement{
+		SQL: "SELECT spock.repair_mode('True');",
+	}
+}
+
 func CreateDatabase(name string) ConditionalStatement {
 	return ConditionalStatement{
 		If: Query[bool]{
