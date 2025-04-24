@@ -313,12 +313,14 @@ func generatePatroniConfig(
 					SSLRootCert: utils.PointerTo("/opt/pgedge/certificates/postgres/ca.crt"),
 					SSLCert:     utils.PointerTo("/opt/pgedge/certificates/postgres/superuser.crt"),
 					SSLKey:      utils.PointerTo("/opt/pgedge/certificates/postgres/superuser.key"),
+					SSLMode:     utils.PointerTo("verify-full"),
 				},
 				Replication: &patroni.User{
 					Username:    utils.PointerTo("patroni_replicator"),
 					SSLRootCert: utils.PointerTo("/opt/pgedge/certificates/postgres/ca.crt"),
-					SSLCert:     utils.PointerTo("/opt/pgedge/certificates/postgres/patroni-replicator.crt"),
-					SSLKey:      utils.PointerTo("/opt/pgedge/certificates/postgres/patroni-replicator.key"),
+					SSLCert:     utils.PointerTo("/opt/pgedge/certificates/postgres/replication.crt"),
+					SSLKey:      utils.PointerTo("/opt/pgedge/certificates/postgres/replication.key"),
+					SSLMode:     utils.PointerTo("verify-full"),
 				},
 			},
 			PgHba: &[]string{
@@ -343,6 +345,26 @@ func generatePatroniConfig(
 					Address:    "::1/128",
 					AuthMethod: hba.AuthMethodTrust,
 				}.String(),
+				hba.Entry{
+					Type:       hba.EntryTypeLocal,
+					Database:   "replication",
+					User:       "all",
+					AuthMethod: hba.AuthMethodTrust,
+				}.String(),
+				hba.Entry{
+					Type:       hba.EntryTypeHost,
+					Database:   "replication",
+					User:       "all",
+					Address:    "127.0.0.1/32",
+					AuthMethod: hba.AuthMethodTrust,
+				}.String(),
+				hba.Entry{
+					Type:       hba.EntryTypeHost,
+					Database:   "replication",
+					User:       "all",
+					Address:    "::1/128",
+					AuthMethod: hba.AuthMethodTrust,
+				}.String(),
 				// Reject connections for system users except for SSL
 				// connections from the bridge network gateway (the control
 				// plane server) or SSL connections from peers.
@@ -357,6 +379,22 @@ func generatePatroniConfig(
 				hba.Entry{
 					Type:        hba.EntryTypeHostSSL,
 					Database:    "all",
+					User:        "pgedge,patroni_replicator",
+					Address:     dbNetworkInfo.Subnet.String(),
+					AuthMethod:  hba.AuthMethodCert,
+					AuthOptions: "clientcert=verify-full",
+				}.String(),
+				hba.Entry{
+					Type:        hba.EntryTypeHostSSL,
+					Database:    "replication",
+					User:        "pgedge,patroni_replicator",
+					Address:     fmt.Sprintf("%s/32", bridgeInfo.Gateway.String()),
+					AuthMethod:  hba.AuthMethodCert,
+					AuthOptions: "clientcert=verify-full",
+				}.String(),
+				hba.Entry{
+					Type:        hba.EntryTypeHostSSL,
+					Database:    "replication",
 					User:        "pgedge,patroni_replicator",
 					Address:     dbNetworkInfo.Subnet.String(),
 					AuthMethod:  hba.AuthMethodCert,
