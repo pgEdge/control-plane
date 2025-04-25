@@ -37,7 +37,7 @@ func NewDocker() (*Docker, error) {
 	return &Docker{client: cli}, nil
 }
 
-func (d *Docker) Exec(ctx context.Context, containerID string, command []string) (string, error) {
+func (d *Docker) Exec(ctx context.Context, containerID string, command []string) ([]byte, error) {
 	execIDResp, err := d.client.ContainerExecCreate(ctx, containerID, container.ExecOptions{
 		AttachStdin:  true,
 		AttachStdout: true,
@@ -46,31 +46,31 @@ func (d *Docker) Exec(ctx context.Context, containerID string, command []string)
 		Cmd:          command,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to create exec: %w", errTranslate(err))
+		return nil, fmt.Errorf("failed to create exec: %w", errTranslate(err))
 	}
 	resp, err := d.client.ContainerExecAttach(ctx, execIDResp.ID, container.ExecAttachOptions{
 		Detach: false,
 		Tty:    true,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to attach to exec: %w", err)
+		return nil, fmt.Errorf("failed to attach to exec: %w", err)
 	}
 
 	defer resp.Close()
 	output, err := io.ReadAll(resp.Reader)
 	if err != nil {
-		return "", fmt.Errorf("failed to read exec output: %w", err)
+		return nil, fmt.Errorf("failed to read exec output: %w", err)
 	}
 
 	inspResp, err := d.client.ContainerExecInspect(ctx, execIDResp.ID)
 	if err != nil {
-		return "", fmt.Errorf("failed to inspect exec: %w", err)
+		return nil, fmt.Errorf("failed to inspect exec: %w", err)
 	}
 
 	if inspResp.ExitCode != 0 {
 		err = fmt.Errorf("command failed with exit code %d: %s", inspResp.ExitCode, output)
 	}
-	return string(output), err
+	return output, err
 }
 
 func (d *Docker) Info(ctx context.Context) (system.Info, error) {

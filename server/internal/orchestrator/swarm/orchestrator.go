@@ -274,34 +274,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		},
 	}
 
-	// if spec.BackupConfig != nil && spec.BackupConfig.Provider == database.BackupProviderPgBackrest {
-	// 	pgBackRestBackupConfig := &PgBackRestConfig{
-	// 		InstanceID:   spec.InstanceID,
-	// 		HostID:       spec.HostID,
-	// 		DatabaseID:   spec.DatabaseID,
-	// 		NodeName:     spec.NodeName,
-	// 		Repositories: spec.BackupConfig.Repositories,
-	// 		ParentID:     configsDir.ID,
-	// 		Name:         "pgbackrest.backup.conf",
-	// 		OwnerUID:     o.cfg.DatabaseOwnerUID,
-	// 		OwnerGID:     o.cfg.DatabaseOwnerUID,
-	// 	}
-	// }
-	// if spec.RestoreConfig != nil && spec.RestoreConfig.Provider == database.BackupProviderPgBackrest {
-	// 	pgBackRestRestoreConfig := &PgBackRestConfig{
-	// 		InstanceID:   spec.InstanceID,
-	// 		HostID:       spec.HostID,
-	// 		DatabaseID:   spec.DatabaseID,
-	// 		NodeName:     spec.NodeName,
-	// 		Repositories: []*database.BackupRepository{spec.RestoreConfig.Repository},
-	// 		ParentID:     configsDir.ID,
-	// 		Name:         "pgbackrest.restore.conf",
-	// 		OwnerUID:     o.cfg.DatabaseOwnerUID,
-	// 		OwnerGID:     o.cfg.DatabaseOwnerUID,
-	// 	}
-	// }
-
-	resources, err := database.NewInstanceResources(instance, []resource.Resource{
+	orchestratorResources := []resource.Resource{
 		databaseNetwork,
 		patroniCluster,
 		patroniMember,
@@ -314,7 +287,41 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		patroniConfig,
 		serviceSpec,
 		service,
-	})
+	}
+
+	if spec.BackupConfig != nil && spec.BackupConfig.Provider == database.BackupProviderPgBackrest {
+		orchestratorResources = append(orchestratorResources,
+			&PgBackRestConfig{
+				InstanceID:   spec.InstanceID,
+				HostID:       spec.HostID,
+				DatabaseID:   spec.DatabaseID,
+				NodeName:     spec.NodeName,
+				Repositories: spec.BackupConfig.Repositories,
+				ParentID:     configsDir.ID,
+				Name:         "pgbackrest.backup.conf",
+				OwnerUID:     o.cfg.DatabaseOwnerUID,
+				OwnerGID:     o.cfg.DatabaseOwnerUID,
+			},
+			&PgBackRestStanza{
+				NodeName: spec.NodeName,
+			},
+		)
+	}
+	if spec.RestoreConfig != nil && spec.RestoreConfig.Provider == database.BackupProviderPgBackrest {
+		orchestratorResources = append(orchestratorResources, &PgBackRestConfig{
+			InstanceID:   spec.InstanceID,
+			HostID:       spec.HostID,
+			DatabaseID:   spec.DatabaseID,
+			NodeName:     spec.NodeName,
+			Repositories: []*database.BackupRepository{spec.RestoreConfig.Repository},
+			ParentID:     configsDir.ID,
+			Name:         "pgbackrest.restore.conf",
+			OwnerUID:     o.cfg.DatabaseOwnerUID,
+			OwnerGID:     o.cfg.DatabaseOwnerUID,
+		})
+	}
+
+	resources, err := database.NewInstanceResources(instance, orchestratorResources)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create instance resources: %w", err)
 	}
