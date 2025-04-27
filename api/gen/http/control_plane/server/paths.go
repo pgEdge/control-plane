@@ -75,3 +75,23 @@ func UpdateDatabaseControlPlanePath(databaseID string) string {
 func DeleteDatabaseControlPlanePath(databaseID string) string {
 	return fmt.Sprintf("/databases/%v", databaseID)
 }
+
+// InitiateDatabaseBackupControlPlanePath returns the URL path to the control-plane service initiate-database-backup HTTP endpoint.
+func InitiateDatabaseBackupControlPlanePath(databaseID string, nodeName string) string {
+	return fmt.Sprintf("/databases/%v/nodes/%v/backups", databaseID, nodeName)
+}
+
+// ListDatabaseTasksControlPlanePath returns the URL path to the control-plane service list-database-tasks HTTP endpoint.
+func ListDatabaseTasksControlPlanePath(databaseID string) string {
+	return fmt.Sprintf("/databases/%v/tasks", databaseID)
+}
+
+// InspectDatabaseTaskControlPlanePath returns the URL path to the control-plane service inspect-database-task HTTP endpoint.
+func InspectDatabaseTaskControlPlanePath(databaseID string, taskID string) string {
+	return fmt.Sprintf("/databases/%v/tasks/%v", databaseID, taskID)
+}
+
+// GetDatabaseTaskLogControlPlanePath returns the URL path to the control-plane service get-database-task-log HTTP endpoint.
+func GetDatabaseTaskLogControlPlanePath(databaseID string, taskID string) string {
+	return fmt.Sprintf("/databases/%v/tasks/%v/log", databaseID, taskID)
+}

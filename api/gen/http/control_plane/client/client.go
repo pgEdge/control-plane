@@ -69,6 +69,22 @@ type Client struct {
 	// delete-database endpoint.
 	DeleteDatabaseDoer goahttp.Doer
 
+	// InitiateDatabaseBackup Doer is the HTTP client used to make requests to the
+	// initiate-database-backup endpoint.
+	InitiateDatabaseBackupDoer goahttp.Doer
+
+	// ListDatabaseTasks Doer is the HTTP client used to make requests to the
+	// list-database-tasks endpoint.
+	ListDatabaseTasksDoer goahttp.Doer
+
+	// InspectDatabaseTask Doer is the HTTP client used to make requests to the
+	// inspect-database-task endpoint.
+	InspectDatabaseTaskDoer goahttp.Doer
+
+	// GetDatabaseTaskLog Doer is the HTTP client used to make requests to the
+	// get-database-task-log endpoint.
+	GetDatabaseTaskLogDoer goahttp.Doer
+
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
 	RestoreResponseBody bool
@@ -90,24 +106,28 @@ func NewClient(
 	restoreBody bool,
 ) *Client {
 	return &Client{
-		InitClusterDoer:     doer,
-		JoinClusterDoer:     doer,
-		GetJoinTokenDoer:    doer,
-		GetJoinOptionsDoer:  doer,
-		InspectClusterDoer:  doer,
-		ListHostsDoer:       doer,
-		InspectHostDoer:     doer,
-		RemoveHostDoer:      doer,
-		ListDatabasesDoer:   doer,
-		CreateDatabaseDoer:  doer,
-		InspectDatabaseDoer: doer,
-		UpdateDatabaseDoer:  doer,
-		DeleteDatabaseDoer:  doer,
-		RestoreResponseBody: restoreBody,
-		scheme:              scheme,
-		host:                host,
-		decoder:             dec,
-		encoder:             enc,
+		InitClusterDoer:            doer,
+		JoinClusterDoer:            doer,
+		GetJoinTokenDoer:           doer,
+		GetJoinOptionsDoer:         doer,
+		InspectClusterDoer:         doer,
+		ListHostsDoer:              doer,
+		InspectHostDoer:            doer,
+		RemoveHostDoer:             doer,
+		ListDatabasesDoer:          doer,
+		CreateDatabaseDoer:         doer,
+		InspectDatabaseDoer:        doer,
+		UpdateDatabaseDoer:         doer,
+		DeleteDatabaseDoer:         doer,
+		InitiateDatabaseBackupDoer: doer,
+		ListDatabaseTasksDoer:      doer,
+		InspectDatabaseTaskDoer:    doer,
+		GetDatabaseTaskLogDoer:     doer,
+		RestoreResponseBody:        restoreBody,
+		scheme:                     scheme,
+		host:                       host,
+		decoder:                    dec,
+		encoder:                    enc,
 	}
 }
 
@@ -373,6 +393,97 @@ func (c *Client) DeleteDatabase() goa.Endpoint {
 		resp, err := c.DeleteDatabaseDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("control-plane", "delete-database", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// InitiateDatabaseBackup returns an endpoint that makes HTTP requests to the
+// control-plane service initiate-database-backup server.
+func (c *Client) InitiateDatabaseBackup() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeInitiateDatabaseBackupRequest(c.encoder)
+		decodeResponse = DecodeInitiateDatabaseBackupResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildInitiateDatabaseBackupRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.InitiateDatabaseBackupDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "initiate-database-backup", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// ListDatabaseTasks returns an endpoint that makes HTTP requests to the
+// control-plane service list-database-tasks server.
+func (c *Client) ListDatabaseTasks() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeListDatabaseTasksRequest(c.encoder)
+		decodeResponse = DecodeListDatabaseTasksResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildListDatabaseTasksRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.ListDatabaseTasksDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "list-database-tasks", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// InspectDatabaseTask returns an endpoint that makes HTTP requests to the
+// control-plane service inspect-database-task server.
+func (c *Client) InspectDatabaseTask() goa.Endpoint {
+	var (
+		decodeResponse = DecodeInspectDatabaseTaskResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildInspectDatabaseTaskRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.InspectDatabaseTaskDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "inspect-database-task", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GetDatabaseTaskLog returns an endpoint that makes HTTP requests to the
+// control-plane service get-database-task-log server.
+func (c *Client) GetDatabaseTaskLog() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeGetDatabaseTaskLogRequest(c.encoder)
+		decodeResponse = DecodeGetDatabaseTaskLogResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetDatabaseTaskLogRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetDatabaseTaskLogDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "get-database-task-log", err)
 		}
 		return decodeResponse(resp)
 	}

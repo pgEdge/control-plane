@@ -42,6 +42,14 @@ type Service interface {
 	UpdateDatabase(context.Context, *UpdateDatabasePayload) (res *Database, err error)
 	// Deletes a database from the cluster.
 	DeleteDatabase(context.Context, *DeleteDatabasePayload) (err error)
+	// Initiates a backup for a database.
+	InitiateDatabaseBackup(context.Context, *InitiateDatabaseBackupPayload) (res *Task, err error)
+	// Lists all tasks for a database.
+	ListDatabaseTasks(context.Context, *ListDatabaseTasksPayload) (res []*Task, err error)
+	// Returns information about a particular task for a database.
+	InspectDatabaseTask(context.Context, *InspectDatabaseTaskPayload) (res *Task, err error)
+	// Returns the log of a particular task for a database.
+	GetDatabaseTaskLog(context.Context, *GetDatabaseTaskLogPayload) (res *TaskLog, err error)
 }
 
 // APIName is the name of the API as defined in the design.
@@ -58,7 +66,7 @@ const ServiceName = "control-plane"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [13]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "inspect-cluster", "list-hosts", "inspect-host", "remove-host", "list-databases", "create-database", "inspect-database", "update-database", "delete-database"}
+var MethodNames = [17]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "inspect-cluster", "list-hosts", "inspect-host", "remove-host", "list-databases", "create-database", "inspect-database", "update-database", "delete-database", "initiate-database-backup", "list-database-tasks", "inspect-database-task", "get-database-task-log"}
 
 type BackupConfigSpec struct {
 	// The backup provider for this backup configuration.
@@ -67,6 +75,15 @@ type BackupConfigSpec struct {
 	Repositories []*BackupRepositorySpec
 	// The schedules for this backup configuration.
 	Schedules []*BackupScheduleSpec
+}
+
+type BackupOptions struct {
+	// The type of backup.
+	Type string
+	// Annotations for the backup.
+	Annotations map[string]string
+	// Extra options for the backup.
+	ExtraOptions []string
 }
 
 type BackupRepositorySpec struct {
@@ -333,7 +350,20 @@ type DatabaseUserSpec struct {
 // delete-database method.
 type DeleteDatabasePayload struct {
 	// ID of the database to delete.
-	DatabaseID *string
+	DatabaseID string
+}
+
+// GetDatabaseTaskLogPayload is the payload type of the control-plane service
+// get-database-task-log method.
+type GetDatabaseTaskLogPayload struct {
+	// ID of the database to get task log for.
+	DatabaseID string
+	// ID of the task to get log for.
+	TaskID string
+	// ID of the line to start from.
+	AfterLineID *string
+	// Maximum number of lines to return.
+	Limit *int
 }
 
 // Host is the result type of the control-plane service inspect-host method.
@@ -379,11 +409,30 @@ type HostStatus struct {
 	Components map[string]*ComponentStatus
 }
 
+// InitiateDatabaseBackupPayload is the payload type of the control-plane
+// service initiate-database-backup method.
+type InitiateDatabaseBackupPayload struct {
+	// ID of the database to back up.
+	DatabaseID string
+	// Name of the node to back up.
+	NodeName string
+	Options  *BackupOptions
+}
+
 // InspectDatabasePayload is the payload type of the control-plane service
 // inspect-database method.
 type InspectDatabasePayload struct {
 	// ID of the database to inspect.
 	DatabaseID *string
+}
+
+// InspectDatabaseTaskPayload is the payload type of the control-plane service
+// inspect-database-task method.
+type InspectDatabaseTaskPayload struct {
+	// ID of the database to inspect tasks for.
+	DatabaseID string
+	// ID of the task to inspect.
+	TaskID string
 }
 
 // InspectHostPayload is the payload type of the control-plane service
@@ -434,6 +483,19 @@ type InstanceInterface struct {
 	Ipv4Address *string
 	// The Postgres port for the instance on this interface.
 	Port int
+}
+
+// ListDatabaseTasksPayload is the payload type of the control-plane service
+// list-database-tasks method.
+type ListDatabaseTasksPayload struct {
+	// ID of the database to list tasks for.
+	DatabaseID string
+	// ID of the task to start from.
+	AfterTaskID *string
+	// Maximum number of tasks to return.
+	Limit *int
+	// Sort order for the tasks.
+	SortOrder *string
 }
 
 type PgEdgeVersion struct {
@@ -506,6 +568,40 @@ type RestoreRepositorySpec struct {
 	CustomOptions map[string]string
 }
 
+// Task is the result type of the control-plane service
+// initiate-database-backup method.
+type Task struct {
+	// The database ID of the task.
+	DatabaseID string
+	// The unique ID of the task.
+	TaskID string
+	// The time when the task was created.
+	CreatedAt string
+	// The time when the task was completed.
+	CompletedAt *string
+	// The type of the task.
+	Type string
+	// The status of the task.
+	Status string
+	// The error message if the task failed.
+	Error *string
+}
+
+// TaskLog is the result type of the control-plane service
+// get-database-task-log method.
+type TaskLog struct {
+	// The database ID of the task log.
+	DatabaseID string
+	// The unique ID of the task log.
+	TaskID string
+	// The status of the task.
+	TaskStatus string
+	// The ID of the last line in the task log.
+	LastLineID *string
+	// The lines of the task log.
+	Lines []string
+}
+
 // UpdateDatabasePayload is the payload type of the control-plane service
 // update-database method.
 type UpdateDatabasePayload struct {
@@ -551,6 +647,11 @@ func MakeInvalidInput(err error) *goa.ServiceError {
 // MakeDatabaseAlreadyExists builds a goa.ServiceError from an error.
 func MakeDatabaseAlreadyExists(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "database_already_exists", false, false, false)
+}
+
+// MakeDatabaseNotModifiable builds a goa.ServiceError from an error.
+func MakeDatabaseNotModifiable(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "database_not_modifiable", false, false, false)
 }
 
 // NewDatabaseCollection initializes result type DatabaseCollection from viewed

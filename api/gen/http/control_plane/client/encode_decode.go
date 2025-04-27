@@ -1048,6 +1048,7 @@ func EncodeUpdateDatabaseRequest(encoder func(*http.Request) goahttp.Encoder) fu
 // response body should be restored after having been read.
 // DecodeUpdateDatabaseResponse may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "database_not_modifiable" (type *goa.ServiceError): http.StatusConflict
 //   - "not_found" (type *goa.ServiceError): http.StatusNotFound
 //   - error: internal error
 func DecodeUpdateDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
@@ -1083,19 +1084,40 @@ func DecodeUpdateDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, 
 			res := controlplane.NewDatabase(vres)
 			return res, nil
 		case http.StatusConflict:
-			var (
-				body UpdateDatabaseClusterNotInitializedResponseBody
-				err  error
-			)
-			err = decoder(resp).Decode(&body)
-			if err != nil {
-				return nil, goahttp.ErrDecodingError("control-plane", "update-database", err)
+			en := resp.Header.Get("goa-error")
+			switch en {
+			case "cluster_not_initialized":
+				var (
+					body UpdateDatabaseClusterNotInitializedResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "update-database", err)
+				}
+				err = ValidateUpdateDatabaseClusterNotInitializedResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "update-database", err)
+				}
+				return nil, NewUpdateDatabaseClusterNotInitialized(&body)
+			case "database_not_modifiable":
+				var (
+					body UpdateDatabaseDatabaseNotModifiableResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "update-database", err)
+				}
+				err = ValidateUpdateDatabaseDatabaseNotModifiableResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "update-database", err)
+				}
+				return nil, NewUpdateDatabaseDatabaseNotModifiable(&body)
+			default:
+				body, _ := io.ReadAll(resp.Body)
+				return nil, goahttp.ErrInvalidResponse("control-plane", "update-database", resp.StatusCode, string(body))
 			}
-			err = ValidateUpdateDatabaseClusterNotInitializedResponseBody(&body)
-			if err != nil {
-				return nil, goahttp.ErrValidationError("control-plane", "update-database", err)
-			}
-			return nil, NewUpdateDatabaseClusterNotInitialized(&body)
 		case http.StatusNotFound:
 			var (
 				body UpdateDatabaseNotFoundResponseBody
@@ -1128,9 +1150,7 @@ func (c *Client) BuildDeleteDatabaseRequest(ctx context.Context, v any) (*http.R
 		if !ok {
 			return nil, goahttp.ErrInvalidType("control-plane", "delete-database", "*controlplane.DeleteDatabasePayload", v)
 		}
-		if p.DatabaseID != nil {
-			databaseID = *p.DatabaseID
-		}
+		databaseID = p.DatabaseID
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: DeleteDatabaseControlPlanePath(databaseID)}
 	req, err := http.NewRequest("DELETE", u.String(), nil)
@@ -1149,6 +1169,7 @@ func (c *Client) BuildDeleteDatabaseRequest(ctx context.Context, v any) (*http.R
 // response body should be restored after having been read.
 // DecodeDeleteDatabaseResponse may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "database_not_modifiable" (type *goa.ServiceError): http.StatusConflict
 //   - "not_found" (type *goa.ServiceError): http.StatusNotFound
 //   - error: internal error
 func DecodeDeleteDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
@@ -1169,19 +1190,40 @@ func DecodeDeleteDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, 
 		case http.StatusNoContent:
 			return nil, nil
 		case http.StatusConflict:
-			var (
-				body DeleteDatabaseClusterNotInitializedResponseBody
-				err  error
-			)
-			err = decoder(resp).Decode(&body)
-			if err != nil {
-				return nil, goahttp.ErrDecodingError("control-plane", "delete-database", err)
+			en := resp.Header.Get("goa-error")
+			switch en {
+			case "cluster_not_initialized":
+				var (
+					body DeleteDatabaseClusterNotInitializedResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "delete-database", err)
+				}
+				err = ValidateDeleteDatabaseClusterNotInitializedResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "delete-database", err)
+				}
+				return nil, NewDeleteDatabaseClusterNotInitialized(&body)
+			case "database_not_modifiable":
+				var (
+					body DeleteDatabaseDatabaseNotModifiableResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "delete-database", err)
+				}
+				err = ValidateDeleteDatabaseDatabaseNotModifiableResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "delete-database", err)
+				}
+				return nil, NewDeleteDatabaseDatabaseNotModifiable(&body)
+			default:
+				body, _ := io.ReadAll(resp.Body)
+				return nil, goahttp.ErrInvalidResponse("control-plane", "delete-database", resp.StatusCode, string(body))
 			}
-			err = ValidateDeleteDatabaseClusterNotInitializedResponseBody(&body)
-			if err != nil {
-				return nil, goahttp.ErrValidationError("control-plane", "delete-database", err)
-			}
-			return nil, NewDeleteDatabaseClusterNotInitialized(&body)
 		case http.StatusNotFound:
 			var (
 				body DeleteDatabaseNotFoundResponseBody
@@ -1199,6 +1241,491 @@ func DecodeDeleteDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, 
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "delete-database", resp.StatusCode, string(body))
+		}
+	}
+}
+
+// BuildInitiateDatabaseBackupRequest instantiates a HTTP request object with
+// method and path set to call the "control-plane" service
+// "initiate-database-backup" endpoint
+func (c *Client) BuildInitiateDatabaseBackupRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		databaseID string
+		nodeName   string
+	)
+	{
+		p, ok := v.(*controlplane.InitiateDatabaseBackupPayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("control-plane", "initiate-database-backup", "*controlplane.InitiateDatabaseBackupPayload", v)
+		}
+		databaseID = p.DatabaseID
+		nodeName = p.NodeName
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: InitiateDatabaseBackupControlPlanePath(databaseID, nodeName)}
+	req, err := http.NewRequest("POST", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("control-plane", "initiate-database-backup", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeInitiateDatabaseBackupRequest returns an encoder for requests sent to
+// the control-plane initiate-database-backup server.
+func EncodeInitiateDatabaseBackupRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.InitiateDatabaseBackupPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "initiate-database-backup", "*controlplane.InitiateDatabaseBackupPayload", v)
+		}
+		body := NewInitiateDatabaseBackupRequestBody(p)
+		if err := encoder(req).Encode(&body); err != nil {
+			return goahttp.ErrEncodingError("control-plane", "initiate-database-backup", err)
+		}
+		return nil
+	}
+}
+
+// DecodeInitiateDatabaseBackupResponse returns a decoder for responses
+// returned by the control-plane initiate-database-backup endpoint. restoreBody
+// controls whether the response body should be restored after having been read.
+// DecodeInitiateDatabaseBackupResponse may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "database_not_modifiable" (type *goa.ServiceError): http.StatusConflict
+//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
+//   - error: internal error
+func DecodeInitiateDatabaseBackupResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body InitiateDatabaseBackupResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "initiate-database-backup", err)
+			}
+			err = ValidateInitiateDatabaseBackupResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "initiate-database-backup", err)
+			}
+			res := NewInitiateDatabaseBackupTaskOK(&body)
+			return res, nil
+		case http.StatusConflict:
+			en := resp.Header.Get("goa-error")
+			switch en {
+			case "cluster_not_initialized":
+				var (
+					body InitiateDatabaseBackupClusterNotInitializedResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "initiate-database-backup", err)
+				}
+				err = ValidateInitiateDatabaseBackupClusterNotInitializedResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "initiate-database-backup", err)
+				}
+				return nil, NewInitiateDatabaseBackupClusterNotInitialized(&body)
+			case "database_not_modifiable":
+				var (
+					body InitiateDatabaseBackupDatabaseNotModifiableResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "initiate-database-backup", err)
+				}
+				err = ValidateInitiateDatabaseBackupDatabaseNotModifiableResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "initiate-database-backup", err)
+				}
+				return nil, NewInitiateDatabaseBackupDatabaseNotModifiable(&body)
+			default:
+				body, _ := io.ReadAll(resp.Body)
+				return nil, goahttp.ErrInvalidResponse("control-plane", "initiate-database-backup", resp.StatusCode, string(body))
+			}
+		case http.StatusNotFound:
+			var (
+				body InitiateDatabaseBackupNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "initiate-database-backup", err)
+			}
+			err = ValidateInitiateDatabaseBackupNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "initiate-database-backup", err)
+			}
+			return nil, NewInitiateDatabaseBackupNotFound(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("control-plane", "initiate-database-backup", resp.StatusCode, string(body))
+		}
+	}
+}
+
+// BuildListDatabaseTasksRequest instantiates a HTTP request object with method
+// and path set to call the "control-plane" service "list-database-tasks"
+// endpoint
+func (c *Client) BuildListDatabaseTasksRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		databaseID string
+	)
+	{
+		p, ok := v.(*controlplane.ListDatabaseTasksPayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("control-plane", "list-database-tasks", "*controlplane.ListDatabaseTasksPayload", v)
+		}
+		databaseID = p.DatabaseID
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ListDatabaseTasksControlPlanePath(databaseID)}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("control-plane", "list-database-tasks", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeListDatabaseTasksRequest returns an encoder for requests sent to the
+// control-plane list-database-tasks server.
+func EncodeListDatabaseTasksRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.ListDatabaseTasksPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "list-database-tasks", "*controlplane.ListDatabaseTasksPayload", v)
+		}
+		values := req.URL.Query()
+		if p.AfterTaskID != nil {
+			values.Add("after_task_id", *p.AfterTaskID)
+		}
+		if p.Limit != nil {
+			values.Add("limit", fmt.Sprintf("%v", *p.Limit))
+		}
+		if p.SortOrder != nil {
+			values.Add("sort_order", *p.SortOrder)
+		}
+		req.URL.RawQuery = values.Encode()
+		return nil
+	}
+}
+
+// DecodeListDatabaseTasksResponse returns a decoder for responses returned by
+// the control-plane list-database-tasks endpoint. restoreBody controls whether
+// the response body should be restored after having been read.
+// DecodeListDatabaseTasksResponse may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
+//   - error: internal error
+func DecodeListDatabaseTasksResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body ListDatabaseTasksResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "list-database-tasks", err)
+			}
+			for _, e := range body {
+				if e != nil {
+					if err2 := ValidateTaskResponse(e); err2 != nil {
+						err = goa.MergeErrors(err, err2)
+					}
+				}
+			}
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "list-database-tasks", err)
+			}
+			res := NewListDatabaseTasksTaskOK(body)
+			return res, nil
+		case http.StatusConflict:
+			var (
+				body ListDatabaseTasksClusterNotInitializedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "list-database-tasks", err)
+			}
+			err = ValidateListDatabaseTasksClusterNotInitializedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "list-database-tasks", err)
+			}
+			return nil, NewListDatabaseTasksClusterNotInitialized(&body)
+		case http.StatusNotFound:
+			var (
+				body ListDatabaseTasksNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "list-database-tasks", err)
+			}
+			err = ValidateListDatabaseTasksNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "list-database-tasks", err)
+			}
+			return nil, NewListDatabaseTasksNotFound(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("control-plane", "list-database-tasks", resp.StatusCode, string(body))
+		}
+	}
+}
+
+// BuildInspectDatabaseTaskRequest instantiates a HTTP request object with
+// method and path set to call the "control-plane" service
+// "inspect-database-task" endpoint
+func (c *Client) BuildInspectDatabaseTaskRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		databaseID string
+		taskID     string
+	)
+	{
+		p, ok := v.(*controlplane.InspectDatabaseTaskPayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("control-plane", "inspect-database-task", "*controlplane.InspectDatabaseTaskPayload", v)
+		}
+		databaseID = p.DatabaseID
+		taskID = p.TaskID
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: InspectDatabaseTaskControlPlanePath(databaseID, taskID)}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("control-plane", "inspect-database-task", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// DecodeInspectDatabaseTaskResponse returns a decoder for responses returned
+// by the control-plane inspect-database-task endpoint. restoreBody controls
+// whether the response body should be restored after having been read.
+// DecodeInspectDatabaseTaskResponse may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
+//   - error: internal error
+func DecodeInspectDatabaseTaskResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body InspectDatabaseTaskResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "inspect-database-task", err)
+			}
+			err = ValidateInspectDatabaseTaskResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "inspect-database-task", err)
+			}
+			res := NewInspectDatabaseTaskTaskOK(&body)
+			return res, nil
+		case http.StatusConflict:
+			var (
+				body InspectDatabaseTaskClusterNotInitializedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "inspect-database-task", err)
+			}
+			err = ValidateInspectDatabaseTaskClusterNotInitializedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "inspect-database-task", err)
+			}
+			return nil, NewInspectDatabaseTaskClusterNotInitialized(&body)
+		case http.StatusNotFound:
+			var (
+				body InspectDatabaseTaskNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "inspect-database-task", err)
+			}
+			err = ValidateInspectDatabaseTaskNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "inspect-database-task", err)
+			}
+			return nil, NewInspectDatabaseTaskNotFound(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("control-plane", "inspect-database-task", resp.StatusCode, string(body))
+		}
+	}
+}
+
+// BuildGetDatabaseTaskLogRequest instantiates a HTTP request object with
+// method and path set to call the "control-plane" service
+// "get-database-task-log" endpoint
+func (c *Client) BuildGetDatabaseTaskLogRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		databaseID string
+		taskID     string
+	)
+	{
+		p, ok := v.(*controlplane.GetDatabaseTaskLogPayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("control-plane", "get-database-task-log", "*controlplane.GetDatabaseTaskLogPayload", v)
+		}
+		databaseID = p.DatabaseID
+		taskID = p.TaskID
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetDatabaseTaskLogControlPlanePath(databaseID, taskID)}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("control-plane", "get-database-task-log", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeGetDatabaseTaskLogRequest returns an encoder for requests sent to the
+// control-plane get-database-task-log server.
+func EncodeGetDatabaseTaskLogRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.GetDatabaseTaskLogPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "get-database-task-log", "*controlplane.GetDatabaseTaskLogPayload", v)
+		}
+		values := req.URL.Query()
+		if p.AfterLineID != nil {
+			values.Add("after_line_id", *p.AfterLineID)
+		}
+		if p.Limit != nil {
+			values.Add("limit", fmt.Sprintf("%v", *p.Limit))
+		}
+		req.URL.RawQuery = values.Encode()
+		return nil
+	}
+}
+
+// DecodeGetDatabaseTaskLogResponse returns a decoder for responses returned by
+// the control-plane get-database-task-log endpoint. restoreBody controls
+// whether the response body should be restored after having been read.
+// DecodeGetDatabaseTaskLogResponse may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
+//   - error: internal error
+func DecodeGetDatabaseTaskLogResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body GetDatabaseTaskLogResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-database-task-log", err)
+			}
+			err = ValidateGetDatabaseTaskLogResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-database-task-log", err)
+			}
+			res := NewGetDatabaseTaskLogTaskLogOK(&body)
+			return res, nil
+		case http.StatusConflict:
+			var (
+				body GetDatabaseTaskLogClusterNotInitializedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-database-task-log", err)
+			}
+			err = ValidateGetDatabaseTaskLogClusterNotInitializedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-database-task-log", err)
+			}
+			return nil, NewGetDatabaseTaskLogClusterNotInitialized(&body)
+		case http.StatusNotFound:
+			var (
+				body GetDatabaseTaskLogNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-database-task-log", err)
+			}
+			err = ValidateGetDatabaseTaskLogNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-database-task-log", err)
+			}
+			return nil, NewGetDatabaseTaskLogNotFound(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("control-plane", "get-database-task-log", resp.StatusCode, string(body))
 		}
 	}
 }
@@ -3017,6 +3544,22 @@ func marshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRepo
 			tv := val
 			res.CustomOptions[tk] = tv
 		}
+	}
+
+	return res
+}
+
+// unmarshalTaskResponseToControlplaneTask builds a value of type
+// *controlplane.Task from a value of type *TaskResponse.
+func unmarshalTaskResponseToControlplaneTask(v *TaskResponse) *controlplane.Task {
+	res := &controlplane.Task{
+		DatabaseID:  *v.DatabaseID,
+		TaskID:      *v.TaskID,
+		CreatedAt:   *v.CreatedAt,
+		CompletedAt: v.CompletedAt,
+		Type:        *v.Type,
+		Status:      *v.Status,
+		Error:       v.Error,
 	}
 
 	return res

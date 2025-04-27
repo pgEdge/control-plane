@@ -17,6 +17,8 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
+	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
 )
 
@@ -31,6 +33,7 @@ type Service struct {
 	etcd           *etcd.EmbeddedEtcd
 	hostSvc        *host.Service
 	dbSvc          *database.Service
+	taskSvc        *task.Service
 	workflowClient *client.Client
 }
 
@@ -40,6 +43,7 @@ func NewService(
 	etcd *etcd.EmbeddedEtcd,
 	hostSvc *host.Service,
 	dbSvc *database.Service,
+	taskSvc *task.Service,
 	workflowClient *client.Client,
 ) *Service {
 	return &Service{
@@ -48,6 +52,7 @@ func NewService(
 		etcd:           etcd,
 		hostSvc:        hostSvc,
 		dbSvc:          dbSvc,
+		taskSvc:        taskSvc,
 		workflowClient: workflowClient,
 	}
 }
@@ -202,23 +207,20 @@ func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePay
 	return databaseToAPI(db), nil
 }
 
-func (s *Service) DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePayload) (err error) {
-	if req.DatabaseID == nil {
-		return api.MakeInvalidInput(errors.New("database ID is required"))
-	}
-	databaseID, err := uuid.Parse(*req.DatabaseID)
+func (s *Service) DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePayload) error {
+	databaseID, err := uuid.Parse(req.DatabaseID)
 	if err != nil {
-		return api.MakeInvalidInput(fmt.Errorf("invalid database ID %q: %w", *req.DatabaseID, err))
+		return api.MakeInvalidInput(fmt.Errorf("invalid database ID %q: %w", req.DatabaseID, err))
 	}
 
 	db, err := s.dbSvc.GetDatabase(ctx, databaseID)
 	if errors.Is(err, database.ErrDatabaseNotFound) {
-		return api.MakeNotFound(fmt.Errorf("database %s not found: %w", *req.DatabaseID, err))
+		return api.MakeNotFound(fmt.Errorf("database %s not found: %w", databaseID, err))
 	} else if err != nil {
 		return fmt.Errorf("failed to get database: %w", err)
 	}
 	if !database.DatabaseStateModifiable(db.State) {
-		return api.MakeInvalidInput(fmt.Errorf("database %s is not in a modifiable state", *req.DatabaseID))
+		return api.MakeDatabaseNotModifiable(fmt.Errorf("database %s is not in a modifiable state", databaseID))
 	}
 
 	// TODO: This update needs to be atomic
@@ -238,6 +240,152 @@ func (s *Service) DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePay
 	}
 
 	return nil
+}
+
+func (s *Service) InitiateDatabaseBackup(ctx context.Context, req *api.InitiateDatabaseBackupPayload) (*api.Task, error) {
+	databaseID, err := uuid.Parse(req.DatabaseID)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("invalid database ID %q: %w", req.DatabaseID, err))
+	}
+
+	db, err := s.dbSvc.GetDatabase(ctx, databaseID)
+	if errors.Is(err, database.ErrDatabaseNotFound) {
+		return nil, api.MakeNotFound(fmt.Errorf("database %s not found: %w", databaseID, err))
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get database: %w", err)
+	}
+	if !database.DatabaseStateModifiable(db.State) {
+		return nil, api.MakeDatabaseNotModifiable(fmt.Errorf("database %s is not in a modifiable state", databaseID))
+	}
+
+	node, err := db.Spec.Node(req.NodeName)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("invalid node name %q: %w", req.NodeName, err))
+	}
+	instances := make([]*workflows.InstanceHost, len(node.HostIDs))
+	for i, hostID := range node.HostIDs {
+		instances[i] = &workflows.InstanceHost{
+			InstanceID: database.InstanceIDFor(hostID, db.DatabaseID, node.Name),
+			HostID:     hostID,
+		}
+	}
+
+	t, err := task.NewTask(db.DatabaseID, task.TypeBackup)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create task: %w", err)
+	}
+	err = s.taskSvc.CreateTask(ctx, t)
+	if err != nil {
+		return nil, fmt.Errorf("failed to persist task: %w", err)
+	}
+
+	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
+		Queue:      core.Queue(s.cfg.HostID.String()),
+		InstanceID: db.DatabaseID.String() + "-" + node.Name,
+	}, "CreatePgBackRestBackup", &workflows.CreatePgBackRestBackupInput{
+		Task:      t,
+		Instances: instances,
+		Options: &pgbackrest.BackupOptions{
+			Type:         pgbackrest.BackupType(req.Options.Type),
+			Annotations:  req.Options.Annotations,
+			ExtraOptions: req.Options.ExtraOptions,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create workflow instance: %w", err)
+	}
+
+	return taskToAPI(t), nil
+}
+
+func (s *Service) ListDatabaseTasks(ctx context.Context, req *api.ListDatabaseTasksPayload) ([]*api.Task, error) {
+	databaseID, err := uuid.Parse(req.DatabaseID)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("invalid database ID %q: %w", req.DatabaseID, err))
+	}
+
+	_, err = s.dbSvc.GetDatabase(ctx, databaseID)
+	if errors.Is(err, database.ErrDatabaseNotFound) {
+		return nil, api.MakeNotFound(fmt.Errorf("database %s not found: %w", databaseID, err))
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get database: %w", err)
+	}
+
+	options, err := taskListOptions(req)
+	if err != nil {
+		return nil, api.MakeInvalidInput(err)
+	}
+
+	tasks, err := s.taskSvc.GetTasks(ctx, databaseID, options)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tasks: %w", err)
+	}
+
+	return tasksToAPI(tasks), nil
+}
+
+func (s *Service) InspectDatabaseTask(ctx context.Context, req *api.InspectDatabaseTaskPayload) (*api.Task, error) {
+	databaseID, err := uuid.Parse(req.DatabaseID)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("invalid database ID %q: %w", req.DatabaseID, err))
+	}
+	taskID, err := uuid.Parse(req.TaskID)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("invalid task ID %q: %w", req.TaskID, err))
+	}
+
+	_, err = s.dbSvc.GetDatabase(ctx, databaseID)
+	if errors.Is(err, database.ErrDatabaseNotFound) {
+		return nil, api.MakeNotFound(fmt.Errorf("database %s not found: %w", databaseID, err))
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get database: %w", err)
+	}
+
+	t, err := s.taskSvc.GetTask(ctx, databaseID, taskID)
+	if errors.Is(err, task.ErrTaskNotFound) {
+		return nil, api.MakeNotFound(fmt.Errorf("task %s not found: %w", taskID, err))
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get task: %w", err)
+	}
+
+	return taskToAPI(t), nil
+}
+
+func (s *Service) GetDatabaseTaskLog(ctx context.Context, req *api.GetDatabaseTaskLogPayload) (*api.TaskLog, error) {
+	databaseID, err := uuid.Parse(req.DatabaseID)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("invalid database ID %q: %w", req.DatabaseID, err))
+	}
+	taskID, err := uuid.Parse(req.TaskID)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("invalid task ID %q: %w", req.TaskID, err))
+	}
+
+	_, err = s.dbSvc.GetDatabase(ctx, databaseID)
+	if errors.Is(err, database.ErrDatabaseNotFound) {
+		return nil, api.MakeNotFound(fmt.Errorf("database %s not found: %w", databaseID, err))
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get database: %w", err)
+	}
+
+	t, err := s.taskSvc.GetTask(ctx, databaseID, taskID)
+	if errors.Is(err, task.ErrTaskNotFound) {
+		return nil, api.MakeNotFound(fmt.Errorf("task %s not found: %w", taskID, err))
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get task: %w", err)
+	}
+
+	options, err := taskLogOptions(req)
+	if err != nil {
+		return nil, api.MakeInvalidInput(err)
+	}
+
+	log, err := s.taskSvc.GetTaskLog(ctx, databaseID, taskID, options)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get task log: %w", err)
+	}
+
+	return taskLogToAPI(log, t.Status), nil
 }
 
 func (s *Service) InitCluster(ctx context.Context) (*api.ClusterJoinToken, error) {

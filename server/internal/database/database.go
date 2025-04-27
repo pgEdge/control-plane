@@ -15,6 +15,7 @@ const (
 	DatabaseStateDeleting  DatabaseState = "deleting"
 	DatabaseStateDegraded  DatabaseState = "degraded"
 	DatabaseStateFailed    DatabaseState = "failed"
+	DatabaseStateBackingUp DatabaseState = "backing_up"
 	DatabaseStateUnknown   DatabaseState = "unknown"
 )
 
@@ -34,7 +35,6 @@ type Database struct {
 	UpdatedAt  time.Time
 	State      DatabaseState
 	Spec       *Spec
-	Instances  []*Instance
 }
 
 func databaseToStored(d *Database) *StoredDatabase {
@@ -47,13 +47,13 @@ func databaseToStored(d *Database) *StoredDatabase {
 	}
 }
 
-func storedToDatabase(d *StoredDatabase, instances []*Instance) *Database {
+func storedToDatabase(d *StoredDatabase, spec *Spec) *Database {
 	return &Database{
 		DatabaseID: d.DatabaseID,
 		TenantID:   d.TenantID,
 		CreatedAt:  d.CreatedAt,
 		UpdatedAt:  d.UpdatedAt,
 		State:      d.State,
-		Instances:  instances,
+		Spec:       spec,
 	}
 }

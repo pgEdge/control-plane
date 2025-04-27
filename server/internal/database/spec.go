@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 )
 
 var ErrHostNotInDBSpec = errors.New("host not in db spec")
@@ -46,85 +47,6 @@ const (
 	BackupProviderPgDump     BackupProvider = "pg_dump"
 )
 
-type BackupRepositoryType string
-
-const (
-	BackupRepositoryTypeS3    BackupRepositoryType = "s3"
-	BackupRepositoryTypeGCS   BackupRepositoryType = "gcs"
-	BackupRepositoryTypeAzure BackupRepositoryType = "azure"
-)
-
-type RetentionFullType string
-
-const (
-	RetentionFullTypeTime  RetentionFullType = "time"
-	RetentionFullTypeCount RetentionFullType = "count"
-)
-
-type BackupRepository struct {
-	ID                string               `json:"id"`
-	Type              BackupRepositoryType `json:"type"`
-	S3Bucket          string               `json:"s3_bucket,omitempty"`
-	S3Region          string               `json:"s3_region,omitempty"`
-	S3Endpoint        string               `json:"s3_endpoint,omitempty"`
-	S3Key             string               `json:"s3_key,omitempty"`
-	S3KeySecret       string               `json:"s3_key_secret,omitempty"`
-	GCSBucket         string               `json:"gcs_bucket,omitempty"`
-	GCSEndpoint       string               `json:"gcs_endpoint,omitempty"`
-	GCSKey            string               `json:"gcs_key,omitempty"`
-	AzureAccount      string               `json:"azure_account,omitempty"`
-	AzureContainer    string               `json:"azure_container,omitempty"`
-	AzureEndpoint     string               `json:"azure_endpoint,omitempty"`
-	AzureKey          string               `json:"azure_key,omitempty"`
-	RetentionFull     int                  `json:"retention_full"`
-	RetentionFullType RetentionFullType    `json:"retention_full_type"`
-	BasePath          string               `json:"base_path,omitempty"`
-	CustomOptions     map[string]string    `json:"custom_options,omitempty"`
-}
-
-func (r *BackupRepository) WithDefaults() *BackupRepository {
-	out := &BackupRepository{
-		ID:                r.ID,
-		Type:              r.Type,
-		S3Bucket:          r.S3Bucket,
-		S3Region:          r.S3Region,
-		S3Endpoint:        r.S3Endpoint,
-		S3Key:             r.S3Key,
-		S3KeySecret:       r.S3KeySecret,
-		GCSBucket:         r.GCSBucket,
-		GCSEndpoint:       r.GCSEndpoint,
-		GCSKey:            r.GCSKey,
-		AzureAccount:      r.AzureAccount,
-		AzureContainer:    r.AzureContainer,
-		AzureEndpoint:     r.AzureEndpoint,
-		AzureKey:          r.AzureKey,
-		RetentionFull:     r.RetentionFull,
-		RetentionFullType: r.RetentionFullType,
-		BasePath:          r.BasePath,
-		CustomOptions:     r.CustomOptions,
-	}
-	if out.S3Endpoint == "" {
-		if out.S3Region != "" {
-			out.S3Endpoint = fmt.Sprintf("s3.%s.amazonaws.com", out.S3Region)
-		} else {
-			out.S3Endpoint = "s3.amazonaws.com"
-		}
-	}
-	if out.GCSEndpoint == "" {
-		out.GCSEndpoint = "storage.googleapis.com"
-	}
-	if out.AzureEndpoint == "" {
-		out.AzureEndpoint = "blob.core.windows.net"
-	}
-	if out.RetentionFullType == "" {
-		out.RetentionFullType = RetentionFullTypeTime
-	}
-	if out.RetentionFull == 0 {
-		out.RetentionFull = 7
-	}
-	return out
-}
-
 type BackupScheduleType string
 
 const (
@@ -139,17 +61,17 @@ type BackupSchedule struct {
 }
 
 type BackupConfig struct {
-	Provider     BackupProvider      `json:"provider"`
-	Repositories []*BackupRepository `json:"repositories"`
-	Schedules    []*BackupSchedule   `json:"schedules"`
+	Provider     BackupProvider           `json:"provider"`
+	Repositories []*pgbackrest.Repository `json:"repositories"`
+	Schedules    []*BackupSchedule        `json:"schedules"`
 }
 
 type RestoreConfig struct {
-	Provider     BackupProvider    `json:"provider"`
-	DatabaseID   uuid.UUID         `json:"database_id"`
-	NodeName     string            `json:"node_name"`
-	DatabaseName string            `json:"database_name"`
-	Repository   *BackupRepository `json:"repository"`
+	Provider     BackupProvider         `json:"provider"`
+	DatabaseID   uuid.UUID              `json:"database_id"`
+	NodeName     string                 `json:"node_name"`
+	DatabaseName string                 `json:"database_name"`
+	Repository   *pgbackrest.Repository `json:"repository"`
 }
 
 type Spec struct {
@@ -170,6 +92,15 @@ type Spec struct {
 	BackupConfig       *BackupConfig     `json:"backup_config"`
 	RestoreConfig      *RestoreConfig    `json:"restore_config"`
 	PostgreSQLConf     map[string]any    `json:"postgresql_conf"`
+}
+
+func (s *Spec) Node(name string) (*Node, error) {
+	for _, node := range s.Nodes {
+		if node.Name == name {
+			return node, nil
+		}
+	}
+	return nil, fmt.Errorf("node %s not found in spec", name)
 }
 
 func InstanceIDFor(hostID, databaseID uuid.UUID, nodeName string) uuid.UUID {

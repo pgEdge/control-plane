@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 )
 
@@ -25,10 +24,10 @@ func TestWriteConfig(t *testing.T) {
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
 				User:       "pgedge",
-				Repositories: []*database.BackupRepository{
+				Repositories: []*pgbackrest.Repository{
 					{
 						ID:       "0c28ad6e-233b-4ca7-ae60-4214e3a5356d",
-						Type:     database.BackupRepositoryTypeS3,
+						Type:     pgbackrest.RepositoryTypeS3,
 						S3Bucket: "backups",
 						S3Region: "us-east-1",
 					},
@@ -63,16 +62,16 @@ func TestWriteConfig(t *testing.T) {
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
 				User:       "pgedge",
-				Repositories: []*database.BackupRepository{
+				Repositories: []*pgbackrest.Repository{
 					{
 						ID:                "0c28ad6e-233b-4ca7-ae60-4214e3a5356d",
-						Type:              database.BackupRepositoryTypeS3,
+						Type:              pgbackrest.RepositoryTypeS3,
 						S3Bucket:          "backups",
 						S3Endpoint:        "minio.cluster.local",
 						S3Key:             "minio-key",
 						S3KeySecret:       "minio-secret",
 						BasePath:          "/backups",
-						RetentionFullType: database.RetentionFullTypeCount,
+						RetentionFullType: pgbackrest.RetentionFullTypeCount,
 						RetentionFull:     5,
 					},
 				},
@@ -107,10 +106,10 @@ func TestWriteConfig(t *testing.T) {
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
 				User:       "pgedge",
-				Repositories: []*database.BackupRepository{
+				Repositories: []*pgbackrest.Repository{
 					{
 						ID:       "0c28ad6e-233b-4ca7-ae60-4214e3a5356d",
-						Type:     database.BackupRepositoryTypeS3,
+						Type:     pgbackrest.RepositoryTypeS3,
 						S3Bucket: "backups",
 						S3Region: "us-east-1",
 						CustomOptions: map[string]string{
@@ -151,19 +150,19 @@ func TestWriteConfig(t *testing.T) {
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
 				User:       "pgedge",
-				Repositories: []*database.BackupRepository{
+				Repositories: []*pgbackrest.Repository{
 					{
 						ID:       "time-retention",
-						Type:     database.BackupRepositoryTypeS3,
+						Type:     pgbackrest.RepositoryTypeS3,
 						S3Bucket: "backups",
 						S3Region: "us-east-1",
 					},
 					{
 						ID:                "count-retention",
-						Type:              database.BackupRepositoryTypeS3,
+						Type:              pgbackrest.RepositoryTypeS3,
 						S3Bucket:          "backups",
 						S3Region:          "us-east-1",
-						RetentionFullType: database.RetentionFullTypeCount,
+						RetentionFullType: pgbackrest.RetentionFullTypeCount,
 						RetentionFull:     30,
 					},
 				},
@@ -206,10 +205,10 @@ func TestWriteConfig(t *testing.T) {
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
 				User:       "pgedge",
-				Repositories: []*database.BackupRepository{
+				Repositories: []*pgbackrest.Repository{
 					{
 						ID:        "0c28ad6e-233b-4ca7-ae60-4214e3a5356d",
-						Type:      database.BackupRepositoryTypeGCS,
+						Type:      pgbackrest.RepositoryTypeGCS,
 						GCSBucket: "backups",
 					},
 				},
@@ -242,10 +241,10 @@ func TestWriteConfig(t *testing.T) {
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
 				User:       "pgedge",
-				Repositories: []*database.BackupRepository{
+				Repositories: []*pgbackrest.Repository{
 					{
 						ID:        "0c28ad6e-233b-4ca7-ae60-4214e3a5356d",
-						Type:      database.BackupRepositoryTypeGCS,
+						Type:      pgbackrest.RepositoryTypeGCS,
 						GCSBucket: "backups",
 						GCSKey:    "gcs-key",
 					},
@@ -280,10 +279,10 @@ func TestWriteConfig(t *testing.T) {
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
 				User:       "pgedge",
-				Repositories: []*database.BackupRepository{
+				Repositories: []*pgbackrest.Repository{
 					{
 						ID:             "0c28ad6e-233b-4ca7-ae60-4214e3a5356d",
-						Type:           database.BackupRepositoryTypeAzure,
+						Type:           pgbackrest.RepositoryTypeAzure,
 						AzureAccount:   "backups-account",
 						AzureContainer: "backups",
 					},
@@ -319,10 +318,10 @@ func TestWriteConfig(t *testing.T) {
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
 				User:       "pgedge",
-				Repositories: []*database.BackupRepository{
+				Repositories: []*pgbackrest.Repository{
 					{
 						ID:             "0c28ad6e-233b-4ca7-ae60-4214e3a5356d",
-						Type:           database.BackupRepositoryTypeAzure,
+						Type:           pgbackrest.RepositoryTypeAzure,
 						AzureAccount:   "backups-account",
 						AzureContainer: "backups",
 						AzureKey:       "azure-key",

@@ -156,7 +156,7 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 	}
 
 	// Enable RBAC - IMPORTANT: must be done last before restarting the server
-	if _, err := client.Auth.AuthEnable(ctx); err != nil {
+	if _, err := client.AuthEnable(ctx); err != nil {
 		return fmt.Errorf("failed to enable authentication: %w", err)
 	}
 

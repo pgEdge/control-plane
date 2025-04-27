@@ -170,12 +170,205 @@ func BuildUpdateDatabasePayload(controlPlaneUpdateDatabaseBody string, controlPl
 // BuildDeleteDatabasePayload builds the payload for the control-plane
 // delete-database endpoint from CLI flags.
 func BuildDeleteDatabasePayload(controlPlaneDeleteDatabaseDatabaseID string) (*controlplane.DeleteDatabasePayload, error) {
+	var err error
 	var databaseID string
 	{
 		databaseID = controlPlaneDeleteDatabaseDatabaseID
+		err = goa.MergeErrors(err, goa.ValidateFormat("database_id", databaseID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
 	}
 	v := &controlplane.DeleteDatabasePayload{}
-	v.DatabaseID = &databaseID
+	v.DatabaseID = databaseID
+
+	return v, nil
+}
+
+// BuildInitiateDatabaseBackupPayload builds the payload for the control-plane
+// initiate-database-backup endpoint from CLI flags.
+func BuildInitiateDatabaseBackupPayload(controlPlaneInitiateDatabaseBackupBody string, controlPlaneInitiateDatabaseBackupDatabaseID string, controlPlaneInitiateDatabaseBackupNodeName string) (*controlplane.InitiateDatabaseBackupPayload, error) {
+	var err error
+	var body InitiateDatabaseBackupRequestBody
+	{
+		err = json.Unmarshal([]byte(controlPlaneInitiateDatabaseBackupBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"annotations\": {\n         \"key\": \"value\"\n      },\n      \"extra_options\": [\n         \"--option1\",\n         \"--option2\"\n      ],\n      \"type\": \"full\"\n   }'")
+		}
+		if !(body.Type == "full" || body.Type == "diff" || body.Type == "incr") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"full", "diff", "incr"}))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var databaseID string
+	{
+		databaseID = controlPlaneInitiateDatabaseBackupDatabaseID
+		err = goa.MergeErrors(err, goa.ValidateFormat("database_id", databaseID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var nodeName string
+	{
+		nodeName = controlPlaneInitiateDatabaseBackupNodeName
+	}
+	v := &controlplane.BackupOptions{
+		Type: body.Type,
+	}
+	if body.Annotations != nil {
+		v.Annotations = make(map[string]string, len(body.Annotations))
+		for key, val := range body.Annotations {
+			tk := key
+			tv := val
+			v.Annotations[tk] = tv
+		}
+	}
+	if body.ExtraOptions != nil {
+		v.ExtraOptions = make([]string, len(body.ExtraOptions))
+		for i, val := range body.ExtraOptions {
+			v.ExtraOptions[i] = val
+		}
+	}
+	res := &controlplane.InitiateDatabaseBackupPayload{
+		Options: v,
+	}
+	res.DatabaseID = databaseID
+	res.NodeName = nodeName
+
+	return res, nil
+}
+
+// BuildListDatabaseTasksPayload builds the payload for the control-plane
+// list-database-tasks endpoint from CLI flags.
+func BuildListDatabaseTasksPayload(controlPlaneListDatabaseTasksDatabaseID string, controlPlaneListDatabaseTasksAfterTaskID string, controlPlaneListDatabaseTasksLimit string, controlPlaneListDatabaseTasksSortOrder string) (*controlplane.ListDatabaseTasksPayload, error) {
+	var err error
+	var databaseID string
+	{
+		databaseID = controlPlaneListDatabaseTasksDatabaseID
+		err = goa.MergeErrors(err, goa.ValidateFormat("database_id", databaseID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var afterTaskID *string
+	{
+		if controlPlaneListDatabaseTasksAfterTaskID != "" {
+			afterTaskID = &controlPlaneListDatabaseTasksAfterTaskID
+			err = goa.MergeErrors(err, goa.ValidateFormat("after_task_id", *afterTaskID, goa.FormatUUID))
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	var limit *int
+	{
+		if controlPlaneListDatabaseTasksLimit != "" {
+			var v int64
+			v, err = strconv.ParseInt(controlPlaneListDatabaseTasksLimit, 10, strconv.IntSize)
+			val := int(v)
+			limit = &val
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for limit, must be INT")
+			}
+		}
+	}
+	var sortOrder *string
+	{
+		if controlPlaneListDatabaseTasksSortOrder != "" {
+			sortOrder = &controlPlaneListDatabaseTasksSortOrder
+			if !(*sortOrder == "asc" || *sortOrder == "ascend" || *sortOrder == "ascending" || *sortOrder == "desc" || *sortOrder == "descend" || *sortOrder == "descending") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("sort_order", *sortOrder, []any{"asc", "ascend", "ascending", "desc", "descend", "descending"}))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	v := &controlplane.ListDatabaseTasksPayload{}
+	v.DatabaseID = databaseID
+	v.AfterTaskID = afterTaskID
+	v.Limit = limit
+	v.SortOrder = sortOrder
+
+	return v, nil
+}
+
+// BuildInspectDatabaseTaskPayload builds the payload for the control-plane
+// inspect-database-task endpoint from CLI flags.
+func BuildInspectDatabaseTaskPayload(controlPlaneInspectDatabaseTaskDatabaseID string, controlPlaneInspectDatabaseTaskTaskID string) (*controlplane.InspectDatabaseTaskPayload, error) {
+	var err error
+	var databaseID string
+	{
+		databaseID = controlPlaneInspectDatabaseTaskDatabaseID
+		err = goa.MergeErrors(err, goa.ValidateFormat("database_id", databaseID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var taskID string
+	{
+		taskID = controlPlaneInspectDatabaseTaskTaskID
+		err = goa.MergeErrors(err, goa.ValidateFormat("task_id", taskID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	v := &controlplane.InspectDatabaseTaskPayload{}
+	v.DatabaseID = databaseID
+	v.TaskID = taskID
+
+	return v, nil
+}
+
+// BuildGetDatabaseTaskLogPayload builds the payload for the control-plane
+// get-database-task-log endpoint from CLI flags.
+func BuildGetDatabaseTaskLogPayload(controlPlaneGetDatabaseTaskLogDatabaseID string, controlPlaneGetDatabaseTaskLogTaskID string, controlPlaneGetDatabaseTaskLogAfterLineID string, controlPlaneGetDatabaseTaskLogLimit string) (*controlplane.GetDatabaseTaskLogPayload, error) {
+	var err error
+	var databaseID string
+	{
+		databaseID = controlPlaneGetDatabaseTaskLogDatabaseID
+		err = goa.MergeErrors(err, goa.ValidateFormat("database_id", databaseID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var taskID string
+	{
+		taskID = controlPlaneGetDatabaseTaskLogTaskID
+		err = goa.MergeErrors(err, goa.ValidateFormat("task_id", taskID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var afterLineID *string
+	{
+		if controlPlaneGetDatabaseTaskLogAfterLineID != "" {
+			afterLineID = &controlPlaneGetDatabaseTaskLogAfterLineID
+			err = goa.MergeErrors(err, goa.ValidateFormat("after_line_id", *afterLineID, goa.FormatUUID))
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	var limit *int
+	{
+		if controlPlaneGetDatabaseTaskLogLimit != "" {
+			var v int64
+			v, err = strconv.ParseInt(controlPlaneGetDatabaseTaskLogLimit, 10, strconv.IntSize)
+			val := int(v)
+			limit = &val
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for limit, must be INT")
+			}
+		}
+	}
+	v := &controlplane.GetDatabaseTaskLogPayload{}
+	v.DatabaseID = databaseID
+	v.TaskID = taskID
+	v.AfterLineID = afterLineID
+	v.Limit = limit
 
 	return v, nil
 }

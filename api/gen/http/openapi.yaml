@@ -214,7 +214,7 @@ paths:
                 "409":
                     description: Conflict response.
                     schema:
-                        $ref: '#/definitions/ControlPlaneUpdateDatabaseClusterNotInitializedResponseBody'
+                        $ref: '#/definitions/ControlPlaneUpdateDatabaseDatabaseNotModifiableResponseBody'
             schemes:
                 - http
         delete:
@@ -229,6 +229,7 @@ paths:
                   description: ID of the database to delete.
                   required: true
                   type: string
+                  format: uuid
             responses:
                 "204":
                     description: No Content response.
@@ -239,7 +240,198 @@ paths:
                 "409":
                     description: Conflict response.
                     schema:
-                        $ref: '#/definitions/ControlPlaneDeleteDatabaseClusterNotInitializedResponseBody'
+                        $ref: '#/definitions/ControlPlaneDeleteDatabaseDatabaseNotModifiableResponseBody'
+            schemes:
+                - http
+    /databases/{database_id}/nodes/{node_name}/backups:
+        post:
+            tags:
+                - control-plane
+            summary: initiate-database-backup control-plane
+            description: Initiates a backup for a database.
+            operationId: control-plane#initiate-database-backup
+            parameters:
+                - name: database_id
+                  in: path
+                  description: ID of the database to back up.
+                  required: true
+                  type: string
+                  format: uuid
+                - name: node_name
+                  in: path
+                  description: Name of the node to back up.
+                  required: true
+                  type: string
+                - name: Initiate-Database-BackupRequestBody
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/BackupOptions'
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/Task'
+                        required:
+                            - database_id
+                            - task_id
+                            - created_at
+                            - type
+                            - status
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/ControlPlaneInitiateDatabaseBackupNotFoundResponseBody'
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ControlPlaneInitiateDatabaseBackupDatabaseNotModifiableResponseBody'
+            schemes:
+                - http
+    /databases/{database_id}/tasks:
+        get:
+            tags:
+                - control-plane
+            summary: list-database-tasks control-plane
+            description: Lists all tasks for a database.
+            operationId: control-plane#list-database-tasks
+            parameters:
+                - name: after_task_id
+                  in: query
+                  description: ID of the task to start from.
+                  required: false
+                  type: string
+                  format: uuid
+                - name: limit
+                  in: query
+                  description: Maximum number of tasks to return.
+                  required: false
+                  type: integer
+                - name: sort_order
+                  in: query
+                  description: Sort order for the tasks.
+                  required: false
+                  type: string
+                  enum:
+                    - asc
+                    - ascend
+                    - ascending
+                    - desc
+                    - descend
+                    - descending
+                - name: database_id
+                  in: path
+                  description: ID of the database to list tasks for.
+                  required: true
+                  type: string
+                  format: uuid
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        type: array
+                        items:
+                            $ref: '#/definitions/Task'
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/ControlPlaneListDatabaseTasksNotFoundResponseBody'
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ControlPlaneListDatabaseTasksClusterNotInitializedResponseBody'
+            schemes:
+                - http
+    /databases/{database_id}/tasks/{task_id}:
+        get:
+            tags:
+                - control-plane
+            summary: inspect-database-task control-plane
+            description: Returns information about a particular task for a database.
+            operationId: control-plane#inspect-database-task
+            parameters:
+                - name: database_id
+                  in: path
+                  description: ID of the database to inspect tasks for.
+                  required: true
+                  type: string
+                  format: uuid
+                - name: task_id
+                  in: path
+                  description: ID of the task to inspect.
+                  required: true
+                  type: string
+                  format: uuid
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/Task'
+                        required:
+                            - database_id
+                            - task_id
+                            - created_at
+                            - type
+                            - status
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/ControlPlaneInspectDatabaseTaskNotFoundResponseBody'
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ControlPlaneInspectDatabaseTaskClusterNotInitializedResponseBody'
+            schemes:
+                - http
+    /databases/{database_id}/tasks/{task_id}/log:
+        get:
+            tags:
+                - control-plane
+            summary: get-database-task-log control-plane
+            description: Returns the log of a particular task for a database.
+            operationId: control-plane#get-database-task-log
+            parameters:
+                - name: after_line_id
+                  in: query
+                  description: ID of the line to start from.
+                  required: false
+                  type: string
+                  format: uuid
+                - name: limit
+                  in: query
+                  description: Maximum number of lines to return.
+                  required: false
+                  type: integer
+                - name: database_id
+                  in: path
+                  description: ID of the database to get task log for.
+                  required: true
+                  type: string
+                  format: uuid
+                - name: task_id
+                  in: path
+                  description: ID of the task to get log for.
+                  required: true
+                  type: string
+                  format: uuid
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/TaskLog'
+                        required:
+                            - database_id
+                            - task_id
+                            - task_status
+                            - lines
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/ControlPlaneGetDatabaseTaskLogNotFoundResponseBody'
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ControlPlaneGetDatabaseTaskLogClusterNotInitializedResponseBody'
             schemes:
                 - http
     /hosts:
@@ -396,52 +588,15 @@ definitions:
                       s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                       s3_region: us-east-1
                       type: s3
-                    - azure_account: pgedge-backups
-                      azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      azure_endpoint: blob.core.usgovcloudapi.net
-                      azure_key: YXpLZXk=
-                      base_path: /backups
-                      custom_options:
-                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                        storage-upload-chunk-size: 5MiB
-                      gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      gcs_endpoint: localhost
-                      gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                      id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                      retention_full: 2
-                      retention_full_type: count
-                      s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      s3_endpoint: s3.us-east-1.amazonaws.com
-                      s3_key: AKIAIOSFODNN7EXAMPLE
-                      s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                      s3_region: us-east-1
-                      type: s3
-                    - azure_account: pgedge-backups
-                      azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      azure_endpoint: blob.core.usgovcloudapi.net
-                      azure_key: YXpLZXk=
-                      base_path: /backups
-                      custom_options:
-                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                        storage-upload-chunk-size: 5MiB
-                      gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      gcs_endpoint: localhost
-                      gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                      id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                      retention_full: 2
-                      retention_full_type: count
-                      s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      s3_endpoint: s3.us-east-1.amazonaws.com
-                      s3_key: AKIAIOSFODNN7EXAMPLE
-                      s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                      s3_region: us-east-1
-                      type: s3
             schedules:
                 type: array
                 items:
                     $ref: '#/definitions/BackupScheduleSpec'
                 description: The schedules for this backup configuration.
                 example:
+                    - cron_expression: 0 6 * * ?
+                      id: daily-full-backup
+                      type: full
                     - cron_expression: 0 6 * * ?
                       id: daily-full-backup
                       type: full
@@ -503,6 +658,44 @@ definitions:
                   type: full
         required:
             - provider
+    BackupOptions:
+        title: BackupOptions
+        type: object
+        properties:
+            annotations:
+                type: object
+                description: Annotations for the backup.
+                example:
+                    key: value
+                additionalProperties:
+                    type: string
+                    example: Voluptates dignissimos odio dolorem porro dolore illo.
+            extra_options:
+                type: array
+                items:
+                    type: string
+                    example: Qui in iure eveniet est itaque qui.
+                description: Extra options for the backup.
+                example:
+                    - --option1
+                    - --option2
+            type:
+                type: string
+                description: The type of backup.
+                example: full
+                enum:
+                    - full
+                    - diff
+                    - incr
+        example:
+            annotations:
+                key: value
+            extra_options:
+                - --option1
+                - --option2
+            type: full
+        required:
+            - type
     BackupRepositorySpec:
         title: BackupRepositorySpec
         type: object
@@ -535,7 +728,7 @@ definitions:
                     storage-upload-chunk-size: 5MiB
                 additionalProperties:
                     type: string
-                    example: Odit sint est at et.
+                    example: Dolorem sequi perferendis magni ea.
             gcs_bucket:
                 type: string
                 description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -668,13 +861,7 @@ definitions:
                       orchestrator: swarm
                       status:
                         components:
-                            Eum sequi enim.:
-                                details:
-                                    alarms:
-                                        - '3: NOSPACE'
-                                error: failed to connect to etcd
-                                healthy: false
-                            Libero repellendus qui nobis.:
+                            Sequi enim ut libero repellendus qui nobis.:
                                 details:
                                     alarms:
                                         - '3: NOSPACE'
@@ -705,13 +892,69 @@ definitions:
                       orchestrator: swarm
                       status:
                         components:
-                            Eum sequi enim.:
+                            Sequi enim ut libero repellendus qui nobis.:
                                 details:
                                     alarms:
                                         - '3: NOSPACE'
                                 error: failed to connect to etcd
                                 healthy: false
-                            Libero repellendus qui nobis.:
+                        state: available
+                        updated_at: "2021-07-01T12:34:56Z"
+                      supported_pgedge_versions:
+                        - postgres_version: "16"
+                          spock_version: "4"
+                        - postgres_version: "16"
+                          spock_version: "4"
+                        - postgres_version: "16"
+                          spock_version: "4"
+                    - cohort:
+                        cohort_id: pps1n11hqijn9rbee4cjil453
+                        control_available: true
+                        member_id: lah4bsznw6kc0hp7biylmmmll
+                        type: swarm
+                      cpus: 4
+                      default_pgedge_version:
+                        postgres_version: "16"
+                        spock_version: "4"
+                      hostname: i-0123456789abcdef.ec2.internal
+                      id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      ipv4_address: 10.24.34.0
+                      memory: 16GiB
+                      orchestrator: swarm
+                      status:
+                        components:
+                            Sequi enim ut libero repellendus qui nobis.:
+                                details:
+                                    alarms:
+                                        - '3: NOSPACE'
+                                error: failed to connect to etcd
+                                healthy: false
+                        state: available
+                        updated_at: "2021-07-01T12:34:56Z"
+                      supported_pgedge_versions:
+                        - postgres_version: "16"
+                          spock_version: "4"
+                        - postgres_version: "16"
+                          spock_version: "4"
+                        - postgres_version: "16"
+                          spock_version: "4"
+                    - cohort:
+                        cohort_id: pps1n11hqijn9rbee4cjil453
+                        control_available: true
+                        member_id: lah4bsznw6kc0hp7biylmmmll
+                        type: swarm
+                      cpus: 4
+                      default_pgedge_version:
+                        postgres_version: "16"
+                        spock_version: "4"
+                      hostname: i-0123456789abcdef.ec2.internal
+                      id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      ipv4_address: 10.24.34.0
+                      memory: 16GiB
+                      orchestrator: swarm
+                      status:
+                        components:
+                            Sequi enim ut libero repellendus qui nobis.:
                                 details:
                                     alarms:
                                         - '3: NOSPACE'
@@ -756,13 +999,7 @@ definitions:
                   orchestrator: swarm
                   status:
                     components:
-                        Eum sequi enim.:
-                            details:
-                                alarms:
-                                    - '3: NOSPACE'
-                            error: failed to connect to etcd
-                            healthy: false
-                        Libero repellendus qui nobis.:
+                        Sequi enim ut libero repellendus qui nobis.:
                             details:
                                 alarms:
                                     - '3: NOSPACE'
@@ -793,50 +1030,7 @@ definitions:
                   orchestrator: swarm
                   status:
                     components:
-                        Eum sequi enim.:
-                            details:
-                                alarms:
-                                    - '3: NOSPACE'
-                            error: failed to connect to etcd
-                            healthy: false
-                        Libero repellendus qui nobis.:
-                            details:
-                                alarms:
-                                    - '3: NOSPACE'
-                            error: failed to connect to etcd
-                            healthy: false
-                    state: available
-                    updated_at: "2021-07-01T12:34:56Z"
-                  supported_pgedge_versions:
-                    - postgres_version: "16"
-                      spock_version: "4"
-                    - postgres_version: "16"
-                      spock_version: "4"
-                    - postgres_version: "16"
-                      spock_version: "4"
-                - cohort:
-                    cohort_id: pps1n11hqijn9rbee4cjil453
-                    control_available: true
-                    member_id: lah4bsznw6kc0hp7biylmmmll
-                    type: swarm
-                  cpus: 4
-                  default_pgedge_version:
-                    postgres_version: "16"
-                    spock_version: "4"
-                  hostname: i-0123456789abcdef.ec2.internal
-                  id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  ipv4_address: 10.24.34.0
-                  memory: 16GiB
-                  orchestrator: swarm
-                  status:
-                    components:
-                        Eum sequi enim.:
-                            details:
-                                alarms:
-                                    - '3: NOSPACE'
-                            error: failed to connect to etcd
-                            healthy: false
-                        Libero repellendus qui nobis.:
+                        Sequi enim ut libero repellendus qui nobis.:
                             details:
                                 alarms:
                                     - '3: NOSPACE'
@@ -853,7 +1047,7 @@ definitions:
                       spock_version: "4"
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             status:
-                state: error
+                state: available
             tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
         required:
             - id
@@ -886,12 +1080,12 @@ definitions:
             state:
                 type: string
                 description: The current state of the cluster.
-                example: available
+                example: error
                 enum:
                     - available
                     - error
         example:
-            state: available
+            state: error
         required:
             - state
     ComponentStatus:
@@ -929,7 +1123,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: false
+                example: true
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -945,19 +1139,19 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: false
+                example: true
             timeout:
                 type: boolean
                 description: Is the error a timeout?
                 example: false
         description: create-database_cluster_not_initialized_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
-            timeout: true
+            temporary: false
+            timeout: false
         required:
             - name
             - id
@@ -972,7 +1166,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: false
+                example: true
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -992,14 +1186,14 @@ definitions:
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: false
+                example: true
         description: create-database_database_already_exists_response_body result type (default view)
         example:
-            fault: false
+            fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
+            temporary: true
             timeout: false
         required:
             - name
@@ -1015,7 +1209,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: true
+                example: false
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -1038,12 +1232,12 @@ definitions:
                 example: true
         description: create-database_invalid_input_response_body result type (default view)
         example:
-            fault: false
+            fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
-            timeout: true
+            temporary: true
+            timeout: false
         required:
             - name
             - id
@@ -1072,7 +1266,7 @@ definitions:
             state:
                 type: string
                 description: Current state of the database.
-                example: deleting
+                example: degraded
                 enum:
                     - creating
                     - modifying
@@ -1492,7 +1686,7 @@ definitions:
                 spock_version: "4"
                 storage_class: loop_device
                 storage_size: 500GiB
-            state: creating
+            state: modifying
             tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
             updated_at: "2025-01-01T02:30:00Z"
         required:
@@ -1507,6 +1701,812 @@ definitions:
             $ref: '#/definitions/DatabaseResponseAbbreviated'
         description: ControlPlaneDatabaseResponseAbbreviatedCollection is the result type for an array of DatabaseResponseAbbreviated (default view)
         example:
+            - created_at: "2025-01-01T01:30:00Z"
+              id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+              instances:
+                - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                  node_name: n1
+                  state: modifying
+                - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                  node_name: n1
+                  state: modifying
+                - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                  node_name: n1
+                  state: modifying
+              spec:
+                backup_config:
+                    provider: pgbackrest
+                    repositories:
+                        - azure_account: pgedge-backups
+                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          azure_endpoint: blob.core.usgovcloudapi.net
+                          azure_key: YXpLZXk=
+                          base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
+                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          gcs_endpoint: localhost
+                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                          retention_full: 2
+                          retention_full_type: count
+                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          s3_endpoint: s3.us-east-1.amazonaws.com
+                          s3_key: AKIAIOSFODNN7EXAMPLE
+                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                          s3_region: us-east-1
+                          type: s3
+                        - azure_account: pgedge-backups
+                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          azure_endpoint: blob.core.usgovcloudapi.net
+                          azure_key: YXpLZXk=
+                          base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
+                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          gcs_endpoint: localhost
+                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                          retention_full: 2
+                          retention_full_type: count
+                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          s3_endpoint: s3.us-east-1.amazonaws.com
+                          s3_key: AKIAIOSFODNN7EXAMPLE
+                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                          s3_region: us-east-1
+                          type: s3
+                    schedules:
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                cpus: 500m
+                database_name: northwind
+                database_users:
+                    - attributes:
+                        - LOGIN
+                        - CREATEDB
+                        - CREATEROLE
+                      db_owner: true
+                      password: secret
+                      roles:
+                        - pgedge_superuser
+                      username: admin
+                    - attributes:
+                        - LOGIN
+                        - CREATEDB
+                        - CREATEROLE
+                      db_owner: true
+                      password: secret
+                      roles:
+                        - pgedge_superuser
+                      username: admin
+                deletion_protection: true
+                features:
+                    some_feature: enabled
+                memory: 500M
+                nodes:
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                      cpus: 500m
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      storage_class: loop_device
+                      storage_size: 500GiB
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                      cpus: 500m
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      storage_class: loop_device
+                      storage_size: 500GiB
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                      cpus: 500m
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      storage_class: loop_device
+                      storage_size: 500GiB
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                      cpus: 500m
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      storage_class: loop_device
+                      storage_size: 500GiB
+                port: 5432
+                postgres_version: "17"
+                postgresql_conf:
+                    max_connections: 1000
+                restore_config:
+                    database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
+                    database_name: northwind
+                    node_name: n1
+                    provider: pgbackrest
+                    repository:
+                        azure_account: pgedge-backups
+                        azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                        azure_endpoint: blob.core.usgovcloudapi.net
+                        azure_key: YXpLZXk=
+                        base_path: /backups
+                        custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                        gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                        gcs_endpoint: localhost
+                        gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                        id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                        s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                        s3_endpoint: s3.us-east-1.amazonaws.com
+                        s3_key: AKIAIOSFODNN7EXAMPLE
+                        s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                        s3_region: us-east-1
+                        type: s3
+                spock_version: "4"
+                storage_class: loop_device
+                storage_size: 500GiB
+              state: degraded
+              tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
+              updated_at: "2025-01-01T02:30:00Z"
+            - created_at: "2025-01-01T01:30:00Z"
+              id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+              instances:
+                - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                  node_name: n1
+                  state: modifying
+                - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                  node_name: n1
+                  state: modifying
+                - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                  node_name: n1
+                  state: modifying
+              spec:
+                backup_config:
+                    provider: pgbackrest
+                    repositories:
+                        - azure_account: pgedge-backups
+                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          azure_endpoint: blob.core.usgovcloudapi.net
+                          azure_key: YXpLZXk=
+                          base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
+                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          gcs_endpoint: localhost
+                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                          retention_full: 2
+                          retention_full_type: count
+                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          s3_endpoint: s3.us-east-1.amazonaws.com
+                          s3_key: AKIAIOSFODNN7EXAMPLE
+                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                          s3_region: us-east-1
+                          type: s3
+                        - azure_account: pgedge-backups
+                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          azure_endpoint: blob.core.usgovcloudapi.net
+                          azure_key: YXpLZXk=
+                          base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
+                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          gcs_endpoint: localhost
+                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                          retention_full: 2
+                          retention_full_type: count
+                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          s3_endpoint: s3.us-east-1.amazonaws.com
+                          s3_key: AKIAIOSFODNN7EXAMPLE
+                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                          s3_region: us-east-1
+                          type: s3
+                    schedules:
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                cpus: 500m
+                database_name: northwind
+                database_users:
+                    - attributes:
+                        - LOGIN
+                        - CREATEDB
+                        - CREATEROLE
+                      db_owner: true
+                      password: secret
+                      roles:
+                        - pgedge_superuser
+                      username: admin
+                    - attributes:
+                        - LOGIN
+                        - CREATEDB
+                        - CREATEROLE
+                      db_owner: true
+                      password: secret
+                      roles:
+                        - pgedge_superuser
+                      username: admin
+                deletion_protection: true
+                features:
+                    some_feature: enabled
+                memory: 500M
+                nodes:
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                      cpus: 500m
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      storage_class: loop_device
+                      storage_size: 500GiB
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                      cpus: 500m
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      storage_class: loop_device
+                      storage_size: 500GiB
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                      cpus: 500m
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      storage_class: loop_device
+                      storage_size: 500GiB
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                      cpus: 500m
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      storage_class: loop_device
+                      storage_size: 500GiB
+                port: 5432
+                postgres_version: "17"
+                postgresql_conf:
+                    max_connections: 1000
+                restore_config:
+                    database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
+                    database_name: northwind
+                    node_name: n1
+                    provider: pgbackrest
+                    repository:
+                        azure_account: pgedge-backups
+                        azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                        azure_endpoint: blob.core.usgovcloudapi.net
+                        azure_key: YXpLZXk=
+                        base_path: /backups
+                        custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                        gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                        gcs_endpoint: localhost
+                        gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                        id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                        s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                        s3_endpoint: s3.us-east-1.amazonaws.com
+                        s3_key: AKIAIOSFODNN7EXAMPLE
+                        s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                        s3_region: us-east-1
+                        type: s3
+                spock_version: "4"
+                storage_class: loop_device
+                storage_size: 500GiB
+              state: degraded
+              tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
+              updated_at: "2025-01-01T02:30:00Z"
             - created_at: "2025-01-01T01:30:00Z"
               id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
               instances:
@@ -2336,7 +3336,7 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: false
+                example: true
             timeout:
                 type: boolean
                 description: Is the error a timeout?
@@ -2347,8 +3347,51 @@ definitions:
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
+            temporary: false
             timeout: false
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+    ControlPlaneDeleteDatabaseDatabaseNotModifiableResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: false
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: true
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: false
+        description: delete-database_database_not_modifiable_response_body result type (default view)
+        example:
+            fault: true
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: false
+            timeout: true
         required:
             - name
             - id
@@ -2383,7 +3426,7 @@ definitions:
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: false
+                example: true
         description: delete-database_not_found_response_body result type (default view)
         example:
             fault: true
@@ -2392,6 +3435,92 @@ definitions:
             name: bad_request
             temporary: false
             timeout: false
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+    ControlPlaneGetDatabaseTaskLogClusterNotInitializedResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: true
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: true
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: false
+        description: get-database-task-log_cluster_not_initialized_response_body result type (default view)
+        example:
+            fault: true
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: true
+            timeout: true
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+    ControlPlaneGetDatabaseTaskLogNotFoundResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: false
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: false
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: false
+        description: get-database-task-log_not_found_response_body result type (default view)
+        example:
+            fault: true
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: true
+            timeout: true
         required:
             - name
             - id
@@ -2422,14 +3551,57 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: false
+                example: true
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
+                example: false
         description: get-join-token_cluster_not_initialized_response_body result type (default view)
         example:
-            fault: false
+            fault: true
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: true
+            timeout: false
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+    ControlPlaneInitClusterClusterAlreadyInitializedResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: true
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: true
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: false
+        description: init-cluster_cluster_already_initialized_response_body result type (default view)
+        example:
+            fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
@@ -2442,7 +3614,50 @@ definitions:
             - temporary
             - timeout
             - fault
-    ControlPlaneInitClusterClusterAlreadyInitializedResponseBody:
+    ControlPlaneInitiateDatabaseBackupClusterNotInitializedResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: true
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: false
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: true
+        description: initiate-database-backup_cluster_not_initialized_response_body result type (default view)
+        example:
+            fault: false
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: true
+            timeout: false
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+    ControlPlaneInitiateDatabaseBackupDatabaseNotModifiableResponseBody:
         title: 'Mediatype identifier: application/vnd.goa.error; view=default'
         type: object
         properties:
@@ -2465,18 +3680,61 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: false
+                example: true
             timeout:
                 type: boolean
                 description: Is the error a timeout?
                 example: false
-        description: init-cluster_cluster_already_initialized_response_body result type (default view)
+        description: initiate-database-backup_database_not_modifiable_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
+            temporary: false
+            timeout: true
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+    ControlPlaneInitiateDatabaseBackupNotFoundResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: true
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: true
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: true
+        description: initiate-database-backup_not_found_response_body result type (default view)
+        example:
+            fault: false
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: false
             timeout: false
         required:
             - name
@@ -2515,12 +3773,12 @@ definitions:
                 example: false
         description: inspect-cluster_cluster_not_initialized_response_body result type (default view)
         example:
-            fault: false
+            fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
-            timeout: false
+            temporary: true
+            timeout: true
         required:
             - name
             - id
@@ -2535,7 +3793,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: false
+                example: true
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -2555,15 +3813,15 @@ definitions:
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
+                example: false
         description: inspect-cluster_not_found_response_body result type (default view)
         example:
-            fault: false
+            fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
-            timeout: true
+            temporary: false
+            timeout: false
         required:
             - name
             - id
@@ -2578,7 +3836,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: false
+                example: true
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -2637,18 +3895,18 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: true
+                example: false
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
+                example: false
         description: inspect-database_not_found_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
+            temporary: false
             timeout: true
         required:
             - name
@@ -2678,7 +3936,7 @@ definitions:
             state:
                 type: string
                 description: Current state of the database.
-                example: deleting
+                example: degraded
                 enum:
                     - creating
                     - modifying
@@ -3098,7 +4356,7 @@ definitions:
                 spock_version: "4"
                 storage_class: loop_device
                 storage_size: 500GiB
-            state: modifying
+            state: available
             tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
             updated_at: "2025-01-01T02:30:00Z"
         required:
@@ -3106,7 +4364,7 @@ definitions:
             - created_at
             - updated_at
             - state
-    ControlPlaneInspectHostClusterNotInitializedResponseBody:
+    ControlPlaneInspectDatabaseTaskClusterNotInitializedResponseBody:
         title: 'Mediatype identifier: application/vnd.goa.error; view=default'
         type: object
         properties:
@@ -3133,8 +4391,8 @@ definitions:
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: false
-        description: inspect-host_cluster_not_initialized_response_body result type (default view)
+                example: true
+        description: inspect-database-task_cluster_not_initialized_response_body result type (default view)
         example:
             fault: true
             id: 123abc
@@ -3142,6 +4400,92 @@ definitions:
             name: bad_request
             temporary: false
             timeout: false
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+    ControlPlaneInspectDatabaseTaskNotFoundResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: true
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: true
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: true
+        description: inspect-database-task_not_found_response_body result type (default view)
+        example:
+            fault: true
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: false
+            timeout: true
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+    ControlPlaneInspectHostClusterNotInitializedResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: false
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: true
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: true
+        description: inspect-host_cluster_not_initialized_response_body result type (default view)
+        example:
+            fault: true
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: true
+            timeout: true
         required:
             - name
             - id
@@ -3172,7 +4516,7 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: true
+                example: false
             timeout:
                 type: boolean
                 description: Is the error a timeout?
@@ -3183,8 +4527,8 @@ definitions:
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
-            timeout: false
+            temporary: true
+            timeout: true
         required:
             - name
             - id
@@ -3199,6 +4543,49 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
+                example: false
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: false
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: true
+        description: join-cluster_cluster_already_initialized_response_body result type (default view)
+        example:
+            fault: false
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: false
+            timeout: false
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+    ControlPlaneListDatabaseTasksClusterNotInitializedResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
                 example: true
             id:
                 type: string
@@ -3219,15 +4606,58 @@ definitions:
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
-        description: join-cluster_cluster_already_initialized_response_body result type (default view)
+                example: false
+        description: list-database-tasks_cluster_not_initialized_response_body result type (default view)
         example:
             fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
-            timeout: false
+            temporary: false
+            timeout: true
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+    ControlPlaneListDatabaseTasksNotFoundResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: true
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: false
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: true
+        description: list-database-tasks_not_found_response_body result type (default view)
+        example:
+            fault: true
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: false
+            timeout: true
         required:
             - name
             - id
@@ -3242,7 +4672,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: false
+                example: true
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -3262,14 +4692,14 @@ definitions:
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: false
+                example: true
         description: list-databases_cluster_not_initialized_response_body result type (default view)
         example:
-            fault: false
+            fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
+            temporary: true
             timeout: true
         required:
             - name
@@ -3285,7 +4715,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: true
+                example: false
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -3305,15 +4735,15 @@ definitions:
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: false
+                example: true
         description: list-hosts_cluster_not_initialized_response_body result type (default view)
         example:
             fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
-            timeout: true
+            temporary: false
+            timeout: false
         required:
             - name
             - id
@@ -3328,7 +4758,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: false
+                example: true
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -3344,18 +4774,18 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: true
+                example: false
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
+                example: false
         description: remove-host_cluster_not_initialized_response_body result type (default view)
         example:
             fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
+            temporary: false
             timeout: true
         required:
             - name
@@ -3387,19 +4817,19 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: false
+                example: true
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
+                example: false
         description: remove-host_not_found_response_body result type (default view)
         example:
             fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
-            timeout: true
+            temporary: false
+            timeout: false
         required:
             - name
             - id
@@ -3437,12 +4867,55 @@ definitions:
                 example: false
         description: update-database_cluster_not_initialized_response_body result type (default view)
         example:
-            fault: false
+            fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
-            timeout: true
+            temporary: true
+            timeout: false
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+    ControlPlaneUpdateDatabaseDatabaseNotModifiableResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: false
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: true
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: false
+        description: update-database_database_not_modifiable_response_body result type (default view)
+        example:
+            fault: true
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: true
+            timeout: false
         required:
             - name
             - id
@@ -3473,18 +4946,18 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: false
+                example: true
             timeout:
                 type: boolean
                 description: Is the error a timeout?
                 example: true
         description: update-database_not_found_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
+            temporary: true
             timeout: false
         required:
             - name
@@ -4493,7 +5966,7 @@ definitions:
             state:
                 type: string
                 description: Current state of the database.
-                example: unknown
+                example: deleting
                 enum:
                     - creating
                     - modifying
@@ -4528,7 +6001,7 @@ definitions:
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
                   state: modifying
-            state: degraded
+            state: modifying
             tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
             updated_at: "2025-01-01T02:30:00Z"
         required:
@@ -4574,6 +6047,24 @@ definitions:
                       roles:
                         - pgedge_superuser
                       username: admin
+                    - attributes:
+                        - LOGIN
+                        - CREATEDB
+                        - CREATEROLE
+                      db_owner: true
+                      password: secret
+                      roles:
+                        - pgedge_superuser
+                      username: admin
+                    - attributes:
+                        - LOGIN
+                        - CREATEDB
+                        - CREATEROLE
+                      db_owner: true
+                      password: secret
+                      roles:
+                        - pgedge_superuser
+                      username: admin
             deletion_protection:
                 type: boolean
                 description: Prevents deletion when true.
@@ -4585,7 +6076,7 @@ definitions:
                     some_feature: enabled
                 additionalProperties:
                     type: string
-                    example: Quisquam quo aliquid.
+                    example: Est ea ratione nobis beatae.
             memory:
                 type: string
                 description: The amount of memory in SI or IEC notation to allocate for the database and to use for tuning Postgres. Defaults to the total available memory on the host. Whether this limit will be enforced depends on the orchestrator.
@@ -4596,74 +6087,6 @@ definitions:
                     $ref: '#/definitions/DatabaseNodeSpec'
                 description: The Spock nodes for this database.
                 example:
-                    - backup_config:
-                        provider: pgbackrest
-                        repositories:
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              azure_key: YXpLZXk=
-                              base_path: /backups
-                              custom_options:
-                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                storage-upload-chunk-size: 5MiB
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_key: AKIAIOSFODNN7EXAMPLE
-                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                              s3_region: us-east-1
-                              type: s3
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              azure_key: YXpLZXk=
-                              base_path: /backups
-                              custom_options:
-                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                storage-upload-chunk-size: 5MiB
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_key: AKIAIOSFODNN7EXAMPLE
-                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                              s3_region: us-east-1
-                              type: s3
-                        schedules:
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
-                      cpus: 500m
-                      host_ids:
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      memory: 500M
-                      name: n1
-                      port: 5432
-                      postgres_version: "17"
-                      postgresql_conf:
-                        max_connections: 1000
-                      storage_class: loop_device
-                      storage_size: 500GiB
                     - backup_config:
                         provider: pgbackrest
                         repositories:
@@ -5230,7 +6653,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Sequi perferendis magni ea suscipit dolores mollitia.
+                    example: Est modi.
                 description: The attributes to assign to this database user.
                 example:
                     - LOGIN
@@ -5248,7 +6671,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Accusamus accusamus nihil nihil est modi.
+                    example: Voluptate recusandae quisquam quo aliquid omnis.
                 description: The roles to assign to this database user.
                 example:
                     - pgedge_superuser
@@ -5316,6 +6739,10 @@ definitions:
                       spock_version: "4"
                     - postgres_version: "16"
                       spock_version: "4"
+                    - postgres_version: "16"
+                      spock_version: "4"
+                    - postgres_version: "16"
+                      spock_version: "4"
         example:
             cohort:
                 cohort_id: pps1n11hqijn9rbee4cjil453
@@ -5333,13 +6760,7 @@ definitions:
             orchestrator: swarm
             status:
                 components:
-                    Eum sequi enim.:
-                        details:
-                            alarms:
-                                - '3: NOSPACE'
-                        error: failed to connect to etcd
-                        healthy: false
-                    Libero repellendus qui nobis.:
+                    Sequi enim ut libero repellendus qui nobis.:
                         details:
                             alarms:
                                 - '3: NOSPACE'
@@ -5348,6 +6769,8 @@ definitions:
                 state: available
                 updated_at: "2021-07-01T12:34:56Z"
             supported_pgedge_versions:
+                - postgres_version: "16"
+                  spock_version: "4"
                 - postgres_version: "16"
                   spock_version: "4"
                 - postgres_version: "16"
@@ -5400,19 +6823,7 @@ definitions:
                 type: object
                 description: The status of each component of the host.
                 example:
-                    Consequuntur officiis.:
-                        details:
-                            alarms:
-                                - '3: NOSPACE'
-                        error: failed to connect to etcd
-                        healthy: false
-                    Laborum ratione id ut magni incidunt reprehenderit.:
-                        details:
-                            alarms:
-                                - '3: NOSPACE'
-                        error: failed to connect to etcd
-                        healthy: false
-                    Rem consequuntur officiis explicabo blanditiis.:
+                    Et beatae excepturi.:
                         details:
                             alarms:
                                 - '3: NOSPACE'
@@ -5435,19 +6846,7 @@ definitions:
                 format: date-time
         example:
             components:
-                Animi sint amet exercitationem ex.:
-                    details:
-                        alarms:
-                            - '3: NOSPACE'
-                    error: failed to connect to etcd
-                    healthy: false
-                Excepturi atque explicabo laborum quasi.:
-                    details:
-                        alarms:
-                            - '3: NOSPACE'
-                    error: failed to connect to etcd
-                    healthy: false
-                Laboriosam quis impedit ut.:
+                Voluptatem in qui quibusdam aut.:
                     details:
                         alarms:
                             - '3: NOSPACE'
@@ -5479,7 +6878,7 @@ definitions:
                 example: n1
             state:
                 type: string
-                example: available
+                example: modifying
                 enum:
                     - creating
                     - modifying
@@ -5494,7 +6893,7 @@ definitions:
             host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: degraded
+            state: backing_up
         required:
             - id
             - host_id
@@ -5510,15 +6909,15 @@ definitions:
             - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
               id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
               node_name: n1
-              state: backing_up
+              state: available
             - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
               id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
               node_name: n1
-              state: backing_up
+              state: available
             - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
               id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
               node_name: n1
-              state: backing_up
+              state: available
     InstanceResponseBodyAbbreviated:
         title: 'Mediatype identifier: instance; view=default'
         type: object
@@ -5539,7 +6938,7 @@ definitions:
                 example: n1
             state:
                 type: string
-                example: backing_up
+                example: creating
                 enum:
                     - creating
                     - modifying
@@ -5554,7 +6953,7 @@ definitions:
             host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: restoring
+            state: unknown
         required:
             - id
             - host_id
@@ -5570,15 +6969,19 @@ definitions:
             - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
               id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
               node_name: n1
-              state: backing_up
+              state: available
             - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
               id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
               node_name: n1
-              state: backing_up
+              state: available
             - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
               id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
               node_name: n1
-              state: backing_up
+              state: available
+            - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+              id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+              node_name: n1
+              state: available
     PgEdgeVersion:
         title: PgEdgeVersion
         type: object
@@ -5682,7 +7085,7 @@ definitions:
                     s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
                 additionalProperties:
                     type: string
-                    example: Eius quis earum.
+                    example: Est et.
             gcs_bucket:
                 type: string
                 description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -5747,6 +7150,108 @@ definitions:
             type: s3
         required:
             - type
+    Task:
+        title: Task
+        type: object
+        properties:
+            completed_at:
+                type: string
+                description: The time when the task was completed.
+                example: "2025-01-01T02:30:00Z"
+                format: date-time
+            created_at:
+                type: string
+                description: The time when the task was created.
+                example: "2025-01-01T01:30:00Z"
+                format: date-time
+            database_id:
+                type: string
+                description: The database ID of the task.
+                example: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+            error:
+                type: string
+                description: The error message if the task failed.
+                example: failed to connect to database
+            status:
+                type: string
+                description: The status of the task.
+                example: pending
+                enum:
+                    - pending
+                    - running
+                    - completed
+                    - failed
+                    - unknown
+            task_id:
+                type: string
+                description: The unique ID of the task.
+                example: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+            type:
+                type: string
+                description: The type of the task.
+                example: backup
+        example:
+            completed_at: "2025-01-01T02:30:00Z"
+            created_at: "2025-01-01T01:30:00Z"
+            database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+            error: failed to connect to database
+            status: pending
+            task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+            type: backup
+        required:
+            - database_id
+            - task_id
+            - created_at
+            - type
+            - status
+    TaskLog:
+        title: TaskLog
+        type: object
+        properties:
+            database_id:
+                type: string
+                description: The database ID of the task log.
+                example: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+            last_line_id:
+                type: string
+                description: The ID of the last line in the task log.
+                example: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+            lines:
+                type: array
+                items:
+                    type: string
+                    example: Ut rerum.
+                description: The lines of the task log.
+                example:
+                    - Task started
+                    - Task completed
+            task_id:
+                type: string
+                description: The unique ID of the task log.
+                example: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+            task_status:
+                type: string
+                description: The status of the task.
+                example: pending
+                enum:
+                    - pending
+                    - running
+                    - completed
+                    - failed
+                    - unknown
+        example:
+            database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+            last_line_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+            lines:
+                - Task started
+                - Task completed
+            task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+            task_status: pending
+        required:
+            - database_id
+            - task_id
+            - task_status
+            - lines
     UpdateDatabaseRequest:
         title: UpdateDatabaseRequest
         type: object

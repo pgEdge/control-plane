@@ -1,6 +1,7 @@
 package swarm
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -62,15 +63,16 @@ func (p *PgBackRestStanza) Refresh(ctx context.Context, rc *resource.Context) er
 	}
 
 	infoCmd := pgbackrestBackupCmd("info", "--output=json").StringSlice()
-	output, err := PostgresContainerExec(ctx, client, node.PrimaryInstanceID, infoCmd)
+	var output bytes.Buffer
+	err = PostgresContainerExec(ctx, &output, client, node.PrimaryInstanceID, infoCmd)
 	if err != nil {
 		// pgbackrest info returns a 0 exit code even if the stanza doesn't
 		// exist, so an error here means something else went wrong.
-		return fmt.Errorf("failed to exec pgbackrest info: %w, output: %s", err, output)
+		return fmt.Errorf("failed to exec pgbackrest info: %w, output: %s", err, output.String())
 	}
-	info, err := pgbackrest.ParseInfoOutput(output)
+	info, err := pgbackrest.ParseInfoOutput(output.Bytes())
 	if err != nil {
-		return fmt.Errorf("failed to parse pgbackrest info output: %w, output: %s", err, output)
+		return fmt.Errorf("failed to parse pgbackrest info output: %w, output: %s", err, output.String())
 	}
 	stanza := info.Stanza("db")
 	if stanza == nil {
@@ -94,15 +96,17 @@ func (p *PgBackRestStanza) Create(ctx context.Context, rc *resource.Context) err
 		return fmt.Errorf("failed to get node %q: %w", p.NodeName, err)
 	}
 
+	var stanzaCreateOut bytes.Buffer
 	stanzaCreateCmd := pgbackrestBackupCmd("stanza-create", "--io-timeout=10s").StringSlice()
-	_, err = PostgresContainerExec(ctx, client, node.PrimaryInstanceID, stanzaCreateCmd)
+	err = PostgresContainerExec(ctx, &stanzaCreateOut, client, node.PrimaryInstanceID, stanzaCreateCmd)
 	if err != nil {
-		return fmt.Errorf("failed to exec pgbackrest stanza-create: %w", err)
+		return fmt.Errorf("failed to exec pgbackrest stanza-create: %w, output: %s", err, stanzaCreateOut.String())
 	}
+	var checkOut bytes.Buffer
 	checkCmd := pgbackrestBackupCmd("check").StringSlice()
-	_, err = PostgresContainerExec(ctx, client, node.PrimaryInstanceID, checkCmd)
+	err = PostgresContainerExec(ctx, &checkOut, client, node.PrimaryInstanceID, checkCmd)
 	if err != nil {
-		return fmt.Errorf("failed to exec pgbackrest check: %w", err)
+		return fmt.Errorf("failed to exec pgbackrest check: %w, output: %s", err, checkOut.String())
 	}
 
 	return nil

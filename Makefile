@@ -34,8 +34,8 @@ lint:
 .PHONY: lint-ci
 lint-ci:
 	$(golangcilint) run \
-		--out-format junit-xml \
-		$(modules) > lint-results.xml
+		--output.junit-xml.path lint-results.xml \
+		$(modules)
 
 .PHONY: ci
 ci: test-ci lint-ci

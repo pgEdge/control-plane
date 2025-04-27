@@ -1,9 +1,33 @@
-issues:
-  exclude-rules:
-    - path: (.+)_test.go
-      linters:
-        - errcheck
-    - linters:
-        - errcheck
-      # allow defer statements without error checks
-      source: "^\\s*defer\\s+"
+version: "2"
+linters:
+  settings:
+    cyclop:
+      max-complexity: 8
+    funlen:
+      lines: 50
+      ignore-comments: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - errcheck
+        path: (.+)_test.go
+      - linters:
+          - errcheck
+        source: ^\s*defer\s+
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

@@ -33,3 +33,31 @@ func (c Cmd) StringSlice() []string {
 func (c Cmd) String() string {
 	return strings.Join(c.StringSlice(), " ")
 }
+
+type BackupType string
+
+func (b BackupType) String() string {
+	return string(b)
+}
+
+const (
+	BackupTypeFull         BackupType = "full"
+	BackupTypeDifferential BackupType = "diff"
+	BackupTypeIncremental  BackupType = "incr"
+)
+
+type BackupOptions struct {
+	Type         BackupType        `json:"type"`
+	Annotations  map[string]string `json:"annotations,omitempty"`
+	ExtraOptions []string          `json:"extra_options,omitempty"`
+}
+
+func (b BackupOptions) StringSlice() []string {
+	var options []string
+	options = append(options, "--type", b.Type.String())
+	for k, v := range b.Annotations {
+		options = append(options, "--annotation", k+"="+v)
+	}
+	options = append(options, b.ExtraOptions...)
+	return options
+}

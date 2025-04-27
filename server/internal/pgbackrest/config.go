@@ -12,8 +12,86 @@ import (
 	"gopkg.in/ini.v1"
 
 	"github.com/google/uuid"
-	"github.com/pgEdge/control-plane/server/internal/database"
 )
+
+type RepositoryType string
+
+const (
+	RepositoryTypeS3    RepositoryType = "s3"
+	RepositoryTypeGCS   RepositoryType = "gcs"
+	RepositoryTypeAzure RepositoryType = "azure"
+)
+
+type RetentionFullType string
+
+const (
+	RetentionFullTypeTime  RetentionFullType = "time"
+	RetentionFullTypeCount RetentionFullType = "count"
+)
+
+type Repository struct {
+	ID                string            `json:"id"`
+	Type              RepositoryType    `json:"type"`
+	S3Bucket          string            `json:"s3_bucket,omitempty"`
+	S3Region          string            `json:"s3_region,omitempty"`
+	S3Endpoint        string            `json:"s3_endpoint,omitempty"`
+	S3Key             string            `json:"s3_key,omitempty"`
+	S3KeySecret       string            `json:"s3_key_secret,omitempty"`
+	GCSBucket         string            `json:"gcs_bucket,omitempty"`
+	GCSEndpoint       string            `json:"gcs_endpoint,omitempty"`
+	GCSKey            string            `json:"gcs_key,omitempty"`
+	AzureAccount      string            `json:"azure_account,omitempty"`
+	AzureContainer    string            `json:"azure_container,omitempty"`
+	AzureEndpoint     string            `json:"azure_endpoint,omitempty"`
+	AzureKey          string            `json:"azure_key,omitempty"`
+	RetentionFull     int               `json:"retention_full"`
+	RetentionFullType RetentionFullType `json:"retention_full_type"`
+	BasePath          string            `json:"base_path,omitempty"`
+	CustomOptions     map[string]string `json:"custom_options,omitempty"`
+}
+
+func (r *Repository) WithDefaults() *Repository {
+	out := &Repository{
+		ID:                r.ID,
+		Type:              r.Type,
+		S3Bucket:          r.S3Bucket,
+		S3Region:          r.S3Region,
+		S3Endpoint:        r.S3Endpoint,
+		S3Key:             r.S3Key,
+		S3KeySecret:       r.S3KeySecret,
+		GCSBucket:         r.GCSBucket,
+		GCSEndpoint:       r.GCSEndpoint,
+		GCSKey:            r.GCSKey,
+		AzureAccount:      r.AzureAccount,
+		AzureContainer:    r.AzureContainer,
+		AzureEndpoint:     r.AzureEndpoint,
+		AzureKey:          r.AzureKey,
+		RetentionFull:     r.RetentionFull,
+		RetentionFullType: r.RetentionFullType,
+		BasePath:          r.BasePath,
+		CustomOptions:     r.CustomOptions,
+	}
+	if out.S3Endpoint == "" {
+		if out.S3Region != "" {
+			out.S3Endpoint = fmt.Sprintf("s3.%s.amazonaws.com", out.S3Region)
+		} else {
+			out.S3Endpoint = "s3.amazonaws.com"
+		}
+	}
+	if out.GCSEndpoint == "" {
+		out.GCSEndpoint = "storage.googleapis.com"
+	}
+	if out.AzureEndpoint == "" {
+		out.AzureEndpoint = "blob.core.windows.net"
+	}
+	if out.RetentionFullType == "" {
+		out.RetentionFullType = RetentionFullTypeTime
+	}
+	if out.RetentionFull == 0 {
+		out.RetentionFull = 7
+	}
+	return out
+}
 
 type ConfigOptions struct {
 	DatabaseID   uuid.UUID
@@ -22,7 +100,7 @@ type ConfigOptions struct {
 	HostUser     string
 	User         string
 	SocketPath   string
-	Repositories []*database.BackupRepository
+	Repositories []*Repository
 }
 
 func WriteConfig(w io.Writer, opts ConfigOptions) error {
@@ -43,11 +121,11 @@ func WriteConfig(w io.Writer, opts ConfigOptions) error {
 		global[repoKey(idx, "retention-full-type")] = string(repo.RetentionFullType)
 
 		switch repo.Type {
-		case database.BackupRepositoryTypeS3:
+		case RepositoryTypeS3:
 			writeS3Repo(idx, repo, global)
-		case database.BackupRepositoryTypeGCS:
+		case RepositoryTypeGCS:
 			writeGCSRepo(idx, repo, global)
-		case database.BackupRepositoryTypeAzure:
+		case RepositoryTypeAzure:
 			writeAzureRepo(idx, repo, global)
 		default:
 			return fmt.Errorf("unsupported repository type: %q", repo.Type)
@@ -92,7 +170,7 @@ func WriteConfig(w io.Writer, opts ConfigOptions) error {
 	return nil
 }
 
-func writeS3Repo(idx int, repo *database.BackupRepository, contents map[string]string) {
+func writeS3Repo(idx int, repo *Repository, contents map[string]string) {
 	contents[repoKey(idx, "s3-bucket")] = repo.S3Bucket
 	contents[repoKey(idx, "s3-endpoint")] = repo.S3Endpoint
 	if repo.S3Region != "" {
@@ -107,7 +185,7 @@ func writeS3Repo(idx int, repo *database.BackupRepository, contents map[string]s
 	}
 }
 
-func writeGCSRepo(idx int, repo *database.BackupRepository, contents map[string]string) {
+func writeGCSRepo(idx int, repo *Repository, contents map[string]string) {
 	contents[repoKey(idx, "gcs-bucket")] = repo.GCSBucket
 	contents[repoKey(idx, "gcs-endpoint")] = repo.GCSEndpoint
 	if repo.GCSKey != "" {
@@ -118,7 +196,7 @@ func writeGCSRepo(idx int, repo *database.BackupRepository, contents map[string]
 	}
 }
 
-func writeAzureRepo(idx int, repo *database.BackupRepository, contents map[string]string) {
+func writeAzureRepo(idx int, repo *Repository, contents map[string]string) {
 	contents[repoKey(idx, "azure-account")] = repo.AzureAccount
 	contents[repoKey(idx, "azure-container")] = repo.AzureContainer
 	contents[repoKey(idx, "azure-endpoint")] = repo.AzureEndpoint
@@ -133,7 +211,7 @@ func writeAzureRepo(idx int, repo *database.BackupRepository, contents map[strin
 
 var repoPrefixRegex = regexp.MustCompile(`^repo\d+-`)
 
-func writeCustomOptions(idx int, repo *database.BackupRepository, contents map[string]string) {
+func writeCustomOptions(idx int, repo *Repository, contents map[string]string) {
 	for key, value := range repo.CustomOptions {
 		// Sanitize the keys in case someone preemptively added the repoN prefix.
 		key = repoPrefixRegex.ReplaceAllString(key, "")

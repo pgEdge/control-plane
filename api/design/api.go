@@ -22,12 +22,14 @@ var _ = g.API("control-plane", func() {
 	g.Error("invalid_join_token")
 	g.Error("invalid_input")
 	g.Error("not_found")
+	g.Error("database_not_modifiable")
 	g.HTTP(func() {
 		g.Response("cluster_already_initialized", http.StatusConflict)
 		g.Response("cluster_not_initialized", http.StatusConflict)
 		g.Response("invalid_join_token", http.StatusUnauthorized)
 		g.Response("invalid_input", http.StatusBadRequest)
 		g.Response("not_found", http.StatusNotFound)
+		g.Response("database_not_modifiable", http.StatusConflict)
 	})
 })
 
@@ -74,16 +76,6 @@ var _ = g.Service("control-plane", func() {
 			g.POST("/internal/cluster/join-options")
 		})
 	})
-
-	// g.Method("init-cluster", func() {
-	// 	g.Meta()
-	// 	g.Description("Initializes a new cluster.")
-	// 	g.Result(ClusterJoinToken)
-
-	// 	g.HTTP(func() {
-	// 		g.GET("/cluster/init")
-	// 	})
-	// })
 
 	g.Method("inspect-cluster", func() {
 		g.Description("Returns information about the cluster.")
@@ -204,6 +196,7 @@ var _ = g.Service("control-plane", func() {
 		})
 		g.Error("cluster_not_initialized")
 		g.Error("not_found")
+		g.Error("database_not_modifiable")
 
 		g.HTTP(func() {
 			g.POST("/databases/{database_id}")
@@ -216,15 +209,144 @@ var _ = g.Service("control-plane", func() {
 		g.Description("Deletes a database from the cluster.")
 		g.Payload(func() {
 			g.Attribute("database_id", g.String, func() {
+				g.Format(g.FormatUUID)
 				g.Description("ID of the database to delete.")
 				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
+
+			g.Required("database_id")
 		})
+		g.Error("cluster_not_initialized")
+		g.Error("not_found")
+		g.Error("database_not_modifiable")
+
+		g.HTTP(func() {
+			g.DELETE("/databases/{database_id}")
+		})
+	})
+
+	g.Method("initiate-database-backup", func() {
+		g.Description("Initiates a backup for a database.")
+		g.Payload(func() {
+			g.Attribute("database_id", g.String, func() {
+				g.Format(g.FormatUUID)
+				g.Description("ID of the database to back up.")
+				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+			})
+			g.Attribute("node_name", g.String, func() {
+				g.Description("Name of the node to back up.")
+				g.Example("n1")
+			})
+			g.Attribute("options", BackupOptions)
+
+			g.Required("database_id", "node_name", "options")
+		})
+		g.Result(Task)
+		g.Error("cluster_not_initialized")
+		g.Error("not_found")
+		g.Error("database_not_modifiable")
+
+		g.HTTP(func() {
+			g.POST("/databases/{database_id}/nodes/{node_name}/backups")
+			g.Body("options")
+		})
+	})
+
+	g.Method("list-database-tasks", func() {
+		g.Description("Lists all tasks for a database.")
+		g.Payload(func() {
+			g.Attribute("database_id", g.String, func() {
+				g.Format(g.FormatUUID)
+				g.Description("ID of the database to list tasks for.")
+				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+			})
+			g.Attribute("after_task_id", g.String, func() {
+				g.Format(g.FormatUUID)
+				g.Description("ID of the task to start from.")
+				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+			})
+			g.Attribute("limit", g.Int, func() {
+				g.Description("Maximum number of tasks to return.")
+				g.Example(100)
+			})
+			g.Attribute("sort_order", g.String, func() {
+				g.Enum("asc", "ascend", "ascending", "desc", "descend", "descending")
+				g.Description("Sort order for the tasks.")
+				g.Example("ascend")
+			})
+
+			g.Required("database_id")
+		})
+		g.Result(g.ArrayOf(Task))
 		g.Error("cluster_not_initialized")
 		g.Error("not_found")
 
 		g.HTTP(func() {
-			g.DELETE("/databases/{database_id}")
+			g.GET("/databases/{database_id}/tasks")
+			g.Param("after_task_id")
+			g.Param("limit")
+			g.Param("sort_order")
+		})
+	})
+
+	g.Method("inspect-database-task", func() {
+		g.Description("Returns information about a particular task for a database.")
+		g.Payload(func() {
+			g.Attribute("database_id", g.String, func() {
+				g.Format(g.FormatUUID)
+				g.Description("ID of the database to inspect tasks for.")
+				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+			})
+			g.Attribute("task_id", g.String, func() {
+				g.Format(g.FormatUUID)
+				g.Description("ID of the task to inspect.")
+				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+			})
+
+			g.Required("database_id", "task_id")
+		})
+		g.Result(Task)
+		g.Error("cluster_not_initialized")
+		g.Error("not_found")
+
+		g.HTTP(func() {
+			g.GET("/databases/{database_id}/tasks/{task_id}")
+		})
+	})
+
+	g.Method("get-database-task-log", func() {
+		g.Description("Returns the log of a particular task for a database.")
+		g.Payload(func() {
+			g.Attribute("database_id", g.String, func() {
+				g.Format(g.FormatUUID)
+				g.Description("ID of the database to get task log for.")
+				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+			})
+			g.Attribute("task_id", g.String, func() {
+				g.Format(g.FormatUUID)
+				g.Description("ID of the task to get log for.")
+				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+			})
+			g.Attribute("after_line_id", g.String, func() {
+				g.Format(g.FormatUUID)
+				g.Description("ID of the line to start from.")
+				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+			})
+			g.Attribute("limit", g.Int, func() {
+				g.Description("Maximum number of lines to return.")
+				g.Example(100)
+			})
+
+			g.Required("database_id", "task_id")
+		})
+		g.Result(TaskLog)
+		g.Error("cluster_not_initialized")
+		g.Error("not_found")
+
+		g.HTTP(func() {
+			g.GET("/databases/{database_id}/tasks/{task_id}/log")
+			g.Param("after_line_id")
+			g.Param("limit")
 		})
 	})
 

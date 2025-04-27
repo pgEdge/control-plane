@@ -17,12 +17,9 @@ func Slog(base zerolog.Logger, level zerolog.Level) *slog.Logger {
 			break
 		}
 	}
-	innerLogger := base.With().
-		CallerWithSkipFrameCount(3).
-		Logger()
 	return slog.New(slogzerolog.Option{
 		Level:  translatedLevel,
-		Logger: &innerLogger,
+		Logger: &base,
 	}.NewZerologHandler())
 }
 
@@ -30,7 +27,6 @@ func Zap(base zerolog.Logger, level zerolog.Level) *zap.Logger {
 	core := zerozap.New(base.
 		Level(level).
 		With().
-		CallerWithSkipFrameCount(5). // Found via trial and error
 		Logger())
 	return zap.New(core)
 }
