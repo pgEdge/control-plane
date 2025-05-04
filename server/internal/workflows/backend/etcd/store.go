@@ -10,10 +10,11 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/workflows/backend/etcd/workflow_instance_lock"
 	"github.com/pgEdge/control-plane/server/internal/workflows/backend/etcd/workflow_instance_sticky"
 	"github.com/pgEdge/control-plane/server/internal/workflows/backend/etcd/workflow_queue_item"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type Store struct {
-	client                 storage.EtcdClient
+	client                 *clientv3.Client
 	ActivityLock           *activity_lock.Store
 	ActivityQueueItem      *activity_queue_item.Store
 	HistoryEvent           *history_event.Store
@@ -24,7 +25,7 @@ type Store struct {
 	WorkflowQueueItem      *workflow_queue_item.Store
 }
 
-func NewStore(client storage.EtcdClient, root string) *Store {
+func NewStore(client *clientv3.Client, root string) *Store {
 	return &Store{
 		client:                 client,
 		ActivityLock:           activity_lock.NewStore(client, root),

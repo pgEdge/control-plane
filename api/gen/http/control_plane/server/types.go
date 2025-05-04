@@ -49,6 +49,8 @@ type CreateDatabaseRequestBody struct {
 // UpdateDatabaseRequestBody is the type of the "control-plane" service
 // "update-database" endpoint HTTP request body.
 type UpdateDatabaseRequestBody struct {
+	// Unique identifier for the databases's owner.
+	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
 	// The specification for the database.
 	Spec *DatabaseSpecRequestBodyRequestBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
 }
@@ -297,6 +299,25 @@ type InspectClusterClusterNotInitializedResponseBody struct {
 	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
+// InspectClusterNotFoundResponseBody is the type of the "control-plane"
+// service "inspect-cluster" endpoint HTTP response body for the "not_found"
+// error.
+type InspectClusterNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
 // ListHostsClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "list-hosts" endpoint HTTP response body for the
 // "cluster_not_initialized" error.
@@ -335,10 +356,46 @@ type InspectHostClusterNotInitializedResponseBody struct {
 	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
+// InspectHostNotFoundResponseBody is the type of the "control-plane" service
+// "inspect-host" endpoint HTTP response body for the "not_found" error.
+type InspectHostNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
 // RemoveHostClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "remove-host" endpoint HTTP response body for the
 // "cluster_not_initialized" error.
 type RemoveHostClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// RemoveHostNotFoundResponseBody is the type of the "control-plane" service
+// "remove-host" endpoint HTTP response body for the "not_found" error.
+type RemoveHostNotFoundResponseBody struct {
 	// Name is the name of this class of errors.
 	Name string `form:"name" json:"name" xml:"name"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -449,6 +506,25 @@ type InspectDatabaseClusterNotInitializedResponseBody struct {
 	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
+// InspectDatabaseNotFoundResponseBody is the type of the "control-plane"
+// service "inspect-database" endpoint HTTP response body for the "not_found"
+// error.
+type InspectDatabaseNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
 // UpdateDatabaseClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "update-database" endpoint HTTP response body for
 // the "cluster_not_initialized" error.
@@ -468,10 +544,48 @@ type UpdateDatabaseClusterNotInitializedResponseBody struct {
 	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
+// UpdateDatabaseNotFoundResponseBody is the type of the "control-plane"
+// service "update-database" endpoint HTTP response body for the "not_found"
+// error.
+type UpdateDatabaseNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
 // DeleteDatabaseClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "delete-database" endpoint HTTP response body for
 // the "cluster_not_initialized" error.
 type DeleteDatabaseClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// DeleteDatabaseNotFoundResponseBody is the type of the "control-plane"
+// service "delete-database" endpoint HTTP response body for the "not_found"
+// error.
+type DeleteDatabaseNotFoundResponseBody struct {
 	// Name is the name of this class of errors.
 	Name string `form:"name" json:"name" xml:"name"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -1623,6 +1737,20 @@ func NewInspectClusterClusterNotInitializedResponseBody(res *goa.ServiceError) *
 	return body
 }
 
+// NewInspectClusterNotFoundResponseBody builds the HTTP response body from the
+// result of the "inspect-cluster" endpoint of the "control-plane" service.
+func NewInspectClusterNotFoundResponseBody(res *goa.ServiceError) *InspectClusterNotFoundResponseBody {
+	body := &InspectClusterNotFoundResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
 // NewListHostsClusterNotInitializedResponseBody builds the HTTP response body
 // from the result of the "list-hosts" endpoint of the "control-plane" service.
 func NewListHostsClusterNotInitializedResponseBody(res *goa.ServiceError) *ListHostsClusterNotInitializedResponseBody {
@@ -1652,10 +1780,38 @@ func NewInspectHostClusterNotInitializedResponseBody(res *goa.ServiceError) *Ins
 	return body
 }
 
+// NewInspectHostNotFoundResponseBody builds the HTTP response body from the
+// result of the "inspect-host" endpoint of the "control-plane" service.
+func NewInspectHostNotFoundResponseBody(res *goa.ServiceError) *InspectHostNotFoundResponseBody {
+	body := &InspectHostNotFoundResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
 // NewRemoveHostClusterNotInitializedResponseBody builds the HTTP response body
 // from the result of the "remove-host" endpoint of the "control-plane" service.
 func NewRemoveHostClusterNotInitializedResponseBody(res *goa.ServiceError) *RemoveHostClusterNotInitializedResponseBody {
 	body := &RemoveHostClusterNotInitializedResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewRemoveHostNotFoundResponseBody builds the HTTP response body from the
+// result of the "remove-host" endpoint of the "control-plane" service.
+func NewRemoveHostNotFoundResponseBody(res *goa.ServiceError) *RemoveHostNotFoundResponseBody {
+	body := &RemoveHostNotFoundResponseBody{
 		Name:      res.Name,
 		ID:        res.ID,
 		Message:   res.Message,
@@ -1740,6 +1896,20 @@ func NewInspectDatabaseClusterNotInitializedResponseBody(res *goa.ServiceError) 
 	return body
 }
 
+// NewInspectDatabaseNotFoundResponseBody builds the HTTP response body from
+// the result of the "inspect-database" endpoint of the "control-plane" service.
+func NewInspectDatabaseNotFoundResponseBody(res *goa.ServiceError) *InspectDatabaseNotFoundResponseBody {
+	body := &InspectDatabaseNotFoundResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
 // NewUpdateDatabaseClusterNotInitializedResponseBody builds the HTTP response
 // body from the result of the "update-database" endpoint of the
 // "control-plane" service.
@@ -1755,11 +1925,39 @@ func NewUpdateDatabaseClusterNotInitializedResponseBody(res *goa.ServiceError) *
 	return body
 }
 
+// NewUpdateDatabaseNotFoundResponseBody builds the HTTP response body from the
+// result of the "update-database" endpoint of the "control-plane" service.
+func NewUpdateDatabaseNotFoundResponseBody(res *goa.ServiceError) *UpdateDatabaseNotFoundResponseBody {
+	body := &UpdateDatabaseNotFoundResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
 // NewDeleteDatabaseClusterNotInitializedResponseBody builds the HTTP response
 // body from the result of the "delete-database" endpoint of the
 // "control-plane" service.
 func NewDeleteDatabaseClusterNotInitializedResponseBody(res *goa.ServiceError) *DeleteDatabaseClusterNotInitializedResponseBody {
 	body := &DeleteDatabaseClusterNotInitializedResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewDeleteDatabaseNotFoundResponseBody builds the HTTP response body from the
+// result of the "delete-database" endpoint of the "control-plane" service.
+func NewDeleteDatabaseNotFoundResponseBody(res *goa.ServiceError) *DeleteDatabaseNotFoundResponseBody {
+	body := &DeleteDatabaseNotFoundResponseBody{
 		Name:      res.Name,
 		ID:        res.ID,
 		Message:   res.Message,
@@ -1837,8 +2035,10 @@ func NewInspectDatabasePayload(databaseID string) *controlplane.InspectDatabaseP
 
 // NewUpdateDatabasePayload builds a control-plane service update-database
 // endpoint payload.
-func NewUpdateDatabasePayload(body *UpdateDatabaseRequestBody, databaseID string) *controlplane.UpdateDatabasePayload {
-	v := &controlplane.UpdateDatabaseRequest{}
+func NewUpdateDatabasePayload(body *UpdateDatabaseRequestBody, databaseID string, forceUpdate *bool) *controlplane.UpdateDatabasePayload {
+	v := &controlplane.UpdateDatabaseRequest{
+		TenantID: body.TenantID,
+	}
 	if body.Spec != nil {
 		v.Spec = unmarshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(body.Spec)
 	}
@@ -1846,6 +2046,7 @@ func NewUpdateDatabasePayload(body *UpdateDatabaseRequestBody, databaseID string
 		Request: v,
 	}
 	res.DatabaseID = &databaseID
+	res.ForceUpdate = forceUpdate
 
 	return res
 }
@@ -1918,6 +2119,9 @@ func ValidateCreateDatabaseRequestBody(body *CreateDatabaseRequestBody) (err err
 // ValidateUpdateDatabaseRequestBody runs the validations defined on
 // Update-DatabaseRequestBody
 func ValidateUpdateDatabaseRequestBody(body *UpdateDatabaseRequestBody) (err error) {
+	if body.TenantID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.tenant_id", *body.TenantID, goa.FormatUUID))
+	}
 	if body.Spec != nil {
 		if err2 := ValidateDatabaseSpecRequestBodyRequestBody(body.Spec); err2 != nil {
 			err = goa.MergeErrors(err, err2)

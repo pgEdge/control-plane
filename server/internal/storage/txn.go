@@ -10,10 +10,10 @@ import (
 
 type txn struct {
 	ops    []TxnOperation
-	client EtcdClient
+	client *clientv3.Client
 }
 
-func NewTxn(client EtcdClient, ops ...TxnOperation) Txn {
+func NewTxn(client *clientv3.Client, ops ...TxnOperation) Txn {
 	return &txn{
 		client: client,
 		ops:    ops,

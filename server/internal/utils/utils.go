@@ -2,6 +2,8 @@ package utils
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
@@ -68,4 +70,13 @@ func NillablePointerTo[T comparable](v T) *T {
 		return nil
 	}
 	return &v
+}
+
+func RandomString(length int) (string, error) {
+	randomBytes := make([]byte, length)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(randomBytes), nil
 }

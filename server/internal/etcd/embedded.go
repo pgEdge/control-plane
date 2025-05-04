@@ -16,8 +16,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
+	"github.com/samber/do"
 	"github.com/spf13/afero"
+	"go.etcd.io/etcd/api/v3/authpb"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
+	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	"go.etcd.io/etcd/client/pkg/v3/transport"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/server/v3/embed"
@@ -25,12 +28,13 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/common"
 	"github.com/pgEdge/control-plane/server/internal/config"
-	"github.com/pgEdge/control-plane/server/internal/exec"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 var _ common.HealthCheckable = (*EmbeddedEtcd)(nil)
+var _ do.Shutdownable = (*EmbeddedEtcd)(nil)
 
 type JoinOptions struct {
 	Peer        Peer
@@ -101,7 +105,7 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 		return fmt.Errorf("failed to get etcd client for initialization: %w", err)
 	}
 	// Initialize the certificate authority
-	certStore := certificates.NewStore(client, e.cfg.ClusterID.String())
+	certStore := certificates.NewStore(client, e.cfg.EtcdKeyRoot)
 	certSvc := certificates.NewService(e.cfg, certStore)
 	if err := certSvc.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start certificate service: %w", err)
@@ -187,9 +191,8 @@ func (e *EmbeddedEtcd) start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to get internal etcd client: %w", err)
 	}
-	e.client = client
 
-	certStore := certificates.NewStore(client, e.cfg.ClusterID.String())
+	certStore := certificates.NewStore(client, e.cfg.EtcdKeyRoot)
 	certSvc := certificates.NewService(e.cfg, certStore)
 	if err := certSvc.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start certificate service: %w", err)
@@ -294,9 +297,8 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 	if err != nil {
 		return fmt.Errorf("failed to get internal etcd client: %w", err)
 	}
-	e.client = client
 
-	certStore := certificates.NewStore(client, e.cfg.ClusterID.String())
+	certStore := certificates.NewStore(client, e.cfg.EtcdKeyRoot)
 	certSvc := certificates.NewService(e.cfg, certStore)
 	if err := certSvc.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start certificate service: %w", err)
@@ -407,6 +409,10 @@ func (e *EmbeddedEtcd) clientTLSConfig() (*tls.Config, error) {
 }
 
 func (e *EmbeddedEtcd) GetClient() (*clientv3.Client, error) {
+	if e.client != nil {
+		return e.client, nil
+	}
+
 	lg, err := newZapLogger(e.logger, e.cfg.EmbeddedEtcd.ClientLogLevel, "etcd_client")
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize etcd client logger: %w", err)
@@ -418,15 +424,18 @@ func (e *EmbeddedEtcd) GetClient() (*clientv3.Client, error) {
 	}
 
 	client, err := clientv3.New(clientv3.Config{
-		Logger:    lg,
-		Endpoints: e.etcd.Server.Cluster().ClientURLs(),
-		TLS:       tlsConfig,
-		Username:  fmt.Sprintf("host-%s", e.cfg.HostID.String()),
-		Password:  e.cfg.HostID.String(),
+		Logger:             lg,
+		Endpoints:          e.etcd.Server.Cluster().ClientURLs(),
+		TLS:                tlsConfig,
+		Username:           fmt.Sprintf("host-%s", e.cfg.HostID.String()),
+		Password:           e.cfg.HostID.String(),
+		MaxCallSendMsgSize: 10 * 1024 * 1024, // 10MB
+		MaxCallRecvMsgSize: 10 * 1024 * 1024, // 10MB
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize etcd client: %w", err)
 	}
+	e.client = client
 
 	return client, nil
 }
@@ -446,7 +455,7 @@ func (e *EmbeddedEtcd) AddInstanceUser(ctx context.Context, opts InstanceUserOpt
 		return nil, fmt.Errorf("failed to get etcd client: %w", err)
 	}
 
-	return createInstanceEtcdUser(ctx, client, e.certSvc, opts)
+	return CreateInstanceEtcdUser(ctx, client, e.certSvc, opts)
 }
 
 func (e *EmbeddedEtcd) writeCredentials(creds *HostCredentials) error {
@@ -481,7 +490,7 @@ func (e *EmbeddedEtcd) writeCredentials(creds *HostCredentials) error {
 			},
 		},
 	}
-	err := certs.Create(context.Background(), afero.NewOsFs(), exec.RunCmd, e.cfg.DataDir)
+	err := certs.Create(context.Background(), afero.NewOsFs(), e.cfg.DataDir, e.cfg.DatabaseOwnerUID)
 	if err != nil {
 		return fmt.Errorf("failed to write credentials: %w", err)
 	}
@@ -651,6 +660,7 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 	// but the workflows backend can produce large transactions in complex
 	// workflows.
 	c.MaxTxnOps = 2048
+	c.MaxRequestBytes = 10 * 1024 * 1024 // 10MB
 
 	return c, nil
 }
@@ -786,44 +796,42 @@ func createEtcdHostCredentials(
 type InstanceUserOptions struct {
 	InstanceID uuid.UUID
 	KeyPrefix  string
+	Password   string
 }
 
 type InstanceUserCredentials struct {
 	Username   string
+	Password   string
 	CaCert     []byte
 	ClientCert []byte
 	ClientKey  []byte
 }
 
-func createInstanceEtcdUser(
+func CreateInstanceEtcdUser(
 	ctx context.Context,
 	client *clientv3.Client,
 	certSvc *certificates.Service,
 	opts InstanceUserOptions,
 ) (*InstanceUserCredentials, error) {
 	username := fmt.Sprintf("instance-%s", opts.InstanceID.String())
-
-	// Create a user for instance
-	// TODO: patroni doesn't support CN auth, so we need a password. Replace this
-	// with something random.
-	if _, err := client.UserAdd(ctx, username, opts.InstanceID.String()); err != nil {
-		return nil, fmt.Errorf("failed to create instance user: %w", err)
+	password := opts.Password
+	if password == "" {
+		pw, err := utils.RandomString(16)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate random password: %w", err)
+		}
+		password = pw
 	}
-	// Create a role for the instance
-	if _, err := client.RoleAdd(ctx, username); err != nil {
+
+	if err := createRoleIfNotExists(ctx, client, username, opts.KeyPrefix); err != nil {
 		return nil, fmt.Errorf("failed to create instance role: %w", err)
 	}
-	rangeEnd := clientv3.GetPrefixRangeEnd(opts.KeyPrefix)
-	permType := clientv3.PermissionType(clientv3.PermReadWrite)
-	if _, err := client.RoleGrantPermission(ctx, username, opts.KeyPrefix, rangeEnd, permType); err != nil {
-		return nil, fmt.Errorf("failed to grant instance role permission: %w", err)
-	}
-	// Grant the role to the user
-	if _, err := client.UserGrantRole(ctx, username, username); err != nil {
-		return nil, fmt.Errorf("failed to grant instance role to instance user: %w", err)
+
+	if err := createUserIfNotExists(ctx, client, username, password, username); err != nil {
+		return nil, fmt.Errorf("failed to create instance user: %w", err)
 	}
 
-	// Create a cert for the instance user
+	// Create a cert for the instance user. This operation is idempotent.
 	clientPrincipal, err := certSvc.InstanceEtcdUser(ctx, opts.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cert for etcd host user: %w", err)
@@ -831,8 +839,127 @@ func createInstanceEtcdUser(
 
 	return &InstanceUserCredentials{
 		Username:   username,
+		Password:   password,
 		CaCert:     certSvc.CACert(),
 		ClientCert: clientPrincipal.CertPEM,
 		ClientKey:  clientPrincipal.KeyPEM,
 	}, nil
+}
+
+func createRoleIfNotExists(
+	ctx context.Context,
+	client *clientv3.Client,
+	roleName string,
+	keyPrefix string,
+) error {
+	var perms []*authpb.Permission
+	resp, err := client.RoleGet(ctx, roleName)
+	if errors.Is(err, rpctypes.ErrRoleNotFound) {
+		if _, err := client.RoleAdd(ctx, roleName); err != nil {
+			return fmt.Errorf("failed to create role %q: %w", roleName, err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("failed to get role %q: %w", roleName, err)
+	} else {
+		perms = resp.Perm
+	}
+	if keyPrefix == "" {
+		return nil
+	}
+	var hasPerm bool
+	for _, perm := range perms {
+		if string(perm.Key) == keyPrefix {
+			hasPerm = true
+			break
+		}
+	}
+	if hasPerm {
+		return nil
+	}
+	rangeEnd := clientv3.GetPrefixRangeEnd(keyPrefix)
+	permType := clientv3.PermissionType(clientv3.PermReadWrite)
+	if _, err := client.RoleGrantPermission(ctx, roleName, keyPrefix, rangeEnd, permType); err != nil {
+		return fmt.Errorf("failed to grant role permission: %w", err)
+	}
+
+	return nil
+}
+
+func createUserIfNotExists(
+	ctx context.Context,
+	client *clientv3.Client,
+	username string,
+	password string,
+	roleNames ...string,
+) error {
+	var roles []string
+	resp, err := client.UserGet(ctx, username)
+	if errors.Is(err, rpctypes.ErrUserNotFound) {
+		if _, err := client.UserAdd(ctx, username, password); err != nil {
+			return fmt.Errorf("failed to create user: %w", err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("failed to get user %q: %w", username, err)
+	} else {
+		roles = resp.Roles
+	}
+	haveRoles := ds.NewSet(roles...)
+	wantRoles := ds.NewSet(roleNames...)
+	for roleName := range wantRoles.Difference(haveRoles) {
+		if _, err := client.UserGrantRole(ctx, username, roleName); err != nil {
+			return fmt.Errorf("failed to grant role to user: %w", err)
+		}
+	}
+	return nil
+}
+
+func RemoveInstanceEtcdUser(
+	ctx context.Context,
+	client *clientv3.Client,
+	certSvc *certificates.Service,
+	instanceID uuid.UUID,
+) error {
+	username := fmt.Sprintf("instance-%s", instanceID.String())
+
+	if err := removeUserIfExists(ctx, client, username); err != nil {
+		return fmt.Errorf("failed to create instance user: %w", err)
+	}
+	if err := removeRoleIfExists(ctx, client, username); err != nil {
+		return fmt.Errorf("failed to create instance role: %w", err)
+	}
+	if err := certSvc.RemoveInstanceEtcdUser(ctx, instanceID); err != nil {
+		return fmt.Errorf("failed to remove instance cert: %w", err)
+	}
+
+	return nil
+}
+
+func removeRoleIfExists(
+	ctx context.Context,
+	client *clientv3.Client,
+	roleName string,
+) error {
+	_, err := client.RoleDelete(ctx, roleName)
+	if errors.Is(err, rpctypes.ErrRoleNotFound) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("failed to delete role %q: %w", roleName, err)
+	}
+
+	return nil
+}
+
+func removeUserIfExists(
+	ctx context.Context,
+	client *clientv3.Client,
+	username string,
+) error {
+	_, err := client.UserDelete(ctx, username)
+	if errors.Is(err, rpctypes.ErrUserNotFound) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("failed to delete user %q: %w", username, err)
+	}
+
+	return nil
 }

@@ -14,8 +14,18 @@ const (
 	DatabaseStateAvailable DatabaseState = "available"
 	DatabaseStateDeleting  DatabaseState = "deleting"
 	DatabaseStateDegraded  DatabaseState = "degraded"
+	DatabaseStateFailed    DatabaseState = "failed"
 	DatabaseStateUnknown   DatabaseState = "unknown"
 )
+
+func DatabaseStateModifiable(state DatabaseState) bool {
+	switch state {
+	case DatabaseStateAvailable, DatabaseStateDegraded, DatabaseStateFailed:
+		return true
+	default:
+		return false
+	}
+}
 
 type Database struct {
 	DatabaseID uuid.UUID
@@ -37,13 +47,13 @@ func databaseToStored(d *Database) *StoredDatabase {
 	}
 }
 
-// func storedToDatabase(d *StoredDatabase, instances []*Instance) *Database {
-// 	return &Database{
-// 		DatabaseID: d.DatabaseID,
-// 		TenantID:   d.TenantID,
-// 		CreatedAt:  d.CreatedAt,
-// 		UpdatedAt:  d.UpdatedAt,
-// 		State:      d.State,
-// 		Instances:  instances,
-// 	}
-// }
+func storedToDatabase(d *StoredDatabase, instances []*Instance) *Database {
+	return &Database{
+		DatabaseID: d.DatabaseID,
+		TenantID:   d.TenantID,
+		CreatedAt:  d.CreatedAt,
+		UpdatedAt:  d.UpdatedAt,
+		State:      d.State,
+		Instances:  instances,
+	}
+}

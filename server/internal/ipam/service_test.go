@@ -2,13 +2,13 @@ package ipam
 
 import (
 	"context"
+	"net/netip"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/storage/storagetest"
 )
 
@@ -17,36 +17,29 @@ func TestService(t *testing.T) {
 		etcd := storagetest.NewEtcdTestServer(t)
 		client := etcd.Client(t)
 		store := NewStore(client, uuid.NewString())
-		cfg := config.Config{
-			DockerSwarm: config.DockerSwarm{
-				BridgeNetworksCIDR:         "172.17.128.0/20",
-				BridgeNetworksSubnetBits:   28,
-				DatabaseNetworksCIDR:       "10.0.128.0/18",
-				DatabaseNetworksSubnetBits: 26,
-			},
-		}
+		prefix := netip.MustParsePrefix("172.17.128.0/20")
+		bits := 28
 		logger := zerolog.New(zerolog.NewTestWriter(t))
 
-		service := NewService(cfg, logger, store)
+		service := NewService(logger, store)
 		assert.NotNil(t, service)
 
+		// Allocate a subnet
 		ctx := context.Background()
-		assert.NoError(t, service.Start(ctx))
-
-		// Allocate a bridge subnet
-		bridge, err := service.AllocateBridgeSubnet(ctx)
+		subnetA, err := service.AllocateSubnet(ctx, prefix, bits)
 		assert.NoError(t, err)
-		assert.True(t, bridge.IsValid())
+		assert.True(t, subnetA.IsValid())
 
-		// Allocate a database subnet
-		database, err := service.AllocateDatabaseSubnet(ctx)
+		// Ensure the allocator is persisted
+		stored, err := store.GetByKey(prefix.String()).Exec(ctx)
 		assert.NoError(t, err)
-		assert.True(t, database.IsValid())
+		assert.NotNil(t, stored)
 
-		// Simulate restoring the allocators from snapshots on the next startup
-		restored := NewService(cfg, logger, store)
-		assert.NoError(t, restored.Start(ctx))
-		assert.True(t, restored.bridgeAllocator.Has(bridge))
-		assert.True(t, restored.databaseAllocator.Has(database))
+		// Allocate another subnet. This should use the persisted allocator and
+		// produce a different subnet.
+		subnetB, err := service.AllocateSubnet(ctx, prefix, bits)
+		assert.NoError(t, err)
+		assert.True(t, subnetB.IsValid())
+		assert.NotEqual(t, subnetA.String(), subnetB.String())
 	})
 }

@@ -106,6 +106,12 @@ func (s *Service) InstanceEtcdUser(ctx context.Context, instanceID uuid.UUID) (*
 	return s.getPrincipal(ctx, id, &x509.CertificateRequest{})
 }
 
+func (s *Service) RemoveInstanceEtcdUser(ctx context.Context, instanceID uuid.UUID) error {
+	id := fmt.Sprintf("instance:%s:etcd-user", instanceID.String())
+
+	return s.removePrincipal(ctx, id)
+}
+
 func (s *Service) HostEtcdUser(ctx context.Context, hostID uuid.UUID) (*Principal, error) {
 	id := fmt.Sprintf("host:%s:etcd-user", hostID.String())
 
@@ -171,6 +177,13 @@ func (s *Service) getPrincipal(ctx context.Context, id string, template *x509.Ce
 		return nil, fmt.Errorf("failed to store new principal: %w", err)
 	}
 	return principal, nil
+}
+
+func (s *Service) removePrincipal(ctx context.Context, id string) error {
+	if _, err := s.store.Principal.DeleteByKey(id).Exec(ctx); err != nil {
+		return fmt.Errorf("failed to delete principal: %w", err)
+	}
+	return nil
 }
 
 func (s *Service) Verify(certPEM []byte) error {

@@ -3,6 +3,7 @@ package postgres_test
 import (
 	"testing"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/pgEdge/control-plane/server/internal/postgres"
@@ -25,10 +26,20 @@ func TestCreateUserRole(t *testing.T) {
 				Roles:      []string{"pgedge_application"},
 			},
 			expected: postgres.Statements{
-				{SQL: `CREATE ROLE "app"`},
-				{SQL: `ALTER ROLE "app" WITH PASSWORD 'password';`},
-				{SQL: `ALTER ROLE "app" WITH LOGIN;`},
-				{SQL: `GRANT "pgedge_application" TO "app" WITH INHERIT TRUE;`},
+				postgres.ConditionalStatement{
+					If: postgres.Query[bool]{
+						SQL: `SELECT NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = @name);`,
+						Args: pgx.NamedArgs{
+							"name": "app",
+						},
+					},
+					Then: postgres.Statement{
+						SQL: `CREATE ROLE "app"`,
+					},
+				},
+				postgres.Statement{SQL: `ALTER ROLE "app" WITH PASSWORD 'password';`},
+				postgres.Statement{SQL: `ALTER ROLE "app" WITH LOGIN;`},
+				postgres.Statement{SQL: `GRANT "pgedge_application" TO "app" WITH INHERIT TRUE;`},
 			},
 		},
 		{
@@ -42,13 +53,21 @@ func TestCreateUserRole(t *testing.T) {
 				Roles:      []string{"pgedge_superuser"},
 			},
 			expected: postgres.Statements{
-				{SQL: `CREATE ROLE "admin"`},
-				{SQL: `ALTER ROLE "admin" WITH PASSWORD 'password';`},
-				{SQL: `ALTER ROLE "admin" WITH LOGIN;`},
-				{SQL: `ALTER ROLE "admin" WITH CREATEDB;`},
-				{SQL: `ALTER ROLE "admin" WITH CREATEROLE;`},
-				{SQL: `ALTER DATABASE "northwind" OWNER TO "admin";`},
-				{SQL: `GRANT "pgedge_superuser" TO "admin" WITH INHERIT TRUE;`},
+				postgres.ConditionalStatement{
+					If: postgres.Query[bool]{
+						SQL: `SELECT NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = @name);`,
+						Args: pgx.NamedArgs{
+							"name": "admin",
+						},
+					},
+					Then: postgres.Statement{SQL: `CREATE ROLE "admin"`},
+				},
+				postgres.Statement{SQL: `ALTER ROLE "admin" WITH PASSWORD 'password';`},
+				postgres.Statement{SQL: `ALTER ROLE "admin" WITH LOGIN;`},
+				postgres.Statement{SQL: `ALTER ROLE "admin" WITH CREATEDB;`},
+				postgres.Statement{SQL: `ALTER ROLE "admin" WITH CREATEROLE;`},
+				postgres.Statement{SQL: `ALTER DATABASE "northwind" OWNER TO "admin";`},
+				postgres.Statement{SQL: `GRANT "pgedge_superuser" TO "admin" WITH INHERIT TRUE;`},
 			},
 		},
 		{
@@ -61,11 +80,19 @@ func TestCreateUserRole(t *testing.T) {
 				Attributes: []string{"LOGIN", "SUPERUSER"},
 			},
 			expected: postgres.Statements{
-				{SQL: `CREATE ROLE "admin"`},
-				{SQL: `ALTER ROLE "admin" WITH PASSWORD 'password';`},
-				{SQL: `ALTER ROLE "admin" WITH LOGIN;`},
-				{SQL: `ALTER ROLE "admin" WITH SUPERUSER;`},
-				{SQL: `ALTER DATABASE "northwind" OWNER TO "admin";`},
+				postgres.ConditionalStatement{
+					If: postgres.Query[bool]{
+						SQL: `SELECT NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = @name);`,
+						Args: pgx.NamedArgs{
+							"name": "admin",
+						},
+					},
+					Then: postgres.Statement{SQL: `CREATE ROLE "admin"`},
+				},
+				postgres.Statement{SQL: `ALTER ROLE "admin" WITH PASSWORD 'password';`},
+				postgres.Statement{SQL: `ALTER ROLE "admin" WITH LOGIN;`},
+				postgres.Statement{SQL: `ALTER ROLE "admin" WITH SUPERUSER;`},
+				postgres.Statement{SQL: `ALTER DATABASE "northwind" OWNER TO "admin";`},
 			},
 		},
 		{

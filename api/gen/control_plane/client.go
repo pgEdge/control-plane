@@ -104,6 +104,7 @@ func (c *Client) GetJoinOptions(ctx context.Context, p *ClusterJoinRequest) (res
 // service.
 // InspectCluster may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) InspectCluster(ctx context.Context) (res *Cluster, err error) {
 	var ires any
@@ -130,6 +131,7 @@ func (c *Client) ListHosts(ctx context.Context) (res []*Host, err error) {
 // InspectHost calls the "inspect-host" endpoint of the "control-plane" service.
 // InspectHost may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) InspectHost(ctx context.Context, p *InspectHostPayload) (res *Host, err error) {
 	var ires any
@@ -143,6 +145,7 @@ func (c *Client) InspectHost(ctx context.Context, p *InspectHostPayload) (res *H
 // RemoveHost calls the "remove-host" endpoint of the "control-plane" service.
 // RemoveHost may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) RemoveHost(ctx context.Context, p *RemoveHostPayload) (err error) {
 	_, err = c.RemoveHostEndpoint(ctx, p)
@@ -183,6 +186,7 @@ func (c *Client) CreateDatabase(ctx context.Context, p *CreateDatabaseRequest) (
 // service.
 // InspectDatabase may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) InspectDatabase(ctx context.Context, p *InspectDatabasePayload) (res *Database, err error) {
 	var ires any
@@ -197,6 +201,7 @@ func (c *Client) InspectDatabase(ctx context.Context, p *InspectDatabasePayload)
 // service.
 // UpdateDatabase may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) UpdateDatabase(ctx context.Context, p *UpdateDatabasePayload) (res *Database, err error) {
 	var ires any
@@ -211,6 +216,7 @@ func (c *Client) UpdateDatabase(ctx context.Context, p *UpdateDatabasePayload) (
 // service.
 // DeleteDatabase may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) DeleteDatabase(ctx context.Context, p *DeleteDatabasePayload) (err error) {
 	_, err = c.DeleteDatabaseEndpoint(ctx, p)

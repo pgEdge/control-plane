@@ -145,11 +145,11 @@ type BackupConfig struct {
 }
 
 type RestoreConfig struct {
-	Provider     BackupProvider   `json:"provider"`
-	DatabaseID   uuid.UUID        `json:"database_id"`
-	NodeName     string           `json:"node_name"`
-	DatabaseName string           `json:"database_name"`
-	Repository   BackupRepository `json:"repository"`
+	Provider     BackupProvider    `json:"provider"`
+	DatabaseID   uuid.UUID         `json:"database_id"`
+	NodeName     string            `json:"node_name"`
+	DatabaseName string            `json:"database_name"`
+	Repository   *BackupRepository `json:"repository"`
 }
 
 type Spec struct {
@@ -198,6 +198,7 @@ type InstanceSpec struct {
 	RestoreConfig    *RestoreConfig      `json:"restore_config"`
 	PostgreSQLConf   map[string]any      `json:"postgresql_conf"`
 	EnableBackups    bool                `json:"enable_backups"`
+	ClusterSize      int                 `json:"cluster_size"`
 }
 
 func (i *InstanceSpec) Hostname() string {
@@ -223,7 +224,8 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		return nil, fmt.Errorf("failed to parse version from spec: %w", err)
 	}
 
-	nodes := make([]*NodeInstances, len(s.Nodes))
+	clusterSize := len(s.Nodes)
+	nodes := make([]*NodeInstances, clusterSize)
 	for nodeIdx, node := range s.Nodes {
 		nodeOrdinal, err := extractOrdinal(node.Name)
 		if err != nil {
@@ -291,6 +293,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				// backups. We'll want to incorporate the current state of the
 				// cluster into this decision when we implement updates.
 				EnableBackups: backupConfig != nil && hostIdx == len(node.HostIDs)-1,
+				ClusterSize:   clusterSize,
 			}
 		}
 

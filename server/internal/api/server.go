@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/rs/zerolog"
+	"github.com/samber/do"
 	goahttp "goa.design/goa/v3/http"
 
 	"github.com/pgEdge/control-plane/api"
@@ -14,22 +15,25 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/config"
 )
 
+var _ do.Shutdownable = (*Server)(nil)
+
 type Server struct {
-	cfg   config.Config
-	svc   controlplane.Service
-	http  *httpServer
-	mqtt  *mqttServer
-	errCh chan error
+	started bool
+	cfg     config.Config
+	svc     *DynamicService
+	http    *httpServer
+	mqtt    *mqttServer
+	errCh   chan error
 }
 
-func NewServer(cfg config.Config, logger zerolog.Logger, svc controlplane.Service) *Server {
+func NewServer(cfg config.Config, logger zerolog.Logger) *Server {
 	mux := goahttp.NewMuxer()
 	mux.Handle("GET", "/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Link", `</openapi.json>; rel="service-desc"`)
 		w.WriteHeader(204)
 	})
 
-	// svc := NewServiceManager(cfg, logger, e)
+	svc := NewDynamicService()
 	endpoints := controlplane.NewEndpoints(svc)
 	dec := goahttp.RequestDecoder
 	enc := goahttp.ResponseEncoder
@@ -64,7 +68,12 @@ func NewServer(cfg config.Config, logger zerolog.Logger, svc controlplane.Servic
 	}
 }
 
-func (s *Server) Start(ctx context.Context) {
+func (s *Server) Serve(ctx context.Context, impl controlplane.Service) {
+	s.svc.UpdateImpl(impl)
+	if s.started {
+		return
+	}
+
 	var errChs []chan error
 
 	if s.http != nil {
@@ -75,6 +84,8 @@ func (s *Server) Start(ctx context.Context) {
 		s.mqtt.start(ctx)
 		errChs = append(errChs, s.mqtt.errCh)
 	}
+
+	s.started = true
 
 	for _, c := range errChs {
 		go func(c chan error) {

@@ -57,7 +57,6 @@ func TestEmbeddedEtcd(t *testing.T) {
 		assert.Equal(t, "bar", string(resp.Kvs[0].Value))
 
 		// Stop everything
-		assert.NoError(t, client.Close())
 		assert.NoError(t, server.Shutdown())
 
 		// and start it up again
@@ -73,7 +72,6 @@ func TestEmbeddedEtcd(t *testing.T) {
 		assert.Equal(t, int64(1), resp.Count)
 		assert.Equal(t, "bar", string(resp.Kvs[0].Value))
 
-		assert.NoError(t, client.Close())
 		assert.NoError(t, server.Shutdown())
 	})
 
@@ -160,7 +158,6 @@ func TestEmbeddedEtcd(t *testing.T) {
 		assert.Equal(t, "baz", string(resp.Kvs[0].Value))
 
 		// Shut down B
-		assert.NoError(t, clientB.Close())
 		assert.NoError(t, serverB.Shutdown())
 
 		// Start B again so we can verify it's still clustered. We can use the
@@ -183,8 +180,6 @@ func TestEmbeddedEtcd(t *testing.T) {
 		assert.Equal(t, int64(1), resp.Count)
 		assert.Equal(t, "qux", string(resp.Kvs[0].Value))
 
-		assert.NoError(t, clientA.Close())
-		assert.NoError(t, clientB.Close())
 		assert.NoError(t, serverA.Shutdown())
 		assert.NoError(t, serverB.Shutdown())
 	})
@@ -310,17 +305,3 @@ func TestEmbeddedEtcd(t *testing.T) {
 		assert.Equal(t, "bar", string(resp.Kvs[0].Value))
 	})
 }
-
-// func tmpDir(t testing.TB) string {
-// 	t.Helper()
-
-// 	dir, err := os.MkdirTemp(os.TempDir(), "embedded-etcd")
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	t.Cleanup(func() {
-// 		os.RemoveAll(dir)
-// 	})
-
-// 	return dir
-// }

@@ -12,8 +12,6 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/server/v3/embed"
 	"go.uber.org/zap"
-
-	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
 type EtcdTestServer struct {
@@ -23,7 +21,7 @@ type EtcdTestServer struct {
 	clientURL string
 }
 
-func (s *EtcdTestServer) Client(t testing.TB) storage.EtcdClient {
+func (s *EtcdTestServer) Client(t testing.TB) *clientv3.Client {
 	client, err := clientv3.New(clientv3.Config{
 		Logger:      zap.NewNop(),
 		Endpoints:   []string{s.clientURL},

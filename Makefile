@@ -1,7 +1,9 @@
 include tools.mk
 
 CODACY_CODE ?= $(shell pwd)
+DEBUG ?= 0
 modules=$(shell go list -m -f '{{ .Dir }}' | awk -F '/' '{ print "./" $$NF "/..."  }')
+module_src_files=$(shell go list -m -f '{{ .Dir }}' | xargs find -f)
 
 .PHONY: test
 test:
@@ -99,3 +101,14 @@ codacy:
 		--volume /tmp:/tmp \
 		codacy/codacy-analysis-cli \
 			analyze
+
+.PHONY: dev-build
+dev-build: docker/control-plane-dev/control-plane
+
+.PHONY: dev-watch
+dev-watch: dev-build
+	WORKSPACE_DIR=$(shell pwd) docker compose -f ./docker/control-plane-dev/docker-compose.yaml build
+	WORKSPACE_DIR=$(shell pwd) DEBUG=$(DEBUG) docker compose -f ./docker/control-plane-dev/docker-compose.yaml up --watch
+
+docker/control-plane-dev/control-plane: $(module_src_files)
+	GOOS=linux go build -gcflags "all=-N -l" -o $@ $(shell pwd)/server

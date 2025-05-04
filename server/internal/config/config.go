@@ -190,11 +190,13 @@ type Config struct {
 	MQTT                   MQTT         `koanf:"mqtt"`
 	HTTP                   HTTP         `koanf:"http"`
 	Logging                Logging      `koanf:"logging"`
+	EtcdKeyRoot            string       `koanf:"etcd_key_root"`
 	EmbeddedEtcd           EmbeddedEtcd `koanf:"embedded_etcd"`
 	RemoteEtcd             RemoteEtcd   `koanf:"remote_etcd"`
 	TraefikEnabled         bool         `koanf:"traefik_enabled"`
 	VectorEnabled          bool         `koanf:"vector_enabled"`
 	DockerSwarm            DockerSwarm  `koanf:"docker_swarm"`
+	DatabaseOwnerUID       int          `koanf:"database_owner_uid"`
 }
 
 func (c Config) Validate() error {
@@ -265,6 +267,7 @@ func defaultConfig() (Config, error) {
 		StopGracePeriodSeconds: 30,
 		EmbeddedEtcd:           embeddedEtcdDefault,
 		DockerSwarm:            defaultDockerSwarm,
+		DatabaseOwnerUID:       1020,
 	}, nil
 }
 

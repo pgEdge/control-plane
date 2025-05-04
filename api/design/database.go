@@ -464,6 +464,11 @@ var CreateDatabaseRequest = g.Type("CreateDatabaseRequest", func() {
 })
 
 var UpdateDatabaseRequest = g.Type("UpdateDatabaseRequest", func() {
+	g.Attribute("tenant_id", g.String, func() {
+		g.Format(g.FormatUUID)
+		g.Description("Unique identifier for the databases's owner.")
+		g.Example("8210ec10-2dca-406c-ac4a-0661d2189954")
+	})
 	g.Attribute("spec", DatabaseSpec, func() {
 		g.Description("The specification for the database.")
 	})

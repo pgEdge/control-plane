@@ -20,11 +20,11 @@ type Value struct {
 }
 
 type Store struct {
-	client storage.EtcdClient
+	client *clientv3.Client
 	root   string
 }
 
-func NewStore(client storage.EtcdClient, root string) *Store {
+func NewStore(client *clientv3.Client, root string) *Store {
 	return &Store{
 		client: client,
 		root:   root,

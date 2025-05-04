@@ -3,6 +3,8 @@
 
 *-results.xml
 control-plane
+!docker/control-plane
+docker/control-plane-dev/data
 .terraform
 
 .vagrant

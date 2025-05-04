@@ -4,6 +4,8 @@ import (
 	"path"
 
 	"github.com/google/uuid"
+	clientv3 "go.etcd.io/etcd/client/v3"
+
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
@@ -29,11 +31,11 @@ type StoredHost struct {
 }
 
 type HostStore struct {
-	client storage.EtcdClient
+	client *clientv3.Client
 	root   string
 }
 
-func NewHostStore(client storage.EtcdClient, root string) *HostStore {
+func NewHostStore(client *clientv3.Client, root string) *HostStore {
 	return &HostStore{
 		client: client,
 		root:   root,

@@ -10,13 +10,14 @@ import (
 	"github.com/cschleiden/go-workflows/client"
 	"github.com/cschleiden/go-workflows/core"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
+
 	api "github.com/pgEdge/control-plane/api/gen/control_plane"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
-	"github.com/rs/zerolog"
 )
 
 var ErrNotImplemented = errors.New("endpoint not implemented")
@@ -33,7 +34,14 @@ type Service struct {
 	workflowClient *client.Client
 }
 
-func NewService(cfg config.Config, logger zerolog.Logger, etcd *etcd.EmbeddedEtcd, hostSvc *host.Service, dbSvc *database.Service, workflowClient *client.Client) *Service {
+func NewService(
+	cfg config.Config,
+	logger zerolog.Logger,
+	etcd *etcd.EmbeddedEtcd,
+	hostSvc *host.Service,
+	dbSvc *database.Service,
+	workflowClient *client.Client,
+) *Service {
 	return &Service{
 		cfg:            cfg,
 		logger:         logger,
@@ -145,8 +153,8 @@ func (s *Service) CreateDatabase(ctx context.Context, req *api.CreateDatabaseReq
 
 	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
 		Queue:      core.Queue(s.cfg.HostID.String()),
-		InstanceID: uuid.NewString(),
-	}, "CreateDatabase", &workflows.CreateDatabaseInput{
+		InstanceID: db.DatabaseID.String(), // Using a stable ID functions as a locking mechanism
+	}, "UpdateDatabase", &workflows.UpdateDatabaseInput{
 		Spec: spec,
 	})
 	if err != nil {
@@ -161,11 +169,75 @@ func (s *Service) InspectDatabase(ctx context.Context, req *api.InspectDatabaseP
 }
 
 func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePayload) (*api.Database, error) {
-	return nil, ErrNotImplemented
+	spec, err := apiToDatabaseSpec(req.DatabaseID, req.Request.TenantID, req.Request.Spec)
+	if err != nil {
+		return nil, api.MakeInvalidInput(err)
+	}
+
+	db, err := s.dbSvc.UpdateDatabase(ctx, spec)
+	if errors.Is(err, database.ErrDatabaseNotFound) {
+		return nil, api.MakeNotFound(fmt.Errorf("database %s not found", *req.DatabaseID))
+	} else if errors.Is(err, database.ErrDatabaseNotModifiable) {
+		return nil, api.MakeInvalidInput(fmt.Errorf("database %s is not modifiable", *req.DatabaseID))
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to create database: %w", err)
+	}
+
+	var forceUpdate bool
+	if req.ForceUpdate != nil {
+		forceUpdate = *req.ForceUpdate
+	}
+
+	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
+		Queue:      core.Queue(s.cfg.HostID.String()),
+		InstanceID: db.DatabaseID.String(), // Using a stable ID functions as a locking mechanism
+	}, "UpdateDatabase", &workflows.UpdateDatabaseInput{
+		Spec:        spec,
+		ForceUpdate: forceUpdate,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create workflow instance: %w", err)
+	}
+
+	return databaseToAPI(db), nil
 }
 
 func (s *Service) DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePayload) (err error) {
-	return ErrNotImplemented
+	if req.DatabaseID == nil {
+		return api.MakeInvalidInput(errors.New("database ID is required"))
+	}
+	databaseID, err := uuid.Parse(*req.DatabaseID)
+	if err != nil {
+		return api.MakeInvalidInput(fmt.Errorf("invalid database ID %q: %w", *req.DatabaseID, err))
+	}
+
+	db, err := s.dbSvc.GetDatabase(ctx, databaseID)
+	if errors.Is(err, database.ErrDatabaseNotFound) {
+		return api.MakeNotFound(fmt.Errorf("database %s not found: %w", *req.DatabaseID, err))
+	} else if err != nil {
+		return fmt.Errorf("failed to get database: %w", err)
+	}
+	if !database.DatabaseStateModifiable(db.State) {
+		return api.MakeInvalidInput(fmt.Errorf("database %s is not in a modifiable state", *req.DatabaseID))
+	}
+
+	// TODO: This update needs to be atomic
+	err = s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, database.DatabaseStateDeleting)
+	if err != nil {
+		return fmt.Errorf("failed to update database state: %w", err)
+	}
+
+	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
+		Queue:      core.Queue(s.cfg.HostID.String()),
+		InstanceID: db.DatabaseID.String(), // Using a stable ID functions as a locking mechanism
+	}, "DeleteDatabase", &workflows.DeleteDatabaseInput{
+		DatabaseID: db.DatabaseID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create workflow instance: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Service) InitCluster(ctx context.Context) (*api.ClusterJoinToken, error) {

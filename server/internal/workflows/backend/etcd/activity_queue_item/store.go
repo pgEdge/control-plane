@@ -4,9 +4,10 @@ import (
 	"path"
 	"time"
 
-	"github.com/pgEdge/control-plane/server/internal/storage"
-
 	"github.com/cschleiden/go-workflows/backend/history"
+	clientv3 "go.etcd.io/etcd/client/v3"
+
+	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
 type Value struct {
@@ -24,11 +25,11 @@ func (v *Value) UpdateLastLocked() {
 }
 
 type Store struct {
-	client storage.EtcdClient
+	client *clientv3.Client
 	root   string
 }
 
-func NewStore(client storage.EtcdClient, root string) *Store {
+func NewStore(client *clientv3.Client, root string) *Store {
 	return &Store{
 		client: client,
 		root:   root,

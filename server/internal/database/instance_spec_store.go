@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/storage"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type StoredInstanceSpec struct {
@@ -13,11 +14,11 @@ type StoredInstanceSpec struct {
 }
 
 type InstanceSpecStore struct {
-	client storage.EtcdClient
+	client *clientv3.Client
 	root   string
 }
 
-func NewInstanceSpecStore(client storage.EtcdClient, root string) *InstanceSpecStore {
+func NewInstanceSpecStore(client *clientv3.Client, root string) *InstanceSpecStore {
 	return &InstanceSpecStore{
 		client: client,
 		root:   root,

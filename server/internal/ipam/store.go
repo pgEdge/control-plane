@@ -3,6 +3,8 @@ package ipam
 import (
 	"path"
 
+	clientv3 "go.etcd.io/etcd/client/v3"
+
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
@@ -14,11 +16,11 @@ type StoredSubnetRange struct {
 }
 
 type Store struct {
-	client storage.EtcdClient
+	client *clientv3.Client
 	root   string
 }
 
-func NewStore(client storage.EtcdClient, root string) *Store {
+func NewStore(client *clientv3.Client, root string) *Store {
 	return &Store{
 		client: client,
 		root:   root,
@@ -43,7 +45,7 @@ func (s *Store) GetByKey(allocatorName string) storage.GetOp[*StoredSubnetRange]
 	return storage.NewGetOp[*StoredSubnetRange](s.client, key)
 }
 
-func (s *Store) Put(item *StoredSubnetRange) storage.PutOp[*StoredSubnetRange] {
+func (s *Store) Update(item *StoredSubnetRange) storage.PutOp[*StoredSubnetRange] {
 	key := s.Key(item.Name)
-	return storage.NewPutOp(s.client, key, item)
+	return storage.NewUpdateOp(s.client, key, item)
 }

@@ -4,28 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 
-	"github.com/cschleiden/go-workflows/backend"
-	"github.com/cschleiden/go-workflows/client"
 	"github.com/rs/zerolog"
-	slogzerolog "github.com/samber/slog-zerolog/v2"
-	"github.com/spf13/afero"
-	clientv3 "go.etcd.io/etcd/client/v3"
+	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/api"
+	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
-	"github.com/pgEdge/control-plane/server/internal/docker"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
-	"github.com/pgEdge/control-plane/server/internal/exec"
-	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/host"
-	"github.com/pgEdge/control-plane/server/internal/ipam"
-	"github.com/pgEdge/control-plane/server/internal/orchestrator/swarm"
-	etcd_backend "github.com/pgEdge/control-plane/server/internal/workflows/backend/etcd"
-	"github.com/pgEdge/control-plane/server/internal/workflows/worker"
-	// "github.com/pgEdge/control-plane/server/internal/host/swarm"
+	"github.com/pgEdge/control-plane/server/internal/workflows"
 )
 
 type Orchestrator interface {
@@ -34,32 +23,44 @@ type Orchestrator interface {
 }
 
 type App struct {
-	cfg        config.Config
-	logger     zerolog.Logger
-	etcd       *etcd.EmbeddedEtcd
-	client     *clientv3.Client
-	apiSvc     *api.DynamicService
-	api        *api.Server
-	hostTicker *host.UpdateTicker
-	docker     *docker.Docker
+	i      *do.Injector
+	cfg    config.Config
+	logger zerolog.Logger
+	etcd   *etcd.EmbeddedEtcd
+	api    *api.Server
 }
 
-func NewApp(
-	cfg config.Config,
-	logger zerolog.Logger,
-) *App {
+func NewApp(i *do.Injector) (*App, error) {
+	cfg, err := do.Invoke[config.Config](i)
+	if err != nil {
+		return nil, err
+	}
+	logger, err := do.Invoke[zerolog.Logger](i)
+	if err != nil {
+		return nil, err
+	}
+
 	app := &App{
+		i:      i,
 		cfg:    cfg,
 		logger: logger,
 	}
 
-	return app
+	return app, nil
 }
 
 func (a *App) Run(ctx context.Context) error {
-	a.etcd = etcd.NewEmbeddedEtcd(a.cfg, a.logger)
-	a.apiSvc = api.NewDynamicService()
-	a.api = api.NewServer(a.cfg, a.logger, a.apiSvc)
+	embeddedEtcd, err := do.Invoke[*etcd.EmbeddedEtcd](a.i)
+	if err != nil {
+		return fmt.Errorf("failed to initialize etcd: %w", err)
+	}
+	apiServer, err := do.Invoke[*api.Server](a.i)
+	if err != nil {
+		return fmt.Errorf("failed to initialize api server: %w", err)
+	}
+
+	a.etcd = embeddedEtcd
+	a.api = apiServer
 
 	initialized, err := a.etcd.IsInitialized()
 	if err != nil {
@@ -69,7 +70,6 @@ func (a *App) Run(ctx context.Context) error {
 		if err := a.etcd.Start(ctx); err != nil {
 			return fmt.Errorf("failed to start etcd: %w", err)
 		}
-		a.api.Start(ctx)
 		return a.runInitialized(ctx)
 	} else {
 		return a.runPreInitialization(ctx)
@@ -77,10 +77,12 @@ func (a *App) Run(ctx context.Context) error {
 }
 
 func (a *App) runPreInitialization(ctx context.Context) error {
-	svc := api.NewPreInitService(a.cfg, a.etcd)
-	a.apiSvc.UpdateImpl(svc)
+	svc, err := do.Invoke[*api.PreInitService](a.i)
+	if err != nil {
+		return fmt.Errorf("failed to initialize pre-init api service: %w", err)
+	}
 
-	a.api.Start(ctx)
+	a.api.Serve(ctx, svc)
 
 	select {
 	case <-ctx.Done():
@@ -95,103 +97,40 @@ func (a *App) runPreInitialization(ctx context.Context) error {
 }
 
 func (a *App) runInitialized(ctx context.Context) error {
-	var orchestrator Orchestrator
-	switch a.cfg.Orchestrator {
-	case config.OrchestratorSwarm:
-		d, err := docker.NewDocker()
-		if err != nil {
-			return fmt.Errorf("failed to create docker client: %w", err)
-		}
-		a.docker = d
-		orchestrator = swarm.NewOrchestrator(a.cfg, d)
-	}
-
-	etcdClient, err := a.etcd.GetClient()
+	svc, err := do.Invoke[*api.Service](a.i)
 	if err != nil {
-		return fmt.Errorf("failed to get etcd client: %w", err)
+		return fmt.Errorf("failed to initialize api service: %w", err)
 	}
-	a.client = etcdClient
+	a.api.Serve(ctx, svc)
 
-	storeRoot := a.cfg.ClusterID.String()
-
-	workflowsStore := etcd_backend.NewStore(a.client, storeRoot)
-	workflowLevel := slog.LevelDebug
-	for sl, zl := range slogzerolog.LogLevels {
-		if zl == a.logger.GetLevel() {
-			workflowLevel = sl
-			break
-		}
+	certSvc, err := do.Invoke[*certificates.Service](a.i)
+	if err != nil {
+		return fmt.Errorf("failed to initialize certificate service: %w", err)
 	}
-	workflowLogger := a.logger.With().
-		CallerWithSkipFrameCount(3).
-		Logger()
-	backendOpts := backend.ApplyOptions(backend.WithLogger(
-		slog.New(slogzerolog.Option{
-			Level:  workflowLevel,
-			Logger: &workflowLogger,
-		}.NewZerologHandler()),
-	))
-	workflowsBackend := etcd_backend.NewBackend(workflowsStore, backendOpts)
-	workflowClient := client.New(workflowsBackend)
+	if err := certSvc.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start certificate service: %w", err)
+	}
 
-	hostStore := host.NewStore(a.client, storeRoot)
-	hostSvc := host.NewService(a.cfg, a.etcd, hostStore, orchestrator)
+	hostSvc, err := do.Invoke[*host.Service](a.i)
+	if err != nil {
+		return fmt.Errorf("failed to initialize host service: %w", err)
+	}
 	if err := hostSvc.UpdateHost(ctx); err != nil {
-		return fmt.Errorf("failed to record host information: %w", err)
+		return fmt.Errorf("failed to update host: %w", err)
 	}
-	a.hostTicker = host.NewUpdateTicker(a.logger)
-	a.hostTicker.Start(ctx, hostSvc)
 
-	dbStore := database.NewStore(a.client, storeRoot)
-	dbSvc := database.NewService(orchestrator, dbStore, hostSvc)
+	hostTicker, err := do.Invoke[*host.UpdateTicker](a.i)
+	if err != nil {
+		return fmt.Errorf("failed to initialize host ticker: %w", err)
+	}
+	hostTicker.Start(ctx)
 
-	svc := api.NewService(a.cfg, a.logger, a.etcd, hostSvc, dbSvc, workflowClient)
-	a.apiSvc.UpdateImpl(svc)
-
-	// zerologLogger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr})
-
-	// TODO: move to etcd backend package or logger package
-
-	w := worker.NewWorker(a.cfg, a.logger, workflowsBackend)
-
-	// TODO: can we combine this with the condition above?
-	switch a.cfg.Orchestrator {
-	case config.OrchestratorSwarm:
-		fs := afero.NewOsFs()
-		var loopMgr filesystem.LoopDeviceManager
-		fstabMgr, err := filesystem.NewFSTabManager(filesystem.FSTabManagerOptions{
-			FS:         fs,
-			FileWriter: filesystem.SudoWriter,
-		})
-		// TODO: this is ugly, we should handle this better
-		if err == nil {
-			loopMgr = filesystem.NewLoopDeviceManager(filesystem.LoopDeviceManagerOptions{
-				CmdRunner:    exec.RunCmd,
-				FSTabManager: fstabMgr,
-				FS:           fs,
-			})
-		} else {
-			a.logger.Warn().Err(err).Msg("failed to initialize fstab manager. loop_device storage class will not be available.")
-		}
-		ipamSvc := ipam.NewService(a.cfg, a.logger, ipam.NewStore(a.client, storeRoot))
-		if err := ipamSvc.Start(ctx); err != nil {
-			return fmt.Errorf("failed to start ipam service: %w", err)
-		}
-		err = w.StartSwarmWorker(
-			ctx,
-			fs,
-			loopMgr,
-			ipamSvc,
-			hostSvc,
-			a.etcd.CertService(),
-			a.docker,
-			a.etcd,
-			a.client,
-			exec.RunCmd,
-		)
-		if err != nil {
-			return fmt.Errorf("failed to start swarm worker: %w", err)
-		}
+	worker, err := do.Invoke[*workflows.Worker](a.i)
+	if err != nil {
+		return fmt.Errorf("failed to initialize worker: %w", err)
+	}
+	if err := worker.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start worker: %w", err)
 	}
 
 	select {
@@ -204,23 +143,11 @@ func (a *App) runInitialized(ctx context.Context) error {
 }
 
 func (a *App) Shutdown(reason error) error {
-	errs := []error{reason}
+	a.logger.Info().Msg("attempting to gracefully shut down")
 
-	if a.hostTicker != nil {
-		a.logger.Info().Msg("stopping host ticker")
-		a.hostTicker.Stop()
-	}
-	if a.api != nil {
-		a.logger.Info().Msg("stopping api")
-		errs = append(errs, a.api.Shutdown())
-	}
-	if a.client != nil {
-		a.logger.Info().Msg("stopping client")
-		errs = append(errs, a.client.Close())
-	}
-	if a.etcd != nil {
-		a.logger.Info().Msg("stopping etcd")
-		errs = append(errs, a.etcd.Shutdown())
+	errs := []error{
+		reason,
+		a.i.Shutdown(),
 	}
 
 	return errors.Join(errs...)
