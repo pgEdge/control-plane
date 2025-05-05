@@ -3,6 +3,7 @@ module github.com/pgEdge/control-plane/server
 go 1.23.5
 
 require (
+	al.essio.dev/pkg/shellescape v1.6.0
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/cilium/ipam v0.0.0-20230509084518-fd66eae7909b
 	github.com/cschleiden/go-workflows v0.19.0

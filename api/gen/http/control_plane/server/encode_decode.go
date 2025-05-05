@@ -1663,6 +1663,9 @@ func unmarshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *Datab
 	if v.BackupConfig != nil {
 		res.BackupConfig = unmarshalBackupConfigSpecRequestBodyToControlplaneBackupConfigSpec(v.BackupConfig)
 	}
+	if v.RestoreConfig != nil {
+		res.RestoreConfig = unmarshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec(v.RestoreConfig)
+	}
 
 	return res
 }
@@ -1674,14 +1677,16 @@ func unmarshalBackupConfigSpecRequestBodyToControlplaneBackupConfigSpec(v *Backu
 	if v == nil {
 		return nil
 	}
-	res := &controlplane.BackupConfigSpec{
-		Provider: *v.Provider,
+	res := &controlplane.BackupConfigSpec{}
+	if v.Provider != nil {
+		res.Provider = *v.Provider
 	}
-	if v.Repositories != nil {
-		res.Repositories = make([]*controlplane.BackupRepositorySpec, len(v.Repositories))
-		for i, val := range v.Repositories {
-			res.Repositories[i] = unmarshalBackupRepositorySpecRequestBodyToControlplaneBackupRepositorySpec(val)
-		}
+	if v.Provider == nil {
+		res.Provider = "pgbackrest"
+	}
+	res.Repositories = make([]*controlplane.BackupRepositorySpec, len(v.Repositories))
+	for i, val := range v.Repositories {
+		res.Repositories[i] = unmarshalBackupRepositorySpecRequestBodyToControlplaneBackupRepositorySpec(val)
 	}
 	if v.Schedules != nil {
 		res.Schedules = make([]*controlplane.BackupScheduleSpec, len(v.Schedules))
@@ -1697,9 +1702,6 @@ func unmarshalBackupConfigSpecRequestBodyToControlplaneBackupConfigSpec(v *Backu
 // builds a value of type *controlplane.BackupRepositorySpec from a value of
 // type *BackupRepositorySpecRequestBody.
 func unmarshalBackupRepositorySpecRequestBodyToControlplaneBackupRepositorySpec(v *BackupRepositorySpecRequestBody) *controlplane.BackupRepositorySpec {
-	if v == nil {
-		return nil
-	}
 	res := &controlplane.BackupRepositorySpec{
 		ID:                v.ID,
 		Type:              *v.Type,
@@ -1747,34 +1749,6 @@ func unmarshalBackupScheduleSpecRequestBodyToControlplaneBackupScheduleSpec(v *B
 	return res
 }
 
-// unmarshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec builds a
-// value of type *controlplane.DatabaseUserSpec from a value of type
-// *DatabaseUserSpecRequestBody.
-func unmarshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec(v *DatabaseUserSpecRequestBody) *controlplane.DatabaseUserSpec {
-	if v == nil {
-		return nil
-	}
-	res := &controlplane.DatabaseUserSpec{
-		Username: *v.Username,
-		Password: *v.Password,
-		DbOwner:  v.DbOwner,
-	}
-	if v.Attributes != nil {
-		res.Attributes = make([]string, len(v.Attributes))
-		for i, val := range v.Attributes {
-			res.Attributes[i] = val
-		}
-	}
-	if v.Roles != nil {
-		res.Roles = make([]string, len(v.Roles))
-		for i, val := range v.Roles {
-			res.Roles[i] = val
-		}
-	}
-
-	return res
-}
-
 // unmarshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec builds
 // a value of type *controlplane.RestoreConfigSpec from a value of type
 // *RestoreConfigSpecRequestBody.
@@ -1783,12 +1757,23 @@ func unmarshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec(v *Res
 		return nil
 	}
 	res := &controlplane.RestoreConfigSpec{
-		Provider:     *v.Provider,
-		DatabaseID:   *v.DatabaseID,
-		NodeName:     *v.NodeName,
-		DatabaseName: *v.DatabaseName,
+		SourceDatabaseID:   *v.SourceDatabaseID,
+		SourceNodeName:     *v.SourceNodeName,
+		SourceDatabaseName: *v.SourceDatabaseName,
+	}
+	if v.Provider != nil {
+		res.Provider = *v.Provider
+	}
+	if v.Provider == nil {
+		res.Provider = "pgbackrest"
 	}
 	res.Repository = unmarshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpec(v.Repository)
+	if v.RestoreOptions != nil {
+		res.RestoreOptions = make([]string, len(v.RestoreOptions))
+		for i, val := range v.RestoreOptions {
+			res.RestoreOptions[i] = val
+		}
+	}
 
 	return res
 }
@@ -1820,6 +1805,34 @@ func unmarshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpe
 			tk := key
 			tv := val
 			res.CustomOptions[tk] = tv
+		}
+	}
+
+	return res
+}
+
+// unmarshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec builds a
+// value of type *controlplane.DatabaseUserSpec from a value of type
+// *DatabaseUserSpecRequestBody.
+func unmarshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec(v *DatabaseUserSpecRequestBody) *controlplane.DatabaseUserSpec {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.DatabaseUserSpec{
+		Username: *v.Username,
+		Password: *v.Password,
+		DbOwner:  v.DbOwner,
+	}
+	if v.Attributes != nil {
+		res.Attributes = make([]string, len(v.Attributes))
+		for i, val := range v.Attributes {
+			res.Attributes[i] = val
+		}
+	}
+	if v.Roles != nil {
+		res.Roles = make([]string, len(v.Roles))
+		for i, val := range v.Roles {
+			res.Roles[i] = val
 		}
 	}
 
@@ -1933,6 +1946,9 @@ func marshalControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpecResponseBody(
 	if v.BackupConfig != nil {
 		res.BackupConfig = marshalControlplaneviewsBackupConfigSpecViewToBackupConfigSpecResponseBody(v.BackupConfig)
 	}
+	if v.RestoreConfig != nil {
+		res.RestoreConfig = marshalControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpecResponseBody(v.RestoreConfig)
+	}
 
 	return res
 }
@@ -1944,14 +1960,20 @@ func marshalControlplaneviewsBackupConfigSpecViewToBackupConfigSpecResponseBody(
 	if v == nil {
 		return nil
 	}
-	res := &BackupConfigSpecResponseBody{
-		Provider: *v.Provider,
+	res := &BackupConfigSpecResponseBody{}
+	if v.Provider != nil {
+		res.Provider = *v.Provider
+	}
+	if v.Provider == nil {
+		res.Provider = "pgbackrest"
 	}
 	if v.Repositories != nil {
 		res.Repositories = make([]*BackupRepositorySpecResponseBody, len(v.Repositories))
 		for i, val := range v.Repositories {
 			res.Repositories[i] = marshalControlplaneviewsBackupRepositorySpecViewToBackupRepositorySpecResponseBody(val)
 		}
+	} else {
+		res.Repositories = []*BackupRepositorySpecResponseBody{}
 	}
 	if v.Schedules != nil {
 		res.Schedules = make([]*BackupScheduleSpecResponseBody, len(v.Schedules))
@@ -1967,9 +1989,6 @@ func marshalControlplaneviewsBackupConfigSpecViewToBackupConfigSpecResponseBody(
 // builds a value of type *BackupRepositorySpecResponseBody from a value of
 // type *controlplaneviews.BackupRepositorySpecView.
 func marshalControlplaneviewsBackupRepositorySpecViewToBackupRepositorySpecResponseBody(v *controlplaneviews.BackupRepositorySpecView) *BackupRepositorySpecResponseBody {
-	if v == nil {
-		return nil
-	}
 	res := &BackupRepositorySpecResponseBody{
 		ID:                v.ID,
 		Type:              *v.Type,
@@ -2017,34 +2036,6 @@ func marshalControlplaneviewsBackupScheduleSpecViewToBackupScheduleSpecResponseB
 	return res
 }
 
-// marshalControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpecResponseBody
-// builds a value of type *DatabaseUserSpecResponseBody from a value of type
-// *controlplaneviews.DatabaseUserSpecView.
-func marshalControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpecResponseBody(v *controlplaneviews.DatabaseUserSpecView) *DatabaseUserSpecResponseBody {
-	if v == nil {
-		return nil
-	}
-	res := &DatabaseUserSpecResponseBody{
-		Username: *v.Username,
-		Password: *v.Password,
-		DbOwner:  v.DbOwner,
-	}
-	if v.Attributes != nil {
-		res.Attributes = make([]string, len(v.Attributes))
-		for i, val := range v.Attributes {
-			res.Attributes[i] = val
-		}
-	}
-	if v.Roles != nil {
-		res.Roles = make([]string, len(v.Roles))
-		for i, val := range v.Roles {
-			res.Roles[i] = val
-		}
-	}
-
-	return res
-}
-
 // marshalControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpecResponseBody
 // builds a value of type *RestoreConfigSpecResponseBody from a value of type
 // *controlplaneviews.RestoreConfigSpecView.
@@ -2053,13 +2044,24 @@ func marshalControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpecResponseBod
 		return nil
 	}
 	res := &RestoreConfigSpecResponseBody{
-		Provider:     *v.Provider,
-		DatabaseID:   *v.DatabaseID,
-		NodeName:     *v.NodeName,
-		DatabaseName: *v.DatabaseName,
+		SourceDatabaseID:   *v.SourceDatabaseID,
+		SourceNodeName:     *v.SourceNodeName,
+		SourceDatabaseName: *v.SourceDatabaseName,
+	}
+	if v.Provider != nil {
+		res.Provider = *v.Provider
+	}
+	if v.Provider == nil {
+		res.Provider = "pgbackrest"
 	}
 	if v.Repository != nil {
 		res.Repository = marshalControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpecResponseBody(v.Repository)
+	}
+	if v.RestoreOptions != nil {
+		res.RestoreOptions = make([]string, len(v.RestoreOptions))
+		for i, val := range v.RestoreOptions {
+			res.RestoreOptions[i] = val
+		}
 	}
 
 	return res
@@ -2092,6 +2094,34 @@ func marshalControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpecRes
 			tk := key
 			tv := val
 			res.CustomOptions[tk] = tv
+		}
+	}
+
+	return res
+}
+
+// marshalControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpecResponseBody
+// builds a value of type *DatabaseUserSpecResponseBody from a value of type
+// *controlplaneviews.DatabaseUserSpecView.
+func marshalControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpecResponseBody(v *controlplaneviews.DatabaseUserSpecView) *DatabaseUserSpecResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseUserSpecResponseBody{
+		Username: *v.Username,
+		Password: *v.Password,
+		DbOwner:  v.DbOwner,
+	}
+	if v.Attributes != nil {
+		res.Attributes = make([]string, len(v.Attributes))
+		for i, val := range v.Attributes {
+			res.Attributes[i] = val
+		}
+	}
+	if v.Roles != nil {
+		res.Roles = make([]string, len(v.Roles))
+		for i, val := range v.Roles {
+			res.Roles[i] = val
 		}
 	}
 
@@ -2180,6 +2210,9 @@ func unmarshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSp
 	if v.BackupConfig != nil {
 		res.BackupConfig = unmarshalBackupConfigSpecRequestBodyRequestBodyToControlplaneBackupConfigSpec(v.BackupConfig)
 	}
+	if v.RestoreConfig != nil {
+		res.RestoreConfig = unmarshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSpec(v.RestoreConfig)
+	}
 
 	return res
 }
@@ -2191,14 +2224,16 @@ func unmarshalBackupConfigSpecRequestBodyRequestBodyToControlplaneBackupConfigSp
 	if v == nil {
 		return nil
 	}
-	res := &controlplane.BackupConfigSpec{
-		Provider: *v.Provider,
+	res := &controlplane.BackupConfigSpec{}
+	if v.Provider != nil {
+		res.Provider = *v.Provider
 	}
-	if v.Repositories != nil {
-		res.Repositories = make([]*controlplane.BackupRepositorySpec, len(v.Repositories))
-		for i, val := range v.Repositories {
-			res.Repositories[i] = unmarshalBackupRepositorySpecRequestBodyRequestBodyToControlplaneBackupRepositorySpec(val)
-		}
+	if v.Provider == nil {
+		res.Provider = "pgbackrest"
+	}
+	res.Repositories = make([]*controlplane.BackupRepositorySpec, len(v.Repositories))
+	for i, val := range v.Repositories {
+		res.Repositories[i] = unmarshalBackupRepositorySpecRequestBodyRequestBodyToControlplaneBackupRepositorySpec(val)
 	}
 	if v.Schedules != nil {
 		res.Schedules = make([]*controlplane.BackupScheduleSpec, len(v.Schedules))
@@ -2214,9 +2249,6 @@ func unmarshalBackupConfigSpecRequestBodyRequestBodyToControlplaneBackupConfigSp
 // builds a value of type *controlplane.BackupRepositorySpec from a value of
 // type *BackupRepositorySpecRequestBodyRequestBody.
 func unmarshalBackupRepositorySpecRequestBodyRequestBodyToControlplaneBackupRepositorySpec(v *BackupRepositorySpecRequestBodyRequestBody) *controlplane.BackupRepositorySpec {
-	if v == nil {
-		return nil
-	}
 	res := &controlplane.BackupRepositorySpec{
 		ID:                v.ID,
 		Type:              *v.Type,
@@ -2264,34 +2296,6 @@ func unmarshalBackupScheduleSpecRequestBodyRequestBodyToControlplaneBackupSchedu
 	return res
 }
 
-// unmarshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSpec
-// builds a value of type *controlplane.DatabaseUserSpec from a value of type
-// *DatabaseUserSpecRequestBodyRequestBody.
-func unmarshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSpec(v *DatabaseUserSpecRequestBodyRequestBody) *controlplane.DatabaseUserSpec {
-	if v == nil {
-		return nil
-	}
-	res := &controlplane.DatabaseUserSpec{
-		Username: *v.Username,
-		Password: *v.Password,
-		DbOwner:  v.DbOwner,
-	}
-	if v.Attributes != nil {
-		res.Attributes = make([]string, len(v.Attributes))
-		for i, val := range v.Attributes {
-			res.Attributes[i] = val
-		}
-	}
-	if v.Roles != nil {
-		res.Roles = make([]string, len(v.Roles))
-		for i, val := range v.Roles {
-			res.Roles[i] = val
-		}
-	}
-
-	return res
-}
-
 // unmarshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSpec
 // builds a value of type *controlplane.RestoreConfigSpec from a value of type
 // *RestoreConfigSpecRequestBodyRequestBody.
@@ -2300,12 +2304,23 @@ func unmarshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfig
 		return nil
 	}
 	res := &controlplane.RestoreConfigSpec{
-		Provider:     *v.Provider,
-		DatabaseID:   *v.DatabaseID,
-		NodeName:     *v.NodeName,
-		DatabaseName: *v.DatabaseName,
+		SourceDatabaseID:   *v.SourceDatabaseID,
+		SourceNodeName:     *v.SourceNodeName,
+		SourceDatabaseName: *v.SourceDatabaseName,
+	}
+	if v.Provider != nil {
+		res.Provider = *v.Provider
+	}
+	if v.Provider == nil {
+		res.Provider = "pgbackrest"
 	}
 	res.Repository = unmarshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRepositorySpec(v.Repository)
+	if v.RestoreOptions != nil {
+		res.RestoreOptions = make([]string, len(v.RestoreOptions))
+		for i, val := range v.RestoreOptions {
+			res.RestoreOptions[i] = val
+		}
+	}
 
 	return res
 }
@@ -2337,6 +2352,34 @@ func unmarshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRe
 			tk := key
 			tv := val
 			res.CustomOptions[tk] = tv
+		}
+	}
+
+	return res
+}
+
+// unmarshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSpec
+// builds a value of type *controlplane.DatabaseUserSpec from a value of type
+// *DatabaseUserSpecRequestBodyRequestBody.
+func unmarshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSpec(v *DatabaseUserSpecRequestBodyRequestBody) *controlplane.DatabaseUserSpec {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.DatabaseUserSpec{
+		Username: *v.Username,
+		Password: *v.Password,
+		DbOwner:  v.DbOwner,
+	}
+	if v.Attributes != nil {
+		res.Attributes = make([]string, len(v.Attributes))
+		for i, val := range v.Attributes {
+			res.Attributes[i] = val
+		}
+	}
+	if v.Roles != nil {
+		res.Roles = make([]string, len(v.Roles))
+		for i, val := range v.Roles {
+			res.Roles[i] = val
 		}
 	}
 

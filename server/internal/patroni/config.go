@@ -108,12 +108,27 @@ type DCS struct {
 	IgnoreSlots           *[]IgnoreSlot      `json:"ignore_slots,omitempty"`
 }
 
+type BootstrapMethod string
+
+const (
+	BoostrapMethodNameInitDB   BootstrapMethod = "initdb"
+	BootstrapMethodNameRestore BootstrapMethod = "restore"
+)
+
+type BootstrapMethodConf struct {
+	Command                  *string         `json:"command,omitempty"`
+	KeepExistingRecoveryConf *bool           `json:"keep_existing_recovery_conf,omitempty"`
+	NoParams                 *bool           `json:"no_params,omitempty"`
+	RecoveryConf             *map[string]any `json:"recovery_conf,omitempty"`
+}
+
 type Bootstrap struct {
-	DCS           *DCS      `json:"dcs,omitempty"`
-	Method        *string   `json:"method,omitempty"`
-	InitDB        *[]string `json:"initdb,omitempty"`
-	PostBootstrap *string   `json:"post_bootstrap,omitempty"`
-	PostInit      *string   `json:"post_init,omitempty"`
+	DCS           *DCS                 `json:"dcs,omitempty"`
+	Method        *BootstrapMethod     `json:"method,omitempty"`
+	InitDB        *[]string            `json:"initdb,omitempty"`
+	PostBootstrap *string              `json:"post_bootstrap,omitempty"`
+	PostInit      *string              `json:"post_init,omitempty"`
+	Restore       *BootstrapMethodConf `json:"restore,omitempty"`
 }
 
 type Etcd struct {

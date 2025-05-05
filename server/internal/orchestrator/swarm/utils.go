@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/docker"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 )
 
@@ -27,6 +29,45 @@ func pgbackrestBackupCmd(command string, args ...string) pgbackrest.Cmd {
 	return pgbackrest.Cmd{
 		PgBackrestCmd: "/usr/bin/pgbackrest",
 		Config:        "/opt/pgedge/configs/pgbackrest.backup.conf",
+		Stanza:        "db",
+		Command:       command,
+		Args:          args,
+	}
+}
+
+var targetActionRestoreTypes = ds.NewSet(
+	"immediate",
+	"lsn",
+	"name",
+	"time",
+	"xid",
+)
+
+func pgbackrestRecoveryCmd(command string, args ...string) pgbackrest.Cmd {
+	var hasTargetAction, needsTargetAction bool
+	for i, arg := range args {
+		if strings.HasPrefix(arg, "--target-action") {
+			hasTargetAction = true
+		}
+		var restoreType string
+		if arg == "--type" && i+1 < len(args) {
+			restoreType = args[i+1]
+		} else if strings.HasPrefix(arg, "--type=") {
+			restoreType = strings.TrimPrefix(arg, "--type=")
+		} else {
+			continue
+		}
+		if targetActionRestoreTypes.Has(restoreType) {
+			needsTargetAction = true
+		}
+	}
+	if needsTargetAction && !hasTargetAction {
+		args = append(args, "--target-action=promote")
+	}
+
+	return pgbackrest.Cmd{
+		PgBackrestCmd: "/usr/bin/pgbackrest",
+		Config:        "/opt/pgedge/configs/pgbackrest.restore.conf",
 		Stanza:        "db",
 		Command:       command,
 		Args:          args,

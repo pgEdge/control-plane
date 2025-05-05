@@ -68,6 +68,9 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 	g.Attribute("backup_config", BackupConfigSpec, func() {
 		g.Description("The backup configuration for this node. Overrides the backup configuration set in the DatabaseSpec.")
 	})
+	g.Attribute("restore_config", RestoreConfigSpec, func() {
+		g.Description("The restore configuration for this node. Overrides the restore configuration set in the DatabaseSpec.")
+	})
 
 	g.Required("name", "host_ids")
 })
@@ -202,17 +205,19 @@ var BackupScheduleSpec = g.Type("BackupScheduleSpec", func() {
 var BackupConfigSpec = g.Type("BackupConfigSpec", func() {
 	g.Attribute("provider", g.String, func() {
 		g.Description("The backup provider for this backup configuration.")
-		g.Enum("pgbackrest", "pg_dump")
+		g.Default("pgbackrest")
+		g.Enum("pgbackrest")
 		g.Example("pgbackrest")
 	})
 	g.Attribute("repositories", g.ArrayOf(BackupRepositorySpec), func() {
 		g.Description("The repositories for this backup configuration.")
+		g.MinLength(1)
 	})
 	g.Attribute("schedules", g.ArrayOf(BackupScheduleSpec), func() {
 		g.Description("The schedules for this backup configuration.")
 	})
 
-	g.Required("provider")
+	g.Required("repositories")
 })
 
 var RestoreRepositorySpec = g.Type("RestoreRepositorySpec", func() {
@@ -290,26 +295,33 @@ var RestoreRepositorySpec = g.Type("RestoreRepositorySpec", func() {
 var RestoreConfigSpec = g.Type("RestoreConfigSpec", func() {
 	g.Attribute("provider", g.String, func() {
 		g.Description("The backup provider for this restore configuration.")
-		g.Enum("pgbackrest", "pg_dump")
+		g.Default("pgbackrest")
+		g.Enum("pgbackrest")
 		g.Example("pgbackrest")
 	})
-	g.Attribute("database_id", g.String, func() {
+	g.Attribute("source_database_id", g.String, func() {
 		g.Description("The ID of the database to restore this database from.")
 		g.Example("6c8e43ee-26ea-47b8-a8f8-89897e0137bd")
 	})
-	g.Attribute("node_name", g.String, func() {
+	g.Attribute("source_node_name", g.String, func() {
 		g.Description("The name of the node to restore this database from.")
 		g.Example("n1")
 	})
-	g.Attribute("database_name", g.String, func() {
+	g.Attribute("source_database_name", g.String, func() {
 		g.Description("The name of the database in this repository. This database will be renamed to the database_name in the DatabaseSpec.")
 		g.Example("northwind")
 	})
 	g.Attribute("repository", RestoreRepositorySpec, func() {
 		g.Description("The repository to restore this database from.")
 	})
+	g.Attribute("restore_options", g.ArrayOf(g.String), func() {
+		g.Description("Additional options to use when restoring this database. If omitted, the database will be restored to the latest point in the given repository.")
+		g.Example([]string{"--type=time", "--target=2025-01-01T01:30:00Z"})
+		g.Example([]string{"--type=lsn", "--target=0/30000000"})
+		g.Example([]string{"--set=20250505-153628F", "--type=xid", "--target=123456"})
+	})
 
-	g.Required("provider", "database_id", "node_name", "database_name", "repository")
+	g.Required("source_database_id", "source_node_name", "source_database_name", "repository")
 })
 
 var DatabaseSpec = g.Type("DatabaseSpec", func() {

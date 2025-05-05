@@ -25,6 +25,7 @@ type Node struct {
 	MemoryBytes      uint64         `json:"memory"`
 	PostgreSQLConf   map[string]any `json:"postgresql_conf"`
 	BackupConfig     *BackupConfig  `json:"backup_config"`
+	RestoreConfig    *RestoreConfig `json:"restore_config"`
 }
 
 type User struct {
@@ -43,7 +44,7 @@ type Extension struct {
 type BackupProvider string
 
 const (
-	BackupProviderPgBackrest BackupProvider = "pgbackrest"
+	BackupProviderPgBackRest BackupProvider = "pgbackrest"
 	BackupProviderPgDump     BackupProvider = "pg_dump"
 )
 
@@ -67,11 +68,12 @@ type BackupConfig struct {
 }
 
 type RestoreConfig struct {
-	Provider     BackupProvider         `json:"provider"`
-	DatabaseID   uuid.UUID              `json:"database_id"`
-	NodeName     string                 `json:"node_name"`
-	DatabaseName string                 `json:"database_name"`
-	Repository   *pgbackrest.Repository `json:"repository"`
+	Provider           BackupProvider         `json:"provider"`
+	SourceDatabaseID   uuid.UUID              `json:"source_database_id"`
+	SourceNodeName     string                 `json:"source_node_name"`
+	SourceDatabaseName string                 `json:"source_database_name"`
+	Repository         *pgbackrest.Repository `json:"repository"`
+	RestoreOptions     []string               `json:"restore_options"`
 }
 
 type Spec struct {
@@ -141,7 +143,7 @@ func (i *InstanceSpec) HostnameWithDomain() string {
 }
 
 func (i *InstanceSpec) UsesPgBackRest() bool {
-	return i.BackupConfig != nil && i.BackupConfig.Provider == BackupProviderPgBackrest
+	return i.BackupConfig != nil && i.BackupConfig.Provider == BackupProviderPgBackRest
 }
 
 type NodeInstances struct {
@@ -195,6 +197,10 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		if node.BackupConfig != nil {
 			backupConfig = node.BackupConfig
 		}
+		restoreConfig := s.RestoreConfig
+		if node.RestoreConfig != nil {
+			restoreConfig = node.RestoreConfig
+		}
 		// Create a merged PostgreSQL configuration with node-level overrides
 		postgresqlConf := maps.Clone(s.PostgreSQLConf)
 		maps.Copy(node.PostgreSQLConf, postgresqlConf)
@@ -218,7 +224,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				DatabaseUsers:    s.DatabaseUsers,
 				Features:         s.Features,
 				BackupConfig:     backupConfig,
-				RestoreConfig:    s.RestoreConfig,
+				RestoreConfig:    restoreConfig,
 				PostgreSQLConf:   postgresqlConf,
 				// By default, we'll choose the last host in the list to run
 				// backups. We'll want to incorporate the current state of the

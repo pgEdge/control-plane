@@ -290,6 +290,9 @@ type DatabaseNodeSpec struct {
 	// The backup configuration for this node. Overrides the backup configuration
 	// set in the DatabaseSpec.
 	BackupConfig *BackupConfigSpec
+	// The restore configuration for this node. Overrides the restore configuration
+	// set in the DatabaseSpec.
+	RestoreConfig *RestoreConfigSpec
 }
 
 type DatabaseSpec struct {
@@ -516,14 +519,17 @@ type RestoreConfigSpec struct {
 	// The backup provider for this restore configuration.
 	Provider string
 	// The ID of the database to restore this database from.
-	DatabaseID string
+	SourceDatabaseID string
 	// The name of the node to restore this database from.
-	NodeName string
+	SourceNodeName string
 	// The name of the database in this repository. This database will be renamed
 	// to the database_name in the DatabaseSpec.
-	DatabaseName string
+	SourceDatabaseName string
 	// The repository to restore this database from.
 	Repository *RestoreRepositorySpec
+	// Additional options to use when restoring this database. If omitted, the
+	// database will be restored to the latest point in the given repository.
+	RestoreOptions []string
 }
 
 type RestoreRepositorySpec struct {
@@ -1065,6 +1071,9 @@ func transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec(v *control
 	if v.BackupConfig != nil {
 		res.BackupConfig = transformControlplaneviewsBackupConfigSpecViewToBackupConfigSpec(v.BackupConfig)
 	}
+	if v.RestoreConfig != nil {
+		res.RestoreConfig = transformControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpec(v.RestoreConfig)
+	}
 
 	return res
 }
@@ -1076,14 +1085,20 @@ func transformControlplaneviewsBackupConfigSpecViewToBackupConfigSpec(v *control
 	if v == nil {
 		return nil
 	}
-	res := &BackupConfigSpec{
-		Provider: *v.Provider,
+	res := &BackupConfigSpec{}
+	if v.Provider != nil {
+		res.Provider = *v.Provider
+	}
+	if v.Provider == nil {
+		res.Provider = "pgbackrest"
 	}
 	if v.Repositories != nil {
 		res.Repositories = make([]*BackupRepositorySpec, len(v.Repositories))
 		for i, val := range v.Repositories {
 			res.Repositories[i] = transformControlplaneviewsBackupRepositorySpecViewToBackupRepositorySpec(val)
 		}
+	} else {
+		res.Repositories = []*BackupRepositorySpec{}
 	}
 	if v.Schedules != nil {
 		res.Schedules = make([]*BackupScheduleSpec, len(v.Schedules))
@@ -1099,9 +1114,6 @@ func transformControlplaneviewsBackupConfigSpecViewToBackupConfigSpec(v *control
 // builds a value of type *BackupRepositorySpec from a value of type
 // *controlplaneviews.BackupRepositorySpecView.
 func transformControlplaneviewsBackupRepositorySpecViewToBackupRepositorySpec(v *controlplaneviews.BackupRepositorySpecView) *BackupRepositorySpec {
-	if v == nil {
-		return nil
-	}
 	res := &BackupRepositorySpec{
 		ID:                v.ID,
 		Type:              *v.Type,
@@ -1149,34 +1161,6 @@ func transformControlplaneviewsBackupScheduleSpecViewToBackupScheduleSpec(v *con
 	return res
 }
 
-// transformControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpec builds a
-// value of type *DatabaseUserSpec from a value of type
-// *controlplaneviews.DatabaseUserSpecView.
-func transformControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpec(v *controlplaneviews.DatabaseUserSpecView) *DatabaseUserSpec {
-	if v == nil {
-		return nil
-	}
-	res := &DatabaseUserSpec{
-		Username: *v.Username,
-		Password: *v.Password,
-		DbOwner:  v.DbOwner,
-	}
-	if v.Attributes != nil {
-		res.Attributes = make([]string, len(v.Attributes))
-		for i, val := range v.Attributes {
-			res.Attributes[i] = val
-		}
-	}
-	if v.Roles != nil {
-		res.Roles = make([]string, len(v.Roles))
-		for i, val := range v.Roles {
-			res.Roles[i] = val
-		}
-	}
-
-	return res
-}
-
 // transformControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpec builds a
 // value of type *RestoreConfigSpec from a value of type
 // *controlplaneviews.RestoreConfigSpecView.
@@ -1185,13 +1169,24 @@ func transformControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpec(v *contr
 		return nil
 	}
 	res := &RestoreConfigSpec{
-		Provider:     *v.Provider,
-		DatabaseID:   *v.DatabaseID,
-		NodeName:     *v.NodeName,
-		DatabaseName: *v.DatabaseName,
+		SourceDatabaseID:   *v.SourceDatabaseID,
+		SourceNodeName:     *v.SourceNodeName,
+		SourceDatabaseName: *v.SourceDatabaseName,
+	}
+	if v.Provider != nil {
+		res.Provider = *v.Provider
+	}
+	if v.Provider == nil {
+		res.Provider = "pgbackrest"
 	}
 	if v.Repository != nil {
 		res.Repository = transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec(v.Repository)
+	}
+	if v.RestoreOptions != nil {
+		res.RestoreOptions = make([]string, len(v.RestoreOptions))
+		for i, val := range v.RestoreOptions {
+			res.RestoreOptions[i] = val
+		}
 	}
 
 	return res
@@ -1224,6 +1219,34 @@ func transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec(
 			tk := key
 			tv := val
 			res.CustomOptions[tk] = tv
+		}
+	}
+
+	return res
+}
+
+// transformControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpec builds a
+// value of type *DatabaseUserSpec from a value of type
+// *controlplaneviews.DatabaseUserSpecView.
+func transformControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpec(v *controlplaneviews.DatabaseUserSpecView) *DatabaseUserSpec {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseUserSpec{
+		Username: *v.Username,
+		Password: *v.Password,
+		DbOwner:  v.DbOwner,
+	}
+	if v.Attributes != nil {
+		res.Attributes = make([]string, len(v.Attributes))
+		for i, val := range v.Attributes {
+			res.Attributes[i] = val
+		}
+	}
+	if v.Roles != nil {
+		res.Roles = make([]string, len(v.Roles))
+		for i, val := range v.Roles {
+			res.Roles[i] = val
 		}
 	}
 
@@ -1319,6 +1342,9 @@ func transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView(v *Databas
 	if v.BackupConfig != nil {
 		res.BackupConfig = transformBackupConfigSpecToControlplaneviewsBackupConfigSpecView(v.BackupConfig)
 	}
+	if v.RestoreConfig != nil {
+		res.RestoreConfig = transformRestoreConfigSpecToControlplaneviewsRestoreConfigSpecView(v.RestoreConfig)
+	}
 
 	return res
 }
@@ -1338,6 +1364,8 @@ func transformBackupConfigSpecToControlplaneviewsBackupConfigSpecView(v *BackupC
 		for i, val := range v.Repositories {
 			res.Repositories[i] = transformBackupRepositorySpecToControlplaneviewsBackupRepositorySpecView(val)
 		}
+	} else {
+		res.Repositories = []*controlplaneviews.BackupRepositorySpecView{}
 	}
 	if v.Schedules != nil {
 		res.Schedules = make([]*controlplaneviews.BackupScheduleSpecView, len(v.Schedules))
@@ -1353,9 +1381,6 @@ func transformBackupConfigSpecToControlplaneviewsBackupConfigSpecView(v *BackupC
 // builds a value of type *controlplaneviews.BackupRepositorySpecView from a
 // value of type *BackupRepositorySpec.
 func transformBackupRepositorySpecToControlplaneviewsBackupRepositorySpecView(v *BackupRepositorySpec) *controlplaneviews.BackupRepositorySpecView {
-	if v == nil {
-		return nil
-	}
 	res := &controlplaneviews.BackupRepositorySpecView{
 		ID:                v.ID,
 		Type:              &v.Type,
@@ -1403,34 +1428,6 @@ func transformBackupScheduleSpecToControlplaneviewsBackupScheduleSpecView(v *Bac
 	return res
 }
 
-// transformDatabaseUserSpecToControlplaneviewsDatabaseUserSpecView builds a
-// value of type *controlplaneviews.DatabaseUserSpecView from a value of type
-// *DatabaseUserSpec.
-func transformDatabaseUserSpecToControlplaneviewsDatabaseUserSpecView(v *DatabaseUserSpec) *controlplaneviews.DatabaseUserSpecView {
-	if v == nil {
-		return nil
-	}
-	res := &controlplaneviews.DatabaseUserSpecView{
-		Username: &v.Username,
-		Password: &v.Password,
-		DbOwner:  v.DbOwner,
-	}
-	if v.Attributes != nil {
-		res.Attributes = make([]string, len(v.Attributes))
-		for i, val := range v.Attributes {
-			res.Attributes[i] = val
-		}
-	}
-	if v.Roles != nil {
-		res.Roles = make([]string, len(v.Roles))
-		for i, val := range v.Roles {
-			res.Roles[i] = val
-		}
-	}
-
-	return res
-}
-
 // transformRestoreConfigSpecToControlplaneviewsRestoreConfigSpecView builds a
 // value of type *controlplaneviews.RestoreConfigSpecView from a value of type
 // *RestoreConfigSpec.
@@ -1439,13 +1436,19 @@ func transformRestoreConfigSpecToControlplaneviewsRestoreConfigSpecView(v *Resto
 		return nil
 	}
 	res := &controlplaneviews.RestoreConfigSpecView{
-		Provider:     &v.Provider,
-		DatabaseID:   &v.DatabaseID,
-		NodeName:     &v.NodeName,
-		DatabaseName: &v.DatabaseName,
+		Provider:           &v.Provider,
+		SourceDatabaseID:   &v.SourceDatabaseID,
+		SourceNodeName:     &v.SourceNodeName,
+		SourceDatabaseName: &v.SourceDatabaseName,
 	}
 	if v.Repository != nil {
 		res.Repository = transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView(v.Repository)
+	}
+	if v.RestoreOptions != nil {
+		res.RestoreOptions = make([]string, len(v.RestoreOptions))
+		for i, val := range v.RestoreOptions {
+			res.RestoreOptions[i] = val
+		}
 	}
 
 	return res
@@ -1478,6 +1481,34 @@ func transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView(
 			tk := key
 			tv := val
 			res.CustomOptions[tk] = tv
+		}
+	}
+
+	return res
+}
+
+// transformDatabaseUserSpecToControlplaneviewsDatabaseUserSpecView builds a
+// value of type *controlplaneviews.DatabaseUserSpecView from a value of type
+// *DatabaseUserSpec.
+func transformDatabaseUserSpecToControlplaneviewsDatabaseUserSpecView(v *DatabaseUserSpec) *controlplaneviews.DatabaseUserSpecView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.DatabaseUserSpecView{
+		Username: &v.Username,
+		Password: &v.Password,
+		DbOwner:  v.DbOwner,
+	}
+	if v.Attributes != nil {
+		res.Attributes = make([]string, len(v.Attributes))
+		for i, val := range v.Attributes {
+			res.Attributes[i] = val
+		}
+	}
+	if v.Roles != nil {
+		res.Roles = make([]string, len(v.Roles))
+		for i, val := range v.Roles {
+			res.Roles[i] = val
 		}
 	}
 

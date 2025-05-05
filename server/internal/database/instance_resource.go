@@ -2,16 +2,20 @@ package database
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/samber/do"
+
 	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
-	"github.com/samber/do"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 var _ resource.Resource = (*InstanceResource)(nil)
@@ -75,7 +79,7 @@ func (r *InstanceResource) Refresh(ctx context.Context, rc *resource.Context) er
 		return err
 	}
 
-	primaryInstanceID, err := GetPrimaryInstanceID(ctx, orch, r.Spec.DatabaseID, r.Spec.InstanceID)
+	primaryInstanceID, err := GetPrimaryInstanceID(ctx, orch, r.Spec.DatabaseID, r.Spec.InstanceID, 30*time.Second)
 	if err != nil {
 		return resource.ErrNotFound // TODO: Is this always the right choice?
 	}
@@ -94,7 +98,12 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 		return err
 	}
 
-	primaryInstanceID, err := GetPrimaryInstanceID(ctx, orch, r.Spec.DatabaseID, r.Spec.InstanceID)
+	err = WaitForPatroniRunning(ctx, orch, r.Spec.DatabaseID, r.Spec.InstanceID, 12*time.Hour)
+	if err != nil {
+		return fmt.Errorf("failed to wait for patroni to enter running state: %w", err)
+	}
+
+	primaryInstanceID, err := GetPrimaryInstanceID(ctx, orch, r.Spec.DatabaseID, r.Spec.InstanceID, time.Minute)
 	if err != nil {
 		return err
 	}
@@ -116,21 +125,23 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 	}
 	r.ConnectionInfo = connInfo
 
-	createDBConn, err := ConnectToInstance(ctx, &ConnectionOptions{
-		DSN: &postgres.DSN{
-			Host:   connInfo.AdminHost,
-			Port:   connInfo.AdminPort,
-			DBName: "postgres",
-			User:   "pgedge",
-		},
-		TLS: tlsCfg,
-	})
+	firstTimeSetup, err := r.isFirstTimeSetup(rc)
 	if err != nil {
-		return fmt.Errorf("failed to connect to 'postgres' database on instance: %w", err)
+		return err
 	}
-	defer createDBConn.Close(ctx)
 
-	err = postgres.CreateDatabase(r.Spec.DatabaseName).Exec(ctx, createDBConn)
+	if r.Spec.RestoreConfig != nil && firstTimeSetup {
+		err = r.renameDB(ctx, connInfo, tlsCfg)
+		if err != nil {
+			return fmt.Errorf("failed to rename database %q: %w", r.Spec.DatabaseName, err)
+		}
+		err = r.dropSpock(ctx, connInfo, tlsCfg)
+		if err != nil {
+			return fmt.Errorf("failed to drop spock: %w", err)
+		}
+	}
+
+	err = r.createDB(ctx, connInfo, tlsCfg)
 	if err != nil {
 		return fmt.Errorf("failed to create database %q: %w", r.Spec.DatabaseName, err)
 	}
@@ -246,4 +257,99 @@ func (r *InstanceResource) Connection(ctx context.Context, rc *resource.Context,
 		return nil, fmt.Errorf("failed to connect to database %q: %w", r.Spec.DatabaseName, err)
 	}
 	return conn, nil
+}
+
+func (r *InstanceResource) createDB(ctx context.Context, connInfo *ConnectionInfo, tlsCfg *tls.Config) error {
+	createDBConn, err := ConnectToInstance(ctx, &ConnectionOptions{
+		DSN: &postgres.DSN{
+			Host:   connInfo.AdminHost,
+			Port:   connInfo.AdminPort,
+			DBName: "postgres",
+			User:   "pgedge",
+		},
+		TLS: tlsCfg,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to 'postgres' database on instance: %w", err)
+	}
+	defer createDBConn.Close(ctx)
+
+	err = postgres.CreateDatabase(r.Spec.DatabaseName).Exec(ctx, createDBConn)
+	if err != nil {
+		return fmt.Errorf("failed to create database %q: %w", r.Spec.DatabaseName, err)
+	}
+
+	return nil
+}
+
+func (r *InstanceResource) renameDB(ctx context.Context, connInfo *ConnectionInfo, tlsCfg *tls.Config) error {
+	// Short circuit if the restore config doesn't include a dbname or if the
+	// database name is the same.
+	if r.Spec.RestoreConfig.SourceDatabaseName == "" || r.Spec.RestoreConfig.SourceDatabaseName == r.Spec.DatabaseName {
+		return nil
+	}
+
+	// This operation can be flaky because of other processes connected to the
+	// database. We retry it a few times to avoid failing the entire create
+	// operation.
+	err := utils.Retry(3, 500*time.Millisecond, func() error {
+		createDBConn, err := ConnectToInstance(ctx, &ConnectionOptions{
+			DSN: &postgres.DSN{
+				Host:   connInfo.AdminHost,
+				Port:   connInfo.AdminPort,
+				DBName: "postgres",
+				User:   "pgedge",
+			},
+			TLS: tlsCfg,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to connect to 'postgres' database on instance: %w", err)
+		}
+		defer createDBConn.Close(ctx)
+
+		return postgres.
+			RenameDB(r.Spec.RestoreConfig.SourceDatabaseName, r.Spec.DatabaseName).
+			Exec(ctx, createDBConn)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to rename database %q: %w", r.Spec.DatabaseName, err)
+	}
+
+	return nil
+}
+
+func (r *InstanceResource) dropSpock(ctx context.Context, connInfo *ConnectionInfo, tlsCfg *tls.Config) error {
+	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
+		DSN: &postgres.DSN{
+			Host:   connInfo.AdminHost,
+			Port:   connInfo.AdminPort,
+			DBName: r.Spec.DatabaseName,
+			User:   "pgedge",
+		},
+		TLS: tlsCfg,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to database %q: %w", r.Spec.DatabaseName, err)
+	}
+	defer conn.Close(ctx)
+
+	err = postgres.DropSpockAndCleanupSlots().Exec(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("failed to drop spock: %w", err)
+	}
+
+	return nil
+}
+
+func (r *InstanceResource) isFirstTimeSetup(rc *resource.Context) (bool, error) {
+	// This instance will already exist in the state if it's been successfully
+	// created before.
+	_, err := resource.FromContext[*InstanceResource](rc, r.Identifier())
+	if errors.Is(err, resource.ErrNotFound) {
+		return true, nil
+	} else if err != nil {
+		return false, fmt.Errorf("failed to check state for previous version of this instance: %w", err)
+	}
+
+	return false, nil
 }

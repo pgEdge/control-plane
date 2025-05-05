@@ -67,13 +67,20 @@ func (c *PatroniConfig) Identifier() resource.Identifier {
 }
 
 func (c *PatroniConfig) Dependencies() []resource.Identifier {
-	return []resource.Identifier{
+	deps := []resource.Identifier{
 		filesystem.DirResourceIdentifier(c.ParentID),
 		NetworkResourceIdentifier(c.DatabaseNetworkName),
 		EtcdCredsIdentifier(c.Spec.InstanceID),
 		PatroniMemberResourceIdentifier(c.Spec.InstanceID),
 		PatroniClusterResourceIdentifier(c.Spec.NodeName),
 	}
+	if c.Spec.RestoreConfig != nil && c.Spec.RestoreConfig.Provider == database.BackupProviderPgBackRest {
+		deps = append(deps, PgBackRestConfigIdentifier(c.Spec.InstanceID, PgBackRestConfigTypeRestore))
+	}
+	if c.Spec.BackupConfig != nil && c.Spec.BackupConfig.Provider == database.BackupProviderPgBackRest {
+		deps = append(deps, PgBackRestConfigIdentifier(c.Spec.InstanceID, PgBackRestConfigTypeBackup))
+	}
+	return deps
 }
 
 func (c *PatroniConfig) Refresh(ctx context.Context, rc *resource.Context) error {
@@ -217,7 +224,7 @@ func generatePatroniConfig(
 		"ssl_cert_file":            "/opt/pgedge/certificates/postgres/server.crt",
 		"ssl_key_file":             "/opt/pgedge/certificates/postgres/server.key",
 	})
-	if spec.UsesPgBackRest() {
+	if spec.BackupConfig != nil && spec.BackupConfig.Provider == database.BackupProviderPgBackRest {
 		maps.Copy(parameters, map[string]any{
 			// It's safe to set this to "on" on every instance in the node
 			// because "on" (as opposed to "always") will only archive from the
@@ -253,7 +260,7 @@ func generatePatroniConfig(
 		etcdHosts[i] = u.Host
 	}
 
-	return &patroni.Config{
+	cfg := &patroni.Config{
 		Name:      utils.PointerTo(spec.InstanceID.String()),
 		Namespace: utils.PointerTo(patroni.Namespace(spec.DatabaseID, spec.NodeName)),
 		Scope:     utils.PointerTo(spec.DatabaseID.String() + ":" + spec.NodeName),
@@ -433,5 +440,16 @@ func generatePatroniConfig(
 				}.String(),
 			},
 		},
-	}, nil
+	}
+
+	if spec.RestoreConfig != nil && spec.RestoreConfig.Provider == database.BackupProviderPgBackRest {
+		cfg.Bootstrap.Method = utils.PointerTo(patroni.BootstrapMethodNameRestore)
+		cfg.Bootstrap.Restore = &patroni.BootstrapMethodConf{
+			Command:                  utils.PointerTo(pgbackrestRecoveryCmd("restore", spec.RestoreConfig.RestoreOptions...).String()),
+			NoParams:                 utils.PointerTo(true),
+			KeepExistingRecoveryConf: utils.PointerTo(true),
+		}
+	}
+
+	return cfg, nil
 }

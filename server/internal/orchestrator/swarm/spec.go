@@ -51,7 +51,7 @@ func DatabaseServiceSpec(
 					"PATRONICTL_CONFIG_FILE=/opt/pgedge/configs/patroni.yaml",
 				},
 				Healthcheck: &container.HealthConfig{
-					Test:        []string{"CMD-SHELL", "curl -Ssf http://localhost:8888/health"},
+					Test:        []string{"CMD-SHELL", "curl -Ssf http://localhost:8888/liveness"},
 					StartPeriod: time.Second * 5,
 					Interval:    time.Second * 5,
 					Timeout:     time.Second * 3,
