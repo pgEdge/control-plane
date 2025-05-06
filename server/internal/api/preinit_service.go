@@ -162,6 +162,22 @@ func (s *PreInitService) UpdateDatabase(ctx context.Context, req *api.UpdateData
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitService) DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePayload) (err error) {
+func (s *PreInitService) DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePayload) error {
 	return ErrUninitialized
+}
+
+func (s *PreInitService) InitiateDatabaseBackup(ctx context.Context, req *api.InitiateDatabaseBackupPayload) (*api.Task, error) {
+	return nil, ErrUninitialized
+}
+
+func (s *PreInitService) ListDatabaseTasks(ctx context.Context, req *api.ListDatabaseTasksPayload) ([]*api.Task, error) {
+	return nil, ErrUninitialized
+}
+
+func (s *PreInitService) InspectDatabaseTask(ctx context.Context, req *api.InspectDatabaseTaskPayload) (*api.Task, error) {
+	return nil, ErrUninitialized
+}
+
+func (s *PreInitService) GetDatabaseTaskLog(ctx context.Context, req *api.GetDatabaseTaskLogPayload) (*api.TaskLog, error) {
+	return nil, ErrUninitialized
 }

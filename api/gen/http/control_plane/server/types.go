@@ -55,6 +55,17 @@ type UpdateDatabaseRequestBody struct {
 	Spec *DatabaseSpecRequestBodyRequestBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
 }
 
+// InitiateDatabaseBackupRequestBody is the type of the "control-plane" service
+// "initiate-database-backup" endpoint HTTP request body.
+type InitiateDatabaseBackupRequestBody struct {
+	// The type of backup.
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// Annotations for the backup.
+	Annotations map[string]string `form:"annotations,omitempty" json:"annotations,omitempty" xml:"annotations,omitempty"`
+	// Extra options for the backup.
+	ExtraOptions []string `form:"extra_options,omitempty" json:"extra_options,omitempty" xml:"extra_options,omitempty"`
+}
+
 // InitClusterResponseBody is the type of the "control-plane" service
 // "init-cluster" endpoint HTTP response body.
 type InitClusterResponseBody struct {
@@ -183,6 +194,63 @@ type UpdateDatabaseResponseBody struct {
 	Instances InstanceResponseBodyAbbreviatedCollection `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
+}
+
+// InitiateDatabaseBackupResponseBody is the type of the "control-plane"
+// service "initiate-database-backup" endpoint HTTP response body.
+type InitiateDatabaseBackupResponseBody struct {
+	// The database ID of the task.
+	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	// The unique ID of the task.
+	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+	// The time when the task was created.
+	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The status of the task.
+	Status string `form:"status" json:"status" xml:"status"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
+// ListDatabaseTasksResponseBody is the type of the "control-plane" service
+// "list-database-tasks" endpoint HTTP response body.
+type ListDatabaseTasksResponseBody []*TaskResponse
+
+// InspectDatabaseTaskResponseBody is the type of the "control-plane" service
+// "inspect-database-task" endpoint HTTP response body.
+type InspectDatabaseTaskResponseBody struct {
+	// The database ID of the task.
+	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	// The unique ID of the task.
+	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+	// The time when the task was created.
+	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The status of the task.
+	Status string `form:"status" json:"status" xml:"status"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
+// GetDatabaseTaskLogResponseBody is the type of the "control-plane" service
+// "get-database-task-log" endpoint HTTP response body.
+type GetDatabaseTaskLogResponseBody struct {
+	// The database ID of the task log.
+	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	// The unique ID of the task log.
+	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+	// The status of the task.
+	TaskStatus string `form:"task_status" json:"task_status" xml:"task_status"`
+	// The ID of the last line in the task log.
+	LastLineID *string `form:"last_line_id,omitempty" json:"last_line_id,omitempty" xml:"last_line_id,omitempty"`
+	// The lines of the task log.
+	Lines []string `form:"lines" json:"lines" xml:"lines"`
 }
 
 // InitClusterClusterAlreadyInitializedResponseBody is the type of the
@@ -544,6 +612,25 @@ type UpdateDatabaseClusterNotInitializedResponseBody struct {
 	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
+// UpdateDatabaseDatabaseNotModifiableResponseBody is the type of the
+// "control-plane" service "update-database" endpoint HTTP response body for
+// the "database_not_modifiable" error.
+type UpdateDatabaseDatabaseNotModifiableResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
 // UpdateDatabaseNotFoundResponseBody is the type of the "control-plane"
 // service "update-database" endpoint HTTP response body for the "not_found"
 // error.
@@ -582,10 +669,219 @@ type DeleteDatabaseClusterNotInitializedResponseBody struct {
 	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
+// DeleteDatabaseDatabaseNotModifiableResponseBody is the type of the
+// "control-plane" service "delete-database" endpoint HTTP response body for
+// the "database_not_modifiable" error.
+type DeleteDatabaseDatabaseNotModifiableResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
 // DeleteDatabaseNotFoundResponseBody is the type of the "control-plane"
 // service "delete-database" endpoint HTTP response body for the "not_found"
 // error.
 type DeleteDatabaseNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// InitiateDatabaseBackupBackupAlreadyInProgressResponseBody is the type of the
+// "control-plane" service "initiate-database-backup" endpoint HTTP response
+// body for the "backup_already_in_progress" error.
+type InitiateDatabaseBackupBackupAlreadyInProgressResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// InitiateDatabaseBackupClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "initiate-database-backup" endpoint HTTP response
+// body for the "cluster_not_initialized" error.
+type InitiateDatabaseBackupClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// InitiateDatabaseBackupDatabaseNotModifiableResponseBody is the type of the
+// "control-plane" service "initiate-database-backup" endpoint HTTP response
+// body for the "database_not_modifiable" error.
+type InitiateDatabaseBackupDatabaseNotModifiableResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// InitiateDatabaseBackupNotFoundResponseBody is the type of the
+// "control-plane" service "initiate-database-backup" endpoint HTTP response
+// body for the "not_found" error.
+type InitiateDatabaseBackupNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// ListDatabaseTasksClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "list-database-tasks" endpoint HTTP response body
+// for the "cluster_not_initialized" error.
+type ListDatabaseTasksClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// ListDatabaseTasksNotFoundResponseBody is the type of the "control-plane"
+// service "list-database-tasks" endpoint HTTP response body for the
+// "not_found" error.
+type ListDatabaseTasksNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// InspectDatabaseTaskClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "inspect-database-task" endpoint HTTP response body
+// for the "cluster_not_initialized" error.
+type InspectDatabaseTaskClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// InspectDatabaseTaskNotFoundResponseBody is the type of the "control-plane"
+// service "inspect-database-task" endpoint HTTP response body for the
+// "not_found" error.
+type InspectDatabaseTaskNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// GetDatabaseTaskLogClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "get-database-task-log" endpoint HTTP response body
+// for the "cluster_not_initialized" error.
+type GetDatabaseTaskLogClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// GetDatabaseTaskLogNotFoundResponseBody is the type of the "control-plane"
+// service "get-database-task-log" endpoint HTTP response body for the
+// "not_found" error.
+type GetDatabaseTaskLogNotFoundResponseBody struct {
 	// Name is the name of this class of errors.
 	Name string `form:"name" json:"name" xml:"name"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -1026,6 +1322,24 @@ type RestoreRepositorySpecResponseBody struct {
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
+}
+
+// TaskResponse is used to define fields on response body types.
+type TaskResponse struct {
+	// The database ID of the task.
+	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	// The unique ID of the task.
+	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+	// The time when the task was created.
+	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The status of the task.
+	Status string `form:"status" json:"status" xml:"status"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
 // DatabaseSpecRequestBody is used to define fields on request body types.
@@ -1647,6 +1961,69 @@ func NewUpdateDatabaseResponseBody(res *controlplaneviews.DatabaseView) *UpdateD
 	return body
 }
 
+// NewInitiateDatabaseBackupResponseBody builds the HTTP response body from the
+// result of the "initiate-database-backup" endpoint of the "control-plane"
+// service.
+func NewInitiateDatabaseBackupResponseBody(res *controlplane.Task) *InitiateDatabaseBackupResponseBody {
+	body := &InitiateDatabaseBackupResponseBody{
+		DatabaseID:  res.DatabaseID,
+		TaskID:      res.TaskID,
+		CreatedAt:   res.CreatedAt,
+		CompletedAt: res.CompletedAt,
+		Type:        res.Type,
+		Status:      res.Status,
+		Error:       res.Error,
+	}
+	return body
+}
+
+// NewListDatabaseTasksResponseBody builds the HTTP response body from the
+// result of the "list-database-tasks" endpoint of the "control-plane" service.
+func NewListDatabaseTasksResponseBody(res []*controlplane.Task) ListDatabaseTasksResponseBody {
+	body := make([]*TaskResponse, len(res))
+	for i, val := range res {
+		body[i] = marshalControlplaneTaskToTaskResponse(val)
+	}
+	return body
+}
+
+// NewInspectDatabaseTaskResponseBody builds the HTTP response body from the
+// result of the "inspect-database-task" endpoint of the "control-plane"
+// service.
+func NewInspectDatabaseTaskResponseBody(res *controlplane.Task) *InspectDatabaseTaskResponseBody {
+	body := &InspectDatabaseTaskResponseBody{
+		DatabaseID:  res.DatabaseID,
+		TaskID:      res.TaskID,
+		CreatedAt:   res.CreatedAt,
+		CompletedAt: res.CompletedAt,
+		Type:        res.Type,
+		Status:      res.Status,
+		Error:       res.Error,
+	}
+	return body
+}
+
+// NewGetDatabaseTaskLogResponseBody builds the HTTP response body from the
+// result of the "get-database-task-log" endpoint of the "control-plane"
+// service.
+func NewGetDatabaseTaskLogResponseBody(res *controlplane.TaskLog) *GetDatabaseTaskLogResponseBody {
+	body := &GetDatabaseTaskLogResponseBody{
+		DatabaseID: res.DatabaseID,
+		TaskID:     res.TaskID,
+		TaskStatus: res.TaskStatus,
+		LastLineID: res.LastLineID,
+	}
+	if res.Lines != nil {
+		body.Lines = make([]string, len(res.Lines))
+		for i, val := range res.Lines {
+			body.Lines[i] = val
+		}
+	} else {
+		body.Lines = []string{}
+	}
+	return body
+}
+
 // NewInitClusterClusterAlreadyInitializedResponseBody builds the HTTP response
 // body from the result of the "init-cluster" endpoint of the "control-plane"
 // service.
@@ -1925,6 +2302,21 @@ func NewUpdateDatabaseClusterNotInitializedResponseBody(res *goa.ServiceError) *
 	return body
 }
 
+// NewUpdateDatabaseDatabaseNotModifiableResponseBody builds the HTTP response
+// body from the result of the "update-database" endpoint of the
+// "control-plane" service.
+func NewUpdateDatabaseDatabaseNotModifiableResponseBody(res *goa.ServiceError) *UpdateDatabaseDatabaseNotModifiableResponseBody {
+	body := &UpdateDatabaseDatabaseNotModifiableResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
 // NewUpdateDatabaseNotFoundResponseBody builds the HTTP response body from the
 // result of the "update-database" endpoint of the "control-plane" service.
 func NewUpdateDatabaseNotFoundResponseBody(res *goa.ServiceError) *UpdateDatabaseNotFoundResponseBody {
@@ -1954,10 +2346,175 @@ func NewDeleteDatabaseClusterNotInitializedResponseBody(res *goa.ServiceError) *
 	return body
 }
 
+// NewDeleteDatabaseDatabaseNotModifiableResponseBody builds the HTTP response
+// body from the result of the "delete-database" endpoint of the
+// "control-plane" service.
+func NewDeleteDatabaseDatabaseNotModifiableResponseBody(res *goa.ServiceError) *DeleteDatabaseDatabaseNotModifiableResponseBody {
+	body := &DeleteDatabaseDatabaseNotModifiableResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
 // NewDeleteDatabaseNotFoundResponseBody builds the HTTP response body from the
 // result of the "delete-database" endpoint of the "control-plane" service.
 func NewDeleteDatabaseNotFoundResponseBody(res *goa.ServiceError) *DeleteDatabaseNotFoundResponseBody {
 	body := &DeleteDatabaseNotFoundResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewInitiateDatabaseBackupBackupAlreadyInProgressResponseBody builds the HTTP
+// response body from the result of the "initiate-database-backup" endpoint of
+// the "control-plane" service.
+func NewInitiateDatabaseBackupBackupAlreadyInProgressResponseBody(res *goa.ServiceError) *InitiateDatabaseBackupBackupAlreadyInProgressResponseBody {
+	body := &InitiateDatabaseBackupBackupAlreadyInProgressResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewInitiateDatabaseBackupClusterNotInitializedResponseBody builds the HTTP
+// response body from the result of the "initiate-database-backup" endpoint of
+// the "control-plane" service.
+func NewInitiateDatabaseBackupClusterNotInitializedResponseBody(res *goa.ServiceError) *InitiateDatabaseBackupClusterNotInitializedResponseBody {
+	body := &InitiateDatabaseBackupClusterNotInitializedResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewInitiateDatabaseBackupDatabaseNotModifiableResponseBody builds the HTTP
+// response body from the result of the "initiate-database-backup" endpoint of
+// the "control-plane" service.
+func NewInitiateDatabaseBackupDatabaseNotModifiableResponseBody(res *goa.ServiceError) *InitiateDatabaseBackupDatabaseNotModifiableResponseBody {
+	body := &InitiateDatabaseBackupDatabaseNotModifiableResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewInitiateDatabaseBackupNotFoundResponseBody builds the HTTP response body
+// from the result of the "initiate-database-backup" endpoint of the
+// "control-plane" service.
+func NewInitiateDatabaseBackupNotFoundResponseBody(res *goa.ServiceError) *InitiateDatabaseBackupNotFoundResponseBody {
+	body := &InitiateDatabaseBackupNotFoundResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewListDatabaseTasksClusterNotInitializedResponseBody builds the HTTP
+// response body from the result of the "list-database-tasks" endpoint of the
+// "control-plane" service.
+func NewListDatabaseTasksClusterNotInitializedResponseBody(res *goa.ServiceError) *ListDatabaseTasksClusterNotInitializedResponseBody {
+	body := &ListDatabaseTasksClusterNotInitializedResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewListDatabaseTasksNotFoundResponseBody builds the HTTP response body from
+// the result of the "list-database-tasks" endpoint of the "control-plane"
+// service.
+func NewListDatabaseTasksNotFoundResponseBody(res *goa.ServiceError) *ListDatabaseTasksNotFoundResponseBody {
+	body := &ListDatabaseTasksNotFoundResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewInspectDatabaseTaskClusterNotInitializedResponseBody builds the HTTP
+// response body from the result of the "inspect-database-task" endpoint of the
+// "control-plane" service.
+func NewInspectDatabaseTaskClusterNotInitializedResponseBody(res *goa.ServiceError) *InspectDatabaseTaskClusterNotInitializedResponseBody {
+	body := &InspectDatabaseTaskClusterNotInitializedResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewInspectDatabaseTaskNotFoundResponseBody builds the HTTP response body
+// from the result of the "inspect-database-task" endpoint of the
+// "control-plane" service.
+func NewInspectDatabaseTaskNotFoundResponseBody(res *goa.ServiceError) *InspectDatabaseTaskNotFoundResponseBody {
+	body := &InspectDatabaseTaskNotFoundResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewGetDatabaseTaskLogClusterNotInitializedResponseBody builds the HTTP
+// response body from the result of the "get-database-task-log" endpoint of the
+// "control-plane" service.
+func NewGetDatabaseTaskLogClusterNotInitializedResponseBody(res *goa.ServiceError) *GetDatabaseTaskLogClusterNotInitializedResponseBody {
+	body := &GetDatabaseTaskLogClusterNotInitializedResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewGetDatabaseTaskLogNotFoundResponseBody builds the HTTP response body from
+// the result of the "get-database-task-log" endpoint of the "control-plane"
+// service.
+func NewGetDatabaseTaskLogNotFoundResponseBody(res *goa.ServiceError) *GetDatabaseTaskLogNotFoundResponseBody {
+	body := &GetDatabaseTaskLogNotFoundResponseBody{
 		Name:      res.Name,
 		ID:        res.ID,
 		Message:   res.Message,
@@ -2055,7 +2612,70 @@ func NewUpdateDatabasePayload(body *UpdateDatabaseRequestBody, databaseID string
 // endpoint payload.
 func NewDeleteDatabasePayload(databaseID string) *controlplane.DeleteDatabasePayload {
 	v := &controlplane.DeleteDatabasePayload{}
-	v.DatabaseID = &databaseID
+	v.DatabaseID = databaseID
+
+	return v
+}
+
+// NewInitiateDatabaseBackupPayload builds a control-plane service
+// initiate-database-backup endpoint payload.
+func NewInitiateDatabaseBackupPayload(body *InitiateDatabaseBackupRequestBody, databaseID string, nodeName string) *controlplane.InitiateDatabaseBackupPayload {
+	v := &controlplane.BackupOptions{
+		Type: *body.Type,
+	}
+	if body.Annotations != nil {
+		v.Annotations = make(map[string]string, len(body.Annotations))
+		for key, val := range body.Annotations {
+			tk := key
+			tv := val
+			v.Annotations[tk] = tv
+		}
+	}
+	if body.ExtraOptions != nil {
+		v.ExtraOptions = make([]string, len(body.ExtraOptions))
+		for i, val := range body.ExtraOptions {
+			v.ExtraOptions[i] = val
+		}
+	}
+	res := &controlplane.InitiateDatabaseBackupPayload{
+		Options: v,
+	}
+	res.DatabaseID = databaseID
+	res.NodeName = nodeName
+
+	return res
+}
+
+// NewListDatabaseTasksPayload builds a control-plane service
+// list-database-tasks endpoint payload.
+func NewListDatabaseTasksPayload(databaseID string, afterTaskID *string, limit *int, sortOrder *string) *controlplane.ListDatabaseTasksPayload {
+	v := &controlplane.ListDatabaseTasksPayload{}
+	v.DatabaseID = databaseID
+	v.AfterTaskID = afterTaskID
+	v.Limit = limit
+	v.SortOrder = sortOrder
+
+	return v
+}
+
+// NewInspectDatabaseTaskPayload builds a control-plane service
+// inspect-database-task endpoint payload.
+func NewInspectDatabaseTaskPayload(databaseID string, taskID string) *controlplane.InspectDatabaseTaskPayload {
+	v := &controlplane.InspectDatabaseTaskPayload{}
+	v.DatabaseID = databaseID
+	v.TaskID = taskID
+
+	return v
+}
+
+// NewGetDatabaseTaskLogPayload builds a control-plane service
+// get-database-task-log endpoint payload.
+func NewGetDatabaseTaskLogPayload(databaseID string, taskID string, afterLineID *string, limit *int) *controlplane.GetDatabaseTaskLogPayload {
+	v := &controlplane.GetDatabaseTaskLogPayload{}
+	v.DatabaseID = databaseID
+	v.TaskID = taskID
+	v.AfterLineID = afterLineID
+	v.Limit = limit
 
 	return v
 }
@@ -2125,6 +2745,20 @@ func ValidateUpdateDatabaseRequestBody(body *UpdateDatabaseRequestBody) (err err
 	if body.Spec != nil {
 		if err2 := ValidateDatabaseSpecRequestBodyRequestBody(body.Spec); err2 != nil {
 			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateInitiateDatabaseBackupRequestBody runs the validations defined on
+// Initiate-Database-BackupRequestBody
+func ValidateInitiateDatabaseBackupRequestBody(body *InitiateDatabaseBackupRequestBody) (err error) {
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.Type != nil {
+		if !(*body.Type == "full" || *body.Type == "diff" || *body.Type == "incr") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"full", "diff", "incr"}))
 		}
 	}
 	return

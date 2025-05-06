@@ -11,7 +11,6 @@ import (
 	"github.com/samber/do"
 	"github.com/spf13/afero"
 
-	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/resource"
@@ -29,15 +28,15 @@ func PgBackRestConfigIdentifier(instanceID uuid.UUID) resource.Identifier {
 }
 
 type PgBackRestConfig struct {
-	InstanceID   uuid.UUID                    `json:"instance_id"`
-	HostID       uuid.UUID                    `json:"host_id"`
-	DatabaseID   uuid.UUID                    `json:"database_id"`
-	NodeName     string                       `json:"node_name"`
-	Repositories []*database.BackupRepository `json:"repositories"`
-	ParentID     string                       `json:"parent_id"`
-	Name         string                       `json:"name"`
-	OwnerUID     int                          `json:"owner_uid"`
-	OwnerGID     int                          `json:"owner_gid"`
+	InstanceID   uuid.UUID                `json:"instance_id"`
+	HostID       uuid.UUID                `json:"host_id"`
+	DatabaseID   uuid.UUID                `json:"database_id"`
+	NodeName     string                   `json:"node_name"`
+	Repositories []*pgbackrest.Repository `json:"repositories"`
+	ParentID     string                   `json:"parent_id"`
+	Name         string                   `json:"name"`
+	OwnerUID     int                      `json:"owner_uid"`
+	OwnerGID     int                      `json:"owner_gid"`
 }
 
 func (c *PgBackRestConfig) ResourceVersion() string {

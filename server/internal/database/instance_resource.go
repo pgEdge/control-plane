@@ -4,13 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"slices"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/pgEdge/control-plane/server/internal/certificates"
-	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/samber/do"
@@ -72,18 +70,31 @@ func (r *InstanceResource) Dependencies() []resource.Identifier {
 }
 
 func (r *InstanceResource) Refresh(ctx context.Context, rc *resource.Context) error {
-	primaryInstanceID, err := r.getPrimaryInstanceID(ctx, rc.Injector)
+	orch, err := do.Invoke[Orchestrator](rc.Injector)
+	if err != nil {
+		return err
+	}
+
+	primaryInstanceID, err := GetPrimaryInstanceID(ctx, orch, r.Spec.DatabaseID, r.Spec.InstanceID)
 	if err != nil {
 		return resource.ErrNotFound // TODO: Is this always the right choice?
 	}
-
 	r.PrimaryInstanceID = primaryInstanceID
 
 	return nil
 }
 
 func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) error {
-	primaryInstanceID, err := r.getPrimaryInstanceID(ctx, rc.Injector)
+	orch, err := do.Invoke[Orchestrator](rc.Injector)
+	if err != nil {
+		return err
+	}
+	certs, err := do.Invoke[*certificates.Service](rc.Injector)
+	if err != nil {
+		return err
+	}
+
+	primaryInstanceID, err := GetPrimaryInstanceID(ctx, orch, r.Spec.DatabaseID, r.Spec.InstanceID)
 	if err != nil {
 		return err
 	}
@@ -94,22 +105,12 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 		return nil
 	}
 
-	orch, err := do.Invoke[Orchestrator](rc.Injector)
-	if err != nil {
-		return err
-	}
-
-	certs, err := do.Invoke[*certificates.Service](rc.Injector)
-	if err != nil {
-		return err
-	}
-
 	tlsCfg, err := certs.PostgresUserTLS(ctx, r.Spec.InstanceID, r.InstanceHostname, "pgedge")
 	if err != nil {
 		return fmt.Errorf("failed to get TLS config: %w", err)
 	}
 
-	connInfo, err := orch.GetInstanceConnectionInfo(ctx, r)
+	connInfo, err := orch.GetInstanceConnectionInfo(ctx, r.Spec.DatabaseID, r.Spec.InstanceID)
 	if err != nil {
 		return fmt.Errorf("failed to get instance DSN: %w", err)
 	}
@@ -219,46 +220,6 @@ func (r *InstanceResource) Update(ctx context.Context, rc *resource.Context) err
 
 func (r *InstanceResource) Delete(ctx context.Context, rc *resource.Context) error {
 	return nil
-}
-
-func (r *InstanceResource) getPrimaryInstanceID(ctx context.Context, i *do.Injector) (uuid.UUID, error) {
-	orch, err := do.Invoke[Orchestrator](i)
-	if err != nil {
-		return uuid.Nil, err
-	}
-
-	connInfo, err := orch.GetInstanceConnectionInfo(ctx, r)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("failed to get instance DSN: %w", err)
-	}
-	patroniURL := &url.URL{
-		Scheme: "http",
-		Host:   fmt.Sprintf("%s:8888", connInfo.AdminHost),
-	}
-	patroniClient := patroni.NewClient(patroniURL, nil)
-
-	status, err := patroniClient.GetClusterStatus(ctx)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("failed to get cluster status: %w", err)
-	}
-
-	var primaryInstanceID uuid.UUID
-	for _, m := range status.Members {
-		if !m.IsLeader() {
-			continue
-		}
-		if m.Name == nil {
-			continue
-		}
-		id, err := uuid.Parse(*m.Name)
-		if err != nil {
-			return uuid.Nil, fmt.Errorf("failed to parse instance ID from member name %q: %w", *m.Name, err)
-		}
-		primaryInstanceID = id
-		break
-	}
-
-	return primaryInstanceID, nil
 }
 
 func (r *InstanceResource) Connection(ctx context.Context, rc *resource.Context, dbName string) (*pgx.Conn, error) {

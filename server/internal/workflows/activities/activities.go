@@ -33,13 +33,16 @@ type Activities struct {
 func (a *Activities) Register(work *worker.Worker) error {
 	errs := []error{
 		work.RegisterActivity(a.ApplyEvent),
+		work.RegisterActivity(a.CreatePgBackRestBackup),
 		work.RegisterActivity(a.DeleteDbEntities),
 		work.RegisterActivity(a.GetCurrentState),
 		work.RegisterActivity(a.GetInstanceResources),
+		work.RegisterActivity(a.GetPrimaryInstance),
 		work.RegisterActivity(a.PersistState),
 		work.RegisterActivity(a.PlanRefresh),
 		work.RegisterActivity(a.Plan),
 		work.RegisterActivity(a.UpdateDbState),
+		work.RegisterActivity(a.UpdateTask),
 	}
 	return errors.Join(errs...)
 }

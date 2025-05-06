@@ -20,6 +20,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/orchestrator"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator/swarm"
 	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
@@ -65,6 +66,7 @@ func newRootCmd(i *do.Injector) *cobra.Command {
 			resource.Provide(i)
 			workflows.Provide(i)
 			activities.Provide(i)
+			task.Provide(i)
 
 			registry, err := do.Invoke[*resource.Registry](i)
 			if err != nil {

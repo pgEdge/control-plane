@@ -1,19 +1,10 @@
-# Running a local Control Plane cluster
+# Running a local Control Plane cluster in virtual machines
 
-The Control Plane server only runs properly on Linux because:
+This repository contains scripts and configurations to run a three-node Docker
+Swarm cluster with Vagrant. You can run Control Plane on any or all of these
+machines to test different configurations.
 
-- The `loop_device` storage class depends on Linux-only features
-- The Control Plane server communicates with pgEdge instances over the default
-  `bridge` network. Most Docker distributions for non-Linux platforms run
-  containers within a Virtual Machine, so this network is not exposed on the
-  host machine.
-
-In addition, some Control Plane operations can modify the host. So, this
-repository contains scripts and configurations to run a three-node Docker Swarm
-cluster with Vagrant. You can run Control Plane on any or all of these machines
-to test different configurations.
-
-- [Running a local Control Plane cluster](#running-a-local-control-plane-cluster)
+- [Running a local Control Plane cluster in virtual machines](#running-a-local-control-plane-cluster-in-virtual-machines)
   - [Apple Silicon](#apple-silicon)
     - [Prerequisites](#prerequisites)
       - [VMware Fusion Pro 13](#vmware-fusion-pro-13)
@@ -24,6 +15,7 @@ to test different configurations.
   - [Initialize the cluster](#initialize-the-cluster)
   - [Start and populate the local image registry](#start-and-populate-the-local-image-registry)
   - [Start the Control Plane server on each instance](#start-the-control-plane-server-on-each-instance)
+    - [Why do we need `sudo`?](#why-do-we-need-sudo)
   - [Interact with the Control Plane API](#interact-with-the-control-plane-api)
   - [Resetting each instance](#resetting-each-instance)
   - [Teardown](#teardown)
@@ -37,7 +29,6 @@ Fusion. I've also found that many boxes marked as arm64 are actually built on
 amd64 hosts and are therefore incompatible with Apple Silicon machines.
 
 These tools and instructions are carefully chosen based on what worked for me.
-
 
 ### Prerequisites
 
@@ -113,8 +104,18 @@ like the Control Plane API. It's not strictly required, but it is recommended.
 brew install danielgtaylor/restish/restish
 ```
 
-After installation, modify the configuration file to add entries for the local
-Control Plane instances. On MacOS, this file will be
+It's recommended to add this environment variable to your `.zshrc` as well to
+disable Restish's default retry behavior:
+
+```sh
+export RSH_RETRY=0
+```
+
+After you've added this line, you can run `exec zsh` to reload the configuration
+in your current shell session. It will automatically apply to any new sessions.
+
+After installation, modify the Restish configuration file to add entries for the
+local Control Plane instances. On MacOS, this file will be
 `~/Library/Application Support/restish/apis.json`. See
 [the configuration page](https://rest.sh/#/configuration) to find the
 configuration file location for non-MacOS systems.
@@ -122,7 +123,7 @@ configuration file location for non-MacOS systems.
 ```json
 {
   "$schema": "https://rest.sh/schemas/apis.json",
-  "control-plane-local-1": {
+  "control-plane-vm-1": {
     "base": "http://10.1.0.11:3000",
     "profiles": {
       "default": {
@@ -131,7 +132,7 @@ configuration file location for non-MacOS systems.
     },
     "tls": {}
   },
-  "control-plane-local-2": {
+  "control-plane-vm-2": {
     "base": "http://10.1.0.12:3000",
     "profiles": {
       "default": {
@@ -140,7 +141,7 @@ configuration file location for non-MacOS systems.
     },
     "tls": {}
   },
-  "control-plane-local-3": {
+  "control-plane-vm-3": {
     "base": "http://10.1.0.13:3000",
     "profiles": {
       "default": {
@@ -221,20 +222,37 @@ the Control Plane server:
 ```sh
 make ssh-1
 cd control-plane
-./control-plane run -p -c ./dev/${HOSTNAME}.json
+sudo ./control-plane run -p -c ./dev/${HOSTNAME}.json
 ```
 
 ```sh
 make ssh-2
 cd control-plane
-./control-plane run -p -c ./dev/${HOSTNAME}.json
+sudo ./control-plane run -p -c ./dev/${HOSTNAME}.json
 ```
 
 ```sh
 make ssh-3
 cd control-plane
-./control-plane run -p -c ./dev/${HOSTNAME}.json
+sudo ./control-plane run -p -c ./dev/${HOSTNAME}.json
 ```
+
+### Why do we need `sudo`?
+
+The Control Plane needs to do a few privileged operations when it's configured
+for the Docker Swarm orchestrator:
+
+- Changing the ownership of files so they can be managed by the `pgedge` user in
+  the pgEdge database containers.
+- Reading/writing files that are owned by other users so that we can update and
+  delete files after we've changed their ownership.
+
+When we run the Control Plane server with Docker, we use Linux capabilities to
+grant these privileges in a more fine-grained way.  We can do the same for the
+`control-plane` binary with `setcap` or `capsh`, but for development it's easier
+to just use `sudo`. Later on when we develop a system package and a `systemd`
+unit for the Control Plane server, we'll use the `systemd`'s capability
+functions to assign these capabilities like we do in the Docker setup.
 
 ## Interact with the Control Plane API
 

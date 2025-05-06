@@ -34,7 +34,6 @@ func NewLogger(cfg config.Config) (zerolog.Logger, error) {
 	logger := zerolog.New(out).
 		With().
 		Timestamp().
-		Caller().
 		Logger().
 		Level(level)
 

@@ -21,6 +21,7 @@ import (
 )
 
 var ErrNotFound = errors.New("not found error")
+var ErrProcessNotFound = errors.New("matching process not found")
 
 var _ common.HealthCheckable = (*Docker)(nil)
 var _ do.Shutdownable = (*Docker)(nil)
@@ -37,7 +38,7 @@ func NewDocker() (*Docker, error) {
 	return &Docker{client: cli}, nil
 }
 
-func (d *Docker) Exec(ctx context.Context, containerID string, command []string) ([]byte, error) {
+func (d *Docker) Exec(ctx context.Context, w io.Writer, containerID string, command []string) error {
 	execIDResp, err := d.client.ContainerExecCreate(ctx, containerID, container.ExecOptions{
 		AttachStdin:  true,
 		AttachStdout: true,
@@ -46,31 +47,30 @@ func (d *Docker) Exec(ctx context.Context, containerID string, command []string)
 		Cmd:          command,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create exec: %w", errTranslate(err))
+		return fmt.Errorf("failed to create exec: %w", errTranslate(err))
 	}
 	resp, err := d.client.ContainerExecAttach(ctx, execIDResp.ID, container.ExecAttachOptions{
 		Detach: false,
 		Tty:    true,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to attach to exec: %w", err)
+		return fmt.Errorf("failed to attach to exec: %w", err)
 	}
 
 	defer resp.Close()
-	output, err := io.ReadAll(resp.Reader)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read exec output: %w", err)
+	if _, err := io.Copy(w, resp.Reader); err != nil {
+		return fmt.Errorf("failed to copy exec output: %w", err)
 	}
 
 	inspResp, err := d.client.ContainerExecInspect(ctx, execIDResp.ID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to inspect exec: %w", err)
+		return fmt.Errorf("failed to inspect exec: %w", err)
 	}
 
 	if inspResp.ExitCode != 0 {
-		err = fmt.Errorf("command failed with exit code %d: %s", inspResp.ExitCode, output)
+		err = fmt.Errorf("command failed with exit code %d", inspResp.ExitCode)
 	}
-	return output, err
+	return err
 }
 
 func (d *Docker) Info(ctx context.Context) (system.Info, error) {
@@ -336,6 +336,14 @@ func (d *Docker) ContainerList(ctx context.Context, opts container.ListOptions) 
 		return nil, fmt.Errorf("failed to list containers: %w", err)
 	}
 	return containers, nil
+}
+
+func (d *Docker) ContainerInspect(ctx context.Context, containerID string) (types.ContainerJSON, error) {
+	resp, err := d.client.ContainerInspect(ctx, containerID)
+	if err != nil {
+		return types.ContainerJSON{}, fmt.Errorf("failed to inspect container: %w", errTranslate(err))
+	}
+	return resp, nil
 }
 
 func (d *Docker) GetContainerByLabels(ctx context.Context, labels map[string]string) (types.Container, error) {

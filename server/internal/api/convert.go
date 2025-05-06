@@ -11,6 +11,8 @@ import (
 	api "github.com/pgEdge/control-plane/api/gen/control_plane"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
+	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
@@ -57,57 +59,6 @@ func hostToAPI(h *host.Host) *api.Host {
 			Components: components,
 			UpdatedAt:  h.Status.UpdatedAt.Format(time.RFC3339),
 		},
-	}
-}
-
-// func instanceToApi(i *database.Instance) *api.Instance {
-// 	return &api.Instance{
-// 		ID:          i.InstanceID.String(),
-// 		HostID:      i.HostID.String(),
-// 		NodeName:    i.NodeName,
-// 		ReplicaName: utils.PointerTo(i.ReplicaName),
-// 		CreatedAt:   i.CreatedAt.Format(time.RFC3339),
-// 		UpdatedAt:   i.UpdatedAt.Format(time.RFC3339),
-// 		State:       string(i.State),
-
-// 		InstanceID: i.InstanceID,
-// 		HostID:     i.HostID,
-// 		DatabaseID: i.DatabaseID,
-// 		Role:       string(i.Role),
-// 		UpdatedAt:  i.UpdatedAt.Format(time.RFC3339),
-// 	}
-// }
-
-func instanceInterfacesToAPI(interfaces []*database.InstanceInterface) []*api.InstanceInterface {
-	apiInterfaces := make([]*api.InstanceInterface, len(interfaces))
-	for i, iface := range interfaces {
-		apiInterfaces[i] = &api.InstanceInterface{
-			NetworkType: string(iface.NetworkType),
-			NetworkID:   utils.NillablePointerTo(iface.NetworkID),
-			Hostname:    utils.NillablePointerTo(iface.Hostname),
-			Ipv4Address: utils.NillablePointerTo(iface.IPv4Address),
-			Port:        iface.Port,
-		}
-	}
-	return apiInterfaces
-}
-
-func instanceToAPI(i *database.Instance) *api.Instance {
-	return &api.Instance{
-		ID:              i.InstanceID.String(),
-		HostID:          i.HostID.String(),
-		NodeName:        i.NodeName,
-		CreatedAt:       i.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:       i.UpdatedAt.Format(time.RFC3339),
-		State:           string(i.State),
-		PatroniState:    utils.NillablePointerTo(string(i.PatroniState)),
-		Role:            utils.NillablePointerTo(string(i.Role)),
-		ReadOnly:        &i.ReadOnly,
-		PendingRestart:  &i.PendingRestart,
-		PatroniPaused:   &i.PatroniPaused,
-		Interfaces:      instanceInterfacesToAPI(i.Interfaces),
-		PostgresVersion: utils.NillablePointerTo(i.PostgresVersion),
-		SpockVersion:    utils.NillablePointerTo(i.SpockVersion),
 	}
 }
 
@@ -242,17 +193,12 @@ func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 }
 
 func databaseToAPI(d *database.Database) *api.Database {
-	instances := make([]*api.Instance, len(d.Instances))
-	for i, instance := range d.Instances {
-		instances[i] = instanceToAPI(instance)
-	}
 	return &api.Database{
 		ID:        d.DatabaseID.String(),
 		TenantID:  stringifyStringerPtr(d.TenantID),
 		CreatedAt: d.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: d.UpdatedAt.Format(time.RFC3339),
 		State:     string(d.State),
-		Instances: instances,
 		Spec:      databaseSpecToAPI(d.Spec),
 	}
 }
@@ -305,11 +251,11 @@ func apiToBackupConfig(apiConfig *api.BackupConfigSpec) (*database.BackupConfig,
 		return nil, nil
 	}
 
-	repositories := make([]*database.BackupRepository, len(apiConfig.Repositories))
+	repositories := make([]*pgbackrest.Repository, len(apiConfig.Repositories))
 	for i, apiRepo := range apiConfig.Repositories {
-		repositories[i] = &database.BackupRepository{
+		repositories[i] = &pgbackrest.Repository{
 			ID:                utils.FromPointer(apiRepo.ID),
-			Type:              database.BackupRepositoryType(apiRepo.Type),
+			Type:              pgbackrest.RepositoryType(apiRepo.Type),
 			S3Bucket:          utils.FromPointer(apiRepo.S3Bucket),
 			S3Region:          utils.FromPointer(apiRepo.S3Region),
 			S3Endpoint:        utils.FromPointer(apiRepo.S3Endpoint),
@@ -323,7 +269,7 @@ func apiToBackupConfig(apiConfig *api.BackupConfigSpec) (*database.BackupConfig,
 			AzureEndpoint:     utils.FromPointer(apiRepo.AzureEndpoint),
 			AzureKey:          utils.FromPointer(apiRepo.AzureKey),
 			RetentionFull:     utils.FromPointer(apiRepo.RetentionFull),
-			RetentionFullType: database.RetentionFullType(utils.FromPointer(apiRepo.RetentionFullType)),
+			RetentionFullType: pgbackrest.RetentionFullType(utils.FromPointer(apiRepo.RetentionFullType)),
 			BasePath:          utils.FromPointer(apiRepo.BasePath),
 			CustomOptions:     apiRepo.CustomOptions,
 		}
@@ -361,9 +307,9 @@ func apiToRestoreConfig(apiConfig *api.RestoreConfigSpec) (*database.RestoreConf
 		DatabaseID:   databaseID,
 		NodeName:     apiConfig.NodeName,
 		DatabaseName: apiConfig.DatabaseName,
-		Repository: &database.BackupRepository{
+		Repository: &pgbackrest.Repository{
 			ID:             utils.FromPointer(apiConfig.Repository.ID),
-			Type:           database.BackupRepositoryType(apiConfig.Repository.Type),
+			Type:           pgbackrest.RepositoryType(apiConfig.Repository.Type),
 			S3Bucket:       utils.FromPointer(apiConfig.Repository.S3Bucket),
 			S3Region:       utils.FromPointer(apiConfig.Repository.S3Region),
 			S3Endpoint:     utils.FromPointer(apiConfig.Repository.S3Endpoint),
@@ -448,6 +394,94 @@ func apiToDatabaseSpec(id, tID *string, apiSpec *api.DatabaseSpec) (*database.Sp
 		PostgreSQLConf:     apiSpec.PostgresqlConf,
 		RestoreConfig:      restoreConfig,
 	}, nil
+}
+
+func taskToAPI(t *task.Task) *api.Task {
+	var completedAt, err *string
+	if !t.CompletedAt.IsZero() {
+		completedAt = utils.PointerTo(t.CompletedAt.Format(time.RFC3339))
+	}
+	if t.Error != "" {
+		err = &t.Error
+	}
+	return &api.Task{
+		TaskID:      t.TaskID.String(),
+		DatabaseID:  t.DatabaseID.String(),
+		CreatedAt:   t.CreatedAt.Format(time.RFC3339),
+		CompletedAt: completedAt,
+		Type:        string(t.Type),
+		Status:      string(t.Status),
+		Error:       err,
+	}
+}
+
+func tasksToAPI(tasks []*task.Task) []*api.Task {
+	apiTasks := make([]*api.Task, len(tasks))
+	for i, t := range tasks {
+		apiTasks[i] = taskToAPI(t)
+	}
+	return apiTasks
+}
+
+func taskLogToAPI(t *task.TaskLog, status task.Status) *api.TaskLog {
+	var lastLineID *string
+	if t.LastLineID != uuid.Nil {
+		lastLineID = utils.PointerTo(t.LastLineID.String())
+	}
+	// we want to return an empty array if there are no lines
+	lines := []string{}
+	if len(t.Lines) > 0 {
+		lines = t.Lines
+	}
+	return &api.TaskLog{
+		DatabaseID: t.DatabaseID.String(),
+		TaskID:     t.TaskID.String(),
+		TaskStatus: string(status),
+		LastLineID: lastLineID,
+		Lines:      lines,
+	}
+}
+
+func taskListOptions(req *api.ListDatabaseTasksPayload) (task.TaskListOptions, error) {
+	options := task.TaskListOptions{}
+	if req.Limit != nil {
+		options.Limit = *req.Limit
+	}
+	if req.AfterTaskID != nil {
+		afterTaskID, err := uuid.Parse(*req.AfterTaskID)
+		if err != nil {
+			return task.TaskListOptions{}, fmt.Errorf("invalid after task ID %q: %w", *req.AfterTaskID, err)
+		}
+		options.AfterTaskID = afterTaskID
+	}
+	if req.SortOrder != nil {
+		switch *req.SortOrder {
+		case "asc", "ascend", "ascending":
+			options.SortOrder = task.SortAscend
+		case "desc", "descend", "descending":
+			options.SortOrder = task.SortDescend
+		default:
+			return task.TaskListOptions{}, fmt.Errorf("invalid sort order %q", *req.SortOrder)
+		}
+	}
+
+	return options, nil
+}
+
+func taskLogOptions(req *api.GetDatabaseTaskLogPayload) (task.TaskLogOptions, error) {
+	options := task.TaskLogOptions{}
+	if req.Limit != nil {
+		options.Limit = *req.Limit
+	}
+	if req.AfterLineID != nil {
+		afterLineID, err := uuid.Parse(*req.AfterLineID)
+		if err != nil {
+			return task.TaskLogOptions{}, fmt.Errorf("invalid after line ID %q: %w", *req.AfterLineID, err)
+		}
+		options.AfterLineID = afterLineID
+	}
+
+	return options, nil
 }
 
 func humanizeBytes(size uint64) string {

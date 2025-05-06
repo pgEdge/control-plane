@@ -3,6 +3,7 @@ package swarm
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/google/uuid"
 
@@ -10,16 +11,16 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 )
 
-func PostgresContainerExec(ctx context.Context, dockerClient *docker.Docker, instanceID uuid.UUID, cmd []string) ([]byte, error) {
+func PostgresContainerExec(ctx context.Context, w io.Writer, dockerClient *docker.Docker, instanceID uuid.UUID, cmd []string) error {
 	container, err := GetPostgresContainer(ctx, dockerClient, instanceID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get postgres container: %w", err)
+		return fmt.Errorf("failed to get postgres container: %w", err)
 	}
-	output, err := dockerClient.Exec(ctx, container.ID, cmd)
+	err = dockerClient.Exec(ctx, w, container.ID, cmd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to exec command in postgres container: %w", err)
+		return fmt.Errorf("failed to exec command in postgres container: %w", err)
 	}
-	return output, nil
+	return nil
 }
 
 func pgbackrestBackupCmd(command string, args ...string) pgbackrest.Cmd {

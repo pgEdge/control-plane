@@ -3,7 +3,10 @@ package database
 import (
 	"context"
 	"fmt"
+	"io"
 
+	"github.com/google/uuid"
+	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -41,6 +44,6 @@ type ConnectionInfo struct {
 
 type Orchestrator interface {
 	GenerateInstanceResources(spec *InstanceSpec) (*InstanceResources, error)
-	// ReadInstanceResource(ctx context.Context, instance *InstanceResource) (*InstanceResource, error)
-	GetInstanceConnectionInfo(ctx context.Context, instance *InstanceResource) (*ConnectionInfo, error)
+	GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID uuid.UUID) (*ConnectionInfo, error)
+	CreatePgBackRestBackup(ctx context.Context, w io.Writer, instanceID uuid.UUID, options *pgbackrest.BackupOptions) error
 }

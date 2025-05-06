@@ -141,9 +141,14 @@ func (s *Service) GetDatabase(ctx context.Context, databaseID uuid.UUID) (*Datab
 	} else if err != nil {
 		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
+	storedSpec, err := s.store.Spec.GetByKey(databaseID).Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrDatabaseNotFound
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get database spec: %w", err)
+	}
 
-	// TODO: instances aren't being stored yet, so passing nil for now.
-	return storedToDatabase(storedDb, nil), nil
+	return storedToDatabase(storedDb, storedSpec.Spec), nil
 }
 
 func (s *Service) GetDatabases(ctx context.Context) ([]*Database, error) {

@@ -6,7 +6,9 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
+	"unicode"
 )
 
 var ErrTimedOut = errors.New("operation timed out")
@@ -79,4 +81,14 @@ func RandomString(length int) (string, error) {
 		return "", err
 	}
 	return base64.URLEncoding.EncodeToString(randomBytes), nil
+}
+
+// Clean removes all non-printing characters from the given string.
+func Clean(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsGraphic(r) {
+			return r
+		}
+		return -1
+	}, s)
 }

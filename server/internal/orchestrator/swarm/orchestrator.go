@@ -3,6 +3,7 @@ package swarm
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/netip"
 	"path"
 	"path/filepath"
@@ -10,6 +11,8 @@ import (
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/swarm"
+	"github.com/google/uuid"
+
 	"github.com/pgEdge/control-plane/server/internal/common"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
@@ -17,6 +20,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
+	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -313,7 +317,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 			HostID:       spec.HostID,
 			DatabaseID:   spec.DatabaseID,
 			NodeName:     spec.NodeName,
-			Repositories: []*database.BackupRepository{spec.RestoreConfig.Repository},
+			Repositories: []*pgbackrest.Repository{spec.RestoreConfig.Repository},
 			ParentID:     configsDir.ID,
 			Name:         "pgbackrest.restore.conf",
 			OwnerUID:     o.cfg.DatabaseOwnerUID,
@@ -329,26 +333,24 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 	return resources, nil
 }
 
-func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, instance *database.InstanceResource) (*database.ConnectionInfo, error) {
-	container, err := GetPostgresContainer(ctx, o.docker, instance.Spec.InstanceID)
+func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID uuid.UUID) (*database.ConnectionInfo, error) {
+	container, err := GetPostgresContainer(ctx, o.docker, instanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get postgres container: %w", err)
 	}
-	var ipAddress string
-	for _, network := range container.NetworkSettings.Networks {
-		if network.Gateway != "" {
-			ipAddress = network.IPAddress
-			break
-		}
+	inspect, err := o.docker.ContainerInspect(ctx, container.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to inspect postgres container: %w", err)
 	}
-	if ipAddress == "" {
-		return nil, fmt.Errorf("no bridge network IP address found for postgres container %q", container.ID)
+	bridge, ok := inspect.NetworkSettings.Networks["bridge"]
+	if !ok {
+		return nil, fmt.Errorf("no bridge network found for postgres container %q", container.ID)
 	}
-
+	adminHost := bridge.IPAddress
 	return &database.ConnectionInfo{
-		AdminHost:       ipAddress,
+		AdminHost:       adminHost,
 		AdminPort:       5432,
-		PeerHost:        fmt.Sprintf("%s.%s-database", instance.InstanceHostname, instance.Spec.DatabaseID),
+		PeerHost:        fmt.Sprintf("%s.%s-database", inspect.Config.Hostname, databaseID),
 		PeerPort:        5432,
 		PeerSSLCert:     "/opt/pgedge/certificates/postgres/superuser.crt",
 		PeerSSLKey:      "/opt/pgedge/certificates/postgres/superuser.key",
@@ -366,4 +368,15 @@ func (o *Orchestrator) WorkerQueues() ([]workflow.Queue, error) {
 		queues = append(queues, workflow.Queue(o.swarmID))
 	}
 	return queues, nil
+}
+
+func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, instanceID uuid.UUID, options *pgbackrest.BackupOptions) error {
+	backupCmd := pgbackrestBackupCmd("backup", options.StringSlice()...)
+
+	err := PostgresContainerExec(ctx, w, o.docker, instanceID, backupCmd.StringSlice())
+	if err != nil {
+		return fmt.Errorf("failed to exec backup command: %w", err)
+	}
+
+	return nil
 }

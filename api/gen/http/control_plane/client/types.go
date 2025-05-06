@@ -55,6 +55,17 @@ type UpdateDatabaseRequestBody struct {
 	Spec *DatabaseSpecRequestBodyRequestBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
 }
 
+// InitiateDatabaseBackupRequestBody is the type of the "control-plane" service
+// "initiate-database-backup" endpoint HTTP request body.
+type InitiateDatabaseBackupRequestBody struct {
+	// The type of backup.
+	Type string `form:"type" json:"type" xml:"type"`
+	// Annotations for the backup.
+	Annotations map[string]string `form:"annotations,omitempty" json:"annotations,omitempty" xml:"annotations,omitempty"`
+	// Extra options for the backup.
+	ExtraOptions []string `form:"extra_options,omitempty" json:"extra_options,omitempty" xml:"extra_options,omitempty"`
+}
+
 // InitClusterResponseBody is the type of the "control-plane" service
 // "init-cluster" endpoint HTTP response body.
 type InitClusterResponseBody struct {
@@ -183,6 +194,63 @@ type UpdateDatabaseResponseBody struct {
 	Instances InstanceResponseBodyAbbreviatedCollection `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
+}
+
+// InitiateDatabaseBackupResponseBody is the type of the "control-plane"
+// service "initiate-database-backup" endpoint HTTP response body.
+type InitiateDatabaseBackupResponseBody struct {
+	// The database ID of the task.
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	// The unique ID of the task.
+	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
+	// The time when the task was created.
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// The status of the task.
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
+// ListDatabaseTasksResponseBody is the type of the "control-plane" service
+// "list-database-tasks" endpoint HTTP response body.
+type ListDatabaseTasksResponseBody []*TaskResponse
+
+// InspectDatabaseTaskResponseBody is the type of the "control-plane" service
+// "inspect-database-task" endpoint HTTP response body.
+type InspectDatabaseTaskResponseBody struct {
+	// The database ID of the task.
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	// The unique ID of the task.
+	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
+	// The time when the task was created.
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// The status of the task.
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
+// GetDatabaseTaskLogResponseBody is the type of the "control-plane" service
+// "get-database-task-log" endpoint HTTP response body.
+type GetDatabaseTaskLogResponseBody struct {
+	// The database ID of the task log.
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	// The unique ID of the task log.
+	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
+	// The status of the task.
+	TaskStatus *string `form:"task_status,omitempty" json:"task_status,omitempty" xml:"task_status,omitempty"`
+	// The ID of the last line in the task log.
+	LastLineID *string `form:"last_line_id,omitempty" json:"last_line_id,omitempty" xml:"last_line_id,omitempty"`
+	// The lines of the task log.
+	Lines []string `form:"lines,omitempty" json:"lines,omitempty" xml:"lines,omitempty"`
 }
 
 // InitClusterClusterAlreadyInitializedResponseBody is the type of the
@@ -544,6 +612,25 @@ type UpdateDatabaseClusterNotInitializedResponseBody struct {
 	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
+// UpdateDatabaseDatabaseNotModifiableResponseBody is the type of the
+// "control-plane" service "update-database" endpoint HTTP response body for
+// the "database_not_modifiable" error.
+type UpdateDatabaseDatabaseNotModifiableResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
 // UpdateDatabaseNotFoundResponseBody is the type of the "control-plane"
 // service "update-database" endpoint HTTP response body for the "not_found"
 // error.
@@ -582,10 +669,219 @@ type DeleteDatabaseClusterNotInitializedResponseBody struct {
 	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
+// DeleteDatabaseDatabaseNotModifiableResponseBody is the type of the
+// "control-plane" service "delete-database" endpoint HTTP response body for
+// the "database_not_modifiable" error.
+type DeleteDatabaseDatabaseNotModifiableResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
 // DeleteDatabaseNotFoundResponseBody is the type of the "control-plane"
 // service "delete-database" endpoint HTTP response body for the "not_found"
 // error.
 type DeleteDatabaseNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// InitiateDatabaseBackupBackupAlreadyInProgressResponseBody is the type of the
+// "control-plane" service "initiate-database-backup" endpoint HTTP response
+// body for the "backup_already_in_progress" error.
+type InitiateDatabaseBackupBackupAlreadyInProgressResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// InitiateDatabaseBackupClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "initiate-database-backup" endpoint HTTP response
+// body for the "cluster_not_initialized" error.
+type InitiateDatabaseBackupClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// InitiateDatabaseBackupDatabaseNotModifiableResponseBody is the type of the
+// "control-plane" service "initiate-database-backup" endpoint HTTP response
+// body for the "database_not_modifiable" error.
+type InitiateDatabaseBackupDatabaseNotModifiableResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// InitiateDatabaseBackupNotFoundResponseBody is the type of the
+// "control-plane" service "initiate-database-backup" endpoint HTTP response
+// body for the "not_found" error.
+type InitiateDatabaseBackupNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// ListDatabaseTasksClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "list-database-tasks" endpoint HTTP response body
+// for the "cluster_not_initialized" error.
+type ListDatabaseTasksClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// ListDatabaseTasksNotFoundResponseBody is the type of the "control-plane"
+// service "list-database-tasks" endpoint HTTP response body for the
+// "not_found" error.
+type ListDatabaseTasksNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// InspectDatabaseTaskClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "inspect-database-task" endpoint HTTP response body
+// for the "cluster_not_initialized" error.
+type InspectDatabaseTaskClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// InspectDatabaseTaskNotFoundResponseBody is the type of the "control-plane"
+// service "inspect-database-task" endpoint HTTP response body for the
+// "not_found" error.
+type InspectDatabaseTaskNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// GetDatabaseTaskLogClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "get-database-task-log" endpoint HTTP response body
+// for the "cluster_not_initialized" error.
+type GetDatabaseTaskLogClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// GetDatabaseTaskLogNotFoundResponseBody is the type of the "control-plane"
+// service "get-database-task-log" endpoint HTTP response body for the
+// "not_found" error.
+type GetDatabaseTaskLogNotFoundResponseBody struct {
 	// Name is the name of this class of errors.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -1729,6 +2025,24 @@ type RestoreRepositorySpecRequestBodyRequestBody struct {
 	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
+// TaskResponse is used to define fields on response body types.
+type TaskResponse struct {
+	// The database ID of the task.
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	// The unique ID of the task.
+	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
+	// The time when the task was created.
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// The status of the task.
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
 // NewJoinClusterRequestBody builds the HTTP request body from the payload of
 // the "join-cluster" endpoint of the "control-plane" service.
 func NewJoinClusterRequestBody(p *controlplane.ClusterJoinToken) *JoinClusterRequestBody {
@@ -1772,6 +2086,30 @@ func NewUpdateDatabaseRequestBody(p *controlplane.UpdateDatabasePayload) *Update
 	}
 	if p.Request.Spec != nil {
 		body.Spec = marshalControlplaneDatabaseSpecToDatabaseSpecRequestBodyRequestBody(p.Request.Spec)
+	}
+	return body
+}
+
+// NewInitiateDatabaseBackupRequestBody builds the HTTP request body from the
+// payload of the "initiate-database-backup" endpoint of the "control-plane"
+// service.
+func NewInitiateDatabaseBackupRequestBody(p *controlplane.InitiateDatabaseBackupPayload) *InitiateDatabaseBackupRequestBody {
+	body := &InitiateDatabaseBackupRequestBody{
+		Type: p.Options.Type,
+	}
+	if p.Options.Annotations != nil {
+		body.Annotations = make(map[string]string, len(p.Options.Annotations))
+		for key, val := range p.Options.Annotations {
+			tk := key
+			tv := val
+			body.Annotations[tk] = tv
+		}
+	}
+	if p.Options.ExtraOptions != nil {
+		body.ExtraOptions = make([]string, len(p.Options.ExtraOptions))
+		for i, val := range p.Options.ExtraOptions {
+			body.ExtraOptions[i] = val
+		}
 	}
 	return body
 }
@@ -2226,6 +2564,21 @@ func NewUpdateDatabaseClusterNotInitialized(body *UpdateDatabaseClusterNotInitia
 	return v
 }
 
+// NewUpdateDatabaseDatabaseNotModifiable builds a control-plane service
+// update-database endpoint database_not_modifiable error.
+func NewUpdateDatabaseDatabaseNotModifiable(body *UpdateDatabaseDatabaseNotModifiableResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
 // NewUpdateDatabaseNotFound builds a control-plane service update-database
 // endpoint not_found error.
 func NewUpdateDatabaseNotFound(body *UpdateDatabaseNotFoundResponseBody) *goa.ServiceError {
@@ -2256,9 +2609,234 @@ func NewDeleteDatabaseClusterNotInitialized(body *DeleteDatabaseClusterNotInitia
 	return v
 }
 
+// NewDeleteDatabaseDatabaseNotModifiable builds a control-plane service
+// delete-database endpoint database_not_modifiable error.
+func NewDeleteDatabaseDatabaseNotModifiable(body *DeleteDatabaseDatabaseNotModifiableResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
 // NewDeleteDatabaseNotFound builds a control-plane service delete-database
 // endpoint not_found error.
 func NewDeleteDatabaseNotFound(body *DeleteDatabaseNotFoundResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewInitiateDatabaseBackupTaskOK builds a "control-plane" service
+// "initiate-database-backup" endpoint result from a HTTP "OK" response.
+func NewInitiateDatabaseBackupTaskOK(body *InitiateDatabaseBackupResponseBody) *controlplane.Task {
+	v := &controlplane.Task{
+		DatabaseID:  *body.DatabaseID,
+		TaskID:      *body.TaskID,
+		CreatedAt:   *body.CreatedAt,
+		CompletedAt: body.CompletedAt,
+		Type:        *body.Type,
+		Status:      *body.Status,
+		Error:       body.Error,
+	}
+
+	return v
+}
+
+// NewInitiateDatabaseBackupBackupAlreadyInProgress builds a control-plane
+// service initiate-database-backup endpoint backup_already_in_progress error.
+func NewInitiateDatabaseBackupBackupAlreadyInProgress(body *InitiateDatabaseBackupBackupAlreadyInProgressResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewInitiateDatabaseBackupClusterNotInitialized builds a control-plane
+// service initiate-database-backup endpoint cluster_not_initialized error.
+func NewInitiateDatabaseBackupClusterNotInitialized(body *InitiateDatabaseBackupClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewInitiateDatabaseBackupDatabaseNotModifiable builds a control-plane
+// service initiate-database-backup endpoint database_not_modifiable error.
+func NewInitiateDatabaseBackupDatabaseNotModifiable(body *InitiateDatabaseBackupDatabaseNotModifiableResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewInitiateDatabaseBackupNotFound builds a control-plane service
+// initiate-database-backup endpoint not_found error.
+func NewInitiateDatabaseBackupNotFound(body *InitiateDatabaseBackupNotFoundResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewListDatabaseTasksTaskOK builds a "control-plane" service
+// "list-database-tasks" endpoint result from a HTTP "OK" response.
+func NewListDatabaseTasksTaskOK(body []*TaskResponse) []*controlplane.Task {
+	v := make([]*controlplane.Task, len(body))
+	for i, val := range body {
+		v[i] = unmarshalTaskResponseToControlplaneTask(val)
+	}
+
+	return v
+}
+
+// NewListDatabaseTasksClusterNotInitialized builds a control-plane service
+// list-database-tasks endpoint cluster_not_initialized error.
+func NewListDatabaseTasksClusterNotInitialized(body *ListDatabaseTasksClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewListDatabaseTasksNotFound builds a control-plane service
+// list-database-tasks endpoint not_found error.
+func NewListDatabaseTasksNotFound(body *ListDatabaseTasksNotFoundResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewInspectDatabaseTaskTaskOK builds a "control-plane" service
+// "inspect-database-task" endpoint result from a HTTP "OK" response.
+func NewInspectDatabaseTaskTaskOK(body *InspectDatabaseTaskResponseBody) *controlplane.Task {
+	v := &controlplane.Task{
+		DatabaseID:  *body.DatabaseID,
+		TaskID:      *body.TaskID,
+		CreatedAt:   *body.CreatedAt,
+		CompletedAt: body.CompletedAt,
+		Type:        *body.Type,
+		Status:      *body.Status,
+		Error:       body.Error,
+	}
+
+	return v
+}
+
+// NewInspectDatabaseTaskClusterNotInitialized builds a control-plane service
+// inspect-database-task endpoint cluster_not_initialized error.
+func NewInspectDatabaseTaskClusterNotInitialized(body *InspectDatabaseTaskClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewInspectDatabaseTaskNotFound builds a control-plane service
+// inspect-database-task endpoint not_found error.
+func NewInspectDatabaseTaskNotFound(body *InspectDatabaseTaskNotFoundResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewGetDatabaseTaskLogTaskLogOK builds a "control-plane" service
+// "get-database-task-log" endpoint result from a HTTP "OK" response.
+func NewGetDatabaseTaskLogTaskLogOK(body *GetDatabaseTaskLogResponseBody) *controlplane.TaskLog {
+	v := &controlplane.TaskLog{
+		DatabaseID: *body.DatabaseID,
+		TaskID:     *body.TaskID,
+		TaskStatus: *body.TaskStatus,
+		LastLineID: body.LastLineID,
+	}
+	v.Lines = make([]string, len(body.Lines))
+	for i, val := range body.Lines {
+		v.Lines[i] = val
+	}
+
+	return v
+}
+
+// NewGetDatabaseTaskLogClusterNotInitialized builds a control-plane service
+// get-database-task-log endpoint cluster_not_initialized error.
+func NewGetDatabaseTaskLogClusterNotInitialized(body *GetDatabaseTaskLogClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewGetDatabaseTaskLogNotFound builds a control-plane service
+// get-database-task-log endpoint not_found error.
+func NewGetDatabaseTaskLogNotFound(body *GetDatabaseTaskLogNotFoundResponseBody) *goa.ServiceError {
 	v := &goa.ServiceError{
 		Name:      *body.Name,
 		ID:        *body.ID,
@@ -2412,6 +2990,93 @@ func ValidateInspectHostResponseBody(body *InspectHostResponseBody) (err error) 
 			if err2 := ValidatePgEdgeVersionResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
+		}
+	}
+	return
+}
+
+// ValidateInitiateDatabaseBackupResponseBody runs the validations defined on
+// Initiate-Database-BackupResponseBody
+func ValidateInitiateDatabaseBackupResponseBody(body *InitiateDatabaseBackupResponseBody) (err error) {
+	if body.DatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	}
+	if body.TaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
+	}
+	if body.CreatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
+	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.CreatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
+	}
+	if body.CompletedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
+	}
+	if body.Status != nil {
+		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		}
+	}
+	return
+}
+
+// ValidateInspectDatabaseTaskResponseBody runs the validations defined on
+// Inspect-Database-TaskResponseBody
+func ValidateInspectDatabaseTaskResponseBody(body *InspectDatabaseTaskResponseBody) (err error) {
+	if body.DatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	}
+	if body.TaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
+	}
+	if body.CreatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
+	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.CreatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
+	}
+	if body.CompletedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
+	}
+	if body.Status != nil {
+		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		}
+	}
+	return
+}
+
+// ValidateGetDatabaseTaskLogResponseBody runs the validations defined on
+// Get-Database-Task-LogResponseBody
+func ValidateGetDatabaseTaskLogResponseBody(body *GetDatabaseTaskLogResponseBody) (err error) {
+	if body.DatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	}
+	if body.TaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
+	}
+	if body.TaskStatus == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_status", "body"))
+	}
+	if body.Lines == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("lines", "body"))
+	}
+	if body.TaskStatus != nil {
+		if !(*body.TaskStatus == "pending" || *body.TaskStatus == "running" || *body.TaskStatus == "completed" || *body.TaskStatus == "failed" || *body.TaskStatus == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.task_status", *body.TaskStatus, []any{"pending", "running", "completed", "failed", "unknown"}))
 		}
 	}
 	return
@@ -2873,6 +3538,30 @@ func ValidateUpdateDatabaseClusterNotInitializedResponseBody(body *UpdateDatabas
 	return
 }
 
+// ValidateUpdateDatabaseDatabaseNotModifiableResponseBody runs the validations
+// defined on update-database_database_not_modifiable_response_body
+func ValidateUpdateDatabaseDatabaseNotModifiableResponseBody(body *UpdateDatabaseDatabaseNotModifiableResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
 // ValidateUpdateDatabaseNotFoundResponseBody runs the validations defined on
 // update-database_not_found_response_body
 func ValidateUpdateDatabaseNotFoundResponseBody(body *UpdateDatabaseNotFoundResponseBody) (err error) {
@@ -2921,9 +3610,279 @@ func ValidateDeleteDatabaseClusterNotInitializedResponseBody(body *DeleteDatabas
 	return
 }
 
+// ValidateDeleteDatabaseDatabaseNotModifiableResponseBody runs the validations
+// defined on delete-database_database_not_modifiable_response_body
+func ValidateDeleteDatabaseDatabaseNotModifiableResponseBody(body *DeleteDatabaseDatabaseNotModifiableResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
 // ValidateDeleteDatabaseNotFoundResponseBody runs the validations defined on
 // delete-database_not_found_response_body
 func ValidateDeleteDatabaseNotFoundResponseBody(body *DeleteDatabaseNotFoundResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateInitiateDatabaseBackupBackupAlreadyInProgressResponseBody runs the
+// validations defined on
+// initiate-database-backup_backup_already_in_progress_response_body
+func ValidateInitiateDatabaseBackupBackupAlreadyInProgressResponseBody(body *InitiateDatabaseBackupBackupAlreadyInProgressResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateInitiateDatabaseBackupClusterNotInitializedResponseBody runs the
+// validations defined on
+// initiate-database-backup_cluster_not_initialized_response_body
+func ValidateInitiateDatabaseBackupClusterNotInitializedResponseBody(body *InitiateDatabaseBackupClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateInitiateDatabaseBackupDatabaseNotModifiableResponseBody runs the
+// validations defined on
+// initiate-database-backup_database_not_modifiable_response_body
+func ValidateInitiateDatabaseBackupDatabaseNotModifiableResponseBody(body *InitiateDatabaseBackupDatabaseNotModifiableResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateInitiateDatabaseBackupNotFoundResponseBody runs the validations
+// defined on initiate-database-backup_not_found_response_body
+func ValidateInitiateDatabaseBackupNotFoundResponseBody(body *InitiateDatabaseBackupNotFoundResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateListDatabaseTasksClusterNotInitializedResponseBody runs the
+// validations defined on
+// list-database-tasks_cluster_not_initialized_response_body
+func ValidateListDatabaseTasksClusterNotInitializedResponseBody(body *ListDatabaseTasksClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateListDatabaseTasksNotFoundResponseBody runs the validations defined
+// on list-database-tasks_not_found_response_body
+func ValidateListDatabaseTasksNotFoundResponseBody(body *ListDatabaseTasksNotFoundResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateInspectDatabaseTaskClusterNotInitializedResponseBody runs the
+// validations defined on
+// inspect-database-task_cluster_not_initialized_response_body
+func ValidateInspectDatabaseTaskClusterNotInitializedResponseBody(body *InspectDatabaseTaskClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateInspectDatabaseTaskNotFoundResponseBody runs the validations defined
+// on inspect-database-task_not_found_response_body
+func ValidateInspectDatabaseTaskNotFoundResponseBody(body *InspectDatabaseTaskNotFoundResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateGetDatabaseTaskLogClusterNotInitializedResponseBody runs the
+// validations defined on
+// get-database-task-log_cluster_not_initialized_response_body
+func ValidateGetDatabaseTaskLogClusterNotInitializedResponseBody(body *GetDatabaseTaskLogClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateGetDatabaseTaskLogNotFoundResponseBody runs the validations defined
+// on get-database-task-log_not_found_response_body
+func ValidateGetDatabaseTaskLogNotFoundResponseBody(body *GetDatabaseTaskLogNotFoundResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
@@ -4108,6 +5067,37 @@ func ValidateRestoreConfigSpecRequestBodyRequestBody(body *RestoreConfigSpecRequ
 func ValidateRestoreRepositorySpecRequestBodyRequestBody(body *RestoreRepositorySpecRequestBodyRequestBody) (err error) {
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure"}))
+	}
+	return
+}
+
+// ValidateTaskResponse runs the validations defined on TaskResponse
+func ValidateTaskResponse(body *TaskResponse) (err error) {
+	if body.DatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	}
+	if body.TaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
+	}
+	if body.CreatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
+	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.CreatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
+	}
+	if body.CompletedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
+	}
+	if body.Status != nil {
+		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		}
 	}
 	return
 }

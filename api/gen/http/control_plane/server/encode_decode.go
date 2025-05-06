@@ -777,6 +777,19 @@ func EncodeUpdateDatabaseError(encoder func(context.Context, http.ResponseWriter
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
+		case "database_not_modifiable":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewUpdateDatabaseDatabaseNotModifiableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
 		case "not_found":
 			var res *goa.ServiceError
 			errors.As(v, &res)
@@ -811,10 +824,15 @@ func DecodeDeleteDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 	return func(r *http.Request) (any, error) {
 		var (
 			databaseID string
+			err        error
 
 			params = mux.Vars(r)
 		)
 		databaseID = params["database_id"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("database_id", databaseID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
 		payload := NewDeleteDatabasePayload(databaseID)
 
 		return payload, nil
@@ -844,6 +862,19 @@ func EncodeDeleteDatabaseError(encoder func(context.Context, http.ResponseWriter
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
+		case "database_not_modifiable":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewDeleteDatabaseDatabaseNotModifiableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
 		case "not_found":
 			var res *goa.ServiceError
 			errors.As(v, &res)
@@ -853,6 +884,411 @@ func EncodeDeleteDatabaseError(encoder func(context.Context, http.ResponseWriter
 				body = formatter(ctx, res)
 			} else {
 				body = NewDeleteDatabaseNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeInitiateDatabaseBackupResponse returns an encoder for responses
+// returned by the control-plane initiate-database-backup endpoint.
+func EncodeInitiateDatabaseBackupResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.Task)
+		enc := encoder(ctx, w)
+		body := NewInitiateDatabaseBackupResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeInitiateDatabaseBackupRequest returns a decoder for requests sent to
+// the control-plane initiate-database-backup endpoint.
+func DecodeInitiateDatabaseBackupRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			body InitiateDatabaseBackupRequestBody
+			err  error
+		)
+		err = decoder(r).Decode(&body)
+		if err != nil {
+			if err == io.EOF {
+				return nil, goa.MissingPayloadError()
+			}
+			var gerr *goa.ServiceError
+			if errors.As(err, &gerr) {
+				return nil, gerr
+			}
+			return nil, goa.DecodePayloadError(err.Error())
+		}
+		err = ValidateInitiateDatabaseBackupRequestBody(&body)
+		if err != nil {
+			return nil, err
+		}
+
+		var (
+			databaseID string
+			nodeName   string
+
+			params = mux.Vars(r)
+		)
+		databaseID = params["database_id"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("database_id", databaseID, goa.FormatUUID))
+		nodeName = params["node_name"]
+		if err != nil {
+			return nil, err
+		}
+		payload := NewInitiateDatabaseBackupPayload(&body, databaseID, nodeName)
+
+		return payload, nil
+	}
+}
+
+// EncodeInitiateDatabaseBackupError returns an encoder for errors returned by
+// the initiate-database-backup control-plane endpoint.
+func EncodeInitiateDatabaseBackupError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "backup_already_in_progress":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewInitiateDatabaseBackupBackupAlreadyInProgressResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "cluster_not_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewInitiateDatabaseBackupClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "database_not_modifiable":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewInitiateDatabaseBackupDatabaseNotModifiableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "not_found":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewInitiateDatabaseBackupNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeListDatabaseTasksResponse returns an encoder for responses returned by
+// the control-plane list-database-tasks endpoint.
+func EncodeListDatabaseTasksResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.([]*controlplane.Task)
+		enc := encoder(ctx, w)
+		body := NewListDatabaseTasksResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeListDatabaseTasksRequest returns a decoder for requests sent to the
+// control-plane list-database-tasks endpoint.
+func DecodeListDatabaseTasksRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			databaseID  string
+			afterTaskID *string
+			limit       *int
+			sortOrder   *string
+			err         error
+
+			params = mux.Vars(r)
+		)
+		databaseID = params["database_id"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("database_id", databaseID, goa.FormatUUID))
+		qp := r.URL.Query()
+		afterTaskIDRaw := qp.Get("after_task_id")
+		if afterTaskIDRaw != "" {
+			afterTaskID = &afterTaskIDRaw
+		}
+		if afterTaskID != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("after_task_id", *afterTaskID, goa.FormatUUID))
+		}
+		{
+			limitRaw := qp.Get("limit")
+			if limitRaw != "" {
+				v, err2 := strconv.ParseInt(limitRaw, 10, strconv.IntSize)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("limit", limitRaw, "integer"))
+				}
+				pv := int(v)
+				limit = &pv
+			}
+		}
+		sortOrderRaw := qp.Get("sort_order")
+		if sortOrderRaw != "" {
+			sortOrder = &sortOrderRaw
+		}
+		if sortOrder != nil {
+			if !(*sortOrder == "asc" || *sortOrder == "ascend" || *sortOrder == "ascending" || *sortOrder == "desc" || *sortOrder == "descend" || *sortOrder == "descending") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("sort_order", *sortOrder, []any{"asc", "ascend", "ascending", "desc", "descend", "descending"}))
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewListDatabaseTasksPayload(databaseID, afterTaskID, limit, sortOrder)
+
+		return payload, nil
+	}
+}
+
+// EncodeListDatabaseTasksError returns an encoder for errors returned by the
+// list-database-tasks control-plane endpoint.
+func EncodeListDatabaseTasksError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListDatabaseTasksClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "not_found":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListDatabaseTasksNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeInspectDatabaseTaskResponse returns an encoder for responses returned
+// by the control-plane inspect-database-task endpoint.
+func EncodeInspectDatabaseTaskResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.Task)
+		enc := encoder(ctx, w)
+		body := NewInspectDatabaseTaskResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeInspectDatabaseTaskRequest returns a decoder for requests sent to the
+// control-plane inspect-database-task endpoint.
+func DecodeInspectDatabaseTaskRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			databaseID string
+			taskID     string
+			err        error
+
+			params = mux.Vars(r)
+		)
+		databaseID = params["database_id"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("database_id", databaseID, goa.FormatUUID))
+		taskID = params["task_id"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("task_id", taskID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+		payload := NewInspectDatabaseTaskPayload(databaseID, taskID)
+
+		return payload, nil
+	}
+}
+
+// EncodeInspectDatabaseTaskError returns an encoder for errors returned by the
+// inspect-database-task control-plane endpoint.
+func EncodeInspectDatabaseTaskError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewInspectDatabaseTaskClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "not_found":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewInspectDatabaseTaskNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeGetDatabaseTaskLogResponse returns an encoder for responses returned
+// by the control-plane get-database-task-log endpoint.
+func EncodeGetDatabaseTaskLogResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.TaskLog)
+		enc := encoder(ctx, w)
+		body := NewGetDatabaseTaskLogResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeGetDatabaseTaskLogRequest returns a decoder for requests sent to the
+// control-plane get-database-task-log endpoint.
+func DecodeGetDatabaseTaskLogRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			databaseID  string
+			taskID      string
+			afterLineID *string
+			limit       *int
+			err         error
+
+			params = mux.Vars(r)
+		)
+		databaseID = params["database_id"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("database_id", databaseID, goa.FormatUUID))
+		taskID = params["task_id"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("task_id", taskID, goa.FormatUUID))
+		qp := r.URL.Query()
+		afterLineIDRaw := qp.Get("after_line_id")
+		if afterLineIDRaw != "" {
+			afterLineID = &afterLineIDRaw
+		}
+		if afterLineID != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("after_line_id", *afterLineID, goa.FormatUUID))
+		}
+		{
+			limitRaw := qp.Get("limit")
+			if limitRaw != "" {
+				v, err2 := strconv.ParseInt(limitRaw, 10, strconv.IntSize)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("limit", limitRaw, "integer"))
+				}
+				pv := int(v)
+				limit = &pv
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewGetDatabaseTaskLogPayload(databaseID, taskID, afterLineID, limit)
+
+		return payload, nil
+	}
+}
+
+// EncodeGetDatabaseTaskLogError returns an encoder for errors returned by the
+// get-database-task-log control-plane endpoint.
+func EncodeGetDatabaseTaskLogError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetDatabaseTaskLogClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "not_found":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetDatabaseTaskLogNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1902,6 +2338,22 @@ func unmarshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRe
 			tv := val
 			res.CustomOptions[tk] = tv
 		}
+	}
+
+	return res
+}
+
+// marshalControlplaneTaskToTaskResponse builds a value of type *TaskResponse
+// from a value of type *controlplane.Task.
+func marshalControlplaneTaskToTaskResponse(v *controlplane.Task) *TaskResponse {
+	res := &TaskResponse{
+		DatabaseID:  v.DatabaseID,
+		TaskID:      v.TaskID,
+		CreatedAt:   v.CreatedAt,
+		CompletedAt: v.CompletedAt,
+		Type:        v.Type,
+		Status:      v.Status,
+		Error:       v.Error,
 	}
 
 	return res
