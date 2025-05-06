@@ -217,19 +217,15 @@ func generatePatroniConfig(
 		"ssl_cert_file":            "/opt/pgedge/certificates/postgres/server.crt",
 		"ssl_key_file":             "/opt/pgedge/certificates/postgres/server.key",
 	})
-	// if spec.UsesPgBackRest() {
-	// 	maps.Copy(parameters, map[string]any{
-	// 		// It's safe to set this to "on" on every node
-	// 		"archive_mode": "on",
-	// 		"archive_command": pgbackrest.Cmd{
-	// 			PgBackrestCmd: "/usr/bin/pgbackrest",
-	// 			Config:        "/opt/pgedge/configs/pgbackrest.backup.conf",
-	// 			Stanza:        "db",
-	// 			Command:       "archive-push",
-	// 			Args:          []string{`"%p"`},
-	// 		}.String(),
-	// 	})
-	// }
+	if spec.UsesPgBackRest() {
+		maps.Copy(parameters, map[string]any{
+			// It's safe to set this to "on" on every instance in the node
+			// because "on" (as opposed to "always") will only archive from the
+			// primary instance.
+			"archive_mode":    "on",
+			"archive_command": pgbackrestBackupCmd("archive-push", `"%p"`).String(),
+		})
+	}
 	snowflakeLolorGUCs, err := postgres.SnowflakeLolorGUCs(spec.NodeOrdinal)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate snowflake/lolor GUCs: %w", err)

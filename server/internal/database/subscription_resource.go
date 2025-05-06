@@ -55,7 +55,7 @@ func (s *SubscriptionResource) Dependencies() []resource.Identifier {
 }
 
 func (s *SubscriptionResource) Refresh(ctx context.Context, rc *resource.Context) error {
-	subscriber, err := getPrimaryInstance(ctx, rc, s.SubscriberNode)
+	subscriber, err := GetPrimaryInstance(ctx, rc, s.SubscriberNode)
 	if err != nil {
 		return fmt.Errorf("failed to get subscriber instance: %w", err)
 	}
@@ -75,11 +75,11 @@ func (s *SubscriptionResource) Refresh(ctx context.Context, rc *resource.Context
 }
 
 func (s *SubscriptionResource) Create(ctx context.Context, rc *resource.Context) error {
-	subscriber, err := getPrimaryInstance(ctx, rc, s.SubscriberNode)
+	subscriber, err := GetPrimaryInstance(ctx, rc, s.SubscriberNode)
 	if err != nil {
 		return fmt.Errorf("failed to get subscriber instance: %w", err)
 	}
-	provider, err := getPrimaryInstance(ctx, rc, s.ProviderNode)
+	provider, err := GetPrimaryInstance(ctx, rc, s.ProviderNode)
 	if err != nil {
 		return fmt.Errorf("failed to get provider instance: %w", err)
 	}
@@ -116,7 +116,7 @@ func (s *SubscriptionResource) Update(ctx context.Context, rc *resource.Context)
 }
 
 func (s *SubscriptionResource) Delete(ctx context.Context, rc *resource.Context) error {
-	subscriber, err := getPrimaryInstance(ctx, rc, s.SubscriberNode)
+	subscriber, err := GetPrimaryInstance(ctx, rc, s.SubscriberNode)
 	if err != nil {
 		return fmt.Errorf("failed to get subscriber instance: %w", err)
 	}
@@ -132,7 +132,7 @@ func (s *SubscriptionResource) Delete(ctx context.Context, rc *resource.Context)
 	return nil
 }
 
-func getPrimaryInstance(ctx context.Context, rc *resource.Context, nodeName string) (*InstanceResource, error) {
+func GetPrimaryInstance(ctx context.Context, rc *resource.Context, nodeName string) (*InstanceResource, error) {
 	node, err := resource.FromContext[*NodeResource](rc, NodeResourceIdentifier(nodeName))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node %q: %w", nodeName, err)
