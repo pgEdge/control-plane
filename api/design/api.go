@@ -245,10 +245,12 @@ var _ = g.Service("control-plane", func() {
 		g.Error("cluster_not_initialized")
 		g.Error("not_found")
 		g.Error("database_not_modifiable")
+		g.Error("backup_already_in_progress")
 
 		g.HTTP(func() {
 			g.POST("/databases/{database_id}/nodes/{node_name}/backups")
 			g.Body("options")
+			g.Response("backup_already_in_progress", http.StatusConflict)
 		})
 	})
 

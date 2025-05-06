@@ -239,6 +239,7 @@ func (c *Client) DeleteDatabase(ctx context.Context, p *DeleteDatabasePayload) (
 //   - "cluster_not_initialized" (type *goa.ServiceError)
 //   - "not_found" (type *goa.ServiceError)
 //   - "database_not_modifiable" (type *goa.ServiceError)
+//   - "backup_already_in_progress" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) InitiateDatabaseBackup(ctx context.Context, p *InitiateDatabaseBackupPayload) (res *Task, err error) {
 	var ires any

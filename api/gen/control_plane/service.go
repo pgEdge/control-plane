@@ -654,6 +654,11 @@ func MakeDatabaseNotModifiable(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "database_not_modifiable", false, false, false)
 }
 
+// MakeBackupAlreadyInProgress builds a goa.ServiceError from an error.
+func MakeBackupAlreadyInProgress(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "backup_already_in_progress", false, false, false)
+}
+
 // NewDatabaseCollection initializes result type DatabaseCollection from viewed
 // result type DatabaseCollection.
 func NewDatabaseCollection(vres controlplaneviews.DatabaseCollection) DatabaseCollection {

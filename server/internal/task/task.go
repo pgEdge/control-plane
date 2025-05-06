@@ -58,6 +58,23 @@ func NewTask(databaseID uuid.UUID, taskType Type) (*Task, error) {
 	}, nil
 }
 
+func (t *Task) SetFailed(err error) {
+	t.CompletedAt = time.Now()
+	t.Error = err.Error()
+	t.Status = StatusFailed
+}
+
+func (t *Task) SetCompleted() {
+	t.CompletedAt = time.Now()
+	t.Status = StatusCompleted
+}
+
+func (t *Task) SetRunning(workflowInstanceID, workflowExecutionID string) {
+	t.WorkflowInstanceID = workflowInstanceID
+	t.WorkflowExecutionID = workflowExecutionID
+	t.Status = StatusRunning
+}
+
 type TaskLog struct {
 	DatabaseID uuid.UUID `json:"database_id"`
 	TaskID     uuid.UUID `json:"id"`

@@ -2788,7 +2788,77 @@ paths:
                                           spock_version: "4"
                                         - postgres_version: "16"
                                           spock_version: "4"
+                                    - cohort:
+                                        cohort_id: pps1n11hqijn9rbee4cjil453
+                                        control_available: true
+                                        member_id: lah4bsznw6kc0hp7biylmmmll
+                                        type: swarm
+                                      cpus: 4
+                                      default_pgedge_version:
+                                        postgres_version: "16"
+                                        spock_version: "4"
+                                      hostname: i-0123456789abcdef.ec2.internal
+                                      id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                                      ipv4_address: 10.24.34.0
+                                      memory: 16GiB
+                                      orchestrator: swarm
+                                      status:
+                                        components:
+                                            In praesentium quis.:
+                                                details:
+                                                    alarms:
+                                                        - '3: NOSPACE'
+                                                error: failed to connect to etcd
+                                                healthy: false
+                                            Non modi totam quis et aut.:
+                                                details:
+                                                    alarms:
+                                                        - '3: NOSPACE'
+                                                error: failed to connect to etcd
+                                                healthy: false
+                                        state: available
+                                        updated_at: "2021-07-01T12:34:56Z"
+                                      supported_pgedge_versions:
+                                        - postgres_version: "16"
+                                          spock_version: "4"
+                                        - postgres_version: "16"
+                                          spock_version: "4"
                             example:
+                                - cohort:
+                                    cohort_id: pps1n11hqijn9rbee4cjil453
+                                    control_available: true
+                                    member_id: lah4bsznw6kc0hp7biylmmmll
+                                    type: swarm
+                                  cpus: 4
+                                  default_pgedge_version:
+                                    postgres_version: "16"
+                                    spock_version: "4"
+                                  hostname: i-0123456789abcdef.ec2.internal
+                                  id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                                  ipv4_address: 10.24.34.0
+                                  memory: 16GiB
+                                  orchestrator: swarm
+                                  status:
+                                    components:
+                                        In praesentium quis.:
+                                            details:
+                                                alarms:
+                                                    - '3: NOSPACE'
+                                            error: failed to connect to etcd
+                                            healthy: false
+                                        Non modi totam quis et aut.:
+                                            details:
+                                                alarms:
+                                                    - '3: NOSPACE'
+                                            error: failed to connect to etcd
+                                            healthy: false
+                                    state: available
+                                    updated_at: "2021-07-01T12:34:56Z"
+                                  supported_pgedge_versions:
+                                    - postgres_version: "16"
+                                      spock_version: "4"
+                                    - postgres_version: "16"
+                                      spock_version: "4"
                                 - cohort:
                                     cohort_id: pps1n11hqijn9rbee4cjil453
                                     control_available: true
@@ -3066,6 +3136,46 @@ components:
                           s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                           s3_region: us-east-1
                           type: s3
+                        - azure_account: pgedge-backups
+                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          azure_endpoint: blob.core.usgovcloudapi.net
+                          azure_key: YXpLZXk=
+                          base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
+                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          gcs_endpoint: localhost
+                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                          retention_full: 2
+                          retention_full_type: count
+                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          s3_endpoint: s3.us-east-1.amazonaws.com
+                          s3_key: AKIAIOSFODNN7EXAMPLE
+                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                          s3_region: us-east-1
+                          type: s3
+                        - azure_account: pgedge-backups
+                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          azure_endpoint: blob.core.usgovcloudapi.net
+                          azure_key: YXpLZXk=
+                          base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
+                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          gcs_endpoint: localhost
+                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                          retention_full: 2
+                          retention_full_type: count
+                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          s3_endpoint: s3.us-east-1.amazonaws.com
+                          s3_key: AKIAIOSFODNN7EXAMPLE
+                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                          s3_region: us-east-1
+                          type: s3
                 schedules:
                     type: array
                     items:
@@ -3084,26 +3194,6 @@ components:
             example:
                 provider: pgbackrest
                 repositories:
-                    - azure_account: pgedge-backups
-                      azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      azure_endpoint: blob.core.usgovcloudapi.net
-                      azure_key: YXpLZXk=
-                      base_path: /backups
-                      custom_options:
-                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                        storage-upload-chunk-size: 5MiB
-                      gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      gcs_endpoint: localhost
-                      gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                      id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                      retention_full: 2
-                      retention_full_type: count
-                      s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      s3_endpoint: s3.us-east-1.amazonaws.com
-                      s3_key: AKIAIOSFODNN7EXAMPLE
-                      s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                      s3_region: us-east-1
-                      type: s3
                     - azure_account: pgedge-backups
                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       azure_endpoint: blob.core.usgovcloudapi.net
@@ -3166,12 +3256,12 @@ components:
                         key: value
                     additionalProperties:
                         type: string
-                        example: Corrupti cumque totam beatae.
+                        example: Fugiat laudantium sint magnam et magni.
                 extra_options:
                     type: array
                     items:
                         type: string
-                        example: Aut adipisci perspiciatis laudantium consectetur nam molestiae.
+                        example: Aut velit magni cum qui.
                     description: Extra options for the backup.
                     example:
                         - --option1
@@ -3224,7 +3314,7 @@ components:
                         storage-upload-chunk-size: 5MiB
                     additionalProperties:
                         type: string
-                        example: Corporis dolorum fugiat laudantium sint.
+                        example: Error cumque quia quam laudantium hic in.
                 gcs_bucket:
                     type: string
                     description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -3429,6 +3519,51 @@ components:
                               spock_version: "4"
                             - postgres_version: "16"
                               spock_version: "4"
+                        - cohort:
+                            cohort_id: pps1n11hqijn9rbee4cjil453
+                            control_available: true
+                            member_id: lah4bsznw6kc0hp7biylmmmll
+                            type: swarm
+                          cpus: 4
+                          default_pgedge_version:
+                            postgres_version: "16"
+                            spock_version: "4"
+                          hostname: i-0123456789abcdef.ec2.internal
+                          id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                          ipv4_address: 10.24.34.0
+                          memory: 16GiB
+                          orchestrator: swarm
+                          status:
+                            components:
+                                Dolorem veniam non.:
+                                    details:
+                                        alarms:
+                                            - '3: NOSPACE'
+                                    error: failed to connect to etcd
+                                    healthy: false
+                                Et voluptatum ex ea.:
+                                    details:
+                                        alarms:
+                                            - '3: NOSPACE'
+                                    error: failed to connect to etcd
+                                    healthy: false
+                                Nostrum repellendus sint qui qui.:
+                                    details:
+                                        alarms:
+                                            - '3: NOSPACE'
+                                    error: failed to connect to etcd
+                                    healthy: false
+                            state: available
+                            updated_at: "2021-07-01T12:34:56Z"
+                          supported_pgedge_versions:
+                            - postgres_version: "16"
+                              spock_version: "4"
+                            - postgres_version: "16"
+                              spock_version: "4"
+                            - postgres_version: "16"
+                              spock_version: "4"
+                            - postgres_version: "16"
+                              spock_version: "4"
                 id:
                     type: string
                     description: Unique identifier for the cluster.
@@ -3443,6 +3578,51 @@ components:
                     format: uuid
             example:
                 hosts:
+                    - cohort:
+                        cohort_id: pps1n11hqijn9rbee4cjil453
+                        control_available: true
+                        member_id: lah4bsznw6kc0hp7biylmmmll
+                        type: swarm
+                      cpus: 4
+                      default_pgedge_version:
+                        postgres_version: "16"
+                        spock_version: "4"
+                      hostname: i-0123456789abcdef.ec2.internal
+                      id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      ipv4_address: 10.24.34.0
+                      memory: 16GiB
+                      orchestrator: swarm
+                      status:
+                        components:
+                            Dolorem veniam non.:
+                                details:
+                                    alarms:
+                                        - '3: NOSPACE'
+                                error: failed to connect to etcd
+                                healthy: false
+                            Et voluptatum ex ea.:
+                                details:
+                                    alarms:
+                                        - '3: NOSPACE'
+                                error: failed to connect to etcd
+                                healthy: false
+                            Nostrum repellendus sint qui qui.:
+                                details:
+                                    alarms:
+                                        - '3: NOSPACE'
+                                error: failed to connect to etcd
+                                healthy: false
+                        state: available
+                        updated_at: "2021-07-01T12:34:56Z"
+                      supported_pgedge_versions:
+                        - postgres_version: "16"
+                          spock_version: "4"
+                        - postgres_version: "16"
+                          spock_version: "4"
+                        - postgres_version: "16"
+                          spock_version: "4"
+                        - postgres_version: "16"
+                          spock_version: "4"
                     - cohort:
                         cohort_id: pps1n11hqijn9rbee4cjil453
                         control_available: true
@@ -3733,7 +3913,7 @@ components:
                 state:
                     type: string
                     description: Current state of the database.
-                    example: available
+                    example: unknown
                     enum:
                         - creating
                         - modifying
@@ -5037,6 +5217,8 @@ components:
                     description: The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary and the others will be read replicas.
                     example:
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                     minItems: 1
                 memory:
                     type: string
@@ -5131,6 +5313,7 @@ components:
                 host_ids:
                     - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                     - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                    - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                 memory: 500M
                 name: n1
                 port: 5432
@@ -5172,7 +5355,7 @@ components:
                 state:
                     type: string
                     description: Current state of the database.
-                    example: modifying
+                    example: deleting
                     enum:
                         - creating
                         - modifying
@@ -5207,7 +5390,7 @@ components:
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                       node_name: n1
                       state: modifying
-                state: degraded
+                state: unknown
                 tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                 updated_at: "2025-01-01T02:30:00Z"
             required:
@@ -5221,6 +5404,24 @@ components:
                 $ref: '#/components/schemas/DatabaseResponseAbbreviated'
             description: List-DatabasesResponseBody is the result type for an array of DatabaseResponse (abbreviated view)
             example:
+                - created_at: "2025-01-01T01:30:00Z"
+                  id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+                  instances:
+                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                      node_name: n1
+                      state: modifying
+                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                      node_name: n1
+                      state: modifying
+                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                      node_name: n1
+                      state: modifying
+                  state: unknown
+                  tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
+                  updated_at: "2025-01-01T02:30:00Z"
                 - created_at: "2025-01-01T01:30:00Z"
                   id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                   instances:
@@ -5294,15 +5495,6 @@ components:
                           roles:
                             - pgedge_superuser
                           username: admin
-                        - attributes:
-                            - LOGIN
-                            - CREATEDB
-                            - CREATEROLE
-                          db_owner: true
-                          password: secret
-                          roles:
-                            - pgedge_superuser
-                          username: admin
                 deletion_protection:
                     type: boolean
                     description: Prevents deletion when true.
@@ -5314,7 +5506,7 @@ components:
                         some_feature: enabled
                     additionalProperties:
                         type: string
-                        example: Maiores quia necessitatibus ut.
+                        example: Totam ut ut quisquam.
                 memory:
                     type: string
                     description: The amount of memory in SI or IEC notation to allocate for the database and to use for tuning Postgres. Defaults to the total available memory on the host. Whether this limit will be enforced depends on the orchestrator.
@@ -5571,20 +5763,75 @@ components:
                       roles:
                         - pgedge_superuser
                       username: admin
-                    - attributes:
-                        - LOGIN
-                        - CREATEDB
-                        - CREATEROLE
-                      db_owner: true
-                      password: secret
-                      roles:
-                        - pgedge_superuser
-                      username: admin
                 deletion_protection: true
                 features:
                     some_feature: enabled
                 memory: 500M
                 nodes:
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                      cpus: 500m
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      storage_class: loop_device
+                      storage_size: 500GiB
                     - backup_config:
                         provider: pgbackrest
                         repositories:
@@ -5753,7 +6000,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Consequatur molestiae officiis.
+                        example: Distinctio maiores quia necessitatibus ut ad corporis.
                     description: The attributes to assign to this database user.
                     example:
                         - LOGIN
@@ -5771,7 +6018,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Accusantium et.
+                        example: Expedita autem et quo.
                     description: The roles to assign to this database user.
                     example:
                         - pgedge_superuser
@@ -5784,7 +6031,7 @@ components:
                     - LOGIN
                     - CREATEDB
                     - CREATEROLE
-                db_owner: false
+                db_owner: true
                 password: secret
                 roles:
                     - pgedge_superuser
@@ -5798,7 +6045,7 @@ components:
                 fault:
                     type: boolean
                     description: Is the error a server-side fault?
-                    example: true
+                    example: false
                 id:
                     type: string
                     description: ID is a unique identifier for this particular occurrence of the problem.
@@ -5875,6 +6122,8 @@ components:
                         $ref: '#/components/schemas/PgEdgeVersion'
                     description: The PgEdge versions supported by this host.
                     example:
+                        - postgres_version: "16"
+                          spock_version: "4"
                         - postgres_version: "16"
                           spock_version: "4"
                         - postgres_version: "16"
@@ -5967,7 +6216,7 @@ components:
                     type: object
                     description: The status of each component of the host.
                     example:
-                        Autem et quo rem maiores error.:
+                        Necessitatibus porro repudiandae pariatur eligendi.:
                             details:
                                 alarms:
                                     - '3: NOSPACE'
@@ -5990,13 +6239,19 @@ components:
                     format: date-time
             example:
                 components:
-                    Iste sit et tempora occaecati ut.:
+                    Aliquam dolor rem nihil qui nobis velit.:
                         details:
                             alarms:
                                 - '3: NOSPACE'
                         error: failed to connect to etcd
                         healthy: false
-                    Quam laudantium hic in accusantium sint.:
+                    Non ab suscipit quos dolorem tempore.:
+                        details:
+                            alarms:
+                                - '3: NOSPACE'
+                        error: failed to connect to etcd
+                        healthy: false
+                    Qui ratione.:
                         details:
                             alarms:
                                 - '3: NOSPACE'
@@ -6014,7 +6269,7 @@ components:
                 created_at:
                     type: string
                     description: The time that the instance was created.
-                    example: "1986-03-20T05:08:26Z"
+                    example: "2007-07-21T10:25:45Z"
                     format: date-time
                 host_id:
                     type: string
@@ -6042,6 +6297,11 @@ components:
                           network_id: l5imrq28sh6s
                           network_type: docker
                           port: 5432
+                        - hostname: postgres-n1
+                          ipv4_address: 10.1.0.113
+                          network_id: l5imrq28sh6s
+                          network_type: docker
+                          port: 5432
                 node_name:
                     type: string
                     description: The Spock node name for this instance.
@@ -6052,7 +6312,7 @@ components:
                     example: true
                 patroni_state:
                     type: string
-                    example: initializing new cluster
+                    example: initdb failed
                     enum:
                         - stopping
                         - stopped
@@ -6072,7 +6332,7 @@ components:
                 pending_restart:
                     type: boolean
                     description: True if this instance is pending to be restarted from a configuration change.
-                    example: false
+                    example: true
                 postgres_version:
                     type: string
                     description: The version of Postgres for this instance.
@@ -6093,7 +6353,7 @@ components:
                     example: 4.0.9
                 state:
                     type: string
-                    example: backing_up
+                    example: modifying
                     enum:
                         - creating
                         - modifying
@@ -6106,10 +6366,10 @@ components:
                 updated_at:
                     type: string
                     description: The time that the instance was last updated.
-                    example: "1992-12-10T14:46:33Z"
+                    example: "1989-12-21T21:42:19Z"
                     format: date-time
             example:
-                created_at: "1985-10-05T20:48:28Z"
+                created_at: "1984-09-05T14:17:57Z"
                 host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                 id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                 interfaces:
@@ -6125,14 +6385,14 @@ components:
                       port: 5432
                 node_name: n1
                 patroni_paused: false
-                patroni_state: stop failed
+                patroni_state: stopping
                 pending_restart: false
                 postgres_version: "17.1"
-                read_only: true
-                role: replica
+                read_only: false
+                role: primary
                 spock_version: 4.0.9
-                state: degraded
-                updated_at: "1997-10-19T11:35:56Z"
+                state: restoring
+                updated_at: "2010-09-13T06:29:43Z"
             required:
                 - id
                 - host_id
@@ -6145,35 +6405,6 @@ components:
             items:
                 $ref: '#/components/schemas/Instance'
             example:
-                - created_at: "2008-04-05T03:29:38Z"
-                  host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  interfaces:
-                    - hostname: postgres-n1
-                      ipv4_address: 10.1.0.113
-                      network_id: l5imrq28sh6s
-                      network_type: docker
-                      port: 5432
-                    - hostname: postgres-n1
-                      ipv4_address: 10.1.0.113
-                      network_id: l5imrq28sh6s
-                      network_type: docker
-                      port: 5432
-                    - hostname: postgres-n1
-                      ipv4_address: 10.1.0.113
-                      network_id: l5imrq28sh6s
-                      network_type: docker
-                      port: 5432
-                  node_name: n1
-                  patroni_paused: true
-                  patroni_state: unknown
-                  pending_restart: true
-                  postgres_version: "17.1"
-                  read_only: true
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  updated_at: "2003-08-09T22:13:38Z"
                 - created_at: "2008-04-05T03:29:38Z"
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
@@ -6288,7 +6519,7 @@ components:
                     example: n1
                 state:
                     type: string
-                    example: unknown
+                    example: degraded
                     enum:
                         - creating
                         - modifying
@@ -6303,7 +6534,7 @@ components:
                 host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                 id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                 node_name: n1
-                state: backing_up
+                state: creating
             required:
                 - id
                 - host_id
@@ -6315,14 +6546,6 @@ components:
                 $ref: '#/components/schemas/InstanceResponseAbbreviated'
             description: InstanceCollectionResponse is the result type for an array of InstanceResponse (abbreviated view)
             example:
-                - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  node_name: n1
-                  state: modifying
-                - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  node_name: n1
-                  state: modifying
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
@@ -6431,7 +6654,7 @@ components:
                         s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
                     additionalProperties:
                         type: string
-                        example: Cum qui molestias nisi.
+                        example: Occaecati ut molestiae ut.
                 gcs_bucket:
                     type: string
                     description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -6564,7 +6787,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Totam ut ut quisquam.
+                        example: Voluptas enim maiores sint voluptatibus earum.
                     description: The lines of the task log.
                     example:
                         - Task started

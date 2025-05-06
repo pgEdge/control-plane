@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/cschleiden/go-workflows/backend"
 	"github.com/cschleiden/go-workflows/client"
 	"github.com/cschleiden/go-workflows/core"
 	"github.com/google/uuid"
@@ -292,7 +293,15 @@ func (s *Service) InitiateDatabaseBackup(ctx context.Context, req *api.InitiateD
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create workflow instance: %w", err)
+		if errors.Is(err, backend.ErrInstanceAlreadyExists) {
+			err = api.MakeBackupAlreadyInProgress(fmt.Errorf("a backup is already in progress for node %s", node.Name))
+		} else {
+			err = fmt.Errorf("failed to create workflow instance: %w", err)
+		}
+		if tErr := s.taskSvc.DeleteTask(ctx, db.DatabaseID, t.TaskID); tErr != nil {
+			s.logger.Error().Err(tErr).Msg("failed to clean up task after workflow creation failure")
+		}
+		return nil, err
 	}
 
 	return taskToAPI(t), nil

@@ -1293,6 +1293,7 @@ func EncodeInitiateDatabaseBackupRequest(encoder func(*http.Request) goahttp.Enc
 // returned by the control-plane initiate-database-backup endpoint. restoreBody
 // controls whether the response body should be restored after having been read.
 // DecodeInitiateDatabaseBackupResponse may return the following errors:
+//   - "backup_already_in_progress" (type *goa.ServiceError): http.StatusConflict
 //   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
 //   - "database_not_modifiable" (type *goa.ServiceError): http.StatusConflict
 //   - "not_found" (type *goa.ServiceError): http.StatusNotFound
@@ -1330,6 +1331,20 @@ func DecodeInitiateDatabaseBackupResponse(decoder func(*http.Response) goahttp.D
 		case http.StatusConflict:
 			en := resp.Header.Get("goa-error")
 			switch en {
+			case "backup_already_in_progress":
+				var (
+					body InitiateDatabaseBackupBackupAlreadyInProgressResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "initiate-database-backup", err)
+				}
+				err = ValidateInitiateDatabaseBackupBackupAlreadyInProgressResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "initiate-database-backup", err)
+				}
+				return nil, NewInitiateDatabaseBackupBackupAlreadyInProgress(&body)
 			case "cluster_not_initialized":
 				var (
 					body InitiateDatabaseBackupClusterNotInitializedResponseBody

@@ -588,6 +588,46 @@ definitions:
                       s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                       s3_region: us-east-1
                       type: s3
+                    - azure_account: pgedge-backups
+                      azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                      azure_endpoint: blob.core.usgovcloudapi.net
+                      azure_key: YXpLZXk=
+                      base_path: /backups
+                      custom_options:
+                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                        storage-upload-chunk-size: 5MiB
+                      gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                      gcs_endpoint: localhost
+                      gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                      id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                      retention_full: 2
+                      retention_full_type: count
+                      s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                      s3_endpoint: s3.us-east-1.amazonaws.com
+                      s3_key: AKIAIOSFODNN7EXAMPLE
+                      s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                      s3_region: us-east-1
+                      type: s3
+                    - azure_account: pgedge-backups
+                      azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                      azure_endpoint: blob.core.usgovcloudapi.net
+                      azure_key: YXpLZXk=
+                      base_path: /backups
+                      custom_options:
+                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                        storage-upload-chunk-size: 5MiB
+                      gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                      gcs_endpoint: localhost
+                      gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                      id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                      retention_full: 2
+                      retention_full_type: count
+                      s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                      s3_endpoint: s3.us-east-1.amazonaws.com
+                      s3_key: AKIAIOSFODNN7EXAMPLE
+                      s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                      s3_region: us-east-1
+                      type: s3
             schedules:
                 type: array
                 items:
@@ -603,12 +643,49 @@ definitions:
                     - cron_expression: 0 6 * * ?
                       id: daily-full-backup
                       type: full
-                    - cron_expression: 0 6 * * ?
-                      id: daily-full-backup
-                      type: full
         example:
             provider: pgbackrest
             repositories:
+                - azure_account: pgedge-backups
+                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  azure_endpoint: blob.core.usgovcloudapi.net
+                  azure_key: YXpLZXk=
+                  base_path: /backups
+                  custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                    storage-upload-chunk-size: 5MiB
+                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  gcs_endpoint: localhost
+                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                  retention_full: 2
+                  retention_full_type: count
+                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  s3_endpoint: s3.us-east-1.amazonaws.com
+                  s3_key: AKIAIOSFODNN7EXAMPLE
+                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                  s3_region: us-east-1
+                  type: s3
+                - azure_account: pgedge-backups
+                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  azure_endpoint: blob.core.usgovcloudapi.net
+                  azure_key: YXpLZXk=
+                  base_path: /backups
+                  custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                    storage-upload-chunk-size: 5MiB
+                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  gcs_endpoint: localhost
+                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                  retention_full: 2
+                  retention_full_type: count
+                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  s3_endpoint: s3.us-east-1.amazonaws.com
+                  s3_key: AKIAIOSFODNN7EXAMPLE
+                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                  s3_region: us-east-1
+                  type: s3
                 - azure_account: pgedge-backups
                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                   azure_endpoint: blob.core.usgovcloudapi.net
@@ -669,12 +746,12 @@ definitions:
                     key: value
                 additionalProperties:
                     type: string
-                    example: Voluptates dignissimos odio dolorem porro dolore illo.
+                    example: Iusto repudiandae sed aut animi saepe dignissimos.
             extra_options:
                 type: array
                 items:
                     type: string
-                    example: Qui in iure eveniet est itaque qui.
+                    example: Qui mollitia esse eveniet non ut.
                 description: Extra options for the backup.
                 example:
                     - --option1
@@ -728,7 +805,7 @@ definitions:
                     storage-upload-chunk-size: 5MiB
                 additionalProperties:
                     type: string
-                    example: Dolorem sequi perferendis magni ea.
+                    example: Quo aliquid omnis eius.
             gcs_bucket:
                 type: string
                 description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -1045,6 +1122,37 @@ definitions:
                       spock_version: "4"
                     - postgres_version: "16"
                       spock_version: "4"
+                - cohort:
+                    cohort_id: pps1n11hqijn9rbee4cjil453
+                    control_available: true
+                    member_id: lah4bsznw6kc0hp7biylmmmll
+                    type: swarm
+                  cpus: 4
+                  default_pgedge_version:
+                    postgres_version: "16"
+                    spock_version: "4"
+                  hostname: i-0123456789abcdef.ec2.internal
+                  id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  ipv4_address: 10.24.34.0
+                  memory: 16GiB
+                  orchestrator: swarm
+                  status:
+                    components:
+                        Sequi enim ut libero repellendus qui nobis.:
+                            details:
+                                alarms:
+                                    - '3: NOSPACE'
+                            error: failed to connect to etcd
+                            healthy: false
+                    state: available
+                    updated_at: "2021-07-01T12:34:56Z"
+                  supported_pgedge_versions:
+                    - postgres_version: "16"
+                      spock_version: "4"
+                    - postgres_version: "16"
+                      spock_version: "4"
+                    - postgres_version: "16"
+                      spock_version: "4"
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             status:
                 state: available
@@ -1085,7 +1193,7 @@ definitions:
                     - available
                     - error
         example:
-            state: error
+            state: available
         required:
             - state
     ComponentStatus:
@@ -1123,7 +1231,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: true
+                example: false
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -1139,7 +1247,7 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: true
+                example: false
             timeout:
                 type: boolean
                 description: Is the error a timeout?
@@ -1150,7 +1258,7 @@ definitions:
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
+            temporary: true
             timeout: false
         required:
             - name
@@ -1182,19 +1290,19 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: false
+                example: true
             timeout:
                 type: boolean
                 description: Is the error a timeout?
                 example: true
         description: create-database_database_already_exists_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
-            timeout: false
+            temporary: false
+            timeout: true
         required:
             - name
             - id
@@ -1225,19 +1333,19 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: false
+                example: true
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
+                example: false
         description: create-database_invalid_input_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
-            timeout: false
+            temporary: false
+            timeout: true
         required:
             - name
             - id
@@ -3320,7 +3428,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: true
+                example: false
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -3340,15 +3448,15 @@ definitions:
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
+                example: false
         description: delete-database_cluster_not_initialized_response_body result type (default view)
         example:
             fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
-            timeout: false
+            temporary: true
+            timeout: true
         required:
             - name
             - id
@@ -3379,19 +3487,19 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: true
+                example: false
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: false
+                example: true
         description: delete-database_database_not_modifiable_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
             temporary: false
-            timeout: true
+            timeout: false
         required:
             - name
             - id
@@ -3406,7 +3514,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: true
+                example: false
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -3426,14 +3534,14 @@ definitions:
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
+                example: false
         description: delete-database_not_found_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
+            temporary: true
             timeout: false
         required:
             - name
@@ -3449,7 +3557,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: true
+                example: false
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -3476,7 +3584,7 @@ definitions:
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
+            temporary: false
             timeout: true
         required:
             - name
@@ -3492,7 +3600,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: false
+                example: true
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -3519,7 +3627,7 @@ definitions:
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
+            temporary: false
             timeout: true
         required:
             - name
@@ -3558,11 +3666,11 @@ definitions:
                 example: false
         description: get-join-token_cluster_not_initialized_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
+            temporary: false
             timeout: false
         required:
             - name
@@ -3598,14 +3706,57 @@ definitions:
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: false
+                example: true
         description: init-cluster_cluster_already_initialized_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
+            temporary: false
+            timeout: true
+        required:
+            - name
+            - id
+            - message
+            - temporary
+            - timeout
+            - fault
+    ControlPlaneInitiateDatabaseBackupBackupAlreadyInProgressResponseBody:
+        title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+        type: object
+        properties:
+            fault:
+                type: boolean
+                description: Is the error a server-side fault?
+                example: true
+            id:
+                type: string
+                description: ID is a unique identifier for this particular occurrence of the problem.
+                example: 123abc
+            message:
+                type: string
+                description: Message is a human-readable explanation specific to this occurrence of the problem.
+                example: parameter 'p' must be an integer
+            name:
+                type: string
+                description: Name is the name of this class of errors.
+                example: bad_request
+            temporary:
+                type: boolean
+                description: Is the error temporary?
+                example: true
+            timeout:
+                type: boolean
+                description: Is the error a timeout?
+                example: false
+        description: initiate-database-backup_backup_already_in_progress_response_body result type (default view)
+        example:
+            fault: false
+            id: 123abc
+            message: parameter 'p' must be an integer
+            name: bad_request
+            temporary: false
             timeout: true
         required:
             - name
@@ -3637,18 +3788,18 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: false
+                example: true
             timeout:
                 type: boolean
                 description: Is the error a timeout?
                 example: true
         description: initiate-database-backup_cluster_not_initialized_response_body result type (default view)
         example:
-            fault: false
+            fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
+            temporary: false
             timeout: false
         required:
             - name
@@ -3664,7 +3815,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: false
+                example: true
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -3687,12 +3838,12 @@ definitions:
                 example: false
         description: initiate-database-backup_database_not_modifiable_response_body result type (default view)
         example:
-            fault: false
+            fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
-            timeout: true
+            temporary: true
+            timeout: false
         required:
             - name
             - id
@@ -3707,7 +3858,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: true
+                example: false
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -3730,11 +3881,11 @@ definitions:
                 example: true
         description: initiate-database-backup_not_found_response_body result type (default view)
         example:
-            fault: false
+            fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
+            temporary: true
             timeout: false
         required:
             - name
@@ -3773,7 +3924,7 @@ definitions:
                 example: false
         description: inspect-cluster_cluster_not_initialized_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
@@ -3816,12 +3967,12 @@ definitions:
                 example: false
         description: inspect-cluster_not_found_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
-            timeout: false
+            temporary: true
+            timeout: true
         required:
             - name
             - id
@@ -3852,18 +4003,18 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: false
+                example: true
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
+                example: false
         description: inspect-database_cluster_not_initialized_response_body result type (default view)
         example:
             fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
+            temporary: false
             timeout: false
         required:
             - name
@@ -3879,7 +4030,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: false
+                example: true
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -3902,7 +4053,7 @@ definitions:
                 example: false
         description: inspect-database_not_found_response_body result type (default view)
         example:
-            fault: false
+            fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
@@ -3936,7 +4087,7 @@ definitions:
             state:
                 type: string
                 description: Current state of the database.
-                example: degraded
+                example: available
                 enum:
                     - creating
                     - modifying
@@ -4356,7 +4507,7 @@ definitions:
                 spock_version: "4"
                 storage_class: loop_device
                 storage_size: 500GiB
-            state: available
+            state: creating
             tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
             updated_at: "2025-01-01T02:30:00Z"
         required:
@@ -4371,7 +4522,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: true
+                example: false
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -4391,7 +4542,7 @@ definitions:
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
+                example: false
         description: inspect-database-task_cluster_not_initialized_response_body result type (default view)
         example:
             fault: true
@@ -4430,19 +4581,19 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: true
+                example: false
             timeout:
                 type: boolean
                 description: Is the error a timeout?
                 example: true
         description: inspect-database-task_not_found_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
-            timeout: true
+            temporary: true
+            timeout: false
         required:
             - name
             - id
@@ -4473,18 +4624,18 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: true
+                example: false
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
+                example: false
         description: inspect-host_cluster_not_initialized_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
+            temporary: false
             timeout: true
         required:
             - name
@@ -4527,8 +4678,8 @@ definitions:
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
-            timeout: true
+            temporary: false
+            timeout: false
         required:
             - name
             - id
@@ -4563,14 +4714,14 @@ definitions:
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
+                example: false
         description: join-cluster_cluster_already_initialized_response_body result type (default view)
         example:
-            fault: false
+            fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
+            temporary: true
             timeout: false
         required:
             - name
@@ -4586,7 +4737,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: true
+                example: false
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -4602,18 +4753,18 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: true
+                example: false
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: false
+                example: true
         description: list-database-tasks_cluster_not_initialized_response_body result type (default view)
         example:
             fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
+            temporary: true
             timeout: true
         required:
             - name
@@ -4629,7 +4780,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: true
+                example: false
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -4645,11 +4796,11 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: false
+                example: true
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
+                example: false
         description: list-database-tasks_not_found_response_body result type (default view)
         example:
             fault: true
@@ -4672,7 +4823,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: true
+                example: false
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -4695,7 +4846,7 @@ definitions:
                 example: true
         description: list-databases_cluster_not_initialized_response_body result type (default view)
         example:
-            fault: true
+            fault: false
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
@@ -4731,7 +4882,7 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: true
+                example: false
             timeout:
                 type: boolean
                 description: Is the error a timeout?
@@ -4742,8 +4893,8 @@ definitions:
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
-            timeout: false
+            temporary: true
+            timeout: true
         required:
             - name
             - id
@@ -4778,14 +4929,14 @@ definitions:
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: false
+                example: true
         description: remove-host_cluster_not_initialized_response_body result type (default view)
         example:
             fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
+            temporary: true
             timeout: true
         required:
             - name
@@ -4821,14 +4972,14 @@ definitions:
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: false
+                example: true
         description: remove-host_not_found_response_body result type (default view)
         example:
             fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: false
+            temporary: true
             timeout: false
         required:
             - name
@@ -4844,7 +4995,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: false
+                example: true
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -4871,8 +5022,8 @@ definitions:
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
-            timeout: false
+            temporary: false
+            timeout: true
         required:
             - name
             - id
@@ -4887,7 +5038,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: false
+                example: true
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -4903,19 +5054,19 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: true
+                example: false
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: false
+                example: true
         description: update-database_database_not_modifiable_response_body result type (default view)
         example:
             fault: true
             id: 123abc
             message: parameter 'p' must be an integer
             name: bad_request
-            temporary: true
-            timeout: false
+            temporary: false
+            timeout: true
         required:
             - name
             - id
@@ -4930,7 +5081,7 @@ definitions:
             fault:
                 type: boolean
                 description: Is the error a server-side fault?
-                example: false
+                example: true
             id:
                 type: string
                 description: ID is a unique identifier for this particular occurrence of the problem.
@@ -4946,11 +5097,11 @@ definitions:
             temporary:
                 type: boolean
                 description: Is the error temporary?
-                example: true
+                example: false
             timeout:
                 type: boolean
                 description: Is the error a timeout?
-                example: true
+                example: false
         description: update-database_not_found_response_body result type (default view)
         example:
             fault: false
@@ -4987,7 +5138,7 @@ definitions:
             state:
                 type: string
                 description: Current state of the database.
-                example: unknown
+                example: available
                 enum:
                     - creating
                     - modifying
@@ -5407,7 +5558,7 @@ definitions:
                 spock_version: "4"
                 storage_class: loop_device
                 storage_size: 500GiB
-            state: available
+            state: degraded
             tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
             updated_at: "2025-01-01T02:30:00Z"
         required:
@@ -5934,8 +6085,6 @@ definitions:
             cpus: 500m
             host_ids:
                 - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                - de3b1388-1f0c-42f1-a86c-59ab72f255ec
             memory: 500M
             name: n1
             port: 5432
@@ -5966,7 +6115,7 @@ definitions:
             state:
                 type: string
                 description: Current state of the database.
-                example: deleting
+                example: modifying
                 enum:
                     - creating
                     - modifying
@@ -6001,7 +6150,7 @@ definitions:
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
                   state: modifying
-            state: modifying
+            state: deleting
             tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
             updated_at: "2025-01-01T02:30:00Z"
         required:
@@ -6076,7 +6225,7 @@ definitions:
                     some_feature: enabled
                 additionalProperties:
                     type: string
-                    example: Est ea ratione nobis beatae.
+                    example: Est dolor blanditiis modi omnis sit.
             memory:
                 type: string
                 description: The amount of memory in SI or IEC notation to allocate for the database and to use for tuning Postgres. Defaults to the total available memory on the host. Whether this limit will be enforced depends on the orchestrator.
@@ -6335,79 +6484,29 @@ definitions:
                   roles:
                     - pgedge_superuser
                   username: admin
+                - attributes:
+                    - LOGIN
+                    - CREATEDB
+                    - CREATEROLE
+                  db_owner: true
+                  password: secret
+                  roles:
+                    - pgedge_superuser
+                  username: admin
+                - attributes:
+                    - LOGIN
+                    - CREATEDB
+                    - CREATEROLE
+                  db_owner: true
+                  password: secret
+                  roles:
+                    - pgedge_superuser
+                  username: admin
             deletion_protection: true
             features:
                 some_feature: enabled
             memory: 500M
             nodes:
-                - backup_config:
-                    provider: pgbackrest
-                    repositories:
-                        - azure_account: pgedge-backups
-                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          azure_endpoint: blob.core.usgovcloudapi.net
-                          azure_key: YXpLZXk=
-                          base_path: /backups
-                          custom_options:
-                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                            storage-upload-chunk-size: 5MiB
-                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          gcs_endpoint: localhost
-                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                          retention_full: 2
-                          retention_full_type: count
-                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          s3_endpoint: s3.us-east-1.amazonaws.com
-                          s3_key: AKIAIOSFODNN7EXAMPLE
-                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                          s3_region: us-east-1
-                          type: s3
-                        - azure_account: pgedge-backups
-                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          azure_endpoint: blob.core.usgovcloudapi.net
-                          azure_key: YXpLZXk=
-                          base_path: /backups
-                          custom_options:
-                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                            storage-upload-chunk-size: 5MiB
-                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          gcs_endpoint: localhost
-                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                          retention_full: 2
-                          retention_full_type: count
-                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          s3_endpoint: s3.us-east-1.amazonaws.com
-                          s3_key: AKIAIOSFODNN7EXAMPLE
-                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                          s3_region: us-east-1
-                          type: s3
-                    schedules:
-                        - cron_expression: 0 6 * * ?
-                          id: daily-full-backup
-                          type: full
-                        - cron_expression: 0 6 * * ?
-                          id: daily-full-backup
-                          type: full
-                        - cron_expression: 0 6 * * ?
-                          id: daily-full-backup
-                          type: full
-                        - cron_expression: 0 6 * * ?
-                          id: daily-full-backup
-                          type: full
-                  cpus: 500m
-                  host_ids:
-                    - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                    - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  memory: 500M
-                  name: n1
-                  port: 5432
-                  postgres_version: "17"
-                  postgresql_conf:
-                    max_connections: 1000
-                  storage_class: loop_device
-                  storage_size: 500GiB
                 - backup_config:
                     provider: pgbackrest
                     repositories:
@@ -6653,7 +6752,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Est modi.
+                    example: Est et.
                 description: The attributes to assign to this database user.
                 example:
                     - LOGIN
@@ -6662,7 +6761,7 @@ definitions:
             db_owner:
                 type: boolean
                 description: If true, this user will be granted database ownership.
-                example: true
+                example: false
             password:
                 type: string
                 description: The password for this database user.
@@ -6671,7 +6770,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Voluptate recusandae quisquam quo aliquid omnis.
+                    example: Sed illum ad culpa dolor.
                 description: The roles to assign to this database user.
                 example:
                     - pgedge_superuser
@@ -6684,7 +6783,7 @@ definitions:
                 - LOGIN
                 - CREATEDB
                 - CREATEROLE
-            db_owner: false
+            db_owner: true
             password: secret
             roles:
                 - pgedge_superuser
@@ -6741,8 +6840,6 @@ definitions:
                       spock_version: "4"
                     - postgres_version: "16"
                       spock_version: "4"
-                    - postgres_version: "16"
-                      spock_version: "4"
         example:
             cohort:
                 cohort_id: pps1n11hqijn9rbee4cjil453
@@ -6769,6 +6866,8 @@ definitions:
                 state: available
                 updated_at: "2021-07-01T12:34:56Z"
             supported_pgedge_versions:
+                - postgres_version: "16"
+                  spock_version: "4"
                 - postgres_version: "16"
                   spock_version: "4"
                 - postgres_version: "16"
@@ -6823,7 +6922,13 @@ definitions:
                 type: object
                 description: The status of each component of the host.
                 example:
-                    Et beatae excepturi.:
+                    Sed perferendis voluptatem in qui quibusdam.:
+                        details:
+                            alarms:
+                                - '3: NOSPACE'
+                        error: failed to connect to etcd
+                        healthy: false
+                    Ut ea occaecati et quis sit.:
                         details:
                             alarms:
                                 - '3: NOSPACE'
@@ -6846,7 +6951,13 @@ definitions:
                 format: date-time
         example:
             components:
-                Voluptatem in qui quibusdam aut.:
+                Aspernatur itaque explicabo qui quaerat corrupti eaque.:
+                    details:
+                        alarms:
+                            - '3: NOSPACE'
+                    error: failed to connect to etcd
+                    healthy: false
+                Rerum aliquam asperiores.:
                     details:
                         alarms:
                             - '3: NOSPACE'
@@ -6878,7 +6989,7 @@ definitions:
                 example: n1
             state:
                 type: string
-                example: modifying
+                example: degraded
                 enum:
                     - creating
                     - modifying
@@ -6893,7 +7004,7 @@ definitions:
             host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: backing_up
+            state: creating
         required:
             - id
             - host_id
@@ -6909,15 +7020,11 @@ definitions:
             - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
               id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
               node_name: n1
-              state: available
+              state: creating
             - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
               id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
               node_name: n1
-              state: available
-            - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              node_name: n1
-              state: available
+              state: creating
     InstanceResponseBodyAbbreviated:
         title: 'Mediatype identifier: instance; view=default'
         type: object
@@ -6938,7 +7045,7 @@ definitions:
                 example: n1
             state:
                 type: string
-                example: creating
+                example: deleting
                 enum:
                     - creating
                     - modifying
@@ -6969,19 +7076,11 @@ definitions:
             - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
               id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
               node_name: n1
-              state: available
+              state: creating
             - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
               id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
               node_name: n1
-              state: available
-            - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              node_name: n1
-              state: available
-            - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              node_name: n1
-              state: available
+              state: creating
     PgEdgeVersion:
         title: PgEdgeVersion
         type: object
@@ -7085,7 +7184,7 @@ definitions:
                     s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
                 additionalProperties:
                     type: string
-                    example: Est et.
+                    example: Omnis deleniti laborum corporis ducimus.
             gcs_bucket:
                 type: string
                 description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -7220,7 +7319,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Ut rerum.
+                    example: Molestiae unde.
                 description: The lines of the task log.
                 example:
                     - Task started

@@ -39,9 +39,7 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 	var handleError = func(err error) error {
 		logger.With("error", err).Error("failed to create pgbackrest backup")
 
-		t.CompletedAt = workflow.Now(ctx)
-		t.Error = err.Error()
-		t.Status = task.StatusFailed
+		t.SetFailed(err)
 		updateTaskInput := &activities.UpdateTaskInput{
 			Task: t,
 		}
@@ -56,9 +54,7 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 
 	wf := workflow.WorkflowInstance(ctx)
 
-	t.Status = task.StatusRunning
-	t.WorkflowExecutionID = wf.ExecutionID
-	t.WorkflowInstanceID = wf.InstanceID
+	t.SetRunning(wf.InstanceID, wf.ExecutionID)
 	updateTaskInput := &activities.UpdateTaskInput{
 		Task: t,
 	}
@@ -120,8 +116,7 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 		return nil, handleError(fmt.Errorf("failed to create pgbackrest backup: %w", err))
 	}
 
-	t.CompletedAt = workflow.Now(ctx)
-	t.Status = task.StatusCompleted
+	t.SetCompleted()
 	updateTaskInput = &activities.UpdateTaskInput{
 		Task: t,
 	}

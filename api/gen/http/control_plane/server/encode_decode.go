@@ -958,6 +958,19 @@ func EncodeInitiateDatabaseBackupError(encoder func(context.Context, http.Respon
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
+		case "backup_already_in_progress":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewInitiateDatabaseBackupBackupAlreadyInProgressResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
 		case "cluster_not_initialized":
 			var res *goa.ServiceError
 			errors.As(v, &res)
