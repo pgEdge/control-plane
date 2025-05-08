@@ -1,4 +1,4 @@
-postgresql17-server-17.4-1PGDG.rhel9
+postgresql17-server-17.5-1PGDG.rhel9
 spock_17-4.0.10-1PGDG.rhel9
 snowflake_17-2.2-1PGDG.rhel9
 lolor_17-1.2-1PGDG.rhel9

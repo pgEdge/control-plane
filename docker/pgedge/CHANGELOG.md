@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## [4.0.10-4] - 2025-05-08
+
+### Changed
+
+#### pg15 variant
+
+- Upgraded to PostgreSQL 15.13-1
+
+#### pg16 variant
+
+- Upgraded to PostgreSQL 16.9-1
+
+#### pg17 variant
+
+- Upgraded to PostgreSQL 17.5-1
+
 ## [4.0.10-3] - 2025-03-20
 
 ### Changed

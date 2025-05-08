@@ -1,4 +1,4 @@
-postgresql15-server-15.12-1PGDG.rhel9
+postgresql15-server-15.13-1PGDG.rhel9
 spock_15-4.0.10-1PGDG.rhel9
 snowflake_15-2.2-1PGDG.rhel9
 lolor_15-1.2-1PGDG.rhel9
