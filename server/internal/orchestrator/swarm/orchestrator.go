@@ -371,7 +371,7 @@ func (o *Orchestrator) WorkerQueues() ([]workflow.Queue, error) {
 }
 
 func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, instanceID uuid.UUID, options *pgbackrest.BackupOptions) error {
-	backupCmd := pgbackrestBackupCmd("backup", options.StringSlice()...)
+	backupCmd := PgBackRestBackupCmd("backup", options.StringSlice()...)
 
 	err := PostgresContainerExec(ctx, w, o.docker, instanceID, backupCmd.StringSlice())
 	if err != nil {

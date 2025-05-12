@@ -25,7 +25,7 @@ func PostgresContainerExec(ctx context.Context, w io.Writer, dockerClient *docke
 	return nil
 }
 
-func pgbackrestBackupCmd(command string, args ...string) pgbackrest.Cmd {
+func PgBackRestBackupCmd(command string, args ...string) pgbackrest.Cmd {
 	return pgbackrest.Cmd{
 		PgBackrestCmd: "/usr/bin/pgbackrest",
 		Config:        "/opt/pgedge/configs/pgbackrest.backup.conf",
@@ -43,15 +43,18 @@ var targetActionRestoreTypes = ds.NewSet(
 	"xid",
 )
 
-func pgbackrestRecoveryCmd(command string, args ...string) pgbackrest.Cmd {
+func PgBackRestRestoreCmd(command string, args ...string) pgbackrest.Cmd {
 	var hasTargetAction, needsTargetAction bool
-	for i, arg := range args {
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
 		if strings.HasPrefix(arg, "--target-action") {
 			hasTargetAction = true
+			continue // skip the next arg since it's the value of --target-action no further checks needed
 		}
 		var restoreType string
 		if arg == "--type" && i+1 < len(args) {
 			restoreType = args[i+1]
+			i++ // skip the next arg since it's the value of --type
 		} else if strings.HasPrefix(arg, "--type=") {
 			restoreType = strings.TrimPrefix(arg, "--type=")
 		} else {

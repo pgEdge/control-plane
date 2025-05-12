@@ -62,7 +62,7 @@ func (p *PgBackRestStanza) Refresh(ctx context.Context, rc *resource.Context) er
 		return fmt.Errorf("failed to get node %q: %w", p.NodeName, err)
 	}
 
-	infoCmd := pgbackrestBackupCmd("info", "--output=json").StringSlice()
+	infoCmd := PgBackRestBackupCmd("info", "--output=json").StringSlice()
 	var output bytes.Buffer
 	err = PostgresContainerExec(ctx, &output, client, node.PrimaryInstanceID, infoCmd)
 	if err != nil {
@@ -97,13 +97,13 @@ func (p *PgBackRestStanza) Create(ctx context.Context, rc *resource.Context) err
 	}
 
 	var stanzaCreateOut bytes.Buffer
-	stanzaCreateCmd := pgbackrestBackupCmd("stanza-create", "--io-timeout=10s").StringSlice()
+	stanzaCreateCmd := PgBackRestBackupCmd("stanza-create", "--io-timeout=10s").StringSlice()
 	err = PostgresContainerExec(ctx, &stanzaCreateOut, client, node.PrimaryInstanceID, stanzaCreateCmd)
 	if err != nil {
 		return fmt.Errorf("failed to exec pgbackrest stanza-create: %w, output: %s", err, stanzaCreateOut.String())
 	}
 	var checkOut bytes.Buffer
-	checkCmd := pgbackrestBackupCmd("check").StringSlice()
+	checkCmd := PgBackRestBackupCmd("check").StringSlice()
 	err = PostgresContainerExec(ctx, &checkOut, client, node.PrimaryInstanceID, checkCmd)
 	if err != nil {
 		return fmt.Errorf("failed to exec pgbackrest check: %w, output: %s", err, checkOut.String())

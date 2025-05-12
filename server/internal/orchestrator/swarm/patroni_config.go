@@ -230,7 +230,7 @@ func generatePatroniConfig(
 			// because "on" (as opposed to "always") will only archive from the
 			// primary instance.
 			"archive_mode":    "on",
-			"archive_command": pgbackrestBackupCmd("archive-push", `"%p"`).String(),
+			"archive_command": PgBackRestBackupCmd("archive-push", `"%p"`).String(),
 		})
 	}
 	snowflakeLolorGUCs, err := postgres.SnowflakeLolorGUCs(spec.NodeOrdinal)
@@ -445,7 +445,7 @@ func generatePatroniConfig(
 	if spec.RestoreConfig != nil && spec.RestoreConfig.Provider == database.BackupProviderPgBackRest {
 		cfg.Bootstrap.Method = utils.PointerTo(patroni.BootstrapMethodNameRestore)
 		cfg.Bootstrap.Restore = &patroni.BootstrapMethodConf{
-			Command:                  utils.PointerTo(pgbackrestRecoveryCmd("restore", spec.RestoreConfig.RestoreOptions...).String()),
+			Command:                  utils.PointerTo(PgBackRestRestoreCmd("restore", spec.RestoreConfig.RestoreOptions...).String()),
 			NoParams:                 utils.PointerTo(true),
 			KeepExistingRecoveryConf: utils.PointerTo(true),
 		}
