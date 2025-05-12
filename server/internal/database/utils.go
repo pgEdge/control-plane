@@ -24,16 +24,22 @@ func GetPatroniClient(ctx context.Context, orch Orchestrator, databaseID, instan
 }
 
 func WaitForPatroniRunning(ctx context.Context, orch Orchestrator, databaseID, instanceID uuid.UUID, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	patroniClient, err := GetPatroniClient(ctx, orch, databaseID, instanceID)
 	if err != nil {
 		return fmt.Errorf("failed to get patroni client: %w", err)
 	}
 
-	err = utils.WithTimeout(ctx, timeout, func(ctx context.Context) error {
-		for {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
 			status, err := patroniClient.GetInstanceStatus(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to get cluster status: %w", err)
@@ -43,57 +49,40 @@ func WaitForPatroniRunning(ctx context.Context, orch Orchestrator, databaseID, i
 			} else if status.InErrorState() {
 				return fmt.Errorf("instance is in error state: %s", utils.FromPointer(status.State))
 			}
-
-			// Retry after a short delay
-			time.Sleep(5 * time.Second)
 		}
-	})
-	if err != nil {
-		return err
 	}
-
-	return nil
 }
 
 func GetPrimaryInstanceID(ctx context.Context, orch Orchestrator, databaseID, instanceID uuid.UUID, timeout time.Duration) (uuid.UUID, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	patroniClient, err := GetPatroniClient(ctx, orch, databaseID, instanceID)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to get patroni client: %w", err)
 	}
 
-	var primaryInstanceID uuid.UUID
-	err = utils.WithTimeout(ctx, timeout, func(ctx context.Context) error {
-		for {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return uuid.Nil, ctx.Err()
+		case <-ticker.C:
 			status, err := patroniClient.GetClusterStatus(ctx)
 			if err != nil {
-				return fmt.Errorf("failed to get cluster status: %w", err)
+				return uuid.Nil, fmt.Errorf("failed to get cluster status: %w", err)
 			}
-
 			for _, m := range status.Members {
-				if !m.IsLeader() {
-					continue
+				if m.IsLeader() && m.Name != nil {
+					id, err := uuid.Parse(*m.Name)
+					if err != nil {
+						return uuid.Nil, fmt.Errorf("failed to parse instance ID from member name %q: %w", *m.Name, err)
+					}
+					return id, nil
 				}
-				if m.Name == nil {
-					continue
-				}
-				id, err := uuid.Parse(*m.Name)
-				if err != nil {
-					return fmt.Errorf("failed to parse instance ID from member name %q: %w", *m.Name, err)
-				}
-				primaryInstanceID = id
-				return nil
 			}
-
-			// Retry after a short delay
-			time.Sleep(5 * time.Second)
 		}
-	})
-	if err != nil {
-		return uuid.Nil, err
 	}
-
-	return primaryInstanceID, nil
 }
