@@ -16,13 +16,24 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
+type PgBackRestConfigType string
+
+func (t PgBackRestConfigType) String() string {
+	return string(t)
+}
+
+const (
+	PgBackRestConfigTypeBackup  PgBackRestConfigType = "backup"
+	PgBackRestConfigTypeRestore PgBackRestConfigType = "restore"
+)
+
 var _ resource.Resource = (*PgBackRestConfig)(nil)
 
 const ResourceTypePgBackRestConfig resource.Type = "swarm.pgbackrest_config"
 
-func PgBackRestConfigIdentifier(instanceID uuid.UUID) resource.Identifier {
+func PgBackRestConfigIdentifier(instanceID uuid.UUID, configType PgBackRestConfigType) resource.Identifier {
 	return resource.Identifier{
-		ID:   instanceID.String(),
+		ID:   instanceID.String() + "-" + configType.String(),
 		Type: ResourceTypePgBackRestConfig,
 	}
 }
@@ -34,7 +45,7 @@ type PgBackRestConfig struct {
 	NodeName     string                   `json:"node_name"`
 	Repositories []*pgbackrest.Repository `json:"repositories"`
 	ParentID     string                   `json:"parent_id"`
-	Name         string                   `json:"name"`
+	Type         PgBackRestConfigType     `json:"type"`
 	OwnerUID     int                      `json:"owner_uid"`
 	OwnerGID     int                      `json:"owner_gid"`
 }
@@ -55,7 +66,7 @@ func (c *PgBackRestConfig) Executor() resource.Executor {
 }
 
 func (c *PgBackRestConfig) Identifier() resource.Identifier {
-	return PgBackRestConfigIdentifier(c.InstanceID)
+	return PgBackRestConfigIdentifier(c.InstanceID, c.Type)
 }
 
 func (c *PgBackRestConfig) Dependencies() []resource.Identifier {
@@ -70,12 +81,12 @@ func (c *PgBackRestConfig) Refresh(ctx context.Context, rc *resource.Context) er
 		return err
 	}
 
-	parentFullPath, err := filesystem.DirResourceFullPath(rc, c.ParentID)
+	hostPath, err := c.HostPath(rc)
 	if err != nil {
-		return fmt.Errorf("failed to get parent full path: %w", err)
+		return err
 	}
 
-	_, err = readResourceFile(fs, filepath.Join(parentFullPath, c.Name))
+	_, err = readResourceFile(fs, hostPath)
 	if err != nil {
 		return fmt.Errorf("failed to read pgbackrest config: %w", err)
 	}
@@ -101,17 +112,16 @@ func (c *PgBackRestConfig) Create(ctx context.Context, rc *resource.Context) err
 		return fmt.Errorf("failed to generate pgBackRest backup configuration: %w", err)
 	}
 
-	parentFullPath, err := filesystem.DirResourceFullPath(rc, c.ParentID)
+	hostPath, err := c.HostPath(rc)
 	if err != nil {
-		return fmt.Errorf("failed to get parent full path: %w", err)
+		return err
 	}
 
-	configPath := filepath.Join(parentFullPath, c.Name)
-	if err := afero.WriteFile(fs, configPath, b.Bytes(), 0o600); err != nil {
-		return fmt.Errorf("failed to write %s: %w", configPath, err)
+	if err := afero.WriteFile(fs, hostPath, b.Bytes(), 0o600); err != nil {
+		return fmt.Errorf("failed to write %s: %w", hostPath, err)
 	}
-	if err := fs.Chown(configPath, c.OwnerUID, c.OwnerGID); err != nil {
-		return fmt.Errorf("failed to change ownership for %s: %w", configPath, err)
+	if err := fs.Chown(hostPath, c.OwnerUID, c.OwnerGID); err != nil {
+		return fmt.Errorf("failed to change ownership for %s: %w", hostPath, err)
 	}
 
 	return nil
@@ -127,12 +137,12 @@ func (c *PgBackRestConfig) Delete(ctx context.Context, rc *resource.Context) err
 		return err
 	}
 
-	parentFullPath, err := filesystem.DirResourceFullPath(rc, c.ParentID)
+	hostPath, err := c.HostPath(rc)
 	if err != nil {
-		return fmt.Errorf("failed to get parent full path: %w", err)
+		return err
 	}
 
-	err = fs.Remove(filepath.Join(parentFullPath, c.Name))
+	err = fs.Remove(hostPath)
 	if errors.Is(err, afero.ErrFileNotFound) {
 		return nil
 	} else if err != nil {
@@ -140,4 +150,21 @@ func (c *PgBackRestConfig) Delete(ctx context.Context, rc *resource.Context) err
 	}
 
 	return nil
+}
+
+func (c *PgBackRestConfig) BaseName() string {
+	return fmt.Sprintf("pgbackrest.%s.conf", c.Type)
+}
+
+func (c *PgBackRestConfig) HostPath(rc *resource.Context) (string, error) {
+	parentFullPath, err := filesystem.DirResourceFullPath(rc, c.ParentID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get parent full path: %w", err)
+	}
+
+	return filepath.Join(parentFullPath, c.BaseName()), nil
+}
+
+func (c *PgBackRestConfig) ContainerPath() string {
+	return filepath.Join("/opt/pgedge/configs", c.BaseName())
 }

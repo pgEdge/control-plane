@@ -3,6 +3,7 @@ package activities
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/core"
@@ -45,7 +46,7 @@ func (a *Activities) GetPrimaryInstance(ctx context.Context, input *GetPrimaryIn
 		return nil, err
 	}
 
-	primaryInstanceID, err := database.GetPrimaryInstanceID(ctx, orch, input.DatabaseID, input.InstanceID)
+	primaryInstanceID, err := database.GetPrimaryInstanceID(ctx, orch, input.DatabaseID, input.InstanceID, 30*time.Second)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get primary instance ID: %w", err)
 	}

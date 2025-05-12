@@ -293,7 +293,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		service,
 	}
 
-	if spec.BackupConfig != nil && spec.BackupConfig.Provider == database.BackupProviderPgBackrest {
+	if spec.BackupConfig != nil && spec.BackupConfig.Provider == database.BackupProviderPgBackRest {
 		orchestratorResources = append(orchestratorResources,
 			&PgBackRestConfig{
 				InstanceID:   spec.InstanceID,
@@ -302,7 +302,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 				NodeName:     spec.NodeName,
 				Repositories: spec.BackupConfig.Repositories,
 				ParentID:     configsDir.ID,
-				Name:         "pgbackrest.backup.conf",
+				Type:         PgBackRestConfigTypeBackup,
 				OwnerUID:     o.cfg.DatabaseOwnerUID,
 				OwnerGID:     o.cfg.DatabaseOwnerUID,
 			},
@@ -311,15 +311,15 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 			},
 		)
 	}
-	if spec.RestoreConfig != nil && spec.RestoreConfig.Provider == database.BackupProviderPgBackrest {
+	if spec.RestoreConfig != nil && spec.RestoreConfig.Provider == database.BackupProviderPgBackRest {
 		orchestratorResources = append(orchestratorResources, &PgBackRestConfig{
 			InstanceID:   spec.InstanceID,
 			HostID:       spec.HostID,
-			DatabaseID:   spec.DatabaseID,
-			NodeName:     spec.NodeName,
+			DatabaseID:   spec.RestoreConfig.SourceDatabaseID,
+			NodeName:     spec.RestoreConfig.SourceNodeName,
 			Repositories: []*pgbackrest.Repository{spec.RestoreConfig.Repository},
 			ParentID:     configsDir.ID,
-			Name:         "pgbackrest.restore.conf",
+			Type:         PgBackRestConfigTypeRestore,
 			OwnerUID:     o.cfg.DatabaseOwnerUID,
 			OwnerGID:     o.cfg.DatabaseOwnerUID,
 		})
@@ -371,7 +371,7 @@ func (o *Orchestrator) WorkerQueues() ([]workflow.Queue, error) {
 }
 
 func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, instanceID uuid.UUID, options *pgbackrest.BackupOptions) error {
-	backupCmd := pgbackrestBackupCmd("backup", options.StringSlice()...)
+	backupCmd := PgBackRestBackupCmd("backup", options.StringSlice()...)
 
 	err := PostgresContainerExec(ctx, w, o.docker, instanceID, backupCmd.StringSlice())
 	if err != nil {

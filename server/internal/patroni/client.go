@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"path"
 	"time"
+
+	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
 type State string
@@ -32,11 +34,25 @@ const (
 	StateUnknown                      State = "unknown"
 )
 
+var errorStates = ds.NewSet(
+	StateStopFailed,
+	StateCrashed,
+	StateStartFailed,
+	StateRestartFailed,
+	StateInitDBFailed,
+	StateCustomBootstrapFailed,
+)
+
+func IsErrorState(state State) bool {
+	return errorStates.Has(state)
+}
+
 type InstanceRole string
 
 const (
-	InstanceRoleReplica InstanceRole = "replica"
-	InstanceRolePrimary InstanceRole = "primary"
+	InstanceRoleReplica       InstanceRole = "replica"
+	InstanceRolePrimary       InstanceRole = "primary"
+	InstanceRoleUninitialized InstanceRole = "uninitialized"
 )
 
 type XLog struct {
@@ -100,6 +116,14 @@ type InstanceStatus struct {
 	PendingRestart *bool `json:"pending_restart,omitempty"`
 }
 
+func (s *InstanceStatus) InErrorState() bool {
+	return s.State != nil && IsErrorState(*s.State)
+}
+
+func (s *InstanceStatus) InRunningState() bool {
+	return s.State != nil && *s.State == StateRunning
+}
+
 type ClusterRole string
 
 const (
@@ -109,6 +133,21 @@ const (
 	ClusterRoleQuorumStandby ClusterRole = "quorum_standby"
 	ClusterRoleReplica       ClusterRole = "replica"
 )
+
+type Lag int64
+
+func (l *Lag) UnmarshalJSON(data []byte) error {
+	if string(data) == `"unknown"` {
+		*l = Lag(-1)
+		return nil
+	}
+	var lag int64
+	if err := json.Unmarshal(data, &lag); err != nil {
+		return err
+	}
+	*l = Lag(lag)
+	return nil
+}
 
 type ClusterMember struct {
 	// The name of the host (unique in the cluster). The members list is sorted
@@ -132,8 +171,9 @@ type ClusterMember struct {
 	ScheduledRestart *bool `json:"scheduled_restart,omitempty"`
 	// any tags that were set for this member
 	Tags map[string]any `json:"tags,omitempty"`
-	// replication lag, if applicable
-	Lag *int64 `json:"lag,omitempty"`
+	// replication lag, if applicable. We set this to -1 if patroni returns the
+	// lag as 'unknown'.
+	Lag *Lag `json:"lag,omitempty"`
 }
 
 func (m *ClusterMember) IsLeader() bool {

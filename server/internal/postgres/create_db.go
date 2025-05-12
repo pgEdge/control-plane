@@ -32,6 +32,29 @@ func CreateDatabase(name string) ConditionalStatement {
 	}
 }
 
+func RenameDB(oldName, newName string) ConditionalStatement {
+	return ConditionalStatement{
+		If: Query[bool]{
+			SQL: "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = @oldName) AND NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = @newName);",
+			Args: pgx.NamedArgs{
+				"oldName": oldName,
+				"newName": newName,
+			},
+		},
+		Then: Statements{
+			Statement{
+				SQL: "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND datname = @name;",
+				Args: pgx.NamedArgs{
+					"name": oldName,
+				},
+			},
+			Statement{
+				SQL: fmt.Sprintf("ALTER DATABASE %q RENAME TO %q;", oldName, newName),
+			},
+		},
+	}
+}
+
 func InitializePgEdgeExtensions(nodeName string, dsn *DSN) Statements {
 	return Statements{
 		Statement{
@@ -94,6 +117,30 @@ func DropSubscription(nodeName, peerName string) Statement {
 		SQL: "SELECT spock.sub_drop(@sub_name, ifexists := 'true');",
 		Args: pgx.NamedArgs{
 			"sub_name": fmt.Sprintf("sub_%s%s", nodeName, peerName),
+		},
+	}
+}
+
+func DropAllSubscriptions() Statement {
+	return Statement{
+		SQL: "SELECT spock.sub_drop(sub_name) FROM spock.subscription;",
+	}
+}
+
+func DropSpockAndCleanupSlots() Statements {
+	return Statements{
+		Statement{
+			SQL: "DROP EXTENSION IF EXISTS spock CASCADE;",
+		},
+		Statement{
+			// This is filtered to exclude slots created by Patroni.
+			SQL: "SELECT slot_name, pg_drop_replication_slot(slot_name) FROM pg_replication_slots WHERE slot_type = 'logical';",
+		},
+		Statement{
+			// Replication origins are only used by logical replication. This
+			// function is only used during restore, so we assume that any
+			// logical replication needs to be cleaned up and recreated.
+			SQL: "SELECT pg_replication_origin_drop(roname) FROM pg_replication_origin;",
 		},
 	}
 }

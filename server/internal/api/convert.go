@@ -80,6 +80,7 @@ func databaseNodesToAPI(nodes []*database.Node) []*api.DatabaseNodeSpec {
 			Memory:          utils.NillablePointerTo(humanizeBytes(node.MemoryBytes)),
 			PostgresqlConf:  node.PostgreSQLConf,
 			BackupConfig:    backupConfigToAPI(node.BackupConfig),
+			RestoreConfig:   restoreConfigToAPI(node.RestoreConfig),
 		}
 	}
 	return apiNodes
@@ -147,10 +148,11 @@ func restoreConfigToAPI(config *database.RestoreConfig) *api.RestoreConfigSpec {
 		return nil
 	}
 	return &api.RestoreConfigSpec{
-		Provider:     string(config.Provider),
-		DatabaseID:   config.DatabaseID.String(),
-		NodeName:     config.NodeName,
-		DatabaseName: config.DatabaseName,
+		Provider:           string(config.Provider),
+		SourceDatabaseID:   config.SourceDatabaseID.String(),
+		SourceNodeName:     config.SourceNodeName,
+		SourceDatabaseName: config.SourceDatabaseName,
+		RestoreOptions:     config.RestoreOptions,
 		Repository: &api.RestoreRepositorySpec{
 			ID:             utils.NillablePointerTo(config.Repository.ID),
 			Type:           string(config.Repository.Type),
@@ -230,6 +232,10 @@ func apiToDatabaseNodes(apiNodes []*api.DatabaseNodeSpec) ([]*database.Node, err
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse backup config: %w", err)
 		}
+		restoreConfig, err := apiToRestoreConfig(apiNode.RestoreConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse restore config: %w", err)
+		}
 		nodes[i] = &database.Node{
 			Name:             apiNode.Name,
 			HostIDs:          hostIDs,
@@ -241,6 +247,7 @@ func apiToDatabaseNodes(apiNodes []*api.DatabaseNodeSpec) ([]*database.Node, err
 			MemoryBytes:      memory,
 			PostgreSQLConf:   apiNode.PostgresqlConf,
 			BackupConfig:     backupConfig,
+			RestoreConfig:    restoreConfig,
 		}
 	}
 	return nodes, nil
@@ -298,15 +305,16 @@ func apiToRestoreConfig(apiConfig *api.RestoreConfigSpec) (*database.RestoreConf
 			Provider: database.BackupProvider(apiConfig.Provider),
 		}, nil
 	}
-	databaseID, err := uuid.Parse(apiConfig.DatabaseID)
+	databaseID, err := uuid.Parse(apiConfig.SourceDatabaseID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse database ID: %w", err)
 	}
 	return &database.RestoreConfig{
-		Provider:     database.BackupProvider(apiConfig.Provider),
-		DatabaseID:   databaseID,
-		NodeName:     apiConfig.NodeName,
-		DatabaseName: apiConfig.DatabaseName,
+		Provider:           database.BackupProvider(apiConfig.Provider),
+		SourceDatabaseID:   databaseID,
+		SourceNodeName:     apiConfig.SourceNodeName,
+		SourceDatabaseName: apiConfig.SourceDatabaseName,
+		RestoreOptions:     apiConfig.RestoreOptions,
 		Repository: &pgbackrest.Repository{
 			ID:             utils.FromPointer(apiConfig.Repository.ID),
 			Type:           pgbackrest.RepositoryType(apiConfig.Repository.Type),

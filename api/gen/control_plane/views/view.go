@@ -173,6 +173,9 @@ type DatabaseNodeSpecView struct {
 	// The backup configuration for this node. Overrides the backup configuration
 	// set in the DatabaseSpec.
 	BackupConfig *BackupConfigSpecView
+	// The restore configuration for this node. Overrides the restore configuration
+	// set in the DatabaseSpec.
+	RestoreConfig *RestoreConfigSpecView
 }
 
 // BackupConfigSpecView is a type that runs validations on a projected type.
@@ -242,33 +245,22 @@ type BackupScheduleSpecView struct {
 	CronExpression *string
 }
 
-// DatabaseUserSpecView is a type that runs validations on a projected type.
-type DatabaseUserSpecView struct {
-	// The username for this database user.
-	Username *string
-	// The password for this database user.
-	Password *string
-	// If true, this user will be granted database ownership.
-	DbOwner *bool
-	// The attributes to assign to this database user.
-	Attributes []string
-	// The roles to assign to this database user.
-	Roles []string
-}
-
 // RestoreConfigSpecView is a type that runs validations on a projected type.
 type RestoreConfigSpecView struct {
 	// The backup provider for this restore configuration.
 	Provider *string
 	// The ID of the database to restore this database from.
-	DatabaseID *string
+	SourceDatabaseID *string
 	// The name of the node to restore this database from.
-	NodeName *string
+	SourceNodeName *string
 	// The name of the database in this repository. This database will be renamed
 	// to the database_name in the DatabaseSpec.
-	DatabaseName *string
+	SourceDatabaseName *string
 	// The repository to restore this database from.
 	Repository *RestoreRepositorySpecView
+	// Additional options to use when restoring this database. If omitted, the
+	// database will be restored to the latest point in the given repository.
+	RestoreOptions []string
 }
 
 // RestoreRepositorySpecView is a type that runs validations on a projected
@@ -313,6 +305,20 @@ type RestoreRepositorySpecView struct {
 	BasePath *string
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string
+}
+
+// DatabaseUserSpecView is a type that runs validations on a projected type.
+type DatabaseUserSpecView struct {
+	// The username for this database user.
+	Username *string
+	// The password for this database user.
+	Password *string
+	// If true, this user will be granted database ownership.
+	DbOwner *bool
+	// The attributes to assign to this database user.
+	Attributes []string
+	// The roles to assign to this database user.
+	Roles []string
 }
 
 var (
@@ -747,19 +753,27 @@ func ValidateDatabaseNodeSpecView(result *DatabaseNodeSpecView) (err error) {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
+	if result.RestoreConfig != nil {
+		if err2 := ValidateRestoreConfigSpecView(result.RestoreConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
 	return
 }
 
 // ValidateBackupConfigSpecView runs the validations defined on
 // BackupConfigSpecView.
 func ValidateBackupConfigSpecView(result *BackupConfigSpecView) (err error) {
-	if result.Provider == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("provider", "result"))
+	if result.Repositories == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("repositories", "result"))
 	}
 	if result.Provider != nil {
-		if !(*result.Provider == "pgbackrest" || *result.Provider == "pg_dump") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.provider", *result.Provider, []any{"pgbackrest", "pg_dump"}))
+		if !(*result.Provider == "pgbackrest") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.provider", *result.Provider, []any{"pgbackrest"}))
 		}
+	}
+	if len(result.Repositories) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.repositories", result.Repositories, len(result.Repositories), 1, true))
 	}
 	for _, e := range result.Repositories {
 		if e != nil {
@@ -817,39 +831,24 @@ func ValidateBackupScheduleSpecView(result *BackupScheduleSpecView) (err error) 
 	return
 }
 
-// ValidateDatabaseUserSpecView runs the validations defined on
-// DatabaseUserSpecView.
-func ValidateDatabaseUserSpecView(result *DatabaseUserSpecView) (err error) {
-	if result.Username == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("username", "result"))
-	}
-	if result.Password == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("password", "result"))
-	}
-	return
-}
-
 // ValidateRestoreConfigSpecView runs the validations defined on
 // RestoreConfigSpecView.
 func ValidateRestoreConfigSpecView(result *RestoreConfigSpecView) (err error) {
-	if result.Provider == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("provider", "result"))
+	if result.SourceDatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("source_database_id", "result"))
 	}
-	if result.DatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "result"))
+	if result.SourceNodeName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("source_node_name", "result"))
 	}
-	if result.NodeName == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("node_name", "result"))
-	}
-	if result.DatabaseName == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_name", "result"))
+	if result.SourceDatabaseName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("source_database_name", "result"))
 	}
 	if result.Repository == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "result"))
 	}
 	if result.Provider != nil {
-		if !(*result.Provider == "pgbackrest" || *result.Provider == "pg_dump") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.provider", *result.Provider, []any{"pgbackrest", "pg_dump"}))
+		if !(*result.Provider == "pgbackrest") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.provider", *result.Provider, []any{"pgbackrest"}))
 		}
 	}
 	if result.Repository != nil {
@@ -870,6 +869,18 @@ func ValidateRestoreRepositorySpecView(result *RestoreRepositorySpecView) (err e
 		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.type", *result.Type, []any{"s3", "gcs", "azure"}))
 		}
+	}
+	return
+}
+
+// ValidateDatabaseUserSpecView runs the validations defined on
+// DatabaseUserSpecView.
+func ValidateDatabaseUserSpecView(result *DatabaseUserSpecView) (err error) {
+	if result.Username == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("username", "result"))
+	}
+	if result.Password == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("password", "result"))
 	}
 	return
 }

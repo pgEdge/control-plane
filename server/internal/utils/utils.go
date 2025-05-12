@@ -34,7 +34,7 @@ func WithTimeout(ctx context.Context, timeout time.Duration, f func(ctx context.
 func Retry(maxAttempts int, initialDelay time.Duration, f func() error) error {
 	var err error
 	delay := initialDelay
-	for attempt := 0; attempt < maxAttempts; attempt++ {
+	for range maxAttempts {
 		err = f()
 
 		// Return if successful
