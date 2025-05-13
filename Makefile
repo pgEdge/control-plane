@@ -105,8 +105,14 @@ codacy:
 .PHONY: dev-build
 dev-build: docker/control-plane-dev/control-plane
 
+docker-swarm-mode:
+	@if [ "$$(docker info --format '{{.Swarm.LocalNodeState}}')" != "active" ]; then \
+		echo "Docker is not in swarm mode, running 'docker swarm init'..."; \
+		docker swarm init; \
+	fi
+
 .PHONY: dev-watch
-dev-watch: dev-build
+dev-watch: dev-build docker-swarm-mode
 	WORKSPACE_DIR=$(shell pwd) docker compose -f ./docker/control-plane-dev/docker-compose.yaml build
 	WORKSPACE_DIR=$(shell pwd) DEBUG=$(DEBUG) docker compose -f ./docker/control-plane-dev/docker-compose.yaml up --watch
 
