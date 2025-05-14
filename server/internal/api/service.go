@@ -140,8 +140,30 @@ func (s *Service) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) er
 	return ErrNotImplemented
 }
 
+// ListDatabases fetches all databases from the database service and converts them to API format.
 func (s *Service) ListDatabases(ctx context.Context) (api.DatabaseCollection, error) {
-	return nil, ErrNotImplemented
+	// Fetch databases from the database service
+	databases, err := s.dbSvc.GetDatabases(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get databases: %w", err)
+	}
+
+	// Ensure we return an empty (non-nil) slice if no databases found
+	if len(databases) == 0 {
+		return api.DatabaseCollection{}, nil
+	}
+
+	// Preallocate the output slice with the length of the databases
+	apiDatabases := make(api.DatabaseCollection, 0, len(databases))
+	for _, db := range databases {
+		apiDB := databaseToAPI(db)
+		if apiDB != nil {
+			// Only append non-nil API databases
+			apiDatabases = append(apiDatabases, apiDB)
+		}
+	}
+
+	return apiDatabases, nil
 }
 
 func (s *Service) CreateDatabase(ctx context.Context, req *api.CreateDatabaseRequest) (*api.Database, error) {

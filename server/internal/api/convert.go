@@ -195,13 +195,22 @@ func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 }
 
 func databaseToAPI(d *database.Database) *api.Database {
+	if d == nil {
+		return nil
+	}
+
+	var spec *api.DatabaseSpec
+	if d.Spec != nil {
+		spec = databaseSpecToAPI(d.Spec)
+	}
+
 	return &api.Database{
 		ID:        d.DatabaseID.String(),
 		TenantID:  stringifyStringerPtr(d.TenantID),
 		CreatedAt: d.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: d.UpdatedAt.Format(time.RFC3339),
 		State:     string(d.State),
-		Spec:      databaseSpecToAPI(d.Spec),
+		Spec:      spec,
 	}
 }
 
