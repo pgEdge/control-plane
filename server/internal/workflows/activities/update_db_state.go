@@ -42,7 +42,7 @@ func (a *Activities) UpdateDbState(ctx context.Context, input *UpdateDbStateInpu
 		return nil, err
 	}
 
-	err = dbSvc.UpdateDatabaseState(ctx, input.DatabaseID, input.State)
+	err = dbSvc.UpdateDatabaseState(ctx, input.DatabaseID, "", input.State)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update database state: %w", err)
 	}

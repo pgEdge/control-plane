@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
 
 	"github.com/pgEdge/control-plane/server/internal/common"
 	"github.com/pgEdge/control-plane/server/internal/config"
@@ -36,6 +37,7 @@ var allVersions = []*host.PgEdgeVersion{
 type Orchestrator struct {
 	cfg                config.Config
 	docker             *docker.Docker
+	logger             zerolog.Logger
 	dbNetworkAllocator Allocator
 	bridgeNetwork      *docker.NetworkInfo
 	cpus               int
@@ -45,7 +47,12 @@ type Orchestrator struct {
 	controlAvailable   bool
 }
 
-func NewOrchestrator(ctx context.Context, cfg config.Config, d *docker.Docker) (*Orchestrator, error) {
+func NewOrchestrator(
+	ctx context.Context,
+	cfg config.Config,
+	d *docker.Docker,
+	logger zerolog.Logger,
+) (*Orchestrator, error) {
 	info, err := d.Info(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get docker info: %w", err)
@@ -70,6 +77,7 @@ func NewOrchestrator(ctx context.Context, cfg config.Config, d *docker.Docker) (
 	return &Orchestrator{
 		cfg:    cfg,
 		docker: d,
+		logger: logger,
 		dbNetworkAllocator: Allocator{
 			Prefix: dbNetworkPrefix,
 			Bits:   cfg.DockerSwarm.DatabaseNetworksSubnetBits,
@@ -237,22 +245,6 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		InstanceHostname:    instanceHostname,
 	}
 
-	// data := &DataDir{
-	// 	HostID:    spec.HostID,
-	// 	Path:      filepath.Join(instanceDir, "data"),
-	// 	SizeBytes: spec.StorageSizeBytes,
-	// }
-
-	// cfgs := &InstanceConfigs{
-	// 	HostID:           spec.HostID,
-	// 	InstanceID:       spec.InstanceID,
-	// 	DatabaseID:       spec.DatabaseID,
-	// 	InstanceHostname: instanceHostname,
-	// 	ClusterSize:      spec.ClusterSize,
-	// 	CertificatesDir:  filepath.Join(instanceDir, "certificates"),
-	// 	ConfigsDir:       filepath.Join(instanceDir, "configs"),
-	// }
-
 	serviceName := fmt.Sprintf("postgres-%s-%s", spec.NodeName, spec.InstanceID)
 	serviceSpec := &PostgresServiceSpecResource{
 		Instance:            spec,
@@ -329,6 +321,48 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 	if err != nil {
 		return nil, fmt.Errorf("failed to create instance resources: %w", err)
 	}
+
+	return resources, nil
+}
+
+func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceSpec, taskID uuid.UUID) (*database.InstanceResources, error) {
+	if spec.RestoreConfig == nil {
+		return nil, fmt.Errorf("missing restore config for node %s instance %s", spec.NodeName, spec.InstanceID)
+	}
+
+	// TODO: I'd like Patroni to use the backup config that pgbackrest outputs,
+	// but it removes the postgresql.auto.conf when it starts bootstrapping the
+	// cluster. Setting the restore command ourselves is a decent workaround.
+	restoreCmd := PgBackRestRestoreCmd("archive-get", "%f", `"%p"`).String()
+	if spec.PostgreSQLConf == nil {
+		spec.PostgreSQLConf = map[string]any{
+			"restore_command": restoreCmd,
+		}
+	} else {
+		spec.PostgreSQLConf["restore_command"] = restoreCmd
+	}
+
+	resources, err := o.GenerateInstanceResources(spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate instance resources: %w", err)
+	}
+	restoreResource, err := resource.ToResourceData(&PgBackRestRestore{
+		DatabaseID: spec.DatabaseID,
+		HostID:     spec.HostID,
+		InstanceID: spec.InstanceID,
+		TaskID:     taskID,
+		DataDirID:  spec.InstanceID.String() + "-data",
+		NodeName:   spec.NodeName,
+		Options:    spec.RestoreConfig.RestoreOptions,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert restore resource to resource data: %w", err)
+	}
+	resources.Instance.OrchestratorDependencies = append(
+		resources.Instance.OrchestratorDependencies,
+		restoreResource.Identifier,
+	)
+	resources.Resources = append(resources.Resources, restoreResource)
 
 	return resources, nil
 }

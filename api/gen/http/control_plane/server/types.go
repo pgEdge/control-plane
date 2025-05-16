@@ -66,6 +66,15 @@ type InitiateDatabaseBackupRequestBody struct {
 	ExtraOptions []string `form:"extra_options,omitempty" json:"extra_options,omitempty" xml:"extra_options,omitempty"`
 }
 
+// RestoreDatabaseRequestBody is the type of the "control-plane" service
+// "restore-database" endpoint HTTP request body.
+type RestoreDatabaseRequestBody struct {
+	// Configuration for the restore process.
+	RestoreConfig *RestoreConfigSpecRequestBodyRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
+	// The nodes to restore. Defaults to all nodes if empty or unspecified.
+	TargetNodes []string `form:"target_nodes,omitempty" json:"target_nodes,omitempty" xml:"target_nodes,omitempty"`
+}
+
 // InitClusterResponseBody is the type of the "control-plane" service
 // "init-cluster" endpoint HTTP response body.
 type InitClusterResponseBody struct {
@@ -201,6 +210,12 @@ type UpdateDatabaseResponseBody struct {
 type InitiateDatabaseBackupResponseBody struct {
 	// The database ID of the task.
 	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
 	// The unique ID of the task.
 	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
 	// The time when the task was created.
@@ -224,6 +239,12 @@ type ListDatabaseTasksResponseBody []*TaskResponse
 type InspectDatabaseTaskResponseBody struct {
 	// The database ID of the task.
 	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
 	// The unique ID of the task.
 	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
 	// The time when the task was created.
@@ -251,6 +272,15 @@ type GetDatabaseTaskLogResponseBody struct {
 	LastLineID *string `form:"last_line_id,omitempty" json:"last_line_id,omitempty" xml:"last_line_id,omitempty"`
 	// The lines of the task log.
 	Lines []string `form:"lines" json:"lines" xml:"lines"`
+}
+
+// RestoreDatabaseResponseBody is the type of the "control-plane" service
+// "restore-database" endpoint HTTP response body.
+type RestoreDatabaseResponseBody struct {
+	// The database being restored.
+	Database *DatabaseResponseBody `form:"database,omitempty" json:"database,omitempty" xml:"database,omitempty"`
+	// The restore tasks that were created to restore this database.
+	Tasks []*TaskResponseBody `form:"tasks,omitempty" json:"tasks,omitempty" xml:"tasks,omitempty"`
 }
 
 // InitClusterClusterAlreadyInitializedResponseBody is the type of the
@@ -897,6 +927,82 @@ type GetDatabaseTaskLogNotFoundResponseBody struct {
 	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
+// RestoreDatabaseClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "restore-database" endpoint HTTP response body for
+// the "cluster_not_initialized" error.
+type RestoreDatabaseClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// RestoreDatabaseDatabaseNotModifiableResponseBody is the type of the
+// "control-plane" service "restore-database" endpoint HTTP response body for
+// the "database_not_modifiable" error.
+type RestoreDatabaseDatabaseNotModifiableResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// RestoreDatabaseNotFoundResponseBody is the type of the "control-plane"
+// service "restore-database" endpoint HTTP response body for the "not_found"
+// error.
+type RestoreDatabaseNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
+// RestoreDatabaseInvalidInputResponseBody is the type of the "control-plane"
+// service "restore-database" endpoint HTTP response body for the
+// "invalid_input" error.
+type RestoreDatabaseInvalidInputResponseBody struct {
+	// Name is the name of this class of errors.
+	Name string `form:"name" json:"name" xml:"name"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Is the error temporary?
+	Temporary bool `form:"temporary" json:"temporary" xml:"temporary"`
+	// Is the error a timeout?
+	Timeout bool `form:"timeout" json:"timeout" xml:"timeout"`
+	// Is the error a server-side fault?
+	Fault bool `form:"fault" json:"fault" xml:"fault"`
+}
+
 // ClusterPeerResponseBody is used to define fields on response body types.
 type ClusterPeerResponseBody struct {
 	// The name of the cluster member.
@@ -1334,6 +1440,102 @@ type DatabaseUserSpecResponseBody struct {
 type TaskResponse struct {
 	// The database ID of the task.
 	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// The unique ID of the task.
+	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+	// The time when the task was created.
+	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The status of the task.
+	Status string `form:"status" json:"status" xml:"status"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
+// DatabaseResponseBody is used to define fields on response body types.
+type DatabaseResponseBody struct {
+	// Unique identifier for the database.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Unique identifier for the databases's owner.
+	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
+	// The time that the database was created.
+	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// The time that the database was last updated.
+	UpdatedAt string `form:"updated_at" json:"updated_at" xml:"updated_at"`
+	// Current state of the database.
+	State string `form:"state" json:"state" xml:"state"`
+	// All of the instances in the database.
+	Instances InstanceCollectionResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	// The user-provided specification for the database.
+	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
+}
+
+// InstanceCollectionResponseBody is used to define fields on response body
+// types.
+type InstanceCollectionResponseBody []*InstanceResponseBody
+
+// InstanceResponseBody is used to define fields on response body types.
+type InstanceResponseBody struct {
+	// Unique identifier for the instance.
+	ID string `form:"id" json:"id" xml:"id"`
+	// The ID of the host this instance is running on.
+	HostID string `form:"host_id" json:"host_id" xml:"host_id"`
+	// The Spock node name for this instance.
+	NodeName string `form:"node_name" json:"node_name" xml:"node_name"`
+	// The time that the instance was created.
+	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// The time that the instance was last updated.
+	UpdatedAt    string  `form:"updated_at" json:"updated_at" xml:"updated_at"`
+	State        string  `form:"state" json:"state" xml:"state"`
+	PatroniState *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
+	Role         *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
+	// True if this instance is in read-only mode.
+	ReadOnly *bool `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
+	// True if this instance is pending to be restarted from a configuration change.
+	PendingRestart *bool `form:"pending_restart,omitempty" json:"pending_restart,omitempty" xml:"pending_restart,omitempty"`
+	// True if Patroni has been paused for this instance.
+	PatroniPaused *bool `form:"patroni_paused,omitempty" json:"patroni_paused,omitempty" xml:"patroni_paused,omitempty"`
+	// The version of Postgres for this instance.
+	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
+	// The version of Spock for this instance.
+	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
+	// All interfaces that this instance serves on.
+	Interfaces []*InstanceInterfaceResponseBody `form:"interfaces,omitempty" json:"interfaces,omitempty" xml:"interfaces,omitempty"`
+}
+
+// InstanceInterfaceResponseBody is used to define fields on response body
+// types.
+type InstanceInterfaceResponseBody struct {
+	// The type of network for this interface.
+	NetworkType string `form:"network_type" json:"network_type" xml:"network_type"`
+	// The unique identifier of the network for this interface.
+	NetworkID *string `form:"network_id,omitempty" json:"network_id,omitempty" xml:"network_id,omitempty"`
+	// The hostname of the instance on this interface.
+	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
+	// The IPv4 address of the instance on this interface.
+	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
+	// The Postgres port for the instance on this interface.
+	Port int `form:"port" json:"port" xml:"port"`
+}
+
+// TaskResponseBody is used to define fields on response body types.
+type TaskResponseBody struct {
+	// The database ID of the task.
+	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
 	// The unique ID of the task.
 	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
 	// The time when the task was created.
@@ -1985,6 +2187,9 @@ func NewUpdateDatabaseResponseBody(res *controlplaneviews.DatabaseView) *UpdateD
 func NewInitiateDatabaseBackupResponseBody(res *controlplane.Task) *InitiateDatabaseBackupResponseBody {
 	body := &InitiateDatabaseBackupResponseBody{
 		DatabaseID:  res.DatabaseID,
+		NodeName:    res.NodeName,
+		InstanceID:  res.InstanceID,
+		HostID:      res.HostID,
 		TaskID:      res.TaskID,
 		CreatedAt:   res.CreatedAt,
 		CompletedAt: res.CompletedAt,
@@ -2011,6 +2216,9 @@ func NewListDatabaseTasksResponseBody(res []*controlplane.Task) ListDatabaseTask
 func NewInspectDatabaseTaskResponseBody(res *controlplane.Task) *InspectDatabaseTaskResponseBody {
 	body := &InspectDatabaseTaskResponseBody{
 		DatabaseID:  res.DatabaseID,
+		NodeName:    res.NodeName,
+		InstanceID:  res.InstanceID,
+		HostID:      res.HostID,
 		TaskID:      res.TaskID,
 		CreatedAt:   res.CreatedAt,
 		CompletedAt: res.CompletedAt,
@@ -2038,6 +2246,22 @@ func NewGetDatabaseTaskLogResponseBody(res *controlplane.TaskLog) *GetDatabaseTa
 		}
 	} else {
 		body.Lines = []string{}
+	}
+	return body
+}
+
+// NewRestoreDatabaseResponseBody builds the HTTP response body from the result
+// of the "restore-database" endpoint of the "control-plane" service.
+func NewRestoreDatabaseResponseBody(res *controlplane.RestoreDatabaseResponse) *RestoreDatabaseResponseBody {
+	body := &RestoreDatabaseResponseBody{}
+	if res.Database != nil {
+		body.Database = marshalControlplaneDatabaseToDatabaseResponseBody(res.Database)
+	}
+	if res.Tasks != nil {
+		body.Tasks = make([]*TaskResponseBody, len(res.Tasks))
+		for i, val := range res.Tasks {
+			body.Tasks[i] = marshalControlplaneTaskToTaskResponseBody(val)
+		}
 	}
 	return body
 }
@@ -2543,6 +2767,65 @@ func NewGetDatabaseTaskLogNotFoundResponseBody(res *goa.ServiceError) *GetDataba
 	return body
 }
 
+// NewRestoreDatabaseClusterNotInitializedResponseBody builds the HTTP response
+// body from the result of the "restore-database" endpoint of the
+// "control-plane" service.
+func NewRestoreDatabaseClusterNotInitializedResponseBody(res *goa.ServiceError) *RestoreDatabaseClusterNotInitializedResponseBody {
+	body := &RestoreDatabaseClusterNotInitializedResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewRestoreDatabaseDatabaseNotModifiableResponseBody builds the HTTP response
+// body from the result of the "restore-database" endpoint of the
+// "control-plane" service.
+func NewRestoreDatabaseDatabaseNotModifiableResponseBody(res *goa.ServiceError) *RestoreDatabaseDatabaseNotModifiableResponseBody {
+	body := &RestoreDatabaseDatabaseNotModifiableResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewRestoreDatabaseNotFoundResponseBody builds the HTTP response body from
+// the result of the "restore-database" endpoint of the "control-plane" service.
+func NewRestoreDatabaseNotFoundResponseBody(res *goa.ServiceError) *RestoreDatabaseNotFoundResponseBody {
+	body := &RestoreDatabaseNotFoundResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
+// NewRestoreDatabaseInvalidInputResponseBody builds the HTTP response body
+// from the result of the "restore-database" endpoint of the "control-plane"
+// service.
+func NewRestoreDatabaseInvalidInputResponseBody(res *goa.ServiceError) *RestoreDatabaseInvalidInputResponseBody {
+	body := &RestoreDatabaseInvalidInputResponseBody{
+		Name:      res.Name,
+		ID:        res.ID,
+		Message:   res.Message,
+		Temporary: res.Temporary,
+		Timeout:   res.Timeout,
+		Fault:     res.Fault,
+	}
+	return body
+}
+
 // NewJoinClusterClusterJoinToken builds a control-plane service join-cluster
 // endpoint payload.
 func NewJoinClusterClusterJoinToken(body *JoinClusterRequestBody) *controlplane.ClusterJoinToken {
@@ -2698,6 +2981,25 @@ func NewGetDatabaseTaskLogPayload(databaseID string, taskID string, afterLineID 
 	return v
 }
 
+// NewRestoreDatabasePayload builds a control-plane service restore-database
+// endpoint payload.
+func NewRestoreDatabasePayload(body *RestoreDatabaseRequestBody, databaseID string) *controlplane.RestoreDatabasePayload {
+	v := &controlplane.RestoreDatabaseRequest{}
+	v.RestoreConfig = unmarshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSpec(body.RestoreConfig)
+	if body.TargetNodes != nil {
+		v.TargetNodes = make([]string, len(body.TargetNodes))
+		for i, val := range body.TargetNodes {
+			v.TargetNodes[i] = val
+		}
+	}
+	res := &controlplane.RestoreDatabasePayload{
+		Request: v,
+	}
+	res.DatabaseID = databaseID
+
+	return res
+}
+
 // ValidateJoinClusterRequestBody runs the validations defined on
 // Join-ClusterRequestBody
 func ValidateJoinClusterRequestBody(body *JoinClusterRequestBody) (err error) {
@@ -2777,6 +3079,20 @@ func ValidateInitiateDatabaseBackupRequestBody(body *InitiateDatabaseBackupReque
 	if body.Type != nil {
 		if !(*body.Type == "full" || *body.Type == "diff" || *body.Type == "incr") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"full", "diff", "incr"}))
+		}
+	}
+	return
+}
+
+// ValidateRestoreDatabaseRequestBody runs the validations defined on
+// Restore-DatabaseRequestBody
+func ValidateRestoreDatabaseRequestBody(body *RestoreDatabaseRequestBody) (err error) {
+	if body.RestoreConfig == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("restore_config", "body"))
+	}
+	if body.RestoreConfig != nil {
+		if err2 := ValidateRestoreConfigSpecRequestBodyRequestBody(body.RestoreConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return

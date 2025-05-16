@@ -181,3 +181,7 @@ func (s *PreInitService) InspectDatabaseTask(ctx context.Context, req *api.Inspe
 func (s *PreInitService) GetDatabaseTaskLog(ctx context.Context, req *api.GetDatabaseTaskLogPayload) (*api.TaskLog, error) {
 	return nil, ErrUninitialized
 }
+
+func (s *PreInitService) RestoreDatabase(ctx context.Context, req *api.RestoreDatabasePayload) (res *api.RestoreDatabaseResponse, err error) {
+	return nil, ErrUninitialized
+}

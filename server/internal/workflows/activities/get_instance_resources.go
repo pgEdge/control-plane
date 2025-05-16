@@ -1,8 +1,10 @@
 package activities
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
 
@@ -31,7 +33,13 @@ func (a *Activities) ExecuteGetInstanceResources(
 	return workflow.ExecuteActivity[*GetInstanceResourcesOutput](ctx, options, a.GetInstanceResources, input)
 }
 
-func (a *Activities) GetInstanceResources(input *GetInstanceResourcesInput) (*GetInstanceResourcesOutput, error) {
+func (a *Activities) GetInstanceResources(ctx context.Context, input *GetInstanceResourcesInput) (*GetInstanceResourcesOutput, error) {
+	logger := activity.Logger(ctx).With(
+		"database_id", input.Spec.DatabaseID.String(),
+		"instance_id", input.Spec.InstanceID.String(),
+	)
+	logger.Info("getting instance resources")
+
 	resources, err := a.Orchestrator.GenerateInstanceResources(input.Spec)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate instance resources: %w", err)

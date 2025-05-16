@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rs/zerolog"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
@@ -24,6 +25,10 @@ func provideOrchestrator(i *do.Injector) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get config: %w", err)
 		}
-		return NewOrchestrator(context.Background(), cfg, dockerClient)
+		logger, err := do.Invoke[zerolog.Logger](i)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get logger: %w", err)
+		}
+		return NewOrchestrator(context.Background(), cfg, dockerClient, logger)
 	})
 }

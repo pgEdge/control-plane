@@ -352,6 +352,30 @@ var _ = g.Service("control-plane", func() {
 		})
 	})
 
+	g.Method("restore-database", func() {
+		g.Description("Perform an in-place restore one or more nodes using the given restore configuration.")
+		g.Payload(func() {
+			g.Attribute("database_id", g.String, func() {
+				g.Format(g.FormatUUID)
+				g.Description("ID of the database to restore.")
+				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+			})
+			g.Attribute("request", RestoreDatabaseRequest)
+
+			g.Required("database_id", "request")
+		})
+		g.Result(RestoreDatabaseResponse)
+		g.Error("cluster_not_initialized")
+		g.Error("not_found")
+		g.Error("database_not_modifiable")
+		g.Error("invalid_input")
+
+		g.HTTP(func() {
+			g.POST("/databases/{database_id}/restore")
+			g.Body("request")
+		})
+	})
+
 	// Serves the OpenAPI spec as a static file
 	g.Files("/openapi.json", "./gen/http/openapi3.json")
 })

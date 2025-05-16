@@ -36,19 +36,17 @@ func (w *Workflows) DeleteDatabase(ctx workflow.Context, input *DeleteDatabaseIn
 		return err
 	}
 
-	getCurrentInput := &activities.GetCurrentStateInput{
+	refreshCurrentInput := &RefreshCurrentStateInput{
 		DatabaseID: input.DatabaseID,
 	}
-	getCurrentOutput, err := w.Activities.
-		ExecuteGetCurrentState(ctx, getCurrentInput).
-		Get(ctx)
+	refreshCurrentOutput, err := w.ExecuteRefreshCurrentState(ctx, refreshCurrentInput).Get(ctx)
 	if err != nil {
 		return nil, handleError(fmt.Errorf("failed to get current state: %w", err))
 	}
 
 	reconcileInput := &ReconcileStateInput{
 		DatabaseID: input.DatabaseID,
-		Current:    getCurrentOutput.State,
+		Current:    refreshCurrentOutput.State,
 		Desired:    resource.NewState(),
 	}
 	_, err = w.ExecuteReconcileState(ctx, reconcileInput).Get(ctx)

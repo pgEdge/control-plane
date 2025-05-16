@@ -2,8 +2,6 @@ package pgbackrest
 
 import (
 	"strings"
-
-	"al.essio.dev/pkg/shellescape"
 )
 
 type Cmd struct {
@@ -30,16 +28,8 @@ func (c Cmd) StringSlice() []string {
 	if c.Command != "" {
 		parts = append(parts, c.Command)
 	}
-	parts = append(parts, c.escapedArgs()...)
+	parts = append(parts, c.Args...)
 	return parts
-}
-
-func (c Cmd) escapedArgs() []string {
-	escaped := make([]string, len(c.Args))
-	for i, arg := range c.Args {
-		escaped[i] = shellescape.Quote(arg)
-	}
-	return escaped
 }
 
 func (c Cmd) String() string {

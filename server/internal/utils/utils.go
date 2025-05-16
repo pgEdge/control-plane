@@ -74,6 +74,14 @@ func NillablePointerTo[T comparable](v T) *T {
 	return &v
 }
 
+func ClonePointer[T any](v *T) *T {
+	if v == nil {
+		return nil
+	}
+	clone := *v
+	return &clone
+}
+
 func RandomString(length int) (string, error) {
 	randomBytes := make([]byte, length)
 	_, err := rand.Read(randomBytes)

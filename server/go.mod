@@ -3,7 +3,6 @@ module github.com/pgEdge/control-plane/server
 go 1.23.5
 
 require (
-	al.essio.dev/pkg/shellescape v1.6.0
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/cilium/ipam v0.0.0-20230509084518-fd66eae7909b
 	github.com/cschleiden/go-workflows v0.19.0
@@ -18,6 +17,7 @@ require (
 	github.com/knadh/koanf/providers/structs v0.1.0
 	github.com/knadh/koanf/v2 v2.1.2
 	github.com/mackerelio/go-osstat v0.2.5
+	github.com/opencontainers/image-spec v1.1.0
 	github.com/pgEdge/control-plane/api v0.0.0
 	github.com/pgEdge/control-plane/mqtt v0.0.0
 	github.com/rs/zerolog v1.33.0
@@ -87,7 +87,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.20.5 // indirect

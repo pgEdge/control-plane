@@ -44,17 +44,21 @@ func (s *State) Add(data *ResourceData) {
 	s.Resources[data.Identifier.Type] = resources
 }
 
-func (s *State) Remove(data *ResourceData) {
-	resources, ok := s.Resources[data.Identifier.Type]
+func (s *State) RemoveByIdentifier(identifier Identifier) {
+	resources, ok := s.Resources[identifier.Type]
 	if !ok {
 		return
 	}
-	delete(resources, data.Identifier.ID)
+	delete(resources, identifier.ID)
 	if len(resources) == 0 {
-		delete(s.Resources, data.Identifier.Type)
+		delete(s.Resources, identifier.Type)
 	} else {
-		s.Resources[data.Identifier.Type] = resources
+		s.Resources[identifier.Type] = resources
 	}
+}
+
+func (s *State) Remove(data *ResourceData) {
+	s.RemoveByIdentifier(data.Identifier)
 }
 
 func (s *State) Get(identifier Identifier) (*ResourceData, bool) {

@@ -333,7 +333,7 @@ func (r *InstanceResource) dropSpock(ctx context.Context, connInfo *ConnectionIn
 	}
 	defer conn.Close(ctx)
 
-	err = postgres.DropSpockAndCleanupSlots().Exec(ctx, conn)
+	err = postgres.DropSpockAndCleanupSlots(r.Spec.DatabaseName).Exec(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to drop spock: %w", err)
 	}

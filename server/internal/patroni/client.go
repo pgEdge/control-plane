@@ -313,6 +313,8 @@ type DynamicConfig struct {
 	// some replication slots are managed outside of Patroni. Any subset of
 	// matching properties will cause a slot to be ignored.
 	IgnoreSlots *[]IgnoreSlot `json:"ignore_slots,omitempty"`
+	// Stops Patroni from making changes to the cluster.
+	Pause bool `json:"pause,omitempty"`
 }
 
 type Switchover struct {

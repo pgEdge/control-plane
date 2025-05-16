@@ -292,7 +292,7 @@ func generatePatroniConfig(
 			Protocol: utils.PointerTo("https"),
 		},
 		RestAPI: &patroni.RestAPI{
-			ConnectAddress: utils.PointerTo(fmt.Sprintf("%s:8888", instanceHostname)),
+			ConnectAddress: utils.PointerTo(fmt.Sprintf("%s.%s-database:8888", instanceHostname, spec.DatabaseID)),
 			Listen:         utils.PointerTo("0.0.0.0:8888"),
 			Allowlist: &[]string{
 				bridgeInfo.Gateway.String(),   // Control plane will connect from this address

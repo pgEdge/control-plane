@@ -8,6 +8,7 @@ import (
 	"net/netip"
 	"time"
 
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pgEdge/control-plane/server/internal/common"
 	"github.com/samber/do"
 
@@ -71,6 +72,71 @@ func (d *Docker) Exec(ctx context.Context, w io.Writer, containerID string, comm
 		err = fmt.Errorf("command failed with exit code %d", inspResp.ExitCode)
 	}
 	return err
+}
+
+type ContainerRunOptions struct {
+	Config   *container.Config
+	Host     *container.HostConfig
+	Net      *network.NetworkingConfig
+	Platform *v1.Platform
+	Name     string
+}
+
+func (d *Docker) ContainerRun(ctx context.Context, opts ContainerRunOptions) (string, error) {
+	resp, err := d.client.ContainerCreate(ctx, opts.Config, opts.Host, opts.Net, opts.Platform, opts.Name)
+	if err != nil {
+		return "", fmt.Errorf("failed to create container: %w", err)
+	}
+	if err := d.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+		return "", fmt.Errorf("failed to start container: %w", err)
+	}
+	return resp.ID, nil
+}
+
+func (d *Docker) ContainerLogs(ctx context.Context, w io.Writer, containerID string, opts container.LogsOptions) error {
+	resp, err := d.client.ContainerLogs(ctx, containerID, opts)
+	if err != nil {
+		return errTranslate(fmt.Errorf("failed to get container logs: %w", err))
+	}
+	defer resp.Close()
+
+	if _, err := io.Copy(w, resp); err != nil {
+		return fmt.Errorf("failed to copy logs: %w", err)
+	}
+	return nil
+}
+
+func (d *Docker) ContainerWait(ctx context.Context, containerID string, condition container.WaitCondition, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	respC, errC := d.client.ContainerWait(ctx, containerID, container.WaitConditionNotRunning)
+	select {
+	case resp := <-respC:
+		if resp.Error != nil {
+			return fmt.Errorf("failed to wait for container: %w", errTranslate(errors.New(resp.Error.Message)))
+		}
+		if resp.StatusCode != 0 {
+			return fmt.Errorf("container exited with status code %d", resp.StatusCode)
+		}
+		return nil
+	case err := <-errC:
+		if err != nil {
+			return fmt.Errorf("failed to wait for container: %w", errTranslate(err))
+		}
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
+	return nil
+}
+
+func (d *Docker) ContainerRemove(ctx context.Context, containerID string, opts container.RemoveOptions) error {
+	err := d.client.ContainerRemove(ctx, containerID, opts)
+	if err != nil {
+		return fmt.Errorf("failed to remove container: %w", errTranslate(err))
+	}
+	return nil
 }
 
 func (d *Docker) Info(ctx context.Context) (system.Info, error) {
@@ -148,12 +214,8 @@ func (d *Docker) ServiceDeploy(ctx context.Context, spec swarm.ServiceSpec) (str
 	}
 }
 
-type ServiceListOptions struct {
-	Labels map[string]string
-}
-
-func (d *Docker) ServiceList(ctx context.Context, opts ServiceListOptions) ([]swarm.Service, error) {
-	services, err := d.client.ServiceList(ctx, types.ServiceListOptions{})
+func (d *Docker) ServiceList(ctx context.Context, opts types.ServiceListOptions) ([]swarm.Service, error) {
+	services, err := d.client.ServiceList(ctx, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list services: %w", err)
 	}

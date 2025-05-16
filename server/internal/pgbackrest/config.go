@@ -50,6 +50,32 @@ type Repository struct {
 	CustomOptions     map[string]string `json:"custom_options,omitempty"`
 }
 
+func (r *Repository) Clone() *Repository {
+	if r == nil {
+		return nil
+	}
+	return &Repository{
+		ID:                r.ID,
+		Type:              r.Type,
+		S3Bucket:          r.S3Bucket,
+		S3Region:          r.S3Region,
+		S3Endpoint:        r.S3Endpoint,
+		S3Key:             r.S3Key,
+		S3KeySecret:       r.S3KeySecret,
+		GCSBucket:         r.GCSBucket,
+		GCSEndpoint:       r.GCSEndpoint,
+		GCSKey:            r.GCSKey,
+		AzureAccount:      r.AzureAccount,
+		AzureContainer:    r.AzureContainer,
+		AzureEndpoint:     r.AzureEndpoint,
+		AzureKey:          r.AzureKey,
+		RetentionFull:     r.RetentionFull,
+		RetentionFullType: r.RetentionFullType,
+		BasePath:          r.BasePath,
+		CustomOptions:     maps.Clone(r.CustomOptions),
+	}
+}
+
 func (r *Repository) WithDefaults() *Repository {
 	out := &Repository{
 		ID:                r.ID,

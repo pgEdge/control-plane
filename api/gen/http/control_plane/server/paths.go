@@ -95,3 +95,8 @@ func InspectDatabaseTaskControlPlanePath(databaseID string, taskID string) strin
 func GetDatabaseTaskLogControlPlanePath(databaseID string, taskID string) string {
 	return fmt.Sprintf("/databases/%v/tasks/%v/log", databaseID, taskID)
 }
+
+// RestoreDatabaseControlPlanePath returns the URL path to the control-plane service restore-database HTTP endpoint.
+func RestoreDatabaseControlPlanePath(databaseID string) string {
+	return fmt.Sprintf("/databases/%v/restore", databaseID)
+}
