@@ -4,6 +4,21 @@ CODACY_CODE ?= $(shell pwd)
 DEBUG ?= 0
 modules=$(shell go list -m -f '{{ .Dir }}' | awk -F '/' '{ print "./" $$NF "/..."  }')
 module_src_files=$(shell go list -m -f '{{ .Dir }}' | xargs find -f)
+aws_account_id=$(shell aws sts get-caller-identity --query 'Account' --output text)
+terraform_backend=control-plane-terraform-$(aws_account_id)
+terraform_dir=terraform/deployments/$(terraform_deployment)
+
+# AWS accounts where we deploy ECR repositories
+aws_account_id_jason=529820047909
+aws_account_id_assets=583677930824
+
+# Determine the name of the terraform deployment based on the  we're working with. This should
+# match a directory name: ./terraform/pgedge/<name>.
+ifeq ($(aws_account_id),$(aws_account_id_jason))
+	terraform_deployment=jason
+else ifeq ($(aws_account_id),$(aws_account_id_assets))
+	terraform_deployment=assets
+endif
 
 .PHONY: test
 test:
@@ -118,3 +133,20 @@ dev-watch: dev-build docker-swarm-mode
 
 docker/control-plane-dev/control-plane: $(module_src_files)
 	GOOS=linux go build -gcflags "all=-N -l" -o $@ $(shell pwd)/server
+
+.PHONY: terraform-backend
+terraform-backend:
+	@if ! aws s3api head-bucket --bucket $(terraform_backend) > /dev/null 2>&1; then \
+		aws s3 mb s3://$(terraform_backend); \
+	fi
+
+.PHONY: terraform-init
+terraform-init: terraform-backend
+ifeq ($(terraform_deployment),)
+	$(error Unknown terraform deployment for AWS account id $(aws_account_id))
+endif
+	terraform -chdir=$(terraform_dir) init
+
+.PHONY: terraform-deploy
+terraform-deploy: terraform-init
+	terraform -chdir=$(terraform_dir) apply -auto-approve

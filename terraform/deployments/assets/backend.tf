@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
-    bucket = "control-plane-terraform-529820047909"
+    bucket = "control-plane-terraform-583677930824"
     key    = "states/control-plane/terraform.tfstate"
-    region = "us-east-2"
+    region = "us-east-1"
   }
 }
