@@ -2,6 +2,7 @@ package workflows
 
 import (
 	"fmt"
+	"log/slog"
 	"slices"
 
 	"github.com/cschleiden/go-workflows/workflow"
@@ -37,31 +38,7 @@ func (w *Workflows) PgBackRestRestore(ctx workflow.Context, input *PgBackRestRes
 	}
 
 	handleError := func(err error) error {
-		logger.With("error", err).Error("failed to restore database")
-		updateStateInput := &activities.UpdateDbStateInput{
-			DatabaseID: input.Spec.DatabaseID,
-			State:      database.DatabaseStateFailed,
-		}
-		_, stateErr := w.Activities.
-			ExecuteUpdateDbState(ctx, updateStateInput).
-			Get(ctx)
-		if stateErr != nil {
-			logger.With("error", stateErr).Error("failed to update database state")
-		}
-		for _, taskID := range input.NodeTaskIDs {
-			updateTaskStatusInput := &activities.UpdateTaskStatusInput{
-				DatabaseID: input.Spec.DatabaseID,
-				TaskID:     taskID,
-				Status:     task.StatusFailed,
-			}
-			_, taskErr := w.Activities.
-				ExecuteUpdateTaskStatus(ctx, w.Config.HostID, updateTaskStatusInput).
-				Get(ctx)
-			if taskErr != nil {
-				logger.With("error", taskErr).Error("failed to update task status")
-			}
-		}
-		return err
+		return w.handlePgBackRestRestoreFailed(ctx, logger, input, err)
 	}
 
 	refreshCurrentInput := &RefreshCurrentStateInput{
@@ -159,4 +136,37 @@ func (w *Workflows) PgBackRestRestore(ctx workflow.Context, input *PgBackRestRes
 	logger.Info("successfully restored database")
 
 	return &PgBackRestRestoreOutput{}, nil
+}
+
+func (w *Workflows) handlePgBackRestRestoreFailed(
+	ctx workflow.Context,
+	logger *slog.Logger,
+	input *PgBackRestRestoreInput,
+	cause error,
+) error {
+	logger.With("error", cause).Error("failed to restore database")
+	updateStateInput := &activities.UpdateDbStateInput{
+		DatabaseID: input.Spec.DatabaseID,
+		State:      database.DatabaseStateFailed,
+	}
+	_, stateErr := w.Activities.
+		ExecuteUpdateDbState(ctx, updateStateInput).
+		Get(ctx)
+	if stateErr != nil {
+		logger.With("error", stateErr).Error("failed to update database state")
+	}
+	for _, taskID := range input.NodeTaskIDs {
+		updateTaskStatusInput := &activities.UpdateTaskStatusInput{
+			DatabaseID: input.Spec.DatabaseID,
+			TaskID:     taskID,
+			Status:     task.StatusFailed,
+		}
+		_, taskErr := w.Activities.
+			ExecuteUpdateTaskStatus(ctx, w.Config.HostID, updateTaskStatusInput).
+			Get(ctx)
+		if taskErr != nil {
+			logger.With("error", taskErr).Error("failed to update task status")
+		}
+	}
+	return cause
 }
