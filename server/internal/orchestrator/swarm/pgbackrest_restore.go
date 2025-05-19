@@ -91,23 +91,9 @@ func (p *PgBackRestRestore) Create(ctx context.Context, rc *resource.Context) er
 		return err
 	}
 
-	t, err := taskSvc.GetTask(ctx, p.DatabaseID, p.TaskID)
-	if err != nil {
-		return fmt.Errorf("failed to get task %s: %w", p.TaskID, err)
-	}
-	t.Status = task.StatusRunning
-	t.InstanceID = p.InstanceID
-	t.HostID = p.HostID
-	if err := taskSvc.UpdateTask(ctx, t); err != nil {
-		return fmt.Errorf("failed to update task to running: %w", err)
-	}
+	t, err := p.startTask(ctx, taskSvc)
 	handleError := func(cause error) error {
-		t.SetFailed(cause)
-		if err := taskSvc.UpdateTask(context.Background(), t); err != nil {
-			logger.Err(err).
-				Stringer("task_id", p.TaskID).
-				Msg("failed to update task to failed")
-		}
+		p.failTask(logger, taskSvc, t, cause)
 		return err
 	}
 
@@ -115,34 +101,108 @@ func (p *PgBackRestRestore) Create(ctx context.Context, rc *resource.Context) er
 	if err != nil {
 		return handleError(fmt.Errorf("failed to get postgres service resource from state: %w", err))
 	}
-	swarmService, err := dockerClient.ServiceInspect(ctx, svcResource.ServiceID)
+
+	err = p.stopPostgres(ctx, rc, dockerClient, fs, svcResource)
 	if err != nil {
-		return handleError(fmt.Errorf("failed to inspect postgres service: %w", err))
+		return handleError(err)
 	}
+
+	containerID, err := p.runRestoreContainer(ctx, dockerClient, svcResource)
+	if err != nil {
+		return handleError(err)
+	}
+
+	err = p.streamLogsAndWait(ctx, dockerClient, logger, taskSvc, containerID)
+	if err != nil {
+		return handleError(err)
+	}
+
+	err = p.startPostgres(ctx, dockerClient, svcResource)
+	if err != nil {
+		return handleError(err)
+	}
+
+	err = p.completeTask(ctx, taskSvc, t)
+	if err != nil {
+		return handleError(err)
+	}
+
+	return nil
+}
+
+func (p *PgBackRestRestore) startTask(ctx context.Context, taskSvc *task.Service) (*task.Task, error) {
+	t, err := taskSvc.GetTask(ctx, p.DatabaseID, p.TaskID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get task %s: %w", p.TaskID, err)
+	}
+	t.Status = task.StatusRunning
+	t.InstanceID = p.InstanceID
+	t.HostID = p.HostID
+	if err := taskSvc.UpdateTask(ctx, t); err != nil {
+		return nil, fmt.Errorf("failed to update task to running: %w", err)
+	}
+
+	return t, err
+}
+
+func (p *PgBackRestRestore) failTask(
+	logger zerolog.Logger,
+	taskSvc *task.Service,
+	t *task.Task,
+	cause error,
+) {
+	t.SetFailed(cause)
+	if err := taskSvc.UpdateTask(context.Background(), t); err != nil {
+		logger.Err(err).
+			Stringer("task_id", p.TaskID).
+			Msg("failed to update task to failed")
+	}
+}
+
+func (p *PgBackRestRestore) completeTask(
+	ctx context.Context,
+	taskSvc *task.Service,
+	t *task.Task,
+) error {
+	t.SetCompleted()
+	if err := taskSvc.UpdateTask(ctx, t); err != nil {
+		return fmt.Errorf("failed to update task to completed: %w", err)
+	}
+
+	return nil
+}
+
+func (p *PgBackRestRestore) stopPostgres(
+	ctx context.Context,
+	rc *resource.Context,
+	dockerClient *docker.Docker,
+	fs afero.Fs,
+	svcResource *PostgresService,
+) error {
 	dataDir, err := resource.FromContext[*filesystem.DirResource](rc, filesystem.DirResourceIdentifier(p.DataDirID))
 	if err != nil {
-		return handleError(fmt.Errorf("failed to get data dir resource from state: %w", err))
+		return fmt.Errorf("failed to get data dir resource from state: %w", err)
 	}
 	patroniCluster, err := resource.FromContext[*PatroniCluster](rc, PatroniClusterResourceIdentifier(p.NodeName))
 	if err != nil {
-		return handleError(fmt.Errorf("failed to get patroni cluster resource from state: %w", err))
+		return fmt.Errorf("failed to get patroni cluster resource from state: %w", err)
 	}
 
 	err = dockerClient.ServiceScale(ctx, docker.ServiceScaleOptions{
-		ServiceID:   swarmService.ID,
+		ServiceID:   svcResource.ServiceID,
 		Scale:       0,
 		Wait:        true,
 		WaitTimeout: time.Minute,
 	})
 	if err != nil {
-		return handleError(fmt.Errorf("failed to scale down postgres service: %w", err))
+		return fmt.Errorf("failed to scale down postgres service: %w", err)
 	}
 
 	// This resource exists to make it easy to remove the patroni namespace.
 	// The namespace will automatically get recreated when Patroni starts up
 	// again.
 	if err := patroniCluster.Delete(ctx, rc); err != nil {
-		return handleError(fmt.Errorf("failed to delete patroni cluster: %w", err))
+		return fmt.Errorf("failed to delete patroni cluster: %w", err)
 	}
 
 	// Remove the postmaster.pid file if it exists. This can happen if there was
@@ -150,9 +210,21 @@ func (p *PgBackRestRestore) Create(ctx context.Context, rc *resource.Context) er
 	// scaled down the service above.
 	err = fs.Remove(filepath.Join(dataDir.Path, "pgdata", "postmaster.pid"))
 	if err != nil && !errors.Is(err, afero.ErrFileNotFound) {
-		return handleError(fmt.Errorf("failed to remove postmaster.pid file: %w", err))
+		return fmt.Errorf("failed to remove postmaster.pid file: %w", err)
 	}
 
+	return nil
+}
+
+func (p *PgBackRestRestore) runRestoreContainer(
+	ctx context.Context,
+	dockerClient *docker.Docker,
+	svcResource *PostgresService,
+) (string, error) {
+	swarmService, err := dockerClient.ServiceInspect(ctx, svcResource.ServiceID)
+	if err != nil {
+		return "", fmt.Errorf("failed to inspect postgres service: %w", err)
+	}
 	var limits swarm.Limit
 	if swarmService.Spec.TaskTemplate.Resources != nil && swarmService.Spec.TaskTemplate.Resources.Limits != nil {
 		limits = *swarmService.Spec.TaskTemplate.Resources.Limits
@@ -180,8 +252,19 @@ func (p *PgBackRestRestore) Create(ctx context.Context, rc *resource.Context) er
 		Name: fmt.Sprintf("pgbackrest-restore-%s", p.InstanceID),
 	})
 	if err != nil {
-		return handleError(fmt.Errorf("failed to create pgbackrest restore container: %w", err))
+		return "", fmt.Errorf("failed to create pgbackrest restore container: %w", err)
 	}
+
+	return containerID, nil
+}
+
+func (p *PgBackRestRestore) streamLogsAndWait(
+	ctx context.Context,
+	dockerClient *docker.Docker,
+	logger zerolog.Logger,
+	taskSvc *task.Service,
+	containerID string,
+) error {
 	defer func() {
 		err := dockerClient.ContainerRemove(ctx, containerID, container.RemoveOptions{
 			// Using force here to so that we can safely retry this operation.
@@ -195,32 +278,35 @@ func (p *PgBackRestRestore) Create(ctx context.Context, rc *resource.Context) er
 	}()
 	taskLogger := task.NewTaskLogWriter(ctx, taskSvc, p.DatabaseID, p.TaskID)
 	// The follow: true means that this will block until the container exits.
-	err = dockerClient.ContainerLogs(ctx, taskLogger, containerID, container.LogsOptions{
+	err := dockerClient.ContainerLogs(ctx, taskLogger, containerID, container.LogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Follow:     true,
 	})
 	if err != nil {
-		return handleError(fmt.Errorf("failed to get pgbackrest restore container logs: %w", err))
+		return fmt.Errorf("failed to get pgbackrest restore container logs: %w", err)
 	}
 	err = dockerClient.ContainerWait(ctx, containerID, container.WaitConditionNotRunning, 30*time.Second)
 	if err != nil {
-		return handleError(fmt.Errorf("error while waiting for pgbackrest restore container: %w", err))
+		return fmt.Errorf("error while waiting for pgbackrest restore container: %w", err)
 	}
 
-	err = dockerClient.ServiceScale(ctx, docker.ServiceScaleOptions{
-		ServiceID:   swarmService.ID,
+	return nil
+}
+
+func (p *PgBackRestRestore) startPostgres(
+	ctx context.Context,
+	dockerClient *docker.Docker,
+	svcResource *PostgresService,
+) error {
+	err := dockerClient.ServiceScale(ctx, docker.ServiceScaleOptions{
+		ServiceID:   svcResource.ServiceID,
 		Scale:       1,
 		Wait:        true,
 		WaitTimeout: time.Minute,
 	})
 	if err != nil {
-		return handleError(fmt.Errorf("failed to scale up postgres service: %w", err))
-	}
-
-	t.SetCompleted()
-	if err := taskSvc.UpdateTask(ctx, t); err != nil {
-		return handleError(fmt.Errorf("failed to update task to completed: %w", err))
+		return fmt.Errorf("failed to scale up postgres service: %w", err)
 	}
 
 	return nil
