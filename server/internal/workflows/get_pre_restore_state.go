@@ -58,38 +58,42 @@ func (w *Workflows) GetPreRestoreState(ctx workflow.Context, input *GetPreRestor
 			for _, resource := range out.Resources.Resources {
 				state.Add(resource)
 			}
-			// We only want to add the instance resource to the state if that
-			// instance is not being restored.
-			if !toBeRestored {
-				err = state.AddResource(out.Resources.Instance)
-				if err != nil {
-					return nil, fmt.Errorf("failed to add instance resource to state: %w", err)
-				}
+			// Skip adding the instance resource if this instance is going to
+			// be restored.
+			if toBeRestored {
+				continue
+			}
+			err = state.AddResource(out.Resources.Instance)
+			if err != nil {
+				return nil, fmt.Errorf("failed to add instance resource to state: %w", err)
 			}
 		}
-		if !toBeRestored {
-			err = state.AddResource(&database.NodeResource{
-				ClusterID:   w.Config.ClusterID,
-				Name:        nodeInstance.NodeName,
-				InstanceIDs: instanceIDs,
+		// Skip adding the node resource and subscriptions if the node is going
+		// to be restored.
+		if toBeRestored {
+			continue
+		}
+		err = state.AddResource(&database.NodeResource{
+			ClusterID:   w.Config.ClusterID,
+			Name:        nodeInstance.NodeName,
+			InstanceIDs: instanceIDs,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to add node resource to state: %w", err)
+		}
+		for j, peer := range nodeInstances {
+			// Skip adding the subscription if the peer node is going to be
+			// restored.
+			_, peerToBeRestored := input.NodeTaskIDs[peer.NodeName]
+			if i == j || peerToBeRestored {
+				continue
+			}
+			err = state.AddResource(&database.SubscriptionResource{
+				SubscriberNode: nodeInstance.NodeName,
+				ProviderNode:   peer.NodeName,
 			})
 			if err != nil {
-				return nil, fmt.Errorf("failed to add node resource to state: %w", err)
-			}
-			for j, peer := range nodeInstances {
-				if i == j {
-					continue
-				}
-				_, peerToBeRestored := input.NodeTaskIDs[peer.NodeName]
-				if !peerToBeRestored {
-					err = state.AddResource(&database.SubscriptionResource{
-						SubscriberNode: nodeInstance.NodeName,
-						ProviderNode:   peer.NodeName,
-					})
-					if err != nil {
-						return nil, fmt.Errorf("failed to add subscription resource to state: %w", err)
-					}
-				}
+				return nil, fmt.Errorf("failed to add subscription resource to state: %w", err)
 			}
 		}
 	}
