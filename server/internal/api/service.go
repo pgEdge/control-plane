@@ -37,6 +37,7 @@ type Service struct {
 	dbSvc          *database.Service
 	taskSvc        *task.Service
 	workflowClient *client.Client
+	workflows      *workflows.Workflows
 }
 
 func NewService(
@@ -47,6 +48,7 @@ func NewService(
 	dbSvc *database.Service,
 	taskSvc *task.Service,
 	workflowClient *client.Client,
+	workflows *workflows.Workflows,
 ) *Service {
 	return &Service{
 		cfg:            cfg,
@@ -56,6 +58,7 @@ func NewService(
 		dbSvc:          dbSvc,
 		taskSvc:        taskSvc,
 		workflowClient: workflowClient,
+		workflows:      workflows,
 	}
 }
 
@@ -183,7 +186,7 @@ func (s *Service) CreateDatabase(ctx context.Context, req *api.CreateDatabaseReq
 	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
 		Queue:      core.Queue(s.cfg.HostID.String()),
 		InstanceID: db.DatabaseID.String(), // Using a stable ID functions as a locking mechanism
-	}, "UpdateDatabase", &workflows.UpdateDatabaseInput{
+	}, s.workflows.UpdateDatabase, &workflows.UpdateDatabaseInput{
 		Spec: spec,
 	})
 	if err != nil {
@@ -220,7 +223,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePay
 	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
 		Queue:      core.Queue(s.cfg.HostID.String()),
 		InstanceID: db.DatabaseID.String(), // Using a stable ID functions as a locking mechanism
-	}, "UpdateDatabase", &workflows.UpdateDatabaseInput{
+	}, s.workflows.UpdateDatabase, &workflows.UpdateDatabaseInput{
 		Spec:        spec,
 		ForceUpdate: forceUpdate,
 	})
@@ -255,7 +258,7 @@ func (s *Service) DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePay
 	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
 		Queue:      core.Queue(s.cfg.HostID.String()),
 		InstanceID: db.DatabaseID.String(), // Using a stable ID functions as a locking mechanism
-	}, "DeleteDatabase", &workflows.DeleteDatabaseInput{
+	}, s.workflows.DeleteDatabase, &workflows.DeleteDatabaseInput{
 		DatabaseID: db.DatabaseID,
 	})
 	if err != nil {
@@ -306,7 +309,7 @@ func (s *Service) InitiateDatabaseBackup(ctx context.Context, req *api.InitiateD
 	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
 		Queue:      core.Queue(s.cfg.HostID.String()),
 		InstanceID: db.DatabaseID.String() + "-" + node.Name,
-	}, "CreatePgBackRestBackup", &workflows.CreatePgBackRestBackupInput{
+	}, s.workflows.CreatePgBackRestBackup, &workflows.CreatePgBackRestBackupInput{
 		Task:      t,
 		Instances: instances,
 		Options: &pgbackrest.BackupOptions{
@@ -491,7 +494,7 @@ func (s *Service) RestoreDatabase(ctx context.Context, req *api.RestoreDatabaseP
 	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
 		Queue:      core.Queue(s.cfg.HostID.String()),
 		InstanceID: db.DatabaseID.String(), // Using a stable ID functions as a locking mechanism
-	}, "PgBackRestRestore", &workflows.PgBackRestRestoreInput{
+	}, s.workflows.PgBackRestRestore, &workflows.PgBackRestRestoreInput{
 		Spec:          db.Spec,
 		TargetNodes:   targetNodes,
 		RestoreConfig: restoreConfig,
