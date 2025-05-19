@@ -80,35 +80,33 @@ func (a *Activities) RestoreSpec(ctx context.Context, input *RestoreSpecInput) (
 		if err != nil {
 			return nil, fmt.Errorf("failed to get node %s from spec: %w", nodeName, err)
 		}
+		var instanceID, hostID uuid.UUID
 		primary, err := database.GetPrimaryInstance(ctx, rc, nodeName)
 		if errors.Is(err, resource.ErrNotFound) {
 			// ErrNotFound is expected if we previously failed to restore the
 			// database and the node is not in the current state. In this case,
-			// we'll just pick the first host ID from the to be the primary.
+			// we'll just pick the first host ID from the node to be the
+			// primary.
 			if len(node.HostIDs) < 1 {
 				return nil, fmt.Errorf("node %s has no host IDs", nodeName)
 			}
-			node.HostIDs = []uuid.UUID{node.HostIDs[0]}
-			node.RestoreConfig = input.RestoreConfig
-			node.BackupConfig = nil
-			primaries[nodeName] = &InstanceHost{
-				InstanceID: database.InstanceIDFor(node.HostIDs[0], spec.DatabaseID, nodeName),
-				HostID:     node.HostIDs[0],
-			}
+			hostID = node.HostIDs[0]
+			instanceID = database.InstanceIDFor(node.HostIDs[0], spec.DatabaseID, nodeName)
 		} else if err != nil {
 			return nil, fmt.Errorf("failed to get primary instance for node %s: %w", nodeName, err)
 		} else {
-			// We're only going to restore the primary instance, then we'll recreate
-			// the replicas.
-			node.HostIDs = []uuid.UUID{primary.Spec.HostID}
-			node.RestoreConfig = input.RestoreConfig
-			node.BackupConfig = nil
-			primaries[nodeName] = &InstanceHost{
-				InstanceID: primary.Spec.InstanceID,
-				HostID:     primary.Spec.HostID,
-			}
+			hostID = primary.Spec.HostID
+			instanceID = primary.Spec.InstanceID
 		}
-
+		// We're only going to restore the primary instance, then we'll recreate
+		// the replicas.
+		node.HostIDs = []uuid.UUID{hostID}
+		node.RestoreConfig = input.RestoreConfig
+		node.BackupConfig = nil
+		primaries[nodeName] = &InstanceHost{
+			InstanceID: instanceID,
+			HostID:     hostID,
+		}
 	}
 
 	return &RestoreSpecOutput{
