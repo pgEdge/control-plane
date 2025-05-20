@@ -206,7 +206,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePay
 		return nil, api.MakeInvalidInput(err)
 	}
 
-	db, err := s.dbSvc.UpdateDatabase(ctx, spec)
+	db, err := s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateModifying, spec)
 	if errors.Is(err, database.ErrDatabaseNotFound) {
 		return nil, api.MakeNotFound(fmt.Errorf("database %s not found", *req.DatabaseID))
 	} else if errors.Is(err, database.ErrDatabaseNotModifiable) {
@@ -465,8 +465,12 @@ func (s *Service) RestoreDatabase(ctx context.Context, req *api.RestoreDatabaseP
 		return cause
 	}
 
-	if err := s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, db.State, database.DatabaseStateRestoring); err != nil {
-		return nil, fmt.Errorf("failed to update database state: %w", err)
+	// Remove backup configuration from nodes that are being restored and
+	// persist the updated spec.
+	db.Spec.RemoveBackupConfigFrom(targetNodes...)
+	db, err = s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateRestoring, db.Spec)
+	if err != nil {
+		return nil, handleError(fmt.Errorf("failed to persist db spec updates: %w", err))
 	}
 	cleanupTasks = append(cleanupTasks, func() error {
 		return s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, database.DatabaseStateRestoring, db.State)

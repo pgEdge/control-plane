@@ -63,17 +63,6 @@ func (a *Activities) RestoreSpec(ctx context.Context, input *RestoreSpecInput) (
 		Injector: a.Injector,
 	}
 
-	if spec.BackupConfig != nil {
-		// Move the backup config from the database spec onto each node so that
-		// we can nil it out on every node that's being restored.
-		for i := range spec.Nodes {
-			if spec.Nodes[i].BackupConfig == nil {
-				spec.Nodes[i].BackupConfig = spec.BackupConfig
-			}
-		}
-		spec.BackupConfig = nil
-	}
-
 	primaries := map[string]*InstanceHost{}
 	for _, nodeName := range input.TargetNodes {
 		node, err := spec.Node(nodeName)

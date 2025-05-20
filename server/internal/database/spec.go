@@ -192,6 +192,34 @@ func (s *Spec) NodeNames() []string {
 	return names
 }
 
+// NormalizeBackupConfig normalizes the backup config so that its defined
+// per-node rather than at the database level. This is useful as a preliminary
+// step if we need to modify the backup configs on the user's behalf.
+func (s *Spec) NormalizeBackupConfig() {
+	if s.BackupConfig == nil {
+		return
+	}
+	for i := range s.Nodes {
+		if s.Nodes[i].BackupConfig == nil {
+			s.Nodes[i].BackupConfig = s.BackupConfig
+		}
+	}
+	s.BackupConfig = nil
+}
+
+// RemoveBackupConfigFrom removes backup configuration from the given nodes. It
+// normalizes the backup configuration first to ensure that only the given nodes
+// are affected.
+func (s *Spec) RemoveBackupConfigFrom(nodes ...string) {
+	s.NormalizeBackupConfig()
+
+	for i, n := range s.Nodes {
+		if slices.Contains(nodes, n.Name) {
+			s.Nodes[i].BackupConfig = nil
+		}
+	}
+}
+
 func (s *Spec) Clone() *Spec {
 	nodes := make([]*Node, len(s.Nodes))
 	for i, node := range s.Nodes {

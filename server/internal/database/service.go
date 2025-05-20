@@ -65,7 +65,7 @@ func (s *Service) CreateDatabase(ctx context.Context, spec *Spec) (*Database, er
 	return db, nil
 }
 
-func (s *Service) UpdateDatabase(ctx context.Context, spec *Spec) (*Database, error) {
+func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec *Spec) (*Database, error) {
 	currentSpec, err := s.store.Spec.GetByKey(spec.DatabaseID).Exec(ctx)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
@@ -92,7 +92,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, spec *Spec) (*Database, er
 
 	currentSpec.Spec = spec
 	currentDB.UpdatedAt = time.Now()
-	currentDB.State = DatabaseStateModifying
+	currentDB.State = state
 
 	if err := s.store.Txn(
 		s.store.Spec.Update(currentSpec),
