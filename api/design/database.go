@@ -485,3 +485,25 @@ var UpdateDatabaseRequest = g.Type("UpdateDatabaseRequest", func() {
 		g.Description("The specification for the database.")
 	})
 })
+
+var RestoreDatabaseRequest = g.Type("RestoreDatabaseRequest", func() {
+	g.Attribute("restore_config", RestoreConfigSpec, func() {
+		g.Description("Configuration for the restore process.")
+	})
+	g.Attribute("target_nodes", g.ArrayOf(g.String), func() {
+		g.Description("The nodes to restore. Defaults to all nodes if empty or unspecified.")
+		g.Example([]string{"n1", "n2"})
+		g.Example([]string{"n1"})
+	})
+
+	g.Required("restore_config")
+})
+
+var RestoreDatabaseResponse = g.Type("RestoreDatabaseResponse", func() {
+	g.Attribute("database", Database, func() {
+		g.Description("The database being restored.")
+	})
+	g.Attribute("tasks", g.ArrayOf(Task), func() {
+		g.Description("The restore tasks that were created to restore this database.")
+	})
+})

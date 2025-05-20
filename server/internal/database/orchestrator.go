@@ -44,6 +44,7 @@ type ConnectionInfo struct {
 
 type Orchestrator interface {
 	GenerateInstanceResources(spec *InstanceSpec) (*InstanceResources, error)
+	GenerateInstanceRestoreResources(spec *InstanceSpec, taskID uuid.UUID) (*InstanceResources, error)
 	GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID uuid.UUID) (*ConnectionInfo, error)
 	CreatePgBackRestBackup(ctx context.Context, w io.Writer, instanceID uuid.UUID, options *pgbackrest.BackupOptions) error
 }

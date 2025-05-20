@@ -37,6 +37,7 @@ type Server struct {
 	ListDatabaseTasks      http.Handler
 	InspectDatabaseTask    http.Handler
 	GetDatabaseTaskLog     http.Handler
+	RestoreDatabase        http.Handler
 	GenHTTPOpenapi3JSON    http.Handler
 }
 
@@ -89,6 +90,7 @@ func New(
 			{"ListDatabaseTasks", "GET", "/databases/{database_id}/tasks"},
 			{"InspectDatabaseTask", "GET", "/databases/{database_id}/tasks/{task_id}"},
 			{"GetDatabaseTaskLog", "GET", "/databases/{database_id}/tasks/{task_id}/log"},
+			{"RestoreDatabase", "POST", "/databases/{database_id}/restore"},
 			{"Serve ./gen/http/openapi3.json", "GET", "/openapi.json"},
 		},
 		InitCluster:            NewInitClusterHandler(e.InitCluster, mux, decoder, encoder, errhandler, formatter),
@@ -108,6 +110,7 @@ func New(
 		ListDatabaseTasks:      NewListDatabaseTasksHandler(e.ListDatabaseTasks, mux, decoder, encoder, errhandler, formatter),
 		InspectDatabaseTask:    NewInspectDatabaseTaskHandler(e.InspectDatabaseTask, mux, decoder, encoder, errhandler, formatter),
 		GetDatabaseTaskLog:     NewGetDatabaseTaskLogHandler(e.GetDatabaseTaskLog, mux, decoder, encoder, errhandler, formatter),
+		RestoreDatabase:        NewRestoreDatabaseHandler(e.RestoreDatabase, mux, decoder, encoder, errhandler, formatter),
 		GenHTTPOpenapi3JSON:    http.FileServer(fileSystemGenHTTPOpenapi3JSON),
 	}
 }
@@ -134,6 +137,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.ListDatabaseTasks = m(s.ListDatabaseTasks)
 	s.InspectDatabaseTask = m(s.InspectDatabaseTask)
 	s.GetDatabaseTaskLog = m(s.GetDatabaseTaskLog)
+	s.RestoreDatabase = m(s.RestoreDatabase)
 }
 
 // MethodNames returns the methods served.
@@ -158,6 +162,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountListDatabaseTasksHandler(mux, h.ListDatabaseTasks)
 	MountInspectDatabaseTaskHandler(mux, h.InspectDatabaseTask)
 	MountGetDatabaseTaskLogHandler(mux, h.GetDatabaseTaskLog)
+	MountRestoreDatabaseHandler(mux, h.RestoreDatabase)
 	MountGenHTTPOpenapi3JSON(mux, h.GenHTTPOpenapi3JSON)
 }
 
@@ -980,6 +985,57 @@ func NewGetDatabaseTaskLogHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "get-database-task-log")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountRestoreDatabaseHandler configures the mux to serve the "control-plane"
+// service "restore-database" endpoint.
+func MountRestoreDatabaseHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/databases/{database_id}/restore", f)
+}
+
+// NewRestoreDatabaseHandler creates a HTTP handler which loads the HTTP
+// request and calls the "control-plane" service "restore-database" endpoint.
+func NewRestoreDatabaseHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeRestoreDatabaseRequest(mux, decoder)
+		encodeResponse = EncodeRestoreDatabaseResponse(encoder)
+		encodeError    = EncodeRestoreDatabaseError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "restore-database")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
 		payload, err := decodeRequest(r)
 		if err != nil {

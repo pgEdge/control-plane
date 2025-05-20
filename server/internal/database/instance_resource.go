@@ -226,6 +226,20 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 }
 
 func (r *InstanceResource) Update(ctx context.Context, rc *resource.Context) error {
+	orch, err := do.Invoke[Orchestrator](rc.Injector)
+	if err != nil {
+		return err
+	}
+
+	client, err := GetPatroniClient(ctx, orch, r.Spec.DatabaseID, r.Spec.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get patroni client: %w", err)
+	}
+
+	if err := client.Reload(ctx); err != nil {
+		return fmt.Errorf("failed to reload patroni conf: %w", err)
+	}
+
 	return r.Create(ctx, rc)
 }
 
@@ -333,7 +347,7 @@ func (r *InstanceResource) dropSpock(ctx context.Context, connInfo *ConnectionIn
 	}
 	defer conn.Close(ctx)
 
-	err = postgres.DropSpockAndCleanupSlots().Exec(ctx, conn)
+	err = postgres.DropSpockAndCleanupSlots(r.Spec.DatabaseName).Exec(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to drop spock: %w", err)
 	}

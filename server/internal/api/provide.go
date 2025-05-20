@@ -12,6 +12,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/task"
+	"github.com/pgEdge/control-plane/server/internal/workflows"
 )
 
 func Provide(i *do.Injector) {
@@ -78,7 +79,11 @@ func provideService(i *do.Injector) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get task service: %w", err)
 		}
+		workflows, err := do.Invoke[*workflows.Workflows](i)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get workflows: %w", err)
+		}
 
-		return NewService(cfg, logger, etcdClient, hostSvc, dbSvc, taskSvc, wfClient), nil
+		return NewService(cfg, logger, etcdClient, hostSvc, dbSvc, taskSvc, wfClient, workflows), nil
 	})
 }

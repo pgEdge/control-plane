@@ -39,18 +39,18 @@ func (w *Workflows) ReconcileState(ctx workflow.Context, input *ReconcileStateIn
 	logger := workflow.Logger(ctx).With("database_id", input.DatabaseID.String())
 	logger.Info("reconciling database state")
 
-	planInput := &PlanInput{
+	planInput := &activities.PlanInput{
 		DatabaseID:  input.DatabaseID,
 		Current:     input.Current,
 		Desired:     input.Desired,
 		ForceUpdate: input.ForceUpdate,
 	}
-	planOutput, err := w.ExecutePlan(ctx, planInput).Get(ctx)
+	planOutput, err := w.Activities.ExecutePlan(ctx, planInput).Get(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get plan: %w", err)
 	}
 
-	current := planOutput.Current
+	current := input.Current
 
 	// We always want to persist the updated state
 	defer func() {

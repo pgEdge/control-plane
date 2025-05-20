@@ -50,6 +50,9 @@ type Service interface {
 	InspectDatabaseTask(context.Context, *InspectDatabaseTaskPayload) (res *Task, err error)
 	// Returns the log of a particular task for a database.
 	GetDatabaseTaskLog(context.Context, *GetDatabaseTaskLogPayload) (res *TaskLog, err error)
+	// Perform an in-place restore one or more nodes using the given restore
+	// configuration.
+	RestoreDatabase(context.Context, *RestoreDatabasePayload) (res *RestoreDatabaseResponse, err error)
 }
 
 // APIName is the name of the API as defined in the design.
@@ -66,7 +69,7 @@ const ServiceName = "control-plane"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [17]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "inspect-cluster", "list-hosts", "inspect-host", "remove-host", "list-databases", "create-database", "inspect-database", "update-database", "delete-database", "initiate-database-backup", "list-database-tasks", "inspect-database-task", "get-database-task-log"}
+var MethodNames = [18]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "inspect-cluster", "list-hosts", "inspect-host", "remove-host", "list-databases", "create-database", "inspect-database", "update-database", "delete-database", "initiate-database-backup", "list-database-tasks", "inspect-database-task", "get-database-task-log", "restore-database"}
 
 type BackupConfigSpec struct {
 	// The backup provider for this backup configuration.
@@ -532,6 +535,30 @@ type RestoreConfigSpec struct {
 	RestoreOptions []string
 }
 
+// RestoreDatabasePayload is the payload type of the control-plane service
+// restore-database method.
+type RestoreDatabasePayload struct {
+	// ID of the database to restore.
+	DatabaseID string
+	Request    *RestoreDatabaseRequest
+}
+
+type RestoreDatabaseRequest struct {
+	// Configuration for the restore process.
+	RestoreConfig *RestoreConfigSpec
+	// The nodes to restore. Defaults to all nodes if empty or unspecified.
+	TargetNodes []string
+}
+
+// RestoreDatabaseResponse is the result type of the control-plane service
+// restore-database method.
+type RestoreDatabaseResponse struct {
+	// The database being restored.
+	Database *Database
+	// The restore tasks that were created to restore this database.
+	Tasks []*Task
+}
+
 type RestoreRepositorySpec struct {
 	// The unique identifier of this repository.
 	ID *string
@@ -579,6 +606,12 @@ type RestoreRepositorySpec struct {
 type Task struct {
 	// The database ID of the task.
 	DatabaseID string
+	// The name of the node that the task is operating on.
+	NodeName *string
+	// The ID of the instance that the task is operating on.
+	InstanceID *string
+	// The ID of the host that the task is running on.
+	HostID *string
 	// The unique ID of the task.
 	TaskID string
 	// The time when the task was created.

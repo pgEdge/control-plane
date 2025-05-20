@@ -16,6 +16,7 @@ const (
 	DatabaseStateDegraded  DatabaseState = "degraded"
 	DatabaseStateFailed    DatabaseState = "failed"
 	DatabaseStateBackingUp DatabaseState = "backing_up"
+	DatabaseStateRestoring DatabaseState = "restoring"
 	DatabaseStateUnknown   DatabaseState = "unknown"
 )
 

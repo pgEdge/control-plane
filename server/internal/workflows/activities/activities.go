@@ -38,11 +38,14 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.GetCurrentState),
 		work.RegisterActivity(a.GetInstanceResources),
 		work.RegisterActivity(a.GetPrimaryInstance),
+		work.RegisterActivity(a.GetRestoreResources),
 		work.RegisterActivity(a.PersistState),
 		work.RegisterActivity(a.PlanRefresh),
 		work.RegisterActivity(a.Plan),
+		work.RegisterActivity(a.RestoreSpec),
 		work.RegisterActivity(a.UpdateDbState),
 		work.RegisterActivity(a.UpdateTask),
+		work.RegisterActivity(a.UpdateTaskStatus),
 	}
 	return errors.Join(errs...)
 }

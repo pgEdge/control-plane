@@ -52,26 +52,31 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 		return err
 	}
 
-	wf := workflow.WorkflowInstance(ctx)
-
-	t.SetRunning(wf.InstanceID, wf.ExecutionID)
-	updateTaskInput := &activities.UpdateTaskInput{
-		Task: t,
-	}
-	_, err := w.Activities.
-		ExecuteUpdateTask(ctx, w.Config.HostID, updateTaskInput).
-		Get(ctx)
-	if err != nil {
-		logger.With("error", err).Error("failed to update task state")
-		return nil, err
-	}
-
 	instance, err := workflow.SideEffect(ctx, func(_ workflow.Context) *InstanceHost {
 		idx := rand.IntN(len(input.Instances))
 		return input.Instances[idx]
 	}).Get(ctx)
 	if err != nil {
 		return nil, handleError(fmt.Errorf("failed to get random instance: %w", err))
+	}
+
+	wf := workflow.WorkflowInstance(ctx)
+
+	t.Status = task.StatusRunning
+	t.WorkflowInstanceID = wf.InstanceID
+	t.WorkflowExecutionID = wf.ExecutionID
+	t.InstanceID = instance.InstanceID
+	t.HostID = instance.HostID
+
+	updateTaskInput := &activities.UpdateTaskInput{
+		Task: t,
+	}
+	_, err = w.Activities.
+		ExecuteUpdateTask(ctx, w.Config.HostID, updateTaskInput).
+		Get(ctx)
+	if err != nil {
+		logger.With("error", err).Error("failed to update task state")
+		return nil, err
 	}
 
 	getPrimaryInput := &activities.GetPrimaryInstanceInput{

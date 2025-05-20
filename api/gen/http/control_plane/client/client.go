@@ -85,6 +85,10 @@ type Client struct {
 	// get-database-task-log endpoint.
 	GetDatabaseTaskLogDoer goahttp.Doer
 
+	// RestoreDatabase Doer is the HTTP client used to make requests to the
+	// restore-database endpoint.
+	RestoreDatabaseDoer goahttp.Doer
+
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
 	RestoreResponseBody bool
@@ -123,6 +127,7 @@ func NewClient(
 		ListDatabaseTasksDoer:      doer,
 		InspectDatabaseTaskDoer:    doer,
 		GetDatabaseTaskLogDoer:     doer,
+		RestoreDatabaseDoer:        doer,
 		RestoreResponseBody:        restoreBody,
 		scheme:                     scheme,
 		host:                       host,
@@ -484,6 +489,30 @@ func (c *Client) GetDatabaseTaskLog() goa.Endpoint {
 		resp, err := c.GetDatabaseTaskLogDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("control-plane", "get-database-task-log", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// RestoreDatabase returns an endpoint that makes HTTP requests to the
+// control-plane service restore-database server.
+func (c *Client) RestoreDatabase() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeRestoreDatabaseRequest(c.encoder)
+		decodeResponse = DecodeRestoreDatabaseResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildRestoreDatabaseRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.RestoreDatabaseDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "restore-database", err)
 		}
 		return decodeResponse(resp)
 	}

@@ -13,7 +13,8 @@ func (t Type) String() string {
 }
 
 const (
-	TypeBackup Type = "backup"
+	TypeBackup  Type = "backup"
+	TypeRestore Type = "restore"
 )
 
 type Status string
@@ -33,6 +34,9 @@ const (
 
 type Task struct {
 	DatabaseID          uuid.UUID `json:"database_id"`
+	NodeName            string    `json:"node_name"`
+	InstanceID          uuid.UUID `json:"instance_id"`
+	HostID              uuid.UUID `json:"host_id"`
 	TaskID              uuid.UUID `json:"task_id"`
 	CreatedAt           time.Time `json:"created_at"`
 	CompletedAt         time.Time `json:"completed_at"`
@@ -67,12 +71,6 @@ func (t *Task) SetFailed(err error) {
 func (t *Task) SetCompleted() {
 	t.CompletedAt = time.Now()
 	t.Status = StatusCompleted
-}
-
-func (t *Task) SetRunning(workflowInstanceID, workflowExecutionID string) {
-	t.WorkflowInstanceID = workflowInstanceID
-	t.WorkflowExecutionID = workflowExecutionID
-	t.Status = StatusRunning
 }
 
 type TaskLog struct {

@@ -6,10 +6,26 @@ import (
 
 var Task = g.Type("Task", func() {
 	g.Attribute("database_id", g.String, func() {
+		g.Format(g.FormatUUID)
 		g.Description("The database ID of the task.")
 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 	})
+	g.Attribute("node_name", g.String, func() {
+		g.Description("The name of the node that the task is operating on.")
+		g.Example("n1")
+	})
+	g.Attribute("instance_id", g.String, func() {
+		g.Format(g.FormatUUID)
+		g.Description("The ID of the instance that the task is operating on.")
+		g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+	})
+	g.Attribute("host_id", g.String, func() {
+		g.Format(g.FormatUUID)
+		g.Description("The ID of the host that the task is running on.")
+		g.Example("2e52dcde-86d8-4f71-b58e-8dc3a10c936a")
+	})
 	g.Attribute("task_id", g.String, func() {
+		g.Format(g.FormatUUID)
 		g.Description("The unique ID of the task.")
 		g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 	})
@@ -25,7 +41,7 @@ var Task = g.Type("Task", func() {
 	})
 	g.Attribute("type", g.String, func() {
 		g.Description("The type of the task.")
-		g.Example("backup")
+		g.Example("backup", "restore")
 	})
 	g.Attribute("status", g.String, func() {
 		g.Enum("pending", "running", "completed", "failed", "unknown")
@@ -42,10 +58,12 @@ var Task = g.Type("Task", func() {
 
 var TaskLog = g.Type("TaskLog", func() {
 	g.Attribute("database_id", g.String, func() {
+		g.Format(g.FormatUUID)
 		g.Description("The database ID of the task log.")
 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 	})
 	g.Attribute("task_id", g.String, func() {
+		g.Format(g.FormatUUID)
 		g.Description("The unique ID of the task log.")
 		g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 	})
@@ -55,6 +73,7 @@ var TaskLog = g.Type("TaskLog", func() {
 		g.Example("pending")
 	})
 	g.Attribute("last_line_id", g.String, func() {
+		g.Format(g.FormatUUID)
 		g.Description("The ID of the last line in the task log.")
 		g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 	})

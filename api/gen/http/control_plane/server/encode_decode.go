@@ -1299,6 +1299,126 @@ func EncodeGetDatabaseTaskLogError(encoder func(context.Context, http.ResponseWr
 	}
 }
 
+// EncodeRestoreDatabaseResponse returns an encoder for responses returned by
+// the control-plane restore-database endpoint.
+func EncodeRestoreDatabaseResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.RestoreDatabaseResponse)
+		enc := encoder(ctx, w)
+		body := NewRestoreDatabaseResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeRestoreDatabaseRequest returns a decoder for requests sent to the
+// control-plane restore-database endpoint.
+func DecodeRestoreDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			body RestoreDatabaseRequestBody
+			err  error
+		)
+		err = decoder(r).Decode(&body)
+		if err != nil {
+			if err == io.EOF {
+				return nil, goa.MissingPayloadError()
+			}
+			var gerr *goa.ServiceError
+			if errors.As(err, &gerr) {
+				return nil, gerr
+			}
+			return nil, goa.DecodePayloadError(err.Error())
+		}
+		err = ValidateRestoreDatabaseRequestBody(&body)
+		if err != nil {
+			return nil, err
+		}
+
+		var (
+			databaseID string
+
+			params = mux.Vars(r)
+		)
+		databaseID = params["database_id"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("database_id", databaseID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+		payload := NewRestoreDatabasePayload(&body, databaseID)
+
+		return payload, nil
+	}
+}
+
+// EncodeRestoreDatabaseError returns an encoder for errors returned by the
+// restore-database control-plane endpoint.
+func EncodeRestoreDatabaseError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewRestoreDatabaseClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "database_not_modifiable":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewRestoreDatabaseDatabaseNotModifiableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "not_found":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewRestoreDatabaseNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "invalid_input":
+			var res *goa.ServiceError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewRestoreDatabaseInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // marshalControlplaneClusterPeerToClusterPeerResponseBody builds a value of
 // type *ClusterPeerResponseBody from a value of type *controlplane.ClusterPeer.
 func marshalControlplaneClusterPeerToClusterPeerResponseBody(v *controlplane.ClusterPeer) *ClusterPeerResponseBody {
@@ -2391,6 +2511,381 @@ func unmarshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSp
 func marshalControlplaneTaskToTaskResponse(v *controlplane.Task) *TaskResponse {
 	res := &TaskResponse{
 		DatabaseID:  v.DatabaseID,
+		NodeName:    v.NodeName,
+		InstanceID:  v.InstanceID,
+		HostID:      v.HostID,
+		TaskID:      v.TaskID,
+		CreatedAt:   v.CreatedAt,
+		CompletedAt: v.CompletedAt,
+		Type:        v.Type,
+		Status:      v.Status,
+		Error:       v.Error,
+	}
+
+	return res
+}
+
+// marshalControlplaneDatabaseToDatabaseResponseBody builds a value of type
+// *DatabaseResponseBody from a value of type *controlplane.Database.
+func marshalControlplaneDatabaseToDatabaseResponseBody(v *controlplane.Database) *DatabaseResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseResponseBody{
+		ID:        v.ID,
+		TenantID:  v.TenantID,
+		CreatedAt: v.CreatedAt,
+		UpdatedAt: v.UpdatedAt,
+		State:     v.State,
+	}
+	if v.Instances != nil {
+		res.Instances = make([]*InstanceResponseBody, len(v.Instances))
+		for i, val := range v.Instances {
+			res.Instances[i] = marshalControlplaneInstanceToInstanceResponseBody(val)
+		}
+	}
+	if v.Spec != nil {
+		res.Spec = marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody(v.Spec)
+	}
+
+	return res
+}
+
+// marshalControlplaneInstanceToInstanceResponseBody builds a value of type
+// *InstanceResponseBody from a value of type *controlplane.Instance.
+func marshalControlplaneInstanceToInstanceResponseBody(v *controlplane.Instance) *InstanceResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &InstanceResponseBody{
+		ID:              v.ID,
+		HostID:          v.HostID,
+		NodeName:        v.NodeName,
+		CreatedAt:       v.CreatedAt,
+		UpdatedAt:       v.UpdatedAt,
+		State:           v.State,
+		PatroniState:    v.PatroniState,
+		Role:            v.Role,
+		ReadOnly:        v.ReadOnly,
+		PendingRestart:  v.PendingRestart,
+		PatroniPaused:   v.PatroniPaused,
+		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
+	}
+	if v.Interfaces != nil {
+		res.Interfaces = make([]*InstanceInterfaceResponseBody, len(v.Interfaces))
+		for i, val := range v.Interfaces {
+			res.Interfaces[i] = marshalControlplaneInstanceInterfaceToInstanceInterfaceResponseBody(val)
+		}
+	}
+
+	return res
+}
+
+// marshalControlplaneInstanceInterfaceToInstanceInterfaceResponseBody builds a
+// value of type *InstanceInterfaceResponseBody from a value of type
+// *controlplane.InstanceInterface.
+func marshalControlplaneInstanceInterfaceToInstanceInterfaceResponseBody(v *controlplane.InstanceInterface) *InstanceInterfaceResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &InstanceInterfaceResponseBody{
+		NetworkType: v.NetworkType,
+		NetworkID:   v.NetworkID,
+		Hostname:    v.Hostname,
+		Ipv4Address: v.Ipv4Address,
+		Port:        v.Port,
+	}
+
+	return res
+}
+
+// marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody builds a value of
+// type *DatabaseSpecResponseBody from a value of type
+// *controlplane.DatabaseSpec.
+func marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody(v *controlplane.DatabaseSpec) *DatabaseSpecResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseSpecResponseBody{
+		DatabaseName:       v.DatabaseName,
+		PostgresVersion:    v.PostgresVersion,
+		SpockVersion:       v.SpockVersion,
+		Port:               v.Port,
+		DeletionProtection: v.DeletionProtection,
+		StorageClass:       v.StorageClass,
+		StorageSize:        v.StorageSize,
+		Cpus:               v.Cpus,
+		Memory:             v.Memory,
+	}
+	if v.Nodes != nil {
+		res.Nodes = make([]*DatabaseNodeSpecResponseBody, len(v.Nodes))
+		for i, val := range v.Nodes {
+			res.Nodes[i] = marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecResponseBody(val)
+		}
+	} else {
+		res.Nodes = []*DatabaseNodeSpecResponseBody{}
+	}
+	if v.DatabaseUsers != nil {
+		res.DatabaseUsers = make([]*DatabaseUserSpecResponseBody, len(v.DatabaseUsers))
+		for i, val := range v.DatabaseUsers {
+			res.DatabaseUsers[i] = marshalControlplaneDatabaseUserSpecToDatabaseUserSpecResponseBody(val)
+		}
+	}
+	if v.Features != nil {
+		res.Features = make(map[string]string, len(v.Features))
+		for key, val := range v.Features {
+			tk := key
+			tv := val
+			res.Features[tk] = tv
+		}
+	}
+	if v.BackupConfig != nil {
+		res.BackupConfig = marshalControlplaneBackupConfigSpecToBackupConfigSpecResponseBody(v.BackupConfig)
+	}
+	if v.RestoreConfig != nil {
+		res.RestoreConfig = marshalControlplaneRestoreConfigSpecToRestoreConfigSpecResponseBody(v.RestoreConfig)
+	}
+	if v.PostgresqlConf != nil {
+		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
+		for key, val := range v.PostgresqlConf {
+			tk := key
+			tv := val
+			res.PostgresqlConf[tk] = tv
+		}
+	}
+
+	return res
+}
+
+// marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecResponseBody builds a
+// value of type *DatabaseNodeSpecResponseBody from a value of type
+// *controlplane.DatabaseNodeSpec.
+func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecResponseBody(v *controlplane.DatabaseNodeSpec) *DatabaseNodeSpecResponseBody {
+	res := &DatabaseNodeSpecResponseBody{
+		Name:            v.Name,
+		PostgresVersion: v.PostgresVersion,
+		Port:            v.Port,
+		StorageClass:    v.StorageClass,
+		StorageSize:     v.StorageSize,
+		Cpus:            v.Cpus,
+		Memory:          v.Memory,
+	}
+	if v.HostIds != nil {
+		res.HostIds = make([]string, len(v.HostIds))
+		for i, val := range v.HostIds {
+			res.HostIds[i] = val
+		}
+	} else {
+		res.HostIds = []string{}
+	}
+	if v.PostgresqlConf != nil {
+		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
+		for key, val := range v.PostgresqlConf {
+			tk := key
+			tv := val
+			res.PostgresqlConf[tk] = tv
+		}
+	}
+	if v.BackupConfig != nil {
+		res.BackupConfig = marshalControlplaneBackupConfigSpecToBackupConfigSpecResponseBody(v.BackupConfig)
+	}
+	if v.RestoreConfig != nil {
+		res.RestoreConfig = marshalControlplaneRestoreConfigSpecToRestoreConfigSpecResponseBody(v.RestoreConfig)
+	}
+
+	return res
+}
+
+// marshalControlplaneBackupConfigSpecToBackupConfigSpecResponseBody builds a
+// value of type *BackupConfigSpecResponseBody from a value of type
+// *controlplane.BackupConfigSpec.
+func marshalControlplaneBackupConfigSpecToBackupConfigSpecResponseBody(v *controlplane.BackupConfigSpec) *BackupConfigSpecResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &BackupConfigSpecResponseBody{
+		Provider: v.Provider,
+	}
+	{
+		var zero string
+		if res.Provider == zero {
+			res.Provider = "pgbackrest"
+		}
+	}
+	if v.Repositories != nil {
+		res.Repositories = make([]*BackupRepositorySpecResponseBody, len(v.Repositories))
+		for i, val := range v.Repositories {
+			res.Repositories[i] = marshalControlplaneBackupRepositorySpecToBackupRepositorySpecResponseBody(val)
+		}
+	} else {
+		res.Repositories = []*BackupRepositorySpecResponseBody{}
+	}
+	if v.Schedules != nil {
+		res.Schedules = make([]*BackupScheduleSpecResponseBody, len(v.Schedules))
+		for i, val := range v.Schedules {
+			res.Schedules[i] = marshalControlplaneBackupScheduleSpecToBackupScheduleSpecResponseBody(val)
+		}
+	}
+
+	return res
+}
+
+// marshalControlplaneBackupRepositorySpecToBackupRepositorySpecResponseBody
+// builds a value of type *BackupRepositorySpecResponseBody from a value of
+// type *controlplane.BackupRepositorySpec.
+func marshalControlplaneBackupRepositorySpecToBackupRepositorySpecResponseBody(v *controlplane.BackupRepositorySpec) *BackupRepositorySpecResponseBody {
+	res := &BackupRepositorySpecResponseBody{
+		ID:                v.ID,
+		Type:              v.Type,
+		S3Bucket:          v.S3Bucket,
+		S3Region:          v.S3Region,
+		S3Endpoint:        v.S3Endpoint,
+		S3Key:             v.S3Key,
+		S3KeySecret:       v.S3KeySecret,
+		GcsBucket:         v.GcsBucket,
+		GcsEndpoint:       v.GcsEndpoint,
+		GcsKey:            v.GcsKey,
+		AzureAccount:      v.AzureAccount,
+		AzureContainer:    v.AzureContainer,
+		AzureEndpoint:     v.AzureEndpoint,
+		AzureKey:          v.AzureKey,
+		RetentionFull:     v.RetentionFull,
+		RetentionFullType: v.RetentionFullType,
+		BasePath:          v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
+	}
+
+	return res
+}
+
+// marshalControlplaneBackupScheduleSpecToBackupScheduleSpecResponseBody builds
+// a value of type *BackupScheduleSpecResponseBody from a value of type
+// *controlplane.BackupScheduleSpec.
+func marshalControlplaneBackupScheduleSpecToBackupScheduleSpecResponseBody(v *controlplane.BackupScheduleSpec) *BackupScheduleSpecResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &BackupScheduleSpecResponseBody{
+		ID:             v.ID,
+		Type:           v.Type,
+		CronExpression: v.CronExpression,
+	}
+
+	return res
+}
+
+// marshalControlplaneRestoreConfigSpecToRestoreConfigSpecResponseBody builds a
+// value of type *RestoreConfigSpecResponseBody from a value of type
+// *controlplane.RestoreConfigSpec.
+func marshalControlplaneRestoreConfigSpecToRestoreConfigSpecResponseBody(v *controlplane.RestoreConfigSpec) *RestoreConfigSpecResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &RestoreConfigSpecResponseBody{
+		Provider:           v.Provider,
+		SourceDatabaseID:   v.SourceDatabaseID,
+		SourceNodeName:     v.SourceNodeName,
+		SourceDatabaseName: v.SourceDatabaseName,
+	}
+	{
+		var zero string
+		if res.Provider == zero {
+			res.Provider = "pgbackrest"
+		}
+	}
+	if v.Repository != nil {
+		res.Repository = marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecResponseBody(v.Repository)
+	}
+	if v.RestoreOptions != nil {
+		res.RestoreOptions = make([]string, len(v.RestoreOptions))
+		for i, val := range v.RestoreOptions {
+			res.RestoreOptions[i] = val
+		}
+	}
+
+	return res
+}
+
+// marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecResponseBody
+// builds a value of type *RestoreRepositorySpecResponseBody from a value of
+// type *controlplane.RestoreRepositorySpec.
+func marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecResponseBody(v *controlplane.RestoreRepositorySpec) *RestoreRepositorySpecResponseBody {
+	res := &RestoreRepositorySpecResponseBody{
+		ID:             v.ID,
+		Type:           v.Type,
+		S3Bucket:       v.S3Bucket,
+		S3Region:       v.S3Region,
+		S3Endpoint:     v.S3Endpoint,
+		S3Key:          v.S3Key,
+		S3KeySecret:    v.S3KeySecret,
+		GcsBucket:      v.GcsBucket,
+		GcsEndpoint:    v.GcsEndpoint,
+		GcsKey:         v.GcsKey,
+		AzureAccount:   v.AzureAccount,
+		AzureContainer: v.AzureContainer,
+		AzureEndpoint:  v.AzureEndpoint,
+		AzureKey:       v.AzureKey,
+		BasePath:       v.BasePath,
+	}
+	if v.CustomOptions != nil {
+		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
+		for key, val := range v.CustomOptions {
+			tk := key
+			tv := val
+			res.CustomOptions[tk] = tv
+		}
+	}
+
+	return res
+}
+
+// marshalControlplaneDatabaseUserSpecToDatabaseUserSpecResponseBody builds a
+// value of type *DatabaseUserSpecResponseBody from a value of type
+// *controlplane.DatabaseUserSpec.
+func marshalControlplaneDatabaseUserSpecToDatabaseUserSpecResponseBody(v *controlplane.DatabaseUserSpec) *DatabaseUserSpecResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseUserSpecResponseBody{
+		Username: v.Username,
+		Password: v.Password,
+		DbOwner:  v.DbOwner,
+	}
+	if v.Attributes != nil {
+		res.Attributes = make([]string, len(v.Attributes))
+		for i, val := range v.Attributes {
+			res.Attributes[i] = val
+		}
+	}
+	if v.Roles != nil {
+		res.Roles = make([]string, len(v.Roles))
+		for i, val := range v.Roles {
+			res.Roles[i] = val
+		}
+	}
+
+	return res
+}
+
+// marshalControlplaneTaskToTaskResponseBody builds a value of type
+// *TaskResponseBody from a value of type *controlplane.Task.
+func marshalControlplaneTaskToTaskResponseBody(v *controlplane.Task) *TaskResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &TaskResponseBody{
+		DatabaseID:  v.DatabaseID,
+		NodeName:    v.NodeName,
+		InstanceID:  v.InstanceID,
+		HostID:      v.HostID,
 		TaskID:      v.TaskID,
 		CreatedAt:   v.CreatedAt,
 		CompletedAt: v.CompletedAt,

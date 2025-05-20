@@ -65,7 +65,7 @@ func (s *Service) CreateDatabase(ctx context.Context, spec *Spec) (*Database, er
 	return db, nil
 }
 
-func (s *Service) UpdateDatabase(ctx context.Context, spec *Spec) (*Database, error) {
+func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec *Spec) (*Database, error) {
 	currentSpec, err := s.store.Spec.GetByKey(spec.DatabaseID).Exec(ctx)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
@@ -92,7 +92,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, spec *Spec) (*Database, er
 
 	currentSpec.Spec = spec
 	currentDB.UpdatedAt = time.Now()
-	currentDB.State = DatabaseStateModifying
+	currentDB.State = state
 
 	if err := s.store.Txn(
 		s.store.Spec.Update(currentSpec),
@@ -165,15 +165,20 @@ func (s *Service) GetDatabases(ctx context.Context) ([]*Database, error) {
 	return databases, nil
 }
 
-func (s *Service) UpdateDatabaseState(ctx context.Context, databaseID uuid.UUID, state DatabaseState) error {
+func (s *Service) UpdateDatabaseState(ctx context.Context, databaseID uuid.UUID, from, to DatabaseState) error {
 	storedDb, err := s.store.Database.GetByKey(databaseID).Exec(ctx)
 	if errors.Is(err, storage.ErrNotFound) {
 		return ErrDatabaseNotFound
 	} else if err != nil {
 		return fmt.Errorf("failed to get database: %w", err)
 	}
+	// from is an optional guard to ensure that the state is only updated if the
+	// database is in the expected state
+	if from != "" && storedDb.State != from {
+		return fmt.Errorf("database state is not in expected state %s, but %s", from, storedDb.State)
+	}
 
-	storedDb.State = state
+	storedDb.State = to
 	if err := s.store.Database.Update(storedDb).Exec(ctx); err != nil {
 		return fmt.Errorf("failed to update database state: %w", err)
 	}

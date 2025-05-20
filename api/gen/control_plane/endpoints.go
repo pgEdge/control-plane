@@ -32,6 +32,7 @@ type Endpoints struct {
 	ListDatabaseTasks      goa.Endpoint
 	InspectDatabaseTask    goa.Endpoint
 	GetDatabaseTaskLog     goa.Endpoint
+	RestoreDatabase        goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "control-plane" service with endpoints.
@@ -54,6 +55,7 @@ func NewEndpoints(s Service) *Endpoints {
 		ListDatabaseTasks:      NewListDatabaseTasksEndpoint(s),
 		InspectDatabaseTask:    NewInspectDatabaseTaskEndpoint(s),
 		GetDatabaseTaskLog:     NewGetDatabaseTaskLogEndpoint(s),
+		RestoreDatabase:        NewRestoreDatabaseEndpoint(s),
 	}
 }
 
@@ -77,6 +79,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.ListDatabaseTasks = m(e.ListDatabaseTasks)
 	e.InspectDatabaseTask = m(e.InspectDatabaseTask)
 	e.GetDatabaseTaskLog = m(e.GetDatabaseTaskLog)
+	e.RestoreDatabase = m(e.RestoreDatabase)
 }
 
 // NewInitClusterEndpoint returns an endpoint function that calls the method
@@ -244,5 +247,14 @@ func NewGetDatabaseTaskLogEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*GetDatabaseTaskLogPayload)
 		return s.GetDatabaseTaskLog(ctx, p)
+	}
+}
+
+// NewRestoreDatabaseEndpoint returns an endpoint function that calls the
+// method "restore-database" of service "control-plane".
+func NewRestoreDatabaseEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*RestoreDatabasePayload)
+		return s.RestoreDatabase(ctx, p)
 	}
 }

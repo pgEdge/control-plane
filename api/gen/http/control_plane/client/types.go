@@ -66,6 +66,15 @@ type InitiateDatabaseBackupRequestBody struct {
 	ExtraOptions []string `form:"extra_options,omitempty" json:"extra_options,omitempty" xml:"extra_options,omitempty"`
 }
 
+// RestoreDatabaseRequestBody is the type of the "control-plane" service
+// "restore-database" endpoint HTTP request body.
+type RestoreDatabaseRequestBody struct {
+	// Configuration for the restore process.
+	RestoreConfig *RestoreConfigSpecRequestBodyRequestBody `form:"restore_config" json:"restore_config" xml:"restore_config"`
+	// The nodes to restore. Defaults to all nodes if empty or unspecified.
+	TargetNodes []string `form:"target_nodes,omitempty" json:"target_nodes,omitempty" xml:"target_nodes,omitempty"`
+}
+
 // InitClusterResponseBody is the type of the "control-plane" service
 // "init-cluster" endpoint HTTP response body.
 type InitClusterResponseBody struct {
@@ -201,6 +210,12 @@ type UpdateDatabaseResponseBody struct {
 type InitiateDatabaseBackupResponseBody struct {
 	// The database ID of the task.
 	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
 	// The unique ID of the task.
 	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
 	// The time when the task was created.
@@ -224,6 +239,12 @@ type ListDatabaseTasksResponseBody []*TaskResponse
 type InspectDatabaseTaskResponseBody struct {
 	// The database ID of the task.
 	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
 	// The unique ID of the task.
 	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
 	// The time when the task was created.
@@ -251,6 +272,15 @@ type GetDatabaseTaskLogResponseBody struct {
 	LastLineID *string `form:"last_line_id,omitempty" json:"last_line_id,omitempty" xml:"last_line_id,omitempty"`
 	// The lines of the task log.
 	Lines []string `form:"lines,omitempty" json:"lines,omitempty" xml:"lines,omitempty"`
+}
+
+// RestoreDatabaseResponseBody is the type of the "control-plane" service
+// "restore-database" endpoint HTTP response body.
+type RestoreDatabaseResponseBody struct {
+	// The database being restored.
+	Database *DatabaseResponseBody `form:"database,omitempty" json:"database,omitempty" xml:"database,omitempty"`
+	// The restore tasks that were created to restore this database.
+	Tasks []*TaskResponseBody `form:"tasks,omitempty" json:"tasks,omitempty" xml:"tasks,omitempty"`
 }
 
 // InitClusterClusterAlreadyInitializedResponseBody is the type of the
@@ -882,6 +912,82 @@ type GetDatabaseTaskLogClusterNotInitializedResponseBody struct {
 // service "get-database-task-log" endpoint HTTP response body for the
 // "not_found" error.
 type GetDatabaseTaskLogNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// RestoreDatabaseClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "restore-database" endpoint HTTP response body for
+// the "cluster_not_initialized" error.
+type RestoreDatabaseClusterNotInitializedResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// RestoreDatabaseDatabaseNotModifiableResponseBody is the type of the
+// "control-plane" service "restore-database" endpoint HTTP response body for
+// the "database_not_modifiable" error.
+type RestoreDatabaseDatabaseNotModifiableResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// RestoreDatabaseNotFoundResponseBody is the type of the "control-plane"
+// service "restore-database" endpoint HTTP response body for the "not_found"
+// error.
+type RestoreDatabaseNotFoundResponseBody struct {
+	// Name is the name of this class of errors.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// ID is a unique identifier for this particular occurrence of the problem.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Message is a human-readable explanation specific to this occurrence of the
+	// problem.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Is the error temporary?
+	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
+	// Is the error a timeout?
+	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
+	// Is the error a server-side fault?
+	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// RestoreDatabaseInvalidInputResponseBody is the type of the "control-plane"
+// service "restore-database" endpoint HTTP response body for the
+// "invalid_input" error.
+type RestoreDatabaseInvalidInputResponseBody struct {
 	// Name is the name of this class of errors.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -2053,6 +2159,102 @@ type DatabaseUserSpecRequestBodyRequestBody struct {
 type TaskResponse struct {
 	// The database ID of the task.
 	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// The unique ID of the task.
+	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
+	// The time when the task was created.
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// The status of the task.
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
+// DatabaseResponseBody is used to define fields on response body types.
+type DatabaseResponseBody struct {
+	// Unique identifier for the database.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Unique identifier for the databases's owner.
+	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
+	// The time that the database was created.
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// The time that the database was last updated.
+	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
+	// Current state of the database.
+	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
+	// All of the instances in the database.
+	Instances InstanceCollectionResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	// The user-provided specification for the database.
+	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
+}
+
+// InstanceCollectionResponseBody is used to define fields on response body
+// types.
+type InstanceCollectionResponseBody []*InstanceResponseBody
+
+// InstanceResponseBody is used to define fields on response body types.
+type InstanceResponseBody struct {
+	// Unique identifier for the instance.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// The ID of the host this instance is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// The Spock node name for this instance.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The time that the instance was created.
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// The time that the instance was last updated.
+	UpdatedAt    *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
+	State        *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
+	PatroniState *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
+	Role         *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
+	// True if this instance is in read-only mode.
+	ReadOnly *bool `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
+	// True if this instance is pending to be restarted from a configuration change.
+	PendingRestart *bool `form:"pending_restart,omitempty" json:"pending_restart,omitempty" xml:"pending_restart,omitempty"`
+	// True if Patroni has been paused for this instance.
+	PatroniPaused *bool `form:"patroni_paused,omitempty" json:"patroni_paused,omitempty" xml:"patroni_paused,omitempty"`
+	// The version of Postgres for this instance.
+	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
+	// The version of Spock for this instance.
+	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
+	// All interfaces that this instance serves on.
+	Interfaces []*InstanceInterfaceResponseBody `form:"interfaces,omitempty" json:"interfaces,omitempty" xml:"interfaces,omitempty"`
+}
+
+// InstanceInterfaceResponseBody is used to define fields on response body
+// types.
+type InstanceInterfaceResponseBody struct {
+	// The type of network for this interface.
+	NetworkType *string `form:"network_type,omitempty" json:"network_type,omitempty" xml:"network_type,omitempty"`
+	// The unique identifier of the network for this interface.
+	NetworkID *string `form:"network_id,omitempty" json:"network_id,omitempty" xml:"network_id,omitempty"`
+	// The hostname of the instance on this interface.
+	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
+	// The IPv4 address of the instance on this interface.
+	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
+	// The Postgres port for the instance on this interface.
+	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+}
+
+// TaskResponseBody is used to define fields on response body types.
+type TaskResponseBody struct {
+	// The database ID of the task.
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
 	// The unique ID of the task.
 	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
 	// The time when the task was created.
@@ -2133,6 +2335,22 @@ func NewInitiateDatabaseBackupRequestBody(p *controlplane.InitiateDatabaseBackup
 		body.ExtraOptions = make([]string, len(p.Options.ExtraOptions))
 		for i, val := range p.Options.ExtraOptions {
 			body.ExtraOptions[i] = val
+		}
+	}
+	return body
+}
+
+// NewRestoreDatabaseRequestBody builds the HTTP request body from the payload
+// of the "restore-database" endpoint of the "control-plane" service.
+func NewRestoreDatabaseRequestBody(p *controlplane.RestoreDatabasePayload) *RestoreDatabaseRequestBody {
+	body := &RestoreDatabaseRequestBody{}
+	if p.Request.RestoreConfig != nil {
+		body.RestoreConfig = marshalControlplaneRestoreConfigSpecToRestoreConfigSpecRequestBodyRequestBody(p.Request.RestoreConfig)
+	}
+	if p.Request.TargetNodes != nil {
+		body.TargetNodes = make([]string, len(p.Request.TargetNodes))
+		for i, val := range p.Request.TargetNodes {
+			body.TargetNodes[i] = val
 		}
 	}
 	return body
@@ -2668,6 +2886,9 @@ func NewDeleteDatabaseNotFound(body *DeleteDatabaseNotFoundResponseBody) *goa.Se
 func NewInitiateDatabaseBackupTaskOK(body *InitiateDatabaseBackupResponseBody) *controlplane.Task {
 	v := &controlplane.Task{
 		DatabaseID:  *body.DatabaseID,
+		NodeName:    body.NodeName,
+		InstanceID:  body.InstanceID,
+		HostID:      body.HostID,
 		TaskID:      *body.TaskID,
 		CreatedAt:   *body.CreatedAt,
 		CompletedAt: body.CompletedAt,
@@ -2785,6 +3006,9 @@ func NewListDatabaseTasksNotFound(body *ListDatabaseTasksNotFoundResponseBody) *
 func NewInspectDatabaseTaskTaskOK(body *InspectDatabaseTaskResponseBody) *controlplane.Task {
 	v := &controlplane.Task{
 		DatabaseID:  *body.DatabaseID,
+		NodeName:    body.NodeName,
+		InstanceID:  body.InstanceID,
+		HostID:      body.HostID,
 		TaskID:      *body.TaskID,
 		CreatedAt:   *body.CreatedAt,
 		CompletedAt: body.CompletedAt,
@@ -2861,6 +3085,83 @@ func NewGetDatabaseTaskLogClusterNotInitialized(body *GetDatabaseTaskLogClusterN
 // NewGetDatabaseTaskLogNotFound builds a control-plane service
 // get-database-task-log endpoint not_found error.
 func NewGetDatabaseTaskLogNotFound(body *GetDatabaseTaskLogNotFoundResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewRestoreDatabaseResponseOK builds a "control-plane" service
+// "restore-database" endpoint result from a HTTP "OK" response.
+func NewRestoreDatabaseResponseOK(body *RestoreDatabaseResponseBody) *controlplane.RestoreDatabaseResponse {
+	v := &controlplane.RestoreDatabaseResponse{}
+	if body.Database != nil {
+		v.Database = unmarshalDatabaseResponseBodyToControlplaneDatabase(body.Database)
+	}
+	if body.Tasks != nil {
+		v.Tasks = make([]*controlplane.Task, len(body.Tasks))
+		for i, val := range body.Tasks {
+			v.Tasks[i] = unmarshalTaskResponseBodyToControlplaneTask(val)
+		}
+	}
+
+	return v
+}
+
+// NewRestoreDatabaseClusterNotInitialized builds a control-plane service
+// restore-database endpoint cluster_not_initialized error.
+func NewRestoreDatabaseClusterNotInitialized(body *RestoreDatabaseClusterNotInitializedResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewRestoreDatabaseDatabaseNotModifiable builds a control-plane service
+// restore-database endpoint database_not_modifiable error.
+func NewRestoreDatabaseDatabaseNotModifiable(body *RestoreDatabaseDatabaseNotModifiableResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewRestoreDatabaseNotFound builds a control-plane service restore-database
+// endpoint not_found error.
+func NewRestoreDatabaseNotFound(body *RestoreDatabaseNotFoundResponseBody) *goa.ServiceError {
+	v := &goa.ServiceError{
+		Name:      *body.Name,
+		ID:        *body.ID,
+		Message:   *body.Message,
+		Temporary: *body.Temporary,
+		Timeout:   *body.Timeout,
+		Fault:     *body.Fault,
+	}
+
+	return v
+}
+
+// NewRestoreDatabaseInvalidInput builds a control-plane service
+// restore-database endpoint invalid_input error.
+func NewRestoreDatabaseInvalidInput(body *RestoreDatabaseInvalidInputResponseBody) *goa.ServiceError {
 	v := &goa.ServiceError{
 		Name:      *body.Name,
 		ID:        *body.ID,
@@ -3037,6 +3338,18 @@ func ValidateInitiateDatabaseBackupResponseBody(body *InitiateDatabaseBackupResp
 	if body.Status == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
 	}
+	if body.DatabaseID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.database_id", *body.DatabaseID, goa.FormatUUID))
+	}
+	if body.InstanceID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.instance_id", *body.InstanceID, goa.FormatUUID))
+	}
+	if body.HostID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
+	}
+	if body.TaskID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
+	}
 	if body.CreatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
 	}
@@ -3069,6 +3382,18 @@ func ValidateInspectDatabaseTaskResponseBody(body *InspectDatabaseTaskResponseBo
 	if body.Status == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
 	}
+	if body.DatabaseID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.database_id", *body.DatabaseID, goa.FormatUUID))
+	}
+	if body.InstanceID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.instance_id", *body.InstanceID, goa.FormatUUID))
+	}
+	if body.HostID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
+	}
+	if body.TaskID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
+	}
 	if body.CreatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
 	}
@@ -3098,9 +3423,36 @@ func ValidateGetDatabaseTaskLogResponseBody(body *GetDatabaseTaskLogResponseBody
 	if body.Lines == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("lines", "body"))
 	}
+	if body.DatabaseID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.database_id", *body.DatabaseID, goa.FormatUUID))
+	}
+	if body.TaskID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
+	}
 	if body.TaskStatus != nil {
 		if !(*body.TaskStatus == "pending" || *body.TaskStatus == "running" || *body.TaskStatus == "completed" || *body.TaskStatus == "failed" || *body.TaskStatus == "unknown") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.task_status", *body.TaskStatus, []any{"pending", "running", "completed", "failed", "unknown"}))
+		}
+	}
+	if body.LastLineID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.last_line_id", *body.LastLineID, goa.FormatUUID))
+	}
+	return
+}
+
+// ValidateRestoreDatabaseResponseBody runs the validations defined on
+// Restore-DatabaseResponseBody
+func ValidateRestoreDatabaseResponseBody(body *RestoreDatabaseResponseBody) (err error) {
+	if body.Database != nil {
+		if err2 := ValidateDatabaseResponseBody(body.Database); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	for _, e := range body.Tasks {
+		if e != nil {
+			if err2 := ValidateTaskResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	return
@@ -3907,6 +4259,102 @@ func ValidateGetDatabaseTaskLogClusterNotInitializedResponseBody(body *GetDataba
 // ValidateGetDatabaseTaskLogNotFoundResponseBody runs the validations defined
 // on get-database-task-log_not_found_response_body
 func ValidateGetDatabaseTaskLogNotFoundResponseBody(body *GetDatabaseTaskLogNotFoundResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateRestoreDatabaseClusterNotInitializedResponseBody runs the
+// validations defined on restore-database_cluster_not_initialized_response_body
+func ValidateRestoreDatabaseClusterNotInitializedResponseBody(body *RestoreDatabaseClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateRestoreDatabaseDatabaseNotModifiableResponseBody runs the
+// validations defined on restore-database_database_not_modifiable_response_body
+func ValidateRestoreDatabaseDatabaseNotModifiableResponseBody(body *RestoreDatabaseDatabaseNotModifiableResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateRestoreDatabaseNotFoundResponseBody runs the validations defined on
+// restore-database_not_found_response_body
+func ValidateRestoreDatabaseNotFoundResponseBody(body *RestoreDatabaseNotFoundResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Temporary == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	}
+	if body.Timeout == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	}
+	if body.Fault == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	}
+	return
+}
+
+// ValidateRestoreDatabaseInvalidInputResponseBody runs the validations defined
+// on restore-database_invalid_input_response_body
+func ValidateRestoreDatabaseInvalidInputResponseBody(body *RestoreDatabaseInvalidInputResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
@@ -5143,6 +5591,197 @@ func ValidateTaskResponse(body *TaskResponse) (err error) {
 	}
 	if body.Status == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.DatabaseID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.database_id", *body.DatabaseID, goa.FormatUUID))
+	}
+	if body.InstanceID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.instance_id", *body.InstanceID, goa.FormatUUID))
+	}
+	if body.HostID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
+	}
+	if body.TaskID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
+	}
+	if body.CreatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
+	}
+	if body.CompletedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
+	}
+	if body.Status != nil {
+		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		}
+	}
+	return
+}
+
+// ValidateDatabaseResponseBody runs the validations defined on
+// DatabaseResponseBody
+func ValidateDatabaseResponseBody(body *DatabaseResponseBody) (err error) {
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.CreatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
+	}
+	if body.UpdatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("updated_at", "body"))
+	}
+	if body.State == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
+	}
+	if body.ID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+	}
+	if body.TenantID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.tenant_id", *body.TenantID, goa.FormatUUID))
+	}
+	if body.CreatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
+	}
+	if body.UpdatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
+	}
+	if body.State != nil {
+		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "available" || *body.State == "deleting" || *body.State == "degraded" || *body.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "available", "deleting", "degraded", "unknown"}))
+		}
+	}
+	if body.Instances != nil {
+		if err2 := ValidateInstanceCollectionResponseBody(body.Instances); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.Spec != nil {
+		if err2 := ValidateDatabaseSpecResponseBody(body.Spec); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateInstanceCollectionResponseBody runs the validations defined on
+// InstanceCollectionResponseBody
+func ValidateInstanceCollectionResponseBody(body InstanceCollectionResponseBody) (err error) {
+	for _, e := range body {
+		if e != nil {
+			if err2 := ValidateInstanceResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateInstanceResponseBody runs the validations defined on
+// InstanceResponseBody
+func ValidateInstanceResponseBody(body *InstanceResponseBody) (err error) {
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if body.HostID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "body"))
+	}
+	if body.NodeName == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("node_name", "body"))
+	}
+	if body.CreatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
+	}
+	if body.UpdatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("updated_at", "body"))
+	}
+	if body.State == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
+	}
+	if body.ID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+	}
+	if body.HostID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
+	}
+	if body.CreatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
+	}
+	if body.UpdatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
+	}
+	if body.State != nil {
+		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "backing_up" || *body.State == "restoring" || *body.State == "deleting" || *body.State == "available" || *body.State == "degraded" || *body.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "backing_up", "restoring", "deleting", "available", "degraded", "unknown"}))
+		}
+	}
+	if body.PatroniState != nil {
+		if !(*body.PatroniState == "stopping" || *body.PatroniState == "stopped" || *body.PatroniState == "stop failed" || *body.PatroniState == "crashed" || *body.PatroniState == "running" || *body.PatroniState == "starting" || *body.PatroniState == "start failed" || *body.PatroniState == "restarting" || *body.PatroniState == "restart failed" || *body.PatroniState == "initializing new cluster" || *body.PatroniState == "initdb failed" || *body.PatroniState == "running custom bootstrap script" || *body.PatroniState == "custom bootstrap failed" || *body.PatroniState == "creating replica" || *body.PatroniState == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.patroni_state", *body.PatroniState, []any{"stopping", "stopped", "stop failed", "crashed", "running", "starting", "start failed", "restarting", "restart failed", "initializing new cluster", "initdb failed", "running custom bootstrap script", "custom bootstrap failed", "creating replica", "unknown"}))
+		}
+	}
+	if body.Role != nil {
+		if !(*body.Role == "replica" || *body.Role == "primary") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.role", *body.Role, []any{"replica", "primary"}))
+		}
+	}
+	for _, e := range body.Interfaces {
+		if e != nil {
+			if err2 := ValidateInstanceInterfaceResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateInstanceInterfaceResponseBody runs the validations defined on
+// InstanceInterfaceResponseBody
+func ValidateInstanceInterfaceResponseBody(body *InstanceInterfaceResponseBody) (err error) {
+	if body.NetworkType == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("network_type", "body"))
+	}
+	if body.Port == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("port", "body"))
+	}
+	if body.NetworkType != nil {
+		if !(*body.NetworkType == "docker" || *body.NetworkType == "host") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.network_type", *body.NetworkType, []any{"docker", "host"}))
+		}
+	}
+	if body.Ipv4Address != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
+	}
+	return
+}
+
+// ValidateTaskResponseBody runs the validations defined on TaskResponseBody
+func ValidateTaskResponseBody(body *TaskResponseBody) (err error) {
+	if body.DatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	}
+	if body.TaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
+	}
+	if body.CreatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
+	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.DatabaseID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.database_id", *body.DatabaseID, goa.FormatUUID))
+	}
+	if body.InstanceID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.instance_id", *body.InstanceID, goa.FormatUUID))
+	}
+	if body.HostID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
+	}
+	if body.TaskID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
 	}
 	if body.CreatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))

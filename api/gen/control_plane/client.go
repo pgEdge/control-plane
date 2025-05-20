@@ -32,10 +32,11 @@ type Client struct {
 	ListDatabaseTasksEndpoint      goa.Endpoint
 	InspectDatabaseTaskEndpoint    goa.Endpoint
 	GetDatabaseTaskLogEndpoint     goa.Endpoint
+	RestoreDatabaseEndpoint        goa.Endpoint
 }
 
 // NewClient initializes a "control-plane" service client given the endpoints.
-func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, inspectCluster, listHosts, inspectHost, removeHost, listDatabases, createDatabase, inspectDatabase, updateDatabase, deleteDatabase, initiateDatabaseBackup, listDatabaseTasks, inspectDatabaseTask, getDatabaseTaskLog goa.Endpoint) *Client {
+func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, inspectCluster, listHosts, inspectHost, removeHost, listDatabases, createDatabase, inspectDatabase, updateDatabase, deleteDatabase, initiateDatabaseBackup, listDatabaseTasks, inspectDatabaseTask, getDatabaseTaskLog, restoreDatabase goa.Endpoint) *Client {
 	return &Client{
 		InitClusterEndpoint:            initCluster,
 		JoinClusterEndpoint:            joinCluster,
@@ -54,6 +55,7 @@ func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, inspectCl
 		ListDatabaseTasksEndpoint:      listDatabaseTasks,
 		InspectDatabaseTaskEndpoint:    inspectDatabaseTask,
 		GetDatabaseTaskLogEndpoint:     getDatabaseTaskLog,
+		RestoreDatabaseEndpoint:        restoreDatabase,
 	}
 }
 
@@ -293,4 +295,21 @@ func (c *Client) GetDatabaseTaskLog(ctx context.Context, p *GetDatabaseTaskLogPa
 		return
 	}
 	return ires.(*TaskLog), nil
+}
+
+// RestoreDatabase calls the "restore-database" endpoint of the "control-plane"
+// service.
+// RestoreDatabase may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
+//   - "database_not_modifiable" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) RestoreDatabase(ctx context.Context, p *RestoreDatabasePayload) (res *RestoreDatabaseResponse, err error) {
+	var ires any
+	ires, err = c.RestoreDatabaseEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*RestoreDatabaseResponse), nil
 }

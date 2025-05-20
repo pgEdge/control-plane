@@ -26,7 +26,7 @@ func (w *Workflows) applyEvents(ctx workflow.Context, databaseID uuid.UUID, stat
 				// resource was removed outside of control-plane and we've
 				// updated our state to reflect that. We'll remove this resource
 				// so that it can be recreated.
-				// TODO: validate that this is always correct.
+				// TODO: validate that this is always the right choice.
 				state.Remove(event.Resource)
 				continue
 			} else if err != nil {
@@ -36,6 +36,12 @@ func (w *Workflows) applyEvents(ctx workflow.Context, databaseID uuid.UUID, stat
 		}
 		var errs []error
 		for i, future := range futures {
+			if future == nil {
+				// This future was nil because the executor was not found. We
+				// still add the nil futures to the slice so that we can match
+				// the index to the original event.
+				continue
+			}
 			out, err := future.Get(ctx)
 			if err != nil {
 				event := phase[i]

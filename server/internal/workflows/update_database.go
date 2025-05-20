@@ -38,12 +38,10 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		return err
 	}
 
-	getCurrentInput := &activities.GetCurrentStateInput{
+	refreshCurrentInput := &RefreshCurrentStateInput{
 		DatabaseID: input.Spec.DatabaseID,
 	}
-	getCurrentOutput, err := w.Activities.
-		ExecuteGetCurrentState(ctx, getCurrentInput).
-		Get(ctx)
+	refreshCurrentOutput, err := w.ExecuteRefreshCurrentState(ctx, refreshCurrentInput).Get(ctx)
 	if err != nil {
 		return nil, handleError(fmt.Errorf("failed to get current state: %w", err))
 	}
@@ -58,7 +56,7 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 
 	reconcileInput := &ReconcileStateInput{
 		DatabaseID:  input.Spec.DatabaseID,
-		Current:     getCurrentOutput.State,
+		Current:     refreshCurrentOutput.State,
 		Desired:     getDesiredOutput.State,
 		ForceUpdate: input.ForceUpdate,
 	}

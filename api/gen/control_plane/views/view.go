@@ -321,6 +321,39 @@ type DatabaseUserSpecView struct {
 	Roles []string
 }
 
+// RestoreDatabaseResponseView is a type that runs validations on a projected
+// type.
+type RestoreDatabaseResponseView struct {
+	// The database being restored.
+	Database *DatabaseView
+	// The restore tasks that were created to restore this database.
+	Tasks []*TaskView
+}
+
+// TaskView is a type that runs validations on a projected type.
+type TaskView struct {
+	// The database ID of the task.
+	DatabaseID *string
+	// The name of the node that the task is operating on.
+	NodeName *string
+	// The ID of the instance that the task is operating on.
+	InstanceID *string
+	// The ID of the host that the task is running on.
+	HostID *string
+	// The unique ID of the task.
+	TaskID *string
+	// The time when the task was created.
+	CreatedAt *string
+	// The time when the task was completed.
+	CompletedAt *string
+	// The type of the task.
+	Type *string
+	// The status of the task.
+	Status *string
+	// The error message if the task failed.
+	Error *string
+}
+
 var (
 	// DatabaseCollectionMap is a map indexing the attribute names of
 	// DatabaseCollection by view name.
@@ -881,6 +914,67 @@ func ValidateDatabaseUserSpecView(result *DatabaseUserSpecView) (err error) {
 	}
 	if result.Password == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("password", "result"))
+	}
+	return
+}
+
+// ValidateRestoreDatabaseResponseView runs the validations defined on
+// RestoreDatabaseResponseView.
+func ValidateRestoreDatabaseResponseView(result *RestoreDatabaseResponseView) (err error) {
+	if result.Database != nil {
+		if err2 := ValidateDatabaseView(result.Database); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	for _, e := range result.Tasks {
+		if e != nil {
+			if err2 := ValidateTaskView(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateTaskView runs the validations defined on TaskView.
+func ValidateTaskView(result *TaskView) (err error) {
+	if result.DatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "result"))
+	}
+	if result.TaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "result"))
+	}
+	if result.CreatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "result"))
+	}
+	if result.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "result"))
+	}
+	if result.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "result"))
+	}
+	if result.DatabaseID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.database_id", *result.DatabaseID, goa.FormatUUID))
+	}
+	if result.InstanceID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.instance_id", *result.InstanceID, goa.FormatUUID))
+	}
+	if result.HostID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.host_id", *result.HostID, goa.FormatUUID))
+	}
+	if result.TaskID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.task_id", *result.TaskID, goa.FormatUUID))
+	}
+	if result.CreatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.created_at", *result.CreatedAt, goa.FormatDateTime))
+	}
+	if result.CompletedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.completed_at", *result.CompletedAt, goa.FormatDateTime))
+	}
+	if result.Status != nil {
+		if !(*result.Status == "pending" || *result.Status == "running" || *result.Status == "completed" || *result.Status == "failed" || *result.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.status", *result.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		}
 	}
 	return
 }
