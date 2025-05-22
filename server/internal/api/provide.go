@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 
-	"github.com/cschleiden/go-workflows/client"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 
@@ -71,19 +70,15 @@ func provideService(i *do.Injector) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get database service: %w", err)
 		}
-		wfClient, err := do.Invoke[*client.Client](i)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get workflow client: %w", err)
-		}
 		taskSvc, err := do.Invoke[*task.Service](i)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get task service: %w", err)
 		}
-		workflows, err := do.Invoke[*workflows.Workflows](i)
+		workflowSvc, err := do.Invoke[*workflows.Service](i)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get workflows: %w", err)
+			return nil, fmt.Errorf("failed to get workflow service: %w", err)
 		}
 
-		return NewService(cfg, logger, etcdClient, hostSvc, dbSvc, taskSvc, wfClient, workflows), nil
+		return NewService(cfg, logger, etcdClient, hostSvc, dbSvc, taskSvc, workflowSvc), nil
 	})
 }

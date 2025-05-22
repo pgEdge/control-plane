@@ -18,6 +18,8 @@ type InstanceHost struct {
 }
 
 type CreatePgBackRestBackupInput struct {
+	DatabaseID        uuid.UUID                 `json:"database_id"`
+	NodeName          string                    `json:"node_name"`
 	Task              *task.Task                `json:"task"`
 	BackupFromStandby bool                      `json:"backup_from_standby"`
 	Instances         []*InstanceHost           `json:"instances"`

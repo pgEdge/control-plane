@@ -19,6 +19,7 @@ func Provide(i *do.Injector) {
 	provideClient(i)
 	provideWorkflows(i)
 	provideWorker(i)
+	provideService(i)
 }
 
 func provideWorker(i *do.Injector) {
@@ -97,5 +98,24 @@ func provideStore(i *do.Injector) {
 			return nil, err
 		}
 		return etcd.NewStore(client, config.EtcdKeyRoot), nil
+	})
+}
+
+func provideService(i *do.Injector) {
+	do.Provide(i, func(i *do.Injector) (*Service, error) {
+		config, err := do.Invoke[config.Config](i)
+		if err != nil {
+			return nil, err
+		}
+		client, err := do.Invoke[*client.Client](i)
+		if err != nil {
+			return nil, err
+		}
+		workflows, err := do.Invoke[*Workflows](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return NewService(config, client, workflows), nil
 	})
 }

@@ -13,6 +13,9 @@ func (t Type) String() string {
 }
 
 const (
+	TypeCreate  Type = "create"
+	TypeUpdate  Type = "update"
+	TypeDelete  Type = "delete"
 	TypeBackup  Type = "backup"
 	TypeRestore Type = "restore"
 )

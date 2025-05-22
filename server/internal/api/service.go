@@ -7,9 +7,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/cschleiden/go-workflows/backend"
-	"github.com/cschleiden/go-workflows/client"
-	"github.com/cschleiden/go-workflows/core"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 
@@ -31,14 +28,13 @@ var ErrAlreadyInitialized = api.MakeClusterAlreadyInitialized(errors.New("cluste
 var _ api.Service = (*Service)(nil)
 
 type Service struct {
-	cfg            config.Config
-	logger         zerolog.Logger
-	etcd           *etcd.EmbeddedEtcd
-	hostSvc        *host.Service
-	dbSvc          *database.Service
-	taskSvc        *task.Service
-	workflowClient *client.Client
-	workflows      *workflows.Workflows
+	cfg         config.Config
+	logger      zerolog.Logger
+	etcd        *etcd.EmbeddedEtcd
+	hostSvc     *host.Service
+	dbSvc       *database.Service
+	taskSvc     *task.Service
+	workflowSvc *workflows.Service
 }
 
 func NewService(
@@ -48,18 +44,16 @@ func NewService(
 	hostSvc *host.Service,
 	dbSvc *database.Service,
 	taskSvc *task.Service,
-	workflowClient *client.Client,
-	workflows *workflows.Workflows,
+	workflowSvc *workflows.Service,
 ) *Service {
 	return &Service{
-		cfg:            cfg,
-		logger:         logger,
-		etcd:           etcd,
-		hostSvc:        hostSvc,
-		dbSvc:          dbSvc,
-		taskSvc:        taskSvc,
-		workflowClient: workflowClient,
-		workflows:      workflows,
+		cfg:         cfg,
+		logger:      logger,
+		etcd:        etcd,
+		hostSvc:     hostSvc,
+		dbSvc:       dbSvc,
+		taskSvc:     taskSvc,
+		workflowSvc: workflowSvc,
 	}
 }
 
@@ -184,14 +178,11 @@ func (s *Service) CreateDatabase(ctx context.Context, req *api.CreateDatabaseReq
 		return nil, fmt.Errorf("failed to create database: %w", err)
 	}
 
-	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
-		Queue:      core.Queue(s.cfg.HostID.String()),
-		InstanceID: db.DatabaseID.String(), // Using a stable ID functions as a locking mechanism
-	}, s.workflows.UpdateDatabase, &workflows.UpdateDatabaseInput{
+	err = s.workflowSvc.UpdateDatabase(ctx, &workflows.UpdateDatabaseInput{
 		Spec: spec,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create workflow instance: %w", err)
+		return nil, fmt.Errorf("failed to start workflow: %w", err)
 	}
 
 	return databaseToAPI(db), nil
@@ -221,15 +212,12 @@ func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePay
 		forceUpdate = *req.ForceUpdate
 	}
 
-	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
-		Queue:      core.Queue(s.cfg.HostID.String()),
-		InstanceID: db.DatabaseID.String(), // Using a stable ID functions as a locking mechanism
-	}, s.workflows.UpdateDatabase, &workflows.UpdateDatabaseInput{
+	err = s.workflowSvc.UpdateDatabase(ctx, &workflows.UpdateDatabaseInput{
 		Spec:        spec,
 		ForceUpdate: forceUpdate,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create workflow instance: %w", err)
+		return nil, fmt.Errorf("failed to start workflow: %w", err)
 	}
 
 	return databaseToAPI(db), nil
@@ -256,14 +244,11 @@ func (s *Service) DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePay
 		return fmt.Errorf("failed to update database state: %w", err)
 	}
 
-	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
-		Queue:      core.Queue(s.cfg.HostID.String()),
-		InstanceID: db.DatabaseID.String(), // Using a stable ID functions as a locking mechanism
-	}, s.workflows.DeleteDatabase, &workflows.DeleteDatabaseInput{
+	err = s.workflowSvc.DeleteDatabase(ctx, &workflows.DeleteDatabaseInput{
 		DatabaseID: db.DatabaseID,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create workflow instance: %w", err)
+		return fmt.Errorf("failed to start workflow: %w", err)
 	}
 
 	return nil
@@ -307,20 +292,20 @@ func (s *Service) InitiateDatabaseBackup(ctx context.Context, req *api.InitiateD
 		return nil, fmt.Errorf("failed to persist task: %w", err)
 	}
 
-	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
-		Queue:      core.Queue(s.cfg.HostID.String()),
-		InstanceID: db.DatabaseID.String() + "-" + node.Name,
-	}, s.workflows.CreatePgBackRestBackup, &workflows.CreatePgBackRestBackupInput{
-		Task:      t,
-		Instances: instances,
+	input := &workflows.CreatePgBackRestBackupInput{
+		DatabaseID: db.DatabaseID,
+		NodeName:   node.Name,
+		Task:       t,
+		Instances:  instances,
 		Options: &pgbackrest.BackupOptions{
 			Type:         pgbackrest.BackupType(req.Options.Type),
 			Annotations:  req.Options.Annotations,
 			ExtraOptions: req.Options.ExtraOptions,
 		},
-	})
+	}
+	err = s.workflowSvc.CreatePgBackRestBackup(ctx, input)
 	if err != nil {
-		if errors.Is(err, backend.ErrInstanceAlreadyExists) {
+		if errors.Is(err, workflows.ErrDuplicateWorkflow) {
 			err = api.MakeBackupAlreadyInProgress(fmt.Errorf("a backup is already in progress for node %s", node.Name))
 		} else {
 			err = fmt.Errorf("failed to create workflow instance: %w", err)
@@ -496,17 +481,15 @@ func (s *Service) RestoreDatabase(ctx context.Context, req *api.RestoreDatabaseP
 		tasks[i] = t
 	}
 
-	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
-		Queue:      core.Queue(s.cfg.HostID.String()),
-		InstanceID: db.DatabaseID.String(), // Using a stable ID functions as a locking mechanism
-	}, s.workflows.PgBackRestRestore, &workflows.PgBackRestRestoreInput{
+	input := &workflows.PgBackRestRestoreInput{
 		Spec:          db.Spec,
 		TargetNodes:   targetNodes,
 		RestoreConfig: restoreConfig,
 		NodeTaskIDs:   nodeTaskIDs,
-	})
+	}
+	err = s.workflowSvc.PgBackRestRestore(ctx, input)
 	if err != nil {
-		if errors.Is(err, backend.ErrInstanceAlreadyExists) {
+		if errors.Is(err, workflows.ErrDuplicateWorkflow) {
 			err = api.MakeBackupAlreadyInProgress(fmt.Errorf("an operation is already in progress for this database"))
 		} else {
 			err = fmt.Errorf("failed to create workflow instance: %w", err)
