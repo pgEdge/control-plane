@@ -1,0 +1,29 @@
+version: 2
+builds:
+  - main: ./server
+    binary: control-plane
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+
+sboms:
+  - artifacts: archive
+    documents:
+      - '${artifact}.spdx.json'
+
+release:
+  prerelease: auto
+  footer: |
+    Get the Docker image for this release from:
+
+    ```
+    public.ecr.aws/pgedge/control-plane:{{ .Tag }}
+    ```
+  extra_files:
+    - glob: LICENSE.md
