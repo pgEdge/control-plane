@@ -3938,6 +3938,25 @@ paths:
             responses:
                 "200":
                     description: File downloaded
+    /version:
+        get:
+            tags:
+                - control-plane
+            summary: get-version control-plane
+            description: Returns version information for the Control Plane server.
+            operationId: get-version
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/VersionInfo'
+                            example:
+                                arch: amd64
+                                revision: abc123
+                                revision_time: "2025-01-01T01:30:00Z"
+                                version: 1.0.0
 components:
     schemas:
         BackupConfigSpec:
@@ -9029,5 +9048,35 @@ components:
                     storage_class: loop_device
                     storage_size: 500GiB
                 tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
+        VersionInfo:
+            type: object
+            properties:
+                arch:
+                    type: string
+                    description: The CPU architecture of the API server.
+                    example: amd64
+                revision:
+                    type: string
+                    description: The VCS revision of the API server.
+                    example: abc123
+                revision_time:
+                    type: string
+                    description: The timestamp associated with the revision.
+                    example: "2025-01-01T01:30:00Z"
+                    format: date-time
+                version:
+                    type: string
+                    description: The version of the API server.
+                    example: 1.0.0
+            example:
+                arch: amd64
+                revision: abc123
+                revision_time: "2025-01-01T01:30:00Z"
+                version: 1.0.0
+            required:
+                - version
+                - revision
+                - revision_time
+                - arch
 tags:
     - name: control-plane

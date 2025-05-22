@@ -1419,6 +1419,18 @@ func EncodeRestoreDatabaseError(encoder func(context.Context, http.ResponseWrite
 	}
 }
 
+// EncodeGetVersionResponse returns an encoder for responses returned by the
+// control-plane get-version endpoint.
+func EncodeGetVersionResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.VersionInfo)
+		enc := encoder(ctx, w)
+		body := NewGetVersionResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
 // marshalControlplaneClusterPeerToClusterPeerResponseBody builds a value of
 // type *ClusterPeerResponseBody from a value of type *controlplane.ClusterPeer.
 func marshalControlplaneClusterPeerToClusterPeerResponseBody(v *controlplane.ClusterPeer) *ClusterPeerResponseBody {

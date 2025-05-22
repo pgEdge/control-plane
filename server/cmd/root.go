@@ -37,6 +37,11 @@ func newRootCmd(i *do.Injector) *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
 
+			if cmd.Use == "version" {
+				// Skip initialization for the version command.
+				return nil
+			}
+
 			// Source order determines precedence. The last source loaded will
 			// override any previous values.
 			var sources []*config.Source
@@ -101,6 +106,7 @@ func Execute() {
 	rootCmd.PersistentFlags().BoolP("logging.pretty", "p", false, "Use pretty logging instead of JSON logging.")
 
 	rootCmd.AddCommand(newRunCommand(i))
+	rootCmd.AddCommand(newVersionCommand(i))
 
 	if err := rootCmd.Execute(); err != nil {
 		if logger.GetLevel() == zerolog.NoLevel {

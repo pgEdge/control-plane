@@ -22,7 +22,7 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `control-plane (init-cluster|join-cluster|get-join-token|get-join-options|inspect-cluster|list-hosts|inspect-host|remove-host|list-databases|create-database|inspect-database|update-database|delete-database|initiate-database-backup|list-database-tasks|inspect-database-task|get-database-task-log|restore-database)
+	return `control-plane (init-cluster|join-cluster|get-join-token|get-join-options|inspect-cluster|list-hosts|inspect-host|remove-host|list-databases|create-database|inspect-database|update-database|delete-database|initiate-database-backup|list-database-tasks|inspect-database-task|get-database-task-log|restore-database|get-version)
 `
 }
 
@@ -104,6 +104,8 @@ func ParseEndpoint(
 		controlPlaneRestoreDatabaseFlags          = flag.NewFlagSet("restore-database", flag.ExitOnError)
 		controlPlaneRestoreDatabaseBodyFlag       = controlPlaneRestoreDatabaseFlags.String("body", "REQUIRED", "")
 		controlPlaneRestoreDatabaseDatabaseIDFlag = controlPlaneRestoreDatabaseFlags.String("database-id", "REQUIRED", "ID of the database to restore.")
+
+		controlPlaneGetVersionFlags = flag.NewFlagSet("get-version", flag.ExitOnError)
 	)
 	controlPlaneFlags.Usage = controlPlaneUsage
 	controlPlaneInitClusterFlags.Usage = controlPlaneInitClusterUsage
@@ -124,6 +126,7 @@ func ParseEndpoint(
 	controlPlaneInspectDatabaseTaskFlags.Usage = controlPlaneInspectDatabaseTaskUsage
 	controlPlaneGetDatabaseTaskLogFlags.Usage = controlPlaneGetDatabaseTaskLogUsage
 	controlPlaneRestoreDatabaseFlags.Usage = controlPlaneRestoreDatabaseUsage
+	controlPlaneGetVersionFlags.Usage = controlPlaneGetVersionUsage
 
 	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
 		return nil, nil, err
@@ -213,6 +216,9 @@ func ParseEndpoint(
 			case "restore-database":
 				epf = controlPlaneRestoreDatabaseFlags
 
+			case "get-version":
+				epf = controlPlaneGetVersionFlags
+
 			}
 
 		}
@@ -287,6 +293,8 @@ func ParseEndpoint(
 			case "restore-database":
 				endpoint = c.RestoreDatabase()
 				data, err = controlplanec.BuildRestoreDatabasePayload(*controlPlaneRestoreDatabaseBodyFlag, *controlPlaneRestoreDatabaseDatabaseIDFlag)
+			case "get-version":
+				endpoint = c.GetVersion()
 			}
 		}
 	}
@@ -323,6 +331,7 @@ COMMAND:
     inspect-database-task: Returns information about a particular task for a database.
     get-database-task-log: Returns the log of a particular task for a database.
     restore-database: Perform an in-place restore one or more nodes using the given restore configuration.
+    get-version: Returns version information for the Control Plane server.
 
 Additional help:
     %[1]s control-plane COMMAND --help
@@ -1607,5 +1616,15 @@ Example:
          "n1"
       ]
    }' --database-id "02f1a7db-fca8-4521-b57a-2a375c1ced51"
+`, os.Args[0])
+}
+
+func controlPlaneGetVersionUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane get-version
+
+Returns version information for the Control Plane server.
+
+Example:
+    %[1]s control-plane get-version
 `, os.Args[0])
 }

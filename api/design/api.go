@@ -376,6 +376,15 @@ var _ = g.Service("control-plane", func() {
 		})
 	})
 
+	g.Method("get-version", func() {
+		g.Description("Returns version information for the Control Plane server.")
+		g.Result(VersionInfo)
+
+		g.HTTP(func() {
+			g.GET("/version")
+		})
+	})
+
 	// Serves the OpenAPI spec as a static file
 	g.Files("/openapi.json", "./gen/http/openapi3.json")
 })

@@ -33,10 +33,11 @@ type Client struct {
 	InspectDatabaseTaskEndpoint    goa.Endpoint
 	GetDatabaseTaskLogEndpoint     goa.Endpoint
 	RestoreDatabaseEndpoint        goa.Endpoint
+	GetVersionEndpoint             goa.Endpoint
 }
 
 // NewClient initializes a "control-plane" service client given the endpoints.
-func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, inspectCluster, listHosts, inspectHost, removeHost, listDatabases, createDatabase, inspectDatabase, updateDatabase, deleteDatabase, initiateDatabaseBackup, listDatabaseTasks, inspectDatabaseTask, getDatabaseTaskLog, restoreDatabase goa.Endpoint) *Client {
+func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, inspectCluster, listHosts, inspectHost, removeHost, listDatabases, createDatabase, inspectDatabase, updateDatabase, deleteDatabase, initiateDatabaseBackup, listDatabaseTasks, inspectDatabaseTask, getDatabaseTaskLog, restoreDatabase, getVersion goa.Endpoint) *Client {
 	return &Client{
 		InitClusterEndpoint:            initCluster,
 		JoinClusterEndpoint:            joinCluster,
@@ -56,6 +57,7 @@ func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, inspectCl
 		InspectDatabaseTaskEndpoint:    inspectDatabaseTask,
 		GetDatabaseTaskLogEndpoint:     getDatabaseTaskLog,
 		RestoreDatabaseEndpoint:        restoreDatabase,
+		GetVersionEndpoint:             getVersion,
 	}
 }
 
@@ -312,4 +314,14 @@ func (c *Client) RestoreDatabase(ctx context.Context, p *RestoreDatabasePayload)
 		return
 	}
 	return ires.(*RestoreDatabaseResponse), nil
+}
+
+// GetVersion calls the "get-version" endpoint of the "control-plane" service.
+func (c *Client) GetVersion(ctx context.Context) (res *VersionInfo, err error) {
+	var ires any
+	ires, err = c.GetVersionEndpoint(ctx, nil)
+	if err != nil {
+		return
+	}
+	return ires.(*VersionInfo), nil
 }

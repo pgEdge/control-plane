@@ -1895,6 +1895,61 @@ func DecodeRestoreDatabaseResponse(decoder func(*http.Response) goahttp.Decoder,
 	}
 }
 
+// BuildGetVersionRequest instantiates a HTTP request object with method and
+// path set to call the "control-plane" service "get-version" endpoint
+func (c *Client) BuildGetVersionRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVersionControlPlanePath()}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("control-plane", "get-version", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// DecodeGetVersionResponse returns a decoder for responses returned by the
+// control-plane get-version endpoint. restoreBody controls whether the
+// response body should be restored after having been read.
+func DecodeGetVersionResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body GetVersionResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-version", err)
+			}
+			err = ValidateGetVersionResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-version", err)
+			}
+			res := NewGetVersionVersionInfoOK(&body)
+			return res, nil
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("control-plane", "get-version", resp.StatusCode, string(body))
+		}
+	}
+}
+
 // unmarshalClusterPeerResponseBodyToControlplaneClusterPeer builds a value of
 // type *controlplane.ClusterPeer from a value of type *ClusterPeerResponseBody.
 func unmarshalClusterPeerResponseBodyToControlplaneClusterPeer(v *ClusterPeerResponseBody) *controlplane.ClusterPeer {

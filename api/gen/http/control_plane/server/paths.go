@@ -100,3 +100,8 @@ func GetDatabaseTaskLogControlPlanePath(databaseID string, taskID string) string
 func RestoreDatabaseControlPlanePath(databaseID string) string {
 	return fmt.Sprintf("/databases/%v/restore", databaseID)
 }
+
+// GetVersionControlPlanePath returns the URL path to the control-plane service get-version HTTP endpoint.
+func GetVersionControlPlanePath() string {
+	return "/version"
+}

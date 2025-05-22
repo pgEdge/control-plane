@@ -283,6 +283,19 @@ type RestoreDatabaseResponseBody struct {
 	Tasks []*TaskResponseBody `form:"tasks,omitempty" json:"tasks,omitempty" xml:"tasks,omitempty"`
 }
 
+// GetVersionResponseBody is the type of the "control-plane" service
+// "get-version" endpoint HTTP response body.
+type GetVersionResponseBody struct {
+	// The version of the API server.
+	Version *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
+	// The VCS revision of the API server.
+	Revision *string `form:"revision,omitempty" json:"revision,omitempty" xml:"revision,omitempty"`
+	// The timestamp associated with the revision.
+	RevisionTime *string `form:"revision_time,omitempty" json:"revision_time,omitempty" xml:"revision_time,omitempty"`
+	// The CPU architecture of the API server.
+	Arch *string `form:"arch,omitempty" json:"arch,omitempty" xml:"arch,omitempty"`
+}
+
 // InitClusterClusterAlreadyInitializedResponseBody is the type of the
 // "control-plane" service "init-cluster" endpoint HTTP response body for the
 // "cluster_already_initialized" error.
@@ -3174,6 +3187,19 @@ func NewRestoreDatabaseInvalidInput(body *RestoreDatabaseInvalidInputResponseBod
 	return v
 }
 
+// NewGetVersionVersionInfoOK builds a "control-plane" service "get-version"
+// endpoint result from a HTTP "OK" response.
+func NewGetVersionVersionInfoOK(body *GetVersionResponseBody) *controlplane.VersionInfo {
+	v := &controlplane.VersionInfo{
+		Version:      *body.Version,
+		Revision:     *body.Revision,
+		RevisionTime: *body.RevisionTime,
+		Arch:         *body.Arch,
+	}
+
+	return v
+}
+
 // ValidateInitClusterResponseBody runs the validations defined on
 // Init-ClusterResponseBody
 func ValidateInitClusterResponseBody(body *InitClusterResponseBody) (err error) {
@@ -3454,6 +3480,27 @@ func ValidateRestoreDatabaseResponseBody(body *RestoreDatabaseResponseBody) (err
 				err = goa.MergeErrors(err, err2)
 			}
 		}
+	}
+	return
+}
+
+// ValidateGetVersionResponseBody runs the validations defined on
+// Get-VersionResponseBody
+func ValidateGetVersionResponseBody(body *GetVersionResponseBody) (err error) {
+	if body.Version == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("version", "body"))
+	}
+	if body.Revision == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("revision", "body"))
+	}
+	if body.RevisionTime == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("revision_time", "body"))
+	}
+	if body.Arch == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("arch", "body"))
+	}
+	if body.RevisionTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.revision_time", *body.RevisionTime, goa.FormatDateTime))
 	}
 	return
 }
