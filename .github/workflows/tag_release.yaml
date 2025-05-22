@@ -1,0 +1,29 @@
+name: tag_release
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+jobs:
+  tag_release:
+    if: ${{ github.event.pull_request.merged && startsWith(github.event.pull_request.head.ref, 'release/') }}
+    environment: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Tag release
+        run: |
+          branch_name=${{ github.event.pull_request.head.ref }}
+          version=${branch_name#release/}
+
+          # ensure release notes exist
+          ls changes/${version}.md
+
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git tag -a -F changes/${version}.md ${version}
+          git push origin ${version}

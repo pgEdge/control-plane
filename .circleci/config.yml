@@ -1,6 +1,7 @@
 version: 2.1
 orbs:
-  go: circleci/go@1.12.0
+  go: circleci/go@3.0.2
+  aws-cli: circleci/aws-cli@5.1
 commands:
   use_mod_cache:
     steps:
@@ -39,7 +40,61 @@ jobs:
           command: make ci
       - store_test_results:
           path: .
+  release:
+    docker:
+      - image: cimg/go:1.24.3
+    steps:
+      - checkout
+      - aws-cli/setup:
+          profile_name: default
+      - setup_remote_docker
+      - use_mod_cache
+      - run:
+          name: Build and publish release artifacts
+          command: |
+            # ensure required env vars are set
+            if [[ -z "${GITHUB_TOKEN}" ]]; then
+              echo "GITHUB_TOKEN must be set"
+            fi
+            if [[ -z "${CONTROL_PLANE_ECR_REPO}" ]]; then
+              echo "CONTROL_PLANE_ECR_REPO must be set"
+            fi
+
+            # Trim any pre-release identifiers from the end of the tag so that
+            # we can find the corresponding release notes.
+            release_version=${CIRCLE_TAG%-*}
+            release_notes=changes/${release_version}.md
+
+            # ensure the release notes exist
+            ls ${release_notes}
+
+            # initialize the ci buildx builder
+            make buildx-init
+
+            # create the github release
+            goreleaser release \
+              --release-notes=changes/${release_notes}.md \
+              --skip-validate
+
+            # log into control plane ECR repo
+            aws ecr-public get-login-password --region us-east-1 \
+              | docker login --username AWS --password-stdin "${CONTROL_PLANE_ECR_REPO}"
+
+            # build and publish control plane image
+            CONTROL_PLANE_IMAGE_REPO="${CONTROL_PLANE_ECR_REPO}" \
+            CONTROL_PLANE_VERSION="${CIRCLE_TAG}" \
+            make control-plane-images
+
 workflows:
   test:
     jobs:
       - test
+  release:
+    jobs:
+      - release:
+          context: control-plane-release
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(-.*)*/
