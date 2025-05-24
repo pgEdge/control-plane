@@ -1,13 +1,18 @@
 package design
 
 import (
+	_ "embed"
 	"net/http"
 
 	g "goa.design/goa/v3/dsl"
 )
 
+//go:embed version.txt
+var version string
+
 var _ = g.API("control-plane", func() {
 	g.Title("pgEdge Control Plane API")
+	g.Version(version)
 	g.Description("Service for creating, modifying, and operating pgEdge databases.")
 	g.Server("control-plane", func() {
 		g.Host("localhost", func() {

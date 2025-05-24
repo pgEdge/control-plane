@@ -104,10 +104,12 @@ release:
 ifeq ($(VERSION),)
 	$(error VERSION must be set to trigger a release. )
 endif
-	changie batch $(VERSION)
-	changie merge
+	$(changie) batch $(VERSION)
+	$(changie) merge
+	$(changie) latest > api/design/version.txt
+	$(MAKE) -C api generate
 	git checkout -b release/$(VERSION)
-	git add changes CHANGELOG.md
+	git add api changes CHANGELOG.md
 	git diff --staged
 	@echo -n "Are you sure? [y/N] " && read ans && [ $${ans:-N} == y ]
 	git commit -m "chore: bump version to $(VERSION)"
