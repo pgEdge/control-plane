@@ -418,21 +418,33 @@ func apiToDatabaseSpec(id, tID *string, apiSpec *api.DatabaseSpec) (*database.Sp
 }
 
 func taskToAPI(t *task.Task) *api.Task {
-	var completedAt, err *string
+	var (
+		completedAt *string
+		hostID      *string
+		instanceID  *string
+		parentID    *string
+	)
 	if !t.CompletedAt.IsZero() {
 		completedAt = utils.PointerTo(t.CompletedAt.Format(time.RFC3339))
 	}
-	if t.Error != "" {
-		err = &t.Error
+	if t.HostID != uuid.Nil {
+		hostID = utils.PointerTo(t.HostID.String())
+	}
+	if t.InstanceID != uuid.Nil {
+		instanceID = utils.PointerTo(t.InstanceID.String())
 	}
 	return &api.Task{
-		TaskID:      t.TaskID.String(),
+		ParentID:    parentID,
 		DatabaseID:  t.DatabaseID.String(),
+		TaskID:      t.TaskID.String(),
+		NodeName:    utils.NillablePointerTo(t.NodeName),
+		HostID:      hostID,
+		InstanceID:  instanceID,
 		CreatedAt:   t.CreatedAt.Format(time.RFC3339),
 		CompletedAt: completedAt,
 		Type:        string(t.Type),
 		Status:      string(t.Status),
-		Error:       err,
+		Error:       utils.NillablePointerTo(t.Error),
 	}
 }
 
@@ -500,6 +512,9 @@ func taskLogOptions(req *api.GetDatabaseTaskLogPayload) (task.TaskLogOptions, er
 			return task.TaskLogOptions{}, fmt.Errorf("invalid after line ID %q: %w", *req.AfterLineID, err)
 		}
 		options.AfterLineID = afterLineID
+	}
+	if req.IncludeTimestamp != nil {
+		options.IncludeTimestamp = *req.IncludeTimestamp
 	}
 
 	return options, nil
