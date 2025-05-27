@@ -9,6 +9,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/logging"
+	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 	"github.com/pgEdge/control-plane/server/internal/workflows/backend/etcd"
 )
@@ -46,7 +47,6 @@ func provideWorkflows(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-
 		activities, err := do.Invoke[*activities.Activities](i)
 		if err != nil {
 			return nil, err
@@ -115,7 +115,11 @@ func provideService(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
+		taskSvc, err := do.Invoke[*task.Service](i)
+		if err != nil {
+			return nil, err
+		}
 
-		return NewService(config, client, workflows), nil
+		return NewService(config, client, taskSvc, workflows), nil
 	})
 }
