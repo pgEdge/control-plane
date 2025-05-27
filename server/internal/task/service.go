@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+
 	"github.com/pgEdge/control-plane/server/internal/storage"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
@@ -22,15 +23,19 @@ func NewService(store *Store) *Service {
 	}
 }
 
-func (s *Service) CreateTask(ctx context.Context, task *Task) error {
-	err := s.Store.Task.Create(&StoredTask{
+func (s *Service) CreateTask(ctx context.Context, opts Options) (*Task, error) {
+	task, err := NewTask(opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create task: %w", err)
+	}
+	err = s.Store.Task.Create(&StoredTask{
 		Task: task,
 	}).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create task: %w", err)
+		return nil, fmt.Errorf("failed to create task: %w", err)
 	}
 
-	return nil
+	return task, nil
 }
 
 func (s *Service) UpdateTask(ctx context.Context, task *Task) error {

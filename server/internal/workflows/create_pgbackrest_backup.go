@@ -43,10 +43,12 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 
 		t.SetFailed(err)
 		updateTaskInput := &activities.UpdateTaskInput{
-			Task: t,
+			DatabaseID:    input.DatabaseID,
+			TaskID:        t.TaskID,
+			UpdateOptions: task.UpdateFail(err),
 		}
 		_, taskErr := w.Activities.
-			ExecuteUpdateTask(ctx, w.Config.HostID, updateTaskInput).
+			ExecuteUpdateTask(ctx, updateTaskInput).
 			Get(ctx)
 		if taskErr != nil {
 			logger.With("error", taskErr).Error("failed to update task state")
@@ -62,19 +64,13 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 		return nil, handleError(fmt.Errorf("failed to get random instance: %w", err))
 	}
 
-	wf := workflow.WorkflowInstance(ctx)
-
-	t.Status = task.StatusRunning
-	t.WorkflowInstanceID = wf.InstanceID
-	t.WorkflowExecutionID = wf.ExecutionID
-	t.InstanceID = instance.InstanceID
-	t.HostID = instance.HostID
-
 	updateTaskInput := &activities.UpdateTaskInput{
-		Task: t,
+		DatabaseID:    input.DatabaseID,
+		TaskID:        t.TaskID,
+		UpdateOptions: task.UpdateStart(),
 	}
 	_, err = w.Activities.
-		ExecuteUpdateTask(ctx, w.Config.HostID, updateTaskInput).
+		ExecuteUpdateTask(ctx, updateTaskInput).
 		Get(ctx)
 	if err != nil {
 		logger.With("error", err).Error("failed to update task state")
@@ -123,12 +119,13 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 		return nil, handleError(fmt.Errorf("failed to create pgbackrest backup: %w", err))
 	}
 
-	t.SetCompleted()
 	updateTaskInput = &activities.UpdateTaskInput{
-		Task: t,
+		DatabaseID:    input.DatabaseID,
+		TaskID:        t.TaskID,
+		UpdateOptions: task.UpdateComplete(),
 	}
 	_, err = w.Activities.
-		ExecuteUpdateTask(ctx, w.Config.HostID, updateTaskInput).
+		ExecuteUpdateTask(ctx, updateTaskInput).
 		Get(ctx)
 	if err != nil {
 		logger.With("error", err).Error("failed to update task state")

@@ -156,13 +156,13 @@ func (w *Workflows) handlePgBackRestRestoreFailed(
 		logger.With("error", stateErr).Error("failed to update database state")
 	}
 	for _, taskID := range input.NodeTaskIDs {
-		updateTaskStatusInput := &activities.UpdateTaskStatusInput{
-			DatabaseID: input.Spec.DatabaseID,
-			TaskID:     taskID,
-			Status:     task.StatusFailed,
+		updateTaskInput := &activities.UpdateTaskInput{
+			DatabaseID:    input.Spec.DatabaseID,
+			TaskID:        taskID,
+			UpdateOptions: task.UpdateFail(cause),
 		}
 		_, taskErr := w.Activities.
-			ExecuteUpdateTaskStatus(ctx, w.Config.HostID, updateTaskStatusInput).
+			ExecuteUpdateTask(ctx, updateTaskInput).
 			Get(ctx)
 		if taskErr != nil {
 			logger.With("error", taskErr).Error("failed to update task status")

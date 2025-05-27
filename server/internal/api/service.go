@@ -282,12 +282,11 @@ func (s *Service) InitiateDatabaseBackup(ctx context.Context, req *api.InitiateD
 		}
 	}
 
-	t, err := task.NewTask(db.DatabaseID, task.TypeBackup)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create task: %w", err)
-	}
-	t.NodeName = node.Name
-	err = s.taskSvc.CreateTask(ctx, t)
+	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		DatabaseID: db.DatabaseID,
+		Type:       task.TypeNodeBackup,
+		NodeName:   node.Name,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to persist task: %w", err)
 	}
@@ -465,12 +464,11 @@ func (s *Service) RestoreDatabase(ctx context.Context, req *api.RestoreDatabaseP
 	nodeTaskIDs := map[string]uuid.UUID{}
 	tasks := make([]*task.Task, len(targetNodes))
 	for i, node := range targetNodes {
-		t, err := task.NewTask(db.DatabaseID, task.TypeRestore)
-		if err != nil {
-			return nil, handleError(fmt.Errorf("failed to create task: %w", err))
-		}
-		t.NodeName = node
-		err = s.taskSvc.CreateTask(ctx, t)
+		t, err := s.taskSvc.CreateTask(ctx, task.Options{
+			DatabaseID: db.DatabaseID,
+			Type:       task.TypeNodeRestore,
+			NodeName:   node,
+		})
 		if err != nil {
 			return nil, handleError(fmt.Errorf("failed to persist task: %w", err))
 		}
