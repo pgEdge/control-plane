@@ -17,7 +17,8 @@ import (
 )
 
 type DeleteDbEntitiesInput struct {
-	DatabaseID uuid.UUID `json:"database_id"`
+	DatabaseID   uuid.UUID `json:"database_id"`
+	DeleteTaskID uuid.UUID `json:"delete_task_id"`
 }
 
 type DeleteDbEntitiesOutput struct{}
@@ -47,10 +48,6 @@ func (a *Activities) DeleteDbEntities(ctx context.Context, input *DeleteDbEntiti
 	if err != nil {
 		return nil, err
 	}
-	taskSvc, err := do.Invoke[*task.Service](a.Injector)
-	if err != nil {
-		return nil, err
-	}
 
 	err = resourceSvc.DeleteState(ctx, input.DatabaseID)
 	if err != nil {
@@ -60,9 +57,20 @@ func (a *Activities) DeleteDbEntities(ctx context.Context, input *DeleteDbEntiti
 	if err != nil && !errors.Is(err, database.ErrDatabaseNotFound) {
 		return nil, fmt.Errorf("failed to delete database: %w", err)
 	}
-	err = taskSvc.DeleteAllTasks(ctx, input.DatabaseID)
+	tasks, err := a.TaskSvc.GetTasks(ctx, input.DatabaseID, task.TaskListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to delete tasks: %w", err)
+		return nil, fmt.Errorf("failed to list tasks: %w", err)
+	}
+	for _, t := range tasks {
+		// We want to leave the delete task in place so that API clients can
+		// track the delete through to completion.
+		if t.TaskID == input.DeleteTaskID {
+			continue
+		}
+		err = a.TaskSvc.DeleteTask(ctx, input.DatabaseID, t.TaskID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to delete task: %w", err)
+		}
 	}
 
 	return &DeleteDbEntitiesOutput{}, nil

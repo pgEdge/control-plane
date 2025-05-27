@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/core"
@@ -16,6 +17,7 @@ import (
 
 type ApplyEventInput struct {
 	DatabaseID uuid.UUID       `json:"database_id"`
+	TaskID     uuid.UUID       `json:"task_id"`
 	State      *resource.State `json:"state"`
 	Event      *resource.Event `json:"event"`
 }
@@ -79,15 +81,24 @@ func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*A
 			return nil, fmt.Errorf("failed to refresh resource %s: %w", r.Identifier().String(), err)
 		}
 	case resource.EventTypeCreate:
-		if err := r.Create(ctx, rc); err != nil {
+		err := a.logEvent(ctx, input.DatabaseID, input.TaskID, "creating", r, func() error {
+			return r.Create(ctx, rc)
+		})
+		if err != nil {
 			return nil, fmt.Errorf("failed to create resource %s: %w", r.Identifier().String(), err)
 		}
 	case resource.EventTypeUpdate:
-		if err := r.Update(ctx, rc); err != nil {
+		err := a.logEvent(ctx, input.DatabaseID, input.TaskID, "updating", r, func() error {
+			return r.Update(ctx, rc)
+		})
+		if err != nil {
 			return nil, fmt.Errorf("failed to update resource %s: %w", r.Identifier().String(), err)
 		}
 	case resource.EventTypeDelete:
-		if err := r.Delete(ctx, rc); err != nil {
+		err := a.logEvent(ctx, input.DatabaseID, input.TaskID, "deleting", r, func() error {
+			return r.Delete(ctx, rc)
+		})
+		if err != nil {
 			return nil, fmt.Errorf("failed to delete resource %s: %w", r.Identifier().String(), err)
 		}
 	default:
@@ -105,4 +116,48 @@ func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*A
 			Resource: data,
 		},
 	}, nil
+}
+
+func (a *Activities) logEvent(
+	ctx context.Context,
+	databaseID uuid.UUID,
+	taskID uuid.UUID,
+	verb string,
+	resource resource.Resource,
+	apply func() error,
+) error {
+	// Currying AddLogLine
+	log := func(msg string) error {
+		return a.TaskSvc.AddLogLine(ctx, databaseID, taskID, msg)
+	}
+
+	msg := fmt.Sprintf("%s %s on host %s", verb, resource.Identifier(), a.Config.HostID)
+	err := log(msg)
+	if err != nil {
+		return fmt.Errorf("failed to record event start: %w", err)
+	}
+
+	start := time.Now()
+	applyErr := apply()
+	duration := time.Since(start)
+
+	if applyErr != nil {
+		msg := fmt.Sprintf("error while %s %s: %s", verb, resource.Identifier(), applyErr)
+		err := log(msg)
+		if err != nil {
+			return errors.Join(
+				applyErr,
+				fmt.Errorf("failed to record event error: %w", err),
+			)
+		}
+		return applyErr
+	}
+
+	msg = fmt.Sprintf("finished %s %s (took %s)", verb, resource.Identifier(), duration)
+	err = log(msg)
+	if err != nil {
+		return fmt.Errorf("failed to record event completion: %w", err)
+	}
+
+	return nil
 }

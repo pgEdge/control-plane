@@ -9,6 +9,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/task"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
@@ -19,8 +20,8 @@ type InstanceHost struct {
 
 type CreatePgBackRestBackupInput struct {
 	DatabaseID        uuid.UUID                 `json:"database_id"`
+	TaskID            uuid.UUID                 `json:"task_id"`
 	NodeName          string                    `json:"node_name"`
-	Task              *task.Task                `json:"task"`
 	BackupFromStandby bool                      `json:"backup_from_standby"`
 	Instances         []*InstanceHost           `json:"instances"`
 	Options           *pgbackrest.BackupOptions `json:"options"`
@@ -30,30 +31,23 @@ type CreatePgBackRestBackupOutput struct{}
 
 func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePgBackRestBackupInput) (*CreatePgBackRestBackupOutput, error) {
 	logger := workflow.Logger(ctx).With(
-		"database_id", input.Task.DatabaseID.String(),
-		"task_id", input.Task.TaskID.String(),
+		"database_id", input.DatabaseID.String(),
+		"task_id", input.TaskID.String(),
 		"backup_from_standby", input.BackupFromStandby,
 	)
 	logger.Info("creating pgbackrest backup")
 
-	t := input.Task
+	var handleError = func(cause error) error {
+		logger.With("error", cause).Error("failed to create pgbackrest backup")
 
-	var handleError = func(err error) error {
-		logger.With("error", err).Error("failed to create pgbackrest backup")
-
-		t.SetFailed(err)
 		updateTaskInput := &activities.UpdateTaskInput{
 			DatabaseID:    input.DatabaseID,
-			TaskID:        t.TaskID,
-			UpdateOptions: task.UpdateFail(err),
+			TaskID:        input.TaskID,
+			UpdateOptions: task.UpdateFail(cause),
 		}
-		_, taskErr := w.Activities.
-			ExecuteUpdateTask(ctx, updateTaskInput).
-			Get(ctx)
-		if taskErr != nil {
-			logger.With("error", taskErr).Error("failed to update task state")
-		}
-		return err
+		_ = w.updateTask(ctx, logger, updateTaskInput)
+
+		return cause
 	}
 
 	instance, err := workflow.SideEffect(ctx, func(_ workflow.Context) *InstanceHost {
@@ -64,21 +58,19 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 		return nil, handleError(fmt.Errorf("failed to get random instance: %w", err))
 	}
 
+	updateOptions := task.UpdateStart()
+	updateOptions.InstanceID = utils.PointerTo(instance.InstanceID)
 	updateTaskInput := &activities.UpdateTaskInput{
 		DatabaseID:    input.DatabaseID,
-		TaskID:        t.TaskID,
-		UpdateOptions: task.UpdateStart(),
+		TaskID:        input.TaskID,
+		UpdateOptions: updateOptions,
 	}
-	_, err = w.Activities.
-		ExecuteUpdateTask(ctx, updateTaskInput).
-		Get(ctx)
-	if err != nil {
-		logger.With("error", err).Error("failed to update task state")
-		return nil, err
+	if err := w.updateTask(ctx, logger, updateTaskInput); err != nil {
+		return nil, handleError(err)
 	}
 
 	getPrimaryInput := &activities.GetPrimaryInstanceInput{
-		DatabaseID: input.Task.DatabaseID,
+		DatabaseID: input.DatabaseID,
 		InstanceID: instance.InstanceID,
 	}
 	getPrimaryOutput, err := w.Activities.
@@ -107,9 +99,9 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 	}
 
 	backupInput := &activities.CreatePgBackRestBackupInput{
-		DatabaseID: input.Task.DatabaseID,
+		DatabaseID: input.DatabaseID,
 		InstanceID: backupInstance.InstanceID,
-		TaskID:     input.Task.TaskID,
+		TaskID:     input.TaskID,
 		Options:    input.Options,
 	}
 	_, err = w.Activities.
@@ -121,15 +113,11 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 
 	updateTaskInput = &activities.UpdateTaskInput{
 		DatabaseID:    input.DatabaseID,
-		TaskID:        t.TaskID,
+		TaskID:        input.TaskID,
 		UpdateOptions: task.UpdateComplete(),
 	}
-	_, err = w.Activities.
-		ExecuteUpdateTask(ctx, updateTaskInput).
-		Get(ctx)
-	if err != nil {
-		logger.With("error", err).Error("failed to update task state")
-		return nil, err
+	if err := w.updateTask(ctx, logger, updateTaskInput); err != nil {
+		return nil, handleError(err)
 	}
 
 	logger.Info("successfully created pgbackrest backup")

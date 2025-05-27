@@ -57,7 +57,8 @@ func (s *Service) CreateDatabase(ctx context.Context, spec *database.Spec) (*tas
 		return nil, fmt.Errorf("failed to create new task: %w", err)
 	}
 	input := &UpdateDatabaseInput{
-		Spec: spec,
+		TaskID: t.TaskID,
+		Spec:   spec,
 	}
 	err = s.createWorkflow(ctx, t, databaseID.String(), s.workflows.UpdateDatabase, input)
 	if err != nil {
@@ -77,6 +78,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, spec *database.Spec, force
 		return nil, fmt.Errorf("failed to create new task: %w", err)
 	}
 	input := &UpdateDatabaseInput{
+		TaskID:      t.TaskID,
 		Spec:        spec,
 		ForceUpdate: forceUpdate,
 	}
@@ -98,6 +100,7 @@ func (s *Service) DeleteDatabase(ctx context.Context, databaseID uuid.UUID) (*ta
 	}
 	input := &DeleteDatabaseInput{
 		DatabaseID: databaseID,
+		TaskID:     t.TaskID,
 	}
 	err = s.createWorkflow(ctx, t, databaseID.String(), s.workflows.DeleteDatabase, input)
 	if err != nil {
@@ -125,6 +128,7 @@ func (s *Service) CreatePgBackRestBackup(
 	input := &CreatePgBackRestBackupInput{
 		DatabaseID:        databaseID,
 		NodeName:          nodeName,
+		TaskID:            t.TaskID,
 		BackupFromStandby: backupFromStandby,
 		Instances:         instances,
 		Options:           options,
@@ -174,6 +178,7 @@ func (s *Service) PgBackRestRestore(
 	}
 
 	input := &PgBackRestRestoreInput{
+		TaskID:        t.TaskID,
 		Spec:          spec,
 		TargetNodes:   targetNodes,
 		RestoreConfig: restoreConfig,

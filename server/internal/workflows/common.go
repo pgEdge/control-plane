@@ -3,6 +3,7 @@ package workflows
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
@@ -11,12 +12,13 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
-func (w *Workflows) applyEvents(ctx workflow.Context, databaseID uuid.UUID, state *resource.State, phases [][]*resource.Event) error {
+func (w *Workflows) applyEvents(ctx workflow.Context, databaseID, taskID uuid.UUID, state *resource.State, phases [][]*resource.Event) error {
 	for _, phase := range phases {
 		futures := make([]workflow.Future[*activities.ApplyEventOutput], len(phase))
 		for i, event := range phase {
 			in := &activities.ApplyEventInput{
 				DatabaseID: databaseID,
+				TaskID:     taskID,
 				State:      state,
 				Event:      event,
 			}
@@ -56,6 +58,40 @@ func (w *Workflows) applyEvents(ctx workflow.Context, databaseID uuid.UUID, stat
 		if err := errors.Join(errs...); err != nil {
 			return fmt.Errorf("failed while modifying resources: %w", err)
 		}
+	}
+
+	return nil
+}
+
+func (w *Workflows) updateTask(
+	ctx workflow.Context,
+	logger *slog.Logger,
+	input *activities.UpdateTaskInput,
+) error {
+	_, err := w.Activities.
+		ExecuteUpdateTask(ctx, input).
+		Get(ctx)
+	if err != nil {
+		logger.With("error", err).Error("failed to update task state")
+		return fmt.Errorf("failed to update task state: %w", err)
+	}
+	return nil
+}
+
+func (w *Workflows) logTaskEvent(
+	ctx workflow.Context,
+	databaseID uuid.UUID,
+	taskID uuid.UUID,
+	msgs ...string,
+) error {
+	_, err := w.Activities.
+		ExecuteLogTaskEvent(ctx, &activities.LogTaskEventInput{
+			DatabaseID: databaseID,
+			TaskID:     taskID,
+			Messages:   msgs,
+		}).Get(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to log task event: %w", err)
 	}
 
 	return nil

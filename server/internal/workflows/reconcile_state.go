@@ -13,6 +13,7 @@ import (
 
 type ReconcileStateInput struct {
 	DatabaseID  uuid.UUID       `json:"database_id"`
+	TaskID      uuid.UUID       `json:"task_id"`
 	Current     *resource.State `json:"current"`
 	Desired     *resource.State `json:"desired"`
 	ForceUpdate bool            `json:"force_update"`
@@ -65,7 +66,7 @@ func (w *Workflows) ReconcileState(ctx workflow.Context, input *ReconcileStateIn
 	}()
 
 	if len(planOutput.Plan) > 0 {
-		if err := w.applyEvents(ctx, input.DatabaseID, current, planOutput.Plan); err != nil {
+		if err := w.applyEvents(ctx, input.DatabaseID, input.TaskID, current, planOutput.Plan); err != nil {
 			return nil, fmt.Errorf("failed to apply events: %w", err)
 		}
 
