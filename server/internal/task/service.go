@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -116,6 +117,7 @@ func (s *Service) AddLogLine(ctx context.Context, databaseID, taskID uuid.UUID, 
 		DatabaseID: databaseID,
 		TaskID:     taskID,
 		LineID:     lineID,
+		Timestamp:  time.Now(),
 		Line:       utils.Clean(line), // remove all control characters
 	}
 	err = s.Store.TaskLogLine.Put(stored).Exec(ctx)
@@ -138,7 +140,11 @@ func (s *Service) GetTaskLog(ctx context.Context, databaseID, taskID uuid.UUID, 
 	}
 	for i := len(stored) - 1; i >= 0; i-- {
 		s := stored[i]
-		log.Lines = append(log.Lines, s.Line)
+		if options.IncludeTimestamp {
+			log.Lines = append(log.Lines, s.Timestamp.Format(time.RFC3339)+" "+s.Line)
+		} else {
+			log.Lines = append(log.Lines, s.Line)
+		}
 	}
 	if len(stored) > 0 {
 		log.LastLineID = stored[len(stored)-1].LineID

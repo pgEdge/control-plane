@@ -2,6 +2,7 @@ package task
 
 import (
 	"path"
+	"time"
 
 	"github.com/google/uuid"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -14,6 +15,7 @@ type StoredTaskLogLine struct {
 	DatabaseID uuid.UUID `json:"database_id"`
 	TaskID     uuid.UUID `json:"task_id"`
 	LineID     uuid.UUID `json:"line_id"`
+	Timestamp  time.Time `json:"timestamp"`
 	Line       string    `json:"line"`
 }
 
@@ -46,8 +48,9 @@ func (s *TaskLogLineStore) Key(databaseID, taskID, lineID uuid.UUID) string {
 }
 
 type TaskLogOptions struct {
-	Limit       int
-	AfterLineID uuid.UUID
+	Limit            int
+	AfterLineID      uuid.UUID
+	IncludeTimestamp bool
 }
 
 func (s *TaskLogLineStore) GetAllByTaskID(databaseID, taskID uuid.UUID, options TaskLogOptions) storage.GetMultipleOp[*StoredTaskLogLine] {
