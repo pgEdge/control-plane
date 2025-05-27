@@ -19,27 +19,27 @@ import (
 
 // Server lists the control-plane service endpoint HTTP handlers.
 type Server struct {
-	Mounts                 []*MountPoint
-	InitCluster            http.Handler
-	JoinCluster            http.Handler
-	GetJoinToken           http.Handler
-	GetJoinOptions         http.Handler
-	InspectCluster         http.Handler
-	ListHosts              http.Handler
-	InspectHost            http.Handler
-	RemoveHost             http.Handler
-	ListDatabases          http.Handler
-	CreateDatabase         http.Handler
-	InspectDatabase        http.Handler
-	UpdateDatabase         http.Handler
-	DeleteDatabase         http.Handler
-	InitiateDatabaseBackup http.Handler
-	ListDatabaseTasks      http.Handler
-	InspectDatabaseTask    http.Handler
-	GetDatabaseTaskLog     http.Handler
-	RestoreDatabase        http.Handler
-	GetVersion             http.Handler
-	GenHTTPOpenapi3JSON    http.Handler
+	Mounts              []*MountPoint
+	InitCluster         http.Handler
+	JoinCluster         http.Handler
+	GetJoinToken        http.Handler
+	GetJoinOptions      http.Handler
+	InspectCluster      http.Handler
+	ListHosts           http.Handler
+	InspectHost         http.Handler
+	RemoveHost          http.Handler
+	ListDatabases       http.Handler
+	CreateDatabase      http.Handler
+	InspectDatabase     http.Handler
+	UpdateDatabase      http.Handler
+	DeleteDatabase      http.Handler
+	BackupDatabaseNode  http.Handler
+	ListDatabaseTasks   http.Handler
+	InspectDatabaseTask http.Handler
+	GetDatabaseTaskLog  http.Handler
+	RestoreDatabase     http.Handler
+	GetVersion          http.Handler
+	GenHTTPOpenapi3JSON http.Handler
 }
 
 // MountPoint holds information about the mounted endpoints.
@@ -87,7 +87,7 @@ func New(
 			{"InspectDatabase", "GET", "/databases/{database_id}"},
 			{"UpdateDatabase", "POST", "/databases/{database_id}"},
 			{"DeleteDatabase", "DELETE", "/databases/{database_id}"},
-			{"InitiateDatabaseBackup", "POST", "/databases/{database_id}/nodes/{node_name}/backups"},
+			{"BackupDatabaseNode", "POST", "/databases/{database_id}/nodes/{node_name}/backups"},
 			{"ListDatabaseTasks", "GET", "/databases/{database_id}/tasks"},
 			{"InspectDatabaseTask", "GET", "/databases/{database_id}/tasks/{task_id}"},
 			{"GetDatabaseTaskLog", "GET", "/databases/{database_id}/tasks/{task_id}/log"},
@@ -95,26 +95,26 @@ func New(
 			{"GetVersion", "GET", "/version"},
 			{"Serve ./gen/http/openapi3.json", "GET", "/openapi.json"},
 		},
-		InitCluster:            NewInitClusterHandler(e.InitCluster, mux, decoder, encoder, errhandler, formatter),
-		JoinCluster:            NewJoinClusterHandler(e.JoinCluster, mux, decoder, encoder, errhandler, formatter),
-		GetJoinToken:           NewGetJoinTokenHandler(e.GetJoinToken, mux, decoder, encoder, errhandler, formatter),
-		GetJoinOptions:         NewGetJoinOptionsHandler(e.GetJoinOptions, mux, decoder, encoder, errhandler, formatter),
-		InspectCluster:         NewInspectClusterHandler(e.InspectCluster, mux, decoder, encoder, errhandler, formatter),
-		ListHosts:              NewListHostsHandler(e.ListHosts, mux, decoder, encoder, errhandler, formatter),
-		InspectHost:            NewInspectHostHandler(e.InspectHost, mux, decoder, encoder, errhandler, formatter),
-		RemoveHost:             NewRemoveHostHandler(e.RemoveHost, mux, decoder, encoder, errhandler, formatter),
-		ListDatabases:          NewListDatabasesHandler(e.ListDatabases, mux, decoder, encoder, errhandler, formatter),
-		CreateDatabase:         NewCreateDatabaseHandler(e.CreateDatabase, mux, decoder, encoder, errhandler, formatter),
-		InspectDatabase:        NewInspectDatabaseHandler(e.InspectDatabase, mux, decoder, encoder, errhandler, formatter),
-		UpdateDatabase:         NewUpdateDatabaseHandler(e.UpdateDatabase, mux, decoder, encoder, errhandler, formatter),
-		DeleteDatabase:         NewDeleteDatabaseHandler(e.DeleteDatabase, mux, decoder, encoder, errhandler, formatter),
-		InitiateDatabaseBackup: NewInitiateDatabaseBackupHandler(e.InitiateDatabaseBackup, mux, decoder, encoder, errhandler, formatter),
-		ListDatabaseTasks:      NewListDatabaseTasksHandler(e.ListDatabaseTasks, mux, decoder, encoder, errhandler, formatter),
-		InspectDatabaseTask:    NewInspectDatabaseTaskHandler(e.InspectDatabaseTask, mux, decoder, encoder, errhandler, formatter),
-		GetDatabaseTaskLog:     NewGetDatabaseTaskLogHandler(e.GetDatabaseTaskLog, mux, decoder, encoder, errhandler, formatter),
-		RestoreDatabase:        NewRestoreDatabaseHandler(e.RestoreDatabase, mux, decoder, encoder, errhandler, formatter),
-		GetVersion:             NewGetVersionHandler(e.GetVersion, mux, decoder, encoder, errhandler, formatter),
-		GenHTTPOpenapi3JSON:    http.FileServer(fileSystemGenHTTPOpenapi3JSON),
+		InitCluster:         NewInitClusterHandler(e.InitCluster, mux, decoder, encoder, errhandler, formatter),
+		JoinCluster:         NewJoinClusterHandler(e.JoinCluster, mux, decoder, encoder, errhandler, formatter),
+		GetJoinToken:        NewGetJoinTokenHandler(e.GetJoinToken, mux, decoder, encoder, errhandler, formatter),
+		GetJoinOptions:      NewGetJoinOptionsHandler(e.GetJoinOptions, mux, decoder, encoder, errhandler, formatter),
+		InspectCluster:      NewInspectClusterHandler(e.InspectCluster, mux, decoder, encoder, errhandler, formatter),
+		ListHosts:           NewListHostsHandler(e.ListHosts, mux, decoder, encoder, errhandler, formatter),
+		InspectHost:         NewInspectHostHandler(e.InspectHost, mux, decoder, encoder, errhandler, formatter),
+		RemoveHost:          NewRemoveHostHandler(e.RemoveHost, mux, decoder, encoder, errhandler, formatter),
+		ListDatabases:       NewListDatabasesHandler(e.ListDatabases, mux, decoder, encoder, errhandler, formatter),
+		CreateDatabase:      NewCreateDatabaseHandler(e.CreateDatabase, mux, decoder, encoder, errhandler, formatter),
+		InspectDatabase:     NewInspectDatabaseHandler(e.InspectDatabase, mux, decoder, encoder, errhandler, formatter),
+		UpdateDatabase:      NewUpdateDatabaseHandler(e.UpdateDatabase, mux, decoder, encoder, errhandler, formatter),
+		DeleteDatabase:      NewDeleteDatabaseHandler(e.DeleteDatabase, mux, decoder, encoder, errhandler, formatter),
+		BackupDatabaseNode:  NewBackupDatabaseNodeHandler(e.BackupDatabaseNode, mux, decoder, encoder, errhandler, formatter),
+		ListDatabaseTasks:   NewListDatabaseTasksHandler(e.ListDatabaseTasks, mux, decoder, encoder, errhandler, formatter),
+		InspectDatabaseTask: NewInspectDatabaseTaskHandler(e.InspectDatabaseTask, mux, decoder, encoder, errhandler, formatter),
+		GetDatabaseTaskLog:  NewGetDatabaseTaskLogHandler(e.GetDatabaseTaskLog, mux, decoder, encoder, errhandler, formatter),
+		RestoreDatabase:     NewRestoreDatabaseHandler(e.RestoreDatabase, mux, decoder, encoder, errhandler, formatter),
+		GetVersion:          NewGetVersionHandler(e.GetVersion, mux, decoder, encoder, errhandler, formatter),
+		GenHTTPOpenapi3JSON: http.FileServer(fileSystemGenHTTPOpenapi3JSON),
 	}
 }
 
@@ -136,7 +136,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.InspectDatabase = m(s.InspectDatabase)
 	s.UpdateDatabase = m(s.UpdateDatabase)
 	s.DeleteDatabase = m(s.DeleteDatabase)
-	s.InitiateDatabaseBackup = m(s.InitiateDatabaseBackup)
+	s.BackupDatabaseNode = m(s.BackupDatabaseNode)
 	s.ListDatabaseTasks = m(s.ListDatabaseTasks)
 	s.InspectDatabaseTask = m(s.InspectDatabaseTask)
 	s.GetDatabaseTaskLog = m(s.GetDatabaseTaskLog)
@@ -162,7 +162,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountInspectDatabaseHandler(mux, h.InspectDatabase)
 	MountUpdateDatabaseHandler(mux, h.UpdateDatabase)
 	MountDeleteDatabaseHandler(mux, h.DeleteDatabase)
-	MountInitiateDatabaseBackupHandler(mux, h.InitiateDatabaseBackup)
+	MountBackupDatabaseNodeHandler(mux, h.BackupDatabaseNode)
 	MountListDatabaseTasksHandler(mux, h.ListDatabaseTasks)
 	MountInspectDatabaseTaskHandler(mux, h.InspectDatabaseTask)
 	MountGetDatabaseTaskLogHandler(mux, h.GetDatabaseTaskLog)
@@ -804,9 +804,9 @@ func NewDeleteDatabaseHandler(
 	})
 }
 
-// MountInitiateDatabaseBackupHandler configures the mux to serve the
-// "control-plane" service "initiate-database-backup" endpoint.
-func MountInitiateDatabaseBackupHandler(mux goahttp.Muxer, h http.Handler) {
+// MountBackupDatabaseNodeHandler configures the mux to serve the
+// "control-plane" service "backup-database-node" endpoint.
+func MountBackupDatabaseNodeHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
@@ -816,10 +816,10 @@ func MountInitiateDatabaseBackupHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("POST", "/databases/{database_id}/nodes/{node_name}/backups", f)
 }
 
-// NewInitiateDatabaseBackupHandler creates a HTTP handler which loads the HTTP
-// request and calls the "control-plane" service "initiate-database-backup"
+// NewBackupDatabaseNodeHandler creates a HTTP handler which loads the HTTP
+// request and calls the "control-plane" service "backup-database-node"
 // endpoint.
-func NewInitiateDatabaseBackupHandler(
+func NewBackupDatabaseNodeHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -828,13 +828,13 @@ func NewInitiateDatabaseBackupHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		decodeRequest  = DecodeInitiateDatabaseBackupRequest(mux, decoder)
-		encodeResponse = EncodeInitiateDatabaseBackupResponse(encoder)
-		encodeError    = EncodeInitiateDatabaseBackupError(encoder, formatter)
+		decodeRequest  = DecodeBackupDatabaseNodeRequest(mux, decoder)
+		encodeResponse = EncodeBackupDatabaseNodeResponse(encoder)
+		encodeError    = EncodeBackupDatabaseNodeError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "initiate-database-backup")
+		ctx = context.WithValue(ctx, goa.MethodKey, "backup-database-node")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
 		payload, err := decodeRequest(r)
 		if err != nil {

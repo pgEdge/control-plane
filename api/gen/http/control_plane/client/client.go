@@ -69,9 +69,9 @@ type Client struct {
 	// delete-database endpoint.
 	DeleteDatabaseDoer goahttp.Doer
 
-	// InitiateDatabaseBackup Doer is the HTTP client used to make requests to the
-	// initiate-database-backup endpoint.
-	InitiateDatabaseBackupDoer goahttp.Doer
+	// BackupDatabaseNode Doer is the HTTP client used to make requests to the
+	// backup-database-node endpoint.
+	BackupDatabaseNodeDoer goahttp.Doer
 
 	// ListDatabaseTasks Doer is the HTTP client used to make requests to the
 	// list-database-tasks endpoint.
@@ -114,30 +114,30 @@ func NewClient(
 	restoreBody bool,
 ) *Client {
 	return &Client{
-		InitClusterDoer:            doer,
-		JoinClusterDoer:            doer,
-		GetJoinTokenDoer:           doer,
-		GetJoinOptionsDoer:         doer,
-		InspectClusterDoer:         doer,
-		ListHostsDoer:              doer,
-		InspectHostDoer:            doer,
-		RemoveHostDoer:             doer,
-		ListDatabasesDoer:          doer,
-		CreateDatabaseDoer:         doer,
-		InspectDatabaseDoer:        doer,
-		UpdateDatabaseDoer:         doer,
-		DeleteDatabaseDoer:         doer,
-		InitiateDatabaseBackupDoer: doer,
-		ListDatabaseTasksDoer:      doer,
-		InspectDatabaseTaskDoer:    doer,
-		GetDatabaseTaskLogDoer:     doer,
-		RestoreDatabaseDoer:        doer,
-		GetVersionDoer:             doer,
-		RestoreResponseBody:        restoreBody,
-		scheme:                     scheme,
-		host:                       host,
-		decoder:                    dec,
-		encoder:                    enc,
+		InitClusterDoer:         doer,
+		JoinClusterDoer:         doer,
+		GetJoinTokenDoer:        doer,
+		GetJoinOptionsDoer:      doer,
+		InspectClusterDoer:      doer,
+		ListHostsDoer:           doer,
+		InspectHostDoer:         doer,
+		RemoveHostDoer:          doer,
+		ListDatabasesDoer:       doer,
+		CreateDatabaseDoer:      doer,
+		InspectDatabaseDoer:     doer,
+		UpdateDatabaseDoer:      doer,
+		DeleteDatabaseDoer:      doer,
+		BackupDatabaseNodeDoer:  doer,
+		ListDatabaseTasksDoer:   doer,
+		InspectDatabaseTaskDoer: doer,
+		GetDatabaseTaskLogDoer:  doer,
+		RestoreDatabaseDoer:     doer,
+		GetVersionDoer:          doer,
+		RestoreResponseBody:     restoreBody,
+		scheme:                  scheme,
+		host:                    host,
+		decoder:                 dec,
+		encoder:                 enc,
 	}
 }
 
@@ -408,15 +408,15 @@ func (c *Client) DeleteDatabase() goa.Endpoint {
 	}
 }
 
-// InitiateDatabaseBackup returns an endpoint that makes HTTP requests to the
-// control-plane service initiate-database-backup server.
-func (c *Client) InitiateDatabaseBackup() goa.Endpoint {
+// BackupDatabaseNode returns an endpoint that makes HTTP requests to the
+// control-plane service backup-database-node server.
+func (c *Client) BackupDatabaseNode() goa.Endpoint {
 	var (
-		encodeRequest  = EncodeInitiateDatabaseBackupRequest(c.encoder)
-		decodeResponse = DecodeInitiateDatabaseBackupResponse(c.decoder, c.RestoreResponseBody)
+		encodeRequest  = EncodeBackupDatabaseNodeRequest(c.encoder)
+		decodeResponse = DecodeBackupDatabaseNodeResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildInitiateDatabaseBackupRequest(ctx, v)
+		req, err := c.BuildBackupDatabaseNodeRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -424,9 +424,9 @@ func (c *Client) InitiateDatabaseBackup() goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.InitiateDatabaseBackupDoer.Do(req)
+		resp, err := c.BackupDatabaseNodeDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("control-plane", "initiate-database-backup", err)
+			return nil, goahttp.ErrRequestError("control-plane", "backup-database-node", err)
 		}
 		return decodeResponse(resp)
 	}

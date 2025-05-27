@@ -35,15 +35,15 @@ type Service interface {
 	// Lists all databases in the cluster.
 	ListDatabases(context.Context) (res DatabaseCollection, err error)
 	// Creates a new database in the cluster.
-	CreateDatabase(context.Context, *CreateDatabaseRequest) (res *Database, err error)
+	CreateDatabase(context.Context, *CreateDatabaseRequest) (res *CreateDatabaseResponse, err error)
 	// Returns information about a particular database in the cluster.
 	InspectDatabase(context.Context, *InspectDatabasePayload) (res *Database, err error)
 	// Updates a database with the given specification.
-	UpdateDatabase(context.Context, *UpdateDatabasePayload) (res *Database, err error)
+	UpdateDatabase(context.Context, *UpdateDatabasePayload) (res *UpdateDatabaseResponse, err error)
 	// Deletes a database from the cluster.
-	DeleteDatabase(context.Context, *DeleteDatabasePayload) (err error)
-	// Initiates a backup for a database.
-	InitiateDatabaseBackup(context.Context, *InitiateDatabaseBackupPayload) (res *Task, err error)
+	DeleteDatabase(context.Context, *DeleteDatabasePayload) (res *DeleteDatabaseResponse, err error)
+	// Initiates a backup for a database node.
+	BackupDatabaseNode(context.Context, *BackupDatabaseNodePayload) (res *BackupDatabaseNodeResponse, err error)
 	// Lists all tasks for a database.
 	ListDatabaseTasks(context.Context, *ListDatabaseTasksPayload) (res []*Task, err error)
 	// Returns information about a particular task for a database.
@@ -71,7 +71,7 @@ const ServiceName = "control-plane"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [19]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "inspect-cluster", "list-hosts", "inspect-host", "remove-host", "list-databases", "create-database", "inspect-database", "update-database", "delete-database", "initiate-database-backup", "list-database-tasks", "inspect-database-task", "get-database-task-log", "restore-database", "get-version"}
+var MethodNames = [19]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "inspect-cluster", "list-hosts", "inspect-host", "remove-host", "list-databases", "create-database", "inspect-database", "update-database", "delete-database", "backup-database-node", "list-database-tasks", "inspect-database-task", "get-database-task-log", "restore-database", "get-version"}
 
 type BackupConfigSpec struct {
 	// The backup provider for this backup configuration.
@@ -80,6 +80,23 @@ type BackupConfigSpec struct {
 	Repositories []*BackupRepositorySpec
 	// The schedules for this backup configuration.
 	Schedules []*BackupScheduleSpec
+}
+
+// BackupDatabaseNodePayload is the payload type of the control-plane service
+// backup-database-node method.
+type BackupDatabaseNodePayload struct {
+	// ID of the database to back up.
+	DatabaseID string
+	// Name of the node to back up.
+	NodeName string
+	Options  *BackupOptions
+}
+
+// BackupDatabaseNodeResponse is the result type of the control-plane service
+// backup-database-node method.
+type BackupDatabaseNodeResponse struct {
+	// The task that will backup this database node.
+	Task *Task
 }
 
 type BackupOptions struct {
@@ -238,7 +255,16 @@ type CreateDatabaseRequest struct {
 	Spec *DatabaseSpec
 }
 
-// Database is the result type of the control-plane service create-database
+// CreateDatabaseResponse is the result type of the control-plane service
+// create-database method.
+type CreateDatabaseResponse struct {
+	// The task that will create this database.
+	Task *Task
+	// The database being created.
+	Database *Database
+}
+
+// Database is the result type of the control-plane service inspect-database
 // method.
 type Database struct {
 	// Unique identifier for the database.
@@ -367,6 +393,13 @@ type DeleteDatabasePayload struct {
 	DatabaseID string
 }
 
+// DeleteDatabaseResponse is the result type of the control-plane service
+// delete-database method.
+type DeleteDatabaseResponse struct {
+	// The task that will delete this database.
+	Task *Task
+}
+
 // Defines an extra volumes mapping between host and container.
 type ExtraVolumesSpec struct {
 	// The host path for the volume.
@@ -386,6 +419,8 @@ type GetDatabaseTaskLogPayload struct {
 	AfterLineID *string
 	// Maximum number of lines to return.
 	Limit *int
+	// Prepends the timestamp to each log line.
+	IncludeTimestamp *bool
 }
 
 // Host is the result type of the control-plane service inspect-host method.
@@ -429,16 +464,6 @@ type HostStatus struct {
 	UpdatedAt string
 	// The status of each component of the host.
 	Components map[string]*ComponentStatus
-}
-
-// InitiateDatabaseBackupPayload is the payload type of the control-plane
-// service initiate-database-backup method.
-type InitiateDatabaseBackupPayload struct {
-	// ID of the database to back up.
-	DatabaseID string
-	// Name of the node to back up.
-	NodeName string
-	Options  *BackupOptions
 }
 
 // InspectDatabasePayload is the payload type of the control-plane service
@@ -569,10 +594,12 @@ type RestoreDatabaseRequest struct {
 // RestoreDatabaseResponse is the result type of the control-plane service
 // restore-database method.
 type RestoreDatabaseResponse struct {
+	// The task that will restore this database.
+	Task *Task
+	// The tasks that will restore each database node.
+	NodeTasks []*Task
 	// The database being restored.
 	Database *Database
-	// The restore tasks that were created to restore this database.
-	Tasks []*Task
 }
 
 type RestoreRepositorySpec struct {
@@ -618,9 +645,11 @@ type RestoreRepositorySpec struct {
 	CustomOptions map[string]string
 }
 
-// Task is the result type of the control-plane service
-// initiate-database-backup method.
+// Task is the result type of the control-plane service inspect-database-task
+// method.
 type Task struct {
+	// The parent task ID of the task.
+	ParentID *string
 	// The database ID of the task.
 	DatabaseID string
 	// The name of the node that the task is operating on.
@@ -673,6 +702,15 @@ type UpdateDatabaseRequest struct {
 	TenantID *string
 	// The specification for the database.
 	Spec *DatabaseSpec
+}
+
+// UpdateDatabaseResponse is the result type of the control-plane service
+// update-database method.
+type UpdateDatabaseResponse struct {
+	// The task that will update this database.
+	Task *Task
+	// The database being updated.
+	Database *Database
 }
 
 // VersionInfo is the result type of the control-plane service get-version

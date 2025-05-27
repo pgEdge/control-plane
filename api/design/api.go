@@ -151,9 +151,7 @@ var _ = g.Service("control-plane", func() {
 	g.Method("create-database", func() {
 		g.Description("Creates a new database in the cluster.")
 		g.Payload(CreateDatabaseRequest)
-		g.Result(Database, func() {
-			g.View("default")
-		})
+		g.Result(CreateDatabaseResponse)
 		g.Error("cluster_not_initialized")
 		g.Error("invalid_input")
 		g.Error("database_already_exists")
@@ -196,9 +194,7 @@ var _ = g.Service("control-plane", func() {
 			})
 			g.Attribute("request", UpdateDatabaseRequest)
 		})
-		g.Result(Database, func() {
-			g.View("default")
-		})
+		g.Result(UpdateDatabaseResponse)
 		g.Error("cluster_not_initialized")
 		g.Error("not_found")
 		g.Error("database_not_modifiable")
@@ -221,6 +217,7 @@ var _ = g.Service("control-plane", func() {
 
 			g.Required("database_id")
 		})
+		g.Result(DeleteDatabaseResponse)
 		g.Error("cluster_not_initialized")
 		g.Error("not_found")
 		g.Error("database_not_modifiable")
@@ -230,8 +227,8 @@ var _ = g.Service("control-plane", func() {
 		})
 	})
 
-	g.Method("initiate-database-backup", func() {
-		g.Description("Initiates a backup for a database.")
+	g.Method("backup-database-node", func() {
+		g.Description("Initiates a backup for a database node.")
 		g.Payload(func() {
 			g.Attribute("database_id", g.String, func() {
 				g.Format(g.FormatUUID)
@@ -246,7 +243,7 @@ var _ = g.Service("control-plane", func() {
 
 			g.Required("database_id", "node_name", "options")
 		})
-		g.Result(Task)
+		g.Result(BackupDatabaseNodeResponse)
 		g.Error("cluster_not_initialized")
 		g.Error("not_found")
 		g.Error("database_not_modifiable")
@@ -343,6 +340,10 @@ var _ = g.Service("control-plane", func() {
 				g.Description("Maximum number of lines to return.")
 				g.Example(100)
 			})
+			g.Attribute("include_timestamp", g.Boolean, func() {
+				g.Description("Prepends the timestamp to each log line.")
+				g.Example(true)
+			})
 
 			g.Required("database_id", "task_id")
 		})
@@ -354,6 +355,7 @@ var _ = g.Service("control-plane", func() {
 			g.GET("/databases/{database_id}/tasks/{task_id}/log")
 			g.Param("after_line_id")
 			g.Param("limit")
+			g.Param("include_timestamp")
 		})
 	})
 

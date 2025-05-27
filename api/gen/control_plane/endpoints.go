@@ -15,49 +15,49 @@ import (
 
 // Endpoints wraps the "control-plane" service endpoints.
 type Endpoints struct {
-	InitCluster            goa.Endpoint
-	JoinCluster            goa.Endpoint
-	GetJoinToken           goa.Endpoint
-	GetJoinOptions         goa.Endpoint
-	InspectCluster         goa.Endpoint
-	ListHosts              goa.Endpoint
-	InspectHost            goa.Endpoint
-	RemoveHost             goa.Endpoint
-	ListDatabases          goa.Endpoint
-	CreateDatabase         goa.Endpoint
-	InspectDatabase        goa.Endpoint
-	UpdateDatabase         goa.Endpoint
-	DeleteDatabase         goa.Endpoint
-	InitiateDatabaseBackup goa.Endpoint
-	ListDatabaseTasks      goa.Endpoint
-	InspectDatabaseTask    goa.Endpoint
-	GetDatabaseTaskLog     goa.Endpoint
-	RestoreDatabase        goa.Endpoint
-	GetVersion             goa.Endpoint
+	InitCluster         goa.Endpoint
+	JoinCluster         goa.Endpoint
+	GetJoinToken        goa.Endpoint
+	GetJoinOptions      goa.Endpoint
+	InspectCluster      goa.Endpoint
+	ListHosts           goa.Endpoint
+	InspectHost         goa.Endpoint
+	RemoveHost          goa.Endpoint
+	ListDatabases       goa.Endpoint
+	CreateDatabase      goa.Endpoint
+	InspectDatabase     goa.Endpoint
+	UpdateDatabase      goa.Endpoint
+	DeleteDatabase      goa.Endpoint
+	BackupDatabaseNode  goa.Endpoint
+	ListDatabaseTasks   goa.Endpoint
+	InspectDatabaseTask goa.Endpoint
+	GetDatabaseTaskLog  goa.Endpoint
+	RestoreDatabase     goa.Endpoint
+	GetVersion          goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "control-plane" service with endpoints.
 func NewEndpoints(s Service) *Endpoints {
 	return &Endpoints{
-		InitCluster:            NewInitClusterEndpoint(s),
-		JoinCluster:            NewJoinClusterEndpoint(s),
-		GetJoinToken:           NewGetJoinTokenEndpoint(s),
-		GetJoinOptions:         NewGetJoinOptionsEndpoint(s),
-		InspectCluster:         NewInspectClusterEndpoint(s),
-		ListHosts:              NewListHostsEndpoint(s),
-		InspectHost:            NewInspectHostEndpoint(s),
-		RemoveHost:             NewRemoveHostEndpoint(s),
-		ListDatabases:          NewListDatabasesEndpoint(s),
-		CreateDatabase:         NewCreateDatabaseEndpoint(s),
-		InspectDatabase:        NewInspectDatabaseEndpoint(s),
-		UpdateDatabase:         NewUpdateDatabaseEndpoint(s),
-		DeleteDatabase:         NewDeleteDatabaseEndpoint(s),
-		InitiateDatabaseBackup: NewInitiateDatabaseBackupEndpoint(s),
-		ListDatabaseTasks:      NewListDatabaseTasksEndpoint(s),
-		InspectDatabaseTask:    NewInspectDatabaseTaskEndpoint(s),
-		GetDatabaseTaskLog:     NewGetDatabaseTaskLogEndpoint(s),
-		RestoreDatabase:        NewRestoreDatabaseEndpoint(s),
-		GetVersion:             NewGetVersionEndpoint(s),
+		InitCluster:         NewInitClusterEndpoint(s),
+		JoinCluster:         NewJoinClusterEndpoint(s),
+		GetJoinToken:        NewGetJoinTokenEndpoint(s),
+		GetJoinOptions:      NewGetJoinOptionsEndpoint(s),
+		InspectCluster:      NewInspectClusterEndpoint(s),
+		ListHosts:           NewListHostsEndpoint(s),
+		InspectHost:         NewInspectHostEndpoint(s),
+		RemoveHost:          NewRemoveHostEndpoint(s),
+		ListDatabases:       NewListDatabasesEndpoint(s),
+		CreateDatabase:      NewCreateDatabaseEndpoint(s),
+		InspectDatabase:     NewInspectDatabaseEndpoint(s),
+		UpdateDatabase:      NewUpdateDatabaseEndpoint(s),
+		DeleteDatabase:      NewDeleteDatabaseEndpoint(s),
+		BackupDatabaseNode:  NewBackupDatabaseNodeEndpoint(s),
+		ListDatabaseTasks:   NewListDatabaseTasksEndpoint(s),
+		InspectDatabaseTask: NewInspectDatabaseTaskEndpoint(s),
+		GetDatabaseTaskLog:  NewGetDatabaseTaskLogEndpoint(s),
+		RestoreDatabase:     NewRestoreDatabaseEndpoint(s),
+		GetVersion:          NewGetVersionEndpoint(s),
 	}
 }
 
@@ -77,7 +77,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.InspectDatabase = m(e.InspectDatabase)
 	e.UpdateDatabase = m(e.UpdateDatabase)
 	e.DeleteDatabase = m(e.DeleteDatabase)
-	e.InitiateDatabaseBackup = m(e.InitiateDatabaseBackup)
+	e.BackupDatabaseNode = m(e.BackupDatabaseNode)
 	e.ListDatabaseTasks = m(e.ListDatabaseTasks)
 	e.InspectDatabaseTask = m(e.InspectDatabaseTask)
 	e.GetDatabaseTaskLog = m(e.GetDatabaseTaskLog)
@@ -171,12 +171,7 @@ func NewListDatabasesEndpoint(s Service) goa.Endpoint {
 func NewCreateDatabaseEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*CreateDatabaseRequest)
-		res, err := s.CreateDatabase(ctx, p)
-		if err != nil {
-			return nil, err
-		}
-		vres := NewViewedDatabase(res, "default")
-		return vres, nil
+		return s.CreateDatabase(ctx, p)
 	}
 }
 
@@ -199,12 +194,7 @@ func NewInspectDatabaseEndpoint(s Service) goa.Endpoint {
 func NewUpdateDatabaseEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*UpdateDatabasePayload)
-		res, err := s.UpdateDatabase(ctx, p)
-		if err != nil {
-			return nil, err
-		}
-		vres := NewViewedDatabase(res, "default")
-		return vres, nil
+		return s.UpdateDatabase(ctx, p)
 	}
 }
 
@@ -213,16 +203,16 @@ func NewUpdateDatabaseEndpoint(s Service) goa.Endpoint {
 func NewDeleteDatabaseEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*DeleteDatabasePayload)
-		return nil, s.DeleteDatabase(ctx, p)
+		return s.DeleteDatabase(ctx, p)
 	}
 }
 
-// NewInitiateDatabaseBackupEndpoint returns an endpoint function that calls
-// the method "initiate-database-backup" of service "control-plane".
-func NewInitiateDatabaseBackupEndpoint(s Service) goa.Endpoint {
+// NewBackupDatabaseNodeEndpoint returns an endpoint function that calls the
+// method "backup-database-node" of service "control-plane".
+func NewBackupDatabaseNodeEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*InitiateDatabaseBackupPayload)
-		return s.InitiateDatabaseBackup(ctx, p)
+		p := req.(*BackupDatabaseNodePayload)
+		return s.BackupDatabaseNode(ctx, p)
 	}
 }
 

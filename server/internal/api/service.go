@@ -165,7 +165,7 @@ func (s *Service) ListDatabases(ctx context.Context) (api.DatabaseCollection, er
 	return apiDatabases, nil
 }
 
-func (s *Service) CreateDatabase(ctx context.Context, req *api.CreateDatabaseRequest) (*api.Database, error) {
+func (s *Service) CreateDatabase(ctx context.Context, req *api.CreateDatabaseRequest) (*api.CreateDatabaseResponse, error) {
 	spec, err := apiToDatabaseSpec(req.ID, req.TenantID, req.Spec)
 	if err != nil {
 		return nil, api.MakeInvalidInput(err)
@@ -185,14 +185,16 @@ func (s *Service) CreateDatabase(ctx context.Context, req *api.CreateDatabaseReq
 		return nil, fmt.Errorf("failed to start workflow: %w", err)
 	}
 
-	return databaseToAPI(db), nil
+	return &api.CreateDatabaseResponse{
+		Database: databaseToAPI(db),
+	}, nil
 }
 
 func (s *Service) InspectDatabase(ctx context.Context, req *api.InspectDatabasePayload) (*api.Database, error) {
 	return nil, ErrNotImplemented
 }
 
-func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePayload) (*api.Database, error) {
+func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePayload) (*api.UpdateDatabaseResponse, error) {
 	spec, err := apiToDatabaseSpec(req.DatabaseID, req.Request.TenantID, req.Request.Spec)
 	if err != nil {
 		return nil, api.MakeInvalidInput(err)
@@ -220,41 +222,43 @@ func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePay
 		return nil, fmt.Errorf("failed to start workflow: %w", err)
 	}
 
-	return databaseToAPI(db), nil
+	return &api.UpdateDatabaseResponse{
+		Database: databaseToAPI(db),
+	}, nil
 }
 
-func (s *Service) DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePayload) error {
+func (s *Service) DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePayload) (*api.DeleteDatabaseResponse, error) {
 	databaseID, err := uuid.Parse(req.DatabaseID)
 	if err != nil {
-		return api.MakeInvalidInput(fmt.Errorf("invalid database ID %q: %w", req.DatabaseID, err))
+		return nil, api.MakeInvalidInput(fmt.Errorf("invalid database ID %q: %w", req.DatabaseID, err))
 	}
 
 	db, err := s.dbSvc.GetDatabase(ctx, databaseID)
 	if errors.Is(err, database.ErrDatabaseNotFound) {
-		return api.MakeNotFound(fmt.Errorf("database %s not found: %w", databaseID, err))
+		return nil, api.MakeNotFound(fmt.Errorf("database %s not found: %w", databaseID, err))
 	} else if err != nil {
-		return fmt.Errorf("failed to get database: %w", err)
+		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
 	if !database.DatabaseStateModifiable(db.State) {
-		return api.MakeDatabaseNotModifiable(fmt.Errorf("database %s is not in a modifiable state", databaseID))
+		return nil, api.MakeDatabaseNotModifiable(fmt.Errorf("database %s is not in a modifiable state", databaseID))
 	}
 
 	err = s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, db.State, database.DatabaseStateDeleting)
 	if err != nil {
-		return fmt.Errorf("failed to update database state: %w", err)
+		return nil, fmt.Errorf("failed to update database state: %w", err)
 	}
 
 	err = s.workflowSvc.DeleteDatabase(ctx, &workflows.DeleteDatabaseInput{
 		DatabaseID: db.DatabaseID,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to start workflow: %w", err)
+		return nil, fmt.Errorf("failed to start workflow: %w", err)
 	}
 
-	return nil
+	return &api.DeleteDatabaseResponse{}, nil
 }
 
-func (s *Service) InitiateDatabaseBackup(ctx context.Context, req *api.InitiateDatabaseBackupPayload) (*api.Task, error) {
+func (s *Service) BackupDatabaseNode(ctx context.Context, req *api.BackupDatabaseNodePayload) (*api.BackupDatabaseNodeResponse, error) {
 	databaseID, err := uuid.Parse(req.DatabaseID)
 	if err != nil {
 		return nil, api.MakeInvalidInput(fmt.Errorf("invalid database ID %q: %w", req.DatabaseID, err))
@@ -315,7 +319,9 @@ func (s *Service) InitiateDatabaseBackup(ctx context.Context, req *api.InitiateD
 		return nil, err
 	}
 
-	return taskToAPI(t), nil
+	return &api.BackupDatabaseNodeResponse{
+		Task: taskToAPI(t),
+	}, nil
 }
 
 func (s *Service) ListDatabaseTasks(ctx context.Context, req *api.ListDatabaseTasksPayload) ([]*api.Task, error) {
@@ -496,8 +502,8 @@ func (s *Service) RestoreDatabase(ctx context.Context, req *api.RestoreDatabaseP
 	}
 
 	return &api.RestoreDatabaseResponse{
-		Database: databaseToAPI(db),
-		Tasks:    tasksToAPI(tasks),
+		Database:  databaseToAPI(db),
+		NodeTasks: tasksToAPI(tasks),
 	}, nil
 }
 

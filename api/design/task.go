@@ -5,6 +5,11 @@ import (
 )
 
 var Task = g.Type("Task", func() {
+	g.Attribute("parent_id", g.String, func() {
+		g.Format(g.FormatUUID)
+		g.Description("The parent task ID of the task.")
+		g.Example("439eb515-e700-4740-b508-4a3f12ec4f83")
+	})
 	g.Attribute("database_id", g.String, func() {
 		g.Format(g.FormatUUID)
 		g.Description("The database ID of the task.")

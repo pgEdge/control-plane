@@ -185,13 +185,13 @@ func BuildDeleteDatabasePayload(controlPlaneDeleteDatabaseDatabaseID string) (*c
 	return v, nil
 }
 
-// BuildInitiateDatabaseBackupPayload builds the payload for the control-plane
-// initiate-database-backup endpoint from CLI flags.
-func BuildInitiateDatabaseBackupPayload(controlPlaneInitiateDatabaseBackupBody string, controlPlaneInitiateDatabaseBackupDatabaseID string, controlPlaneInitiateDatabaseBackupNodeName string) (*controlplane.InitiateDatabaseBackupPayload, error) {
+// BuildBackupDatabaseNodePayload builds the payload for the control-plane
+// backup-database-node endpoint from CLI flags.
+func BuildBackupDatabaseNodePayload(controlPlaneBackupDatabaseNodeBody string, controlPlaneBackupDatabaseNodeDatabaseID string, controlPlaneBackupDatabaseNodeNodeName string) (*controlplane.BackupDatabaseNodePayload, error) {
 	var err error
-	var body InitiateDatabaseBackupRequestBody
+	var body BackupDatabaseNodeRequestBody
 	{
-		err = json.Unmarshal([]byte(controlPlaneInitiateDatabaseBackupBody), &body)
+		err = json.Unmarshal([]byte(controlPlaneBackupDatabaseNodeBody), &body)
 		if err != nil {
 			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"annotations\": {\n         \"key\": \"value\"\n      },\n      \"extra_options\": [\n         \"--option1\",\n         \"--option2\"\n      ],\n      \"type\": \"full\"\n   }'")
 		}
@@ -204,7 +204,7 @@ func BuildInitiateDatabaseBackupPayload(controlPlaneInitiateDatabaseBackupBody s
 	}
 	var databaseID string
 	{
-		databaseID = controlPlaneInitiateDatabaseBackupDatabaseID
+		databaseID = controlPlaneBackupDatabaseNodeDatabaseID
 		err = goa.MergeErrors(err, goa.ValidateFormat("database_id", databaseID, goa.FormatUUID))
 		if err != nil {
 			return nil, err
@@ -212,7 +212,7 @@ func BuildInitiateDatabaseBackupPayload(controlPlaneInitiateDatabaseBackupBody s
 	}
 	var nodeName string
 	{
-		nodeName = controlPlaneInitiateDatabaseBackupNodeName
+		nodeName = controlPlaneBackupDatabaseNodeNodeName
 	}
 	v := &controlplane.BackupOptions{
 		Type: body.Type,
@@ -231,7 +231,7 @@ func BuildInitiateDatabaseBackupPayload(controlPlaneInitiateDatabaseBackupBody s
 			v.ExtraOptions[i] = val
 		}
 	}
-	res := &controlplane.InitiateDatabaseBackupPayload{
+	res := &controlplane.BackupDatabaseNodePayload{
 		Options: v,
 	}
 	res.DatabaseID = databaseID
@@ -324,7 +324,7 @@ func BuildInspectDatabaseTaskPayload(controlPlaneInspectDatabaseTaskDatabaseID s
 
 // BuildGetDatabaseTaskLogPayload builds the payload for the control-plane
 // get-database-task-log endpoint from CLI flags.
-func BuildGetDatabaseTaskLogPayload(controlPlaneGetDatabaseTaskLogDatabaseID string, controlPlaneGetDatabaseTaskLogTaskID string, controlPlaneGetDatabaseTaskLogAfterLineID string, controlPlaneGetDatabaseTaskLogLimit string) (*controlplane.GetDatabaseTaskLogPayload, error) {
+func BuildGetDatabaseTaskLogPayload(controlPlaneGetDatabaseTaskLogDatabaseID string, controlPlaneGetDatabaseTaskLogTaskID string, controlPlaneGetDatabaseTaskLogAfterLineID string, controlPlaneGetDatabaseTaskLogLimit string, controlPlaneGetDatabaseTaskLogIncludeTimestamp string) (*controlplane.GetDatabaseTaskLogPayload, error) {
 	var err error
 	var databaseID string
 	{
@@ -364,11 +364,23 @@ func BuildGetDatabaseTaskLogPayload(controlPlaneGetDatabaseTaskLogDatabaseID str
 			}
 		}
 	}
+	var includeTimestamp *bool
+	{
+		if controlPlaneGetDatabaseTaskLogIncludeTimestamp != "" {
+			var val bool
+			val, err = strconv.ParseBool(controlPlaneGetDatabaseTaskLogIncludeTimestamp)
+			includeTimestamp = &val
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for includeTimestamp, must be BOOL")
+			}
+		}
+	}
 	v := &controlplane.GetDatabaseTaskLogPayload{}
 	v.DatabaseID = databaseID
 	v.TaskID = taskID
 	v.AfterLineID = afterLineID
 	v.Limit = limit
+	v.IncludeTimestamp = includeTimestamp
 
 	return v, nil
 }
