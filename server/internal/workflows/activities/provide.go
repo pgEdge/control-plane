@@ -5,6 +5,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/task"
 )
 
 func Provide(i *do.Injector) {
@@ -21,11 +22,16 @@ func provideActivities(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
+		taskSvc, err := do.Invoke[*task.Service](i)
+		if err != nil {
+			return nil, err
+		}
 
 		return &Activities{
 			Config:       cfg,
 			Injector:     i,
 			Orchestrator: orch,
+			TaskSvc:      taskSvc,
 		}, nil
 	})
 }
