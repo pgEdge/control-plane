@@ -20,6 +20,7 @@ sboms:
 release:
   prerelease: auto
   footer: |
+    
     Get the Docker image for this release from:
 
     ```
