@@ -89,6 +89,10 @@ type Client struct {
 	// restore-database endpoint.
 	RestoreDatabaseDoer goahttp.Doer
 
+	// GetVersion Doer is the HTTP client used to make requests to the get-version
+	// endpoint.
+	GetVersionDoer goahttp.Doer
+
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
 	RestoreResponseBody bool
@@ -128,6 +132,7 @@ func NewClient(
 		InspectDatabaseTaskDoer:    doer,
 		GetDatabaseTaskLogDoer:     doer,
 		RestoreDatabaseDoer:        doer,
+		GetVersionDoer:             doer,
 		RestoreResponseBody:        restoreBody,
 		scheme:                     scheme,
 		host:                       host,
@@ -513,6 +518,25 @@ func (c *Client) RestoreDatabase() goa.Endpoint {
 		resp, err := c.RestoreDatabaseDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("control-plane", "restore-database", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GetVersion returns an endpoint that makes HTTP requests to the control-plane
+// service get-version server.
+func (c *Client) GetVersion() goa.Endpoint {
+	var (
+		decodeResponse = DecodeGetVersionResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetVersionRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetVersionDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "get-version", err)
 		}
 		return decodeResponse(resp)
 	}

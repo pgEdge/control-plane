@@ -283,6 +283,19 @@ type RestoreDatabaseResponseBody struct {
 	Tasks []*TaskResponseBody `form:"tasks,omitempty" json:"tasks,omitempty" xml:"tasks,omitempty"`
 }
 
+// GetVersionResponseBody is the type of the "control-plane" service
+// "get-version" endpoint HTTP response body.
+type GetVersionResponseBody struct {
+	// The version of the API server.
+	Version string `form:"version" json:"version" xml:"version"`
+	// The VCS revision of the API server.
+	Revision string `form:"revision" json:"revision" xml:"revision"`
+	// The timestamp associated with the revision.
+	RevisionTime string `form:"revision_time" json:"revision_time" xml:"revision_time"`
+	// The CPU architecture of the API server.
+	Arch string `form:"arch" json:"arch" xml:"arch"`
+}
+
 // InitClusterClusterAlreadyInitializedResponseBody is the type of the
 // "control-plane" service "init-cluster" endpoint HTTP response body for the
 // "cluster_already_initialized" error.
@@ -2262,6 +2275,18 @@ func NewRestoreDatabaseResponseBody(res *controlplane.RestoreDatabaseResponse) *
 		for i, val := range res.Tasks {
 			body.Tasks[i] = marshalControlplaneTaskToTaskResponseBody(val)
 		}
+	}
+	return body
+}
+
+// NewGetVersionResponseBody builds the HTTP response body from the result of
+// the "get-version" endpoint of the "control-plane" service.
+func NewGetVersionResponseBody(res *controlplane.VersionInfo) *GetVersionResponseBody {
+	body := &GetVersionResponseBody{
+		Version:      res.Version,
+		Revision:     res.Revision,
+		RevisionTime: res.RevisionTime,
+		Arch:         res.Arch,
 	}
 	return body
 }

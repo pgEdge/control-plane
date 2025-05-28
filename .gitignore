@@ -1,11 +1,13 @@
+# dev environment
 .vscode
 .scratch
-
-*-results.xml
-control-plane
-!docker/control-plane
 docker/control-plane-dev/data
-.terraform
-
 .vagrant
 vagrant-ssh.cfg
+.terraform
+
+# build artifacts
+*-results.xml
+dist
+control-plane
+!docker/control-plane

@@ -14,6 +14,7 @@ import (
 	"github.com/pgEdge/control-plane/api/gen/http/control_plane/client"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
+	"github.com/pgEdge/control-plane/server/internal/version"
 )
 
 var ErrUninitialized = api.MakeClusterNotInitialized(errors.New("cluster is not initialized"))
@@ -116,6 +117,20 @@ func (s *PreInitService) JoinCluster(ctx context.Context, token *api.ClusterJoin
 	}
 
 	return nil
+}
+
+func (s *PreInitService) GetVersion(context.Context) (res *api.VersionInfo, err error) {
+	info, err := version.GetInfo()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get version info: %w", err)
+	}
+
+	return &api.VersionInfo{
+		Version:      info.Version,
+		Revision:     info.Revision,
+		RevisionTime: info.RevisionTime,
+		Arch:         info.Arch,
+	}, nil
 }
 
 func (s *PreInitService) GetJoinOptions(ctx context.Context, req *api.ClusterJoinRequest) (*api.ClusterJoinOptions, error) {

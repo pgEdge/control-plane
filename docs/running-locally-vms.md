@@ -194,7 +194,7 @@ Finally, build and push the pgEdge Postgres images to your local registry:
 ```sh
 # Should be repeated any time you make changes to the image, or if you recreate
 # your registry.
-make local-docker-images
+make pgedge-images
 ```
 
 It will take a few minutes to build and push the images.

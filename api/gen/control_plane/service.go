@@ -53,13 +53,15 @@ type Service interface {
 	// Perform an in-place restore one or more nodes using the given restore
 	// configuration.
 	RestoreDatabase(context.Context, *RestoreDatabasePayload) (res *RestoreDatabaseResponse, err error)
+	// Returns version information for the Control Plane server.
+	GetVersion(context.Context) (res *VersionInfo, err error)
 }
 
 // APIName is the name of the API as defined in the design.
 const APIName = "control-plane"
 
 // APIVersion is the version of the API as defined in the design.
-const APIVersion = "0.0.1"
+const APIVersion = "v0.0.0"
 
 // ServiceName is the name of the service as defined in the design. This is the
 // same value that is set in the endpoint request contexts under the ServiceKey
@@ -69,7 +71,7 @@ const ServiceName = "control-plane"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [18]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "inspect-cluster", "list-hosts", "inspect-host", "remove-host", "list-databases", "create-database", "inspect-database", "update-database", "delete-database", "initiate-database-backup", "list-database-tasks", "inspect-database-task", "get-database-task-log", "restore-database"}
+var MethodNames = [19]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "inspect-cluster", "list-hosts", "inspect-host", "remove-host", "list-databases", "create-database", "inspect-database", "update-database", "delete-database", "initiate-database-backup", "list-database-tasks", "inspect-database-task", "get-database-task-log", "restore-database", "get-version"}
 
 type BackupConfigSpec struct {
 	// The backup provider for this backup configuration.
@@ -656,6 +658,19 @@ type UpdateDatabaseRequest struct {
 	TenantID *string
 	// The specification for the database.
 	Spec *DatabaseSpec
+}
+
+// VersionInfo is the result type of the control-plane service get-version
+// method.
+type VersionInfo struct {
+	// The version of the API server.
+	Version string
+	// The VCS revision of the API server.
+	Revision string
+	// The timestamp associated with the revision.
+	RevisionTime string
+	// The CPU architecture of the API server.
+	Arch string
 }
 
 // MakeClusterAlreadyInitialized builds a goa.ServiceError from an error.

@@ -21,6 +21,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/task"
+	"github.com/pgEdge/control-plane/server/internal/version"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
 )
 
@@ -516,6 +517,20 @@ func (s *Service) RestoreDatabase(ctx context.Context, req *api.RestoreDatabaseP
 	return &api.RestoreDatabaseResponse{
 		Database: databaseToAPI(db),
 		Tasks:    tasksToAPI(tasks),
+	}, nil
+}
+
+func (s *Service) GetVersion(context.Context) (res *api.VersionInfo, err error) {
+	info, err := version.GetInfo()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get version info: %w", err)
+	}
+
+	return &api.VersionInfo{
+		Version:      info.Version,
+		Revision:     info.Revision,
+		RevisionTime: info.RevisionTime,
+		Arch:         info.Arch,
 	}, nil
 }
 

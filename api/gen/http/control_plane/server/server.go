@@ -38,6 +38,7 @@ type Server struct {
 	InspectDatabaseTask    http.Handler
 	GetDatabaseTaskLog     http.Handler
 	RestoreDatabase        http.Handler
+	GetVersion             http.Handler
 	GenHTTPOpenapi3JSON    http.Handler
 }
 
@@ -91,6 +92,7 @@ func New(
 			{"InspectDatabaseTask", "GET", "/databases/{database_id}/tasks/{task_id}"},
 			{"GetDatabaseTaskLog", "GET", "/databases/{database_id}/tasks/{task_id}/log"},
 			{"RestoreDatabase", "POST", "/databases/{database_id}/restore"},
+			{"GetVersion", "GET", "/version"},
 			{"Serve ./gen/http/openapi3.json", "GET", "/openapi.json"},
 		},
 		InitCluster:            NewInitClusterHandler(e.InitCluster, mux, decoder, encoder, errhandler, formatter),
@@ -111,6 +113,7 @@ func New(
 		InspectDatabaseTask:    NewInspectDatabaseTaskHandler(e.InspectDatabaseTask, mux, decoder, encoder, errhandler, formatter),
 		GetDatabaseTaskLog:     NewGetDatabaseTaskLogHandler(e.GetDatabaseTaskLog, mux, decoder, encoder, errhandler, formatter),
 		RestoreDatabase:        NewRestoreDatabaseHandler(e.RestoreDatabase, mux, decoder, encoder, errhandler, formatter),
+		GetVersion:             NewGetVersionHandler(e.GetVersion, mux, decoder, encoder, errhandler, formatter),
 		GenHTTPOpenapi3JSON:    http.FileServer(fileSystemGenHTTPOpenapi3JSON),
 	}
 }
@@ -138,6 +141,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.InspectDatabaseTask = m(s.InspectDatabaseTask)
 	s.GetDatabaseTaskLog = m(s.GetDatabaseTaskLog)
 	s.RestoreDatabase = m(s.RestoreDatabase)
+	s.GetVersion = m(s.GetVersion)
 }
 
 // MethodNames returns the methods served.
@@ -163,6 +167,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountInspectDatabaseTaskHandler(mux, h.InspectDatabaseTask)
 	MountGetDatabaseTaskLogHandler(mux, h.GetDatabaseTaskLog)
 	MountRestoreDatabaseHandler(mux, h.RestoreDatabase)
+	MountGetVersionHandler(mux, h.GetVersion)
 	MountGenHTTPOpenapi3JSON(mux, h.GenHTTPOpenapi3JSON)
 }
 
@@ -1045,6 +1050,50 @@ func NewRestoreDatabaseHandler(
 			return
 		}
 		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountGetVersionHandler configures the mux to serve the "control-plane"
+// service "get-version" endpoint.
+func MountGetVersionHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/version", f)
+}
+
+// NewGetVersionHandler creates a HTTP handler which loads the HTTP request and
+// calls the "control-plane" service "get-version" endpoint.
+func NewGetVersionHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		encodeResponse = EncodeGetVersionResponse(encoder)
+		encodeError    = goahttp.ErrorEncoder(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-version")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
+		var err error
+		res, err := endpoint(ctx, nil)
 		if err != nil {
 			if err := encodeError(ctx, w, err); err != nil {
 				errhandler(ctx, w, err)
