@@ -52,6 +52,9 @@ jobs:
       - run:
           name: Build and publish release artifacts
           command: |
+            # reset repo contents to prevent dirty build
+            git checkout -- .
+
             # ensure required env vars are set
             if [[ -z "${GITHUB_TOKEN}" ]]; then
               echo "GITHUB_TOKEN must be set"
@@ -73,8 +76,7 @@ jobs:
 
             # create the github release
             goreleaser release \
-              --release-notes=${release_notes} \
-              --skip validate
+              --release-notes=${release_notes}
 
             # log into control plane ECR repo
             aws ecr-public get-login-password --region us-east-1 \
