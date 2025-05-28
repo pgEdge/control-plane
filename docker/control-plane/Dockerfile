@@ -2,7 +2,8 @@ FROM scratch
 
 ARG TARGETOS
 ARG TARGETARCH
+ARG ARCHIVE_VERSION
 
 ENTRYPOINT ["/control-plane"]
 
-COPY --from=dist controlplane_${TARGETOS}_${TARGETARCH}*/control-plane /
+ADD controlplane_${ARCHIVE_VERSION}_${TARGETOS}_${TARGETARCH}.tar.gz /

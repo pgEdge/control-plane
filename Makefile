@@ -3,7 +3,7 @@ include tools.mk
 # Overridable vars
 DEBUG ?= 0
 CONTROL_PLANE_IMAGE_REPO ?= host.docker.internal:5000/control-plane
-CONTROL_PLANE_VERSION ?=
+CONTROL_PLANE_VERSION ?= $(shell git describe --tags --abbrev=0)
 PGEDGE_IMAGE_REPO ?= host.docker.internal:5000/pgedge
 PACKAGE_REPO_BASE_URL ?= http://pgedge-529820047909-yum.s3-website.us-east-2.amazonaws.com
 PACKAGE_RELEASE_CHANNEL ?= dev

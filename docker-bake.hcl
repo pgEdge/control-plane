@@ -11,14 +11,15 @@ variable "CONTROL_PLANE_VERSION" {}
 function "control_plane_tags" {
   params = [repo, version]
   result = [
-      notequal("", version) ? "${repo}:${version}" : "${repo}:dev",
+      "${repo}:${version}",
     ]
 }
 
 target "control_plane" {
-  context = "docker/control-plane"
-  contexts = {
-    "dist" = "dist"
+  context = "dist"
+  dockerfile = "../docker/control-plane/Dockerfile"
+  args = {
+    ARCHIVE_VERSION = trimprefix(CONTROL_PLANE_VERSION, "v")
   }
   tags = control_plane_tags(
     CONTROL_PLANE_IMAGE_REPO,
