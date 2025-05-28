@@ -113,7 +113,7 @@ endif
 	git -c core.pager='' diff --staged ':(exclude)api/gen/**.json'
 	git -c core.pager='' diff --staged --compact-summary
 	@echo -n "Are you sure? [y/N] " && read ans && [ $${ans:-N} == y ]
-	git commit -m "chore: bump version to $(VERSION)"
+	git commit -m "build(release): bump version to $(VERSION)"
 	git push origin release/$(VERSION)
 	git tag $(VERSION)-rc.1
 	git push origin $(VERSION)-rc.1
