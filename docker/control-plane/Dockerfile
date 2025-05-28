@@ -6,4 +6,4 @@ ARG ARCHIVE_VERSION
 
 ENTRYPOINT ["/control-plane"]
 
-ADD controlplane_${ARCHIVE_VERSION}_${TARGETOS}_${TARGETARCH}.tar.gz /
+ADD control-plane_${ARCHIVE_VERSION}_${TARGETOS}_${TARGETARCH}.tar.gz /
