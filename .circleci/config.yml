@@ -73,7 +73,7 @@ jobs:
 
             # create the github release
             goreleaser release \
-              --release-notes=changes/${release_notes}.md \
+              --release-notes=${release_notes} \
               --skip validate
 
             # log into control plane ECR repo
