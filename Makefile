@@ -110,7 +110,8 @@ endif
 	$(MAKE) -C api generate
 	git checkout -b release/$(VERSION)
 	git add api changes CHANGELOG.md
-	git diff --staged
+	git -c core.pager='' diff --staged ':(exclude)api/gen/**.json'
+	git -c core.pager='' diff --staged --compact-summary
 	@echo -n "Are you sure? [y/N] " && read ans && [ $${ans:-N} == y ]
 	git commit -m "chore: bump version to $(VERSION)"
 	git push origin release/$(VERSION)

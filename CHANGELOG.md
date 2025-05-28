@@ -1,0 +1,4 @@
+# Changelog
+## v0.1.0 - 2025-05-28
+### Added
+- Release process to publish Docker images for the Control Plane server.
