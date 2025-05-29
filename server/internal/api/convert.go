@@ -259,7 +259,7 @@ func apiToDatabaseNodes(apiNodes []*api.DatabaseNodeSpec) ([]*database.Node, err
 			PostgreSQLConf:   apiNode.PostgresqlConf,
 			BackupConfig:     backupConfig,
 			RestoreConfig:    restoreConfig,
-			ExternalVolumes:  apiToExternalVolumesConfig(apiNode.ExternalVolumes),
+			ExternalVolumes:  externalVolumesToDatabase(apiNode.ExternalVolumes),
 		}
 	}
 	return nodes, nil
@@ -574,10 +574,6 @@ func stringifyStringerPtr[T stringer](v *T) *string {
 		return nil
 	}
 	return utils.PointerTo((*v).String())
-}
-
-func apiToExternalVolumesConfig(externalVolumes []*api.ExternalVolumeSpec) []database.ExternalVolumeSpec {
-	return externalVolumesToDatabase(externalVolumes)
 }
 
 func externalVolumesToDatabase(externalVolumes []*api.ExternalVolumeSpec) []database.ExternalVolumeSpec {
