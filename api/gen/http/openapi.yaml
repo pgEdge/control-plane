@@ -2,7 +2,7 @@ swagger: "2.0"
 info:
     title: pgEdge Control Plane API
     description: Service for creating, modifying, and operating pgEdge databases.
-    version: v0.0.0
+    version: v0.1.0
 host: localhost:3000
 consumes:
     - application/json

@@ -3,7 +3,7 @@ include tools.mk
 # Overridable vars
 DEBUG ?= 0
 CONTROL_PLANE_IMAGE_REPO ?= host.docker.internal:5000/control-plane
-CONTROL_PLANE_VERSION ?=
+CONTROL_PLANE_VERSION ?= $(shell git describe --tags --abbrev=0)
 PGEDGE_IMAGE_REPO ?= host.docker.internal:5000/pgedge
 PACKAGE_REPO_BASE_URL ?= http://pgedge-529820047909-yum.s3-website.us-east-2.amazonaws.com
 PACKAGE_RELEASE_CHANNEL ?= dev
@@ -110,9 +110,10 @@ endif
 	$(MAKE) -C api generate
 	git checkout -b release/$(VERSION)
 	git add api changes CHANGELOG.md
-	git diff --staged
+	git -c core.pager='' diff --staged ':(exclude)api/gen/**.json'
+	git -c core.pager='' diff --staged --compact-summary
 	@echo -n "Are you sure? [y/N] " && read ans && [ $${ans:-N} == y ]
-	git commit -m "chore: bump version to $(VERSION)"
+	git commit -m "build(release): bump version to $(VERSION)"
 	git push origin release/$(VERSION)
 	git tag $(VERSION)-rc.1
 	git push origin $(VERSION)-rc.1

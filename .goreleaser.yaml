@@ -1,4 +1,5 @@
 version: 2
+project_name: control-plane
 builds:
   - main: ./server
     binary: control-plane
@@ -18,8 +19,12 @@ sboms:
       - '${artifact}.spdx.json'
 
 release:
+  github:
+    owner: pgEdge
+    name: control-plane
   prerelease: auto
   footer: |
+    
     Get the Docker image for this release from:
 
     ```
