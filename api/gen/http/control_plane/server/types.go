@@ -1260,6 +1260,9 @@ type DatabaseSpecResponseBody struct {
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
+	// A list of extra volumes to mount. Each entry defines a host and container
+	// path.
+	ExternalVolumes []*ExternalVolumeSpecResponseBody `form:"external_volumes,omitempty" json:"external_volumes,omitempty" xml:"external_volumes,omitempty"`
 }
 
 // DatabaseNodeSpecResponseBody is used to define fields on response body types.
@@ -1301,6 +1304,8 @@ type DatabaseNodeSpecResponseBody struct {
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
 	RestoreConfig *RestoreConfigSpecResponseBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
+	// Optional list of external volumes to mount for this node only.
+	ExternalVolumes []*ExternalVolumeSpecResponseBody `form:"external_volumes,omitempty" json:"external_volumes,omitempty" xml:"external_volumes,omitempty"`
 }
 
 // BackupConfigSpecResponseBody is used to define fields on response body types.
@@ -1355,7 +1360,8 @@ type BackupRepositorySpecResponseBody struct {
 	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
 	// The type of measure used for retention_full.
 	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
-	// The base path within the repository to store backups.
+	// The base path within the repository to store backups. Required for type =
+	// 'posix'.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
@@ -1433,6 +1439,15 @@ type RestoreRepositorySpecResponseBody struct {
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
+}
+
+// ExternalVolumeSpecResponseBody is used to define fields on response body
+// types.
+type ExternalVolumeSpecResponseBody struct {
+	// The host path for the volume.
+	HostPath string `form:"host_path" json:"host_path" xml:"host_path"`
+	// The path inside the container where the volume will be mounted.
+	DestinationPath string `form:"destination_path" json:"destination_path" xml:"destination_path"`
 }
 
 // DatabaseUserSpecResponseBody is used to define fields on response body types.
@@ -1603,6 +1618,9 @@ type DatabaseSpecRequestBody struct {
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
+	// A list of extra volumes to mount. Each entry defines a host and container
+	// path.
+	ExternalVolumes []*ExternalVolumeSpecRequestBody `form:"external_volumes,omitempty" json:"external_volumes,omitempty" xml:"external_volumes,omitempty"`
 }
 
 // DatabaseNodeSpecRequestBody is used to define fields on request body types.
@@ -1644,6 +1662,8 @@ type DatabaseNodeSpecRequestBody struct {
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
 	RestoreConfig *RestoreConfigSpecRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
+	// Optional list of external volumes to mount for this node only.
+	ExternalVolumes []*ExternalVolumeSpecRequestBody `form:"external_volumes,omitempty" json:"external_volumes,omitempty" xml:"external_volumes,omitempty"`
 }
 
 // BackupConfigSpecRequestBody is used to define fields on request body types.
@@ -1698,7 +1718,8 @@ type BackupRepositorySpecRequestBody struct {
 	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
 	// The type of measure used for retention_full.
 	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
-	// The base path within the repository to store backups.
+	// The base path within the repository to store backups. Required for type =
+	// 'posix'.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
@@ -1776,6 +1797,14 @@ type RestoreRepositorySpecRequestBody struct {
 	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
+// ExternalVolumeSpecRequestBody is used to define fields on request body types.
+type ExternalVolumeSpecRequestBody struct {
+	// The host path for the volume.
+	HostPath *string `form:"host_path,omitempty" json:"host_path,omitempty" xml:"host_path,omitempty"`
+	// The path inside the container where the volume will be mounted.
+	DestinationPath *string `form:"destination_path,omitempty" json:"destination_path,omitempty" xml:"destination_path,omitempty"`
+}
+
 // DatabaseUserSpecRequestBody is used to define fields on request body types.
 type DatabaseUserSpecRequestBody struct {
 	// The username for this database user.
@@ -1831,6 +1860,9 @@ type DatabaseSpecRequestBodyRequestBody struct {
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
+	// A list of extra volumes to mount. Each entry defines a host and container
+	// path.
+	ExternalVolumes []*ExternalVolumeSpecRequestBodyRequestBody `form:"external_volumes,omitempty" json:"external_volumes,omitempty" xml:"external_volumes,omitempty"`
 }
 
 // DatabaseNodeSpecRequestBodyRequestBody is used to define fields on request
@@ -1873,6 +1905,8 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
 	RestoreConfig *RestoreConfigSpecRequestBodyRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
+	// Optional list of external volumes to mount for this node only.
+	ExternalVolumes []*ExternalVolumeSpecRequestBodyRequestBody `form:"external_volumes,omitempty" json:"external_volumes,omitempty" xml:"external_volumes,omitempty"`
 }
 
 // BackupConfigSpecRequestBodyRequestBody is used to define fields on request
@@ -1928,7 +1962,8 @@ type BackupRepositorySpecRequestBodyRequestBody struct {
 	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
 	// The type of measure used for retention_full.
 	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
-	// The base path within the repository to store backups.
+	// The base path within the repository to store backups. Required for type =
+	// 'posix'.
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
@@ -2006,6 +2041,15 @@ type RestoreRepositorySpecRequestBodyRequestBody struct {
 	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
+}
+
+// ExternalVolumeSpecRequestBodyRequestBody is used to define fields on request
+// body types.
+type ExternalVolumeSpecRequestBodyRequestBody struct {
+	// The host path for the volume.
+	HostPath *string `form:"host_path,omitempty" json:"host_path,omitempty" xml:"host_path,omitempty"`
+	// The path inside the container where the volume will be mounted.
+	DestinationPath *string `form:"destination_path,omitempty" json:"destination_path,omitempty" xml:"destination_path,omitempty"`
 }
 
 // DatabaseUserSpecRequestBodyRequestBody is used to define fields on request
@@ -3166,6 +3210,13 @@ func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) 
 			err = goa.MergeErrors(err, err2)
 		}
 	}
+	for _, e := range body.ExternalVolumes {
+		if e != nil {
+			if err2 := ValidateExternalVolumeSpecRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
 	return
 }
 
@@ -3200,6 +3251,13 @@ func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err
 	if body.RestoreConfig != nil {
 		if err2 := ValidateRestoreConfigSpecRequestBody(body.RestoreConfig); err2 != nil {
 			err = goa.MergeErrors(err, err2)
+		}
+	}
+	for _, e := range body.ExternalVolumes {
+		if e != nil {
+			if err2 := ValidateExternalVolumeSpecRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	return
@@ -3243,8 +3301,8 @@ func ValidateBackupRepositorySpecRequestBody(body *BackupRepositorySpecRequestBo
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
 	if body.Type != nil {
-		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"s3", "gcs", "azure"}))
+		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure" || *body.Type == "posix") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"s3", "gcs", "azure", "posix"}))
 		}
 	}
 	if body.RetentionFullType != nil {
@@ -3310,9 +3368,21 @@ func ValidateRestoreRepositorySpecRequestBody(body *RestoreRepositorySpecRequest
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
 	if body.Type != nil {
-		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"s3", "gcs", "azure"}))
+		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure" || *body.Type == "posix") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"s3", "gcs", "azure", "posix"}))
 		}
+	}
+	return
+}
+
+// ValidateExternalVolumeSpecRequestBody runs the validations defined on
+// ExternalVolumeSpecRequestBody
+func ValidateExternalVolumeSpecRequestBody(body *ExternalVolumeSpecRequestBody) (err error) {
+	if body.HostPath == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("host_path", "body"))
+	}
+	if body.DestinationPath == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("destination_path", "body"))
 	}
 	return
 }
@@ -3372,6 +3442,13 @@ func ValidateDatabaseSpecRequestBodyRequestBody(body *DatabaseSpecRequestBodyReq
 			err = goa.MergeErrors(err, err2)
 		}
 	}
+	for _, e := range body.ExternalVolumes {
+		if e != nil {
+			if err2 := ValidateExternalVolumeSpecRequestBodyRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
 	return
 }
 
@@ -3406,6 +3483,13 @@ func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecReques
 	if body.RestoreConfig != nil {
 		if err2 := ValidateRestoreConfigSpecRequestBodyRequestBody(body.RestoreConfig); err2 != nil {
 			err = goa.MergeErrors(err, err2)
+		}
+	}
+	for _, e := range body.ExternalVolumes {
+		if e != nil {
+			if err2 := ValidateExternalVolumeSpecRequestBodyRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	return
@@ -3449,8 +3533,8 @@ func ValidateBackupRepositorySpecRequestBodyRequestBody(body *BackupRepositorySp
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
 	if body.Type != nil {
-		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"s3", "gcs", "azure"}))
+		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure" || *body.Type == "posix") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"s3", "gcs", "azure", "posix"}))
 		}
 	}
 	if body.RetentionFullType != nil {
@@ -3516,9 +3600,21 @@ func ValidateRestoreRepositorySpecRequestBodyRequestBody(body *RestoreRepository
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
 	if body.Type != nil {
-		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"s3", "gcs", "azure"}))
+		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure" || *body.Type == "posix") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"s3", "gcs", "azure", "posix"}))
 		}
+	}
+	return
+}
+
+// ValidateExternalVolumeSpecRequestBodyRequestBody runs the validations
+// defined on ExternalVolumeSpecRequestBodyRequestBody
+func ValidateExternalVolumeSpecRequestBodyRequestBody(body *ExternalVolumeSpecRequestBodyRequestBody) (err error) {
+	if body.HostPath == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("host_path", "body"))
+	}
+	if body.DestinationPath == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("destination_path", "body"))
 	}
 	return
 }

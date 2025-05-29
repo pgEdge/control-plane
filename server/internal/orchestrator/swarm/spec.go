@@ -40,6 +40,19 @@ func DatabaseServiceSpec(
 		labels["pgedge.tenant.id"] = instance.TenantID.String()
 	}
 
+	mounts := []mount.Mount{
+		buildMount(options.Paths.Configs, "/opt/pgedge/configs", true),
+		// We're using a mount for the certificates instead of
+		// a secret because secrets can't be rotated without
+		// restarting the container.
+		buildMount(options.Paths.Certificates, "/opt/pgedge/certificates", true),
+		buildMount(options.Paths.Data, "/opt/pgedge/data", false),
+	}
+
+	for _, vol := range instance.ExternalVolumes {
+		mounts = append(mounts, buildMount(vol.HostPath, vol.DestinationPath, false))
+	}
+
 	return swarm.ServiceSpec{
 		TaskTemplate: swarm.TaskSpec{
 			ContainerSpec: &swarm.ContainerSpec{
@@ -57,28 +70,7 @@ func DatabaseServiceSpec(
 					Timeout:     time.Second * 3,
 					Retries:     10,
 				},
-				Mounts: []mount.Mount{
-					{
-						Type:     mount.TypeBind,
-						Source:   options.Paths.Configs,
-						Target:   "/opt/pgedge/configs",
-						ReadOnly: true,
-					},
-					{
-						// We're using a mount for the certificates instead of
-						// a secret because secrets can't be rotated without
-						// restarting the container.
-						Type:     mount.TypeBind,
-						Source:   options.Paths.Certificates,
-						Target:   "/opt/pgedge/certificates",
-						ReadOnly: true,
-					},
-					{
-						Type:   mount.TypeBind,
-						Source: options.Paths.Data,
-						Target: "/opt/pgedge/data",
-					},
-				},
+				Mounts: mounts,
 			},
 			Networks: []swarm.NetworkAttachmentConfig{
 				{
@@ -126,4 +118,13 @@ func DatabaseServiceSpec(
 			Labels: labels,
 		},
 	}, nil
+}
+
+func buildMount(source, target string, readOnly bool) mount.Mount {
+	return mount.Mount{
+		Type:     mount.TypeBind,
+		Source:   source,
+		Target:   target,
+		ReadOnly: readOnly,
+	}
 }

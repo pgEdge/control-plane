@@ -135,6 +135,9 @@ type DatabaseSpecView struct {
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
 	PostgresqlConf map[string]any
+	// A list of extra volumes to mount. Each entry defines a host and container
+	// path.
+	ExternalVolumes []*ExternalVolumeSpecView
 }
 
 // DatabaseNodeSpecView is a type that runs validations on a projected type.
@@ -176,6 +179,8 @@ type DatabaseNodeSpecView struct {
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
 	RestoreConfig *RestoreConfigSpecView
+	// Optional list of external volumes to mount for this node only.
+	ExternalVolumes []*ExternalVolumeSpecView
 }
 
 // BackupConfigSpecView is a type that runs validations on a projected type.
@@ -229,7 +234,8 @@ type BackupRepositorySpecView struct {
 	RetentionFull *int
 	// The type of measure used for retention_full.
 	RetentionFullType *string
-	// The base path within the repository to store backups.
+	// The base path within the repository to store backups. Required for type =
+	// 'posix'.
 	BasePath *string
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string
@@ -305,6 +311,14 @@ type RestoreRepositorySpecView struct {
 	BasePath *string
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string
+}
+
+// ExternalVolumeSpecView is a type that runs validations on a projected type.
+type ExternalVolumeSpecView struct {
+	// The host path for the volume.
+	HostPath *string
+	// The path inside the container where the volume will be mounted.
+	DestinationPath *string
 }
 
 // DatabaseUserSpecView is a type that runs validations on a projected type.
@@ -755,6 +769,13 @@ func ValidateDatabaseSpecView(result *DatabaseSpecView) (err error) {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
+	for _, e := range result.ExternalVolumes {
+		if e != nil {
+			if err2 := ValidateExternalVolumeSpecView(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
 	return
 }
 
@@ -789,6 +810,13 @@ func ValidateDatabaseNodeSpecView(result *DatabaseNodeSpecView) (err error) {
 	if result.RestoreConfig != nil {
 		if err2 := ValidateRestoreConfigSpecView(result.RestoreConfig); err2 != nil {
 			err = goa.MergeErrors(err, err2)
+		}
+	}
+	for _, e := range result.ExternalVolumes {
+		if e != nil {
+			if err2 := ValidateExternalVolumeSpecView(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	return
@@ -832,8 +860,8 @@ func ValidateBackupRepositorySpecView(result *BackupRepositorySpecView) (err err
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "result"))
 	}
 	if result.Type != nil {
-		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.type", *result.Type, []any{"s3", "gcs", "azure"}))
+		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure" || *result.Type == "posix") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.type", *result.Type, []any{"s3", "gcs", "azure", "posix"}))
 		}
 	}
 	if result.RetentionFullType != nil {
@@ -899,9 +927,21 @@ func ValidateRestoreRepositorySpecView(result *RestoreRepositorySpecView) (err e
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "result"))
 	}
 	if result.Type != nil {
-		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.type", *result.Type, []any{"s3", "gcs", "azure"}))
+		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure" || *result.Type == "posix") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.type", *result.Type, []any{"s3", "gcs", "azure", "posix"}))
 		}
+	}
+	return
+}
+
+// ValidateExternalVolumeSpecView runs the validations defined on
+// ExternalVolumeSpecView.
+func ValidateExternalVolumeSpecView(result *ExternalVolumeSpecView) (err error) {
+	if result.HostPath == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("host_path", "result"))
+	}
+	if result.DestinationPath == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("destination_path", "result"))
 	}
 	return
 }

@@ -16,18 +16,24 @@ import (
 
 var ErrHostNotInDBSpec = errors.New("host not in db spec")
 
+type ExternalVolumeSpec struct {
+	HostPath        string `json:"host_path"`
+	DestinationPath string `json:"destination_path"`
+}
+
 type Node struct {
-	Name             string         `json:"name"`
-	HostIDs          []uuid.UUID    `json:"host_ids"`
-	PostgresVersion  string         `json:"postgres_version"`
-	Port             int            `json:"port"`
-	StorageClass     string         `json:"storage_class"`
-	StorageSizeBytes uint64         `json:"storage_size"`
-	CPUs             float64        `json:"cpus"`
-	MemoryBytes      uint64         `json:"memory"`
-	PostgreSQLConf   map[string]any `json:"postgresql_conf"`
-	BackupConfig     *BackupConfig  `json:"backup_config"`
-	RestoreConfig    *RestoreConfig `json:"restore_config"`
+	Name             string               `json:"name"`
+	HostIDs          []uuid.UUID          `json:"host_ids"`
+	PostgresVersion  string               `json:"postgres_version"`
+	Port             int                  `json:"port"`
+	StorageClass     string               `json:"storage_class"`
+	StorageSizeBytes uint64               `json:"storage_size"`
+	CPUs             float64              `json:"cpus"`
+	MemoryBytes      uint64               `json:"memory"`
+	PostgreSQLConf   map[string]any       `json:"postgresql_conf"`
+	BackupConfig     *BackupConfig        `json:"backup_config"`
+	RestoreConfig    *RestoreConfig       `json:"restore_config"`
+	ExternalVolumes  []ExternalVolumeSpec `json:"external_volumes,omitempty"`
 }
 
 func (n *Node) Clone() *Node {
@@ -46,6 +52,7 @@ func (n *Node) Clone() *Node {
 		PostgreSQLConf:   maps.Clone(n.PostgreSQLConf),
 		BackupConfig:     n.BackupConfig.Clone(),
 		RestoreConfig:    n.RestoreConfig.Clone(),
+		ExternalVolumes:  slices.Clone(n.ExternalVolumes),
 	}
 }
 
@@ -156,23 +163,24 @@ func (r *RestoreConfig) Clone() *RestoreConfig {
 }
 
 type Spec struct {
-	DatabaseID         uuid.UUID         `json:"database_id"`
-	TenantID           *uuid.UUID        `json:"tenant_id,omitempty"`
-	DatabaseName       string            `json:"database_name"`
-	PostgresVersion    string            `json:"postgres_version"`
-	SpockVersion       string            `json:"spock_version"`
-	Port               int               `json:"port"`
-	DeletionProtection bool              `json:"deletion_protection"`
-	StorageClass       string            `json:"storage_class"`
-	StorageSizeBytes   uint64            `json:"storage_size"`
-	CPUs               float64           `json:"cpus"`
-	MemoryBytes        uint64            `json:"memory"`
-	Nodes              []*Node           `json:"nodes"`
-	DatabaseUsers      []*User           `json:"database_users"`
-	Features           map[string]string `json:"features"`
-	BackupConfig       *BackupConfig     `json:"backup_config"`
-	RestoreConfig      *RestoreConfig    `json:"restore_config"`
-	PostgreSQLConf     map[string]any    `json:"postgresql_conf"`
+	DatabaseID         uuid.UUID            `json:"database_id"`
+	TenantID           *uuid.UUID           `json:"tenant_id,omitempty"`
+	DatabaseName       string               `json:"database_name"`
+	PostgresVersion    string               `json:"postgres_version"`
+	SpockVersion       string               `json:"spock_version"`
+	Port               int                  `json:"port"`
+	DeletionProtection bool                 `json:"deletion_protection"`
+	StorageClass       string               `json:"storage_class"`
+	StorageSizeBytes   uint64               `json:"storage_size"`
+	CPUs               float64              `json:"cpus"`
+	MemoryBytes        uint64               `json:"memory"`
+	Nodes              []*Node              `json:"nodes"`
+	DatabaseUsers      []*User              `json:"database_users"`
+	Features           map[string]string    `json:"features"`
+	BackupConfig       *BackupConfig        `json:"backup_config"`
+	RestoreConfig      *RestoreConfig       `json:"restore_config"`
+	PostgreSQLConf     map[string]any       `json:"postgresql_conf"`
+	ExternalVolumes    []ExternalVolumeSpec `json:"external_volumes,omitempty"`
 }
 
 func (s *Spec) Node(name string) (*Node, error) {
@@ -248,6 +256,7 @@ func (s *Spec) Clone() *Spec {
 		DatabaseUsers:      users,
 		BackupConfig:       s.BackupConfig.Clone(),
 		RestoreConfig:      s.RestoreConfig.Clone(),
+		ExternalVolumes:    slices.Clone(s.ExternalVolumes),
 	}
 }
 
@@ -258,26 +267,27 @@ func InstanceIDFor(hostID, databaseID uuid.UUID, nodeName string) uuid.UUID {
 }
 
 type InstanceSpec struct {
-	InstanceID       uuid.UUID           `json:"instance_id"`
-	TenantID         *uuid.UUID          `json:"tenant_id,omitempty"`
-	DatabaseID       uuid.UUID           `json:"database_id"`
-	HostID           uuid.UUID           `json:"host_id"`
-	DatabaseName     string              `json:"database_name"`
-	NodeName         string              `json:"node_name"`
-	NodeOrdinal      int                 `json:"node_ordinal"`
-	PgEdgeVersion    *host.PgEdgeVersion `json:"pg_edge_version"`
-	Port             int                 `json:"port"`
-	StorageClass     string              `json:"storage_class"`
-	StorageSizeBytes uint64              `json:"storage_size"`
-	CPUs             float64             `json:"cpus"`
-	MemoryBytes      uint64              `json:"memory"`
-	DatabaseUsers    []*User             `json:"database_users"`
-	Features         map[string]string   `json:"features"`
-	BackupConfig     *BackupConfig       `json:"backup_config"`
-	RestoreConfig    *RestoreConfig      `json:"restore_config"`
-	PostgreSQLConf   map[string]any      `json:"postgresql_conf"`
-	EnableBackups    bool                `json:"enable_backups"`
-	ClusterSize      int                 `json:"cluster_size"`
+	InstanceID       uuid.UUID            `json:"instance_id"`
+	TenantID         *uuid.UUID           `json:"tenant_id,omitempty"`
+	DatabaseID       uuid.UUID            `json:"database_id"`
+	HostID           uuid.UUID            `json:"host_id"`
+	DatabaseName     string               `json:"database_name"`
+	NodeName         string               `json:"node_name"`
+	NodeOrdinal      int                  `json:"node_ordinal"`
+	PgEdgeVersion    *host.PgEdgeVersion  `json:"pg_edge_version"`
+	Port             int                  `json:"port"`
+	StorageClass     string               `json:"storage_class"`
+	StorageSizeBytes uint64               `json:"storage_size"`
+	CPUs             float64              `json:"cpus"`
+	MemoryBytes      uint64               `json:"memory"`
+	DatabaseUsers    []*User              `json:"database_users"`
+	Features         map[string]string    `json:"features"`
+	BackupConfig     *BackupConfig        `json:"backup_config"`
+	RestoreConfig    *RestoreConfig       `json:"restore_config"`
+	PostgreSQLConf   map[string]any       `json:"postgresql_conf"`
+	EnableBackups    bool                 `json:"enable_backups"`
+	ClusterSize      int                  `json:"cluster_size"`
+	ExternalVolumes  []ExternalVolumeSpec `json:"external_volumes,omitempty"`
 }
 
 func (i *InstanceSpec) Hostname() string {
@@ -350,6 +360,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		// Create a merged PostgreSQL configuration with node-level overrides
 		postgresqlConf := maps.Clone(s.PostgreSQLConf)
 		maps.Copy(node.PostgreSQLConf, postgresqlConf)
+		extrernalVolumes := slices.Clone(s.ExternalVolumes)
 
 		instances := make([]*InstanceSpec, len(node.HostIDs))
 		for hostIdx, hostID := range node.HostIDs {
@@ -375,8 +386,9 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				// By default, we'll choose the last host in the list to run
 				// backups. We'll want to incorporate the current state of the
 				// cluster into this decision when we implement updates.
-				EnableBackups: backupConfig != nil && hostIdx == len(node.HostIDs)-1,
-				ClusterSize:   clusterSize,
+				EnableBackups:   backupConfig != nil && hostIdx == len(node.HostIDs)-1,
+				ClusterSize:     clusterSize,
+				ExternalVolumes: extrernalVolumes,
 			}
 		}
 

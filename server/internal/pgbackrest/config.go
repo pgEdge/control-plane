@@ -20,6 +20,7 @@ const (
 	RepositoryTypeS3    RepositoryType = "s3"
 	RepositoryTypeGCS   RepositoryType = "gcs"
 	RepositoryTypeAzure RepositoryType = "azure"
+	RepositoryTypePosix RepositoryType = "posix"
 )
 
 type RetentionFullType string
@@ -153,6 +154,8 @@ func WriteConfig(w io.Writer, opts ConfigOptions) error {
 			writeGCSRepo(idx, repo, global)
 		case RepositoryTypeAzure:
 			writeAzureRepo(idx, repo, global)
+		case RepositoryTypePosix:
+			writePosixRepo(idx, repo, global)
 		default:
 			return fmt.Errorf("unsupported repository type: %q", repo.Type)
 		}
@@ -263,4 +266,9 @@ func repoKey(idx int, key string) string {
 
 func repoPath(databaseID uuid.UUID, basePath, nodeName, repoID string) string {
 	return path.Join("/", basePath, "databases", databaseID.String(), repoID, nodeName)
+}
+
+func writePosixRepo(idx int, repo *Repository, contents map[string]string) {
+	// To Do - add support for posix repo, but for now we just use the base path.
+	contents[repoKey(idx, "base_path")] = repo.BasePath
 }

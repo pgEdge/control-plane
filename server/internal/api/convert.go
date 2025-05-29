@@ -81,6 +81,7 @@ func databaseNodesToAPI(nodes []*database.Node) []*api.DatabaseNodeSpec {
 			PostgresqlConf:  node.PostgreSQLConf,
 			BackupConfig:    backupConfigToAPI(node.BackupConfig),
 			RestoreConfig:   restoreConfigToAPI(node.RestoreConfig),
+			ExternalVolumes: externalVolumesToAPI(node.ExternalVolumes),
 		}
 	}
 	return apiNodes
@@ -191,6 +192,7 @@ func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 		BackupConfig:       backupConfigToAPI(d.BackupConfig),
 		RestoreConfig:      restoreConfigToAPI(d.RestoreConfig),
 		PostgresqlConf:     d.PostgreSQLConf,
+		ExternalVolumes:    externalVolumesToAPI(d.ExternalVolumes),
 	}
 }
 
@@ -257,6 +259,7 @@ func apiToDatabaseNodes(apiNodes []*api.DatabaseNodeSpec) ([]*database.Node, err
 			PostgreSQLConf:   apiNode.PostgresqlConf,
 			BackupConfig:     backupConfig,
 			RestoreConfig:    restoreConfig,
+			ExternalVolumes:  apiToExternalVolumesConfig(apiNode.ExternalVolumes),
 		}
 	}
 	return nodes, nil
@@ -410,6 +413,7 @@ func apiToDatabaseSpec(id, tID *string, apiSpec *api.DatabaseSpec) (*database.Sp
 		BackupConfig:       backupConfig,
 		PostgreSQLConf:     apiSpec.PostgresqlConf,
 		RestoreConfig:      restoreConfig,
+		ExternalVolumes:    externalVolumesToDatabase(apiSpec.ExternalVolumes),
 	}, nil
 }
 
@@ -570,4 +574,37 @@ func stringifyStringerPtr[T stringer](v *T) *string {
 		return nil
 	}
 	return utils.PointerTo((*v).String())
+}
+
+func apiToExternalVolumesConfig(externalVolumes []*api.ExternalVolumeSpec) []database.ExternalVolumeSpec {
+	return externalVolumesToDatabase(externalVolumes)
+}
+
+func externalVolumesToDatabase(externalVolumes []*api.ExternalVolumeSpec) []database.ExternalVolumeSpec {
+	var result []database.ExternalVolumeSpec
+	for _, vol := range externalVolumes {
+		if vol == nil {
+			continue
+		}
+
+		result = append(result, database.ExternalVolumeSpec{
+			HostPath:        vol.HostPath,
+			DestinationPath: vol.DestinationPath,
+		})
+	}
+	return result
+}
+
+func externalVolumesToAPI(vols []database.ExternalVolumeSpec) []*api.ExternalVolumeSpec {
+	if len(vols) == 0 {
+		return nil
+	}
+	result := make([]*api.ExternalVolumeSpec, len(vols))
+	for i, v := range vols {
+		result[i] = &api.ExternalVolumeSpec{
+			HostPath:        v.HostPath,
+			DestinationPath: v.DestinationPath,
+		}
+	}
+	return result
 }

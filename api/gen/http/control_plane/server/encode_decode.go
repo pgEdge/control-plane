@@ -1763,6 +1763,12 @@ func unmarshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecR
 			res.PostgresqlConf[tk] = tv
 		}
 	}
+	if v.ExternalVolumes != nil {
+		res.ExternalVolumes = make([]*controlplane.ExternalVolumeSpec, len(v.ExternalVolumes))
+		for i, val := range v.ExternalVolumes {
+			res.ExternalVolumes[i] = unmarshalExternalVolumeSpecRequestBodyToControlplaneExternalVolumeSpec(val)
+		}
+	}
 
 	return res
 }
@@ -1797,6 +1803,12 @@ func unmarshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *Datab
 	}
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = unmarshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec(v.RestoreConfig)
+	}
+	if v.ExternalVolumes != nil {
+		res.ExternalVolumes = make([]*controlplane.ExternalVolumeSpec, len(v.ExternalVolumes))
+		for i, val := range v.ExternalVolumes {
+			res.ExternalVolumes[i] = unmarshalExternalVolumeSpecRequestBodyToControlplaneExternalVolumeSpec(val)
+		}
 	}
 
 	return res
@@ -1943,6 +1955,21 @@ func unmarshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpe
 	return res
 }
 
+// unmarshalExternalVolumeSpecRequestBodyToControlplaneExternalVolumeSpec
+// builds a value of type *controlplane.ExternalVolumeSpec from a value of type
+// *ExternalVolumeSpecRequestBody.
+func unmarshalExternalVolumeSpecRequestBodyToControlplaneExternalVolumeSpec(v *ExternalVolumeSpecRequestBody) *controlplane.ExternalVolumeSpec {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.ExternalVolumeSpec{
+		HostPath:        *v.HostPath,
+		DestinationPath: *v.DestinationPath,
+	}
+
+	return res
+}
+
 // unmarshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec builds a
 // value of type *controlplane.DatabaseUserSpec from a value of type
 // *DatabaseUserSpecRequestBody.
@@ -2042,6 +2069,12 @@ func marshalControlplaneviewsDatabaseSpecViewToDatabaseSpecResponseBody(v *contr
 			res.PostgresqlConf[tk] = tv
 		}
 	}
+	if v.ExternalVolumes != nil {
+		res.ExternalVolumes = make([]*ExternalVolumeSpecResponseBody, len(v.ExternalVolumes))
+		for i, val := range v.ExternalVolumes {
+			res.ExternalVolumes[i] = marshalControlplaneviewsExternalVolumeSpecViewToExternalVolumeSpecResponseBody(val)
+		}
+	}
 
 	return res
 }
@@ -2080,6 +2113,12 @@ func marshalControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpecResponseBody(
 	}
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = marshalControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpecResponseBody(v.RestoreConfig)
+	}
+	if v.ExternalVolumes != nil {
+		res.ExternalVolumes = make([]*ExternalVolumeSpecResponseBody, len(v.ExternalVolumes))
+		for i, val := range v.ExternalVolumes {
+			res.ExternalVolumes[i] = marshalControlplaneviewsExternalVolumeSpecViewToExternalVolumeSpecResponseBody(val)
+		}
 	}
 
 	return res
@@ -2232,6 +2271,21 @@ func marshalControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpecRes
 	return res
 }
 
+// marshalControlplaneviewsExternalVolumeSpecViewToExternalVolumeSpecResponseBody
+// builds a value of type *ExternalVolumeSpecResponseBody from a value of type
+// *controlplaneviews.ExternalVolumeSpecView.
+func marshalControlplaneviewsExternalVolumeSpecViewToExternalVolumeSpecResponseBody(v *controlplaneviews.ExternalVolumeSpecView) *ExternalVolumeSpecResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &ExternalVolumeSpecResponseBody{
+		HostPath:        *v.HostPath,
+		DestinationPath: *v.DestinationPath,
+	}
+
+	return res
+}
+
 // marshalControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpecResponseBody
 // builds a value of type *DatabaseUserSpecResponseBody from a value of type
 // *controlplaneviews.DatabaseUserSpecView.
@@ -2310,6 +2364,12 @@ func unmarshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Da
 			res.PostgresqlConf[tk] = tv
 		}
 	}
+	if v.ExternalVolumes != nil {
+		res.ExternalVolumes = make([]*controlplane.ExternalVolumeSpec, len(v.ExternalVolumes))
+		for i, val := range v.ExternalVolumes {
+			res.ExternalVolumes[i] = unmarshalExternalVolumeSpecRequestBodyRequestBodyToControlplaneExternalVolumeSpec(val)
+		}
+	}
 
 	return res
 }
@@ -2344,6 +2404,12 @@ func unmarshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSp
 	}
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = unmarshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSpec(v.RestoreConfig)
+	}
+	if v.ExternalVolumes != nil {
+		res.ExternalVolumes = make([]*controlplane.ExternalVolumeSpec, len(v.ExternalVolumes))
+		for i, val := range v.ExternalVolumes {
+			res.ExternalVolumes[i] = unmarshalExternalVolumeSpecRequestBodyRequestBodyToControlplaneExternalVolumeSpec(val)
+		}
 	}
 
 	return res
@@ -2485,6 +2551,21 @@ func unmarshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRe
 			tv := val
 			res.CustomOptions[tk] = tv
 		}
+	}
+
+	return res
+}
+
+// unmarshalExternalVolumeSpecRequestBodyRequestBodyToControlplaneExternalVolumeSpec
+// builds a value of type *controlplane.ExternalVolumeSpec from a value of type
+// *ExternalVolumeSpecRequestBodyRequestBody.
+func unmarshalExternalVolumeSpecRequestBodyRequestBodyToControlplaneExternalVolumeSpec(v *ExternalVolumeSpecRequestBodyRequestBody) *controlplane.ExternalVolumeSpec {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.ExternalVolumeSpec{
+		HostPath:        *v.HostPath,
+		DestinationPath: *v.DestinationPath,
 	}
 
 	return res
@@ -2666,6 +2747,12 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody(v *controlplane.D
 			res.PostgresqlConf[tk] = tv
 		}
 	}
+	if v.ExternalVolumes != nil {
+		res.ExternalVolumes = make([]*ExternalVolumeSpecResponseBody, len(v.ExternalVolumes))
+		for i, val := range v.ExternalVolumes {
+			res.ExternalVolumes[i] = marshalControlplaneExternalVolumeSpecToExternalVolumeSpecResponseBody(val)
+		}
+	}
 
 	return res
 }
@@ -2704,6 +2791,12 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecResponseBody(v *contro
 	}
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = marshalControlplaneRestoreConfigSpecToRestoreConfigSpecResponseBody(v.RestoreConfig)
+	}
+	if v.ExternalVolumes != nil {
+		res.ExternalVolumes = make([]*ExternalVolumeSpecResponseBody, len(v.ExternalVolumes))
+		for i, val := range v.ExternalVolumes {
+			res.ExternalVolumes[i] = marshalControlplaneExternalVolumeSpecToExternalVolumeSpecResponseBody(val)
+		}
 	}
 
 	return res
@@ -2854,6 +2947,21 @@ func marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecResponseBody
 			tv := val
 			res.CustomOptions[tk] = tv
 		}
+	}
+
+	return res
+}
+
+// marshalControlplaneExternalVolumeSpecToExternalVolumeSpecResponseBody builds
+// a value of type *ExternalVolumeSpecResponseBody from a value of type
+// *controlplane.ExternalVolumeSpec.
+func marshalControlplaneExternalVolumeSpecToExternalVolumeSpecResponseBody(v *controlplane.ExternalVolumeSpec) *ExternalVolumeSpecResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &ExternalVolumeSpecResponseBody{
+		HostPath:        v.HostPath,
+		DestinationPath: v.DestinationPath,
 	}
 
 	return res
