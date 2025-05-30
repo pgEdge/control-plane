@@ -2292,6 +2292,12 @@ func unmarshalDatabaseSpecResponseToControlplaneviewsDatabaseSpecView(v *Databas
 			res.PostgresqlConf[tk] = tv
 		}
 	}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*controlplaneviews.ExtraVolumesSpecView, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecResponseToControlplaneviewsExtraVolumesSpecView(val)
+		}
+	}
 
 	return res
 }
@@ -2326,6 +2332,12 @@ func unmarshalDatabaseNodeSpecResponseToControlplaneviewsDatabaseNodeSpecView(v 
 	}
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = unmarshalRestoreConfigSpecResponseToControlplaneviewsRestoreConfigSpecView(v.RestoreConfig)
+	}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*controlplaneviews.ExtraVolumesSpecView, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecResponseToControlplaneviewsExtraVolumesSpecView(val)
+		}
 	}
 
 	return res
@@ -2463,6 +2475,21 @@ func unmarshalRestoreRepositorySpecResponseToControlplaneviewsRestoreRepositoryS
 	return res
 }
 
+// unmarshalExtraVolumesSpecResponseToControlplaneviewsExtraVolumesSpecView
+// builds a value of type *controlplaneviews.ExtraVolumesSpecView from a value
+// of type *ExtraVolumesSpecResponse.
+func unmarshalExtraVolumesSpecResponseToControlplaneviewsExtraVolumesSpecView(v *ExtraVolumesSpecResponse) *controlplaneviews.ExtraVolumesSpecView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.ExtraVolumesSpecView{
+		HostPath:        v.HostPath,
+		DestinationPath: v.DestinationPath,
+	}
+
+	return res
+}
+
 // unmarshalDatabaseUserSpecResponseToControlplaneviewsDatabaseUserSpecView
 // builds a value of type *controlplaneviews.DatabaseUserSpecView from a value
 // of type *DatabaseUserSpecResponse.
@@ -2545,6 +2572,12 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecRequestBody(v *controlplane.Da
 			res.PostgresqlConf[tk] = tv
 		}
 	}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*ExtraVolumesSpecRequestBody, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = marshalControlplaneExtraVolumesSpecToExtraVolumesSpecRequestBody(val)
+		}
+	}
 
 	return res
 }
@@ -2583,6 +2616,12 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecRequestBody(v *control
 	}
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = marshalControlplaneRestoreConfigSpecToRestoreConfigSpecRequestBody(v.RestoreConfig)
+	}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*ExtraVolumesSpecRequestBody, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = marshalControlplaneExtraVolumesSpecToExtraVolumesSpecRequestBody(val)
+		}
 	}
 
 	return res
@@ -2738,6 +2777,21 @@ func marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecRequestBody(
 	return res
 }
 
+// marshalControlplaneExtraVolumesSpecToExtraVolumesSpecRequestBody builds a
+// value of type *ExtraVolumesSpecRequestBody from a value of type
+// *controlplane.ExtraVolumesSpec.
+func marshalControlplaneExtraVolumesSpecToExtraVolumesSpecRequestBody(v *controlplane.ExtraVolumesSpec) *ExtraVolumesSpecRequestBody {
+	if v == nil {
+		return nil
+	}
+	res := &ExtraVolumesSpecRequestBody{
+		HostPath:        v.HostPath,
+		DestinationPath: v.DestinationPath,
+	}
+
+	return res
+}
+
 // marshalControlplaneDatabaseUserSpecToDatabaseUserSpecRequestBody builds a
 // value of type *DatabaseUserSpecRequestBody from a value of type
 // *controlplane.DatabaseUserSpec.
@@ -2820,6 +2874,12 @@ func marshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecReq
 			res.PostgresqlConf[tk] = tv
 		}
 	}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = marshalExtraVolumesSpecRequestBodyToControlplaneExtraVolumesSpec(val)
+		}
+	}
 
 	return res
 }
@@ -2858,6 +2918,12 @@ func marshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *Databas
 	}
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = marshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec(v.RestoreConfig)
+	}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = marshalExtraVolumesSpecRequestBodyToControlplaneExtraVolumesSpec(val)
+		}
 	}
 
 	return res
@@ -3013,6 +3079,21 @@ func marshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpec(
 	return res
 }
 
+// marshalExtraVolumesSpecRequestBodyToControlplaneExtraVolumesSpec builds a
+// value of type *controlplane.ExtraVolumesSpec from a value of type
+// *ExtraVolumesSpecRequestBody.
+func marshalExtraVolumesSpecRequestBodyToControlplaneExtraVolumesSpec(v *ExtraVolumesSpecRequestBody) *controlplane.ExtraVolumesSpec {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.ExtraVolumesSpec{
+		HostPath:        v.HostPath,
+		DestinationPath: v.DestinationPath,
+	}
+
+	return res
+}
+
 // marshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec builds a
 // value of type *controlplane.DatabaseUserSpec from a value of type
 // *DatabaseUserSpecRequestBody.
@@ -3108,6 +3189,12 @@ func unmarshalDatabaseSpecResponseBodyToControlplaneviewsDatabaseSpecView(v *Dat
 			res.PostgresqlConf[tk] = tv
 		}
 	}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*controlplaneviews.ExtraVolumesSpecView, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecResponseBodyToControlplaneviewsExtraVolumesSpecView(val)
+		}
+	}
 
 	return res
 }
@@ -3142,6 +3229,12 @@ func unmarshalDatabaseNodeSpecResponseBodyToControlplaneviewsDatabaseNodeSpecVie
 	}
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = unmarshalRestoreConfigSpecResponseBodyToControlplaneviewsRestoreConfigSpecView(v.RestoreConfig)
+	}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*controlplaneviews.ExtraVolumesSpecView, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecResponseBodyToControlplaneviewsExtraVolumesSpecView(val)
+		}
 	}
 
 	return res
@@ -3279,6 +3372,21 @@ func unmarshalRestoreRepositorySpecResponseBodyToControlplaneviewsRestoreReposit
 	return res
 }
 
+// unmarshalExtraVolumesSpecResponseBodyToControlplaneviewsExtraVolumesSpecView
+// builds a value of type *controlplaneviews.ExtraVolumesSpecView from a value
+// of type *ExtraVolumesSpecResponseBody.
+func unmarshalExtraVolumesSpecResponseBodyToControlplaneviewsExtraVolumesSpecView(v *ExtraVolumesSpecResponseBody) *controlplaneviews.ExtraVolumesSpecView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.ExtraVolumesSpecView{
+		HostPath:        v.HostPath,
+		DestinationPath: v.DestinationPath,
+	}
+
+	return res
+}
+
 // unmarshalDatabaseUserSpecResponseBodyToControlplaneviewsDatabaseUserSpecView
 // builds a value of type *controlplaneviews.DatabaseUserSpecView from a value
 // of type *DatabaseUserSpecResponseBody.
@@ -3361,6 +3469,12 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecRequestBodyRequestBody(v *cont
 			res.PostgresqlConf[tk] = tv
 		}
 	}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*ExtraVolumesSpecRequestBodyRequestBody, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = marshalControlplaneExtraVolumesSpecToExtraVolumesSpecRequestBodyRequestBody(val)
+		}
+	}
 
 	return res
 }
@@ -3399,6 +3513,12 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecRequestBodyRequestBody
 	}
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = marshalControlplaneRestoreConfigSpecToRestoreConfigSpecRequestBodyRequestBody(v.RestoreConfig)
+	}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*ExtraVolumesSpecRequestBodyRequestBody, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = marshalControlplaneExtraVolumesSpecToExtraVolumesSpecRequestBodyRequestBody(val)
+		}
 	}
 
 	return res
@@ -3554,6 +3674,21 @@ func marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecRequestBodyR
 	return res
 }
 
+// marshalControlplaneExtraVolumesSpecToExtraVolumesSpecRequestBodyRequestBody
+// builds a value of type *ExtraVolumesSpecRequestBodyRequestBody from a value
+// of type *controlplane.ExtraVolumesSpec.
+func marshalControlplaneExtraVolumesSpecToExtraVolumesSpecRequestBodyRequestBody(v *controlplane.ExtraVolumesSpec) *ExtraVolumesSpecRequestBodyRequestBody {
+	if v == nil {
+		return nil
+	}
+	res := &ExtraVolumesSpecRequestBodyRequestBody{
+		HostPath:        v.HostPath,
+		DestinationPath: v.DestinationPath,
+	}
+
+	return res
+}
+
 // marshalControlplaneDatabaseUserSpecToDatabaseUserSpecRequestBodyRequestBody
 // builds a value of type *DatabaseUserSpecRequestBodyRequestBody from a value
 // of type *controlplane.DatabaseUserSpec.
@@ -3636,6 +3771,12 @@ func marshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Data
 			res.PostgresqlConf[tk] = tv
 		}
 	}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = marshalExtraVolumesSpecRequestBodyRequestBodyToControlplaneExtraVolumesSpec(val)
+		}
+	}
 
 	return res
 }
@@ -3674,6 +3815,12 @@ func marshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSpec
 	}
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = marshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSpec(v.RestoreConfig)
+	}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = marshalExtraVolumesSpecRequestBodyRequestBodyToControlplaneExtraVolumesSpec(val)
+		}
 	}
 
 	return res
@@ -3824,6 +3971,21 @@ func marshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRepo
 			tv := val
 			res.CustomOptions[tk] = tv
 		}
+	}
+
+	return res
+}
+
+// marshalExtraVolumesSpecRequestBodyRequestBodyToControlplaneExtraVolumesSpec
+// builds a value of type *controlplane.ExtraVolumesSpec from a value of type
+// *ExtraVolumesSpecRequestBodyRequestBody.
+func marshalExtraVolumesSpecRequestBodyRequestBodyToControlplaneExtraVolumesSpec(v *ExtraVolumesSpecRequestBodyRequestBody) *controlplane.ExtraVolumesSpec {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.ExtraVolumesSpec{
+		HostPath:        v.HostPath,
+		DestinationPath: v.DestinationPath,
 	}
 
 	return res
@@ -4001,6 +4163,12 @@ func unmarshalDatabaseSpecResponseBodyToControlplaneDatabaseSpec(v *DatabaseSpec
 			res.PostgresqlConf[tk] = tv
 		}
 	}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecResponseBodyToControlplaneExtraVolumesSpec(val)
+		}
+	}
 
 	return res
 }
@@ -4035,6 +4203,12 @@ func unmarshalDatabaseNodeSpecResponseBodyToControlplaneDatabaseNodeSpec(v *Data
 	}
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = unmarshalRestoreConfigSpecResponseBodyToControlplaneRestoreConfigSpec(v.RestoreConfig)
+	}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecResponseBodyToControlplaneExtraVolumesSpec(val)
+		}
 	}
 
 	return res
@@ -4176,6 +4350,21 @@ func unmarshalRestoreRepositorySpecResponseBodyToControlplaneRestoreRepositorySp
 			tv := val
 			res.CustomOptions[tk] = tv
 		}
+	}
+
+	return res
+}
+
+// unmarshalExtraVolumesSpecResponseBodyToControlplaneExtraVolumesSpec builds a
+// value of type *controlplane.ExtraVolumesSpec from a value of type
+// *ExtraVolumesSpecResponseBody.
+func unmarshalExtraVolumesSpecResponseBodyToControlplaneExtraVolumesSpec(v *ExtraVolumesSpecResponseBody) *controlplane.ExtraVolumesSpec {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.ExtraVolumesSpec{
+		HostPath:        *v.HostPath,
+		DestinationPath: *v.DestinationPath,
 	}
 
 	return res

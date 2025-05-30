@@ -71,7 +71,9 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 	g.Attribute("restore_config", RestoreConfigSpec, func() {
 		g.Description("The restore configuration for this node. Overrides the restore configuration set in the DatabaseSpec.")
 	})
-
+	g.Attribute("extra_volumes", g.ArrayOf(ExtraVolumesSpec), func() {
+		g.Description("Optional list of external volumes to mount for this node only.")
+	})
 	g.Required("name", "host_ids")
 })
 
@@ -109,7 +111,7 @@ var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
 	})
 	g.Attribute("type", g.String, func() {
 		g.Description("The type of this repository.")
-		g.Enum("s3", "gcs", "azure")
+		g.Enum("s3", "gcs", "azure", "posix", "cifs")
 		g.Example("s3")
 	})
 	g.Attribute("s3_bucket", g.String, func() {
@@ -170,7 +172,7 @@ var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
 		g.Example("count")
 	})
 	g.Attribute("base_path", g.String, func() {
-		g.Description("The base path within the repository to store backups.")
+		g.Description("The base path within the repository to store backups. Required for type = 'posix' and 'cifs'.")
 		g.Example("/backups")
 	})
 	g.Attribute("custom_options", g.MapOf(g.String, g.String), func() {
@@ -227,7 +229,7 @@ var RestoreRepositorySpec = g.Type("RestoreRepositorySpec", func() {
 	})
 	g.Attribute("type", g.String, func() {
 		g.Description("The type of this repository.")
-		g.Enum("s3", "gcs", "azure")
+		g.Enum("s3", "gcs", "azure", "posix", "cifs")
 		g.Example("s3")
 	})
 	g.Attribute("s3_bucket", g.String, func() {
@@ -279,7 +281,7 @@ var RestoreRepositorySpec = g.Type("RestoreRepositorySpec", func() {
 		g.Example("YXpLZXk=")
 	})
 	g.Attribute("base_path", g.String, func() {
-		g.Description("The base path within the repository where backups are stored.")
+		g.Description("The base path within the repository to store backups. Required for type = 'posix' and 'cifs'.")
 		g.Example("/backups")
 	})
 	g.Attribute("custom_options", g.MapOf(g.String, g.String), func() {
@@ -390,6 +392,9 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 		g.Example(map[string]any{
 			"max_connections": 1000,
 		})
+	})
+	g.Attribute("extra_volumes", g.ArrayOf(ExtraVolumesSpec), func() {
+		g.Description("A list of extra volumes to mount. Each entry defines a host and container path.")
 	})
 
 	g.Required("database_name", "nodes")
@@ -506,4 +511,20 @@ var RestoreDatabaseResponse = g.Type("RestoreDatabaseResponse", func() {
 	g.Attribute("tasks", g.ArrayOf(Task), func() {
 		g.Description("The restore tasks that were created to restore this database.")
 	})
+})
+
+var ExtraVolumesSpec = g.Type("ExtraVolumesSpec", func() {
+	g.Description("Defines an extra volumes mapping between host and container.")
+
+	g.Attribute("host_path", g.String, func() {
+		g.Description("The host path for the volume.")
+		g.Example("/Users/user/backups/host")
+	})
+
+	g.Attribute("destination_path", g.String, func() {
+		g.Description("The path inside the container where the volume will be mounted.")
+		g.Example("/backups/container")
+	})
+
+	g.Required("host_path", "destination_path")
 })

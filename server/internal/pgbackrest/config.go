@@ -20,6 +20,8 @@ const (
 	RepositoryTypeS3    RepositoryType = "s3"
 	RepositoryTypeGCS   RepositoryType = "gcs"
 	RepositoryTypeAzure RepositoryType = "azure"
+	RepositoryTypePosix RepositoryType = "posix"
+	RepositoryTypeCifs  RepositoryType = "cifs"
 )
 
 type RetentionFullType string
@@ -135,9 +137,6 @@ func WriteConfig(w io.Writer, opts ConfigOptions) error {
 		"log-level-console": "info",
 	}
 
-	global["start-fast"] = "y"
-	global["log-level-console"] = "info"
-
 	for idx, repo := range opts.Repositories {
 		repo = repo.WithDefaults()
 		global[repoKey(idx, "path")] = repoPath(opts.DatabaseID, repo.BasePath, opts.NodeName, repo.ID)
@@ -153,6 +152,13 @@ func WriteConfig(w io.Writer, opts ConfigOptions) error {
 			writeGCSRepo(idx, repo, global)
 		case RepositoryTypeAzure:
 			writeAzureRepo(idx, repo, global)
+		case RepositoryTypePosix:
+			// For Posix repositories, we don't need to add any specific keys
+			// to the global section, as the path is already set.
+		case RepositoryTypeCifs:
+			// For CIFS repositories, just like Posix, we don't need to
+			// add any specific keys to the global section, as the path is
+			// already set.
 		default:
 			return fmt.Errorf("unsupported repository type: %q", repo.Type)
 		}

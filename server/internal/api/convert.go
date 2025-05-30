@@ -81,6 +81,7 @@ func databaseNodesToAPI(nodes []*database.Node) []*api.DatabaseNodeSpec {
 			PostgresqlConf:  node.PostgreSQLConf,
 			BackupConfig:    backupConfigToAPI(node.BackupConfig),
 			RestoreConfig:   restoreConfigToAPI(node.RestoreConfig),
+			ExtraVolumes:    extraVolumesToAPI(node.ExtraVolumes),
 		}
 	}
 	return apiNodes
@@ -191,6 +192,7 @@ func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 		BackupConfig:       backupConfigToAPI(d.BackupConfig),
 		RestoreConfig:      restoreConfigToAPI(d.RestoreConfig),
 		PostgresqlConf:     d.PostgreSQLConf,
+		ExtraVolumes:       extraVolumesToAPI(d.ExtraVolumes),
 	}
 }
 
@@ -257,6 +259,7 @@ func apiToDatabaseNodes(apiNodes []*api.DatabaseNodeSpec) ([]*database.Node, err
 			PostgreSQLConf:   apiNode.PostgresqlConf,
 			BackupConfig:     backupConfig,
 			RestoreConfig:    restoreConfig,
+			ExtraVolumes:     extraVolumesToDatabase(apiNode.ExtraVolumes),
 		}
 	}
 	return nodes, nil
@@ -410,6 +413,7 @@ func apiToDatabaseSpec(id, tID *string, apiSpec *api.DatabaseSpec) (*database.Sp
 		BackupConfig:       backupConfig,
 		PostgreSQLConf:     apiSpec.PostgresqlConf,
 		RestoreConfig:      restoreConfig,
+		ExtraVolumes:       extraVolumesToDatabase(apiSpec.ExtraVolumes),
 	}, nil
 }
 
@@ -570,4 +574,33 @@ func stringifyStringerPtr[T stringer](v *T) *string {
 		return nil
 	}
 	return utils.PointerTo((*v).String())
+}
+
+func extraVolumesToDatabase(extraVolumes []*api.ExtraVolumesSpec) []database.ExtraVolumesSpec {
+	var result []database.ExtraVolumesSpec
+	for _, vol := range extraVolumes {
+		if vol == nil {
+			continue
+		}
+
+		result = append(result, database.ExtraVolumesSpec{
+			HostPath:        vol.HostPath,
+			DestinationPath: vol.DestinationPath,
+		})
+	}
+	return result
+}
+
+func extraVolumesToAPI(vols []database.ExtraVolumesSpec) []*api.ExtraVolumesSpec {
+	if len(vols) == 0 {
+		return nil
+	}
+	result := make([]*api.ExtraVolumesSpec, len(vols))
+	for i, v := range vols {
+		result[i] = &api.ExtraVolumesSpec{
+			HostPath:        v.HostPath,
+			DestinationPath: v.DestinationPath,
+		}
+	}
+	return result
 }

@@ -1,0 +1,3 @@
+kind: Added
+body: Support for performing database backups to a mounted file system using the posix repository type via pgBackRest.
+time: 2025-05-29T23:35:47.02065+05:30
