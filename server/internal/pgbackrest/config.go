@@ -21,6 +21,7 @@ const (
 	RepositoryTypeGCS   RepositoryType = "gcs"
 	RepositoryTypeAzure RepositoryType = "azure"
 	RepositoryTypePosix RepositoryType = "posix"
+	RepositoryTypeCifs  RepositoryType = "cifs"
 )
 
 type RetentionFullType string
@@ -154,6 +155,10 @@ func WriteConfig(w io.Writer, opts ConfigOptions) error {
 		case RepositoryTypePosix:
 			// For Posix repositories, we don't need to add any specific keys
 			// to the global section, as the path is already set.
+		case RepositoryTypeCifs:
+			// For CIFS repositories, just like Posix, we don't need to
+			// add any specific keys to the global section, as the path is
+			// already set.
 		default:
 			return fmt.Errorf("unsupported repository type: %q", repo.Type)
 		}

@@ -132,7 +132,7 @@ type BackupRepositorySpec struct {
 	// The type of measure used for retention_full.
 	RetentionFullType *string
 	// The base path within the repository to store backups. Required for type =
-	// 'posix'.
+	// 'posix' and 'cifs'.
 	BasePath *string
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string
@@ -300,7 +300,7 @@ type DatabaseNodeSpec struct {
 	// set in the DatabaseSpec.
 	RestoreConfig *RestoreConfigSpec
 	// Optional list of external volumes to mount for this node only.
-	ExternalVolumes []*ExternalVolumeSpec
+	ExtraVolumes []*ExtraVolumesSpec
 }
 
 type DatabaseSpec struct {
@@ -344,7 +344,7 @@ type DatabaseSpec struct {
 	PostgresqlConf map[string]any
 	// A list of extra volumes to mount. Each entry defines a host and container
 	// path.
-	ExternalVolumes []*ExternalVolumeSpec
+	ExtraVolumes []*ExtraVolumesSpec
 }
 
 type DatabaseUserSpec struct {
@@ -367,8 +367,8 @@ type DeleteDatabasePayload struct {
 	DatabaseID string
 }
 
-// Defines an external volume mapping between host and container.
-type ExternalVolumeSpec struct {
+// Defines an extra volumes mapping between host and container.
+type ExtraVolumesSpec struct {
 	// The host path for the volume.
 	HostPath string
 	// The path inside the container where the volume will be mounted.
@@ -611,7 +611,8 @@ type RestoreRepositorySpec struct {
 	// An optional Azure storage account access key to use for this repository. If
 	// not provided, pgbackrest will use the VM's managed identity.
 	AzureKey *string
-	// The base path within the repository where backups are stored.
+	// The base path within the repository to store backups. Required for type =
+	// 'posix' and 'cifs'.
 	BasePath *string
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string
@@ -1097,10 +1098,10 @@ func transformControlplaneviewsDatabaseSpecViewToDatabaseSpec(v *controlplanevie
 			res.PostgresqlConf[tk] = tv
 		}
 	}
-	if v.ExternalVolumes != nil {
-		res.ExternalVolumes = make([]*ExternalVolumeSpec, len(v.ExternalVolumes))
-		for i, val := range v.ExternalVolumes {
-			res.ExternalVolumes[i] = transformControlplaneviewsExternalVolumeSpecViewToExternalVolumeSpec(val)
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*ExtraVolumesSpec, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = transformControlplaneviewsExtraVolumesSpecViewToExtraVolumesSpec(val)
 		}
 	}
 
@@ -1142,10 +1143,10 @@ func transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec(v *control
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = transformControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpec(v.RestoreConfig)
 	}
-	if v.ExternalVolumes != nil {
-		res.ExternalVolumes = make([]*ExternalVolumeSpec, len(v.ExternalVolumes))
-		for i, val := range v.ExternalVolumes {
-			res.ExternalVolumes[i] = transformControlplaneviewsExternalVolumeSpecViewToExternalVolumeSpec(val)
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*ExtraVolumesSpec, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = transformControlplaneviewsExtraVolumesSpecViewToExtraVolumesSpec(val)
 		}
 	}
 
@@ -1299,14 +1300,14 @@ func transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec(
 	return res
 }
 
-// transformControlplaneviewsExternalVolumeSpecViewToExternalVolumeSpec builds
-// a value of type *ExternalVolumeSpec from a value of type
-// *controlplaneviews.ExternalVolumeSpecView.
-func transformControlplaneviewsExternalVolumeSpecViewToExternalVolumeSpec(v *controlplaneviews.ExternalVolumeSpecView) *ExternalVolumeSpec {
+// transformControlplaneviewsExtraVolumesSpecViewToExtraVolumesSpec builds a
+// value of type *ExtraVolumesSpec from a value of type
+// *controlplaneviews.ExtraVolumesSpecView.
+func transformControlplaneviewsExtraVolumesSpecViewToExtraVolumesSpec(v *controlplaneviews.ExtraVolumesSpecView) *ExtraVolumesSpec {
 	if v == nil {
 		return nil
 	}
-	res := &ExternalVolumeSpec{
+	res := &ExtraVolumesSpec{
 		HostPath:        *v.HostPath,
 		DestinationPath: *v.DestinationPath,
 	}
@@ -1395,10 +1396,10 @@ func transformDatabaseSpecToControlplaneviewsDatabaseSpecView(v *DatabaseSpec) *
 			res.PostgresqlConf[tk] = tv
 		}
 	}
-	if v.ExternalVolumes != nil {
-		res.ExternalVolumes = make([]*controlplaneviews.ExternalVolumeSpecView, len(v.ExternalVolumes))
-		for i, val := range v.ExternalVolumes {
-			res.ExternalVolumes[i] = transformExternalVolumeSpecToControlplaneviewsExternalVolumeSpecView(val)
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*controlplaneviews.ExtraVolumesSpecView, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = transformExtraVolumesSpecToControlplaneviewsExtraVolumesSpecView(val)
 		}
 	}
 
@@ -1440,10 +1441,10 @@ func transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView(v *Databas
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = transformRestoreConfigSpecToControlplaneviewsRestoreConfigSpecView(v.RestoreConfig)
 	}
-	if v.ExternalVolumes != nil {
-		res.ExternalVolumes = make([]*controlplaneviews.ExternalVolumeSpecView, len(v.ExternalVolumes))
-		for i, val := range v.ExternalVolumes {
-			res.ExternalVolumes[i] = transformExternalVolumeSpecToControlplaneviewsExternalVolumeSpecView(val)
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*controlplaneviews.ExtraVolumesSpecView, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = transformExtraVolumesSpecToControlplaneviewsExtraVolumesSpecView(val)
 		}
 	}
 
@@ -1588,14 +1589,14 @@ func transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView(
 	return res
 }
 
-// transformExternalVolumeSpecToControlplaneviewsExternalVolumeSpecView builds
-// a value of type *controlplaneviews.ExternalVolumeSpecView from a value of
-// type *ExternalVolumeSpec.
-func transformExternalVolumeSpecToControlplaneviewsExternalVolumeSpecView(v *ExternalVolumeSpec) *controlplaneviews.ExternalVolumeSpecView {
+// transformExtraVolumesSpecToControlplaneviewsExtraVolumesSpecView builds a
+// value of type *controlplaneviews.ExtraVolumesSpecView from a value of type
+// *ExtraVolumesSpec.
+func transformExtraVolumesSpecToControlplaneviewsExtraVolumesSpecView(v *ExtraVolumesSpec) *controlplaneviews.ExtraVolumesSpecView {
 	if v == nil {
 		return nil
 	}
-	res := &controlplaneviews.ExternalVolumeSpecView{
+	res := &controlplaneviews.ExtraVolumesSpecView{
 		HostPath:        &v.HostPath,
 		DestinationPath: &v.DestinationPath,
 	}

@@ -137,7 +137,7 @@ type DatabaseSpecView struct {
 	PostgresqlConf map[string]any
 	// A list of extra volumes to mount. Each entry defines a host and container
 	// path.
-	ExternalVolumes []*ExternalVolumeSpecView
+	ExtraVolumes []*ExtraVolumesSpecView
 }
 
 // DatabaseNodeSpecView is a type that runs validations on a projected type.
@@ -180,7 +180,7 @@ type DatabaseNodeSpecView struct {
 	// set in the DatabaseSpec.
 	RestoreConfig *RestoreConfigSpecView
 	// Optional list of external volumes to mount for this node only.
-	ExternalVolumes []*ExternalVolumeSpecView
+	ExtraVolumes []*ExtraVolumesSpecView
 }
 
 // BackupConfigSpecView is a type that runs validations on a projected type.
@@ -235,7 +235,7 @@ type BackupRepositorySpecView struct {
 	// The type of measure used for retention_full.
 	RetentionFullType *string
 	// The base path within the repository to store backups. Required for type =
-	// 'posix'.
+	// 'posix' and 'cifs'.
 	BasePath *string
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string
@@ -307,14 +307,15 @@ type RestoreRepositorySpecView struct {
 	// An optional Azure storage account access key to use for this repository. If
 	// not provided, pgbackrest will use the VM's managed identity.
 	AzureKey *string
-	// The base path within the repository where backups are stored.
+	// The base path within the repository to store backups. Required for type =
+	// 'posix' and 'cifs'.
 	BasePath *string
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string
 }
 
-// ExternalVolumeSpecView is a type that runs validations on a projected type.
-type ExternalVolumeSpecView struct {
+// ExtraVolumesSpecView is a type that runs validations on a projected type.
+type ExtraVolumesSpecView struct {
 	// The host path for the volume.
 	HostPath *string
 	// The path inside the container where the volume will be mounted.
@@ -769,9 +770,9 @@ func ValidateDatabaseSpecView(result *DatabaseSpecView) (err error) {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	for _, e := range result.ExternalVolumes {
+	for _, e := range result.ExtraVolumes {
 		if e != nil {
-			if err2 := ValidateExternalVolumeSpecView(e); err2 != nil {
+			if err2 := ValidateExtraVolumesSpecView(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -812,9 +813,9 @@ func ValidateDatabaseNodeSpecView(result *DatabaseNodeSpecView) (err error) {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	for _, e := range result.ExternalVolumes {
+	for _, e := range result.ExtraVolumes {
 		if e != nil {
-			if err2 := ValidateExternalVolumeSpecView(e); err2 != nil {
+			if err2 := ValidateExtraVolumesSpecView(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -860,8 +861,8 @@ func ValidateBackupRepositorySpecView(result *BackupRepositorySpecView) (err err
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "result"))
 	}
 	if result.Type != nil {
-		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure" || *result.Type == "posix") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.type", *result.Type, []any{"s3", "gcs", "azure", "posix"}))
+		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure" || *result.Type == "posix" || *result.Type == "cifs") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.type", *result.Type, []any{"s3", "gcs", "azure", "posix", "cifs"}))
 		}
 	}
 	if result.RetentionFullType != nil {
@@ -927,16 +928,16 @@ func ValidateRestoreRepositorySpecView(result *RestoreRepositorySpecView) (err e
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "result"))
 	}
 	if result.Type != nil {
-		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure" || *result.Type == "posix") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.type", *result.Type, []any{"s3", "gcs", "azure", "posix"}))
+		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure" || *result.Type == "posix" || *result.Type == "cifs") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.type", *result.Type, []any{"s3", "gcs", "azure", "posix", "cifs"}))
 		}
 	}
 	return
 }
 
-// ValidateExternalVolumeSpecView runs the validations defined on
-// ExternalVolumeSpecView.
-func ValidateExternalVolumeSpecView(result *ExternalVolumeSpecView) (err error) {
+// ValidateExtraVolumesSpecView runs the validations defined on
+// ExtraVolumesSpecView.
+func ValidateExtraVolumesSpecView(result *ExtraVolumesSpecView) (err error) {
 	if result.HostPath == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("host_path", "result"))
 	}

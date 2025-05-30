@@ -566,7 +566,7 @@ Example:
             }
          ],
          "deletion_protection": true,
-         "external_volumes": [
+         "extra_volumes": [
             {
                "destination_path": "/backups/container",
                "host_path": "/Users/user/backups/host"
@@ -677,7 +677,7 @@ Example:
                   ]
                },
                "cpus": "500m",
-               "external_volumes": [
+               "extra_volumes": [
                   {
                      "destination_path": "/backups/container",
                      "host_path": "/Users/user/backups/host"
@@ -824,7 +824,7 @@ Example:
                   ]
                },
                "cpus": "500m",
-               "external_volumes": [
+               "extra_volumes": [
                   {
                      "destination_path": "/backups/container",
                      "host_path": "/Users/user/backups/host"
@@ -971,7 +971,7 @@ Example:
                   ]
                },
                "cpus": "500m",
-               "external_volumes": [
+               "extra_volumes": [
                   {
                      "destination_path": "/backups/container",
                      "host_path": "/Users/user/backups/host"
@@ -1210,7 +1210,7 @@ Example:
             }
          ],
          "deletion_protection": true,
-         "external_volumes": [
+         "extra_volumes": [
             {
                "destination_path": "/backups/container",
                "host_path": "/Users/user/backups/host"
@@ -1295,7 +1295,7 @@ Example:
                   ]
                },
                "cpus": "500m",
-               "external_volumes": [
+               "extra_volumes": [
                   {
                      "destination_path": "/backups/container",
                      "host_path": "/Users/user/backups/host"
@@ -1427,7 +1427,7 @@ Example:
                   ]
                },
                "cpus": "500m",
-               "external_volumes": [
+               "extra_volumes": [
                   {
                      "destination_path": "/backups/container",
                      "host_path": "/Users/user/backups/host"
@@ -1559,7 +1559,7 @@ Example:
                   ]
                },
                "cpus": "500m",
-               "external_volumes": [
+               "extra_volumes": [
                   {
                      "destination_path": "/backups/container",
                      "host_path": "/Users/user/backups/host"
@@ -1691,7 +1691,7 @@ Example:
                   ]
                },
                "cpus": "500m",
-               "external_volumes": [
+               "extra_volumes": [
                   {
                      "destination_path": "/backups/container",
                      "host_path": "/Users/user/backups/host"

@@ -49,7 +49,7 @@ func DatabaseServiceSpec(
 		buildMount(options.Paths.Data, "/opt/pgedge/data", false),
 	}
 
-	for _, vol := range instance.ExternalVolumes {
+	for _, vol := range instance.ExtraVolumes {
 		mounts = append(mounts, buildMount(vol.HostPath, vol.DestinationPath, false))
 	}
 

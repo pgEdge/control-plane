@@ -373,7 +373,7 @@ paths:
                                         - pgedge_superuser
                                       username: admin
                                 deletion_protection: true
-                                external_volumes:
+                                extra_volumes:
                                     - destination_path: /backups/container
                                       host_path: /Users/user/backups/host
                                     - destination_path: /backups/container
@@ -457,7 +457,7 @@ paths:
                                               id: daily-full-backup
                                               type: full
                                       cpus: 500m
-                                      external_volumes:
+                                      extra_volumes:
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
                                         - destination_path: /backups/container
@@ -573,7 +573,7 @@ paths:
                                               id: daily-full-backup
                                               type: full
                                       cpus: 500m
-                                      external_volumes:
+                                      extra_volumes:
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
                                         - destination_path: /backups/container
@@ -689,7 +689,7 @@ paths:
                                               id: daily-full-backup
                                               type: full
                                       cpus: 500m
-                                      external_volumes:
+                                      extra_volumes:
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
                                         - destination_path: /backups/container
@@ -888,7 +888,7 @@ paths:
                                             - pgedge_superuser
                                           username: admin
                                     deletion_protection: true
-                                    external_volumes:
+                                    extra_volumes:
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
                                         - destination_path: /backups/container
@@ -975,7 +975,7 @@ paths:
                                                   id: daily-full-backup
                                                   type: full
                                           cpus: 500m
-                                          external_volumes:
+                                          extra_volumes:
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
@@ -1095,7 +1095,7 @@ paths:
                                                   id: daily-full-backup
                                                   type: full
                                           cpus: 500m
-                                          external_volumes:
+                                          extra_volumes:
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
@@ -1215,7 +1215,7 @@ paths:
                                                   id: daily-full-backup
                                                   type: full
                                           cpus: 500m
-                                          external_volumes:
+                                          extra_volumes:
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
@@ -1335,7 +1335,7 @@ paths:
                                                   id: daily-full-backup
                                                   type: full
                                           cpus: 500m
-                                          external_volumes:
+                                          extra_volumes:
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
@@ -1598,7 +1598,7 @@ paths:
                                             - pgedge_superuser
                                           username: admin
                                     deletion_protection: true
-                                    external_volumes:
+                                    extra_volumes:
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
                                         - destination_path: /backups/container
@@ -1685,7 +1685,7 @@ paths:
                                                   id: daily-full-backup
                                                   type: full
                                           cpus: 500m
-                                          external_volumes:
+                                          extra_volumes:
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
@@ -1805,7 +1805,7 @@ paths:
                                                   id: daily-full-backup
                                                   type: full
                                           cpus: 500m
-                                          external_volumes:
+                                          extra_volumes:
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
@@ -1925,7 +1925,7 @@ paths:
                                                   id: daily-full-backup
                                                   type: full
                                           cpus: 500m
-                                          external_volumes:
+                                          extra_volumes:
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
@@ -2045,7 +2045,7 @@ paths:
                                                   id: daily-full-backup
                                                   type: full
                                           cpus: 500m
-                                          external_volumes:
+                                          extra_volumes:
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
@@ -2257,7 +2257,7 @@ paths:
                                         - pgedge_superuser
                                       username: admin
                                 deletion_protection: true
-                                external_volumes:
+                                extra_volumes:
                                     - destination_path: /backups/container
                                       host_path: /Users/user/backups/host
                                     - destination_path: /backups/container
@@ -2320,7 +2320,7 @@ paths:
                                               id: daily-full-backup
                                               type: full
                                       cpus: 500m
-                                      external_volumes:
+                                      extra_volumes:
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
                                         - destination_path: /backups/container
@@ -2420,7 +2420,7 @@ paths:
                                               id: daily-full-backup
                                               type: full
                                       cpus: 500m
-                                      external_volumes:
+                                      extra_volumes:
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
                                         - destination_path: /backups/container
@@ -2520,7 +2520,7 @@ paths:
                                               id: daily-full-backup
                                               type: full
                                       cpus: 500m
-                                      external_volumes:
+                                      extra_volumes:
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
                                         - destination_path: /backups/container
@@ -2620,7 +2620,7 @@ paths:
                                               id: daily-full-backup
                                               type: full
                                       cpus: 500m
-                                      external_volumes:
+                                      extra_volumes:
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
                                         - destination_path: /backups/container
@@ -2820,7 +2820,7 @@ paths:
                                             - pgedge_superuser
                                           username: admin
                                     deletion_protection: true
-                                    external_volumes:
+                                    extra_volumes:
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
                                         - destination_path: /backups/container
@@ -2907,7 +2907,7 @@ paths:
                                                   id: daily-full-backup
                                                   type: full
                                           cpus: 500m
-                                          external_volumes:
+                                          extra_volumes:
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
@@ -3027,7 +3027,7 @@ paths:
                                                   id: daily-full-backup
                                                   type: full
                                           cpus: 500m
-                                          external_volumes:
+                                          extra_volumes:
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
@@ -3147,7 +3147,7 @@ paths:
                                                   id: daily-full-backup
                                                   type: full
                                           cpus: 500m
-                                          external_volumes:
+                                          extra_volumes:
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
@@ -3267,7 +3267,7 @@ paths:
                                                   id: daily-full-backup
                                                   type: full
                                           cpus: 500m
-                                          external_volumes:
+                                          extra_volumes:
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
@@ -3621,7 +3621,7 @@ paths:
                                                 - pgedge_superuser
                                               username: admin
                                         deletion_protection: true
-                                        external_volumes:
+                                        extra_volumes:
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
@@ -3664,7 +3664,7 @@ paths:
                                                       id: daily-full-backup
                                                       type: full
                                               cpus: 500m
-                                              external_volumes:
+                                              extra_volumes:
                                                 - destination_path: /backups/container
                                                   host_path: /Users/user/backups/host
                                                 - destination_path: /backups/container
@@ -3740,7 +3740,7 @@ paths:
                                                       id: daily-full-backup
                                                       type: full
                                               cpus: 500m
-                                              external_volumes:
+                                              extra_volumes:
                                                 - destination_path: /backups/container
                                                   host_path: /Users/user/backups/host
                                                 - destination_path: /backups/container
@@ -3816,7 +3816,7 @@ paths:
                                                       id: daily-full-backup
                                                       type: full
                                               cpus: 500m
-                                              external_volumes:
+                                              extra_volumes:
                                                 - destination_path: /backups/container
                                                   host_path: /Users/user/backups/host
                                                 - destination_path: /backups/container
@@ -3892,7 +3892,7 @@ paths:
                                                       id: daily-full-backup
                                                       type: full
                                               cpus: 500m
-                                              external_volumes:
+                                              extra_volumes:
                                                 - destination_path: /backups/container
                                                   host_path: /Users/user/backups/host
                                                 - destination_path: /backups/container
@@ -4972,7 +4972,7 @@ components:
                     example: YXpLZXk=
                 base_path:
                     type: string
-                    description: The base path within the repository to store backups. Required for type = 'posix'.
+                    description: The base path within the repository to store backups. Required for type = 'posix' and 'cifs'.
                     example: /backups
                 custom_options:
                     type: object
@@ -5040,6 +5040,7 @@ components:
                         - gcs
                         - azure
                         - posix
+                        - cifs
             example:
                 azure_account: pgedge-backups
                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -5758,7 +5759,7 @@ components:
                             - pgedge_superuser
                           username: admin
                     deletion_protection: true
-                    external_volumes:
+                    extra_volumes:
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
@@ -5845,7 +5846,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -5965,7 +5966,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -6085,7 +6086,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -6205,7 +6206,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -6375,7 +6376,7 @@ components:
                             - pgedge_superuser
                           username: admin
                     deletion_protection: true
-                    external_volumes:
+                    extra_volumes:
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
@@ -6418,7 +6419,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -6494,7 +6495,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -6570,7 +6571,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -6646,7 +6647,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -6888,7 +6889,7 @@ components:
                             - pgedge_superuser
                           username: admin
                     deletion_protection: true
-                    external_volumes:
+                    extra_volumes:
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
@@ -6931,7 +6932,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -7007,7 +7008,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -7083,7 +7084,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -7159,7 +7160,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -7252,10 +7253,10 @@ components:
                     type: string
                     description: The number of CPUs to allocate for the database on this node and to use for tuning Postgres. Defaults to the number of available CPUs on the host. Can include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be enforced depends on the orchestrator.
                     example: 500m
-                external_volumes:
+                extra_volumes:
                     type: array
                     items:
-                        $ref: '#/components/schemas/ExternalVolumeSpec'
+                        $ref: '#/components/schemas/ExtraVolumesSpec'
                     description: Optional list of external volumes to mount for this node only.
                     example:
                         - destination_path: /backups/container
@@ -7346,7 +7347,7 @@ components:
                           id: daily-full-backup
                           type: full
                 cpus: 500m
-                external_volumes:
+                extra_volumes:
                     - destination_path: /backups/container
                       host_path: /Users/user/backups/host
                     - destination_path: /backups/container
@@ -7577,10 +7578,10 @@ components:
                     type: boolean
                     description: Prevents deletion when true.
                     example: true
-                external_volumes:
+                extra_volumes:
                     type: array
                     items:
-                        $ref: '#/components/schemas/ExternalVolumeSpec'
+                        $ref: '#/components/schemas/ExtraVolumesSpec'
                     description: A list of extra volumes to mount. Each entry defines a host and container path.
                     example:
                         - destination_path: /backups/container
@@ -7641,7 +7642,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -7717,7 +7718,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -7793,7 +7794,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -7943,7 +7944,7 @@ components:
                         - pgedge_superuser
                       username: admin
                 deletion_protection: true
-                external_volumes:
+                extra_volumes:
                     - destination_path: /backups/container
                       host_path: /Users/user/backups/host
                     - destination_path: /backups/container
@@ -7986,7 +7987,7 @@ components:
                               id: daily-full-backup
                               type: full
                       cpus: 500m
-                      external_volumes:
+                      extra_volumes:
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
@@ -8062,7 +8063,7 @@ components:
                               id: daily-full-backup
                               type: full
                       cpus: 500m
-                      external_volumes:
+                      extra_volumes:
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
@@ -8138,7 +8139,7 @@ components:
                               id: daily-full-backup
                               type: full
                       cpus: 500m
-                      external_volumes:
+                      extra_volumes:
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
@@ -8304,7 +8305,7 @@ components:
                 - temporary
                 - timeout
                 - fault
-        ExternalVolumeSpec:
+        ExtraVolumesSpec:
             type: object
             properties:
                 destination_path:
@@ -8315,7 +8316,7 @@ components:
                     type: string
                     description: The host path for the volume.
                     example: /Users/user/backups/host
-            description: Defines an external volume mapping between host and container.
+            description: Defines an extra volumes mapping between host and container.
             example:
                 destination_path: /backups/container
                 host_path: /Users/user/backups/host
@@ -9110,7 +9111,7 @@ components:
                                 - pgedge_superuser
                               username: admin
                         deletion_protection: true
-                        external_volumes:
+                        extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -9153,7 +9154,7 @@ components:
                                       id: daily-full-backup
                                       type: full
                               cpus: 500m
-                              external_volumes:
+                              extra_volumes:
                                 - destination_path: /backups/container
                                   host_path: /Users/user/backups/host
                                 - destination_path: /backups/container
@@ -9229,7 +9230,7 @@ components:
                                       id: daily-full-backup
                                       type: full
                               cpus: 500m
-                              external_volumes:
+                              extra_volumes:
                                 - destination_path: /backups/container
                                   host_path: /Users/user/backups/host
                                 - destination_path: /backups/container
@@ -9305,7 +9306,7 @@ components:
                                       id: daily-full-backup
                                       type: full
                               cpus: 500m
-                              external_volumes:
+                              extra_volumes:
                                 - destination_path: /backups/container
                                   host_path: /Users/user/backups/host
                                 - destination_path: /backups/container
@@ -9381,7 +9382,7 @@ components:
                                       id: daily-full-backup
                                       type: full
                               cpus: 500m
-                              external_volumes:
+                              extra_volumes:
                                 - destination_path: /backups/container
                                   host_path: /Users/user/backups/host
                                 - destination_path: /backups/container
@@ -9522,7 +9523,7 @@ components:
                     example: YXpLZXk=
                 base_path:
                     type: string
-                    description: The base path within the repository where backups are stored.
+                    description: The base path within the repository to store backups. Required for type = 'posix' and 'cifs'.
                     example: /backups
                 custom_options:
                     type: object
@@ -9577,6 +9578,7 @@ components:
                         - gcs
                         - azure
                         - posix
+                        - cifs
             example:
                 azure_account: pgedge-backups
                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -9795,7 +9797,7 @@ components:
                             - pgedge_superuser
                           username: admin
                     deletion_protection: true
-                    external_volumes:
+                    extra_volumes:
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
@@ -9838,7 +9840,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -9914,7 +9916,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -9990,7 +9992,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
@@ -10066,7 +10068,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
-                          external_volumes:
+                          extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
