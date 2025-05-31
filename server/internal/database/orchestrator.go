@@ -4,11 +4,15 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 
 	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
+	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
+
+const pgEdgeUser = "pgedge"
 
 type InstanceResources struct {
 	Instance  *InstanceResource
@@ -40,6 +44,34 @@ type ConnectionInfo struct {
 	PeerSSLKey      string
 	PeerSSLRootCert string
 	PatroniPort     int
+}
+
+func (c *ConnectionInfo) PatroniURL() *url.URL {
+	return &url.URL{
+		Scheme: "http",
+		Host:   fmt.Sprintf("%s:%d", c.AdminHost, c.PatroniPort),
+	}
+}
+
+func (c *ConnectionInfo) AdminDSN(dbName string) *postgres.DSN {
+	return &postgres.DSN{
+		Host:   c.AdminHost,
+		Port:   c.AdminPort,
+		DBName: dbName,
+		User:   pgEdgeUser,
+	}
+}
+
+func (c *ConnectionInfo) PeerDSN(dbName string) *postgres.DSN {
+	return &postgres.DSN{
+		Host:        c.PeerHost,
+		Port:        c.PeerPort,
+		DBName:      dbName,
+		User:        pgEdgeUser,
+		SSLCert:     c.PeerSSLCert,
+		SSLKey:      c.PeerSSLKey,
+		SSLRootCert: c.PeerSSLRootCert,
+	}
 }
 
 type Orchestrator interface {
