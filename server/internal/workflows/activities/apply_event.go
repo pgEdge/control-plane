@@ -13,6 +13,7 @@ import (
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/task"
 )
 
 type ApplyEventInput struct {
@@ -126,13 +127,20 @@ func (a *Activities) logEvent(
 	resource resource.Resource,
 	apply func() error,
 ) error {
-	// Currying AddLogLine
-	log := func(msg string) error {
-		return a.TaskSvc.AddLogLine(ctx, databaseID, taskID, msg)
+	resourceIdentifier := resource.Identifier()
+	fields := map[string]any{
+		"resource_type": resourceIdentifier.Type,
+		"resource_id":   resourceIdentifier.ID,
+		"host_id":       a.Config.HostID.String(),
 	}
-
-	msg := fmt.Sprintf("%s %s on host %s", verb, resource.Identifier(), a.Config.HostID)
-	err := log(msg)
+	// Currying AddLogEntry
+	log := func(entry task.LogEntry) error {
+		return a.TaskSvc.AddLogEntry(ctx, databaseID, taskID, entry)
+	}
+	err := log(task.LogEntry{
+		Message: fmt.Sprintf("%s resource %s", verb, resourceIdentifier),
+		Fields:  fields,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to record event start: %w", err)
 	}
@@ -141,9 +149,16 @@ func (a *Activities) logEvent(
 	applyErr := apply()
 	duration := time.Since(start)
 
+	fields["duration_ms"] = duration.Milliseconds()
+
 	if applyErr != nil {
-		msg := fmt.Sprintf("error while %s %s: %s", verb, resource.Identifier(), applyErr)
-		err := log(msg)
+		fields["success"] = false
+		fields["error"] = applyErr.Error()
+
+		err := log(task.LogEntry{
+			Message: fmt.Sprintf("error while %s resource %s", verb, resourceIdentifier),
+			Fields:  fields,
+		})
 		if err != nil {
 			return errors.Join(
 				applyErr,
@@ -153,8 +168,12 @@ func (a *Activities) logEvent(
 		return applyErr
 	}
 
-	msg = fmt.Sprintf("finished %s %s (took %s)", verb, resource.Identifier(), duration)
-	err = log(msg)
+	fields["success"] = true
+
+	err = log(task.LogEntry{
+		Message: fmt.Sprintf("finished %s resource %s (took %s)", verb, resourceIdentifier, duration),
+		Fields:  fields,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to record event completion: %w", err)
 	}

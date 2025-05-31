@@ -415,12 +415,10 @@ type GetDatabaseTaskLogPayload struct {
 	DatabaseID string
 	// ID of the task to get log for.
 	TaskID string
-	// ID of the line to start from.
-	AfterLineID *string
-	// Maximum number of lines to return.
+	// ID of the entry to start from.
+	AfterEntryID *string
+	// Maximum number of entries to return.
 	Limit *int
-	// Prepends the timestamp to each log line.
-	IncludeTimestamp *bool
 }
 
 // Host is the result type of the control-plane service inspect-host method.
@@ -681,10 +679,19 @@ type TaskLog struct {
 	TaskID string
 	// The status of the task.
 	TaskStatus string
-	// The ID of the last line in the task log.
-	LastLineID *string
-	// The lines of the task log.
-	Lines []string
+	// The ID of the last entry in the task log.
+	LastEntryID *string
+	// Entries in the task log.
+	Entries []*TaskLogEntry
+}
+
+type TaskLogEntry struct {
+	// The timestamp of the log entry.
+	Timestamp string
+	// The log message.
+	Message string
+	// Additional fields for the log entry.
+	Fields map[string]any
 }
 
 // UpdateDatabasePayload is the payload type of the control-plane service

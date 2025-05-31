@@ -187,8 +187,8 @@ func (t *Task) SetCompleted() {
 }
 
 type TaskLog struct {
-	DatabaseID uuid.UUID `json:"database_id"`
-	TaskID     uuid.UUID `json:"id"`
-	LastLineID uuid.UUID `json:"last_line_id"`
-	Lines      []string  `json:"lines"`
+	DatabaseID  uuid.UUID  `json:"database_id"`
+	TaskID      uuid.UUID  `json:"id"`
+	LastEntryID uuid.UUID  `json:"last_entry_id"`
+	Entries     []LogEntry `json:"entries"`
 }

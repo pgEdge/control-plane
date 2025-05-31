@@ -7,16 +7,16 @@ import (
 )
 
 type Store struct {
-	client      *clientv3.Client
-	Task        *TaskStore
-	TaskLogLine *TaskLogLineStore
+	client         *clientv3.Client
+	Task           *TaskStore
+	TaskLogMessage *TaskLogEntryStore
 }
 
 func NewStore(client *clientv3.Client, root string) *Store {
 	return &Store{
-		client:      client,
-		Task:        NewTaskStore(client, root),
-		TaskLogLine: NewTaskLogLineStore(client, root),
+		client:         client,
+		Task:           NewTaskStore(client, root),
+		TaskLogMessage: NewTaskLogMessageStore(client, root),
 	}
 }
 

@@ -239,10 +239,10 @@ type GetDatabaseTaskLogResponseBody struct {
 	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
 	// The status of the task.
 	TaskStatus *string `form:"task_status,omitempty" json:"task_status,omitempty" xml:"task_status,omitempty"`
-	// The ID of the last line in the task log.
-	LastLineID *string `form:"last_line_id,omitempty" json:"last_line_id,omitempty" xml:"last_line_id,omitempty"`
-	// The lines of the task log.
-	Lines []string `form:"lines,omitempty" json:"lines,omitempty" xml:"lines,omitempty"`
+	// The ID of the last entry in the task log.
+	LastEntryID *string `form:"last_entry_id,omitempty" json:"last_entry_id,omitempty" xml:"last_entry_id,omitempty"`
+	// Entries in the task log.
+	Entries []*TaskLogEntryResponseBody `form:"entries,omitempty" json:"entries,omitempty" xml:"entries,omitempty"`
 }
 
 // RestoreDatabaseResponseBody is the type of the "control-plane" service
@@ -2320,6 +2320,16 @@ type TaskResponse struct {
 	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
+// TaskLogEntryResponseBody is used to define fields on response body types.
+type TaskLogEntryResponseBody struct {
+	// The timestamp of the log entry.
+	Timestamp *string `form:"timestamp,omitempty" json:"timestamp,omitempty" xml:"timestamp,omitempty"`
+	// The log message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Additional fields for the log entry.
+	Fields map[string]any `form:"fields,omitempty" json:"fields,omitempty" xml:"fields,omitempty"`
+}
+
 // NewJoinClusterRequestBody builds the HTTP request body from the payload of
 // the "join-cluster" endpoint of the "control-plane" service.
 func NewJoinClusterRequestBody(p *controlplane.ClusterJoinToken) *JoinClusterRequestBody {
@@ -3091,14 +3101,14 @@ func NewInspectDatabaseTaskNotFound(body *InspectDatabaseTaskNotFoundResponseBod
 // "get-database-task-log" endpoint result from a HTTP "OK" response.
 func NewGetDatabaseTaskLogTaskLogOK(body *GetDatabaseTaskLogResponseBody) *controlplane.TaskLog {
 	v := &controlplane.TaskLog{
-		DatabaseID: *body.DatabaseID,
-		TaskID:     *body.TaskID,
-		TaskStatus: *body.TaskStatus,
-		LastLineID: body.LastLineID,
+		DatabaseID:  *body.DatabaseID,
+		TaskID:      *body.TaskID,
+		TaskStatus:  *body.TaskStatus,
+		LastEntryID: body.LastEntryID,
 	}
-	v.Lines = make([]string, len(body.Lines))
-	for i, val := range body.Lines {
-		v.Lines[i] = val
+	v.Entries = make([]*controlplane.TaskLogEntry, len(body.Entries))
+	for i, val := range body.Entries {
+		v.Entries[i] = unmarshalTaskLogEntryResponseBodyToControlplaneTaskLogEntry(val)
 	}
 
 	return v
@@ -3486,8 +3496,8 @@ func ValidateGetDatabaseTaskLogResponseBody(body *GetDatabaseTaskLogResponseBody
 	if body.TaskStatus == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("task_status", "body"))
 	}
-	if body.Lines == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("lines", "body"))
+	if body.Entries == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("entries", "body"))
 	}
 	if body.DatabaseID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.database_id", *body.DatabaseID, goa.FormatUUID))
@@ -3500,8 +3510,15 @@ func ValidateGetDatabaseTaskLogResponseBody(body *GetDatabaseTaskLogResponseBody
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.task_status", *body.TaskStatus, []any{"pending", "running", "completed", "failed", "unknown"}))
 		}
 	}
-	if body.LastLineID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.last_line_id", *body.LastLineID, goa.FormatUUID))
+	if body.LastEntryID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.last_entry_id", *body.LastEntryID, goa.FormatUUID))
+	}
+	for _, e := range body.Entries {
+		if e != nil {
+			if err2 := ValidateTaskLogEntryResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
 	}
 	return
 }
@@ -5943,6 +5960,21 @@ func ValidateTaskResponse(body *TaskResponse) (err error) {
 		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
 		}
+	}
+	return
+}
+
+// ValidateTaskLogEntryResponseBody runs the validations defined on
+// TaskLogEntryResponseBody
+func ValidateTaskLogEntryResponseBody(body *TaskLogEntryResponseBody) (err error) {
+	if body.Timestamp == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("timestamp", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	if body.Timestamp != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.timestamp", *body.Timestamp, goa.FormatDateTime))
 	}
 	return
 }

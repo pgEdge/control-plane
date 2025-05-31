@@ -10,50 +10,50 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
-type StoredTaskLogLine struct {
+type StoredTaskLogEntry struct {
 	storage.StoredValue
-	DatabaseID uuid.UUID `json:"database_id"`
-	TaskID     uuid.UUID `json:"task_id"`
-	LineID     uuid.UUID `json:"line_id"`
-	Timestamp  time.Time `json:"timestamp"`
-	Line       string    `json:"line"`
+	DatabaseID uuid.UUID      `json:"database_id"`
+	TaskID     uuid.UUID      `json:"task_id"`
+	EntryID    uuid.UUID      `json:"entry_id"`
+	Timestamp  time.Time      `json:"timestamp"`
+	Message    string         `json:"message"`
+	Fields     map[string]any `json:"fields"`
 }
 
-type TaskLogLineStore struct {
+type TaskLogEntryStore struct {
 	client *clientv3.Client
 	root   string
 }
 
-func NewTaskLogLineStore(client *clientv3.Client, root string) *TaskLogLineStore {
-	return &TaskLogLineStore{
+func NewTaskLogMessageStore(client *clientv3.Client, root string) *TaskLogEntryStore {
+	return &TaskLogEntryStore{
 		client: client,
 		root:   root,
 	}
 }
 
-func (s *TaskLogLineStore) Prefix() string {
-	return path.Join("/", s.root, "task_log_lines")
+func (s *TaskLogEntryStore) Prefix() string {
+	return path.Join("/", s.root, "task_log_messages")
 }
 
-func (s *TaskLogLineStore) DatabasePrefix(databaseID uuid.UUID) string {
+func (s *TaskLogEntryStore) DatabasePrefix(databaseID uuid.UUID) string {
 	return path.Join(s.Prefix(), databaseID.String())
 }
 
-func (s *TaskLogLineStore) TaskPrefix(databaseID, taskID uuid.UUID) string {
+func (s *TaskLogEntryStore) TaskPrefix(databaseID, taskID uuid.UUID) string {
 	return path.Join(s.DatabasePrefix(databaseID), taskID.String())
 }
 
-func (s *TaskLogLineStore) Key(databaseID, taskID, lineID uuid.UUID) string {
-	return path.Join(s.TaskPrefix(databaseID, taskID), lineID.String())
+func (s *TaskLogEntryStore) Key(databaseID, taskID, messageID uuid.UUID) string {
+	return path.Join(s.TaskPrefix(databaseID, taskID), messageID.String())
 }
 
 type TaskLogOptions struct {
-	Limit            int
-	AfterLineID      uuid.UUID
-	IncludeTimestamp bool
+	Limit        int
+	AfterEntryID uuid.UUID
 }
 
-func (s *TaskLogLineStore) GetAllByTaskID(databaseID, taskID uuid.UUID, options TaskLogOptions) storage.GetMultipleOp[*StoredTaskLogLine] {
+func (s *TaskLogEntryStore) GetAllByTaskID(databaseID, taskID uuid.UUID, options TaskLogOptions) storage.GetMultipleOp[*StoredTaskLogEntry] {
 	rangeStart := s.TaskPrefix(databaseID, taskID)
 	rangeEnd := clientv3.GetPrefixRangeEnd(rangeStart)
 
@@ -61,8 +61,8 @@ func (s *TaskLogLineStore) GetAllByTaskID(databaseID, taskID uuid.UUID, options 
 	if options.Limit > 0 {
 		opOptions = append(opOptions, clientv3.WithLimit(int64(options.Limit)))
 	}
-	if options.AfterLineID != uuid.Nil {
-		rangeStart = s.Key(databaseID, taskID, options.AfterLineID) + "0"
+	if options.AfterEntryID != uuid.Nil {
+		rangeStart = s.Key(databaseID, taskID, options.AfterEntryID) + "0"
 	}
 	opOptions = append(
 		opOptions,
@@ -70,20 +70,20 @@ func (s *TaskLogLineStore) GetAllByTaskID(databaseID, taskID uuid.UUID, options 
 		clientv3.WithSerializable(),
 	)
 
-	return storage.NewGetRangeOp[*StoredTaskLogLine](s.client, rangeStart, rangeEnd, opOptions...)
+	return storage.NewGetRangeOp[*StoredTaskLogEntry](s.client, rangeStart, rangeEnd, opOptions...)
 }
 
-func (s *TaskLogLineStore) Put(item *StoredTaskLogLine) storage.PutOp[*StoredTaskLogLine] {
-	key := s.Key(item.DatabaseID, item.TaskID, item.LineID)
+func (s *TaskLogEntryStore) Put(item *StoredTaskLogEntry) storage.PutOp[*StoredTaskLogEntry] {
+	key := s.Key(item.DatabaseID, item.TaskID, item.EntryID)
 	return storage.NewPutOp(s.client, key, item)
 }
 
-func (s *TaskLogLineStore) DeleteByTaskID(databaseID, taskID uuid.UUID) storage.DeleteOp {
+func (s *TaskLogEntryStore) DeleteByTaskID(databaseID, taskID uuid.UUID) storage.DeleteOp {
 	prefix := s.TaskPrefix(databaseID, taskID)
 	return storage.NewDeletePrefixOp(s.client, prefix)
 }
 
-func (s *TaskLogLineStore) DeleteByDatabaseID(databaseID uuid.UUID) storage.DeleteOp {
+func (s *TaskLogEntryStore) DeleteByDatabaseID(databaseID uuid.UUID) storage.DeleteOp {
 	prefix := s.DatabasePrefix(databaseID)
 	return storage.NewDeletePrefixOp(s.client, prefix)
 }

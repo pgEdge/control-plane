@@ -7,6 +7,7 @@ import (
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
@@ -63,7 +64,9 @@ func (w *Workflows) RefreshCurrentState(ctx workflow.Context, input *RefreshCurr
 	err = w.logTaskEvent(ctx,
 		input.DatabaseID,
 		input.TaskID,
-		"refreshing current state",
+		task.LogEntry{
+			Message: "refreshing current state",
+		},
 	)
 	if err != nil {
 		return nil, err
@@ -71,11 +74,16 @@ func (w *Workflows) RefreshCurrentState(ctx workflow.Context, input *RefreshCurr
 	if err := w.applyEvents(ctx, input.DatabaseID, input.TaskID, current, planRefreshOutput.Plan); err != nil {
 		return nil, fmt.Errorf("failed to apply refresh events: %w", err)
 	}
-	finish := workflow.Now(ctx)
+	duration := workflow.Now(ctx).Sub(start)
 	err = w.logTaskEvent(ctx,
 		input.DatabaseID,
 		input.TaskID,
-		fmt.Sprintf("finished refreshing current state (took %s)", finish.Sub(start)),
+		task.LogEntry{
+			Message: fmt.Sprintf("finished refreshing current state (took %s)", duration),
+			Fields: map[string]any{
+				"duration_ms": duration.Milliseconds(),
+			},
+		},
 	)
 	if err != nil {
 		return nil, err

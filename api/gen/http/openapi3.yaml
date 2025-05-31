@@ -38,19 +38,19 @@ paths:
                                       orchestrator: swarm
                                       status:
                                         components:
-                                            Libero repellendus qui nobis.:
+                                            Debitis sunt.:
                                                 details:
                                                     alarms:
                                                         - '3: NOSPACE'
                                                 error: failed to connect to etcd
                                                 healthy: false
-                                            Reiciendis nostrum nam.:
+                                            Labore distinctio omnis.:
                                                 details:
                                                     alarms:
                                                         - '3: NOSPACE'
                                                 error: failed to connect to etcd
                                                 healthy: false
-                                            Sunt laudantium labore distinctio.:
+                                            Repellendus qui nobis non reiciendis nostrum.:
                                                 details:
                                                     alarms:
                                                         - '3: NOSPACE'
@@ -79,19 +79,101 @@ paths:
                                       orchestrator: swarm
                                       status:
                                         components:
-                                            Libero repellendus qui nobis.:
+                                            Debitis sunt.:
                                                 details:
                                                     alarms:
                                                         - '3: NOSPACE'
                                                 error: failed to connect to etcd
                                                 healthy: false
-                                            Reiciendis nostrum nam.:
+                                            Labore distinctio omnis.:
                                                 details:
                                                     alarms:
                                                         - '3: NOSPACE'
                                                 error: failed to connect to etcd
                                                 healthy: false
-                                            Sunt laudantium labore distinctio.:
+                                            Repellendus qui nobis non reiciendis nostrum.:
+                                                details:
+                                                    alarms:
+                                                        - '3: NOSPACE'
+                                                error: failed to connect to etcd
+                                                healthy: false
+                                        state: available
+                                        updated_at: "2021-07-01T12:34:56Z"
+                                      supported_pgedge_versions:
+                                        - postgres_version: "16"
+                                          spock_version: "4"
+                                        - postgres_version: "16"
+                                          spock_version: "4"
+                                    - cohort:
+                                        cohort_id: pps1n11hqijn9rbee4cjil453
+                                        control_available: true
+                                        member_id: lah4bsznw6kc0hp7biylmmmll
+                                        type: swarm
+                                      cpus: 4
+                                      default_pgedge_version:
+                                        postgres_version: "16"
+                                        spock_version: "4"
+                                      hostname: i-0123456789abcdef.ec2.internal
+                                      id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                                      ipv4_address: 10.24.34.0
+                                      memory: 16GiB
+                                      orchestrator: swarm
+                                      status:
+                                        components:
+                                            Debitis sunt.:
+                                                details:
+                                                    alarms:
+                                                        - '3: NOSPACE'
+                                                error: failed to connect to etcd
+                                                healthy: false
+                                            Labore distinctio omnis.:
+                                                details:
+                                                    alarms:
+                                                        - '3: NOSPACE'
+                                                error: failed to connect to etcd
+                                                healthy: false
+                                            Repellendus qui nobis non reiciendis nostrum.:
+                                                details:
+                                                    alarms:
+                                                        - '3: NOSPACE'
+                                                error: failed to connect to etcd
+                                                healthy: false
+                                        state: available
+                                        updated_at: "2021-07-01T12:34:56Z"
+                                      supported_pgedge_versions:
+                                        - postgres_version: "16"
+                                          spock_version: "4"
+                                        - postgres_version: "16"
+                                          spock_version: "4"
+                                    - cohort:
+                                        cohort_id: pps1n11hqijn9rbee4cjil453
+                                        control_available: true
+                                        member_id: lah4bsznw6kc0hp7biylmmmll
+                                        type: swarm
+                                      cpus: 4
+                                      default_pgedge_version:
+                                        postgres_version: "16"
+                                        spock_version: "4"
+                                      hostname: i-0123456789abcdef.ec2.internal
+                                      id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                                      ipv4_address: 10.24.34.0
+                                      memory: 16GiB
+                                      orchestrator: swarm
+                                      status:
+                                        components:
+                                            Debitis sunt.:
+                                                details:
+                                                    alarms:
+                                                        - '3: NOSPACE'
+                                                error: failed to connect to etcd
+                                                healthy: false
+                                            Labore distinctio omnis.:
+                                                details:
+                                                    alarms:
+                                                        - '3: NOSPACE'
+                                                error: failed to connect to etcd
+                                                healthy: false
+                                            Repellendus qui nobis non reiciendis nostrum.:
                                                 details:
                                                     alarms:
                                                         - '3: NOSPACE'
@@ -106,7 +188,7 @@ paths:
                                           spock_version: "4"
                                 id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                                 status:
-                                    state: available
+                                    state: error
                                 tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                 "404":
                     description: 'not_found: Not Found response.'
@@ -212,15 +294,11 @@ paths:
                                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                                       node_name: n1
-                                      state: unknown
+                                      state: backing_up
                                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                                       node_name: n1
-                                      state: unknown
-                                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                                      node_name: n1
-                                      state: unknown
+                                      state: backing_up
                                   state: unknown
                                   tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                                   updated_at: "2025-01-01T02:30:00Z"
@@ -230,15 +308,11 @@ paths:
                                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                                       node_name: n1
-                                      state: unknown
+                                      state: backing_up
                                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                                       node_name: n1
-                                      state: unknown
-                                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                                      node_name: n1
-                                      state: unknown
+                                      state: backing_up
                                   state: unknown
                                   tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                                   updated_at: "2025-01-01T02:30:00Z"
@@ -248,15 +322,11 @@ paths:
                                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                                       node_name: n1
-                                      state: unknown
+                                      state: backing_up
                                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                                       node_name: n1
-                                      state: unknown
-                                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                                      node_name: n1
-                                      state: unknown
+                                      state: backing_up
                                   state: unknown
                                   tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                                   updated_at: "2025-01-01T02:30:00Z"
@@ -372,12 +442,17 @@ paths:
                                       roles:
                                         - pgedge_superuser
                                       username: admin
+                                    - attributes:
+                                        - LOGIN
+                                        - CREATEDB
+                                        - CREATEROLE
+                                      db_owner: false
+                                      password: secret
+                                      roles:
+                                        - pgedge_superuser
+                                      username: admin
                                 deletion_protection: true
                                 extra_volumes:
-                                    - destination_path: /backups/container
-                                      host_path: /Users/user/backups/host
-                                    - destination_path: /backups/container
-                                      host_path: /Users/user/backups/host
                                     - destination_path: /backups/container
                                       host_path: /Users/user/backups/host
                                     - destination_path: /backups/container
@@ -466,7 +541,6 @@ paths:
                                           host_path: /Users/user/backups/host
                                       host_ids:
                                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                       memory: 500M
                                       name: n1
                                       port: 5432
@@ -582,7 +656,6 @@ paths:
                                           host_path: /Users/user/backups/host
                                       host_ids:
                                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                       memory: 500M
                                       name: n1
                                       port: 5432
@@ -697,7 +770,6 @@ paths:
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
                                       host_ids:
-                                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                       memory: 500M
                                       name: n1
@@ -1358,59 +1430,15 @@ paths:
                                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                                       node_name: n1
-                                      state: unknown
+                                      state: backing_up
                                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                                       node_name: n1
-                                      state: unknown
-                                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                                      node_name: n1
-                                      state: unknown
+                                      state: backing_up
                                 spec:
                                     backup_config:
                                         provider: pgbackrest
                                         repositories:
-                                            - azure_account: pgedge-backups
-                                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              azure_endpoint: blob.core.usgovcloudapi.net
-                                              azure_key: YXpLZXk=
-                                              base_path: /backups
-                                              custom_options:
-                                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                                storage-upload-chunk-size: 5MiB
-                                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              gcs_endpoint: localhost
-                                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                              retention_full: 2
-                                              retention_full_type: count
-                                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              s3_endpoint: s3.us-east-1.amazonaws.com
-                                              s3_key: AKIAIOSFODNN7EXAMPLE
-                                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                              s3_region: us-east-1
-                                              type: s3
-                                            - azure_account: pgedge-backups
-                                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              azure_endpoint: blob.core.usgovcloudapi.net
-                                              azure_key: YXpLZXk=
-                                              base_path: /backups
-                                              custom_options:
-                                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                                storage-upload-chunk-size: 5MiB
-                                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              gcs_endpoint: localhost
-                                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                              retention_full: 2
-                                              retention_full_type: count
-                                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              s3_endpoint: s3.us-east-1.amazonaws.com
-                                              s3_key: AKIAIOSFODNN7EXAMPLE
-                                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                              s3_region: us-east-1
-                                              type: s3
                                             - azure_account: pgedge-backups
                                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                                               azure_endpoint: blob.core.usgovcloudapi.net
@@ -1441,6 +1469,9 @@ paths:
                                             - cron_expression: 0 6 * * ?
                                               id: daily-full-backup
                                               type: full
+                                            - cron_expression: 0 6 * * ?
+                                              id: daily-full-backup
+                                              type: full
                                     cpus: 500m
                                     database_name: northwind
                                     database_users:
@@ -1448,7 +1479,7 @@ paths:
                                             - LOGIN
                                             - CREATEDB
                                             - CREATEROLE
-                                          db_owner: false
+                                          db_owner: true
                                           password: secret
                                           roles:
                                             - pgedge_superuser
@@ -1457,15 +1488,31 @@ paths:
                                             - LOGIN
                                             - CREATEDB
                                             - CREATEROLE
-                                          db_owner: false
+                                          db_owner: true
+                                          password: secret
+                                          roles:
+                                            - pgedge_superuser
+                                          username: admin
+                                        - attributes:
+                                            - LOGIN
+                                            - CREATEDB
+                                            - CREATEROLE
+                                          db_owner: true
+                                          password: secret
+                                          roles:
+                                            - pgedge_superuser
+                                          username: admin
+                                        - attributes:
+                                            - LOGIN
+                                            - CREATEDB
+                                            - CREATEROLE
+                                          db_owner: true
                                           password: secret
                                           roles:
                                             - pgedge_superuser
                                           username: admin
                                     deletion_protection: true
                                     extra_volumes:
-                                        - destination_path: /backups/container
-                                          host_path: /Users/user/backups/host
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
                                         - destination_path: /backups/container
@@ -1499,47 +1546,10 @@ paths:
                                                   s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                                                   s3_region: us-east-1
                                                   type: s3
-                                                - azure_account: pgedge-backups
-                                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                                  azure_key: YXpLZXk=
-                                                  base_path: /backups
-                                                  custom_options:
-                                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                                    storage-upload-chunk-size: 5MiB
-                                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  gcs_endpoint: localhost
-                                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                                  retention_full: 2
-                                                  retention_full_type: count
-                                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                                  s3_region: us-east-1
-                                                  type: s3
-                                                - azure_account: pgedge-backups
-                                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                                  azure_key: YXpLZXk=
-                                                  base_path: /backups
-                                                  custom_options:
-                                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                                    storage-upload-chunk-size: 5MiB
-                                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  gcs_endpoint: localhost
-                                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                                  retention_full: 2
-                                                  retention_full_type: count
-                                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                                  s3_region: us-east-1
-                                                  type: s3
                                             schedules:
+                                                - cron_expression: 0 6 * * ?
+                                                  id: daily-full-backup
+                                                  type: full
                                                 - cron_expression: 0 6 * * ?
                                                   id: daily-full-backup
                                                   type: full
@@ -1557,9 +1567,9 @@ paths:
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
+                                            - destination_path: /backups/container
+                                              host_path: /Users/user/backups/host
                                           host_ids:
-                                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                             - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                           memory: 500M
                                           name: n1
@@ -1619,47 +1629,10 @@ paths:
                                                   s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                                                   s3_region: us-east-1
                                                   type: s3
-                                                - azure_account: pgedge-backups
-                                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                                  azure_key: YXpLZXk=
-                                                  base_path: /backups
-                                                  custom_options:
-                                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                                    storage-upload-chunk-size: 5MiB
-                                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  gcs_endpoint: localhost
-                                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                                  retention_full: 2
-                                                  retention_full_type: count
-                                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                                  s3_region: us-east-1
-                                                  type: s3
-                                                - azure_account: pgedge-backups
-                                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                                  azure_key: YXpLZXk=
-                                                  base_path: /backups
-                                                  custom_options:
-                                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                                    storage-upload-chunk-size: 5MiB
-                                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  gcs_endpoint: localhost
-                                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                                  retention_full: 2
-                                                  retention_full_type: count
-                                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                                  s3_region: us-east-1
-                                                  type: s3
                                             schedules:
+                                                - cron_expression: 0 6 * * ?
+                                                  id: daily-full-backup
+                                                  type: full
                                                 - cron_expression: 0 6 * * ?
                                                   id: daily-full-backup
                                                   type: full
@@ -1677,9 +1650,9 @@ paths:
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
+                                            - destination_path: /backups/container
+                                              host_path: /Users/user/backups/host
                                           host_ids:
-                                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                             - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                           memory: 500M
                                           name: n1
@@ -1739,47 +1712,10 @@ paths:
                                                   s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                                                   s3_region: us-east-1
                                                   type: s3
-                                                - azure_account: pgedge-backups
-                                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                                  azure_key: YXpLZXk=
-                                                  base_path: /backups
-                                                  custom_options:
-                                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                                    storage-upload-chunk-size: 5MiB
-                                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  gcs_endpoint: localhost
-                                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                                  retention_full: 2
-                                                  retention_full_type: count
-                                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                                  s3_region: us-east-1
-                                                  type: s3
-                                                - azure_account: pgedge-backups
-                                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                                  azure_key: YXpLZXk=
-                                                  base_path: /backups
-                                                  custom_options:
-                                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                                    storage-upload-chunk-size: 5MiB
-                                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  gcs_endpoint: localhost
-                                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                                  retention_full: 2
-                                                  retention_full_type: count
-                                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                                  s3_region: us-east-1
-                                                  type: s3
                                             schedules:
+                                                - cron_expression: 0 6 * * ?
+                                                  id: daily-full-backup
+                                                  type: full
                                                 - cron_expression: 0 6 * * ?
                                                   id: daily-full-backup
                                                   type: full
@@ -1797,129 +1733,9 @@ paths:
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
-                                          host_ids:
-                                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                                          memory: 500M
-                                          name: n1
-                                          port: 5432
-                                          postgres_version: "17"
-                                          postgresql_conf:
-                                            max_connections: 1000
-                                          restore_config:
-                                            provider: pgbackrest
-                                            repository:
-                                                azure_account: pgedge-backups
-                                                azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                azure_endpoint: blob.core.usgovcloudapi.net
-                                                azure_key: YXpLZXk=
-                                                base_path: /backups
-                                                custom_options:
-                                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                                gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                gcs_endpoint: localhost
-                                                gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                                id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                                s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                s3_endpoint: s3.us-east-1.amazonaws.com
-                                                s3_key: AKIAIOSFODNN7EXAMPLE
-                                                s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                                s3_region: us-east-1
-                                                type: s3
-                                            restore_options:
-                                                - --set=20250505-153628F
-                                                - --type=xid
-                                                - --target=123456
-                                            source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
-                                            source_database_name: northwind
-                                            source_node_name: n1
-                                          storage_class: loop_device
-                                          storage_size: 500GiB
-                                        - backup_config:
-                                            provider: pgbackrest
-                                            repositories:
-                                                - azure_account: pgedge-backups
-                                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                                  azure_key: YXpLZXk=
-                                                  base_path: /backups
-                                                  custom_options:
-                                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                                    storage-upload-chunk-size: 5MiB
-                                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  gcs_endpoint: localhost
-                                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                                  retention_full: 2
-                                                  retention_full_type: count
-                                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                                  s3_region: us-east-1
-                                                  type: s3
-                                                - azure_account: pgedge-backups
-                                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                                  azure_key: YXpLZXk=
-                                                  base_path: /backups
-                                                  custom_options:
-                                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                                    storage-upload-chunk-size: 5MiB
-                                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  gcs_endpoint: localhost
-                                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                                  retention_full: 2
-                                                  retention_full_type: count
-                                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                                  s3_region: us-east-1
-                                                  type: s3
-                                                - azure_account: pgedge-backups
-                                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                                  azure_key: YXpLZXk=
-                                                  base_path: /backups
-                                                  custom_options:
-                                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                                    storage-upload-chunk-size: 5MiB
-                                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  gcs_endpoint: localhost
-                                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                                  retention_full: 2
-                                                  retention_full_type: count
-                                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                                  s3_region: us-east-1
-                                                  type: s3
-                                            schedules:
-                                                - cron_expression: 0 6 * * ?
-                                                  id: daily-full-backup
-                                                  type: full
-                                                - cron_expression: 0 6 * * ?
-                                                  id: daily-full-backup
-                                                  type: full
-                                                - cron_expression: 0 6 * * ?
-                                                  id: daily-full-backup
-                                                  type: full
-                                          cpus: 500m
-                                          extra_volumes:
-                                            - destination_path: /backups/container
-                                              host_path: /Users/user/backups/host
-                                            - destination_path: /backups/container
-                                              host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                           host_ids:
-                                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                             - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                           memory: 500M
                                           name: n1
@@ -2061,26 +1877,6 @@ paths:
                                           s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                                           s3_region: us-east-1
                                           type: s3
-                                        - azure_account: pgedge-backups
-                                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                          azure_endpoint: blob.core.usgovcloudapi.net
-                                          azure_key: YXpLZXk=
-                                          base_path: /backups
-                                          custom_options:
-                                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                            storage-upload-chunk-size: 5MiB
-                                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                          gcs_endpoint: localhost
-                                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                          retention_full: 2
-                                          retention_full_type: count
-                                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                          s3_endpoint: s3.us-east-1.amazonaws.com
-                                          s3_key: AKIAIOSFODNN7EXAMPLE
-                                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                          s3_region: us-east-1
-                                          type: s3
                                     schedules:
                                         - cron_expression: 0 6 * * ?
                                           id: daily-full-backup
@@ -2112,17 +1908,10 @@ paths:
                                       roles:
                                         - pgedge_superuser
                                       username: admin
-                                    - attributes:
-                                        - LOGIN
-                                        - CREATEDB
-                                        - CREATEROLE
-                                      db_owner: true
-                                      password: secret
-                                      roles:
-                                        - pgedge_superuser
-                                      username: admin
                                 deletion_protection: true
                                 extra_volumes:
+                                    - destination_path: /backups/container
+                                      host_path: /Users/user/backups/host
                                     - destination_path: /backups/container
                                       host_path: /Users/user/backups/host
                                     - destination_path: /backups/container
@@ -2154,26 +1943,6 @@ paths:
                                               s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                                               s3_region: us-east-1
                                               type: s3
-                                            - azure_account: pgedge-backups
-                                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              azure_endpoint: blob.core.usgovcloudapi.net
-                                              azure_key: YXpLZXk=
-                                              base_path: /backups
-                                              custom_options:
-                                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                                storage-upload-chunk-size: 5MiB
-                                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              gcs_endpoint: localhost
-                                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                              retention_full: 2
-                                              retention_full_type: count
-                                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              s3_endpoint: s3.us-east-1.amazonaws.com
-                                              s3_key: AKIAIOSFODNN7EXAMPLE
-                                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                              s3_region: us-east-1
-                                              type: s3
                                         schedules:
                                             - cron_expression: 0 6 * * ?
                                               id: daily-full-backup
@@ -2195,6 +1964,7 @@ paths:
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
                                       host_ids:
+                                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                       memory: 500M
                                       name: n1
@@ -2254,26 +2024,6 @@ paths:
                                               s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                                               s3_region: us-east-1
                                               type: s3
-                                            - azure_account: pgedge-backups
-                                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              azure_endpoint: blob.core.usgovcloudapi.net
-                                              azure_key: YXpLZXk=
-                                              base_path: /backups
-                                              custom_options:
-                                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                                storage-upload-chunk-size: 5MiB
-                                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              gcs_endpoint: localhost
-                                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                              retention_full: 2
-                                              retention_full_type: count
-                                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              s3_endpoint: s3.us-east-1.amazonaws.com
-                                              s3_key: AKIAIOSFODNN7EXAMPLE
-                                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                              s3_region: us-east-1
-                                              type: s3
                                         schedules:
                                             - cron_expression: 0 6 * * ?
                                               id: daily-full-backup
@@ -2295,6 +2045,7 @@ paths:
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
                                       host_ids:
+                                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                       memory: 500M
                                       name: n1
@@ -2354,26 +2105,6 @@ paths:
                                               s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                                               s3_region: us-east-1
                                               type: s3
-                                            - azure_account: pgedge-backups
-                                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              azure_endpoint: blob.core.usgovcloudapi.net
-                                              azure_key: YXpLZXk=
-                                              base_path: /backups
-                                              custom_options:
-                                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                                storage-upload-chunk-size: 5MiB
-                                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              gcs_endpoint: localhost
-                                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                              retention_full: 2
-                                              retention_full_type: count
-                                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              s3_endpoint: s3.us-east-1.amazonaws.com
-                                              s3_key: AKIAIOSFODNN7EXAMPLE
-                                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                              s3_region: us-east-1
-                                              type: s3
                                         schedules:
                                             - cron_expression: 0 6 * * ?
                                               id: daily-full-backup
@@ -2395,6 +2126,7 @@ paths:
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
                                       host_ids:
+                                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                       memory: 500M
                                       name: n1
@@ -2454,26 +2186,6 @@ paths:
                                               s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                                               s3_region: us-east-1
                                               type: s3
-                                            - azure_account: pgedge-backups
-                                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              azure_endpoint: blob.core.usgovcloudapi.net
-                                              azure_key: YXpLZXk=
-                                              base_path: /backups
-                                              custom_options:
-                                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                                storage-upload-chunk-size: 5MiB
-                                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              gcs_endpoint: localhost
-                                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                              retention_full: 2
-                                              retention_full_type: count
-                                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                              s3_endpoint: s3.us-east-1.amazonaws.com
-                                              s3_key: AKIAIOSFODNN7EXAMPLE
-                                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                              s3_region: us-east-1
-                                              type: s3
                                         schedules:
                                             - cron_expression: 0 6 * * ?
                                               id: daily-full-backup
@@ -2495,6 +2207,7 @@ paths:
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
                                       host_ids:
+                                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                       memory: 500M
                                       name: n1
@@ -3709,6 +3422,17 @@ paths:
                                       status: pending
                                       task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
                                       type: restore
+                                    - completed_at: "2025-01-01T02:30:00Z"
+                                      created_at: "2025-01-01T01:30:00Z"
+                                      database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+                                      error: failed to connect to database
+                                      host_id: 2e52dcde-86d8-4f71-b58e-8dc3a10c936a
+                                      instance_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+                                      node_name: n1
+                                      parent_id: 439eb515-e700-4740-b508-4a3f12ec4f83
+                                      status: pending
+                                      task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+                                      type: restore
                                 task:
                                     completed_at: "2025-01-01T02:30:00Z"
                                     created_at: "2025-01-01T01:30:00Z"
@@ -3859,6 +3583,28 @@ paths:
                                   status: pending
                                   task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
                                   type: restore
+                                - completed_at: "2025-01-01T02:30:00Z"
+                                  created_at: "2025-01-01T01:30:00Z"
+                                  database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+                                  error: failed to connect to database
+                                  host_id: 2e52dcde-86d8-4f71-b58e-8dc3a10c936a
+                                  instance_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+                                  node_name: n1
+                                  parent_id: 439eb515-e700-4740-b508-4a3f12ec4f83
+                                  status: pending
+                                  task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+                                  type: restore
+                                - completed_at: "2025-01-01T02:30:00Z"
+                                  created_at: "2025-01-01T01:30:00Z"
+                                  database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+                                  error: failed to connect to database
+                                  host_id: 2e52dcde-86d8-4f71-b58e-8dc3a10c936a
+                                  instance_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+                                  node_name: n1
+                                  parent_id: 439eb515-e700-4740-b508-4a3f12ec4f83
+                                  status: pending
+                                  task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+                                  type: restore
                 "404":
                     description: 'not_found: Not Found response.'
                     content:
@@ -3938,35 +3684,26 @@ paths:
             description: Returns the log of a particular task for a database.
             operationId: get-database-task-log
             parameters:
-                - name: after_line_id
+                - name: after_entry_id
                   in: query
-                  description: ID of the line to start from.
+                  description: ID of the entry to start from.
                   allowEmptyValue: true
                   schema:
                     type: string
-                    description: ID of the line to start from.
+                    description: ID of the entry to start from.
                     example: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
                     format: uuid
                   example: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
                 - name: limit
                   in: query
-                  description: Maximum number of lines to return.
+                  description: Maximum number of entries to return.
                   allowEmptyValue: true
                   schema:
                     type: integer
-                    description: Maximum number of lines to return.
+                    description: Maximum number of entries to return.
                     example: 100
                     format: int64
                   example: 100
-                - name: include_timestamp
-                  in: query
-                  description: Prepends the timestamp to each log line.
-                  allowEmptyValue: true
-                  schema:
-                    type: boolean
-                    description: Prepends the timestamp to each log line.
-                    example: true
-                  example: true
                 - name: database_id
                   in: path
                   description: ID of the database to get task log for.
@@ -3996,10 +3733,28 @@ paths:
                                 $ref: '#/components/schemas/TaskLog'
                             example:
                                 database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-                                last_line_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
-                                lines:
-                                    - Task started
-                                    - Task completed
+                                entries:
+                                    - fields:
+                                        option.enabled: true
+                                        status: creating
+                                      message: task started
+                                      timestamp: "2025-05-29T15:43:13Z"
+                                    - fields:
+                                        option.enabled: true
+                                        status: creating
+                                      message: task started
+                                      timestamp: "2025-05-29T15:43:13Z"
+                                    - fields:
+                                        option.enabled: true
+                                        status: creating
+                                      message: task started
+                                      timestamp: "2025-05-29T15:43:13Z"
+                                    - fields:
+                                        option.enabled: true
+                                        status: creating
+                                      message: task started
+                                      timestamp: "2025-05-29T15:43:13Z"
+                                last_entry_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
                                 task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
                                 task_status: pending
                 "404":
@@ -4047,13 +3802,7 @@ paths:
                                       orchestrator: swarm
                                       status:
                                         components:
-                                            Aut et voluptas necessitatibus culpa fugit.:
-                                                details:
-                                                    alarms:
-                                                        - '3: NOSPACE'
-                                                error: failed to connect to etcd
-                                                healthy: false
-                                            Esse quam quidem ullam autem.:
+                                            Et voluptas necessitatibus culpa fugit et esse.:
                                                 details:
                                                     alarms:
                                                         - '3: NOSPACE'
@@ -4062,8 +3811,6 @@ paths:
                                         state: available
                                         updated_at: "2021-07-01T12:34:56Z"
                                       supported_pgedge_versions:
-                                        - postgres_version: "16"
-                                          spock_version: "4"
                                         - postgres_version: "16"
                                           spock_version: "4"
                                         - postgres_version: "16"
@@ -4086,13 +3833,7 @@ paths:
                                       orchestrator: swarm
                                       status:
                                         components:
-                                            Aut et voluptas necessitatibus culpa fugit.:
-                                                details:
-                                                    alarms:
-                                                        - '3: NOSPACE'
-                                                error: failed to connect to etcd
-                                                healthy: false
-                                            Esse quam quidem ullam autem.:
+                                            Et voluptas necessitatibus culpa fugit et esse.:
                                                 details:
                                                     alarms:
                                                         - '3: NOSPACE'
@@ -4101,8 +3842,6 @@ paths:
                                         state: available
                                         updated_at: "2021-07-01T12:34:56Z"
                                       supported_pgedge_versions:
-                                        - postgres_version: "16"
-                                          spock_version: "4"
                                         - postgres_version: "16"
                                           spock_version: "4"
                                         - postgres_version: "16"
@@ -4125,13 +3864,7 @@ paths:
                                       orchestrator: swarm
                                       status:
                                         components:
-                                            Aut et voluptas necessitatibus culpa fugit.:
-                                                details:
-                                                    alarms:
-                                                        - '3: NOSPACE'
-                                                error: failed to connect to etcd
-                                                healthy: false
-                                            Esse quam quidem ullam autem.:
+                                            Et voluptas necessitatibus culpa fugit et esse.:
                                                 details:
                                                     alarms:
                                                         - '3: NOSPACE'
@@ -4140,47 +3873,6 @@ paths:
                                         state: available
                                         updated_at: "2021-07-01T12:34:56Z"
                                       supported_pgedge_versions:
-                                        - postgres_version: "16"
-                                          spock_version: "4"
-                                        - postgres_version: "16"
-                                          spock_version: "4"
-                                        - postgres_version: "16"
-                                          spock_version: "4"
-                                        - postgres_version: "16"
-                                          spock_version: "4"
-                                    - cohort:
-                                        cohort_id: pps1n11hqijn9rbee4cjil453
-                                        control_available: true
-                                        member_id: lah4bsznw6kc0hp7biylmmmll
-                                        type: swarm
-                                      cpus: 4
-                                      default_pgedge_version:
-                                        postgres_version: "16"
-                                        spock_version: "4"
-                                      hostname: i-0123456789abcdef.ec2.internal
-                                      id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                                      ipv4_address: 10.24.34.0
-                                      memory: 16GiB
-                                      orchestrator: swarm
-                                      status:
-                                        components:
-                                            Aut et voluptas necessitatibus culpa fugit.:
-                                                details:
-                                                    alarms:
-                                                        - '3: NOSPACE'
-                                                error: failed to connect to etcd
-                                                healthy: false
-                                            Esse quam quidem ullam autem.:
-                                                details:
-                                                    alarms:
-                                                        - '3: NOSPACE'
-                                                error: failed to connect to etcd
-                                                healthy: false
-                                        state: available
-                                        updated_at: "2021-07-01T12:34:56Z"
-                                      supported_pgedge_versions:
-                                        - postgres_version: "16"
-                                          spock_version: "4"
                                         - postgres_version: "16"
                                           spock_version: "4"
                                         - postgres_version: "16"
@@ -4204,13 +3896,7 @@ paths:
                                   orchestrator: swarm
                                   status:
                                     components:
-                                        Aut et voluptas necessitatibus culpa fugit.:
-                                            details:
-                                                alarms:
-                                                    - '3: NOSPACE'
-                                            error: failed to connect to etcd
-                                            healthy: false
-                                        Esse quam quidem ullam autem.:
+                                        Et voluptas necessitatibus culpa fugit et esse.:
                                             details:
                                                 alarms:
                                                     - '3: NOSPACE'
@@ -4219,8 +3905,6 @@ paths:
                                     state: available
                                     updated_at: "2021-07-01T12:34:56Z"
                                   supported_pgedge_versions:
-                                    - postgres_version: "16"
-                                      spock_version: "4"
                                     - postgres_version: "16"
                                       spock_version: "4"
                                     - postgres_version: "16"
@@ -4243,13 +3927,7 @@ paths:
                                   orchestrator: swarm
                                   status:
                                     components:
-                                        Aut et voluptas necessitatibus culpa fugit.:
-                                            details:
-                                                alarms:
-                                                    - '3: NOSPACE'
-                                            error: failed to connect to etcd
-                                            healthy: false
-                                        Esse quam quidem ullam autem.:
+                                        Et voluptas necessitatibus culpa fugit et esse.:
                                             details:
                                                 alarms:
                                                     - '3: NOSPACE'
@@ -4258,8 +3936,6 @@ paths:
                                     state: available
                                     updated_at: "2021-07-01T12:34:56Z"
                                   supported_pgedge_versions:
-                                    - postgres_version: "16"
-                                      spock_version: "4"
                                     - postgres_version: "16"
                                       spock_version: "4"
                                     - postgres_version: "16"
@@ -4282,13 +3958,7 @@ paths:
                                   orchestrator: swarm
                                   status:
                                     components:
-                                        Aut et voluptas necessitatibus culpa fugit.:
-                                            details:
-                                                alarms:
-                                                    - '3: NOSPACE'
-                                            error: failed to connect to etcd
-                                            healthy: false
-                                        Esse quam quidem ullam autem.:
+                                        Et voluptas necessitatibus culpa fugit et esse.:
                                             details:
                                                 alarms:
                                                     - '3: NOSPACE'
@@ -4297,8 +3967,6 @@ paths:
                                     state: available
                                     updated_at: "2021-07-01T12:34:56Z"
                                   supported_pgedge_versions:
-                                    - postgres_version: "16"
-                                      spock_version: "4"
                                     - postgres_version: "16"
                                       spock_version: "4"
                                     - postgres_version: "16"
@@ -4321,13 +3989,7 @@ paths:
                                   orchestrator: swarm
                                   status:
                                     components:
-                                        Aut et voluptas necessitatibus culpa fugit.:
-                                            details:
-                                                alarms:
-                                                    - '3: NOSPACE'
-                                            error: failed to connect to etcd
-                                            healthy: false
-                                        Esse quam quidem ullam autem.:
+                                        Et voluptas necessitatibus culpa fugit et esse.:
                                             details:
                                                 alarms:
                                                     - '3: NOSPACE'
@@ -4336,8 +3998,6 @@ paths:
                                     state: available
                                     updated_at: "2021-07-01T12:34:56Z"
                                   supported_pgedge_versions:
-                                    - postgres_version: "16"
-                                      spock_version: "4"
                                     - postgres_version: "16"
                                       spock_version: "4"
                                     - postgres_version: "16"
@@ -4422,19 +4082,19 @@ paths:
                                 orchestrator: swarm
                                 status:
                                     components:
-                                        Libero repellendus qui nobis.:
+                                        Debitis sunt.:
                                             details:
                                                 alarms:
                                                     - '3: NOSPACE'
                                             error: failed to connect to etcd
                                             healthy: false
-                                        Reiciendis nostrum nam.:
+                                        Labore distinctio omnis.:
                                             details:
                                                 alarms:
                                                     - '3: NOSPACE'
                                             error: failed to connect to etcd
                                             healthy: false
-                                        Sunt laudantium labore distinctio.:
+                                        Repellendus qui nobis non reiciendis nostrum.:
                                             details:
                                                 alarms:
                                                     - '3: NOSPACE'
@@ -4443,8 +4103,6 @@ paths:
                                     state: available
                                     updated_at: "2021-07-01T12:34:56Z"
                                 supported_pgedge_versions:
-                                    - postgres_version: "16"
-                                      spock_version: "4"
                                     - postgres_version: "16"
                                       spock_version: "4"
                                     - postgres_version: "16"
@@ -4686,12 +4344,12 @@ components:
                         key: value
                     additionalProperties:
                         type: string
-                        example: Suscipit quos dolorem tempore ut.
+                        example: Omnis non ab.
                 extra_options:
                     type: array
                     items:
                         type: string
-                        example: Ratione repellat.
+                        example: Quos dolorem tempore ut qui ratione repellat.
                     description: Extra options for the backup.
                     example:
                         - --option1
@@ -5416,59 +5074,15 @@ components:
                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                       node_name: n1
-                      state: unknown
+                      state: backing_up
                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                       node_name: n1
-                      state: unknown
-                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      node_name: n1
-                      state: unknown
+                      state: backing_up
                 spec:
                     backup_config:
                         provider: pgbackrest
                         repositories:
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              azure_key: YXpLZXk=
-                              base_path: /backups
-                              custom_options:
-                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                storage-upload-chunk-size: 5MiB
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_key: AKIAIOSFODNN7EXAMPLE
-                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                              s3_region: us-east-1
-                              type: s3
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              azure_key: YXpLZXk=
-                              base_path: /backups
-                              custom_options:
-                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                storage-upload-chunk-size: 5MiB
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_key: AKIAIOSFODNN7EXAMPLE
-                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                              s3_region: us-east-1
-                              type: s3
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
@@ -5499,6 +5113,9 @@ components:
                             - cron_expression: 0 6 * * ?
                               id: daily-full-backup
                               type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
                     cpus: 500m
                     database_name: northwind
                     database_users:
@@ -5506,7 +5123,7 @@ components:
                             - LOGIN
                             - CREATEDB
                             - CREATEROLE
-                          db_owner: false
+                          db_owner: true
                           password: secret
                           roles:
                             - pgedge_superuser
@@ -5515,15 +5132,31 @@ components:
                             - LOGIN
                             - CREATEDB
                             - CREATEROLE
-                          db_owner: false
+                          db_owner: true
+                          password: secret
+                          roles:
+                            - pgedge_superuser
+                          username: admin
+                        - attributes:
+                            - LOGIN
+                            - CREATEDB
+                            - CREATEROLE
+                          db_owner: true
+                          password: secret
+                          roles:
+                            - pgedge_superuser
+                          username: admin
+                        - attributes:
+                            - LOGIN
+                            - CREATEDB
+                            - CREATEROLE
+                          db_owner: true
                           password: secret
                           roles:
                             - pgedge_superuser
                           username: admin
                     deletion_protection: true
                     extra_volumes:
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
@@ -5557,47 +5190,10 @@ components:
                                   s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                                   s3_region: us-east-1
                                   type: s3
-                                - azure_account: pgedge-backups
-                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                  azure_key: YXpLZXk=
-                                  base_path: /backups
-                                  custom_options:
-                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                    storage-upload-chunk-size: 5MiB
-                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  gcs_endpoint: localhost
-                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                  retention_full: 2
-                                  retention_full_type: count
-                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                  s3_region: us-east-1
-                                  type: s3
-                                - azure_account: pgedge-backups
-                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                  azure_key: YXpLZXk=
-                                  base_path: /backups
-                                  custom_options:
-                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                    storage-upload-chunk-size: 5MiB
-                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  gcs_endpoint: localhost
-                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                  retention_full: 2
-                                  retention_full_type: count
-                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                  s3_region: us-east-1
-                                  type: s3
                             schedules:
+                                - cron_expression: 0 6 * * ?
+                                  id: daily-full-backup
+                                  type: full
                                 - cron_expression: 0 6 * * ?
                                   id: daily-full-backup
                                   type: full
@@ -5615,9 +5211,9 @@ components:
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
+                            - destination_path: /backups/container
+                              host_path: /Users/user/backups/host
                           host_ids:
-                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                             - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                           memory: 500M
                           name: n1
@@ -5677,47 +5273,10 @@ components:
                                   s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                                   s3_region: us-east-1
                                   type: s3
-                                - azure_account: pgedge-backups
-                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                  azure_key: YXpLZXk=
-                                  base_path: /backups
-                                  custom_options:
-                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                    storage-upload-chunk-size: 5MiB
-                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  gcs_endpoint: localhost
-                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                  retention_full: 2
-                                  retention_full_type: count
-                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                  s3_region: us-east-1
-                                  type: s3
-                                - azure_account: pgedge-backups
-                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                  azure_key: YXpLZXk=
-                                  base_path: /backups
-                                  custom_options:
-                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                    storage-upload-chunk-size: 5MiB
-                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  gcs_endpoint: localhost
-                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                  retention_full: 2
-                                  retention_full_type: count
-                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                  s3_region: us-east-1
-                                  type: s3
                             schedules:
+                                - cron_expression: 0 6 * * ?
+                                  id: daily-full-backup
+                                  type: full
                                 - cron_expression: 0 6 * * ?
                                   id: daily-full-backup
                                   type: full
@@ -5735,9 +5294,9 @@ components:
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
+                            - destination_path: /backups/container
+                              host_path: /Users/user/backups/host
                           host_ids:
-                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                             - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                           memory: 500M
                           name: n1
@@ -5797,47 +5356,10 @@ components:
                                   s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                                   s3_region: us-east-1
                                   type: s3
-                                - azure_account: pgedge-backups
-                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                  azure_key: YXpLZXk=
-                                  base_path: /backups
-                                  custom_options:
-                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                    storage-upload-chunk-size: 5MiB
-                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  gcs_endpoint: localhost
-                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                  retention_full: 2
-                                  retention_full_type: count
-                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                  s3_region: us-east-1
-                                  type: s3
-                                - azure_account: pgedge-backups
-                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                  azure_key: YXpLZXk=
-                                  base_path: /backups
-                                  custom_options:
-                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                    storage-upload-chunk-size: 5MiB
-                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  gcs_endpoint: localhost
-                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                  retention_full: 2
-                                  retention_full_type: count
-                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                  s3_region: us-east-1
-                                  type: s3
                             schedules:
+                                - cron_expression: 0 6 * * ?
+                                  id: daily-full-backup
+                                  type: full
                                 - cron_expression: 0 6 * * ?
                                   id: daily-full-backup
                                   type: full
@@ -5855,129 +5377,9 @@ components:
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
-                          host_ids:
-                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                          memory: 500M
-                          name: n1
-                          port: 5432
-                          postgres_version: "17"
-                          postgresql_conf:
-                            max_connections: 1000
-                          restore_config:
-                            provider: pgbackrest
-                            repository:
-                                azure_account: pgedge-backups
-                                azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                azure_endpoint: blob.core.usgovcloudapi.net
-                                azure_key: YXpLZXk=
-                                base_path: /backups
-                                custom_options:
-                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                gcs_endpoint: localhost
-                                gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                s3_endpoint: s3.us-east-1.amazonaws.com
-                                s3_key: AKIAIOSFODNN7EXAMPLE
-                                s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                s3_region: us-east-1
-                                type: s3
-                            restore_options:
-                                - --set=20250505-153628F
-                                - --type=xid
-                                - --target=123456
-                            source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
-                            source_database_name: northwind
-                            source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
-                        - backup_config:
-                            provider: pgbackrest
-                            repositories:
-                                - azure_account: pgedge-backups
-                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                  azure_key: YXpLZXk=
-                                  base_path: /backups
-                                  custom_options:
-                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                    storage-upload-chunk-size: 5MiB
-                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  gcs_endpoint: localhost
-                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                  retention_full: 2
-                                  retention_full_type: count
-                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                  s3_region: us-east-1
-                                  type: s3
-                                - azure_account: pgedge-backups
-                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                  azure_key: YXpLZXk=
-                                  base_path: /backups
-                                  custom_options:
-                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                    storage-upload-chunk-size: 5MiB
-                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  gcs_endpoint: localhost
-                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                  retention_full: 2
-                                  retention_full_type: count
-                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                  s3_region: us-east-1
-                                  type: s3
-                                - azure_account: pgedge-backups
-                                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  azure_endpoint: blob.core.usgovcloudapi.net
-                                  azure_key: YXpLZXk=
-                                  base_path: /backups
-                                  custom_options:
-                                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                    storage-upload-chunk-size: 5MiB
-                                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  gcs_endpoint: localhost
-                                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                                  retention_full: 2
-                                  retention_full_type: count
-                                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                                  s3_endpoint: s3.us-east-1.amazonaws.com
-                                  s3_key: AKIAIOSFODNN7EXAMPLE
-                                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                                  s3_region: us-east-1
-                                  type: s3
-                            schedules:
-                                - cron_expression: 0 6 * * ?
-                                  id: daily-full-backup
-                                  type: full
-                                - cron_expression: 0 6 * * ?
-                                  id: daily-full-backup
-                                  type: full
-                                - cron_expression: 0 6 * * ?
-                                  id: daily-full-backup
-                                  type: full
-                          cpus: 500m
-                          extra_volumes:
-                            - destination_path: /backups/container
-                              host_path: /Users/user/backups/host
-                            - destination_path: /backups/container
-                              host_path: /Users/user/backups/host
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                           host_ids:
-                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                             - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                           memory: 500M
                           name: n1
@@ -6048,7 +5450,7 @@ components:
                     spock_version: "4"
                     storage_class: loop_device
                     storage_size: 500GiB
-                state: degraded
+                state: available
                 tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                 updated_at: "2025-01-01T02:30:00Z"
             required:
@@ -7710,16 +7112,12 @@ components:
                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                       node_name: n1
-                      state: unknown
+                      state: backing_up
                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                       node_name: n1
-                      state: unknown
-                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      node_name: n1
-                      state: unknown
-                state: available
+                      state: backing_up
+                state: unknown
                 tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                 updated_at: "2025-01-01T02:30:00Z"
             required:
@@ -7739,15 +7137,11 @@ components:
                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                       node_name: n1
-                      state: unknown
+                      state: backing_up
                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                       node_name: n1
-                      state: unknown
-                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      node_name: n1
-                      state: unknown
+                      state: backing_up
                   state: unknown
                   tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                   updated_at: "2025-01-01T02:30:00Z"
@@ -7757,15 +7151,11 @@ components:
                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                       node_name: n1
-                      state: unknown
+                      state: backing_up
                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                       node_name: n1
-                      state: unknown
-                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      node_name: n1
-                      state: unknown
+                      state: backing_up
                   state: unknown
                   tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                   updated_at: "2025-01-01T02:30:00Z"
@@ -7775,15 +7165,25 @@ components:
                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                       node_name: n1
-                      state: unknown
+                      state: backing_up
                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                       node_name: n1
-                      state: unknown
+                      state: backing_up
+                  state: unknown
+                  tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
+                  updated_at: "2025-01-01T02:30:00Z"
+                - created_at: "2025-01-01T01:30:00Z"
+                  id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+                  instances:
                     - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                       node_name: n1
-                      state: unknown
+                      state: backing_up
+                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                      node_name: n1
+                      state: backing_up
                   state: unknown
                   tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                   updated_at: "2025-01-01T02:30:00Z"
@@ -8563,17 +7963,17 @@ components:
                 temporary:
                     type: boolean
                     description: Is the error temporary?
-                    example: true
+                    example: false
                 timeout:
                     type: boolean
                     description: Is the error a timeout?
-                    example: true
+                    example: false
             example:
                 fault: false
                 id: 123abc
                 message: parameter 'p' must be an integer
                 name: bad_request
-                temporary: false
+                temporary: true
                 timeout: true
             required:
                 - name
@@ -9038,7 +8438,7 @@ components:
                     example: n1
                 state:
                     type: string
-                    example: creating
+                    example: modifying
                     enum:
                         - creating
                         - modifying
@@ -9053,7 +8453,7 @@ components:
                 host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                 id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                 node_name: n1
-                state: backing_up
+                state: restoring
             required:
                 - id
                 - host_id
@@ -9068,19 +8468,15 @@ components:
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: unknown
+                  state: backing_up
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: unknown
+                  state: backing_up
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: unknown
-                - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  node_name: n1
-                  state: unknown
+                  state: backing_up
         PgEdgeVersion:
             type: object
             properties:
@@ -9984,20 +9380,27 @@ components:
                     description: The database ID of the task log.
                     example: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                     format: uuid
-                last_line_id:
-                    type: string
-                    description: The ID of the last line in the task log.
-                    example: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
-                    format: uuid
-                lines:
+                entries:
                     type: array
                     items:
-                        type: string
-                        example: Non nesciunt consequuntur reprehenderit esse id labore.
-                    description: The lines of the task log.
+                        $ref: '#/components/schemas/TaskLogEntry'
+                    description: Entries in the task log.
                     example:
-                        - Task started
-                        - Task completed
+                        - fields:
+                            option.enabled: true
+                            status: creating
+                          message: task started
+                          timestamp: "2025-05-29T15:43:13Z"
+                        - fields:
+                            option.enabled: true
+                            status: creating
+                          message: task started
+                          timestamp: "2025-05-29T15:43:13Z"
+                last_entry_id:
+                    type: string
+                    description: The ID of the last entry in the task log.
+                    example: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+                    format: uuid
                 task_id:
                     type: string
                     description: The unique ID of the task log.
@@ -10015,17 +9418,58 @@ components:
                         - unknown
             example:
                 database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-                last_line_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
-                lines:
-                    - Task started
-                    - Task completed
+                entries:
+                    - fields:
+                        option.enabled: true
+                        status: creating
+                      message: task started
+                      timestamp: "2025-05-29T15:43:13Z"
+                    - fields:
+                        option.enabled: true
+                        status: creating
+                      message: task started
+                      timestamp: "2025-05-29T15:43:13Z"
+                    - fields:
+                        option.enabled: true
+                        status: creating
+                      message: task started
+                      timestamp: "2025-05-29T15:43:13Z"
+                last_entry_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
                 task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
                 task_status: pending
             required:
                 - database_id
                 - task_id
                 - task_status
-                - lines
+                - entries
+        TaskLogEntry:
+            type: object
+            properties:
+                fields:
+                    type: object
+                    description: Additional fields for the log entry.
+                    example:
+                        option.enabled: true
+                        status: creating
+                    additionalProperties: true
+                message:
+                    type: string
+                    description: The log message.
+                    example: task started
+                timestamp:
+                    type: string
+                    description: The timestamp of the log entry.
+                    example: "2025-05-29T15:43:13Z"
+                    format: date-time
+            example:
+                fields:
+                    option.enabled: true
+                    status: creating
+                message: task started
+                timestamp: "2025-05-29T15:43:13Z"
+            required:
+                - timestamp
+                - message
         UpdateDatabaseRequest:
             type: object
             properties:

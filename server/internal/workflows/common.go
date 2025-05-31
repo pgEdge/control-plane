@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
@@ -82,13 +83,13 @@ func (w *Workflows) logTaskEvent(
 	ctx workflow.Context,
 	databaseID uuid.UUID,
 	taskID uuid.UUID,
-	msgs ...string,
+	entries ...task.LogEntry,
 ) error {
 	_, err := w.Activities.
 		ExecuteLogTaskEvent(ctx, &activities.LogTaskEventInput{
 			DatabaseID: databaseID,
 			TaskID:     taskID,
-			Messages:   msgs,
+			Entries:    entries,
 		}).Get(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to log task event: %w", err)

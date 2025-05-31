@@ -331,18 +331,14 @@ var _ = g.Service("control-plane", func() {
 				g.Description("ID of the task to get log for.")
 				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 			})
-			g.Attribute("after_line_id", g.String, func() {
+			g.Attribute("after_entry_id", g.String, func() {
 				g.Format(g.FormatUUID)
-				g.Description("ID of the line to start from.")
+				g.Description("ID of the entry to start from.")
 				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 			})
 			g.Attribute("limit", g.Int, func() {
-				g.Description("Maximum number of lines to return.")
+				g.Description("Maximum number of entries to return.")
 				g.Example(100)
-			})
-			g.Attribute("include_timestamp", g.Boolean, func() {
-				g.Description("Prepends the timestamp to each log line.")
-				g.Example(true)
 			})
 
 			g.Required("database_id", "task_id")
@@ -353,9 +349,8 @@ var _ = g.Service("control-plane", func() {
 
 		g.HTTP(func() {
 			g.GET("/databases/{database_id}/tasks/{task_id}/log")
-			g.Param("after_line_id")
+			g.Param("after_entry_id")
 			g.Param("limit")
-			g.Param("include_timestamp")
 		})
 	})
 

@@ -239,10 +239,10 @@ type GetDatabaseTaskLogResponseBody struct {
 	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
 	// The status of the task.
 	TaskStatus string `form:"task_status" json:"task_status" xml:"task_status"`
-	// The ID of the last line in the task log.
-	LastLineID *string `form:"last_line_id,omitempty" json:"last_line_id,omitempty" xml:"last_line_id,omitempty"`
-	// The lines of the task log.
-	Lines []string `form:"lines" json:"lines" xml:"lines"`
+	// The ID of the last entry in the task log.
+	LastEntryID *string `form:"last_entry_id,omitempty" json:"last_entry_id,omitempty" xml:"last_entry_id,omitempty"`
+	// Entries in the task log.
+	Entries []*TaskLogEntryResponseBody `form:"entries" json:"entries" xml:"entries"`
 }
 
 // RestoreDatabaseResponseBody is the type of the "control-plane" service
@@ -1555,6 +1555,16 @@ type TaskResponse struct {
 	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
+// TaskLogEntryResponseBody is used to define fields on response body types.
+type TaskLogEntryResponseBody struct {
+	// The timestamp of the log entry.
+	Timestamp string `form:"timestamp" json:"timestamp" xml:"timestamp"`
+	// The log message.
+	Message string `form:"message" json:"message" xml:"message"`
+	// Additional fields for the log entry.
+	Fields map[string]any `form:"fields,omitempty" json:"fields,omitempty" xml:"fields,omitempty"`
+}
+
 // DatabaseSpecRequestBody is used to define fields on request body types.
 type DatabaseSpecRequestBody struct {
 	// The name of the Postgres database.
@@ -2254,18 +2264,18 @@ func NewInspectDatabaseTaskResponseBody(res *controlplane.Task) *InspectDatabase
 // service.
 func NewGetDatabaseTaskLogResponseBody(res *controlplane.TaskLog) *GetDatabaseTaskLogResponseBody {
 	body := &GetDatabaseTaskLogResponseBody{
-		DatabaseID: res.DatabaseID,
-		TaskID:     res.TaskID,
-		TaskStatus: res.TaskStatus,
-		LastLineID: res.LastLineID,
+		DatabaseID:  res.DatabaseID,
+		TaskID:      res.TaskID,
+		TaskStatus:  res.TaskStatus,
+		LastEntryID: res.LastEntryID,
 	}
-	if res.Lines != nil {
-		body.Lines = make([]string, len(res.Lines))
-		for i, val := range res.Lines {
-			body.Lines[i] = val
+	if res.Entries != nil {
+		body.Entries = make([]*TaskLogEntryResponseBody, len(res.Entries))
+		for i, val := range res.Entries {
+			body.Entries[i] = marshalControlplaneTaskLogEntryToTaskLogEntryResponseBody(val)
 		}
 	} else {
-		body.Lines = []string{}
+		body.Entries = []*TaskLogEntryResponseBody{}
 	}
 	return body
 }
@@ -3006,13 +3016,12 @@ func NewInspectDatabaseTaskPayload(databaseID string, taskID string) *controlpla
 
 // NewGetDatabaseTaskLogPayload builds a control-plane service
 // get-database-task-log endpoint payload.
-func NewGetDatabaseTaskLogPayload(databaseID string, taskID string, afterLineID *string, limit *int, includeTimestamp *bool) *controlplane.GetDatabaseTaskLogPayload {
+func NewGetDatabaseTaskLogPayload(databaseID string, taskID string, afterEntryID *string, limit *int) *controlplane.GetDatabaseTaskLogPayload {
 	v := &controlplane.GetDatabaseTaskLogPayload{}
 	v.DatabaseID = databaseID
 	v.TaskID = taskID
-	v.AfterLineID = afterLineID
+	v.AfterEntryID = afterEntryID
 	v.Limit = limit
-	v.IncludeTimestamp = includeTimestamp
 
 	return v
 }

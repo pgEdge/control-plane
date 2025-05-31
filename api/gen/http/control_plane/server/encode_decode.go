@@ -1220,12 +1220,11 @@ func EncodeGetDatabaseTaskLogResponse(encoder func(context.Context, http.Respons
 func DecodeGetDatabaseTaskLogRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			databaseID       string
-			taskID           string
-			afterLineID      *string
-			limit            *int
-			includeTimestamp *bool
-			err              error
+			databaseID   string
+			taskID       string
+			afterEntryID *string
+			limit        *int
+			err          error
 
 			params = mux.Vars(r)
 		)
@@ -1234,12 +1233,12 @@ func DecodeGetDatabaseTaskLogRequest(mux goahttp.Muxer, decoder func(*http.Reque
 		taskID = params["task_id"]
 		err = goa.MergeErrors(err, goa.ValidateFormat("task_id", taskID, goa.FormatUUID))
 		qp := r.URL.Query()
-		afterLineIDRaw := qp.Get("after_line_id")
-		if afterLineIDRaw != "" {
-			afterLineID = &afterLineIDRaw
+		afterEntryIDRaw := qp.Get("after_entry_id")
+		if afterEntryIDRaw != "" {
+			afterEntryID = &afterEntryIDRaw
 		}
-		if afterLineID != nil {
-			err = goa.MergeErrors(err, goa.ValidateFormat("after_line_id", *afterLineID, goa.FormatUUID))
+		if afterEntryID != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("after_entry_id", *afterEntryID, goa.FormatUUID))
 		}
 		{
 			limitRaw := qp.Get("limit")
@@ -1252,20 +1251,10 @@ func DecodeGetDatabaseTaskLogRequest(mux goahttp.Muxer, decoder func(*http.Reque
 				limit = &pv
 			}
 		}
-		{
-			includeTimestampRaw := qp.Get("include_timestamp")
-			if includeTimestampRaw != "" {
-				v, err2 := strconv.ParseBool(includeTimestampRaw)
-				if err2 != nil {
-					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("include_timestamp", includeTimestampRaw, "boolean"))
-				}
-				includeTimestamp = &v
-			}
-		}
 		if err != nil {
 			return nil, err
 		}
-		payload := NewGetDatabaseTaskLogPayload(databaseID, taskID, afterLineID, limit, includeTimestamp)
+		payload := NewGetDatabaseTaskLogPayload(databaseID, taskID, afterEntryID, limit)
 
 		return payload, nil
 	}
@@ -3028,6 +3017,26 @@ func marshalControlplaneTaskToTaskResponse(v *controlplane.Task) *TaskResponse {
 		Type:        v.Type,
 		Status:      v.Status,
 		Error:       v.Error,
+	}
+
+	return res
+}
+
+// marshalControlplaneTaskLogEntryToTaskLogEntryResponseBody builds a value of
+// type *TaskLogEntryResponseBody from a value of type
+// *controlplane.TaskLogEntry.
+func marshalControlplaneTaskLogEntryToTaskLogEntryResponseBody(v *controlplane.TaskLogEntry) *TaskLogEntryResponseBody {
+	res := &TaskLogEntryResponseBody{
+		Timestamp: v.Timestamp,
+		Message:   v.Message,
+	}
+	if v.Fields != nil {
+		res.Fields = make(map[string]any, len(v.Fields))
+		for key, val := range v.Fields {
+			tk := key
+			tv := val
+			res.Fields[tk] = tv
+		}
 	}
 
 	return res

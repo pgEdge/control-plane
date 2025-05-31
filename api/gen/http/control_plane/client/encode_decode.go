@@ -1671,14 +1671,11 @@ func EncodeGetDatabaseTaskLogRequest(encoder func(*http.Request) goahttp.Encoder
 			return goahttp.ErrInvalidType("control-plane", "get-database-task-log", "*controlplane.GetDatabaseTaskLogPayload", v)
 		}
 		values := req.URL.Query()
-		if p.AfterLineID != nil {
-			values.Add("after_line_id", *p.AfterLineID)
+		if p.AfterEntryID != nil {
+			values.Add("after_entry_id", *p.AfterEntryID)
 		}
 		if p.Limit != nil {
 			values.Add("limit", fmt.Sprintf("%v", *p.Limit))
-		}
-		if p.IncludeTimestamp != nil {
-			values.Add("include_timestamp", fmt.Sprintf("%v", *p.IncludeTimestamp))
 		}
 		req.URL.RawQuery = values.Encode()
 		return nil
@@ -4429,6 +4426,26 @@ func unmarshalTaskResponseToControlplaneTask(v *TaskResponse) *controlplane.Task
 		Type:        *v.Type,
 		Status:      *v.Status,
 		Error:       v.Error,
+	}
+
+	return res
+}
+
+// unmarshalTaskLogEntryResponseBodyToControlplaneTaskLogEntry builds a value
+// of type *controlplane.TaskLogEntry from a value of type
+// *TaskLogEntryResponseBody.
+func unmarshalTaskLogEntryResponseBodyToControlplaneTaskLogEntry(v *TaskLogEntryResponseBody) *controlplane.TaskLogEntry {
+	res := &controlplane.TaskLogEntry{
+		Timestamp: *v.Timestamp,
+		Message:   *v.Message,
+	}
+	if v.Fields != nil {
+		res.Fields = make(map[string]any, len(v.Fields))
+		for key, val := range v.Fields {
+			tk := key
+			tv := val
+			res.Fields[tk] = tv
+		}
 	}
 
 	return res

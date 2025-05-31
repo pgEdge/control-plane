@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/storage"
-	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 var ErrTaskNotFound = fmt.Errorf("task not found")
@@ -108,28 +107,39 @@ func (s *Service) DeleteAllTasks(ctx context.Context, databaseID uuid.UUID) erro
 	return nil
 }
 
-func (s *Service) AddLogLine(ctx context.Context, databaseID, taskID uuid.UUID, line string) error {
-	lineID, err := uuid.NewV7()
+type LogEntry struct {
+	Timestamp time.Time
+	Message   string
+	Fields    map[string]any
+}
+
+func (s *Service) AddLogEntry(ctx context.Context, databaseID, taskID uuid.UUID, entry LogEntry) error {
+	entryID, err := uuid.NewV7()
 	if err != nil {
-		return fmt.Errorf("failed to create line ID: %w", err)
+		return fmt.Errorf("failed to create entry ID: %w", err)
 	}
-	stored := &StoredTaskLogLine{
+	timestamp := entry.Timestamp
+	if timestamp.IsZero() {
+		timestamp = time.Now()
+	}
+	stored := &StoredTaskLogEntry{
 		DatabaseID: databaseID,
 		TaskID:     taskID,
-		LineID:     lineID,
-		Timestamp:  time.Now(),
-		Line:       utils.Clean(line), // remove all control characters
+		EntryID:    entryID,
+		Timestamp:  timestamp,
+		Message:    entry.Message,
+		Fields:     entry.Fields,
 	}
-	err = s.Store.TaskLogLine.Put(stored).Exec(ctx)
+	err = s.Store.TaskLogMessage.Put(stored).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create task log line: %w", err)
+		return fmt.Errorf("failed to create task log entry: %w", err)
 	}
 
 	return nil
 }
 
 func (s *Service) GetTaskLog(ctx context.Context, databaseID, taskID uuid.UUID, options TaskLogOptions) (*TaskLog, error) {
-	stored, err := s.Store.TaskLogLine.GetAllByTaskID(databaseID, taskID, options).Exec(ctx)
+	stored, err := s.Store.TaskLogMessage.GetAllByTaskID(databaseID, taskID, options).Exec(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get task log: %w", err)
 	}
@@ -140,21 +150,21 @@ func (s *Service) GetTaskLog(ctx context.Context, databaseID, taskID uuid.UUID, 
 	}
 	for i := len(stored) - 1; i >= 0; i-- {
 		s := stored[i]
-		if options.IncludeTimestamp {
-			log.Lines = append(log.Lines, s.Timestamp.Format(time.RFC3339)+" "+s.Line)
-		} else {
-			log.Lines = append(log.Lines, s.Line)
-		}
+		log.Entries = append(log.Entries, LogEntry{
+			Timestamp: s.Timestamp,
+			Message:   s.Message,
+			Fields:    s.Fields,
+		})
 	}
 	if len(stored) > 0 {
-		log.LastLineID = stored[len(stored)-1].LineID
+		log.LastEntryID = stored[len(stored)-1].EntryID
 	}
 
 	return log, nil
 }
 
 func (s *Service) DeleteTaskLogs(ctx context.Context, databaseID, taskID uuid.UUID) error {
-	_, err := s.Store.TaskLogLine.DeleteByTaskID(databaseID, taskID).Exec(ctx)
+	_, err := s.Store.TaskLogMessage.DeleteByTaskID(databaseID, taskID).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to delete task logs: %w", err)
 	}
@@ -162,7 +172,7 @@ func (s *Service) DeleteTaskLogs(ctx context.Context, databaseID, taskID uuid.UU
 }
 
 func (s *Service) DeleteAllTaskLogs(ctx context.Context, databaseID uuid.UUID) error {
-	_, err := s.Store.TaskLogLine.DeleteByDatabaseID(databaseID).Exec(ctx)
+	_, err := s.Store.TaskLogMessage.DeleteByDatabaseID(databaseID).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to delete task logs: %w", err)
 	}

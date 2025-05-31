@@ -8,12 +8,13 @@ import (
 	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
+	"github.com/pgEdge/control-plane/server/internal/task"
 )
 
 type LogTaskEventInput struct {
-	DatabaseID uuid.UUID `json:"database_id"`
-	TaskID     uuid.UUID `json:"task_id"`
-	Messages   []string  `json:"messages"`
+	DatabaseID uuid.UUID       `json:"database_id"`
+	TaskID     uuid.UUID       `json:"task_id"`
+	Entries    []task.LogEntry `json:"messages"`
 }
 
 type LogTaskEventOutput struct{}
@@ -35,10 +36,10 @@ func (a *Activities) LogTaskEvent(ctx context.Context, input *LogTaskEventInput)
 	logger := activity.Logger(ctx).With("database_id", input.DatabaseID.String())
 	logger.Info("updating database state")
 
-	for _, msg := range input.Messages {
-		err := a.TaskSvc.AddLogLine(ctx, input.DatabaseID, input.TaskID, msg)
+	for _, entry := range input.Entries {
+		err := a.TaskSvc.AddLogEntry(ctx, input.DatabaseID, input.TaskID, entry)
 		if err != nil {
-			return nil, fmt.Errorf("failed to add task log line: %w", err)
+			return nil, fmt.Errorf("failed to add task log entry: %w", err)
 		}
 	}
 
