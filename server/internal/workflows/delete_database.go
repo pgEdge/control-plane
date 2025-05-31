@@ -77,8 +77,7 @@ func (w *Workflows) DeleteDatabase(ctx workflow.Context, input *DeleteDatabaseIn
 	}
 
 	deleteInput := &activities.DeleteDbEntitiesInput{
-		DatabaseID:   input.DatabaseID,
-		DeleteTaskID: input.TaskID,
+		DatabaseID: input.DatabaseID,
 	}
 	_, err = w.Activities.ExecuteDeleteDbEntities(ctx, deleteInput).Get(ctx)
 	if err != nil {

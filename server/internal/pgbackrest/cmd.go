@@ -55,8 +55,10 @@ type BackupOptions struct {
 }
 
 func (b BackupOptions) StringSlice() []string {
-	var options []string
-	options = append(options, "--type", b.Type.String())
+	options := []string{
+		"--log-timestamp=n",
+		"--type", b.Type.String(),
+	}
 	for k, v := range b.Annotations {
 		options = append(options, "--annotation", k+"="+v)
 	}

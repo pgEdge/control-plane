@@ -13,12 +13,10 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/resource"
-	"github.com/pgEdge/control-plane/server/internal/task"
 )
 
 type DeleteDbEntitiesInput struct {
-	DatabaseID   uuid.UUID `json:"database_id"`
-	DeleteTaskID uuid.UUID `json:"delete_task_id"`
+	DatabaseID uuid.UUID `json:"database_id"`
 }
 
 type DeleteDbEntitiesOutput struct{}
@@ -56,21 +54,6 @@ func (a *Activities) DeleteDbEntities(ctx context.Context, input *DeleteDbEntiti
 	err = dbSvc.DeleteDatabase(ctx, input.DatabaseID)
 	if err != nil && !errors.Is(err, database.ErrDatabaseNotFound) {
 		return nil, fmt.Errorf("failed to delete database: %w", err)
-	}
-	tasks, err := a.TaskSvc.GetTasks(ctx, input.DatabaseID, task.TaskListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list tasks: %w", err)
-	}
-	for _, t := range tasks {
-		// We want to leave the delete task in place so that API clients can
-		// track the delete through to completion.
-		if t.TaskID == input.DeleteTaskID {
-			continue
-		}
-		err = a.TaskSvc.DeleteTask(ctx, input.DatabaseID, t.TaskID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to delete task: %w", err)
-		}
 	}
 
 	return &DeleteDbEntitiesOutput{}, nil

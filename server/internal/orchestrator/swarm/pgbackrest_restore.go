@@ -230,6 +230,7 @@ func (p *PgBackRestRestore) runRestoreContainer(
 		limits = *swarmService.Spec.TaskTemplate.Resources.Limits
 	}
 	containerSpec := swarmService.Spec.TaskTemplate.ContainerSpec
+	opts := append([]string{"--log-timestamp=n"}, p.Options...)
 	containerID, err := dockerClient.ContainerRun(ctx, docker.ContainerRunOptions{
 		Config: &container.Config{
 			Image: containerSpec.Image,
@@ -240,7 +241,7 @@ func (p *PgBackRestRestore) runRestoreContainer(
 				"pgedge.component":   "pgbackrest-restore",
 			},
 			Hostname:   containerSpec.Hostname,
-			Entrypoint: PgBackRestRestoreCmd("restore", p.Options...).StringSlice(),
+			Entrypoint: PgBackRestRestoreCmd("restore", opts...).StringSlice(),
 		},
 		Host: &container.HostConfig{
 			Mounts: containerSpec.Mounts,
