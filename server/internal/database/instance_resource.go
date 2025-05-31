@@ -79,6 +79,12 @@ func (r *InstanceResource) Refresh(ctx context.Context, rc *resource.Context) er
 		return err
 	}
 
+	info, err := orch.GetInstanceConnectionInfo(ctx, r.Spec.DatabaseID, r.Spec.InstanceID)
+	if err != nil {
+		return resource.ErrNotFound
+	}
+	r.ConnectionInfo = info
+
 	primaryInstanceID, err := GetPrimaryInstanceID(ctx, orch, r.Spec.DatabaseID, r.Spec.InstanceID, 30*time.Second)
 	if err != nil {
 		return resource.ErrNotFound // TODO: Is this always the right choice?
