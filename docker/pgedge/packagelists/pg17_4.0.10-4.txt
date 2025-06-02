@@ -1,0 +1,9 @@
+postgresql17-server-17.5-2PGDG.rhel9
+spock_17-4.0.10-1PGDG.rhel9
+snowflake_17-2.2-1PGDG.rhel9
+lolor_17-1.2-1PGDG.rhel9
+postgis35_17-3.5.3-1PGDG.rhel9
+pgvector_17-0.8.0-1PGDG.rhel9
+pgbackrest-2.55.1-1PGDG.rhel9
+python3-pip-21.3.1-1.el9
+python3-psycopg2-2.9.10-1PGDG.rhel9

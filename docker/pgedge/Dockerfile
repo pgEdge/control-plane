@@ -27,7 +27,7 @@ dnf install -y epel-release dnf
 dnf config-manager --set-enabled crb
 dnf update -y --allowerasing
 xargs dnf install -y < /usr/share/pgedge/packages.txt
-pip install 'python-json-logger==3.2.1'
+pip install 'patroni[etcd,jsonlogger]==4.0.5'
 dnf remove -y python3-pip
 dnf clean all
 
@@ -38,4 +38,4 @@ USER postgres
 ENV PG_MAJOR=${POSTGRES_VERSION}
 ENV PATH=$PATH:/usr/pgsql-${POSTGRES_VERSION}/bin
 
-ENTRYPOINT ["/usr/bin/patroni"]
+ENTRYPOINT ["/usr/local/bin/patroni"]
