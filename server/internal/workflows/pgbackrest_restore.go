@@ -15,6 +15,7 @@ import (
 )
 
 type PgBackRestRestoreInput struct {
+	TaskID        uuid.UUID               `json:"task_id"`
 	Spec          *database.Spec          `json:"spec"`
 	TargetNodes   []string                `json:"target_nodes"`
 	RestoreConfig *database.RestoreConfig `json:"restore_config"`
@@ -41,8 +42,18 @@ func (w *Workflows) PgBackRestRestore(ctx workflow.Context, input *PgBackRestRes
 		return w.handlePgBackRestRestoreFailed(ctx, logger, input, err)
 	}
 
+	updateTaskInput := &activities.UpdateTaskInput{
+		DatabaseID:    input.Spec.DatabaseID,
+		TaskID:        input.TaskID,
+		UpdateOptions: task.UpdateStart(),
+	}
+	if err := w.updateTask(ctx, logger, updateTaskInput); err != nil {
+		return nil, handleError(err)
+	}
+
 	refreshCurrentInput := &RefreshCurrentStateInput{
 		DatabaseID: input.Spec.DatabaseID,
+		TaskID:     input.TaskID,
 	}
 	refreshCurrentOutput, err := w.
 		ExecuteRefreshCurrentState(ctx, refreshCurrentInput).
@@ -112,6 +123,7 @@ func (w *Workflows) PgBackRestRestore(ctx workflow.Context, input *PgBackRestRes
 	for _, desired := range desiredStates {
 		reconcileInput := &ReconcileStateInput{
 			DatabaseID: input.Spec.DatabaseID,
+			TaskID:     input.TaskID,
 			Current:    current,
 			Desired:    desired,
 		}
@@ -131,6 +143,15 @@ func (w *Workflows) PgBackRestRestore(ctx workflow.Context, input *PgBackRestRes
 		Get(ctx)
 	if err != nil {
 		return nil, handleError(fmt.Errorf("failed to update database state to available: %w", err))
+	}
+
+	updateTaskInput = &activities.UpdateTaskInput{
+		DatabaseID:    input.Spec.DatabaseID,
+		TaskID:        input.TaskID,
+		UpdateOptions: task.UpdateComplete(),
+	}
+	if err := w.updateTask(ctx, logger, updateTaskInput); err != nil {
+		return nil, handleError(err)
 	}
 
 	logger.Info("successfully restored database")
@@ -156,17 +177,22 @@ func (w *Workflows) handlePgBackRestRestoreFailed(
 		logger.With("error", stateErr).Error("failed to update database state")
 	}
 	for _, taskID := range input.NodeTaskIDs {
-		updateTaskStatusInput := &activities.UpdateTaskStatusInput{
+		updateTaskInput := &activities.UpdateTaskInput{
 			DatabaseID: input.Spec.DatabaseID,
 			TaskID:     taskID,
-			Status:     task.StatusFailed,
+			UpdateOptions: task.UpdateFail(
+				fmt.Errorf("parent task failed: %w", cause),
+			),
 		}
-		_, taskErr := w.Activities.
-			ExecuteUpdateTaskStatus(ctx, w.Config.HostID, updateTaskStatusInput).
-			Get(ctx)
-		if taskErr != nil {
-			logger.With("error", taskErr).Error("failed to update task status")
-		}
+		_ = w.updateTask(ctx, logger, updateTaskInput)
 	}
+
+	updateTaskInput := &activities.UpdateTaskInput{
+		DatabaseID:    input.Spec.DatabaseID,
+		TaskID:        input.TaskID,
+		UpdateOptions: task.UpdateFail(cause),
+	}
+	_ = w.updateTask(ctx, logger, updateTaskInput)
+
 	return cause
 }

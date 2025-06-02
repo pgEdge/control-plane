@@ -13,7 +13,6 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/resource"
-	"github.com/pgEdge/control-plane/server/internal/task"
 )
 
 type DeleteDbEntitiesInput struct {
@@ -47,10 +46,6 @@ func (a *Activities) DeleteDbEntities(ctx context.Context, input *DeleteDbEntiti
 	if err != nil {
 		return nil, err
 	}
-	taskSvc, err := do.Invoke[*task.Service](a.Injector)
-	if err != nil {
-		return nil, err
-	}
 
 	err = resourceSvc.DeleteState(ctx, input.DatabaseID)
 	if err != nil {
@@ -59,10 +54,6 @@ func (a *Activities) DeleteDbEntities(ctx context.Context, input *DeleteDbEntiti
 	err = dbSvc.DeleteDatabase(ctx, input.DatabaseID)
 	if err != nil && !errors.Is(err, database.ErrDatabaseNotFound) {
 		return nil, fmt.Errorf("failed to delete database: %w", err)
-	}
-	err = taskSvc.DeleteAllTasks(ctx, input.DatabaseID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to delete tasks: %w", err)
 	}
 
 	return &DeleteDbEntitiesOutput{}, nil

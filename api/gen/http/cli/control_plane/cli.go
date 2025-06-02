@@ -22,7 +22,7 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `control-plane (init-cluster|join-cluster|get-join-token|get-join-options|inspect-cluster|list-hosts|inspect-host|remove-host|list-databases|create-database|inspect-database|update-database|delete-database|initiate-database-backup|list-database-tasks|inspect-database-task|get-database-task-log|restore-database|get-version)
+	return `control-plane (init-cluster|join-cluster|get-join-token|get-join-options|inspect-cluster|list-hosts|inspect-host|remove-host|list-databases|create-database|inspect-database|update-database|delete-database|backup-database-node|list-database-tasks|inspect-database-task|get-database-task-log|restore-database|get-version)
 `
 }
 
@@ -80,10 +80,10 @@ func ParseEndpoint(
 		controlPlaneDeleteDatabaseFlags          = flag.NewFlagSet("delete-database", flag.ExitOnError)
 		controlPlaneDeleteDatabaseDatabaseIDFlag = controlPlaneDeleteDatabaseFlags.String("database-id", "REQUIRED", "ID of the database to delete.")
 
-		controlPlaneInitiateDatabaseBackupFlags          = flag.NewFlagSet("initiate-database-backup", flag.ExitOnError)
-		controlPlaneInitiateDatabaseBackupBodyFlag       = controlPlaneInitiateDatabaseBackupFlags.String("body", "REQUIRED", "")
-		controlPlaneInitiateDatabaseBackupDatabaseIDFlag = controlPlaneInitiateDatabaseBackupFlags.String("database-id", "REQUIRED", "ID of the database to back up.")
-		controlPlaneInitiateDatabaseBackupNodeNameFlag   = controlPlaneInitiateDatabaseBackupFlags.String("node-name", "REQUIRED", "Name of the node to back up.")
+		controlPlaneBackupDatabaseNodeFlags          = flag.NewFlagSet("backup-database-node", flag.ExitOnError)
+		controlPlaneBackupDatabaseNodeBodyFlag       = controlPlaneBackupDatabaseNodeFlags.String("body", "REQUIRED", "")
+		controlPlaneBackupDatabaseNodeDatabaseIDFlag = controlPlaneBackupDatabaseNodeFlags.String("database-id", "REQUIRED", "ID of the database to back up.")
+		controlPlaneBackupDatabaseNodeNodeNameFlag   = controlPlaneBackupDatabaseNodeFlags.String("node-name", "REQUIRED", "Name of the node to back up.")
 
 		controlPlaneListDatabaseTasksFlags           = flag.NewFlagSet("list-database-tasks", flag.ExitOnError)
 		controlPlaneListDatabaseTasksDatabaseIDFlag  = controlPlaneListDatabaseTasksFlags.String("database-id", "REQUIRED", "ID of the database to list tasks for.")
@@ -95,11 +95,11 @@ func ParseEndpoint(
 		controlPlaneInspectDatabaseTaskDatabaseIDFlag = controlPlaneInspectDatabaseTaskFlags.String("database-id", "REQUIRED", "ID of the database to inspect tasks for.")
 		controlPlaneInspectDatabaseTaskTaskIDFlag     = controlPlaneInspectDatabaseTaskFlags.String("task-id", "REQUIRED", "ID of the task to inspect.")
 
-		controlPlaneGetDatabaseTaskLogFlags           = flag.NewFlagSet("get-database-task-log", flag.ExitOnError)
-		controlPlaneGetDatabaseTaskLogDatabaseIDFlag  = controlPlaneGetDatabaseTaskLogFlags.String("database-id", "REQUIRED", "ID of the database to get task log for.")
-		controlPlaneGetDatabaseTaskLogTaskIDFlag      = controlPlaneGetDatabaseTaskLogFlags.String("task-id", "REQUIRED", "ID of the task to get log for.")
-		controlPlaneGetDatabaseTaskLogAfterLineIDFlag = controlPlaneGetDatabaseTaskLogFlags.String("after-line-id", "", "")
-		controlPlaneGetDatabaseTaskLogLimitFlag       = controlPlaneGetDatabaseTaskLogFlags.String("limit", "", "")
+		controlPlaneGetDatabaseTaskLogFlags            = flag.NewFlagSet("get-database-task-log", flag.ExitOnError)
+		controlPlaneGetDatabaseTaskLogDatabaseIDFlag   = controlPlaneGetDatabaseTaskLogFlags.String("database-id", "REQUIRED", "ID of the database to get task log for.")
+		controlPlaneGetDatabaseTaskLogTaskIDFlag       = controlPlaneGetDatabaseTaskLogFlags.String("task-id", "REQUIRED", "ID of the task to get log for.")
+		controlPlaneGetDatabaseTaskLogAfterEntryIDFlag = controlPlaneGetDatabaseTaskLogFlags.String("after-entry-id", "", "")
+		controlPlaneGetDatabaseTaskLogLimitFlag        = controlPlaneGetDatabaseTaskLogFlags.String("limit", "", "")
 
 		controlPlaneRestoreDatabaseFlags          = flag.NewFlagSet("restore-database", flag.ExitOnError)
 		controlPlaneRestoreDatabaseBodyFlag       = controlPlaneRestoreDatabaseFlags.String("body", "REQUIRED", "")
@@ -121,7 +121,7 @@ func ParseEndpoint(
 	controlPlaneInspectDatabaseFlags.Usage = controlPlaneInspectDatabaseUsage
 	controlPlaneUpdateDatabaseFlags.Usage = controlPlaneUpdateDatabaseUsage
 	controlPlaneDeleteDatabaseFlags.Usage = controlPlaneDeleteDatabaseUsage
-	controlPlaneInitiateDatabaseBackupFlags.Usage = controlPlaneInitiateDatabaseBackupUsage
+	controlPlaneBackupDatabaseNodeFlags.Usage = controlPlaneBackupDatabaseNodeUsage
 	controlPlaneListDatabaseTasksFlags.Usage = controlPlaneListDatabaseTasksUsage
 	controlPlaneInspectDatabaseTaskFlags.Usage = controlPlaneInspectDatabaseTaskUsage
 	controlPlaneGetDatabaseTaskLogFlags.Usage = controlPlaneGetDatabaseTaskLogUsage
@@ -201,8 +201,8 @@ func ParseEndpoint(
 			case "delete-database":
 				epf = controlPlaneDeleteDatabaseFlags
 
-			case "initiate-database-backup":
-				epf = controlPlaneInitiateDatabaseBackupFlags
+			case "backup-database-node":
+				epf = controlPlaneBackupDatabaseNodeFlags
 
 			case "list-database-tasks":
 				epf = controlPlaneListDatabaseTasksFlags
@@ -278,9 +278,9 @@ func ParseEndpoint(
 			case "delete-database":
 				endpoint = c.DeleteDatabase()
 				data, err = controlplanec.BuildDeleteDatabasePayload(*controlPlaneDeleteDatabaseDatabaseIDFlag)
-			case "initiate-database-backup":
-				endpoint = c.InitiateDatabaseBackup()
-				data, err = controlplanec.BuildInitiateDatabaseBackupPayload(*controlPlaneInitiateDatabaseBackupBodyFlag, *controlPlaneInitiateDatabaseBackupDatabaseIDFlag, *controlPlaneInitiateDatabaseBackupNodeNameFlag)
+			case "backup-database-node":
+				endpoint = c.BackupDatabaseNode()
+				data, err = controlplanec.BuildBackupDatabaseNodePayload(*controlPlaneBackupDatabaseNodeBodyFlag, *controlPlaneBackupDatabaseNodeDatabaseIDFlag, *controlPlaneBackupDatabaseNodeNodeNameFlag)
 			case "list-database-tasks":
 				endpoint = c.ListDatabaseTasks()
 				data, err = controlplanec.BuildListDatabaseTasksPayload(*controlPlaneListDatabaseTasksDatabaseIDFlag, *controlPlaneListDatabaseTasksAfterTaskIDFlag, *controlPlaneListDatabaseTasksLimitFlag, *controlPlaneListDatabaseTasksSortOrderFlag)
@@ -289,7 +289,7 @@ func ParseEndpoint(
 				data, err = controlplanec.BuildInspectDatabaseTaskPayload(*controlPlaneInspectDatabaseTaskDatabaseIDFlag, *controlPlaneInspectDatabaseTaskTaskIDFlag)
 			case "get-database-task-log":
 				endpoint = c.GetDatabaseTaskLog()
-				data, err = controlplanec.BuildGetDatabaseTaskLogPayload(*controlPlaneGetDatabaseTaskLogDatabaseIDFlag, *controlPlaneGetDatabaseTaskLogTaskIDFlag, *controlPlaneGetDatabaseTaskLogAfterLineIDFlag, *controlPlaneGetDatabaseTaskLogLimitFlag)
+				data, err = controlplanec.BuildGetDatabaseTaskLogPayload(*controlPlaneGetDatabaseTaskLogDatabaseIDFlag, *controlPlaneGetDatabaseTaskLogTaskIDFlag, *controlPlaneGetDatabaseTaskLogAfterEntryIDFlag, *controlPlaneGetDatabaseTaskLogLimitFlag)
 			case "restore-database":
 				endpoint = c.RestoreDatabase()
 				data, err = controlplanec.BuildRestoreDatabasePayload(*controlPlaneRestoreDatabaseBodyFlag, *controlPlaneRestoreDatabaseDatabaseIDFlag)
@@ -326,7 +326,7 @@ COMMAND:
     inspect-database: Returns information about a particular database in the cluster.
     update-database: Updates a database with the given specification.
     delete-database: Deletes a database from the cluster.
-    initiate-database-backup: Initiates a backup for a database.
+    backup-database-node: Initiates a backup for a database node.
     list-database-tasks: Lists all tasks for a database.
     inspect-database-task: Returns information about a particular task for a database.
     get-database-task-log: Returns the log of a particular task for a database.
@@ -563,18 +563,23 @@ Example:
                   "pgedge_superuser"
                ],
                "username": "admin"
+            },
+            {
+               "attributes": [
+                  "LOGIN",
+                  "CREATEDB",
+                  "CREATEROLE"
+               ],
+               "db_owner": false,
+               "password": "secret",
+               "roles": [
+                  "pgedge_superuser"
+               ],
+               "username": "admin"
             }
          ],
          "deletion_protection": true,
          "extra_volumes": [
-            {
-               "destination_path": "/backups/container",
-               "host_path": "/Users/user/backups/host"
-            },
-            {
-               "destination_path": "/backups/container",
-               "host_path": "/Users/user/backups/host"
-            },
             {
                "destination_path": "/backups/container",
                "host_path": "/Users/user/backups/host"
@@ -692,7 +697,6 @@ Example:
                   }
                ],
                "host_ids": [
-                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
                   "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
                ],
                "memory": "500M",
@@ -839,7 +843,6 @@ Example:
                   }
                ],
                "host_ids": [
-                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
                   "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
                ],
                "memory": "500M",
@@ -986,7 +989,6 @@ Example:
                   }
                ],
                "host_ids": [
-                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
                   "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
                ],
                "memory": "500M",
@@ -1123,29 +1125,6 @@ Example:
                   "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                   "s3_region": "us-east-1",
                   "type": "s3"
-               },
-               {
-                  "azure_account": "pgedge-backups",
-                  "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "azure_endpoint": "blob.core.usgovcloudapi.net",
-                  "azure_key": "YXpLZXk=",
-                  "base_path": "/backups",
-                  "custom_options": {
-                     "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                     "storage-upload-chunk-size": "5MiB"
-                  },
-                  "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "gcs_endpoint": "localhost",
-                  "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                  "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                  "retention_full": 2,
-                  "retention_full_type": "count",
-                  "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                  "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                  "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                  "s3_region": "us-east-1",
-                  "type": "s3"
                }
             ],
             "schedules": [
@@ -1194,23 +1173,14 @@ Example:
                   "pgedge_superuser"
                ],
                "username": "admin"
-            },
-            {
-               "attributes": [
-                  "LOGIN",
-                  "CREATEDB",
-                  "CREATEROLE"
-               ],
-               "db_owner": true,
-               "password": "secret",
-               "roles": [
-                  "pgedge_superuser"
-               ],
-               "username": "admin"
             }
          ],
          "deletion_protection": true,
          "extra_volumes": [
+            {
+               "destination_path": "/backups/container",
+               "host_path": "/Users/user/backups/host"
+            },
             {
                "destination_path": "/backups/container",
                "host_path": "/Users/user/backups/host"
@@ -1251,29 +1221,6 @@ Example:
                         "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                         "s3_region": "us-east-1",
                         "type": "s3"
-                     },
-                     {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
-                        "type": "s3"
                      }
                   ],
                   "schedules": [
@@ -1314,6 +1261,7 @@ Example:
                   }
                ],
                "host_ids": [
+                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
                   "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
                ],
                "memory": "500M",
@@ -1383,29 +1331,6 @@ Example:
                         "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                         "s3_region": "us-east-1",
                         "type": "s3"
-                     },
-                     {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
-                        "type": "s3"
                      }
                   ],
                   "schedules": [
@@ -1446,6 +1371,7 @@ Example:
                   }
                ],
                "host_ids": [
+                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
                   "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
                ],
                "memory": "500M",
@@ -1515,29 +1441,6 @@ Example:
                         "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                         "s3_region": "us-east-1",
                         "type": "s3"
-                     },
-                     {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
-                        "type": "s3"
                      }
                   ],
                   "schedules": [
@@ -1578,6 +1481,7 @@ Example:
                   }
                ],
                "host_ids": [
+                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
                   "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
                ],
                "memory": "500M",
@@ -1647,29 +1551,6 @@ Example:
                         "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                         "s3_region": "us-east-1",
                         "type": "s3"
-                     },
-                     {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
-                        "type": "s3"
                      }
                   ],
                   "schedules": [
@@ -1710,6 +1591,7 @@ Example:
                   }
                ],
                "host_ids": [
+                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
                   "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
                ],
                "memory": "500M",
@@ -1810,16 +1692,16 @@ Example:
 `, os.Args[0])
 }
 
-func controlPlaneInitiateDatabaseBackupUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane initiate-database-backup -body JSON -database-id STRING -node-name STRING
+func controlPlaneBackupDatabaseNodeUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane backup-database-node -body JSON -database-id STRING -node-name STRING
 
-Initiates a backup for a database.
+Initiates a backup for a database node.
     -body JSON: 
     -database-id STRING: ID of the database to back up.
     -node-name STRING: Name of the node to back up.
 
 Example:
-    %[1]s control-plane initiate-database-backup --body '{
+    %[1]s control-plane backup-database-node --body '{
       "annotations": {
          "key": "value"
       },
@@ -1859,16 +1741,16 @@ Example:
 }
 
 func controlPlaneGetDatabaseTaskLogUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane get-database-task-log -database-id STRING -task-id STRING -after-line-id STRING -limit INT
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane get-database-task-log -database-id STRING -task-id STRING -after-entry-id STRING -limit INT
 
 Returns the log of a particular task for a database.
     -database-id STRING: ID of the database to get task log for.
     -task-id STRING: ID of the task to get log for.
-    -after-line-id STRING: 
+    -after-entry-id STRING: 
     -limit INT: 
 
 Example:
-    %[1]s control-plane get-database-task-log --database-id "02f1a7db-fca8-4521-b57a-2a375c1ced51" --task-id "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348" --after-line-id "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348" --limit 100
+    %[1]s control-plane get-database-task-log --database-id "02f1a7db-fca8-4521-b57a-2a375c1ced51" --task-id "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348" --after-entry-id "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348" --limit 100
 `, os.Args[0])
 }
 

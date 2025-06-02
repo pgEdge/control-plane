@@ -9,6 +9,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/logging"
+	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 	"github.com/pgEdge/control-plane/server/internal/workflows/backend/etcd"
 )
@@ -19,6 +20,7 @@ func Provide(i *do.Injector) {
 	provideClient(i)
 	provideWorkflows(i)
 	provideWorker(i)
+	provideService(i)
 }
 
 func provideWorker(i *do.Injector) {
@@ -45,7 +47,6 @@ func provideWorkflows(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-
 		activities, err := do.Invoke[*activities.Activities](i)
 		if err != nil {
 			return nil, err
@@ -97,5 +98,28 @@ func provideStore(i *do.Injector) {
 			return nil, err
 		}
 		return etcd.NewStore(client, config.EtcdKeyRoot), nil
+	})
+}
+
+func provideService(i *do.Injector) {
+	do.Provide(i, func(i *do.Injector) (*Service, error) {
+		config, err := do.Invoke[config.Config](i)
+		if err != nil {
+			return nil, err
+		}
+		client, err := do.Invoke[*client.Client](i)
+		if err != nil {
+			return nil, err
+		}
+		workflows, err := do.Invoke[*Workflows](i)
+		if err != nil {
+			return nil, err
+		}
+		taskSvc, err := do.Invoke[*task.Service](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return NewService(config, client, taskSvc, workflows), nil
 	})
 }

@@ -14,14 +14,15 @@ import (
 )
 
 type UpdateTaskInput struct {
-	Task *task.Task `json:"task"`
+	DatabaseID    uuid.UUID          `json:"database_id"`
+	TaskID        uuid.UUID          `json:"task_id"`
+	UpdateOptions task.UpdateOptions `json:"update_options,omitempty"`
 }
 
 type UpdateTaskOutput struct{}
 
 func (a *Activities) ExecuteUpdateTask(
 	ctx workflow.Context,
-	hostID uuid.UUID,
 	input *UpdateTaskInput,
 ) workflow.Future[*UpdateTaskOutput] {
 	options := workflow.ActivityOptions{
@@ -35,10 +36,8 @@ func (a *Activities) ExecuteUpdateTask(
 
 func (a *Activities) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*UpdateTaskOutput, error) {
 	logger := activity.Logger(ctx).With(
-		"database_id", input.Task.DatabaseID.String(),
-		"task_id", input.Task.TaskID.String(),
-		"task_type", input.Task.Type.String(),
-		"task_status", input.Task.Status.String(),
+		"database_id", input.DatabaseID.String(),
+		"task_id", input.TaskID.String(),
 	)
 	logger.Info("updating task")
 
@@ -46,8 +45,15 @@ func (a *Activities) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*U
 	if err != nil {
 		return nil, err
 	}
-	err = service.UpdateTask(ctx, input.Task)
+
+	t, err := service.GetTask(ctx, input.DatabaseID, input.TaskID)
 	if err != nil {
+		return nil, fmt.Errorf("failed to get task: %w", err)
+	}
+
+	t.Update(input.UpdateOptions)
+
+	if err := service.UpdateTask(ctx, t); err != nil {
 		return nil, fmt.Errorf("failed to update task: %w", err)
 	}
 

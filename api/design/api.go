@@ -151,9 +151,7 @@ var _ = g.Service("control-plane", func() {
 	g.Method("create-database", func() {
 		g.Description("Creates a new database in the cluster.")
 		g.Payload(CreateDatabaseRequest)
-		g.Result(Database, func() {
-			g.View("default")
-		})
+		g.Result(CreateDatabaseResponse)
 		g.Error("cluster_not_initialized")
 		g.Error("invalid_input")
 		g.Error("database_already_exists")
@@ -196,9 +194,7 @@ var _ = g.Service("control-plane", func() {
 			})
 			g.Attribute("request", UpdateDatabaseRequest)
 		})
-		g.Result(Database, func() {
-			g.View("default")
-		})
+		g.Result(UpdateDatabaseResponse)
 		g.Error("cluster_not_initialized")
 		g.Error("not_found")
 		g.Error("database_not_modifiable")
@@ -221,6 +217,7 @@ var _ = g.Service("control-plane", func() {
 
 			g.Required("database_id")
 		})
+		g.Result(DeleteDatabaseResponse)
 		g.Error("cluster_not_initialized")
 		g.Error("not_found")
 		g.Error("database_not_modifiable")
@@ -230,8 +227,8 @@ var _ = g.Service("control-plane", func() {
 		})
 	})
 
-	g.Method("initiate-database-backup", func() {
-		g.Description("Initiates a backup for a database.")
+	g.Method("backup-database-node", func() {
+		g.Description("Initiates a backup for a database node.")
 		g.Payload(func() {
 			g.Attribute("database_id", g.String, func() {
 				g.Format(g.FormatUUID)
@@ -246,7 +243,7 @@ var _ = g.Service("control-plane", func() {
 
 			g.Required("database_id", "node_name", "options")
 		})
-		g.Result(Task)
+		g.Result(BackupDatabaseNodeResponse)
 		g.Error("cluster_not_initialized")
 		g.Error("not_found")
 		g.Error("database_not_modifiable")
@@ -334,13 +331,13 @@ var _ = g.Service("control-plane", func() {
 				g.Description("ID of the task to get log for.")
 				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 			})
-			g.Attribute("after_line_id", g.String, func() {
+			g.Attribute("after_entry_id", g.String, func() {
 				g.Format(g.FormatUUID)
-				g.Description("ID of the line to start from.")
+				g.Description("ID of the entry to start from.")
 				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 			})
 			g.Attribute("limit", g.Int, func() {
-				g.Description("Maximum number of lines to return.")
+				g.Description("Maximum number of entries to return.")
 				g.Example(100)
 			})
 
@@ -352,7 +349,7 @@ var _ = g.Service("control-plane", func() {
 
 		g.HTTP(func() {
 			g.GET("/databases/{database_id}/tasks/{task_id}/log")
-			g.Param("after_line_id")
+			g.Param("after_entry_id")
 			g.Param("limit")
 		})
 	})

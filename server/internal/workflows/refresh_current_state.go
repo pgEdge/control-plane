@@ -7,11 +7,13 @@ import (
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
 type RefreshCurrentStateInput struct {
 	DatabaseID uuid.UUID `json:"database_id"`
+	TaskID     uuid.UUID `json:"task_id"`
 }
 
 type RefreshCurrentStateOutput struct {
@@ -58,8 +60,33 @@ func (w *Workflows) RefreshCurrentState(ctx workflow.Context, input *RefreshCurr
 		return nil, fmt.Errorf("failed to plan refresh: %w", err)
 	}
 
-	if err := w.applyEvents(ctx, input.DatabaseID, current, planRefreshOutput.Plan); err != nil {
+	start := workflow.Now(ctx)
+	err = w.logTaskEvent(ctx,
+		input.DatabaseID,
+		input.TaskID,
+		task.LogEntry{
+			Message: "refreshing current state",
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	if err := w.applyEvents(ctx, input.DatabaseID, input.TaskID, current, planRefreshOutput.Plan); err != nil {
 		return nil, fmt.Errorf("failed to apply refresh events: %w", err)
+	}
+	duration := workflow.Now(ctx).Sub(start)
+	err = w.logTaskEvent(ctx,
+		input.DatabaseID,
+		input.TaskID,
+		task.LogEntry{
+			Message: fmt.Sprintf("finished refreshing current state (took %s)", duration),
+			Fields: map[string]any{
+				"duration_ms": duration.Milliseconds(),
+			},
+		},
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	logger.Info("successfully got current state")

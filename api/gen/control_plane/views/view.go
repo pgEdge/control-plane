@@ -336,17 +336,19 @@ type DatabaseUserSpecView struct {
 	Roles []string
 }
 
-// RestoreDatabaseResponseView is a type that runs validations on a projected
+// CreateDatabaseResponseView is a type that runs validations on a projected
 // type.
-type RestoreDatabaseResponseView struct {
-	// The database being restored.
+type CreateDatabaseResponseView struct {
+	// The task that will create this database.
+	Task *TaskView
+	// The database being created.
 	Database *DatabaseView
-	// The restore tasks that were created to restore this database.
-	Tasks []*TaskView
 }
 
 // TaskView is a type that runs validations on a projected type.
 type TaskView struct {
+	// The parent task ID of the task.
+	ParentID *string
 	// The database ID of the task.
 	DatabaseID *string
 	// The name of the node that the task is operating on.
@@ -367,6 +369,26 @@ type TaskView struct {
 	Status *string
 	// The error message if the task failed.
 	Error *string
+}
+
+// UpdateDatabaseResponseView is a type that runs validations on a projected
+// type.
+type UpdateDatabaseResponseView struct {
+	// The task that will update this database.
+	Task *TaskView
+	// The database being updated.
+	Database *DatabaseView
+}
+
+// RestoreDatabaseResponseView is a type that runs validations on a projected
+// type.
+type RestoreDatabaseResponseView struct {
+	// The task that will restore this database.
+	Task *TaskView
+	// The tasks that will restore each database node.
+	NodeTasks []*TaskView
+	// The database being restored.
+	Database *DatabaseView
 }
 
 var (
@@ -959,19 +981,17 @@ func ValidateDatabaseUserSpecView(result *DatabaseUserSpecView) (err error) {
 	return
 }
 
-// ValidateRestoreDatabaseResponseView runs the validations defined on
-// RestoreDatabaseResponseView.
-func ValidateRestoreDatabaseResponseView(result *RestoreDatabaseResponseView) (err error) {
-	if result.Database != nil {
-		if err2 := ValidateDatabaseView(result.Database); err2 != nil {
+// ValidateCreateDatabaseResponseView runs the validations defined on
+// CreateDatabaseResponseView.
+func ValidateCreateDatabaseResponseView(result *CreateDatabaseResponseView) (err error) {
+	if result.Task != nil {
+		if err2 := ValidateTaskView(result.Task); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	for _, e := range result.Tasks {
-		if e != nil {
-			if err2 := ValidateTaskView(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if result.Database != nil {
+		if err2 := ValidateDatabaseView(result.Database); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -994,6 +1014,9 @@ func ValidateTaskView(result *TaskView) (err error) {
 	if result.Status == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("status", "result"))
 	}
+	if result.ParentID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.parent_id", *result.ParentID, goa.FormatUUID))
+	}
 	if result.DatabaseID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.database_id", *result.DatabaseID, goa.FormatUUID))
 	}
@@ -1015,6 +1038,45 @@ func ValidateTaskView(result *TaskView) (err error) {
 	if result.Status != nil {
 		if !(*result.Status == "pending" || *result.Status == "running" || *result.Status == "completed" || *result.Status == "failed" || *result.Status == "unknown") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.status", *result.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		}
+	}
+	return
+}
+
+// ValidateUpdateDatabaseResponseView runs the validations defined on
+// UpdateDatabaseResponseView.
+func ValidateUpdateDatabaseResponseView(result *UpdateDatabaseResponseView) (err error) {
+	if result.Task != nil {
+		if err2 := ValidateTaskView(result.Task); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if result.Database != nil {
+		if err2 := ValidateDatabaseView(result.Database); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateRestoreDatabaseResponseView runs the validations defined on
+// RestoreDatabaseResponseView.
+func ValidateRestoreDatabaseResponseView(result *RestoreDatabaseResponseView) (err error) {
+	if result.Task != nil {
+		if err2 := ValidateTaskView(result.Task); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	for _, e := range result.NodeTasks {
+		if e != nil {
+			if err2 := ValidateTaskView(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if result.Database != nil {
+		if err2 := ValidateDatabaseView(result.Database); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return

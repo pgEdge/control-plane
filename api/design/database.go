@@ -480,6 +480,15 @@ var CreateDatabaseRequest = g.Type("CreateDatabaseRequest", func() {
 	})
 })
 
+var CreateDatabaseResponse = g.Type("CreateDatabaseResponse", func() {
+	g.Attribute("task", Task, func() {
+		g.Description("The task that will create this database.")
+	})
+	g.Attribute("database", Database, func() {
+		g.Description("The database being created.")
+	})
+})
+
 var UpdateDatabaseRequest = g.Type("UpdateDatabaseRequest", func() {
 	g.Attribute("tenant_id", g.String, func() {
 		g.Format(g.FormatUUID)
@@ -488,6 +497,27 @@ var UpdateDatabaseRequest = g.Type("UpdateDatabaseRequest", func() {
 	})
 	g.Attribute("spec", DatabaseSpec, func() {
 		g.Description("The specification for the database.")
+	})
+})
+
+var UpdateDatabaseResponse = g.Type("UpdateDatabaseResponse", func() {
+	g.Attribute("task", Task, func() {
+		g.Description("The task that will update this database.")
+	})
+	g.Attribute("database", Database, func() {
+		g.Description("The database being updated.")
+	})
+})
+
+var DeleteDatabaseResponse = g.Type("DeleteDatabaseResponse", func() {
+	g.Attribute("task", Task, func() {
+		g.Description("The task that will delete this database.")
+	})
+})
+
+var BackupDatabaseNodeResponse = g.Type("BackupDatabaseNodeResponse", func() {
+	g.Attribute("task", Task, func() {
+		g.Description("The task that will backup this database node.")
 	})
 })
 
@@ -505,11 +535,14 @@ var RestoreDatabaseRequest = g.Type("RestoreDatabaseRequest", func() {
 })
 
 var RestoreDatabaseResponse = g.Type("RestoreDatabaseResponse", func() {
+	g.Attribute("task", Task, func() {
+		g.Description("The task that will restore this database.")
+	})
+	g.Attribute("node_tasks", g.ArrayOf(Task), func() {
+		g.Description("The tasks that will restore each database node.")
+	})
 	g.Attribute("database", Database, func() {
 		g.Description("The database being restored.")
-	})
-	g.Attribute("tasks", g.ArrayOf(Task), func() {
-		g.Description("The restore tasks that were created to restore this database.")
 	})
 })
 

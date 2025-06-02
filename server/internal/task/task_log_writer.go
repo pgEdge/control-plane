@@ -20,9 +20,11 @@ func NewTaskLogWriter(ctx context.Context, service *Service, databaseID, taskID 
 		DatabaseID: databaseID,
 		TaskID:     taskID,
 		writer: utils.NewLineWriter(func(b []byte) error {
-			err := service.AddLogLine(ctx, databaseID, taskID, string(b))
+			err := service.AddLogEntry(ctx, databaseID, taskID, LogEntry{
+				Message: utils.Clean(string(b)), // remove all control characters
+			})
 			if err != nil {
-				return fmt.Errorf("failed to add log line: %w", err)
+				return fmt.Errorf("failed to add log entry: %w", err)
 			}
 			return nil
 		}),
@@ -32,7 +34,7 @@ func NewTaskLogWriter(ctx context.Context, service *Service, databaseID, taskID 
 func (w *TaskLogWriter) Write(p []byte) (n int, err error) {
 	n, err = w.writer.Write(p)
 	if err != nil {
-		return n, fmt.Errorf("failed to write log line: %w", err)
+		return n, fmt.Errorf("failed to write log entry: %w", err)
 	}
 	return n, nil
 }

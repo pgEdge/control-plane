@@ -5,6 +5,11 @@ import (
 )
 
 var Task = g.Type("Task", func() {
+	g.Attribute("parent_id", g.String, func() {
+		g.Format(g.FormatUUID)
+		g.Description("The parent task ID of the task.")
+		g.Example("439eb515-e700-4740-b508-4a3f12ec4f83")
+	})
 	g.Attribute("database_id", g.String, func() {
 		g.Format(g.FormatUUID)
 		g.Description("The database ID of the task.")
@@ -56,6 +61,26 @@ var Task = g.Type("Task", func() {
 	g.Required("database_id", "task_id", "created_at", "type", "status")
 })
 
+var TaskLogEntry = g.Type("TaskLogEntry", func() {
+	g.Attribute("timestamp", g.String, func() {
+		g.Format(g.FormatDateTime)
+		g.Description("The timestamp of the log entry.")
+		g.Example("2025-05-29T15:43:13Z")
+	})
+	g.Attribute("message", g.String, func() {
+		g.Description("The log message.")
+		g.Example("task started")
+	})
+	g.Attribute("fields", g.MapOf(g.String, g.Any), func() {
+		g.Description("Additional fields for the log entry.")
+		g.Example(map[string]any{
+			"status":         "creating",
+			"option.enabled": true,
+		})
+	})
+	g.Required("timestamp", "message")
+})
+
 var TaskLog = g.Type("TaskLog", func() {
 	g.Attribute("database_id", g.String, func() {
 		g.Format(g.FormatUUID)
@@ -72,15 +97,14 @@ var TaskLog = g.Type("TaskLog", func() {
 		g.Description("The status of the task.")
 		g.Example("pending")
 	})
-	g.Attribute("last_line_id", g.String, func() {
+	g.Attribute("last_entry_id", g.String, func() {
 		g.Format(g.FormatUUID)
-		g.Description("The ID of the last line in the task log.")
+		g.Description("The ID of the last entry in the task log.")
 		g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 	})
-	g.Attribute("lines", g.ArrayOf(g.String), func() {
-		g.Description("The lines of the task log.")
-		g.Example([]string{"Task started", "Task completed"})
+	g.Attribute("entries", g.ArrayOf(TaskLogEntry), func() {
+		g.Description("Entries in the task log.")
 	})
 
-	g.Required("database_id", "task_id", "task_status", "lines")
+	g.Required("database_id", "task_id", "task_status", "entries")
 })

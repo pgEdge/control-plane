@@ -76,8 +76,8 @@ func DeleteDatabaseControlPlanePath(databaseID string) string {
 	return fmt.Sprintf("/databases/%v", databaseID)
 }
 
-// InitiateDatabaseBackupControlPlanePath returns the URL path to the control-plane service initiate-database-backup HTTP endpoint.
-func InitiateDatabaseBackupControlPlanePath(databaseID string, nodeName string) string {
+// BackupDatabaseNodeControlPlanePath returns the URL path to the control-plane service backup-database-node HTTP endpoint.
+func BackupDatabaseNodeControlPlanePath(databaseID string, nodeName string) string {
 	return fmt.Sprintf("/databases/%v/nodes/%v/backups", databaseID, nodeName)
 }
 

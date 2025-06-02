@@ -7,9 +7,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/cschleiden/go-workflows/backend"
-	"github.com/cschleiden/go-workflows/client"
-	"github.com/cschleiden/go-workflows/core"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 
@@ -31,14 +28,13 @@ var ErrAlreadyInitialized = api.MakeClusterAlreadyInitialized(errors.New("cluste
 var _ api.Service = (*Service)(nil)
 
 type Service struct {
-	cfg            config.Config
-	logger         zerolog.Logger
-	etcd           *etcd.EmbeddedEtcd
-	hostSvc        *host.Service
-	dbSvc          *database.Service
-	taskSvc        *task.Service
-	workflowClient *client.Client
-	workflows      *workflows.Workflows
+	cfg         config.Config
+	logger      zerolog.Logger
+	etcd        *etcd.EmbeddedEtcd
+	hostSvc     *host.Service
+	dbSvc       *database.Service
+	taskSvc     *task.Service
+	workflowSvc *workflows.Service
 }
 
 func NewService(
@@ -48,18 +44,16 @@ func NewService(
 	hostSvc *host.Service,
 	dbSvc *database.Service,
 	taskSvc *task.Service,
-	workflowClient *client.Client,
-	workflows *workflows.Workflows,
+	workflowSvc *workflows.Service,
 ) *Service {
 	return &Service{
-		cfg:            cfg,
-		logger:         logger,
-		etcd:           etcd,
-		hostSvc:        hostSvc,
-		dbSvc:          dbSvc,
-		taskSvc:        taskSvc,
-		workflowClient: workflowClient,
-		workflows:      workflows,
+		cfg:         cfg,
+		logger:      logger,
+		etcd:        etcd,
+		hostSvc:     hostSvc,
+		dbSvc:       dbSvc,
+		taskSvc:     taskSvc,
+		workflowSvc: workflowSvc,
 	}
 }
 
@@ -171,7 +165,7 @@ func (s *Service) ListDatabases(ctx context.Context) (api.DatabaseCollection, er
 	return apiDatabases, nil
 }
 
-func (s *Service) CreateDatabase(ctx context.Context, req *api.CreateDatabaseRequest) (*api.Database, error) {
+func (s *Service) CreateDatabase(ctx context.Context, req *api.CreateDatabaseRequest) (*api.CreateDatabaseResponse, error) {
 	spec, err := apiToDatabaseSpec(req.ID, req.TenantID, req.Spec)
 	if err != nil {
 		return nil, api.MakeInvalidInput(err)
@@ -184,24 +178,22 @@ func (s *Service) CreateDatabase(ctx context.Context, req *api.CreateDatabaseReq
 		return nil, fmt.Errorf("failed to create database: %w", err)
 	}
 
-	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
-		Queue:      core.Queue(s.cfg.HostID.String()),
-		InstanceID: db.DatabaseID.String(), // Using a stable ID functions as a locking mechanism
-	}, s.workflows.UpdateDatabase, &workflows.UpdateDatabaseInput{
-		Spec: spec,
-	})
+	t, err := s.workflowSvc.CreateDatabase(ctx, spec)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create workflow instance: %w", err)
+		return nil, fmt.Errorf("failed to start workflow: %w", err)
 	}
 
-	return databaseToAPI(db), nil
+	return &api.CreateDatabaseResponse{
+		Database: databaseToAPI(db),
+		Task:     taskToAPI(t),
+	}, nil
 }
 
 func (s *Service) InspectDatabase(ctx context.Context, req *api.InspectDatabasePayload) (*api.Database, error) {
 	return nil, ErrNotImplemented
 }
 
-func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePayload) (*api.Database, error) {
+func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePayload) (*api.UpdateDatabaseResponse, error) {
 	spec, err := apiToDatabaseSpec(req.DatabaseID, req.Request.TenantID, req.Request.Spec)
 	if err != nil {
 		return nil, api.MakeInvalidInput(err)
@@ -221,55 +213,49 @@ func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePay
 		forceUpdate = *req.ForceUpdate
 	}
 
-	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
-		Queue:      core.Queue(s.cfg.HostID.String()),
-		InstanceID: db.DatabaseID.String(), // Using a stable ID functions as a locking mechanism
-	}, s.workflows.UpdateDatabase, &workflows.UpdateDatabaseInput{
-		Spec:        spec,
-		ForceUpdate: forceUpdate,
-	})
+	t, err := s.workflowSvc.UpdateDatabase(ctx, spec, forceUpdate)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create workflow instance: %w", err)
+		return nil, fmt.Errorf("failed to start workflow: %w", err)
 	}
 
-	return databaseToAPI(db), nil
+	return &api.UpdateDatabaseResponse{
+		Database: databaseToAPI(db),
+		Task:     taskToAPI(t),
+	}, nil
 }
 
-func (s *Service) DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePayload) error {
+func (s *Service) DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePayload) (*api.DeleteDatabaseResponse, error) {
 	databaseID, err := uuid.Parse(req.DatabaseID)
 	if err != nil {
-		return api.MakeInvalidInput(fmt.Errorf("invalid database ID %q: %w", req.DatabaseID, err))
+		return nil, api.MakeInvalidInput(fmt.Errorf("invalid database ID %q: %w", req.DatabaseID, err))
 	}
 
 	db, err := s.dbSvc.GetDatabase(ctx, databaseID)
 	if errors.Is(err, database.ErrDatabaseNotFound) {
-		return api.MakeNotFound(fmt.Errorf("database %s not found: %w", databaseID, err))
+		return nil, api.MakeNotFound(fmt.Errorf("database %s not found: %w", databaseID, err))
 	} else if err != nil {
-		return fmt.Errorf("failed to get database: %w", err)
+		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
 	if !database.DatabaseStateModifiable(db.State) {
-		return api.MakeDatabaseNotModifiable(fmt.Errorf("database %s is not in a modifiable state", databaseID))
+		return nil, api.MakeDatabaseNotModifiable(fmt.Errorf("database %s is not in a modifiable state", databaseID))
 	}
 
 	err = s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, db.State, database.DatabaseStateDeleting)
 	if err != nil {
-		return fmt.Errorf("failed to update database state: %w", err)
+		return nil, fmt.Errorf("failed to update database state: %w", err)
 	}
 
-	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
-		Queue:      core.Queue(s.cfg.HostID.String()),
-		InstanceID: db.DatabaseID.String(), // Using a stable ID functions as a locking mechanism
-	}, s.workflows.DeleteDatabase, &workflows.DeleteDatabaseInput{
-		DatabaseID: db.DatabaseID,
-	})
+	t, err := s.workflowSvc.DeleteDatabase(ctx, databaseID)
 	if err != nil {
-		return fmt.Errorf("failed to create workflow instance: %w", err)
+		return nil, fmt.Errorf("failed to start workflow: %w", err)
 	}
 
-	return nil
+	return &api.DeleteDatabaseResponse{
+		Task: taskToAPI(t),
+	}, nil
 }
 
-func (s *Service) InitiateDatabaseBackup(ctx context.Context, req *api.InitiateDatabaseBackupPayload) (*api.Task, error) {
+func (s *Service) BackupDatabaseNode(ctx context.Context, req *api.BackupDatabaseNodePayload) (*api.BackupDatabaseNodeResponse, error) {
 	databaseID, err := uuid.Parse(req.DatabaseID)
 	if err != nil {
 		return nil, api.MakeInvalidInput(fmt.Errorf("invalid database ID %q: %w", req.DatabaseID, err))
@@ -297,54 +283,35 @@ func (s *Service) InitiateDatabaseBackup(ctx context.Context, req *api.InitiateD
 		}
 	}
 
-	t, err := task.NewTask(db.DatabaseID, task.TypeBackup)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create task: %w", err)
-	}
-	t.NodeName = node.Name
-	err = s.taskSvc.CreateTask(ctx, t)
-	if err != nil {
-		return nil, fmt.Errorf("failed to persist task: %w", err)
-	}
-
-	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
-		Queue:      core.Queue(s.cfg.HostID.String()),
-		InstanceID: db.DatabaseID.String() + "-" + node.Name,
-	}, s.workflows.CreatePgBackRestBackup, &workflows.CreatePgBackRestBackupInput{
-		Task:      t,
-		Instances: instances,
-		Options: &pgbackrest.BackupOptions{
+	t, err := s.workflowSvc.CreatePgBackRestBackup(ctx,
+		db.DatabaseID,
+		node.Name,
+		false,
+		instances,
+		&pgbackrest.BackupOptions{
 			Type:         pgbackrest.BackupType(req.Options.Type),
 			Annotations:  req.Options.Annotations,
 			ExtraOptions: req.Options.ExtraOptions,
 		},
-	})
+	)
 	if err != nil {
-		if errors.Is(err, backend.ErrInstanceAlreadyExists) {
+		if errors.Is(err, workflows.ErrDuplicateWorkflow) {
 			err = api.MakeBackupAlreadyInProgress(fmt.Errorf("a backup is already in progress for node %s", node.Name))
 		} else {
 			err = fmt.Errorf("failed to create workflow instance: %w", err)
 		}
-		if tErr := s.taskSvc.DeleteTask(ctx, db.DatabaseID, t.TaskID); tErr != nil {
-			s.logger.Error().Err(tErr).Msg("failed to clean up task after workflow creation failure")
-		}
 		return nil, err
 	}
 
-	return taskToAPI(t), nil
+	return &api.BackupDatabaseNodeResponse{
+		Task: taskToAPI(t),
+	}, nil
 }
 
 func (s *Service) ListDatabaseTasks(ctx context.Context, req *api.ListDatabaseTasksPayload) ([]*api.Task, error) {
 	databaseID, err := uuid.Parse(req.DatabaseID)
 	if err != nil {
 		return nil, api.MakeInvalidInput(fmt.Errorf("invalid database ID %q: %w", req.DatabaseID, err))
-	}
-
-	_, err = s.dbSvc.GetDatabase(ctx, databaseID)
-	if errors.Is(err, database.ErrDatabaseNotFound) {
-		return nil, api.MakeNotFound(fmt.Errorf("database %s not found: %w", databaseID, err))
-	} else if err != nil {
-		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
 
 	options, err := taskListOptions(req)
@@ -370,13 +337,6 @@ func (s *Service) InspectDatabaseTask(ctx context.Context, req *api.InspectDatab
 		return nil, api.MakeInvalidInput(fmt.Errorf("invalid task ID %q: %w", req.TaskID, err))
 	}
 
-	_, err = s.dbSvc.GetDatabase(ctx, databaseID)
-	if errors.Is(err, database.ErrDatabaseNotFound) {
-		return nil, api.MakeNotFound(fmt.Errorf("database %s not found: %w", databaseID, err))
-	} else if err != nil {
-		return nil, fmt.Errorf("failed to get database: %w", err)
-	}
-
 	t, err := s.taskSvc.GetTask(ctx, databaseID, taskID)
 	if errors.Is(err, task.ErrTaskNotFound) {
 		return nil, api.MakeNotFound(fmt.Errorf("task %s not found: %w", taskID, err))
@@ -395,13 +355,6 @@ func (s *Service) GetDatabaseTaskLog(ctx context.Context, req *api.GetDatabaseTa
 	taskID, err := uuid.Parse(req.TaskID)
 	if err != nil {
 		return nil, api.MakeInvalidInput(fmt.Errorf("invalid task ID %q: %w", req.TaskID, err))
-	}
-
-	_, err = s.dbSvc.GetDatabase(ctx, databaseID)
-	if errors.Is(err, database.ErrDatabaseNotFound) {
-		return nil, api.MakeNotFound(fmt.Errorf("database %s not found: %w", databaseID, err))
-	} else if err != nil {
-		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
 
 	t, err := s.taskSvc.GetTask(ctx, databaseID, taskID)
@@ -456,57 +409,25 @@ func (s *Service) RestoreDatabase(ctx context.Context, req *api.RestoreDatabaseP
 		return nil, api.MakeInvalidInput(fmt.Errorf("invalid target nodes %v: %w", diff.ToSlice(), err))
 	}
 
-	var cleanupTasks []func() error
-	handleError := func(cause error) error {
-		for _, cleanup := range cleanupTasks {
-			if err := cleanup(); err != nil {
-				s.logger.Error().Err(err).Msg("failed cleanup task after failing to start restore")
-			}
-		}
-		return cause
-	}
-
 	// Remove backup configuration from nodes that are being restored and
 	// persist the updated spec.
 	db.Spec.RemoveBackupConfigFrom(targetNodes...)
 	db, err = s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateRestoring, db.Spec)
 	if err != nil {
-		return nil, handleError(fmt.Errorf("failed to persist db spec updates: %w", err))
-	}
-	cleanupTasks = append(cleanupTasks, func() error {
-		return s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, database.DatabaseStateRestoring, db.State)
-	})
-
-	nodeTaskIDs := map[string]uuid.UUID{}
-	tasks := make([]*task.Task, len(targetNodes))
-	for i, node := range targetNodes {
-		t, err := task.NewTask(db.DatabaseID, task.TypeRestore)
-		if err != nil {
-			return nil, handleError(fmt.Errorf("failed to create task: %w", err))
-		}
-		t.NodeName = node
-		err = s.taskSvc.CreateTask(ctx, t)
-		if err != nil {
-			return nil, handleError(fmt.Errorf("failed to persist task: %w", err))
-		}
-		nodeTaskIDs[node] = t.TaskID
-		cleanupTasks = append(cleanupTasks, func() error {
-			return s.taskSvc.DeleteTask(ctx, db.DatabaseID, t.TaskID)
-		})
-		tasks[i] = t
+		return nil, fmt.Errorf("failed to persist db spec updates: %w", err)
 	}
 
-	_, err = s.workflowClient.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
-		Queue:      core.Queue(s.cfg.HostID.String()),
-		InstanceID: db.DatabaseID.String(), // Using a stable ID functions as a locking mechanism
-	}, s.workflows.PgBackRestRestore, &workflows.PgBackRestRestoreInput{
-		Spec:          db.Spec,
-		TargetNodes:   targetNodes,
-		RestoreConfig: restoreConfig,
-		NodeTaskIDs:   nodeTaskIDs,
-	})
+	handleError := func(cause error) error {
+		err := s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, database.DatabaseStateRestoring, db.State)
+		if err != nil {
+			s.logger.Err(err).Msg("failed to roll back database state change")
+		}
+		return cause
+	}
+
+	t, nodeTasks, err := s.workflowSvc.PgBackRestRestore(ctx, db.Spec, targetNodes, restoreConfig)
 	if err != nil {
-		if errors.Is(err, backend.ErrInstanceAlreadyExists) {
+		if errors.Is(err, workflows.ErrDuplicateWorkflow) {
 			err = api.MakeBackupAlreadyInProgress(fmt.Errorf("an operation is already in progress for this database"))
 		} else {
 			err = fmt.Errorf("failed to create workflow instance: %w", err)
@@ -515,8 +436,9 @@ func (s *Service) RestoreDatabase(ctx context.Context, req *api.RestoreDatabaseP
 	}
 
 	return &api.RestoreDatabaseResponse{
-		Database: databaseToAPI(db),
-		Tasks:    tasksToAPI(tasks),
+		Database:  databaseToAPI(db),
+		Task:      taskToAPI(t),
+		NodeTasks: tasksToAPI(nodeTasks),
 	}, nil
 }
 

@@ -4,13 +4,16 @@ import (
 	"fmt"
 
 	"github.com/cschleiden/go-workflows/workflow"
+	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
 type UpdateDatabaseInput struct {
+	TaskID      uuid.UUID      `json:"task_id"`
 	Spec        *database.Spec `json:"spec"`
 	ForceUpdate bool           `json:"force_update"`
 }
@@ -23,8 +26,9 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID.String())
 	logger.Info("updating database")
 
-	handleError := func(err error) error {
-		logger.With("error", err).Error("failed to update database")
+	handleError := func(cause error) error {
+		logger.With("error", cause).Error("failed to update database")
+
 		updateStateInput := &activities.UpdateDbStateInput{
 			DatabaseID: input.Spec.DatabaseID,
 			State:      database.DatabaseStateFailed,
@@ -35,11 +39,29 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		if stateErr != nil {
 			logger.With("error", stateErr).Error("failed to update database state")
 		}
-		return err
+
+		updateTaskInput := &activities.UpdateTaskInput{
+			DatabaseID:    input.Spec.DatabaseID,
+			TaskID:        input.TaskID,
+			UpdateOptions: task.UpdateFail(cause),
+		}
+		_ = w.updateTask(ctx, logger, updateTaskInput)
+
+		return cause
+	}
+
+	updateTaskInput := &activities.UpdateTaskInput{
+		DatabaseID:    input.Spec.DatabaseID,
+		TaskID:        input.TaskID,
+		UpdateOptions: task.UpdateStart(),
+	}
+	if err := w.updateTask(ctx, logger, updateTaskInput); err != nil {
+		return nil, handleError(err)
 	}
 
 	refreshCurrentInput := &RefreshCurrentStateInput{
 		DatabaseID: input.Spec.DatabaseID,
+		TaskID:     input.TaskID,
 	}
 	refreshCurrentOutput, err := w.ExecuteRefreshCurrentState(ctx, refreshCurrentInput).Get(ctx)
 	if err != nil {
@@ -56,6 +78,7 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 
 	reconcileInput := &ReconcileStateInput{
 		DatabaseID:  input.Spec.DatabaseID,
+		TaskID:      input.TaskID,
 		Current:     refreshCurrentOutput.State,
 		Desired:     getDesiredOutput.State,
 		ForceUpdate: input.ForceUpdate,
@@ -74,6 +97,15 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		Get(ctx)
 	if err != nil {
 		return nil, handleError(fmt.Errorf("failed to update database state to available: %w", err))
+	}
+
+	updateTaskInput = &activities.UpdateTaskInput{
+		DatabaseID:    input.Spec.DatabaseID,
+		TaskID:        input.TaskID,
+		UpdateOptions: task.UpdateComplete(),
+	}
+	if err := w.updateTask(ctx, logger, updateTaskInput); err != nil {
+		return nil, handleError(err)
 	}
 
 	logger.Info("successfully updated database")

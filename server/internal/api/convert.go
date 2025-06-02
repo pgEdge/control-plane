@@ -418,21 +418,33 @@ func apiToDatabaseSpec(id, tID *string, apiSpec *api.DatabaseSpec) (*database.Sp
 }
 
 func taskToAPI(t *task.Task) *api.Task {
-	var completedAt, err *string
+	var (
+		completedAt *string
+		hostID      *string
+		instanceID  *string
+		parentID    *string
+	)
 	if !t.CompletedAt.IsZero() {
 		completedAt = utils.PointerTo(t.CompletedAt.Format(time.RFC3339))
 	}
-	if t.Error != "" {
-		err = &t.Error
+	if t.HostID != uuid.Nil {
+		hostID = utils.PointerTo(t.HostID.String())
+	}
+	if t.InstanceID != uuid.Nil {
+		instanceID = utils.PointerTo(t.InstanceID.String())
 	}
 	return &api.Task{
-		TaskID:      t.TaskID.String(),
+		ParentID:    parentID,
 		DatabaseID:  t.DatabaseID.String(),
+		TaskID:      t.TaskID.String(),
+		NodeName:    utils.NillablePointerTo(t.NodeName),
+		HostID:      hostID,
+		InstanceID:  instanceID,
 		CreatedAt:   t.CreatedAt.Format(time.RFC3339),
 		CompletedAt: completedAt,
 		Type:        string(t.Type),
 		Status:      string(t.Status),
-		Error:       err,
+		Error:       utils.NillablePointerTo(t.Error),
 	}
 }
 
@@ -445,22 +457,33 @@ func tasksToAPI(tasks []*task.Task) []*api.Task {
 }
 
 func taskLogToAPI(t *task.TaskLog, status task.Status) *api.TaskLog {
-	var lastLineID *string
-	if t.LastLineID != uuid.Nil {
-		lastLineID = utils.PointerTo(t.LastLineID.String())
-	}
-	// we want to return an empty array if there are no lines
-	lines := []string{}
-	if len(t.Lines) > 0 {
-		lines = t.Lines
+	var lastEntryID *string
+	if t.LastEntryID != uuid.Nil {
+		lastEntryID = utils.PointerTo(t.LastEntryID.String())
 	}
 	return &api.TaskLog{
-		DatabaseID: t.DatabaseID.String(),
-		TaskID:     t.TaskID.String(),
-		TaskStatus: string(status),
-		LastLineID: lastLineID,
-		Lines:      lines,
+		DatabaseID:  t.DatabaseID.String(),
+		TaskID:      t.TaskID.String(),
+		TaskStatus:  string(status),
+		LastEntryID: lastEntryID,
+		Entries:     taskLogEntriesToAPI(t.Entries),
 	}
+}
+
+func taskLogEntriesToAPI(entries []task.LogEntry) []*api.TaskLogEntry {
+	// we want to return an empty JSON array, not null, if there are no entries
+	if len(entries) == 0 {
+		return []*api.TaskLogEntry{}
+	}
+	apiEntries := make([]*api.TaskLogEntry, len(entries))
+	for i, e := range entries {
+		apiEntries[i] = &api.TaskLogEntry{
+			Message:   e.Message,
+			Timestamp: e.Timestamp.Format(time.RFC3339),
+			Fields:    e.Fields,
+		}
+	}
+	return apiEntries
 }
 
 func taskListOptions(req *api.ListDatabaseTasksPayload) (task.TaskListOptions, error) {
@@ -494,12 +517,12 @@ func taskLogOptions(req *api.GetDatabaseTaskLogPayload) (task.TaskLogOptions, er
 	if req.Limit != nil {
 		options.Limit = *req.Limit
 	}
-	if req.AfterLineID != nil {
-		afterLineID, err := uuid.Parse(*req.AfterLineID)
+	if req.AfterEntryID != nil {
+		afterEntryID, err := uuid.Parse(*req.AfterEntryID)
 		if err != nil {
-			return task.TaskLogOptions{}, fmt.Errorf("invalid after line ID %q: %w", *req.AfterLineID, err)
+			return task.TaskLogOptions{}, fmt.Errorf("invalid after entry ID %q: %w", *req.AfterEntryID, err)
 		}
-		options.AfterLineID = afterLineID
+		options.AfterEntryID = afterEntryID
 	}
 
 	return options, nil

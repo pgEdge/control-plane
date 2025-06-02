@@ -165,7 +165,7 @@ func (s *PreInitService) ListDatabases(ctx context.Context) (api.DatabaseCollect
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitService) CreateDatabase(ctx context.Context, req *api.CreateDatabaseRequest) (*api.Database, error) {
+func (s *PreInitService) CreateDatabase(ctx context.Context, req *api.CreateDatabaseRequest) (*api.CreateDatabaseResponse, error) {
 	return nil, ErrUninitialized
 }
 
@@ -173,15 +173,15 @@ func (s *PreInitService) InspectDatabase(ctx context.Context, req *api.InspectDa
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitService) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePayload) (*api.Database, error) {
+func (s *PreInitService) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePayload) (*api.UpdateDatabaseResponse, error) {
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitService) DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePayload) error {
-	return ErrUninitialized
+func (s *PreInitService) DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePayload) (*api.DeleteDatabaseResponse, error) {
+	return nil, ErrUninitialized
 }
 
-func (s *PreInitService) InitiateDatabaseBackup(ctx context.Context, req *api.InitiateDatabaseBackupPayload) (*api.Task, error) {
+func (s *PreInitService) BackupDatabaseNode(ctx context.Context, req *api.BackupDatabaseNodePayload) (*api.BackupDatabaseNodeResponse, error) {
 	return nil, ErrUninitialized
 }
 
