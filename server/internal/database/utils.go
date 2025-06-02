@@ -17,6 +17,10 @@ func WaitForPatroniRunning(ctx context.Context, patroniClient *patroni.Client, t
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
+	// We want some tolerance to transient connection errors.
+	const maxConnectionErrors = 3
+	var errCount int
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -24,7 +28,11 @@ func WaitForPatroniRunning(ctx context.Context, patroniClient *patroni.Client, t
 		case <-ticker.C:
 			status, err := patroniClient.GetInstanceStatus(ctx)
 			if err != nil {
-				return fmt.Errorf("failed to get cluster status: %w", err)
+				errCount++
+				if errCount >= maxConnectionErrors {
+					return fmt.Errorf("failed to get cluster status: %w", err)
+				}
+				continue
 			}
 			if status.InRunningState() {
 				return nil
