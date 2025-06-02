@@ -12,11 +12,18 @@
 
 #### pg16 variant
 
-- Upgraded to PostgreSQL 16.9-1
+- Upgraded to PostgreSQL 16.9-2
 
 #### pg17 variant
 
-- Upgraded to PostgreSQL 17.5-1
+- Upgraded to PostgreSQL 17.5-2
+
+#### All variants
+
+- Install Patroni from `pip` instead of with system package manager
+  - The system package manager provides outdated Python dependencies that
+    contain several Medium and High CVEs. Installing from `pip` gives us the
+    latest compatible package versions and resolves the CVEs.
 
 ## [4.0.10-3] - 2025-03-20
 
