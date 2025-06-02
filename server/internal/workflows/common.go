@@ -85,6 +85,10 @@ func (w *Workflows) logTaskEvent(
 	taskID uuid.UUID,
 	entries ...task.LogEntry,
 ) error {
+	if len(entries) == 0 {
+		return nil
+	}
+
 	_, err := w.Activities.
 		ExecuteLogTaskEvent(ctx, &activities.LogTaskEventInput{
 			DatabaseID: databaseID,
