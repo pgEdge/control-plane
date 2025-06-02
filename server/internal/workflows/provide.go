@@ -71,6 +71,10 @@ func provideClient(i *do.Injector) {
 
 func provideBackend(i *do.Injector) {
 	do.Provide(i, func(i *do.Injector) (backend.Backend, error) {
+		cfg, err := do.Invoke[config.Config](i)
+		if err != nil {
+			return nil, err
+		}
 		store, err := do.Invoke[*etcd.Store](i)
 		if err != nil {
 			return nil, err
@@ -83,7 +87,7 @@ func provideBackend(i *do.Injector) {
 		backendOpts := backend.ApplyOptions(
 			backend.WithLogger(logger),
 		)
-		return etcd.NewBackend(store, backendOpts), nil
+		return etcd.NewBackend(store, backendOpts, cfg.HostID.String()), nil
 	})
 }
 

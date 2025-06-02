@@ -23,7 +23,7 @@ func Test_EtcdBackend(t *testing.T) {
 
 	test.BackendTest(t, func(options ...backend.BackendOption) test.TestBackend {
 		opts := backend.ApplyOptions(options...)
-		return NewBackend(NewStore(client, uuid.NewString()), opts)
+		return NewBackend(NewStore(client, uuid.NewString()), opts, uuid.NewString())
 	}, nil)
 }
 
@@ -33,7 +33,7 @@ func Test_EtcdBackendE2E(t *testing.T) {
 
 	test.EndToEndBackendTest(t, func(options ...backend.BackendOption) test.TestBackend {
 		opts := backend.ApplyOptions(options...)
-		return NewBackend(NewStore(client, uuid.NewString()), opts)
+		return NewBackend(NewStore(client, uuid.NewString()), opts, uuid.NewString())
 	}, nil)
 }
 
