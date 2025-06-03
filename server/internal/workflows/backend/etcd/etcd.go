@@ -260,6 +260,7 @@ func (b *Backend) GetWorkflowTask(ctx context.Context, queues []workflow.Queue) 
 			if err != nil && !errors.Is(err, storage.ErrNotFound) {
 				return nil, fmt.Errorf("failed to check for lock: %w", err)
 			}
+			now := time.Now()
 			var lockOp storage.TxnOperation
 			switch {
 			case lock == nil:
@@ -267,7 +268,7 @@ func (b *Backend) GetWorkflowTask(ctx context.Context, queues []workflow.Queue) 
 					Create(&workflow_instance_lock.Value{
 						WorkflowInstanceID:  instanceID,
 						WorkflowExecutionID: executionID,
-						CreatedAt:           time.Now(),
+						CreatedAt:           now,
 						WorkerID:            b.workerID,
 						WorkerInstanceID:    b.workerInstanceID,
 					}).
@@ -299,7 +300,6 @@ func (b *Backend) GetWorkflowTask(ctx context.Context, queues []workflow.Queue) 
 			}
 			sortPendingEvents(pendingEvents)
 
-			now := time.Now()
 			var newEvents []*history.Event
 			for _, event := range pendingEvents {
 				// Skip events that aren't visible yet.
@@ -322,7 +322,7 @@ func (b *Backend) GetWorkflowTask(ctx context.Context, queues []workflow.Queue) 
 				b.store.WorkflowInstanceSticky.
 					Put(&workflow_instance_sticky.Value{
 						WorkflowInstanceID: instanceID,
-						CreatedAt:          time.Now(),
+						CreatedAt:          now,
 						WorkerID:           b.workerID,
 					}).
 					WithTTL(b.options.StickyTimeout),
