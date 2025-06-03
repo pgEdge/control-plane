@@ -14,6 +14,14 @@ type Value struct {
 	WorkflowInstanceID string    `json:"workflow_instance_id"`
 	EventID            string    `json:"event_id"`
 	CreatedAt          time.Time `json:"created_at"`
+	WorkerID           string    `json:"worker_id"`
+	WorkerInstanceID   string    `json:"worker_instance_id"`
+}
+
+func (v *Value) CanBeReassignedTo(workerID, workerInstanceID string) bool {
+	// This lock can be reassigned if it belongs to an old instance of the given
+	// worker.
+	return v.WorkerID == workerID && v.WorkerInstanceID != workerInstanceID
 }
 
 type Store struct {

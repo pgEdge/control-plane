@@ -29,16 +29,18 @@ import (
 var _ backend.Backend = (*Backend)(nil)
 
 type Backend struct {
-	store    *Store
-	options  *backend.Options
-	workerID string
+	store            *Store
+	options          *backend.Options
+	workerID         string
+	workerInstanceID string
 }
 
-func NewBackend(store *Store, options *backend.Options) *Backend {
+func NewBackend(store *Store, options *backend.Options, workerID string) *Backend {
 	return &Backend{
-		store:    store,
-		options:  options,
-		workerID: uuid.NewString(),
+		store:            store,
+		options:          options,
+		workerID:         workerID,
+		workerInstanceID: uuid.NewString(),
 	}
 }
 
@@ -252,15 +254,35 @@ func (b *Backend) GetWorkflowTask(ctx context.Context, queues []workflow.Queue) 
 			instanceID := item.WorkflowInstance.InstanceID
 			executionID := item.WorkflowInstance.ExecutionID
 
-			locked, err := b.store.WorkflowInstanceLock.
-				ExistsByKey(item.WorkflowInstance.InstanceID, item.WorkflowInstance.ExecutionID).
+			lock, err := b.store.WorkflowInstanceLock.
+				GetByKey(item.WorkflowInstance.InstanceID, item.WorkflowInstance.ExecutionID).
 				Exec(ctx)
-			if err != nil {
+			if err != nil && !errors.Is(err, storage.ErrNotFound) {
 				return nil, fmt.Errorf("failed to check for lock: %w", err)
 			}
-			if locked {
+			now := time.Now()
+			var lockOp storage.TxnOperation
+			switch {
+			case lock == nil:
+				lockOp = b.store.WorkflowInstanceLock.
+					Create(&workflow_instance_lock.Value{
+						WorkflowInstanceID:  instanceID,
+						WorkflowExecutionID: executionID,
+						CreatedAt:           now,
+						WorkerID:            b.workerID,
+						WorkerInstanceID:    b.workerInstanceID,
+					}).
+					WithTTL(b.options.WorkflowLockTimeout)
+			case lock.CanBeReassignedTo(b.workerID, b.workerInstanceID):
+				lock.WorkerID = b.workerID
+				lock.WorkerInstanceID = b.workerInstanceID
+				lockOp = b.store.WorkflowInstanceLock.
+					Update(lock).
+					WithTTL(b.options.WorkflowLockTimeout)
+			default:
 				continue
 			}
+
 			sticky, err := b.store.WorkflowInstanceSticky.
 				GetByKey(item.WorkflowInstance.InstanceID).
 				Exec(ctx)
@@ -278,7 +300,6 @@ func (b *Backend) GetWorkflowTask(ctx context.Context, queues []workflow.Queue) 
 			}
 			sortPendingEvents(pendingEvents)
 
-			now := time.Now()
 			var newEvents []*history.Event
 			for _, event := range pendingEvents {
 				// Skip events that aren't visible yet.
@@ -297,17 +318,11 @@ func (b *Backend) GetWorkflowTask(ctx context.Context, queues []workflow.Queue) 
 			item.UpdateLastLocked()
 
 			err = b.store.Txn(
-				b.store.WorkflowInstanceLock.
-					Create(&workflow_instance_lock.Value{
-						WorkflowInstanceID:  instanceID,
-						WorkflowExecutionID: executionID,
-						CreatedAt:           time.Now(),
-					}).
-					WithTTL(b.options.WorkflowLockTimeout),
+				lockOp,
 				b.store.WorkflowInstanceSticky.
 					Put(&workflow_instance_sticky.Value{
 						WorkflowInstanceID: instanceID,
-						CreatedAt:          time.Now(),
+						CreatedAt:          now,
 						WorkerID:           b.workerID,
 					}).
 					WithTTL(b.options.StickyTimeout),
@@ -356,6 +371,8 @@ func (b *Backend) ExtendWorkflowTask(ctx context.Context, task *backend.Workflow
 			WorkflowInstanceID:  instanceID,
 			WorkflowExecutionID: executionID,
 			CreatedAt:           time.Now(),
+			WorkerID:            b.workerID,
+			WorkerInstanceID:    b.workerInstanceID,
 		}
 	}
 
@@ -570,13 +587,31 @@ func (b *Backend) GetActivityTask(ctx context.Context, queues []workflow.Queue) 
 		for _, item := range items {
 			instanceID := item.WorkflowInstanceID
 			executionID := item.WorkflowExecutionID
-			locked, err := b.store.ActivityLock.
-				ExistsByKey(instanceID, item.Event.ID).
+			lock, err := b.store.ActivityLock.
+				GetByKey(instanceID, item.Event.ID).
 				Exec(ctx)
-			if err != nil {
+			if err != nil && !errors.Is(err, storage.ErrNotFound) {
 				return nil, fmt.Errorf("failed to check for lock: %w", err)
 			}
-			if locked {
+			var lockOp storage.TxnOperation
+			switch {
+			case lock == nil:
+				lockOp = b.store.ActivityLock.
+					Create(&activity_lock.Value{
+						WorkflowInstanceID: instanceID,
+						EventID:            item.Event.ID,
+						CreatedAt:          time.Now(),
+						WorkerID:           b.workerID,
+						WorkerInstanceID:   b.workerInstanceID,
+					}).
+					WithTTL(b.options.ActivityLockTimeout)
+			case lock.CanBeReassignedTo(b.workerID, b.workerInstanceID):
+				lock.WorkerID = b.workerID
+				lock.WorkerInstanceID = b.workerInstanceID
+				lockOp = b.store.ActivityLock.
+					Update(lock).
+					WithTTL(b.options.WorkflowLockTimeout)
+			default:
 				continue
 			}
 
@@ -585,13 +620,7 @@ func (b *Backend) GetActivityTask(ctx context.Context, queues []workflow.Queue) 
 			item.UpdateLastLocked()
 
 			err = b.store.Txn(
-				b.store.ActivityLock.
-					Create(&activity_lock.Value{
-						WorkflowInstanceID: instanceID,
-						EventID:            item.Event.ID,
-						CreatedAt:          time.Now(),
-					}).
-					WithTTL(b.options.ActivityLockTimeout),
+				lockOp,
 				b.store.ActivityQueueItem.Update(item),
 			).Commit(ctx)
 			if err != nil {
@@ -628,6 +657,8 @@ func (b *Backend) ExtendActivityTask(ctx context.Context, task *backend.Activity
 			WorkflowInstanceID: task.WorkflowInstance.InstanceID,
 			EventID:            task.Event.ID,
 			CreatedAt:          time.Now(),
+			WorkerID:           b.workerID,
+			WorkerInstanceID:   b.workerInstanceID,
 		}
 	}
 
