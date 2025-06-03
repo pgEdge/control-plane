@@ -12,6 +12,7 @@ import (
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/patroni"
 )
 
 type GetPrimaryInstanceInput struct {
@@ -46,7 +47,14 @@ func (a *Activities) GetPrimaryInstance(ctx context.Context, input *GetPrimaryIn
 		return nil, err
 	}
 
-	primaryInstanceID, err := database.GetPrimaryInstanceID(ctx, orch, input.DatabaseID, input.InstanceID, 30*time.Second)
+	connInfo, err := orch.GetInstanceConnectionInfo(ctx, input.DatabaseID, input.InstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance connection info: %w", err)
+	}
+
+	patroniClient := patroni.NewClient(connInfo.PatroniURL(), nil)
+
+	primaryInstanceID, err := database.GetPrimaryInstanceID(ctx, patroniClient, 30*time.Second)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get primary instance ID: %w", err)
 	}

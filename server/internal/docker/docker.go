@@ -320,15 +320,35 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	errChan := make(chan error)
-	go func() {
-		for {
+	// The Docker Swarm API doesn't give us a reliable way to wait until the
+	// service spec has been propagated, so calling the inspect endpoint
+	// immediately after update can return a stale result. This ticker not only
+	// gives us an elegant way to poll, it also gives us a brief delay before
+	// the polling starts. That delay should be enough for the service spec to
+	// propagate.
+	//
+	// For comparison, the Docker CLI validates that the service hits a steady
+	// state for a specified time period, which defaults to 5 seconds:
+	// https://github.com/docker/cli/blob/8ed44f916fa908a04f03f69369bc2a16e0db7cc9/cli/command/service/progress/progress.go#L143
+	// We can use a simpler implementation because our service always has a
+	// health check.
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
 			service, _, err := d.client.ServiceInspectWithRaw(ctx, serviceID, types.ServiceInspectOptions{})
 			if err != nil {
-				errChan <- fmt.Errorf("failed to inspect service: %w", errTranslate(err))
+				return fmt.Errorf("failed to inspect service: %w", errTranslate(err))
 			}
 			if service.Spec.Mode.Replicated == nil {
-				errChan <- fmt.Errorf("WaitForServiceScale is only usable for replicated services: %w", err)
+				return fmt.Errorf("WaitForService is only usable for replicated services: %w", err)
+			}
+			if service.UpdateStatus != nil && service.UpdateStatus.State != swarm.UpdateStateCompleted {
+				continue
 			}
 			var desired uint64
 			if r := service.Spec.Mode.Replicated.Replicas; r != nil {
@@ -341,26 +361,18 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 				}),
 			})
 			if err != nil {
-				errChan <- fmt.Errorf("failed to list tasks for service: %w", errTranslate(err))
+				return fmt.Errorf("failed to list tasks for service: %w", errTranslate(err))
 			}
 			var running uint64
 			for _, t := range tasks {
-				if t.Status.State == swarm.TaskStateRunning {
+				if t.DesiredState == swarm.TaskStateRunning && t.Status.State == swarm.TaskStateRunning {
 					running++
 				}
 			}
 			if running == desired {
-				errChan <- nil
+				return nil
 			}
-			time.Sleep(time.Second)
 		}
-	}()
-
-	select {
-	case err := <-errChan:
-		return err
-	case <-ctx.Done():
-		return fmt.Errorf("timed out waiting for service %q to scale", serviceID)
 	}
 }
 

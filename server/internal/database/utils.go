@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,29 +10,16 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
-func GetPatroniClient(ctx context.Context, orch Orchestrator, databaseID, instanceID uuid.UUID) (*patroni.Client, error) {
-	connInfo, err := orch.GetInstanceConnectionInfo(ctx, databaseID, instanceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get instance DSN: %w", err)
-	}
-	patroniURL := &url.URL{
-		Scheme: "http",
-		Host:   fmt.Sprintf("%s:%d", connInfo.AdminHost, connInfo.PatroniPort),
-	}
-	return patroni.NewClient(patroniURL, nil), nil
-}
-
-func WaitForPatroniRunning(ctx context.Context, orch Orchestrator, databaseID, instanceID uuid.UUID, timeout time.Duration) error {
+func WaitForPatroniRunning(ctx context.Context, patroniClient *patroni.Client, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	patroniClient, err := GetPatroniClient(ctx, orch, databaseID, instanceID)
-	if err != nil {
-		return fmt.Errorf("failed to get patroni client: %w", err)
-	}
-
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
+
+	// We want some tolerance to transient connection errors.
+	const maxConnectionErrors = 3
+	var errCount int
 
 	for {
 		select {
@@ -42,7 +28,11 @@ func WaitForPatroniRunning(ctx context.Context, orch Orchestrator, databaseID, i
 		case <-ticker.C:
 			status, err := patroniClient.GetInstanceStatus(ctx)
 			if err != nil {
-				return fmt.Errorf("failed to get cluster status: %w", err)
+				errCount++
+				if errCount >= maxConnectionErrors {
+					return fmt.Errorf("failed to get cluster status: %w", err)
+				}
+				continue
 			}
 			if status.InRunningState() {
 				return nil
@@ -53,14 +43,9 @@ func WaitForPatroniRunning(ctx context.Context, orch Orchestrator, databaseID, i
 	}
 }
 
-func GetPrimaryInstanceID(ctx context.Context, orch Orchestrator, databaseID, instanceID uuid.UUID, timeout time.Duration) (uuid.UUID, error) {
+func GetPrimaryInstanceID(ctx context.Context, patroniClient *patroni.Client, timeout time.Duration) (uuid.UUID, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-
-	patroniClient, err := GetPatroniClient(ctx, orch, databaseID, instanceID)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("failed to get patroni client: %w", err)
-	}
 
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()

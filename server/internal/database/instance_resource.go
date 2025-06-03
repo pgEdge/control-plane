@@ -13,6 +13,7 @@ import (
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/certificates"
+	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/utils"
@@ -74,14 +75,13 @@ func (r *InstanceResource) Dependencies() []resource.Identifier {
 }
 
 func (r *InstanceResource) Refresh(ctx context.Context, rc *resource.Context) error {
-	orch, err := do.Invoke[Orchestrator](rc.Injector)
-	if err != nil {
-		return err
+	if err := r.updateConnectionInfo(ctx, rc); err != nil {
+		return resource.ErrNotFound
 	}
 
-	primaryInstanceID, err := GetPrimaryInstanceID(ctx, orch, r.Spec.DatabaseID, r.Spec.InstanceID, 30*time.Second)
+	primaryInstanceID, err := GetPrimaryInstanceID(ctx, r.patroniClient(), 30*time.Second)
 	if err != nil {
-		return resource.ErrNotFound // TODO: Is this always the right choice?
+		return resource.ErrNotFound
 	}
 	r.PrimaryInstanceID = primaryInstanceID
 
@@ -89,21 +89,23 @@ func (r *InstanceResource) Refresh(ctx context.Context, rc *resource.Context) er
 }
 
 func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) error {
-	orch, err := do.Invoke[Orchestrator](rc.Injector)
-	if err != nil {
-		return err
-	}
 	certs, err := do.Invoke[*certificates.Service](rc.Injector)
 	if err != nil {
 		return err
 	}
 
-	err = WaitForPatroniRunning(ctx, orch, r.Spec.DatabaseID, r.Spec.InstanceID, 12*time.Hour)
+	if err := r.updateConnectionInfo(ctx, rc); err != nil {
+		return err
+	}
+
+	patroniClient := r.patroniClient()
+
+	err = WaitForPatroniRunning(ctx, patroniClient, 12*time.Hour)
 	if err != nil {
 		return fmt.Errorf("failed to wait for patroni to enter running state: %w", err)
 	}
 
-	primaryInstanceID, err := GetPrimaryInstanceID(ctx, orch, r.Spec.DatabaseID, r.Spec.InstanceID, time.Minute)
+	primaryInstanceID, err := GetPrimaryInstanceID(ctx, patroniClient, time.Minute)
 	if err != nil {
 		return err
 	}
@@ -119,40 +121,29 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 		return fmt.Errorf("failed to get TLS config: %w", err)
 	}
 
-	connInfo, err := orch.GetInstanceConnectionInfo(ctx, r.Spec.DatabaseID, r.Spec.InstanceID)
-	if err != nil {
-		return fmt.Errorf("failed to get instance DSN: %w", err)
-	}
-	r.ConnectionInfo = connInfo
-
 	firstTimeSetup, err := r.isFirstTimeSetup(rc)
 	if err != nil {
 		return err
 	}
 
 	if r.Spec.RestoreConfig != nil && firstTimeSetup {
-		err = r.renameDB(ctx, connInfo, tlsCfg)
+		err = r.renameDB(ctx, r.ConnectionInfo, tlsCfg)
 		if err != nil {
 			return fmt.Errorf("failed to rename database %q: %w", r.Spec.DatabaseName, err)
 		}
-		err = r.dropSpock(ctx, connInfo, tlsCfg)
+		err = r.dropSpock(ctx, r.ConnectionInfo, tlsCfg)
 		if err != nil {
 			return fmt.Errorf("failed to drop spock: %w", err)
 		}
 	}
 
-	err = r.createDB(ctx, connInfo, tlsCfg)
+	err = r.createDB(ctx, tlsCfg)
 	if err != nil {
 		return fmt.Errorf("failed to create database %q: %w", r.Spec.DatabaseName, err)
 	}
 
 	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
-		DSN: &postgres.DSN{
-			Host:   connInfo.AdminHost,
-			Port:   connInfo.AdminPort,
-			DBName: r.Spec.DatabaseName,
-			User:   "pgedge",
-		},
+		DSN: r.ConnectionInfo.AdminDSN(r.Spec.DatabaseName),
 		TLS: tlsCfg,
 	})
 	if err != nil {
@@ -178,15 +169,10 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 		}
 	}
 
-	err = postgres.InitializePgEdgeExtensions(r.Spec.NodeName, &postgres.DSN{
-		Host:        connInfo.PeerHost,
-		Port:        connInfo.PeerPort,
-		DBName:      r.Spec.DatabaseName,
-		User:        "pgedge",
-		SSLCert:     connInfo.PeerSSLCert,
-		SSLKey:      connInfo.PeerSSLKey,
-		SSLRootCert: connInfo.PeerSSLRootCert,
-	}).Exec(ctx, conn)
+	err = postgres.InitializePgEdgeExtensions(
+		r.Spec.NodeName,
+		r.ConnectionInfo.PeerDSN(r.Spec.DatabaseName),
+	).Exec(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to initialize pgedge extensions: %w", err)
 	}
@@ -226,17 +212,11 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 }
 
 func (r *InstanceResource) Update(ctx context.Context, rc *resource.Context) error {
-	orch, err := do.Invoke[Orchestrator](rc.Injector)
-	if err != nil {
+	if err := r.updateConnectionInfo(ctx, rc); err != nil {
 		return err
 	}
 
-	client, err := GetPatroniClient(ctx, orch, r.Spec.DatabaseID, r.Spec.InstanceID)
-	if err != nil {
-		return fmt.Errorf("failed to get patroni client: %w", err)
-	}
-
-	if err := client.Reload(ctx); err != nil {
+	if err := r.patroniClient().Reload(ctx); err != nil {
 		return fmt.Errorf("failed to reload patroni conf: %w", err)
 	}
 
@@ -259,12 +239,7 @@ func (r *InstanceResource) Connection(ctx context.Context, rc *resource.Context,
 	}
 
 	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
-		DSN: &postgres.DSN{
-			Host:   r.ConnectionInfo.AdminHost,
-			Port:   r.ConnectionInfo.AdminPort,
-			DBName: dbName,
-			User:   "pgedge",
-		},
+		DSN: r.ConnectionInfo.AdminDSN(dbName),
 		TLS: tlsCfg,
 	})
 	if err != nil {
@@ -273,14 +248,27 @@ func (r *InstanceResource) Connection(ctx context.Context, rc *resource.Context,
 	return conn, nil
 }
 
-func (r *InstanceResource) createDB(ctx context.Context, connInfo *ConnectionInfo, tlsCfg *tls.Config) error {
+func (r *InstanceResource) updateConnectionInfo(ctx context.Context, rc *resource.Context) error {
+	orch, err := do.Invoke[Orchestrator](rc.Injector)
+	if err != nil {
+		return err
+	}
+	connInfo, err := orch.GetInstanceConnectionInfo(ctx, r.Spec.DatabaseID, r.Spec.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get instance connection info: %w", err)
+	}
+	r.ConnectionInfo = connInfo
+
+	return nil
+}
+
+func (r *InstanceResource) patroniClient() *patroni.Client {
+	return patroni.NewClient(r.ConnectionInfo.PatroniURL(), nil)
+}
+
+func (r *InstanceResource) createDB(ctx context.Context, tlsCfg *tls.Config) error {
 	createDBConn, err := ConnectToInstance(ctx, &ConnectionOptions{
-		DSN: &postgres.DSN{
-			Host:   connInfo.AdminHost,
-			Port:   connInfo.AdminPort,
-			DBName: "postgres",
-			User:   "pgedge",
-		},
+		DSN: r.ConnectionInfo.AdminDSN("postgres"),
 		TLS: tlsCfg,
 	})
 	if err != nil {
@@ -308,12 +296,7 @@ func (r *InstanceResource) renameDB(ctx context.Context, connInfo *ConnectionInf
 	// operation.
 	err := utils.Retry(3, 500*time.Millisecond, func() error {
 		createDBConn, err := ConnectToInstance(ctx, &ConnectionOptions{
-			DSN: &postgres.DSN{
-				Host:   connInfo.AdminHost,
-				Port:   connInfo.AdminPort,
-				DBName: "postgres",
-				User:   "pgedge",
-			},
+			DSN: r.ConnectionInfo.AdminDSN("postgres"),
 			TLS: tlsCfg,
 		})
 		if err != nil {
@@ -334,12 +317,7 @@ func (r *InstanceResource) renameDB(ctx context.Context, connInfo *ConnectionInf
 
 func (r *InstanceResource) dropSpock(ctx context.Context, connInfo *ConnectionInfo, tlsCfg *tls.Config) error {
 	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
-		DSN: &postgres.DSN{
-			Host:   connInfo.AdminHost,
-			Port:   connInfo.AdminPort,
-			DBName: r.Spec.DatabaseName,
-			User:   "pgedge",
-		},
+		DSN: r.ConnectionInfo.AdminDSN(r.Spec.DatabaseName),
 		TLS: tlsCfg,
 	})
 	if err != nil {
