@@ -7,6 +7,7 @@ import (
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/monitor"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
@@ -52,6 +53,15 @@ func (w *Workflows) GetDesiredState(ctx workflow.Context, input *GetDesiredState
 				Spec: instance,
 			})
 			instanceFutures = append(instanceFutures, instanceFuture)
+			err = state.AddResource(&monitor.InstanceMonitorResource{
+				DatabaseID:   instance.DatabaseID,
+				InstanceID:   instance.InstanceID,
+				HostID:       instance.HostID,
+				DatabaseName: instance.DatabaseName,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to add instance monitor resource to state: %w", err)
+			}
 		}
 		err = state.AddResource(&database.NodeResource{
 			ClusterID:   w.Config.ClusterID,

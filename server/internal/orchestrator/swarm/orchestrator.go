@@ -7,10 +7,12 @@ import (
 	"net/netip"
 	"path"
 	"path/filepath"
+	"strconv"
 
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/swarm"
+	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 
@@ -380,16 +382,36 @@ func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID
 	if !ok {
 		return nil, fmt.Errorf("no bridge network found for postgres container %q", container.ID)
 	}
-	adminHost := bridge.IPAddress
+	dbPort, err := nat.NewPort("tcp", "5432")
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct postgres nat port: %w", err)
+	}
+
+	var clientPort int
+	// Some configurations won't expose the database port directly, such as
+	// those that use a pooler or load balancer in front of Postgres.
+	binding, ok := inspect.NetworkSettings.Ports[dbPort]
+	if ok && len(binding) > 0 {
+		p, err := strconv.Atoi(binding[0].HostPort)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse client port %q: %w", binding[0].HostPort, err)
+		}
+		clientPort = p
+	}
+
 	return &database.ConnectionInfo{
-		AdminHost:       adminHost,
-		AdminPort:       5432,
-		PeerHost:        fmt.Sprintf("%s.%s-database", inspect.Config.Hostname, databaseID),
-		PeerPort:        5432,
-		PeerSSLCert:     "/opt/pgedge/certificates/postgres/superuser.crt",
-		PeerSSLKey:      "/opt/pgedge/certificates/postgres/superuser.key",
-		PeerSSLRootCert: "/opt/pgedge/certificates/postgres/ca.crt",
-		PatroniPort:     8888,
+		AdminHost:         bridge.IPAddress,
+		AdminPort:         5432,
+		PeerHost:          fmt.Sprintf("%s.%s-database", inspect.Config.Hostname, databaseID),
+		PeerPort:          5432,
+		PeerSSLCert:       "/opt/pgedge/certificates/postgres/superuser.crt",
+		PeerSSLKey:        "/opt/pgedge/certificates/postgres/superuser.key",
+		PeerSSLRootCert:   "/opt/pgedge/certificates/postgres/ca.crt",
+		PatroniPort:       8888,
+		ClientHost:        o.cfg.Hostname,
+		ClientIPv4Address: o.cfg.IPv4Address,
+		ClientPort:        clientPort,
+		InstanceHostname:  inspect.Config.Hostname,
 	}, nil
 }
 

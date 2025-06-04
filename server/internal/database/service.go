@@ -15,6 +15,7 @@ import (
 var ErrDatabaseAlreadyExists = errors.New("database already exists")
 var ErrDatabaseNotFound = errors.New("database not found")
 var ErrDatabaseNotModifiable = errors.New("database not modifiable")
+var ErrInstanceNotFound = errors.New("instance not found")
 
 type Service struct {
 	orchestrator Orchestrator
@@ -184,6 +185,39 @@ func (s *Service) UpdateDatabaseState(ctx context.Context, databaseID uuid.UUID,
 	}
 
 	return nil
+}
+func (s *Service) UpdateInstanceStatus(
+	ctx context.Context,
+	databaseID uuid.UUID,
+	instanceID uuid.UUID,
+	status *InstanceStatus,
+) error {
+	stored := &StoredInstanceStatus{
+		DatabaseID: databaseID,
+		InstanceID: instanceID,
+		Status:     status,
+	}
+	err := s.store.InstanceStatus.
+		Put(stored).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to update stored instance status: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) GetStoredInstanceState(ctx context.Context, databaseID, instanceID uuid.UUID) (InstanceState, error) {
+	storedInstance, err := s.store.Instance.
+		GetByKey(databaseID, instanceID).
+		Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return InstanceStateUnknown, ErrInstanceNotFound
+	} else if err != nil {
+		return InstanceStateUnknown, fmt.Errorf("failed to get stored instance: %w", err)
+	}
+
+	return storedInstance.State, nil
 }
 
 func (s *Service) populateSpecDefaults(ctx context.Context, spec *Spec) error {

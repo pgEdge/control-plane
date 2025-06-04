@@ -36,14 +36,18 @@ func NewInstanceResources(instance *InstanceResource, resources []resource.Resou
 }
 
 type ConnectionInfo struct {
-	AdminHost       string
-	AdminPort       int
-	PeerHost        string
-	PeerPort        int
-	PeerSSLCert     string
-	PeerSSLKey      string
-	PeerSSLRootCert string
-	PatroniPort     int
+	AdminHost         string
+	AdminPort         int
+	PeerHost          string
+	PeerPort          int
+	PeerSSLCert       string
+	PeerSSLKey        string
+	PeerSSLRootCert   string
+	PatroniPort       int
+	ClientHost        string
+	ClientIPv4Address string
+	ClientPort        int
+	InstanceHostname  string
 }
 
 func (c *ConnectionInfo) PatroniURL() *url.URL {
