@@ -157,7 +157,7 @@ func (s *Service) GetTaskLog(ctx context.Context, databaseID, taskID uuid.UUID, 
 		})
 	}
 	if len(stored) > 0 {
-		log.LastEntryID = stored[len(stored)-1].EntryID
+		log.LastEntryID = stored[0].EntryID
 	}
 
 	return log, nil
