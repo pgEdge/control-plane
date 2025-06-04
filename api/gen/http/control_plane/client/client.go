@@ -57,9 +57,9 @@ type Client struct {
 	// create-database endpoint.
 	CreateDatabaseDoer goahttp.Doer
 
-	// InspectDatabase Doer is the HTTP client used to make requests to the
-	// inspect-database endpoint.
-	InspectDatabaseDoer goahttp.Doer
+	// GetDatabase Doer is the HTTP client used to make requests to the
+	// get-database endpoint.
+	GetDatabaseDoer goahttp.Doer
 
 	// UpdateDatabase Doer is the HTTP client used to make requests to the
 	// update-database endpoint.
@@ -124,7 +124,7 @@ func NewClient(
 		RemoveHostDoer:          doer,
 		ListDatabasesDoer:       doer,
 		CreateDatabaseDoer:      doer,
-		InspectDatabaseDoer:     doer,
+		GetDatabaseDoer:         doer,
 		UpdateDatabaseDoer:      doer,
 		DeleteDatabaseDoer:      doer,
 		BackupDatabaseNodeDoer:  doer,
@@ -346,20 +346,20 @@ func (c *Client) CreateDatabase() goa.Endpoint {
 	}
 }
 
-// InspectDatabase returns an endpoint that makes HTTP requests to the
-// control-plane service inspect-database server.
-func (c *Client) InspectDatabase() goa.Endpoint {
+// GetDatabase returns an endpoint that makes HTTP requests to the
+// control-plane service get-database server.
+func (c *Client) GetDatabase() goa.Endpoint {
 	var (
-		decodeResponse = DecodeInspectDatabaseResponse(c.decoder, c.RestoreResponseBody)
+		decodeResponse = DecodeGetDatabaseResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildInspectDatabaseRequest(ctx, v)
+		req, err := c.BuildGetDatabaseRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.InspectDatabaseDoer.Do(req)
+		resp, err := c.GetDatabaseDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("control-plane", "inspect-database", err)
+			return nil, goahttp.ErrRequestError("control-plane", "get-database", err)
 		}
 		return decodeResponse(resp)
 	}

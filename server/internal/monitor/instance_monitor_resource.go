@@ -25,8 +25,7 @@ type InstanceMonitorResource struct {
 	DatabaseID   uuid.UUID `json:"database_id"`
 	InstanceID   uuid.UUID `json:"instance_id"`
 	DatabaseName string    `json:"db_name"`
-	// InstanceHostname string    `json:"instance_hostname"`
-	HostID uuid.UUID `json:"host_id"`
+	HostID       uuid.UUID `json:"host_id"`
 }
 
 func (m *InstanceMonitorResource) ResourceVersion() string {

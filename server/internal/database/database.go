@@ -36,6 +36,7 @@ type Database struct {
 	UpdatedAt  time.Time
 	State      DatabaseState
 	Spec       *Spec
+	Instances  []*Instance
 }
 
 func databaseToStored(d *Database) *StoredDatabase {
@@ -48,13 +49,35 @@ func databaseToStored(d *Database) *StoredDatabase {
 	}
 }
 
-func storedToDatabase(d *StoredDatabase, spec *Spec) *Database {
+func storedToDatabase(d *StoredDatabase, storedSpec *StoredSpec, instances []*Instance) *Database {
 	return &Database{
 		DatabaseID: d.DatabaseID,
 		TenantID:   d.TenantID,
 		CreatedAt:  d.CreatedAt,
 		UpdatedAt:  d.UpdatedAt,
 		State:      d.State,
-		Spec:       spec,
+		Spec:       storedSpec.Spec,
+		Instances:  instances,
 	}
+}
+
+func storedToDatabases(storedDbs []*StoredDatabase, storedSpecs []*StoredSpec, allInstances []*Instance) []*Database {
+	specsByID := map[uuid.UUID]*StoredSpec{}
+	for _, spec := range storedSpecs {
+		specsByID[spec.DatabaseID] = spec
+	}
+
+	instancesByID := map[uuid.UUID][]*Instance{}
+	for _, instance := range allInstances {
+		instancesByID[instance.DatabaseID] = append(instancesByID[instance.DatabaseID], instance)
+	}
+
+	databases := make([]*Database, len(storedDbs))
+	for i, stored := range storedDbs {
+		spec := specsByID[stored.DatabaseID]
+		instances := instancesByID[stored.DatabaseID]
+		databases[i] = storedToDatabase(stored, spec, instances)
+	}
+
+	return databases
 }

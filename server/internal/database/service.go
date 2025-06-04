@@ -91,6 +91,11 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 		return nil, fmt.Errorf("failed to validate database spec: %w", err)
 	}
 
+	instances, err := s.GetInstances(ctx, spec.DatabaseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database instances: %w", err)
+	}
+
 	currentSpec.Spec = spec
 	currentDB.UpdatedAt = time.Now()
 	currentDB.State = state
@@ -102,8 +107,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 		return nil, fmt.Errorf("failed to persist database: %w", err)
 	}
 
-	db := storedToDatabase(currentDB, nil)
-	db.Spec = spec
+	db := storedToDatabase(currentDB, currentSpec, instances)
 
 	return db, nil
 }
@@ -149,7 +153,12 @@ func (s *Service) GetDatabase(ctx context.Context, databaseID uuid.UUID) (*Datab
 		return nil, fmt.Errorf("failed to get database spec: %w", err)
 	}
 
-	return storedToDatabase(storedDb, storedSpec.Spec), nil
+	instances, err := s.GetInstances(ctx, databaseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database instances: %w", err)
+	}
+
+	return storedToDatabase(storedDb, storedSpec, instances), nil
 }
 
 func (s *Service) GetDatabases(ctx context.Context) ([]*Database, error) {
@@ -158,10 +167,17 @@ func (s *Service) GetDatabases(ctx context.Context) ([]*Database, error) {
 		return nil, fmt.Errorf("failed to get databases: %w", err)
 	}
 
-	databases := make([]*Database, len(storedDbs))
-	for i, storedDb := range storedDbs {
-		databases[i] = storedToDatabase(storedDb, nil)
+	storedSpecs, err := s.store.Spec.GetAll().Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database specs: %w", err)
 	}
+
+	instances, err := s.GetAllInstances(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	databases := storedToDatabases(storedDbs, storedSpecs, instances)
 
 	return databases, nil
 }
@@ -260,6 +276,44 @@ func (s *Service) GetStoredInstanceState(ctx context.Context, databaseID, instan
 	return storedInstance.State, nil
 }
 
+func (s *Service) GetInstances(ctx context.Context, databaseID uuid.UUID) ([]*Instance, error) {
+	storedInstances, err := s.store.Instance.
+		GetByDatabaseID(databaseID).
+		Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stored instances: %w", err)
+	}
+	storedStatuses, err := s.store.InstanceStatus.
+		GetByDatabaseID(databaseID).
+		Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stored instance statuses: %w", err)
+	}
+
+	instances := storedToInstances(storedInstances, storedStatuses)
+
+	return instances, nil
+}
+
+func (s *Service) GetAllInstances(ctx context.Context) ([]*Instance, error) {
+	storedInstances, err := s.store.Instance.
+		GetAll().
+		Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stored instances: %w", err)
+	}
+	storedStatuses, err := s.store.InstanceStatus.
+		GetAll().
+		Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stored instance statuses: %w", err)
+	}
+
+	instances := storedToInstances(storedInstances, storedStatuses)
+
+	return instances, nil
+}
+
 func (s *Service) populateSpecDefaults(ctx context.Context, spec *Spec) error {
 	var hostIDs []uuid.UUID
 	// First pass to build out hostID list
@@ -313,13 +367,3 @@ func (s *Service) populateSpecDefaults(ctx context.Context, spec *Spec) error {
 
 	return nil
 }
-
-// func (s *Service) GetDatabase(ctx context.Context, databaseID uuid.UUID) (*Database, error) {
-
-// 	storedSpec, err := s.store.Spec.GetByKey(databaseID).Exec(ctx)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to get database spec: %w", err)
-// 	}
-
-// 	return storedSpec.Spec, nil
-// }

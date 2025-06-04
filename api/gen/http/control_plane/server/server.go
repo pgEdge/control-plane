@@ -30,7 +30,7 @@ type Server struct {
 	RemoveHost          http.Handler
 	ListDatabases       http.Handler
 	CreateDatabase      http.Handler
-	InspectDatabase     http.Handler
+	GetDatabase         http.Handler
 	UpdateDatabase      http.Handler
 	DeleteDatabase      http.Handler
 	BackupDatabaseNode  http.Handler
@@ -84,7 +84,7 @@ func New(
 			{"RemoveHost", "DELETE", "/hosts/{host_id}"},
 			{"ListDatabases", "GET", "/databases"},
 			{"CreateDatabase", "POST", "/databases"},
-			{"InspectDatabase", "GET", "/databases/{database_id}"},
+			{"GetDatabase", "GET", "/databases/{database_id}"},
 			{"UpdateDatabase", "POST", "/databases/{database_id}"},
 			{"DeleteDatabase", "DELETE", "/databases/{database_id}"},
 			{"BackupDatabaseNode", "POST", "/databases/{database_id}/nodes/{node_name}/backups"},
@@ -105,7 +105,7 @@ func New(
 		RemoveHost:          NewRemoveHostHandler(e.RemoveHost, mux, decoder, encoder, errhandler, formatter),
 		ListDatabases:       NewListDatabasesHandler(e.ListDatabases, mux, decoder, encoder, errhandler, formatter),
 		CreateDatabase:      NewCreateDatabaseHandler(e.CreateDatabase, mux, decoder, encoder, errhandler, formatter),
-		InspectDatabase:     NewInspectDatabaseHandler(e.InspectDatabase, mux, decoder, encoder, errhandler, formatter),
+		GetDatabase:         NewGetDatabaseHandler(e.GetDatabase, mux, decoder, encoder, errhandler, formatter),
 		UpdateDatabase:      NewUpdateDatabaseHandler(e.UpdateDatabase, mux, decoder, encoder, errhandler, formatter),
 		DeleteDatabase:      NewDeleteDatabaseHandler(e.DeleteDatabase, mux, decoder, encoder, errhandler, formatter),
 		BackupDatabaseNode:  NewBackupDatabaseNodeHandler(e.BackupDatabaseNode, mux, decoder, encoder, errhandler, formatter),
@@ -133,7 +133,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.RemoveHost = m(s.RemoveHost)
 	s.ListDatabases = m(s.ListDatabases)
 	s.CreateDatabase = m(s.CreateDatabase)
-	s.InspectDatabase = m(s.InspectDatabase)
+	s.GetDatabase = m(s.GetDatabase)
 	s.UpdateDatabase = m(s.UpdateDatabase)
 	s.DeleteDatabase = m(s.DeleteDatabase)
 	s.BackupDatabaseNode = m(s.BackupDatabaseNode)
@@ -159,7 +159,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountRemoveHostHandler(mux, h.RemoveHost)
 	MountListDatabasesHandler(mux, h.ListDatabases)
 	MountCreateDatabaseHandler(mux, h.CreateDatabase)
-	MountInspectDatabaseHandler(mux, h.InspectDatabase)
+	MountGetDatabaseHandler(mux, h.GetDatabase)
 	MountUpdateDatabaseHandler(mux, h.UpdateDatabase)
 	MountDeleteDatabaseHandler(mux, h.DeleteDatabase)
 	MountBackupDatabaseNodeHandler(mux, h.BackupDatabaseNode)
@@ -651,9 +651,9 @@ func NewCreateDatabaseHandler(
 	})
 }
 
-// MountInspectDatabaseHandler configures the mux to serve the "control-plane"
-// service "inspect-database" endpoint.
-func MountInspectDatabaseHandler(mux goahttp.Muxer, h http.Handler) {
+// MountGetDatabaseHandler configures the mux to serve the "control-plane"
+// service "get-database" endpoint.
+func MountGetDatabaseHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
@@ -663,9 +663,9 @@ func MountInspectDatabaseHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("GET", "/databases/{database_id}", f)
 }
 
-// NewInspectDatabaseHandler creates a HTTP handler which loads the HTTP
-// request and calls the "control-plane" service "inspect-database" endpoint.
-func NewInspectDatabaseHandler(
+// NewGetDatabaseHandler creates a HTTP handler which loads the HTTP request
+// and calls the "control-plane" service "get-database" endpoint.
+func NewGetDatabaseHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -674,13 +674,13 @@ func NewInspectDatabaseHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		decodeRequest  = DecodeInspectDatabaseRequest(mux, decoder)
-		encodeResponse = EncodeInspectDatabaseResponse(encoder)
-		encodeError    = EncodeInspectDatabaseError(encoder, formatter)
+		decodeRequest  = DecodeGetDatabaseRequest(mux, decoder)
+		encodeResponse = EncodeGetDatabaseResponse(encoder)
+		encodeError    = EncodeGetDatabaseError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "inspect-database")
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-database")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
 		payload, err := decodeRequest(r)
 		if err != nil {

@@ -109,3 +109,24 @@ func storedToInstance(instance *StoredInstance, status *StoredInstanceStatus) *I
 	}
 	return out
 }
+
+func storedToInstances(storedInstances []*StoredInstance, storedStatuses []*StoredInstanceStatus) []*Instance {
+	statusesByID := map[uuid.UUID]*StoredInstanceStatus{}
+	for _, s := range storedStatuses {
+		statusesByID[s.InstanceID] = s
+	}
+
+	instances := make([]*Instance, len(storedInstances))
+	for idx, stored := range storedInstances {
+		status := statusesByID[stored.InstanceID]
+		instance := storedToInstance(stored, status)
+		// We want to infer the instance state if the instance is supposed to be
+		// available.
+		if instance.State == InstanceStateAvailable && status != nil {
+			instance.State = patroniToInstanceState(status.Status.PatroniState)
+		}
+		instances[idx] = instance
+	}
+
+	return instances
+}

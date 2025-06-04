@@ -16,6 +16,10 @@ import (
 
 type State string
 
+func (s State) String() string {
+	return string(s)
+}
+
 const (
 	StateStopping                     State = "stopping"
 	StateStopped                      State = "stopped"
@@ -48,6 +52,10 @@ func IsErrorState(state State) bool {
 }
 
 type InstanceRole string
+
+func (i InstanceRole) String() string {
+	return string(i)
+}
 
 const (
 	InstanceRoleReplica       InstanceRole = "replica"

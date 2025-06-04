@@ -37,7 +37,7 @@ type Service interface {
 	// Creates a new database in the cluster.
 	CreateDatabase(context.Context, *CreateDatabaseRequest) (res *CreateDatabaseResponse, err error)
 	// Returns information about a particular database in the cluster.
-	InspectDatabase(context.Context, *InspectDatabasePayload) (res *Database, err error)
+	GetDatabase(context.Context, *GetDatabasePayload) (res *Database, err error)
 	// Updates a database with the given specification.
 	UpdateDatabase(context.Context, *UpdateDatabasePayload) (res *UpdateDatabaseResponse, err error)
 	// Deletes a database from the cluster.
@@ -71,7 +71,7 @@ const ServiceName = "control-plane"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [19]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "inspect-cluster", "list-hosts", "inspect-host", "remove-host", "list-databases", "create-database", "inspect-database", "update-database", "delete-database", "backup-database-node", "list-database-tasks", "inspect-database-task", "get-database-task-log", "restore-database", "get-version"}
+var MethodNames = [19]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "inspect-cluster", "list-hosts", "inspect-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "delete-database", "backup-database-node", "list-database-tasks", "inspect-database-task", "get-database-task-log", "restore-database", "get-version"}
 
 type BackupConfigSpec struct {
 	// The backup provider for this backup configuration.
@@ -264,8 +264,7 @@ type CreateDatabaseResponse struct {
 	Database *Database
 }
 
-// Database is the result type of the control-plane service inspect-database
-// method.
+// Database is the result type of the control-plane service get-database method.
 type Database struct {
 	// Unique identifier for the database.
 	ID string
@@ -408,6 +407,13 @@ type ExtraVolumesSpec struct {
 	DestinationPath string
 }
 
+// GetDatabasePayload is the payload type of the control-plane service
+// get-database method.
+type GetDatabasePayload struct {
+	// ID of the database to get.
+	DatabaseID *string
+}
+
 // GetDatabaseTaskLogPayload is the payload type of the control-plane service
 // get-database-task-log method.
 type GetDatabaseTaskLogPayload struct {
@@ -464,13 +470,6 @@ type HostStatus struct {
 	Components map[string]*ComponentStatus
 }
 
-// InspectDatabasePayload is the payload type of the control-plane service
-// inspect-database method.
-type InspectDatabasePayload struct {
-	// ID of the database to inspect.
-	DatabaseID *string
-}
-
 // InspectDatabaseTaskPayload is the payload type of the control-plane service
 // inspect-database-task method.
 type InspectDatabaseTaskPayload struct {
@@ -487,6 +486,7 @@ type InspectHostPayload struct {
 	HostID *string
 }
 
+// An instance of pgEdge Postgres running on a host.
 type Instance struct {
 	// Unique identifier for the instance.
 	ID string
@@ -496,13 +496,15 @@ type Instance struct {
 	NodeName string
 	// The time that the instance was created.
 	CreatedAt string
-	// The time that the instance was last updated.
-	UpdatedAt    string
-	State        string
-	PatroniState *string
-	Role         *string
-	// True if this instance is in read-only mode.
-	ReadOnly *bool
+	// The time that the instance was last modified.
+	UpdatedAt string
+	// The time that the instance status information was last updated.
+	StatusUpdatedAt *string
+	State           string
+	PatroniState    *string
+	Role            *string
+	// The current spock.readonly setting.
+	ReadOnly *string
 	// True if this instance is pending to be restarted from a configuration change.
 	PendingRestart *bool
 	// True if Patroni has been paused for this instance.
@@ -511,23 +513,28 @@ type Instance struct {
 	PostgresVersion *string
 	// The version of Spock for this instance.
 	SpockVersion *string
-	// All interfaces that this instance serves on.
-	Interfaces []*InstanceInterface
+	// The hostname of the host that's running this instance.
+	Hostname *string
+	// The IPv4 address of the host that's running this instance.
+	Ipv4Address *string
+	// The host port that Postgres is listening on for this instance.
+	Port *int
+	// Status information for this instance's Spock subscriptions.
+	Subscriptions []*InstanceSubscription
+	// An error message if the instance is in an error state.
+	Error *string
 }
 
 type InstanceCollection []*Instance
 
-type InstanceInterface struct {
-	// The type of network for this interface.
-	NetworkType string
-	// The unique identifier of the network for this interface.
-	NetworkID *string
-	// The hostname of the instance on this interface.
-	Hostname *string
-	// The IPv4 address of the instance on this interface.
-	Ipv4Address *string
-	// The Postgres port for the instance on this interface.
-	Port int
+// Status information for a Spock subscription.
+type InstanceSubscription struct {
+	// The Spock node name of the provider for this subscription.
+	ProviderNode string
+	// The name of the subscription.
+	Name string
+	// The current status of the subscription.
+	Status string
 }
 
 // ListDatabaseTasksPayload is the payload type of the control-plane service
@@ -890,7 +897,7 @@ func newDatabase(vres *controlplaneviews.DatabaseView) *Database {
 		res.Spec = transformControlplaneviewsDatabaseSpecViewToDatabaseSpec(vres.Spec)
 	}
 	if vres.Instances != nil {
-		res.Instances = newInstanceCollectionAbbreviated(vres.Instances)
+		res.Instances = newInstanceCollection(vres.Instances)
 	}
 	return res
 }
@@ -933,7 +940,7 @@ func newDatabaseView(res *Database) *controlplaneviews.DatabaseView {
 		vres.Spec = transformDatabaseSpecToControlplaneviewsDatabaseSpecView(res.Spec)
 	}
 	if res.Instances != nil {
-		vres.Instances = newInstanceCollectionViewAbbreviated(res.Instances)
+		vres.Instances = newInstanceCollectionView(res.Instances)
 	}
 	return vres
 }
@@ -997,6 +1004,7 @@ func newInstanceCollectionViewAbbreviated(res InstanceCollection) controlplanevi
 // newInstance converts projected type Instance to service type Instance.
 func newInstance(vres *controlplaneviews.InstanceView) *Instance {
 	res := &Instance{
+		StatusUpdatedAt: vres.StatusUpdatedAt,
 		PatroniState:    vres.PatroniState,
 		Role:            vres.Role,
 		ReadOnly:        vres.ReadOnly,
@@ -1004,6 +1012,10 @@ func newInstance(vres *controlplaneviews.InstanceView) *Instance {
 		PatroniPaused:   vres.PatroniPaused,
 		PostgresVersion: vres.PostgresVersion,
 		SpockVersion:    vres.SpockVersion,
+		Hostname:        vres.Hostname,
+		Ipv4Address:     vres.Ipv4Address,
+		Port:            vres.Port,
+		Error:           vres.Error,
 	}
 	if vres.ID != nil {
 		res.ID = *vres.ID
@@ -1023,10 +1035,10 @@ func newInstance(vres *controlplaneviews.InstanceView) *Instance {
 	if vres.State != nil {
 		res.State = *vres.State
 	}
-	if vres.Interfaces != nil {
-		res.Interfaces = make([]*InstanceInterface, len(vres.Interfaces))
-		for i, val := range vres.Interfaces {
-			res.Interfaces[i] = transformControlplaneviewsInstanceInterfaceViewToInstanceInterface(val)
+	if vres.Subscriptions != nil {
+		res.Subscriptions = make([]*InstanceSubscription, len(vres.Subscriptions))
+		for i, val := range vres.Subscriptions {
+			res.Subscriptions[i] = transformControlplaneviewsInstanceSubscriptionViewToInstanceSubscription(val)
 		}
 	}
 	return res
@@ -1060,6 +1072,7 @@ func newInstanceView(res *Instance) *controlplaneviews.InstanceView {
 		NodeName:        &res.NodeName,
 		CreatedAt:       &res.CreatedAt,
 		UpdatedAt:       &res.UpdatedAt,
+		StatusUpdatedAt: res.StatusUpdatedAt,
 		State:           &res.State,
 		PatroniState:    res.PatroniState,
 		Role:            res.Role,
@@ -1068,11 +1081,15 @@ func newInstanceView(res *Instance) *controlplaneviews.InstanceView {
 		PatroniPaused:   res.PatroniPaused,
 		PostgresVersion: res.PostgresVersion,
 		SpockVersion:    res.SpockVersion,
+		Hostname:        res.Hostname,
+		Ipv4Address:     res.Ipv4Address,
+		Port:            res.Port,
+		Error:           res.Error,
 	}
-	if res.Interfaces != nil {
-		vres.Interfaces = make([]*controlplaneviews.InstanceInterfaceView, len(res.Interfaces))
-		for i, val := range res.Interfaces {
-			vres.Interfaces[i] = transformInstanceInterfaceToControlplaneviewsInstanceInterfaceView(val)
+	if res.Subscriptions != nil {
+		vres.Subscriptions = make([]*controlplaneviews.InstanceSubscriptionView, len(res.Subscriptions))
+		for i, val := range res.Subscriptions {
+			vres.Subscriptions[i] = transformInstanceSubscriptionToControlplaneviewsInstanceSubscriptionView(val)
 		}
 	}
 	return vres
@@ -1677,37 +1694,33 @@ func transformDatabaseUserSpecToControlplaneviewsDatabaseUserSpecView(v *Databas
 	return res
 }
 
-// transformControlplaneviewsInstanceInterfaceViewToInstanceInterface builds a
-// value of type *InstanceInterface from a value of type
-// *controlplaneviews.InstanceInterfaceView.
-func transformControlplaneviewsInstanceInterfaceViewToInstanceInterface(v *controlplaneviews.InstanceInterfaceView) *InstanceInterface {
+// transformControlplaneviewsInstanceSubscriptionViewToInstanceSubscription
+// builds a value of type *InstanceSubscription from a value of type
+// *controlplaneviews.InstanceSubscriptionView.
+func transformControlplaneviewsInstanceSubscriptionViewToInstanceSubscription(v *controlplaneviews.InstanceSubscriptionView) *InstanceSubscription {
 	if v == nil {
 		return nil
 	}
-	res := &InstanceInterface{
-		NetworkType: *v.NetworkType,
-		NetworkID:   v.NetworkID,
-		Hostname:    v.Hostname,
-		Ipv4Address: v.Ipv4Address,
-		Port:        *v.Port,
+	res := &InstanceSubscription{
+		ProviderNode: *v.ProviderNode,
+		Name:         *v.Name,
+		Status:       *v.Status,
 	}
 
 	return res
 }
 
-// transformInstanceInterfaceToControlplaneviewsInstanceInterfaceView builds a
-// value of type *controlplaneviews.InstanceInterfaceView from a value of type
-// *InstanceInterface.
-func transformInstanceInterfaceToControlplaneviewsInstanceInterfaceView(v *InstanceInterface) *controlplaneviews.InstanceInterfaceView {
+// transformInstanceSubscriptionToControlplaneviewsInstanceSubscriptionView
+// builds a value of type *controlplaneviews.InstanceSubscriptionView from a
+// value of type *InstanceSubscription.
+func transformInstanceSubscriptionToControlplaneviewsInstanceSubscriptionView(v *InstanceSubscription) *controlplaneviews.InstanceSubscriptionView {
 	if v == nil {
 		return nil
 	}
-	res := &controlplaneviews.InstanceInterfaceView{
-		NetworkType: &v.NetworkType,
-		NetworkID:   v.NetworkID,
-		Hostname:    v.Hostname,
-		Ipv4Address: v.Ipv4Address,
-		Port:        &v.Port,
+	res := &controlplaneviews.InstanceSubscriptionView{
+		ProviderNode: &v.ProviderNode,
+		Name:         &v.Name,
+		Status:       &v.Status,
 	}
 
 	return res

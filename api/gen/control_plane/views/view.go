@@ -62,13 +62,15 @@ type InstanceView struct {
 	NodeName *string
 	// The time that the instance was created.
 	CreatedAt *string
-	// The time that the instance was last updated.
-	UpdatedAt    *string
-	State        *string
-	PatroniState *string
-	Role         *string
-	// True if this instance is in read-only mode.
-	ReadOnly *bool
+	// The time that the instance was last modified.
+	UpdatedAt *string
+	// The time that the instance status information was last updated.
+	StatusUpdatedAt *string
+	State           *string
+	PatroniState    *string
+	Role            *string
+	// The current spock.readonly setting.
+	ReadOnly *string
 	// True if this instance is pending to be restarted from a configuration change.
 	PendingRestart *bool
 	// True if Patroni has been paused for this instance.
@@ -77,22 +79,26 @@ type InstanceView struct {
 	PostgresVersion *string
 	// The version of Spock for this instance.
 	SpockVersion *string
-	// All interfaces that this instance serves on.
-	Interfaces []*InstanceInterfaceView
+	// The hostname of the host that's running this instance.
+	Hostname *string
+	// The IPv4 address of the host that's running this instance.
+	Ipv4Address *string
+	// The host port that Postgres is listening on for this instance.
+	Port *int
+	// Status information for this instance's Spock subscriptions.
+	Subscriptions []*InstanceSubscriptionView
+	// An error message if the instance is in an error state.
+	Error *string
 }
 
-// InstanceInterfaceView is a type that runs validations on a projected type.
-type InstanceInterfaceView struct {
-	// The type of network for this interface.
-	NetworkType *string
-	// The unique identifier of the network for this interface.
-	NetworkID *string
-	// The hostname of the instance on this interface.
-	Hostname *string
-	// The IPv4 address of the instance on this interface.
-	Ipv4Address *string
-	// The Postgres port for the instance on this interface.
-	Port *int
+// InstanceSubscriptionView is a type that runs validations on a projected type.
+type InstanceSubscriptionView struct {
+	// The Spock node name of the provider for this subscription.
+	ProviderNode *string
+	// The name of the subscription.
+	Name *string
+	// The current status of the subscription.
+	Status *string
 }
 
 // DatabaseSpecView is a type that runs validations on a projected type.
@@ -442,6 +448,7 @@ var (
 			"node_name",
 			"created_at",
 			"updated_at",
+			"status_updated_at",
 			"state",
 			"patroni_state",
 			"role",
@@ -450,7 +457,11 @@ var (
 			"patroni_paused",
 			"postgres_version",
 			"spock_version",
-			"interfaces",
+			"hostname",
+			"ipv4_address",
+			"port",
+			"subscriptions",
+			"error",
 		},
 		"abbreviated": {
 			"id",
@@ -467,6 +478,7 @@ var (
 			"node_name",
 			"created_at",
 			"updated_at",
+			"status_updated_at",
 			"state",
 			"patroni_state",
 			"role",
@@ -475,7 +487,11 @@ var (
 			"patroni_paused",
 			"postgres_version",
 			"spock_version",
-			"interfaces",
+			"hostname",
+			"ipv4_address",
+			"port",
+			"subscriptions",
+			"error",
 		},
 		"abbreviated": {
 			"id",
@@ -574,7 +590,7 @@ func ValidateDatabaseView(result *DatabaseView) (err error) {
 		}
 	}
 	if result.Instances != nil {
-		if err2 := ValidateInstanceCollectionViewAbbreviated(result.Instances); err2 != nil {
+		if err2 := ValidateInstanceCollectionView(result.Instances); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -676,9 +692,12 @@ func ValidateInstanceView(result *InstanceView) (err error) {
 	if result.UpdatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.updated_at", *result.UpdatedAt, goa.FormatDateTime))
 	}
+	if result.StatusUpdatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.status_updated_at", *result.StatusUpdatedAt, goa.FormatDateTime))
+	}
 	if result.State != nil {
-		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "backing_up" || *result.State == "restoring" || *result.State == "deleting" || *result.State == "available" || *result.State == "degraded" || *result.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "backing_up", "restoring", "deleting", "available", "degraded", "unknown"}))
+		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "backing_up" || *result.State == "available" || *result.State == "degraded" || *result.State == "failed" || *result.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "backing_up", "available", "degraded", "failed", "unknown"}))
 		}
 	}
 	if result.PatroniState != nil {
@@ -691,9 +710,12 @@ func ValidateInstanceView(result *InstanceView) (err error) {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.role", *result.Role, []any{"replica", "primary"}))
 		}
 	}
-	for _, e := range result.Interfaces {
+	if result.Ipv4Address != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.ipv4_address", *result.Ipv4Address, goa.FormatIPv4))
+	}
+	for _, e := range result.Subscriptions {
 		if e != nil {
-			if err2 := ValidateInstanceInterfaceView(e); err2 != nil {
+			if err2 := ValidateInstanceSubscriptionView(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -723,29 +745,24 @@ func ValidateInstanceViewAbbreviated(result *InstanceView) (err error) {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.host_id", *result.HostID, goa.FormatUUID))
 	}
 	if result.State != nil {
-		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "backing_up" || *result.State == "restoring" || *result.State == "deleting" || *result.State == "available" || *result.State == "degraded" || *result.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "backing_up", "restoring", "deleting", "available", "degraded", "unknown"}))
+		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "backing_up" || *result.State == "available" || *result.State == "degraded" || *result.State == "failed" || *result.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "backing_up", "available", "degraded", "failed", "unknown"}))
 		}
 	}
 	return
 }
 
-// ValidateInstanceInterfaceView runs the validations defined on
-// InstanceInterfaceView.
-func ValidateInstanceInterfaceView(result *InstanceInterfaceView) (err error) {
-	if result.NetworkType == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("network_type", "result"))
+// ValidateInstanceSubscriptionView runs the validations defined on
+// InstanceSubscriptionView.
+func ValidateInstanceSubscriptionView(result *InstanceSubscriptionView) (err error) {
+	if result.ProviderNode == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("provider_node", "result"))
 	}
-	if result.Port == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("port", "result"))
+	if result.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "result"))
 	}
-	if result.NetworkType != nil {
-		if !(*result.NetworkType == "docker" || *result.NetworkType == "host") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.network_type", *result.NetworkType, []any{"docker", "host"}))
-		}
-	}
-	if result.Ipv4Address != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.ipv4_address", *result.Ipv4Address, goa.FormatIPv4))
+	if result.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "result"))
 	}
 	return
 }

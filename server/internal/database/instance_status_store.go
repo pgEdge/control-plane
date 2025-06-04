@@ -50,6 +50,11 @@ func (s *InstanceStatusStore) GetByDatabaseID(databaseID uuid.UUID) storage.GetM
 	return storage.NewGetPrefixOp[*StoredInstanceStatus](s.client, prefix)
 }
 
+func (s *InstanceStatusStore) GetAll() storage.GetMultipleOp[*StoredInstanceStatus] {
+	prefix := s.Prefix()
+	return storage.NewGetPrefixOp[*StoredInstanceStatus](s.client, prefix)
+}
+
 func (s *InstanceStatusStore) Put(item *StoredInstanceStatus) storage.PutOp[*StoredInstanceStatus] {
 	key := s.Key(item.DatabaseID, item.InstanceID)
 	return storage.NewPutOp(s.client, key, item)

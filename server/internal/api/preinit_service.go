@@ -169,7 +169,7 @@ func (s *PreInitService) CreateDatabase(ctx context.Context, req *api.CreateData
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitService) InspectDatabase(ctx context.Context, req *api.InspectDatabasePayload) (*api.Database, error) {
+func (s *PreInitService) GetDatabase(ctx context.Context, req *api.GetDatabasePayload) (*api.Database, error) {
 	return nil, ErrUninitialized
 }
 

@@ -25,7 +25,7 @@ type Endpoints struct {
 	RemoveHost          goa.Endpoint
 	ListDatabases       goa.Endpoint
 	CreateDatabase      goa.Endpoint
-	InspectDatabase     goa.Endpoint
+	GetDatabase         goa.Endpoint
 	UpdateDatabase      goa.Endpoint
 	DeleteDatabase      goa.Endpoint
 	BackupDatabaseNode  goa.Endpoint
@@ -49,7 +49,7 @@ func NewEndpoints(s Service) *Endpoints {
 		RemoveHost:          NewRemoveHostEndpoint(s),
 		ListDatabases:       NewListDatabasesEndpoint(s),
 		CreateDatabase:      NewCreateDatabaseEndpoint(s),
-		InspectDatabase:     NewInspectDatabaseEndpoint(s),
+		GetDatabase:         NewGetDatabaseEndpoint(s),
 		UpdateDatabase:      NewUpdateDatabaseEndpoint(s),
 		DeleteDatabase:      NewDeleteDatabaseEndpoint(s),
 		BackupDatabaseNode:  NewBackupDatabaseNodeEndpoint(s),
@@ -74,7 +74,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.RemoveHost = m(e.RemoveHost)
 	e.ListDatabases = m(e.ListDatabases)
 	e.CreateDatabase = m(e.CreateDatabase)
-	e.InspectDatabase = m(e.InspectDatabase)
+	e.GetDatabase = m(e.GetDatabase)
 	e.UpdateDatabase = m(e.UpdateDatabase)
 	e.DeleteDatabase = m(e.DeleteDatabase)
 	e.BackupDatabaseNode = m(e.BackupDatabaseNode)
@@ -175,12 +175,12 @@ func NewCreateDatabaseEndpoint(s Service) goa.Endpoint {
 	}
 }
 
-// NewInspectDatabaseEndpoint returns an endpoint function that calls the
-// method "inspect-database" of service "control-plane".
-func NewInspectDatabaseEndpoint(s Service) goa.Endpoint {
+// NewGetDatabaseEndpoint returns an endpoint function that calls the method
+// "get-database" of service "control-plane".
+func NewGetDatabaseEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		p := req.(*InspectDatabasePayload)
-		res, err := s.InspectDatabase(ctx, p)
+		p := req.(*GetDatabasePayload)
+		res, err := s.GetDatabase(ctx, p)
 		if err != nil {
 			return nil, err
 		}

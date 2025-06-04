@@ -157,9 +157,9 @@ type CreateDatabaseResponseBody struct {
 	Database *DatabaseResponseBody `form:"database,omitempty" json:"database,omitempty" xml:"database,omitempty"`
 }
 
-// InspectDatabaseResponseBody is the type of the "control-plane" service
-// "inspect-database" endpoint HTTP response body.
-type InspectDatabaseResponseBody struct {
+// GetDatabaseResponseBody is the type of the "control-plane" service
+// "get-database" endpoint HTTP response body.
+type GetDatabaseResponseBody struct {
 	// Unique identifier for the database.
 	ID string `form:"id" json:"id" xml:"id"`
 	// Unique identifier for the databases's owner.
@@ -171,7 +171,7 @@ type InspectDatabaseResponseBody struct {
 	// Current state of the database.
 	State string `form:"state" json:"state" xml:"state"`
 	// All of the instances in the database.
-	Instances InstanceResponseBodyAbbreviatedCollection `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	Instances InstanceResponseBodyCollection `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
 }
@@ -571,10 +571,10 @@ type CreateDatabaseInvalidInputResponseBody struct {
 	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
-// InspectDatabaseClusterNotInitializedResponseBody is the type of the
-// "control-plane" service "inspect-database" endpoint HTTP response body for
-// the "cluster_not_initialized" error.
-type InspectDatabaseClusterNotInitializedResponseBody struct {
+// GetDatabaseClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "get-database" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type GetDatabaseClusterNotInitializedResponseBody struct {
 	// Name is the name of this class of errors.
 	Name string `form:"name" json:"name" xml:"name"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -590,10 +590,9 @@ type InspectDatabaseClusterNotInitializedResponseBody struct {
 	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
-// InspectDatabaseNotFoundResponseBody is the type of the "control-plane"
-// service "inspect-database" endpoint HTTP response body for the "not_found"
-// error.
-type InspectDatabaseNotFoundResponseBody struct {
+// GetDatabaseNotFoundResponseBody is the type of the "control-plane" service
+// "get-database" endpoint HTTP response body for the "not_found" error.
+type GetDatabaseNotFoundResponseBody struct {
 	// Name is the name of this class of errors.
 	Name string `form:"name" json:"name" xml:"name"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -1235,13 +1234,15 @@ type InstanceResponseBody struct {
 	NodeName string `form:"node_name" json:"node_name" xml:"node_name"`
 	// The time that the instance was created.
 	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
-	// The time that the instance was last updated.
-	UpdatedAt    string  `form:"updated_at" json:"updated_at" xml:"updated_at"`
-	State        string  `form:"state" json:"state" xml:"state"`
-	PatroniState *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
-	Role         *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
-	// True if this instance is in read-only mode.
-	ReadOnly *bool `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
+	// The time that the instance was last modified.
+	UpdatedAt string `form:"updated_at" json:"updated_at" xml:"updated_at"`
+	// The time that the instance status information was last updated.
+	StatusUpdatedAt *string `form:"status_updated_at,omitempty" json:"status_updated_at,omitempty" xml:"status_updated_at,omitempty"`
+	State           string  `form:"state" json:"state" xml:"state"`
+	PatroniState    *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
+	Role            *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
+	// The current spock.readonly setting.
+	ReadOnly *string `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
 	// True if this instance is pending to be restarted from a configuration change.
 	PendingRestart *bool `form:"pending_restart,omitempty" json:"pending_restart,omitempty" xml:"pending_restart,omitempty"`
 	// True if Patroni has been paused for this instance.
@@ -1250,23 +1251,27 @@ type InstanceResponseBody struct {
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
 	// The version of Spock for this instance.
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
-	// All interfaces that this instance serves on.
-	Interfaces []*InstanceInterfaceResponseBody `form:"interfaces,omitempty" json:"interfaces,omitempty" xml:"interfaces,omitempty"`
+	// The hostname of the host that's running this instance.
+	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
+	// The IPv4 address of the host that's running this instance.
+	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
+	// The host port that Postgres is listening on for this instance.
+	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	// Status information for this instance's Spock subscriptions.
+	Subscriptions []*InstanceSubscriptionResponseBody `form:"subscriptions,omitempty" json:"subscriptions,omitempty" xml:"subscriptions,omitempty"`
+	// An error message if the instance is in an error state.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
-// InstanceInterfaceResponseBody is used to define fields on response body
+// InstanceSubscriptionResponseBody is used to define fields on response body
 // types.
-type InstanceInterfaceResponseBody struct {
-	// The type of network for this interface.
-	NetworkType string `form:"network_type" json:"network_type" xml:"network_type"`
-	// The unique identifier of the network for this interface.
-	NetworkID *string `form:"network_id,omitempty" json:"network_id,omitempty" xml:"network_id,omitempty"`
-	// The hostname of the instance on this interface.
-	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
-	// The IPv4 address of the instance on this interface.
-	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
-	// The Postgres port for the instance on this interface.
-	Port int `form:"port" json:"port" xml:"port"`
+type InstanceSubscriptionResponseBody struct {
+	// The Spock node name of the provider for this subscription.
+	ProviderNode string `form:"provider_node" json:"provider_node" xml:"provider_node"`
+	// The name of the subscription.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The current status of the subscription.
+	Status string `form:"status" json:"status" xml:"status"`
 }
 
 // DatabaseSpecResponseBody is used to define fields on response body types.
@@ -1513,21 +1518,9 @@ type DatabaseUserSpecResponseBody struct {
 	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
 }
 
-// InstanceResponseBodyAbbreviatedCollection is used to define fields on
-// response body types.
-type InstanceResponseBodyAbbreviatedCollection []*InstanceResponseBodyAbbreviated
-
-// InstanceResponseBodyAbbreviated is used to define fields on response body
+// InstanceResponseBodyCollection is used to define fields on response body
 // types.
-type InstanceResponseBodyAbbreviated struct {
-	// Unique identifier for the instance.
-	ID string `form:"id" json:"id" xml:"id"`
-	// The ID of the host this instance is running on.
-	HostID string `form:"host_id" json:"host_id" xml:"host_id"`
-	// The Spock node name for this instance.
-	NodeName string `form:"node_name" json:"node_name" xml:"node_name"`
-	State    string `form:"state" json:"state" xml:"state"`
-}
+type InstanceResponseBodyCollection []*InstanceResponseBody
 
 // TaskResponse is used to define fields on response body types.
 type TaskResponse struct {
@@ -2174,10 +2167,10 @@ func NewCreateDatabaseResponseBody(res *controlplane.CreateDatabaseResponse) *Cr
 	return body
 }
 
-// NewInspectDatabaseResponseBody builds the HTTP response body from the result
-// of the "inspect-database" endpoint of the "control-plane" service.
-func NewInspectDatabaseResponseBody(res *controlplaneviews.DatabaseView) *InspectDatabaseResponseBody {
-	body := &InspectDatabaseResponseBody{
+// NewGetDatabaseResponseBody builds the HTTP response body from the result of
+// the "get-database" endpoint of the "control-plane" service.
+func NewGetDatabaseResponseBody(res *controlplaneviews.DatabaseView) *GetDatabaseResponseBody {
+	body := &GetDatabaseResponseBody{
 		ID:        *res.ID,
 		TenantID:  res.TenantID,
 		CreatedAt: *res.CreatedAt,
@@ -2185,9 +2178,9 @@ func NewInspectDatabaseResponseBody(res *controlplaneviews.DatabaseView) *Inspec
 		State:     *res.State,
 	}
 	if res.Instances != nil {
-		body.Instances = make([]*InstanceResponseBodyAbbreviated, len(res.Instances))
+		body.Instances = make([]*InstanceResponseBody, len(res.Instances))
 		for i, val := range res.Instances {
-			body.Instances[i] = marshalControlplaneviewsInstanceViewToInstanceResponseBodyAbbreviated(val)
+			body.Instances[i] = marshalControlplaneviewsInstanceViewToInstanceResponseBody(val)
 		}
 	}
 	if res.Spec != nil {
@@ -2545,11 +2538,11 @@ func NewCreateDatabaseInvalidInputResponseBody(res *goa.ServiceError) *CreateDat
 	return body
 }
 
-// NewInspectDatabaseClusterNotInitializedResponseBody builds the HTTP response
-// body from the result of the "inspect-database" endpoint of the
-// "control-plane" service.
-func NewInspectDatabaseClusterNotInitializedResponseBody(res *goa.ServiceError) *InspectDatabaseClusterNotInitializedResponseBody {
-	body := &InspectDatabaseClusterNotInitializedResponseBody{
+// NewGetDatabaseClusterNotInitializedResponseBody builds the HTTP response
+// body from the result of the "get-database" endpoint of the "control-plane"
+// service.
+func NewGetDatabaseClusterNotInitializedResponseBody(res *goa.ServiceError) *GetDatabaseClusterNotInitializedResponseBody {
+	body := &GetDatabaseClusterNotInitializedResponseBody{
 		Name:      res.Name,
 		ID:        res.ID,
 		Message:   res.Message,
@@ -2560,10 +2553,10 @@ func NewInspectDatabaseClusterNotInitializedResponseBody(res *goa.ServiceError) 
 	return body
 }
 
-// NewInspectDatabaseNotFoundResponseBody builds the HTTP response body from
-// the result of the "inspect-database" endpoint of the "control-plane" service.
-func NewInspectDatabaseNotFoundResponseBody(res *goa.ServiceError) *InspectDatabaseNotFoundResponseBody {
-	body := &InspectDatabaseNotFoundResponseBody{
+// NewGetDatabaseNotFoundResponseBody builds the HTTP response body from the
+// result of the "get-database" endpoint of the "control-plane" service.
+func NewGetDatabaseNotFoundResponseBody(res *goa.ServiceError) *GetDatabaseNotFoundResponseBody {
+	body := &GetDatabaseNotFoundResponseBody{
 		Name:      res.Name,
 		ID:        res.ID,
 		Message:   res.Message,
@@ -2927,10 +2920,10 @@ func NewCreateDatabaseRequest(body *CreateDatabaseRequestBody) *controlplane.Cre
 	return v
 }
 
-// NewInspectDatabasePayload builds a control-plane service inspect-database
-// endpoint payload.
-func NewInspectDatabasePayload(databaseID string) *controlplane.InspectDatabasePayload {
-	v := &controlplane.InspectDatabasePayload{}
+// NewGetDatabasePayload builds a control-plane service get-database endpoint
+// payload.
+func NewGetDatabasePayload(databaseID string) *controlplane.GetDatabasePayload {
+	v := &controlplane.GetDatabasePayload{}
 	v.DatabaseID = &databaseID
 
 	return v

@@ -162,11 +162,11 @@ var _ = g.Service("control-plane", func() {
 		})
 	})
 
-	g.Method("inspect-database", func() {
+	g.Method("get-database", func() {
 		g.Description("Returns information about a particular database in the cluster.")
 		g.Payload(func() {
 			g.Attribute("database_id", g.String, func() {
-				g.Description("ID of the database to inspect.")
+				g.Description("ID of the database to get.")
 				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 		})
