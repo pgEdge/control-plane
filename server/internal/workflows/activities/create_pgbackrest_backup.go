@@ -30,7 +30,7 @@ func (a *Activities) ExecuteCreatePgBackRestBackup(
 	input *CreatePgBackRestBackupInput,
 ) workflow.Future[*CreatePgBackRestBackupOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(a.Config.HostID.String()),
+		Queue: core.Queue(hostID.String()),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
