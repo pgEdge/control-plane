@@ -46,11 +46,43 @@ func (a *Activities) CreatePgBackRestBackup(ctx context.Context, input *CreatePg
 	if err != nil {
 		return nil, err
 	}
-	service, err := do.Invoke[*task.Service](a.Injector)
+	taskSvc, err := do.Invoke[*task.Service](a.Injector)
 	if err != nil {
 		return nil, err
 	}
-	taskLogWriter := task.NewTaskLogWriter(ctx, service, input.DatabaseID, input.TaskID)
+	dbSvc, err := do.Invoke[*database.Service](a.Injector)
+	if err != nil {
+		return nil, err
+	}
+
+	originalState, err := dbSvc.GetStoredInstanceState(ctx, input.DatabaseID, input.InstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current instance state: %w", err)
+	}
+
+	err = dbSvc.UpdateInstance(ctx, &database.InstanceUpdateOptions{
+		InstanceID: input.InstanceID,
+		DatabaseID: input.InstanceID,
+		State:      database.InstanceStateBackingUp,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update instance: %w", err)
+	}
+
+	defer func() {
+		// Backing up the database doesn't affect availability, so we always set
+		// the instance back to its original state.
+		err = dbSvc.UpdateInstance(ctx, &database.InstanceUpdateOptions{
+			InstanceID: input.InstanceID,
+			DatabaseID: input.InstanceID,
+			State:      originalState,
+		})
+		if err != nil {
+			logger.With("error", err).Error("failed to restore instance to original state")
+		}
+	}()
+
+	taskLogWriter := task.NewTaskLogWriter(ctx, taskSvc, input.DatabaseID, input.TaskID)
 	defer taskLogWriter.Close()
 
 	err = orch.CreatePgBackRestBackup(ctx, taskLogWriter, input.InstanceID, input.Options)

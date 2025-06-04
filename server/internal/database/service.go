@@ -186,6 +186,46 @@ func (s *Service) UpdateDatabaseState(ctx context.Context, databaseID uuid.UUID,
 
 	return nil
 }
+
+func (s *Service) UpdateInstance(ctx context.Context, opts *InstanceUpdateOptions) error {
+	instance, err := s.store.Instance.
+		GetByKey(opts.DatabaseID, opts.InstanceID).
+		Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		instance = NewStoredInstance(opts)
+	} else if err != nil {
+		return fmt.Errorf("failed to get stored instance: %w", err)
+	} else {
+		instance.Update(opts)
+	}
+
+	err = s.store.Instance.
+		Put(instance).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to update stored instance: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) DeleteInstance(ctx context.Context, databaseID, instanceID uuid.UUID) error {
+	_, err := s.store.Instance.
+		DeleteByKey(databaseID, instanceID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete stored instance: %w", err)
+	}
+	_, err = s.store.InstanceStatus.
+		DeleteByKey(databaseID, instanceID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete stored instance status: %w", err)
+	}
+
+	return nil
+}
+
 func (s *Service) UpdateInstanceStatus(
 	ctx context.Context,
 	databaseID uuid.UUID,
