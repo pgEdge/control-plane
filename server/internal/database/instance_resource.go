@@ -127,11 +127,11 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 	}
 
 	if r.Spec.RestoreConfig != nil && firstTimeSetup {
-		err = r.renameDB(ctx, r.ConnectionInfo, tlsCfg)
+		err = r.renameDB(ctx, tlsCfg)
 		if err != nil {
 			return fmt.Errorf("failed to rename database %q: %w", r.Spec.DatabaseName, err)
 		}
-		err = r.dropSpock(ctx, r.ConnectionInfo, tlsCfg)
+		err = r.dropSpock(ctx, tlsCfg)
 		if err != nil {
 			return fmt.Errorf("failed to drop spock: %w", err)
 		}
@@ -284,7 +284,7 @@ func (r *InstanceResource) createDB(ctx context.Context, tlsCfg *tls.Config) err
 	return nil
 }
 
-func (r *InstanceResource) renameDB(ctx context.Context, connInfo *ConnectionInfo, tlsCfg *tls.Config) error {
+func (r *InstanceResource) renameDB(ctx context.Context, tlsCfg *tls.Config) error {
 	// Short circuit if the restore config doesn't include a dbname or if the
 	// database name is the same.
 	if r.Spec.RestoreConfig.SourceDatabaseName == "" || r.Spec.RestoreConfig.SourceDatabaseName == r.Spec.DatabaseName {
@@ -315,7 +315,7 @@ func (r *InstanceResource) renameDB(ctx context.Context, connInfo *ConnectionInf
 	return nil
 }
 
-func (r *InstanceResource) dropSpock(ctx context.Context, connInfo *ConnectionInfo, tlsCfg *tls.Config) error {
+func (r *InstanceResource) dropSpock(ctx context.Context, tlsCfg *tls.Config) error {
 	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
 		DSN: r.ConnectionInfo.AdminDSN(r.Spec.DatabaseName),
 		TLS: tlsCfg,
