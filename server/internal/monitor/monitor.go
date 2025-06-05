@@ -42,10 +42,11 @@ func (m *Monitor) Start(ctx context.Context) {
 	m.ticker = time.NewTicker(m.interval)
 
 	go func() {
+		defer m.ticker.Stop()
+
 		for {
 			select {
 			case <-ctx.Done():
-				m.ticker.Stop()
 				return
 			case <-m.done:
 				return
@@ -59,6 +60,5 @@ func (m *Monitor) Start(ctx context.Context) {
 }
 
 func (m *Monitor) Stop() {
-	m.ticker.Stop()
 	m.done <- struct{}{}
 }
