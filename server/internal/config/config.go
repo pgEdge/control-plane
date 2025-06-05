@@ -275,7 +275,7 @@ func defaultConfig() (Config, error) {
 func getOutboundIP() (net.IP, error) {
 	// Similar to 'ip route get 1'. Does not actually make a connection since
 	// UDP does not have a handshake.
-	conn, err := net.Dial("udp", "8.8.8.8:80")
+	conn, err := net.Dial("udp4", "8.8.8.8:80")
 	if err != nil {
 		return net.IPv4zero, fmt.Errorf("failed to create connection: %w", err)
 	}
