@@ -68,14 +68,12 @@ func (m *InstanceMonitor) checkStatus(ctx context.Context) error {
 
 	info, err := m.orch.GetInstanceConnectionInfo(ctx, m.databaseID, m.instanceID)
 	if err != nil {
-		status.Error = utils.PointerTo(err.Error())
-		return m.updateInstanceStatus(ctx, status)
+		return m.updateInstanceErrStatus(ctx, status, err)
 	}
 
 	tlsCfg, err := m.certSvc.PostgresUserTLS(ctx, m.instanceID, info.InstanceHostname, "pgedge")
 	if err != nil {
-		status.Error = utils.PointerTo(err.Error())
-		return m.updateInstanceStatus(ctx, status)
+		return m.updateInstanceErrStatus(ctx, status, err)
 	}
 
 	status.Hostname = utils.PointerTo(info.ClientHost)
@@ -84,14 +82,12 @@ func (m *InstanceMonitor) checkStatus(ctx context.Context) error {
 
 	err = m.populateFromDbConn(ctx, info, tlsCfg, status)
 	if err != nil {
-		status.Error = utils.PointerTo(err.Error())
-		return m.updateInstanceStatus(ctx, status)
+		return m.updateInstanceErrStatus(ctx, status, err)
 	}
 
 	err = m.populateFromPatroni(ctx, info, status)
 	if err != nil {
-		status.Error = utils.PointerTo(err.Error())
-		return m.updateInstanceStatus(ctx, status)
+		return m.updateInstanceErrStatus(ctx, status, err)
 	}
 
 	return m.updateInstanceStatus(ctx, status)
@@ -161,6 +157,15 @@ func (m *InstanceMonitor) populateFromDbConn(
 	}
 
 	return nil
+}
+
+func (m *InstanceMonitor) updateInstanceErrStatus(
+	ctx context.Context,
+	status *database.InstanceStatus,
+	cause error,
+) error {
+	status.Error = utils.PointerTo(cause.Error())
+	return m.updateInstanceStatus(ctx, status)
 }
 
 func (m *InstanceMonitor) updateInstanceStatus(ctx context.Context, status *database.InstanceStatus) error {
