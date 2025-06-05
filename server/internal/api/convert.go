@@ -213,17 +213,10 @@ func databaseToAPI(d *database.Database) *api.Database {
 	}
 	// Sort by node ID, instance ID asc
 	slices.SortStableFunc(instances, func(a, b *api.Instance) int {
-		nodeNameCmp := strings.Compare(a.NodeName, b.NodeName)
-		idCmp := strings.Compare(a.ID, b.ID)
-
-		switch {
-		case nodeNameCmp != 0:
-			return nodeNameCmp
-		case idCmp != 0:
-			return idCmp
-		default:
-			return 0
+		if nodeEq := strings.Compare(a.NodeName, b.NodeName); nodeEq != 0 {
+			return nodeEq
 		}
+		return strings.Compare(a.ID, b.ID)
 	})
 
 	return &api.Database{
