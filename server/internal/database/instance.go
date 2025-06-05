@@ -111,7 +111,7 @@ func storedToInstance(instance *StoredInstance, status *StoredInstanceStatus) *I
 }
 
 func storedToInstances(storedInstances []*StoredInstance, storedStatuses []*StoredInstanceStatus) []*Instance {
-	statusesByID := map[uuid.UUID]*StoredInstanceStatus{}
+	statusesByID := make(map[uuid.UUID]*StoredInstanceStatus, len(storedStatuses))
 	for _, s := range storedStatuses {
 		statusesByID[s.InstanceID] = s
 	}

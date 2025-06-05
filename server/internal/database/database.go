@@ -62,12 +62,12 @@ func storedToDatabase(d *StoredDatabase, storedSpec *StoredSpec, instances []*In
 }
 
 func storedToDatabases(storedDbs []*StoredDatabase, storedSpecs []*StoredSpec, allInstances []*Instance) []*Database {
-	specsByID := map[uuid.UUID]*StoredSpec{}
+	specsByID := make(map[uuid.UUID]*StoredSpec, len(storedSpecs))
 	for _, spec := range storedSpecs {
 		specsByID[spec.DatabaseID] = spec
 	}
 
-	instancesByID := map[uuid.UUID][]*Instance{}
+	instancesByID := make(map[uuid.UUID][]*Instance, len(allInstances))
 	for _, instance := range allInstances {
 		instancesByID[instance.DatabaseID] = append(instancesByID[instance.DatabaseID], instance)
 	}
