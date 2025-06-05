@@ -62,7 +62,7 @@ func (a *Activities) CreatePgBackRestBackup(ctx context.Context, input *CreatePg
 
 	err = dbSvc.UpdateInstance(ctx, &database.InstanceUpdateOptions{
 		InstanceID: input.InstanceID,
-		DatabaseID: input.InstanceID,
+		DatabaseID: input.DatabaseID,
 		State:      database.InstanceStateBackingUp,
 	})
 	if err != nil {
@@ -74,7 +74,7 @@ func (a *Activities) CreatePgBackRestBackup(ctx context.Context, input *CreatePg
 		// the instance back to its original state.
 		err = dbSvc.UpdateInstance(ctx, &database.InstanceUpdateOptions{
 			InstanceID: input.InstanceID,
-			DatabaseID: input.InstanceID,
+			DatabaseID: input.DatabaseID,
 			State:      originalState,
 		})
 		if err != nil {
