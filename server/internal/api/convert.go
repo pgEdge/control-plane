@@ -504,6 +504,9 @@ func taskToAPI(t *task.Task) *api.Task {
 	if t.InstanceID != uuid.Nil {
 		instanceID = utils.PointerTo(t.InstanceID.String())
 	}
+	if t.ParentID != uuid.Nil {
+		parentID = utils.PointerTo(t.ParentID.String())
+	}
 	return &api.Task{
 		ParentID:    parentID,
 		DatabaseID:  t.DatabaseID.String(),
