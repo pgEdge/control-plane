@@ -128,6 +128,7 @@ func (m *InstanceMonitor) populateFromDbConn(
 	if err != nil {
 		return fmt.Errorf("failed to connect to instance: %w", err)
 	}
+	defer conn.Close(ctx)
 
 	pgVersion, err := postgres.GetPostgresVersion().Row(ctx, conn)
 	if err != nil {
