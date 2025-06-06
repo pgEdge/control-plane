@@ -24,9 +24,9 @@ type Server struct {
 	JoinCluster         http.Handler
 	GetJoinToken        http.Handler
 	GetJoinOptions      http.Handler
-	InspectCluster      http.Handler
+	GetCluster          http.Handler
 	ListHosts           http.Handler
-	InspectHost         http.Handler
+	GetHost             http.Handler
 	RemoveHost          http.Handler
 	ListDatabases       http.Handler
 	CreateDatabase      http.Handler
@@ -35,7 +35,7 @@ type Server struct {
 	DeleteDatabase      http.Handler
 	BackupDatabaseNode  http.Handler
 	ListDatabaseTasks   http.Handler
-	InspectDatabaseTask http.Handler
+	GetDatabaseTask     http.Handler
 	GetDatabaseTaskLog  http.Handler
 	RestoreDatabase     http.Handler
 	GetVersion          http.Handler
@@ -78,9 +78,9 @@ func New(
 			{"JoinCluster", "POST", "/cluster/join"},
 			{"GetJoinToken", "GET", "/cluster/join-token"},
 			{"GetJoinOptions", "POST", "/internal/cluster/join-options"},
-			{"InspectCluster", "GET", "/cluster"},
+			{"GetCluster", "GET", "/cluster"},
 			{"ListHosts", "GET", "/hosts"},
-			{"InspectHost", "GET", "/hosts/{host_id}"},
+			{"GetHost", "GET", "/hosts/{host_id}"},
 			{"RemoveHost", "DELETE", "/hosts/{host_id}"},
 			{"ListDatabases", "GET", "/databases"},
 			{"CreateDatabase", "POST", "/databases"},
@@ -89,7 +89,7 @@ func New(
 			{"DeleteDatabase", "DELETE", "/databases/{database_id}"},
 			{"BackupDatabaseNode", "POST", "/databases/{database_id}/nodes/{node_name}/backups"},
 			{"ListDatabaseTasks", "GET", "/databases/{database_id}/tasks"},
-			{"InspectDatabaseTask", "GET", "/databases/{database_id}/tasks/{task_id}"},
+			{"GetDatabaseTask", "GET", "/databases/{database_id}/tasks/{task_id}"},
 			{"GetDatabaseTaskLog", "GET", "/databases/{database_id}/tasks/{task_id}/log"},
 			{"RestoreDatabase", "POST", "/databases/{database_id}/restore"},
 			{"GetVersion", "GET", "/version"},
@@ -99,9 +99,9 @@ func New(
 		JoinCluster:         NewJoinClusterHandler(e.JoinCluster, mux, decoder, encoder, errhandler, formatter),
 		GetJoinToken:        NewGetJoinTokenHandler(e.GetJoinToken, mux, decoder, encoder, errhandler, formatter),
 		GetJoinOptions:      NewGetJoinOptionsHandler(e.GetJoinOptions, mux, decoder, encoder, errhandler, formatter),
-		InspectCluster:      NewInspectClusterHandler(e.InspectCluster, mux, decoder, encoder, errhandler, formatter),
+		GetCluster:          NewGetClusterHandler(e.GetCluster, mux, decoder, encoder, errhandler, formatter),
 		ListHosts:           NewListHostsHandler(e.ListHosts, mux, decoder, encoder, errhandler, formatter),
-		InspectHost:         NewInspectHostHandler(e.InspectHost, mux, decoder, encoder, errhandler, formatter),
+		GetHost:             NewGetHostHandler(e.GetHost, mux, decoder, encoder, errhandler, formatter),
 		RemoveHost:          NewRemoveHostHandler(e.RemoveHost, mux, decoder, encoder, errhandler, formatter),
 		ListDatabases:       NewListDatabasesHandler(e.ListDatabases, mux, decoder, encoder, errhandler, formatter),
 		CreateDatabase:      NewCreateDatabaseHandler(e.CreateDatabase, mux, decoder, encoder, errhandler, formatter),
@@ -110,7 +110,7 @@ func New(
 		DeleteDatabase:      NewDeleteDatabaseHandler(e.DeleteDatabase, mux, decoder, encoder, errhandler, formatter),
 		BackupDatabaseNode:  NewBackupDatabaseNodeHandler(e.BackupDatabaseNode, mux, decoder, encoder, errhandler, formatter),
 		ListDatabaseTasks:   NewListDatabaseTasksHandler(e.ListDatabaseTasks, mux, decoder, encoder, errhandler, formatter),
-		InspectDatabaseTask: NewInspectDatabaseTaskHandler(e.InspectDatabaseTask, mux, decoder, encoder, errhandler, formatter),
+		GetDatabaseTask:     NewGetDatabaseTaskHandler(e.GetDatabaseTask, mux, decoder, encoder, errhandler, formatter),
 		GetDatabaseTaskLog:  NewGetDatabaseTaskLogHandler(e.GetDatabaseTaskLog, mux, decoder, encoder, errhandler, formatter),
 		RestoreDatabase:     NewRestoreDatabaseHandler(e.RestoreDatabase, mux, decoder, encoder, errhandler, formatter),
 		GetVersion:          NewGetVersionHandler(e.GetVersion, mux, decoder, encoder, errhandler, formatter),
@@ -127,9 +127,9 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.JoinCluster = m(s.JoinCluster)
 	s.GetJoinToken = m(s.GetJoinToken)
 	s.GetJoinOptions = m(s.GetJoinOptions)
-	s.InspectCluster = m(s.InspectCluster)
+	s.GetCluster = m(s.GetCluster)
 	s.ListHosts = m(s.ListHosts)
-	s.InspectHost = m(s.InspectHost)
+	s.GetHost = m(s.GetHost)
 	s.RemoveHost = m(s.RemoveHost)
 	s.ListDatabases = m(s.ListDatabases)
 	s.CreateDatabase = m(s.CreateDatabase)
@@ -138,7 +138,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.DeleteDatabase = m(s.DeleteDatabase)
 	s.BackupDatabaseNode = m(s.BackupDatabaseNode)
 	s.ListDatabaseTasks = m(s.ListDatabaseTasks)
-	s.InspectDatabaseTask = m(s.InspectDatabaseTask)
+	s.GetDatabaseTask = m(s.GetDatabaseTask)
 	s.GetDatabaseTaskLog = m(s.GetDatabaseTaskLog)
 	s.RestoreDatabase = m(s.RestoreDatabase)
 	s.GetVersion = m(s.GetVersion)
@@ -153,9 +153,9 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountJoinClusterHandler(mux, h.JoinCluster)
 	MountGetJoinTokenHandler(mux, h.GetJoinToken)
 	MountGetJoinOptionsHandler(mux, h.GetJoinOptions)
-	MountInspectClusterHandler(mux, h.InspectCluster)
+	MountGetClusterHandler(mux, h.GetCluster)
 	MountListHostsHandler(mux, h.ListHosts)
-	MountInspectHostHandler(mux, h.InspectHost)
+	MountGetHostHandler(mux, h.GetHost)
 	MountRemoveHostHandler(mux, h.RemoveHost)
 	MountListDatabasesHandler(mux, h.ListDatabases)
 	MountCreateDatabaseHandler(mux, h.CreateDatabase)
@@ -164,7 +164,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountDeleteDatabaseHandler(mux, h.DeleteDatabase)
 	MountBackupDatabaseNodeHandler(mux, h.BackupDatabaseNode)
 	MountListDatabaseTasksHandler(mux, h.ListDatabaseTasks)
-	MountInspectDatabaseTaskHandler(mux, h.InspectDatabaseTask)
+	MountGetDatabaseTaskHandler(mux, h.GetDatabaseTask)
 	MountGetDatabaseTaskLogHandler(mux, h.GetDatabaseTaskLog)
 	MountRestoreDatabaseHandler(mux, h.RestoreDatabase)
 	MountGetVersionHandler(mux, h.GetVersion)
@@ -366,9 +366,9 @@ func NewGetJoinOptionsHandler(
 	})
 }
 
-// MountInspectClusterHandler configures the mux to serve the "control-plane"
-// service "inspect-cluster" endpoint.
-func MountInspectClusterHandler(mux goahttp.Muxer, h http.Handler) {
+// MountGetClusterHandler configures the mux to serve the "control-plane"
+// service "get-cluster" endpoint.
+func MountGetClusterHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
@@ -378,9 +378,9 @@ func MountInspectClusterHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("GET", "/cluster", f)
 }
 
-// NewInspectClusterHandler creates a HTTP handler which loads the HTTP request
-// and calls the "control-plane" service "inspect-cluster" endpoint.
-func NewInspectClusterHandler(
+// NewGetClusterHandler creates a HTTP handler which loads the HTTP request and
+// calls the "control-plane" service "get-cluster" endpoint.
+func NewGetClusterHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -389,12 +389,12 @@ func NewInspectClusterHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		encodeResponse = EncodeInspectClusterResponse(encoder)
-		encodeError    = EncodeInspectClusterError(encoder, formatter)
+		encodeResponse = EncodeGetClusterResponse(encoder)
+		encodeError    = EncodeGetClusterError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "inspect-cluster")
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-cluster")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
 		var err error
 		res, err := endpoint(ctx, nil)
@@ -454,9 +454,9 @@ func NewListHostsHandler(
 	})
 }
 
-// MountInspectHostHandler configures the mux to serve the "control-plane"
-// service "inspect-host" endpoint.
-func MountInspectHostHandler(mux goahttp.Muxer, h http.Handler) {
+// MountGetHostHandler configures the mux to serve the "control-plane" service
+// "get-host" endpoint.
+func MountGetHostHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
@@ -466,9 +466,9 @@ func MountInspectHostHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("GET", "/hosts/{host_id}", f)
 }
 
-// NewInspectHostHandler creates a HTTP handler which loads the HTTP request
-// and calls the "control-plane" service "inspect-host" endpoint.
-func NewInspectHostHandler(
+// NewGetHostHandler creates a HTTP handler which loads the HTTP request and
+// calls the "control-plane" service "get-host" endpoint.
+func NewGetHostHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -477,13 +477,13 @@ func NewInspectHostHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		decodeRequest  = DecodeInspectHostRequest(mux, decoder)
-		encodeResponse = EncodeInspectHostResponse(encoder)
-		encodeError    = EncodeInspectHostError(encoder, formatter)
+		decodeRequest  = DecodeGetHostRequest(mux, decoder)
+		encodeResponse = EncodeGetHostResponse(encoder)
+		encodeError    = EncodeGetHostError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "inspect-host")
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-host")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
 		payload, err := decodeRequest(r)
 		if err != nil {
@@ -907,9 +907,9 @@ func NewListDatabaseTasksHandler(
 	})
 }
 
-// MountInspectDatabaseTaskHandler configures the mux to serve the
-// "control-plane" service "inspect-database-task" endpoint.
-func MountInspectDatabaseTaskHandler(mux goahttp.Muxer, h http.Handler) {
+// MountGetDatabaseTaskHandler configures the mux to serve the "control-plane"
+// service "get-database-task" endpoint.
+func MountGetDatabaseTaskHandler(mux goahttp.Muxer, h http.Handler) {
 	f, ok := h.(http.HandlerFunc)
 	if !ok {
 		f = func(w http.ResponseWriter, r *http.Request) {
@@ -919,10 +919,9 @@ func MountInspectDatabaseTaskHandler(mux goahttp.Muxer, h http.Handler) {
 	mux.Handle("GET", "/databases/{database_id}/tasks/{task_id}", f)
 }
 
-// NewInspectDatabaseTaskHandler creates a HTTP handler which loads the HTTP
-// request and calls the "control-plane" service "inspect-database-task"
-// endpoint.
-func NewInspectDatabaseTaskHandler(
+// NewGetDatabaseTaskHandler creates a HTTP handler which loads the HTTP
+// request and calls the "control-plane" service "get-database-task" endpoint.
+func NewGetDatabaseTaskHandler(
 	endpoint goa.Endpoint,
 	mux goahttp.Muxer,
 	decoder func(*http.Request) goahttp.Decoder,
@@ -931,13 +930,13 @@ func NewInspectDatabaseTaskHandler(
 	formatter func(ctx context.Context, err error) goahttp.Statuser,
 ) http.Handler {
 	var (
-		decodeRequest  = DecodeInspectDatabaseTaskRequest(mux, decoder)
-		encodeResponse = EncodeInspectDatabaseTaskResponse(encoder)
-		encodeError    = EncodeInspectDatabaseTaskError(encoder, formatter)
+		decodeRequest  = DecodeGetDatabaseTaskRequest(mux, decoder)
+		encodeResponse = EncodeGetDatabaseTaskResponse(encoder)
+		encodeError    = EncodeGetDatabaseTaskError(encoder, formatter)
 	)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
-		ctx = context.WithValue(ctx, goa.MethodKey, "inspect-database-task")
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-database-task")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
 		payload, err := decodeRequest(r)
 		if err != nil {

@@ -82,7 +82,7 @@ var _ = g.Service("control-plane", func() {
 		})
 	})
 
-	g.Method("inspect-cluster", func() {
+	g.Method("get-cluster", func() {
 		g.Description("Returns information about the cluster.")
 		g.Result(Cluster)
 		g.Error("cluster_not_initialized")
@@ -103,11 +103,11 @@ var _ = g.Service("control-plane", func() {
 		})
 	})
 
-	g.Method("inspect-host", func() {
+	g.Method("get-host", func() {
 		g.Description("Returns information about a particular host in the cluster.")
 		g.Payload(func() {
 			g.Attribute("host_id", g.String, func() {
-				g.Description("ID of the host to inspect.")
+				g.Description("ID of the host to get.")
 				g.Example("de3b1388-1f0c-42f1-a86c-59ab72f255ec")
 			})
 		})
@@ -293,17 +293,17 @@ var _ = g.Service("control-plane", func() {
 		})
 	})
 
-	g.Method("inspect-database-task", func() {
-		g.Description("Returns information about a particular task for a database.")
+	g.Method("get-database-task", func() {
+		g.Description("Returns information about a particular task.")
 		g.Payload(func() {
 			g.Attribute("database_id", g.String, func() {
 				g.Format(g.FormatUUID)
-				g.Description("ID of the database to inspect tasks for.")
+				g.Description("ID of the database the task belongs to.")
 				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 			g.Attribute("task_id", g.String, func() {
 				g.Format(g.FormatUUID)
-				g.Description("ID of the task to inspect.")
+				g.Description("ID of the task to get.")
 				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 			})
 

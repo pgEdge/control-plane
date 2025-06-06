@@ -31,8 +31,8 @@ func GetJoinOptionsControlPlanePath() string {
 	return "/internal/cluster/join-options"
 }
 
-// InspectClusterControlPlanePath returns the URL path to the control-plane service inspect-cluster HTTP endpoint.
-func InspectClusterControlPlanePath() string {
+// GetClusterControlPlanePath returns the URL path to the control-plane service get-cluster HTTP endpoint.
+func GetClusterControlPlanePath() string {
 	return "/cluster"
 }
 
@@ -41,8 +41,8 @@ func ListHostsControlPlanePath() string {
 	return "/hosts"
 }
 
-// InspectHostControlPlanePath returns the URL path to the control-plane service inspect-host HTTP endpoint.
-func InspectHostControlPlanePath(hostID string) string {
+// GetHostControlPlanePath returns the URL path to the control-plane service get-host HTTP endpoint.
+func GetHostControlPlanePath(hostID string) string {
 	return fmt.Sprintf("/hosts/%v", hostID)
 }
 
@@ -86,8 +86,8 @@ func ListDatabaseTasksControlPlanePath(databaseID string) string {
 	return fmt.Sprintf("/databases/%v/tasks", databaseID)
 }
 
-// InspectDatabaseTaskControlPlanePath returns the URL path to the control-plane service inspect-database-task HTTP endpoint.
-func InspectDatabaseTaskControlPlanePath(databaseID string, taskID string) string {
+// GetDatabaseTaskControlPlanePath returns the URL path to the control-plane service get-database-task HTTP endpoint.
+func GetDatabaseTaskControlPlanePath(databaseID string, taskID string) string {
 	return fmt.Sprintf("/databases/%v/tasks/%v", databaseID, taskID)
 }
 

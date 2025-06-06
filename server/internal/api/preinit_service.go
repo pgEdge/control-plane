@@ -145,7 +145,7 @@ func (s *PreInitService) ServiceDescription(ctx context.Context) (string, error)
 	return "", ErrUninitialized
 }
 
-func (s *PreInitService) InspectCluster(ctx context.Context) (*api.Cluster, error) {
+func (s *PreInitService) GetCluster(ctx context.Context) (*api.Cluster, error) {
 	return nil, ErrUninitialized
 }
 
@@ -153,7 +153,7 @@ func (s *PreInitService) ListHosts(ctx context.Context) ([]*api.Host, error) {
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitService) InspectHost(ctx context.Context, req *api.InspectHostPayload) (*api.Host, error) {
+func (s *PreInitService) GetHost(ctx context.Context, req *api.GetHostPayload) (*api.Host, error) {
 	return nil, ErrUninitialized
 }
 
@@ -189,7 +189,7 @@ func (s *PreInitService) ListDatabaseTasks(ctx context.Context, req *api.ListDat
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitService) InspectDatabaseTask(ctx context.Context, req *api.InspectDatabaseTaskPayload) (*api.Task, error) {
+func (s *PreInitService) GetDatabaseTask(ctx context.Context, req *api.GetDatabaseTaskPayload) (*api.Task, error) {
 	return nil, ErrUninitialized
 }
 

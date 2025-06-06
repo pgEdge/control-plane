@@ -343,13 +343,13 @@ func DecodeGetJoinOptionsResponse(decoder func(*http.Response) goahttp.Decoder, 
 	}
 }
 
-// BuildInspectClusterRequest instantiates a HTTP request object with method
-// and path set to call the "control-plane" service "inspect-cluster" endpoint
-func (c *Client) BuildInspectClusterRequest(ctx context.Context, v any) (*http.Request, error) {
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: InspectClusterControlPlanePath()}
+// BuildGetClusterRequest instantiates a HTTP request object with method and
+// path set to call the "control-plane" service "get-cluster" endpoint
+func (c *Client) BuildGetClusterRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetClusterControlPlanePath()}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
-		return nil, goahttp.ErrInvalidURL("control-plane", "inspect-cluster", u.String(), err)
+		return nil, goahttp.ErrInvalidURL("control-plane", "get-cluster", u.String(), err)
 	}
 	if ctx != nil {
 		req = req.WithContext(ctx)
@@ -358,14 +358,14 @@ func (c *Client) BuildInspectClusterRequest(ctx context.Context, v any) (*http.R
 	return req, nil
 }
 
-// DecodeInspectClusterResponse returns a decoder for responses returned by the
-// control-plane inspect-cluster endpoint. restoreBody controls whether the
+// DecodeGetClusterResponse returns a decoder for responses returned by the
+// control-plane get-cluster endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
-// DecodeInspectClusterResponse may return the following errors:
+// DecodeGetClusterResponse may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
 //   - "not_found" (type *goa.ServiceError): http.StatusNotFound
 //   - error: internal error
-func DecodeInspectClusterResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+func DecodeGetClusterResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
 		if restoreBody {
 			b, err := io.ReadAll(resp.Body)
@@ -382,50 +382,50 @@ func DecodeInspectClusterResponse(decoder func(*http.Response) goahttp.Decoder, 
 		switch resp.StatusCode {
 		case http.StatusOK:
 			var (
-				body InspectClusterResponseBody
+				body GetClusterResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("control-plane", "inspect-cluster", err)
+				return nil, goahttp.ErrDecodingError("control-plane", "get-cluster", err)
 			}
-			err = ValidateInspectClusterResponseBody(&body)
+			err = ValidateGetClusterResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("control-plane", "inspect-cluster", err)
+				return nil, goahttp.ErrValidationError("control-plane", "get-cluster", err)
 			}
-			res := NewInspectClusterClusterOK(&body)
+			res := NewGetClusterClusterOK(&body)
 			return res, nil
 		case http.StatusConflict:
 			var (
-				body InspectClusterClusterNotInitializedResponseBody
+				body GetClusterClusterNotInitializedResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("control-plane", "inspect-cluster", err)
+				return nil, goahttp.ErrDecodingError("control-plane", "get-cluster", err)
 			}
-			err = ValidateInspectClusterClusterNotInitializedResponseBody(&body)
+			err = ValidateGetClusterClusterNotInitializedResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("control-plane", "inspect-cluster", err)
+				return nil, goahttp.ErrValidationError("control-plane", "get-cluster", err)
 			}
-			return nil, NewInspectClusterClusterNotInitialized(&body)
+			return nil, NewGetClusterClusterNotInitialized(&body)
 		case http.StatusNotFound:
 			var (
-				body InspectClusterNotFoundResponseBody
+				body GetClusterNotFoundResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("control-plane", "inspect-cluster", err)
+				return nil, goahttp.ErrDecodingError("control-plane", "get-cluster", err)
 			}
-			err = ValidateInspectClusterNotFoundResponseBody(&body)
+			err = ValidateGetClusterNotFoundResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("control-plane", "inspect-cluster", err)
+				return nil, goahttp.ErrValidationError("control-plane", "get-cluster", err)
 			}
-			return nil, NewInspectClusterNotFound(&body)
+			return nil, NewGetClusterNotFound(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
-			return nil, goahttp.ErrInvalidResponse("control-plane", "inspect-cluster", resp.StatusCode, string(body))
+			return nil, goahttp.ErrInvalidResponse("control-plane", "get-cluster", resp.StatusCode, string(body))
 		}
 	}
 }
@@ -508,25 +508,25 @@ func DecodeListHostsResponse(decoder func(*http.Response) goahttp.Decoder, resto
 	}
 }
 
-// BuildInspectHostRequest instantiates a HTTP request object with method and
-// path set to call the "control-plane" service "inspect-host" endpoint
-func (c *Client) BuildInspectHostRequest(ctx context.Context, v any) (*http.Request, error) {
+// BuildGetHostRequest instantiates a HTTP request object with method and path
+// set to call the "control-plane" service "get-host" endpoint
+func (c *Client) BuildGetHostRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
 		hostID string
 	)
 	{
-		p, ok := v.(*controlplane.InspectHostPayload)
+		p, ok := v.(*controlplane.GetHostPayload)
 		if !ok {
-			return nil, goahttp.ErrInvalidType("control-plane", "inspect-host", "*controlplane.InspectHostPayload", v)
+			return nil, goahttp.ErrInvalidType("control-plane", "get-host", "*controlplane.GetHostPayload", v)
 		}
 		if p.HostID != nil {
 			hostID = *p.HostID
 		}
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: InspectHostControlPlanePath(hostID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetHostControlPlanePath(hostID)}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
-		return nil, goahttp.ErrInvalidURL("control-plane", "inspect-host", u.String(), err)
+		return nil, goahttp.ErrInvalidURL("control-plane", "get-host", u.String(), err)
 	}
 	if ctx != nil {
 		req = req.WithContext(ctx)
@@ -535,14 +535,14 @@ func (c *Client) BuildInspectHostRequest(ctx context.Context, v any) (*http.Requ
 	return req, nil
 }
 
-// DecodeInspectHostResponse returns a decoder for responses returned by the
-// control-plane inspect-host endpoint. restoreBody controls whether the
-// response body should be restored after having been read.
-// DecodeInspectHostResponse may return the following errors:
+// DecodeGetHostResponse returns a decoder for responses returned by the
+// control-plane get-host endpoint. restoreBody controls whether the response
+// body should be restored after having been read.
+// DecodeGetHostResponse may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
 //   - "not_found" (type *goa.ServiceError): http.StatusNotFound
 //   - error: internal error
-func DecodeInspectHostResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+func DecodeGetHostResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
 		if restoreBody {
 			b, err := io.ReadAll(resp.Body)
@@ -559,50 +559,50 @@ func DecodeInspectHostResponse(decoder func(*http.Response) goahttp.Decoder, res
 		switch resp.StatusCode {
 		case http.StatusOK:
 			var (
-				body InspectHostResponseBody
+				body GetHostResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("control-plane", "inspect-host", err)
+				return nil, goahttp.ErrDecodingError("control-plane", "get-host", err)
 			}
-			err = ValidateInspectHostResponseBody(&body)
+			err = ValidateGetHostResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("control-plane", "inspect-host", err)
+				return nil, goahttp.ErrValidationError("control-plane", "get-host", err)
 			}
-			res := NewInspectHostHostOK(&body)
+			res := NewGetHostHostOK(&body)
 			return res, nil
 		case http.StatusConflict:
 			var (
-				body InspectHostClusterNotInitializedResponseBody
+				body GetHostClusterNotInitializedResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("control-plane", "inspect-host", err)
+				return nil, goahttp.ErrDecodingError("control-plane", "get-host", err)
 			}
-			err = ValidateInspectHostClusterNotInitializedResponseBody(&body)
+			err = ValidateGetHostClusterNotInitializedResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("control-plane", "inspect-host", err)
+				return nil, goahttp.ErrValidationError("control-plane", "get-host", err)
 			}
-			return nil, NewInspectHostClusterNotInitialized(&body)
+			return nil, NewGetHostClusterNotInitialized(&body)
 		case http.StatusNotFound:
 			var (
-				body InspectHostNotFoundResponseBody
+				body GetHostNotFoundResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("control-plane", "inspect-host", err)
+				return nil, goahttp.ErrDecodingError("control-plane", "get-host", err)
 			}
-			err = ValidateInspectHostNotFoundResponseBody(&body)
+			err = ValidateGetHostNotFoundResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("control-plane", "inspect-host", err)
+				return nil, goahttp.ErrValidationError("control-plane", "get-host", err)
 			}
-			return nil, NewInspectHostNotFound(&body)
+			return nil, NewGetHostNotFound(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
-			return nil, goahttp.ErrInvalidResponse("control-plane", "inspect-host", resp.StatusCode, string(body))
+			return nil, goahttp.ErrInvalidResponse("control-plane", "get-host", resp.StatusCode, string(body))
 		}
 	}
 }
@@ -1534,26 +1534,25 @@ func DecodeListDatabaseTasksResponse(decoder func(*http.Response) goahttp.Decode
 	}
 }
 
-// BuildInspectDatabaseTaskRequest instantiates a HTTP request object with
-// method and path set to call the "control-plane" service
-// "inspect-database-task" endpoint
-func (c *Client) BuildInspectDatabaseTaskRequest(ctx context.Context, v any) (*http.Request, error) {
+// BuildGetDatabaseTaskRequest instantiates a HTTP request object with method
+// and path set to call the "control-plane" service "get-database-task" endpoint
+func (c *Client) BuildGetDatabaseTaskRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
 		databaseID string
 		taskID     string
 	)
 	{
-		p, ok := v.(*controlplane.InspectDatabaseTaskPayload)
+		p, ok := v.(*controlplane.GetDatabaseTaskPayload)
 		if !ok {
-			return nil, goahttp.ErrInvalidType("control-plane", "inspect-database-task", "*controlplane.InspectDatabaseTaskPayload", v)
+			return nil, goahttp.ErrInvalidType("control-plane", "get-database-task", "*controlplane.GetDatabaseTaskPayload", v)
 		}
 		databaseID = p.DatabaseID
 		taskID = p.TaskID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: InspectDatabaseTaskControlPlanePath(databaseID, taskID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetDatabaseTaskControlPlanePath(databaseID, taskID)}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
-		return nil, goahttp.ErrInvalidURL("control-plane", "inspect-database-task", u.String(), err)
+		return nil, goahttp.ErrInvalidURL("control-plane", "get-database-task", u.String(), err)
 	}
 	if ctx != nil {
 		req = req.WithContext(ctx)
@@ -1562,14 +1561,14 @@ func (c *Client) BuildInspectDatabaseTaskRequest(ctx context.Context, v any) (*h
 	return req, nil
 }
 
-// DecodeInspectDatabaseTaskResponse returns a decoder for responses returned
-// by the control-plane inspect-database-task endpoint. restoreBody controls
-// whether the response body should be restored after having been read.
-// DecodeInspectDatabaseTaskResponse may return the following errors:
+// DecodeGetDatabaseTaskResponse returns a decoder for responses returned by
+// the control-plane get-database-task endpoint. restoreBody controls whether
+// the response body should be restored after having been read.
+// DecodeGetDatabaseTaskResponse may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
 //   - "not_found" (type *goa.ServiceError): http.StatusNotFound
 //   - error: internal error
-func DecodeInspectDatabaseTaskResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+func DecodeGetDatabaseTaskResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
 		if restoreBody {
 			b, err := io.ReadAll(resp.Body)
@@ -1586,50 +1585,50 @@ func DecodeInspectDatabaseTaskResponse(decoder func(*http.Response) goahttp.Deco
 		switch resp.StatusCode {
 		case http.StatusOK:
 			var (
-				body InspectDatabaseTaskResponseBody
+				body GetDatabaseTaskResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("control-plane", "inspect-database-task", err)
+				return nil, goahttp.ErrDecodingError("control-plane", "get-database-task", err)
 			}
-			err = ValidateInspectDatabaseTaskResponseBody(&body)
+			err = ValidateGetDatabaseTaskResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("control-plane", "inspect-database-task", err)
+				return nil, goahttp.ErrValidationError("control-plane", "get-database-task", err)
 			}
-			res := NewInspectDatabaseTaskTaskOK(&body)
+			res := NewGetDatabaseTaskTaskOK(&body)
 			return res, nil
 		case http.StatusConflict:
 			var (
-				body InspectDatabaseTaskClusterNotInitializedResponseBody
+				body GetDatabaseTaskClusterNotInitializedResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("control-plane", "inspect-database-task", err)
+				return nil, goahttp.ErrDecodingError("control-plane", "get-database-task", err)
 			}
-			err = ValidateInspectDatabaseTaskClusterNotInitializedResponseBody(&body)
+			err = ValidateGetDatabaseTaskClusterNotInitializedResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("control-plane", "inspect-database-task", err)
+				return nil, goahttp.ErrValidationError("control-plane", "get-database-task", err)
 			}
-			return nil, NewInspectDatabaseTaskClusterNotInitialized(&body)
+			return nil, NewGetDatabaseTaskClusterNotInitialized(&body)
 		case http.StatusNotFound:
 			var (
-				body InspectDatabaseTaskNotFoundResponseBody
+				body GetDatabaseTaskNotFoundResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("control-plane", "inspect-database-task", err)
+				return nil, goahttp.ErrDecodingError("control-plane", "get-database-task", err)
 			}
-			err = ValidateInspectDatabaseTaskNotFoundResponseBody(&body)
+			err = ValidateGetDatabaseTaskNotFoundResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("control-plane", "inspect-database-task", err)
+				return nil, goahttp.ErrValidationError("control-plane", "get-database-task", err)
 			}
-			return nil, NewInspectDatabaseTaskNotFound(&body)
+			return nil, NewGetDatabaseTaskNotFound(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
-			return nil, goahttp.ErrInvalidResponse("control-plane", "inspect-database-task", resp.StatusCode, string(body))
+			return nil, goahttp.ErrInvalidResponse("control-plane", "get-database-task", resp.StatusCode, string(body))
 		}
 	}
 }

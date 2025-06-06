@@ -65,14 +65,14 @@ func BuildGetJoinOptionsPayload(controlPlaneGetJoinOptionsBody string) (*control
 	return v, nil
 }
 
-// BuildInspectHostPayload builds the payload for the control-plane
-// inspect-host endpoint from CLI flags.
-func BuildInspectHostPayload(controlPlaneInspectHostHostID string) (*controlplane.InspectHostPayload, error) {
+// BuildGetHostPayload builds the payload for the control-plane get-host
+// endpoint from CLI flags.
+func BuildGetHostPayload(controlPlaneGetHostHostID string) (*controlplane.GetHostPayload, error) {
 	var hostID string
 	{
-		hostID = controlPlaneInspectHostHostID
+		hostID = controlPlaneGetHostHostID
 	}
-	v := &controlplane.InspectHostPayload{}
+	v := &controlplane.GetHostPayload{}
 	v.HostID = &hostID
 
 	return v, nil
@@ -297,13 +297,13 @@ func BuildListDatabaseTasksPayload(controlPlaneListDatabaseTasksDatabaseID strin
 	return v, nil
 }
 
-// BuildInspectDatabaseTaskPayload builds the payload for the control-plane
-// inspect-database-task endpoint from CLI flags.
-func BuildInspectDatabaseTaskPayload(controlPlaneInspectDatabaseTaskDatabaseID string, controlPlaneInspectDatabaseTaskTaskID string) (*controlplane.InspectDatabaseTaskPayload, error) {
+// BuildGetDatabaseTaskPayload builds the payload for the control-plane
+// get-database-task endpoint from CLI flags.
+func BuildGetDatabaseTaskPayload(controlPlaneGetDatabaseTaskDatabaseID string, controlPlaneGetDatabaseTaskTaskID string) (*controlplane.GetDatabaseTaskPayload, error) {
 	var err error
 	var databaseID string
 	{
-		databaseID = controlPlaneInspectDatabaseTaskDatabaseID
+		databaseID = controlPlaneGetDatabaseTaskDatabaseID
 		err = goa.MergeErrors(err, goa.ValidateFormat("database_id", databaseID, goa.FormatUUID))
 		if err != nil {
 			return nil, err
@@ -311,13 +311,13 @@ func BuildInspectDatabaseTaskPayload(controlPlaneInspectDatabaseTaskDatabaseID s
 	}
 	var taskID string
 	{
-		taskID = controlPlaneInspectDatabaseTaskTaskID
+		taskID = controlPlaneGetDatabaseTaskTaskID
 		err = goa.MergeErrors(err, goa.ValidateFormat("task_id", taskID, goa.FormatUUID))
 		if err != nil {
 			return nil, err
 		}
 	}
-	v := &controlplane.InspectDatabaseTaskPayload{}
+	v := &controlplane.GetDatabaseTaskPayload{}
 	v.DatabaseID = databaseID
 	v.TaskID = taskID
 
