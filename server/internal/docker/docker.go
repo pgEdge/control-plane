@@ -139,6 +139,12 @@ func (d *Docker) ContainerRemove(ctx context.Context, containerID string, opts c
 	return nil
 }
 
+func (d *Docker) ContainerStop(ctx context.Context, containerID string, timeout *int) error {
+	return d.client.ContainerStop(ctx, containerID, container.StopOptions{
+		Timeout: timeout, // Default timeout for stopping a container}
+	})
+}
+
 func (d *Docker) Info(ctx context.Context) (system.Info, error) {
 	info, err := d.client.Info(ctx)
 	if err != nil {

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/docker/docker/api/types/mount"
 )
 
 var ErrTimedOut = errors.New("operation timed out")
@@ -99,4 +101,13 @@ func Clean(s string) string {
 		}
 		return -1
 	}, s)
+}
+
+func BuildMount(source, target string, readOnly bool) mount.Mount {
+	return mount.Mount{
+		Type:     mount.TypeBind,
+		Source:   source,
+		Target:   target,
+		ReadOnly: readOnly,
+	}
 }

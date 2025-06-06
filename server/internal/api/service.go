@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -171,6 +172,11 @@ func (s *Service) CreateDatabase(ctx context.Context, req *api.CreateDatabaseReq
 		return nil, api.MakeInvalidInput(err)
 	}
 
+	err = s.ValidateVolumes(ctx, spec)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("%w", err))
+	}
+
 	db, err := s.dbSvc.CreateDatabase(ctx, spec)
 	if errors.Is(err, database.ErrDatabaseAlreadyExists) {
 		return nil, api.MakeDatabaseAlreadyExists(err)
@@ -209,6 +215,11 @@ func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePay
 	spec, err := apiToDatabaseSpec(req.DatabaseID, req.Request.TenantID, req.Request.Spec)
 	if err != nil {
 		return nil, api.MakeInvalidInput(err)
+	}
+
+	err = s.ValidateVolumes(ctx, spec)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("%w", err))
 	}
 
 	db, err := s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateModifying, spec)
@@ -474,4 +485,30 @@ func (s *Service) InitCluster(ctx context.Context) (*api.ClusterJoinToken, error
 
 func (s *Service) JoinCluster(ctx context.Context, token *api.ClusterJoinToken) error {
 	return ErrAlreadyInitialized
+}
+
+func (s *Service) ValidateVolumes(ctx context.Context, spec *database.Spec) error {
+	if spec == nil {
+		return errors.New("spec cannot be nil")
+	}
+
+	if len(spec.ExtraVolumes) == 0 {
+		s.logger.Info().Msg("No volumes to validate, skipping volume validation")
+		return nil
+	}
+
+	output := s.workflowSvc.ValidateVolumes(ctx, spec)
+	if output == nil {
+		return errors.New("failed to validate volumes")
+
+	}
+	if !output.Valid {
+		return fmt.Errorf(
+			"volume validation failed. Please ensure that the paths provided in 'extra_volumes' exist and are accessible on the host system.\nDetails: %s",
+			strings.Join(output.Errors, " "),
+		)
+	}
+	s.logger.Info().Msg("Volume validation succeeded")
+
+	return nil
 }

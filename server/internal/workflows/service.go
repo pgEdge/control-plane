@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/cschleiden/go-workflows/backend"
 	"github.com/cschleiden/go-workflows/client"
@@ -16,6 +17,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/task"
+	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
 var ErrDuplicateWorkflow = errors.New("duplicate workflow already in progress")
@@ -231,4 +233,46 @@ func (s *Service) translateCreateErr(err error) error {
 		return ErrDuplicateWorkflow
 	}
 	return fmt.Errorf("failed to create workflow instance: %w", err)
+}
+
+func (s *Service) ValidateVolumes(ctx context.Context, spec *database.Spec) *activities.ValidateVolumesOutput {
+	if spec == nil {
+		return &activities.ValidateVolumesOutput{
+			Valid:  false,
+			Errors: []string{"spec is nil"},
+		}
+	}
+
+	databaseID := spec.DatabaseID
+	opts := client.WorkflowInstanceOptions{
+		Queue:      core.Queue(s.cfg.HostID.String()),
+		InstanceID: databaseID.String(),
+	}
+	input := &ValidateVolumesInput{
+		DatabaseID: databaseID,
+		Spec:       spec,
+	}
+
+	instance, err := s.client.CreateWorkflowInstance(ctx, opts, s.workflows.ValidateSpec, input)
+	if err != nil {
+		s.logger.Error().Err(err).Str("database_id", databaseID.String()).Msg("Failed to create volume validation workflow")
+		return &activities.ValidateVolumesOutput{
+			Valid:  false,
+			Errors: []string{fmt.Sprintf("failed to create workflow instance: %v", err)},
+		}
+	}
+
+	output, err := client.GetWorkflowResult[*activities.ValidateVolumesOutput](ctx, s.client, instance, 5*time.Minute)
+	if err != nil {
+		s.logger.Error().Err(err).Str("database_id", databaseID.String()).Msg("Failed to get result from volume validation workflow")
+
+		if output == nil {
+			return &activities.ValidateVolumesOutput{
+				Valid:  false,
+				Errors: []string{fmt.Sprintf("failed to get workflow result: %v", err)},
+			}
+		}
+	}
+
+	return output
 }
