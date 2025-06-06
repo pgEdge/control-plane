@@ -17,6 +17,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/ipam"
 	"github.com/pgEdge/control-plane/server/internal/logging"
+	"github.com/pgEdge/control-plane/server/internal/monitor"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator/swarm"
 	"github.com/pgEdge/control-plane/server/internal/resource"
@@ -68,6 +69,7 @@ func newRootCmd(i *do.Injector) *cobra.Command {
 			host.Provide(i)
 			ipam.Provide(i)
 			logging.Provide(i)
+			monitor.Provide(i)
 			resource.Provide(i)
 			workflows.Provide(i)
 			activities.Provide(i)
@@ -82,6 +84,7 @@ func newRootCmd(i *do.Injector) *cobra.Command {
 			// orchestrator is configured.
 			database.RegisterResourceTypes(registry)
 			filesystem.RegisterResourceTypes(registry)
+			monitor.RegisterResourceTypes(registry)
 			swarm.RegisterResourceTypes(registry)
 
 			if err := orchestrator.Provide(i); err != nil {

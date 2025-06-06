@@ -4,23 +4,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 )
-
-type NetworkType string
-
-const (
-	NetworkTypeDocker NetworkType = "docker"
-	NetworkTypeHost   NetworkType = "host"
-)
-
-type InstanceInterface struct {
-	NetworkType NetworkType `json:"network_type"`
-	NetworkID   string      `json:"network_id"`
-	Hostname    string      `json:"hostname"`
-	IPv4Address string      `json:"ipv4_address"`
-	Port        int         `json:"port"`
-}
 
 type InstanceState string
 
@@ -28,79 +15,118 @@ const (
 	InstanceStateCreating  InstanceState = "creating"
 	InstanceStateModifying InstanceState = "modifying"
 	InstanceStateBackingUp InstanceState = "backing_up"
-	InstanceStateRestoring InstanceState = "restoring"
-	InstanceStateDeleting  InstanceState = "deleting"
 	InstanceStateAvailable InstanceState = "available"
 	InstanceStateDegraded  InstanceState = "degraded"
+	InstanceStateFailed    InstanceState = "failed"
 	InstanceStateUnknown   InstanceState = "unknown"
 )
 
-type Instance struct {
-	InstanceID      uuid.UUID            `json:"instance_id"`
-	TenantID        *uuid.UUID           `json:"tenant_id,omitempty"`
-	DatabaseID      uuid.UUID            `json:"database_id"`
-	HostID          uuid.UUID            `json:"host_id"`
-	DatabaseName    string               `json:"database_name"`
-	NodeName        string               `json:"node_name"`
-	NodeOrdinal     int                  `json:"node_ordinal"`
-	PostgresVersion string               `json:"postgres_version"`
-	SpockVersion    string               `json:"spock_version"`
-	Port            int                  `json:"port"`
-	State           InstanceState        `json:"state"`
-	PatroniState    patroni.State        `json:"patroni_state"`
-	Role            patroni.InstanceRole `json:"role"`
-	ReadOnly        bool                 `json:"read_only"`
-	PendingRestart  bool                 `json:"pending_restart"`
-	PatroniPaused   bool                 `json:"patroni_paused"`
-	CreatedAt       time.Time            `json:"created_at"`
-	UpdatedAt       time.Time            `json:"updated_at"`
-	Interfaces      []*InstanceInterface `json:"interfaces"`
+var modifyingStates = ds.NewSet(
+	patroni.StateStopping,
+	patroni.StateStopped,
+	patroni.StateStarting,
+	patroni.StateRestarting,
+	patroni.StateInitializingNewCluster,
+	patroni.StateRunningCustomBootstrapScript,
+	patroni.StateCreatingReplica,
+)
+
+var degradedStates = ds.NewSet(
+	patroni.StateStopFailed,
+	patroni.StateCrashed,
+	patroni.StateStartFailed,
+	patroni.StateRestartFailed,
+	patroni.StateInitDBFailed,
+	patroni.StateCustomBootstrapFailed,
+)
+
+func patroniToInstanceState(state *patroni.State) InstanceState {
+	if state == nil {
+		return InstanceStateUnknown
+	}
+	switch {
+	case modifyingStates.Has(*state):
+		return InstanceStateModifying
+	case degradedStates.Has(*state):
+		return InstanceStateDegraded
+	case *state == patroni.StateRunning:
+		return InstanceStateAvailable
+	default:
+		return InstanceStateUnknown
+	}
 }
 
-// func instanceToStored(i *Instance) *StoredInstance {
-// 	return &StoredInstance{
-// 		InstanceID:      i.InstanceID,
-// 		DatabaseID:      i.DatabaseID,
-// 		HostID:          i.HostID,
-// 		TenantID:        i.TenantID,
-// 		DatabaseName:    i.DatabaseName,
-// 		NodeName:        i.NodeName,
-// 		NodeOrdinal:     i.NodeOrdinal,
-// 		ReplicaName:     i.ReplicaName,
-// 		PostgresVersion: i.PostgresVersion,
-// 		SpockVersion:    i.SpockVersion,
-// 		Port:            i.Port,
-// 		State:           i.State,
-// 		PatroniState:    i.PatroniState,
-// 		Role:            i.Role,
-// 		ReadOnly:        i.ReadOnly,
-// 		PendingRestart:  i.PendingRestart,
-// 		PatroniPaused:   i.PatroniPaused,
-// 		UpdatedAt:       i.UpdatedAt,
-// 		Interfaces:      i.Interfaces,
-// 	}
-// }
+type Instance struct {
+	InstanceID uuid.UUID       `json:"instance_id"`
+	DatabaseID uuid.UUID       `json:"database_id"`
+	HostID     uuid.UUID       `json:"host_id"`
+	NodeName   string          `json:"node_name"`
+	State      InstanceState   `json:"state"`
+	Status     *InstanceStatus `json:"status"`
+	CreatedAt  time.Time       `json:"created_at"`
+	UpdatedAt  time.Time       `json:"updated_at"`
+	Error      string          `json:"error,omitempty"`
+}
 
-// func storedToInstance(i *StoredInstance, spec *InstanceSpec) *Instance {
-// 	return &Instance{
-// 		InstanceID:      i.InstanceID,
-// 		DatabaseID:      i.DatabaseID,
-// 		HostID:          i.HostID,
-// 		DatabaseName:    i.DatabaseName,
-// 		NodeName:        i.NodeName,
-// 		NodeOrdinal:     i.NodeOrdinal,
-// 		ReplicaName:     i.ReplicaName,
-// 		PostgresVersion: i.PostgresVersion,
-// 		TenantID:        i.TenantID,
-// 		SpockVersion:    i.SpockVersion,
-// 		Port:            i.Port,
-// 		State:           i.State,
-// 		PatroniState:    i.PatroniState,
-// 		Role:            i.Role,
-// 		ReadOnly:        i.ReadOnly,
-// 		PendingRestart:  i.PendingRestart,
-// 		PatroniPaused:   i.PatroniPaused,
-// 		UpdatedAt:       i.UpdatedAt,
-// 		Interfaces:      i.Interfaces,
-// 	}
-// }
+type SubscriptionStatus struct {
+	ProviderNode string `json:"provider_node"`
+	Name         string `json:"name"`
+	Status       string `json:"status"`
+}
+
+type InstanceStatus struct {
+	PostgresVersion *string               `json:"postgres_version,omitempty"`
+	SpockVersion    *string               `json:"spock_version,omitempty"`
+	Hostname        *string               `json:"hostname,omitempty"`
+	IPv4Address     *string               `json:"ipv4_address,omitempty"`
+	Port            *int                  `json:"port,omitempty"`
+	PatroniState    *patroni.State        `json:"patroni_state,omitempty"`
+	Role            *patroni.InstanceRole `json:"role,omitempty"`
+	ReadOnly        *string               `json:"read_only,omitempty"`
+	PendingRestart  *bool                 `json:"pending_restart,omitempty"`
+	PatroniPaused   *bool                 `json:"patroni_paused,omitempty"`
+	StatusUpdatedAt *time.Time            `json:"status_updated_at,omitempty"`
+	Subscriptions   []SubscriptionStatus  `json:"subscriptions,omitempty"`
+	Error           *string               `json:"error,omitempty"`
+}
+
+func storedToInstance(instance *StoredInstance, status *StoredInstanceStatus) *Instance {
+	if instance == nil {
+		return nil
+	}
+	out := &Instance{
+		InstanceID: instance.InstanceID,
+		DatabaseID: instance.DatabaseID,
+		HostID:     instance.HostID,
+		NodeName:   instance.NodeName,
+		State:      instance.State,
+		CreatedAt:  instance.CreatedAt,
+		UpdatedAt:  instance.UpdateAt,
+		Error:      instance.Error,
+	}
+	if status != nil {
+		out.Status = status.Status
+	}
+	return out
+}
+
+func storedToInstances(storedInstances []*StoredInstance, storedStatuses []*StoredInstanceStatus) []*Instance {
+	statusesByID := make(map[uuid.UUID]*StoredInstanceStatus, len(storedStatuses))
+	for _, s := range storedStatuses {
+		statusesByID[s.InstanceID] = s
+	}
+
+	instances := make([]*Instance, len(storedInstances))
+	for idx, stored := range storedInstances {
+		status := statusesByID[stored.InstanceID]
+		instance := storedToInstance(stored, status)
+		// We want to infer the instance state if the instance is supposed to be
+		// available.
+		if instance.State == InstanceStateAvailable && status != nil {
+			instance.State = patroniToInstanceState(status.Status.PatroniState)
+		}
+		instances[idx] = instance
+	}
+
+	return instances
+}

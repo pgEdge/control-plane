@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -206,6 +207,18 @@ func databaseToAPI(d *database.Database) *api.Database {
 		spec = databaseSpecToAPI(d.Spec)
 	}
 
+	instances := make([]*api.Instance, len(d.Instances))
+	for i, inst := range d.Instances {
+		instances[i] = instanceToAPI(inst)
+	}
+	// Sort by node ID, instance ID asc
+	slices.SortStableFunc(instances, func(a, b *api.Instance) int {
+		if nodeEq := strings.Compare(a.NodeName, b.NodeName); nodeEq != 0 {
+			return nodeEq
+		}
+		return strings.Compare(a.ID, b.ID)
+	})
+
 	return &api.Database{
 		ID:        d.DatabaseID.String(),
 		TenantID:  stringifyStringerPtr(d.TenantID),
@@ -213,7 +226,58 @@ func databaseToAPI(d *database.Database) *api.Database {
 		UpdatedAt: d.UpdatedAt.Format(time.RFC3339),
 		State:     string(d.State),
 		Spec:      spec,
+		Instances: instances,
 	}
+}
+
+func instanceToAPI(instance *database.Instance) *api.Instance {
+	if instance == nil {
+		return nil
+	}
+
+	apiInst := &api.Instance{
+		ID:        instance.InstanceID.String(),
+		HostID:    instance.HostID.String(),
+		NodeName:  instance.NodeName,
+		State:     string(instance.State),
+		CreatedAt: instance.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: instance.UpdatedAt.Format(time.RFC3339),
+		Error:     utils.NillablePointerTo(instance.Error),
+	}
+
+	if status := instance.Status; status != nil {
+		apiInst.PostgresVersion = status.PostgresVersion
+		apiInst.SpockVersion = status.SpockVersion
+		apiInst.Hostname = status.Hostname
+		apiInst.Ipv4Address = status.IPv4Address
+		apiInst.Port = status.Port
+		apiInst.PatroniState = stringifyStringerPtr(status.PatroniState)
+		apiInst.Role = stringifyStringerPtr(status.Role)
+		apiInst.ReadOnly = status.ReadOnly
+		apiInst.PendingRestart = status.PendingRestart
+		apiInst.PatroniPaused = status.PatroniPaused
+		if status.StatusUpdatedAt != nil {
+			apiInst.StatusUpdatedAt = utils.PointerTo(status.StatusUpdatedAt.Format(time.RFC3339))
+		}
+
+		// An instance error takes precedence over its status error because it
+		// represents a failed modification to the database.
+		if apiInst.Error == nil && status.Error != nil {
+			apiInst.Error = status.Error
+		}
+
+		subs := make([]*api.InstanceSubscription, len(status.Subscriptions))
+		for i, sub := range status.Subscriptions {
+			subs[i] = &api.InstanceSubscription{
+				ProviderNode: sub.ProviderNode,
+				Name:         sub.Name,
+				Status:       sub.Status,
+			}
+		}
+		apiInst.Subscriptions = subs
+	}
+
+	return apiInst
 }
 
 func apiToDatabaseNodes(apiNodes []*api.DatabaseNodeSpec) ([]*database.Node, error) {
@@ -432,6 +496,9 @@ func taskToAPI(t *task.Task) *api.Task {
 	}
 	if t.InstanceID != uuid.Nil {
 		instanceID = utils.PointerTo(t.InstanceID.String())
+	}
+	if t.ParentID != uuid.Nil {
+		parentID = utils.PointerTo(t.ParentID.String())
 	}
 	return &api.Task{
 		ParentID:    parentID,

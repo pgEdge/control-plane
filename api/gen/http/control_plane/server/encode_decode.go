@@ -621,21 +621,21 @@ func EncodeCreateDatabaseError(encoder func(context.Context, http.ResponseWriter
 	}
 }
 
-// EncodeInspectDatabaseResponse returns an encoder for responses returned by
-// the control-plane inspect-database endpoint.
-func EncodeInspectDatabaseResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeGetDatabaseResponse returns an encoder for responses returned by the
+// control-plane get-database endpoint.
+func EncodeGetDatabaseResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res := v.(*controlplaneviews.Database)
 		enc := encoder(ctx, w)
-		body := NewInspectDatabaseResponseBody(res.Projected)
+		body := NewGetDatabaseResponseBody(res.Projected)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeInspectDatabaseRequest returns a decoder for requests sent to the
-// control-plane inspect-database endpoint.
-func DecodeInspectDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeGetDatabaseRequest returns a decoder for requests sent to the
+// control-plane get-database endpoint.
+func DecodeGetDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
 			databaseID string
@@ -643,15 +643,15 @@ func DecodeInspectDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request)
 			params = mux.Vars(r)
 		)
 		databaseID = params["database_id"]
-		payload := NewInspectDatabasePayload(databaseID)
+		payload := NewGetDatabasePayload(databaseID)
 
 		return payload, nil
 	}
 }
 
-// EncodeInspectDatabaseError returns an encoder for errors returned by the
-// inspect-database control-plane endpoint.
-func EncodeInspectDatabaseError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeGetDatabaseError returns an encoder for errors returned by the
+// get-database control-plane endpoint.
+func EncodeGetDatabaseError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -667,7 +667,7 @@ func EncodeInspectDatabaseError(encoder func(context.Context, http.ResponseWrite
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewInspectDatabaseClusterNotInitializedResponseBody(res)
+				body = NewGetDatabaseClusterNotInitializedResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
@@ -680,7 +680,7 @@ func EncodeInspectDatabaseError(encoder func(context.Context, http.ResponseWrite
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewInspectDatabaseNotFoundResponseBody(res)
+				body = NewGetDatabaseNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -2062,6 +2062,7 @@ func marshalControlplaneInstanceToInstanceResponseBody(v *controlplane.Instance)
 		NodeName:        v.NodeName,
 		CreatedAt:       v.CreatedAt,
 		UpdatedAt:       v.UpdatedAt,
+		StatusUpdatedAt: v.StatusUpdatedAt,
 		State:           v.State,
 		PatroniState:    v.PatroniState,
 		Role:            v.Role,
@@ -2070,30 +2071,32 @@ func marshalControlplaneInstanceToInstanceResponseBody(v *controlplane.Instance)
 		PatroniPaused:   v.PatroniPaused,
 		PostgresVersion: v.PostgresVersion,
 		SpockVersion:    v.SpockVersion,
+		Hostname:        v.Hostname,
+		Ipv4Address:     v.Ipv4Address,
+		Port:            v.Port,
+		Error:           v.Error,
 	}
-	if v.Interfaces != nil {
-		res.Interfaces = make([]*InstanceInterfaceResponseBody, len(v.Interfaces))
-		for i, val := range v.Interfaces {
-			res.Interfaces[i] = marshalControlplaneInstanceInterfaceToInstanceInterfaceResponseBody(val)
+	if v.Subscriptions != nil {
+		res.Subscriptions = make([]*InstanceSubscriptionResponseBody, len(v.Subscriptions))
+		for i, val := range v.Subscriptions {
+			res.Subscriptions[i] = marshalControlplaneInstanceSubscriptionToInstanceSubscriptionResponseBody(val)
 		}
 	}
 
 	return res
 }
 
-// marshalControlplaneInstanceInterfaceToInstanceInterfaceResponseBody builds a
-// value of type *InstanceInterfaceResponseBody from a value of type
-// *controlplane.InstanceInterface.
-func marshalControlplaneInstanceInterfaceToInstanceInterfaceResponseBody(v *controlplane.InstanceInterface) *InstanceInterfaceResponseBody {
+// marshalControlplaneInstanceSubscriptionToInstanceSubscriptionResponseBody
+// builds a value of type *InstanceSubscriptionResponseBody from a value of
+// type *controlplane.InstanceSubscription.
+func marshalControlplaneInstanceSubscriptionToInstanceSubscriptionResponseBody(v *controlplane.InstanceSubscription) *InstanceSubscriptionResponseBody {
 	if v == nil {
 		return nil
 	}
-	res := &InstanceInterfaceResponseBody{
-		NetworkType: v.NetworkType,
-		NetworkID:   v.NetworkID,
-		Hostname:    v.Hostname,
-		Ipv4Address: v.Ipv4Address,
-		Port:        v.Port,
+	res := &InstanceSubscriptionResponseBody{
+		ProviderNode: v.ProviderNode,
+		Name:         v.Name,
+		Status:       v.Status,
 	}
 
 	return res
@@ -2401,18 +2404,54 @@ func marshalControlplaneDatabaseUserSpecToDatabaseUserSpecResponseBody(v *contro
 	return res
 }
 
-// marshalControlplaneviewsInstanceViewToInstanceResponseBodyAbbreviated builds
-// a value of type *InstanceResponseBodyAbbreviated from a value of type
+// marshalControlplaneviewsInstanceViewToInstanceResponseBody builds a value of
+// type *InstanceResponseBody from a value of type
 // *controlplaneviews.InstanceView.
-func marshalControlplaneviewsInstanceViewToInstanceResponseBodyAbbreviated(v *controlplaneviews.InstanceView) *InstanceResponseBodyAbbreviated {
+func marshalControlplaneviewsInstanceViewToInstanceResponseBody(v *controlplaneviews.InstanceView) *InstanceResponseBody {
 	if v == nil {
 		return nil
 	}
-	res := &InstanceResponseBodyAbbreviated{
-		ID:       *v.ID,
-		HostID:   *v.HostID,
-		NodeName: *v.NodeName,
-		State:    *v.State,
+	res := &InstanceResponseBody{
+		ID:              *v.ID,
+		HostID:          *v.HostID,
+		NodeName:        *v.NodeName,
+		CreatedAt:       *v.CreatedAt,
+		UpdatedAt:       *v.UpdatedAt,
+		StatusUpdatedAt: v.StatusUpdatedAt,
+		State:           *v.State,
+		PatroniState:    v.PatroniState,
+		Role:            v.Role,
+		ReadOnly:        v.ReadOnly,
+		PendingRestart:  v.PendingRestart,
+		PatroniPaused:   v.PatroniPaused,
+		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
+		Hostname:        v.Hostname,
+		Ipv4Address:     v.Ipv4Address,
+		Port:            v.Port,
+		Error:           v.Error,
+	}
+	if v.Subscriptions != nil {
+		res.Subscriptions = make([]*InstanceSubscriptionResponseBody, len(v.Subscriptions))
+		for i, val := range v.Subscriptions {
+			res.Subscriptions[i] = marshalControlplaneviewsInstanceSubscriptionViewToInstanceSubscriptionResponseBody(val)
+		}
+	}
+
+	return res
+}
+
+// marshalControlplaneviewsInstanceSubscriptionViewToInstanceSubscriptionResponseBody
+// builds a value of type *InstanceSubscriptionResponseBody from a value of
+// type *controlplaneviews.InstanceSubscriptionView.
+func marshalControlplaneviewsInstanceSubscriptionViewToInstanceSubscriptionResponseBody(v *controlplaneviews.InstanceSubscriptionView) *InstanceSubscriptionResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &InstanceSubscriptionResponseBody{
+		ProviderNode: *v.ProviderNode,
+		Name:         *v.Name,
+		Status:       *v.Status,
 	}
 
 	return res

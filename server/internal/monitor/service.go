@@ -1,0 +1,141 @@
+package monitor
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/google/uuid"
+	"github.com/rs/zerolog"
+	"github.com/samber/do"
+
+	"github.com/pgEdge/control-plane/server/internal/certificates"
+	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/database"
+)
+
+var _ do.Shutdownable = (*Service)(nil)
+
+type Service struct {
+	appCtx  context.Context
+	cfg     config.Config
+	logger  zerolog.Logger
+	dbSvc   *database.Service
+	certSvc *certificates.Service
+	dbOrch  database.Orchestrator
+	store   *Store
+
+	instances map[uuid.UUID]*InstanceMonitor
+}
+
+func NewService(
+	cfg config.Config,
+	logger zerolog.Logger,
+	dbSvc *database.Service,
+	certSvc *certificates.Service,
+	dbOrch database.Orchestrator,
+	store *Store,
+) *Service {
+	return &Service{
+		cfg:       cfg,
+		logger:    logger,
+		dbSvc:     dbSvc,
+		certSvc:   certSvc,
+		dbOrch:    dbOrch,
+		store:     store,
+		instances: map[uuid.UUID]*InstanceMonitor{},
+	}
+}
+
+func (s *Service) Start(ctx context.Context) error {
+	// The monitors should run for the lifetime of the application rather than
+	// the lifetime of a single operation.
+	s.appCtx = ctx
+
+	stored, err := s.store.InstanceMonitor.
+		GetAllByHostID(s.cfg.HostID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve existing instance monitors: %w", err)
+	}
+
+	for _, inst := range stored {
+		s.addInstanceMonitor(
+			inst.DatabaseID,
+			inst.InstanceID,
+			inst.DatabaseName,
+		)
+	}
+
+	return nil
+}
+
+func (s *Service) Shutdown() error {
+	s.logger.Info().Msg("shutting down instance monitors")
+
+	for _, mon := range s.instances {
+		mon.Stop()
+	}
+
+	s.instances = map[uuid.UUID]*InstanceMonitor{}
+
+	return nil
+}
+
+func (s *Service) CreateInstanceMonitor(ctx context.Context, databaseID, instanceID uuid.UUID, dbName string) error {
+	if s.HasInstanceMonitor(instanceID) {
+		err := s.DeleteInstanceMonitor(ctx, instanceID)
+		if err != nil {
+			return fmt.Errorf("failed to delete existing instance monitor: %w", err)
+		}
+	}
+
+	err := s.store.InstanceMonitor.Put(&StoredInstanceMonitor{
+		HostID:       s.cfg.HostID,
+		DatabaseID:   databaseID,
+		InstanceID:   instanceID,
+		DatabaseName: dbName,
+	}).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to persist instance monitor: %w", err)
+	}
+
+	s.addInstanceMonitor(databaseID, instanceID, dbName)
+
+	return nil
+}
+
+func (s *Service) DeleteInstanceMonitor(ctx context.Context, instanceID uuid.UUID) error {
+	mon, ok := s.instances[instanceID]
+	if ok {
+		mon.Stop()
+		delete(s.instances, instanceID)
+	}
+
+	_, err := s.store.InstanceMonitor.
+		DeleteByKey(s.cfg.HostID, instanceID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete instance monitor: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) HasInstanceMonitor(instanceID uuid.UUID) bool {
+	_, ok := s.instances[instanceID]
+	return ok
+}
+
+func (s *Service) addInstanceMonitor(databaseID, instanceID uuid.UUID, dbName string) {
+	mon := NewInstanceMonitor(
+		s.dbOrch,
+		s.dbSvc,
+		s.certSvc,
+		s.logger,
+		databaseID,
+		instanceID,
+		dbName,
+	)
+	mon.Start(s.appCtx)
+	s.instances[instanceID] = mon
+}

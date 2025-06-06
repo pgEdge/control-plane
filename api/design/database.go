@@ -435,7 +435,6 @@ var Database = g.ResultType("Database", func() {
 		})
 		g.Attribute("instances", g.CollectionOf(Instance), func() {
 			g.Description("All of the instances in the database.")
-			g.View("abbreviated")
 		})
 		g.Attribute("spec", DatabaseSpec, func() {
 			g.Description("The user-provided specification for the database.")
@@ -448,7 +447,9 @@ var Database = g.ResultType("Database", func() {
 		g.Attribute("created_at")
 		g.Attribute("updated_at")
 		g.Attribute("state")
-		g.Attribute("instances")
+		g.Attribute("instances", func() {
+			g.View("default")
+		})
 		g.Attribute("spec")
 	})
 
@@ -458,7 +459,9 @@ var Database = g.ResultType("Database", func() {
 		g.Attribute("created_at")
 		g.Attribute("updated_at")
 		g.Attribute("state")
-		g.Attribute("instances")
+		g.Attribute("instances", func() {
+			g.View("abbreviated")
+		})
 	})
 
 	g.Required("id", "created_at", "updated_at", "state")

@@ -25,7 +25,7 @@ type Client struct {
 	RemoveHostEndpoint          goa.Endpoint
 	ListDatabasesEndpoint       goa.Endpoint
 	CreateDatabaseEndpoint      goa.Endpoint
-	InspectDatabaseEndpoint     goa.Endpoint
+	GetDatabaseEndpoint         goa.Endpoint
 	UpdateDatabaseEndpoint      goa.Endpoint
 	DeleteDatabaseEndpoint      goa.Endpoint
 	BackupDatabaseNodeEndpoint  goa.Endpoint
@@ -37,7 +37,7 @@ type Client struct {
 }
 
 // NewClient initializes a "control-plane" service client given the endpoints.
-func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, inspectCluster, listHosts, inspectHost, removeHost, listDatabases, createDatabase, inspectDatabase, updateDatabase, deleteDatabase, backupDatabaseNode, listDatabaseTasks, inspectDatabaseTask, getDatabaseTaskLog, restoreDatabase, getVersion goa.Endpoint) *Client {
+func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, inspectCluster, listHosts, inspectHost, removeHost, listDatabases, createDatabase, getDatabase, updateDatabase, deleteDatabase, backupDatabaseNode, listDatabaseTasks, inspectDatabaseTask, getDatabaseTaskLog, restoreDatabase, getVersion goa.Endpoint) *Client {
 	return &Client{
 		InitClusterEndpoint:         initCluster,
 		JoinClusterEndpoint:         joinCluster,
@@ -49,7 +49,7 @@ func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, inspectCl
 		RemoveHostEndpoint:          removeHost,
 		ListDatabasesEndpoint:       listDatabases,
 		CreateDatabaseEndpoint:      createDatabase,
-		InspectDatabaseEndpoint:     inspectDatabase,
+		GetDatabaseEndpoint:         getDatabase,
 		UpdateDatabaseEndpoint:      updateDatabase,
 		DeleteDatabaseEndpoint:      deleteDatabase,
 		BackupDatabaseNodeEndpoint:  backupDatabaseNode,
@@ -194,15 +194,14 @@ func (c *Client) CreateDatabase(ctx context.Context, p *CreateDatabaseRequest) (
 	return ires.(*CreateDatabaseResponse), nil
 }
 
-// InspectDatabase calls the "inspect-database" endpoint of the "control-plane"
-// service.
-// InspectDatabase may return the following errors:
+// GetDatabase calls the "get-database" endpoint of the "control-plane" service.
+// GetDatabase may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
 //   - "not_found" (type *goa.ServiceError)
 //   - error: internal error
-func (c *Client) InspectDatabase(ctx context.Context, p *InspectDatabasePayload) (res *Database, err error) {
+func (c *Client) GetDatabase(ctx context.Context, p *GetDatabasePayload) (res *Database, err error) {
 	var ires any
-	ires, err = c.InspectDatabaseEndpoint(ctx, p)
+	ires, err = c.GetDatabaseEndpoint(ctx, p)
 	if err != nil {
 		return
 	}

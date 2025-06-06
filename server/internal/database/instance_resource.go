@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/rs/zerolog"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/certificates"
@@ -89,6 +90,78 @@ func (r *InstanceResource) Refresh(ctx context.Context, rc *resource.Context) er
 }
 
 func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) error {
+	err := r.updateInstanceState(ctx, rc, &InstanceUpdateOptions{State: InstanceStateCreating})
+	if err != nil {
+		return r.recordError(ctx, rc, err)
+	}
+
+	err = r.initializeInstance(ctx, rc)
+	if err != nil {
+		return r.recordError(ctx, rc, err)
+	}
+
+	return nil
+}
+
+func (r *InstanceResource) Update(ctx context.Context, rc *resource.Context) error {
+	err := r.updateInstanceState(ctx, rc, &InstanceUpdateOptions{State: InstanceStateModifying})
+	if err != nil {
+		return r.recordError(ctx, rc, err)
+	}
+
+	if err := r.updateConnectionInfo(ctx, rc); err != nil {
+		return r.recordError(ctx, rc, err)
+	}
+
+	if err := r.patroniClient().Reload(ctx); err != nil {
+		err = fmt.Errorf("failed to reload patroni conf: %w", err)
+		return r.recordError(ctx, rc, err)
+	}
+
+	err = r.initializeInstance(ctx, rc)
+	if err != nil {
+		return r.recordError(ctx, rc, err)
+	}
+
+	return nil
+}
+
+func (r *InstanceResource) Delete(ctx context.Context, rc *resource.Context) error {
+	svc, err := do.Invoke[*Service](rc.Injector)
+	if err != nil {
+		return r.recordError(ctx, rc, err)
+	}
+
+	err = svc.DeleteInstance(ctx, r.Spec.DatabaseID, r.Spec.InstanceID)
+	if err != nil {
+		return r.recordError(ctx, rc, err)
+	}
+
+	return nil
+}
+
+func (r *InstanceResource) Connection(ctx context.Context, rc *resource.Context, dbName string) (*pgx.Conn, error) {
+	certs, err := do.Invoke[*certificates.Service](rc.Injector)
+	if err != nil {
+		return nil, err
+	}
+
+	tlsCfg, err := certs.PostgresUserTLS(ctx, r.Spec.InstanceID, r.InstanceHostname, "pgedge")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get TLS config: %w", err)
+	}
+
+	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
+		DSN: r.ConnectionInfo.AdminDSN(dbName),
+		TLS: tlsCfg,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database %q: %w", r.Spec.DatabaseName, err)
+	}
+	return conn, nil
+}
+
+func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.Context) error {
 	certs, err := do.Invoke[*certificates.Service](rc.Injector)
 	if err != nil {
 		return err
@@ -127,11 +200,11 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 	}
 
 	if r.Spec.RestoreConfig != nil && firstTimeSetup {
-		err = r.renameDB(ctx, r.ConnectionInfo, tlsCfg)
+		err = r.renameDB(ctx, tlsCfg)
 		if err != nil {
 			return fmt.Errorf("failed to rename database %q: %w", r.Spec.DatabaseName, err)
 		}
-		err = r.dropSpock(ctx, r.ConnectionInfo, tlsCfg)
+		err = r.dropSpock(ctx, tlsCfg)
 		if err != nil {
 			return fmt.Errorf("failed to drop spock: %w", err)
 		}
@@ -208,44 +281,46 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
+	err = r.updateInstanceState(ctx, rc, &InstanceUpdateOptions{State: InstanceStateAvailable})
+	if err != nil {
+		return r.recordError(ctx, rc, err)
+	}
+
 	return nil
 }
 
-func (r *InstanceResource) Update(ctx context.Context, rc *resource.Context) error {
-	if err := r.updateConnectionInfo(ctx, rc); err != nil {
+func (r *InstanceResource) updateInstanceState(ctx context.Context, rc *resource.Context, opts *InstanceUpdateOptions) error {
+	svc, err := do.Invoke[*Service](rc.Injector)
+	if err != nil {
+		return err
+	}
+	opts.InstanceID = r.Spec.InstanceID
+	opts.DatabaseID = r.Spec.DatabaseID
+	opts.HostID = r.Spec.HostID
+	opts.NodeName = r.Spec.NodeName
+	err = svc.UpdateInstance(ctx, opts)
+	if err != nil {
+		return fmt.Errorf("failed to update instance state: %w", err)
+	}
+
+	return nil
+}
+
+func (r *InstanceResource) recordError(ctx context.Context, rc *resource.Context, cause error) error {
+	logger, err := do.Invoke[zerolog.Logger](rc.Injector)
+	if err != nil {
 		return err
 	}
 
-	if err := r.patroniClient().Reload(ctx); err != nil {
-		return fmt.Errorf("failed to reload patroni conf: %w", err)
-	}
-
-	return r.Create(ctx, rc)
-}
-
-func (r *InstanceResource) Delete(ctx context.Context, rc *resource.Context) error {
-	return nil
-}
-
-func (r *InstanceResource) Connection(ctx context.Context, rc *resource.Context, dbName string) (*pgx.Conn, error) {
-	certs, err := do.Invoke[*certificates.Service](rc.Injector)
-	if err != nil {
-		return nil, err
-	}
-
-	tlsCfg, err := certs.PostgresUserTLS(ctx, r.Spec.InstanceID, r.InstanceHostname, "pgedge")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get TLS config: %w", err)
-	}
-
-	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
-		DSN: r.ConnectionInfo.AdminDSN(dbName),
-		TLS: tlsCfg,
+	err = r.updateInstanceState(ctx, rc, &InstanceUpdateOptions{
+		State: InstanceStateFailed,
+		Error: cause.Error(),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database %q: %w", r.Spec.DatabaseName, err)
+		logger.Err(err).Msg("failed to persist instance error status")
 	}
-	return conn, nil
+
+	return cause
 }
 
 func (r *InstanceResource) updateConnectionInfo(ctx context.Context, rc *resource.Context) error {
@@ -284,7 +359,7 @@ func (r *InstanceResource) createDB(ctx context.Context, tlsCfg *tls.Config) err
 	return nil
 }
 
-func (r *InstanceResource) renameDB(ctx context.Context, connInfo *ConnectionInfo, tlsCfg *tls.Config) error {
+func (r *InstanceResource) renameDB(ctx context.Context, tlsCfg *tls.Config) error {
 	// Short circuit if the restore config doesn't include a dbname or if the
 	// database name is the same.
 	if r.Spec.RestoreConfig.SourceDatabaseName == "" || r.Spec.RestoreConfig.SourceDatabaseName == r.Spec.DatabaseName {
@@ -315,7 +390,7 @@ func (r *InstanceResource) renameDB(ctx context.Context, connInfo *ConnectionInf
 	return nil
 }
 
-func (r *InstanceResource) dropSpock(ctx context.Context, connInfo *ConnectionInfo, tlsCfg *tls.Config) error {
+func (r *InstanceResource) dropSpock(ctx context.Context, tlsCfg *tls.Config) error {
 	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
 		DSN: r.ConnectionInfo.AdminDSN(r.Spec.DatabaseName),
 		TLS: tlsCfg,

@@ -7,6 +7,7 @@ require (
 	github.com/cilium/ipam v0.0.0-20230509084518-fd66eae7909b
 	github.com/cschleiden/go-workflows v0.19.0
 	github.com/docker/docker v27.1.1+incompatible
+	github.com/docker/go-connections v0.5.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.2
@@ -50,7 +51,6 @@ require (
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/eclipse/paho.golang v0.22.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect

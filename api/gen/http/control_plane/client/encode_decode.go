@@ -892,25 +892,25 @@ func DecodeCreateDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, 
 	}
 }
 
-// BuildInspectDatabaseRequest instantiates a HTTP request object with method
-// and path set to call the "control-plane" service "inspect-database" endpoint
-func (c *Client) BuildInspectDatabaseRequest(ctx context.Context, v any) (*http.Request, error) {
+// BuildGetDatabaseRequest instantiates a HTTP request object with method and
+// path set to call the "control-plane" service "get-database" endpoint
+func (c *Client) BuildGetDatabaseRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
 		databaseID string
 	)
 	{
-		p, ok := v.(*controlplane.InspectDatabasePayload)
+		p, ok := v.(*controlplane.GetDatabasePayload)
 		if !ok {
-			return nil, goahttp.ErrInvalidType("control-plane", "inspect-database", "*controlplane.InspectDatabasePayload", v)
+			return nil, goahttp.ErrInvalidType("control-plane", "get-database", "*controlplane.GetDatabasePayload", v)
 		}
 		if p.DatabaseID != nil {
 			databaseID = *p.DatabaseID
 		}
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: InspectDatabaseControlPlanePath(databaseID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetDatabaseControlPlanePath(databaseID)}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
-		return nil, goahttp.ErrInvalidURL("control-plane", "inspect-database", u.String(), err)
+		return nil, goahttp.ErrInvalidURL("control-plane", "get-database", u.String(), err)
 	}
 	if ctx != nil {
 		req = req.WithContext(ctx)
@@ -919,14 +919,14 @@ func (c *Client) BuildInspectDatabaseRequest(ctx context.Context, v any) (*http.
 	return req, nil
 }
 
-// DecodeInspectDatabaseResponse returns a decoder for responses returned by
-// the control-plane inspect-database endpoint. restoreBody controls whether
-// the response body should be restored after having been read.
-// DecodeInspectDatabaseResponse may return the following errors:
+// DecodeGetDatabaseResponse returns a decoder for responses returned by the
+// control-plane get-database endpoint. restoreBody controls whether the
+// response body should be restored after having been read.
+// DecodeGetDatabaseResponse may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
 //   - "not_found" (type *goa.ServiceError): http.StatusNotFound
 //   - error: internal error
-func DecodeInspectDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+func DecodeGetDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
 		if restoreBody {
 			b, err := io.ReadAll(resp.Body)
@@ -943,52 +943,52 @@ func DecodeInspectDatabaseResponse(decoder func(*http.Response) goahttp.Decoder,
 		switch resp.StatusCode {
 		case http.StatusOK:
 			var (
-				body InspectDatabaseResponseBody
+				body GetDatabaseResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("control-plane", "inspect-database", err)
+				return nil, goahttp.ErrDecodingError("control-plane", "get-database", err)
 			}
-			p := NewInspectDatabaseDatabaseOK(&body)
+			p := NewGetDatabaseDatabaseOK(&body)
 			view := "default"
 			vres := &controlplaneviews.Database{Projected: p, View: view}
 			if err = controlplaneviews.ValidateDatabase(vres); err != nil {
-				return nil, goahttp.ErrValidationError("control-plane", "inspect-database", err)
+				return nil, goahttp.ErrValidationError("control-plane", "get-database", err)
 			}
 			res := controlplane.NewDatabase(vres)
 			return res, nil
 		case http.StatusConflict:
 			var (
-				body InspectDatabaseClusterNotInitializedResponseBody
+				body GetDatabaseClusterNotInitializedResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("control-plane", "inspect-database", err)
+				return nil, goahttp.ErrDecodingError("control-plane", "get-database", err)
 			}
-			err = ValidateInspectDatabaseClusterNotInitializedResponseBody(&body)
+			err = ValidateGetDatabaseClusterNotInitializedResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("control-plane", "inspect-database", err)
+				return nil, goahttp.ErrValidationError("control-plane", "get-database", err)
 			}
-			return nil, NewInspectDatabaseClusterNotInitialized(&body)
+			return nil, NewGetDatabaseClusterNotInitialized(&body)
 		case http.StatusNotFound:
 			var (
-				body InspectDatabaseNotFoundResponseBody
+				body GetDatabaseNotFoundResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
-				return nil, goahttp.ErrDecodingError("control-plane", "inspect-database", err)
+				return nil, goahttp.ErrDecodingError("control-plane", "get-database", err)
 			}
-			err = ValidateInspectDatabaseNotFoundResponseBody(&body)
+			err = ValidateGetDatabaseNotFoundResponseBody(&body)
 			if err != nil {
-				return nil, goahttp.ErrValidationError("control-plane", "inspect-database", err)
+				return nil, goahttp.ErrValidationError("control-plane", "get-database", err)
 			}
-			return nil, NewInspectDatabaseNotFound(&body)
+			return nil, NewGetDatabaseNotFound(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
-			return nil, goahttp.ErrInvalidResponse("control-plane", "inspect-database", resp.StatusCode, string(body))
+			return nil, goahttp.ErrInvalidResponse("control-plane", "get-database", resp.StatusCode, string(body))
 		}
 	}
 }
@@ -2214,6 +2214,7 @@ func unmarshalInstanceResponseToControlplaneviewsInstanceView(v *InstanceRespons
 		NodeName:        v.NodeName,
 		CreatedAt:       v.CreatedAt,
 		UpdatedAt:       v.UpdatedAt,
+		StatusUpdatedAt: v.StatusUpdatedAt,
 		State:           v.State,
 		PatroniState:    v.PatroniState,
 		Role:            v.Role,
@@ -2222,30 +2223,32 @@ func unmarshalInstanceResponseToControlplaneviewsInstanceView(v *InstanceRespons
 		PatroniPaused:   v.PatroniPaused,
 		PostgresVersion: v.PostgresVersion,
 		SpockVersion:    v.SpockVersion,
+		Hostname:        v.Hostname,
+		Ipv4Address:     v.Ipv4Address,
+		Port:            v.Port,
+		Error:           v.Error,
 	}
-	if v.Interfaces != nil {
-		res.Interfaces = make([]*controlplaneviews.InstanceInterfaceView, len(v.Interfaces))
-		for i, val := range v.Interfaces {
-			res.Interfaces[i] = unmarshalInstanceInterfaceResponseToControlplaneviewsInstanceInterfaceView(val)
+	if v.Subscriptions != nil {
+		res.Subscriptions = make([]*controlplaneviews.InstanceSubscriptionView, len(v.Subscriptions))
+		for i, val := range v.Subscriptions {
+			res.Subscriptions[i] = unmarshalInstanceSubscriptionResponseToControlplaneviewsInstanceSubscriptionView(val)
 		}
 	}
 
 	return res
 }
 
-// unmarshalInstanceInterfaceResponseToControlplaneviewsInstanceInterfaceView
-// builds a value of type *controlplaneviews.InstanceInterfaceView from a value
-// of type *InstanceInterfaceResponse.
-func unmarshalInstanceInterfaceResponseToControlplaneviewsInstanceInterfaceView(v *InstanceInterfaceResponse) *controlplaneviews.InstanceInterfaceView {
+// unmarshalInstanceSubscriptionResponseToControlplaneviewsInstanceSubscriptionView
+// builds a value of type *controlplaneviews.InstanceSubscriptionView from a
+// value of type *InstanceSubscriptionResponse.
+func unmarshalInstanceSubscriptionResponseToControlplaneviewsInstanceSubscriptionView(v *InstanceSubscriptionResponse) *controlplaneviews.InstanceSubscriptionView {
 	if v == nil {
 		return nil
 	}
-	res := &controlplaneviews.InstanceInterfaceView{
-		NetworkType: v.NetworkType,
-		NetworkID:   v.NetworkID,
-		Hostname:    v.Hostname,
-		Ipv4Address: v.Ipv4Address,
-		Port:        v.Port,
+	res := &controlplaneviews.InstanceSubscriptionView{
+		ProviderNode: v.ProviderNode,
+		Name:         v.Name,
+		Status:       v.Status,
 	}
 
 	return res
@@ -3192,6 +3195,7 @@ func unmarshalInstanceResponseBodyToControlplaneInstance(v *InstanceResponseBody
 		NodeName:        *v.NodeName,
 		CreatedAt:       *v.CreatedAt,
 		UpdatedAt:       *v.UpdatedAt,
+		StatusUpdatedAt: v.StatusUpdatedAt,
 		State:           *v.State,
 		PatroniState:    v.PatroniState,
 		Role:            v.Role,
@@ -3200,30 +3204,32 @@ func unmarshalInstanceResponseBodyToControlplaneInstance(v *InstanceResponseBody
 		PatroniPaused:   v.PatroniPaused,
 		PostgresVersion: v.PostgresVersion,
 		SpockVersion:    v.SpockVersion,
+		Hostname:        v.Hostname,
+		Ipv4Address:     v.Ipv4Address,
+		Port:            v.Port,
+		Error:           v.Error,
 	}
-	if v.Interfaces != nil {
-		res.Interfaces = make([]*controlplane.InstanceInterface, len(v.Interfaces))
-		for i, val := range v.Interfaces {
-			res.Interfaces[i] = unmarshalInstanceInterfaceResponseBodyToControlplaneInstanceInterface(val)
+	if v.Subscriptions != nil {
+		res.Subscriptions = make([]*controlplane.InstanceSubscription, len(v.Subscriptions))
+		for i, val := range v.Subscriptions {
+			res.Subscriptions[i] = unmarshalInstanceSubscriptionResponseBodyToControlplaneInstanceSubscription(val)
 		}
 	}
 
 	return res
 }
 
-// unmarshalInstanceInterfaceResponseBodyToControlplaneInstanceInterface builds
-// a value of type *controlplane.InstanceInterface from a value of type
-// *InstanceInterfaceResponseBody.
-func unmarshalInstanceInterfaceResponseBodyToControlplaneInstanceInterface(v *InstanceInterfaceResponseBody) *controlplane.InstanceInterface {
+// unmarshalInstanceSubscriptionResponseBodyToControlplaneInstanceSubscription
+// builds a value of type *controlplane.InstanceSubscription from a value of
+// type *InstanceSubscriptionResponseBody.
+func unmarshalInstanceSubscriptionResponseBodyToControlplaneInstanceSubscription(v *InstanceSubscriptionResponseBody) *controlplane.InstanceSubscription {
 	if v == nil {
 		return nil
 	}
-	res := &controlplane.InstanceInterface{
-		NetworkType: *v.NetworkType,
-		NetworkID:   v.NetworkID,
-		Hostname:    v.Hostname,
-		Ipv4Address: v.Ipv4Address,
-		Port:        *v.Port,
+	res := &controlplane.InstanceSubscription{
+		ProviderNode: *v.ProviderNode,
+		Name:         *v.Name,
+		Status:       *v.Status,
 	}
 
 	return res
@@ -3514,18 +3520,54 @@ func unmarshalDatabaseUserSpecResponseBodyToControlplaneDatabaseUserSpec(v *Data
 	return res
 }
 
-// unmarshalInstanceResponseBodyAbbreviatedToControlplaneviewsInstanceView
-// builds a value of type *controlplaneviews.InstanceView from a value of type
-// *InstanceResponseBodyAbbreviated.
-func unmarshalInstanceResponseBodyAbbreviatedToControlplaneviewsInstanceView(v *InstanceResponseBodyAbbreviated) *controlplaneviews.InstanceView {
+// unmarshalInstanceResponseBodyToControlplaneviewsInstanceView builds a value
+// of type *controlplaneviews.InstanceView from a value of type
+// *InstanceResponseBody.
+func unmarshalInstanceResponseBodyToControlplaneviewsInstanceView(v *InstanceResponseBody) *controlplaneviews.InstanceView {
 	if v == nil {
 		return nil
 	}
 	res := &controlplaneviews.InstanceView{
-		ID:       v.ID,
-		HostID:   v.HostID,
-		NodeName: v.NodeName,
-		State:    v.State,
+		ID:              v.ID,
+		HostID:          v.HostID,
+		NodeName:        v.NodeName,
+		CreatedAt:       v.CreatedAt,
+		UpdatedAt:       v.UpdatedAt,
+		StatusUpdatedAt: v.StatusUpdatedAt,
+		State:           v.State,
+		PatroniState:    v.PatroniState,
+		Role:            v.Role,
+		ReadOnly:        v.ReadOnly,
+		PendingRestart:  v.PendingRestart,
+		PatroniPaused:   v.PatroniPaused,
+		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
+		Hostname:        v.Hostname,
+		Ipv4Address:     v.Ipv4Address,
+		Port:            v.Port,
+		Error:           v.Error,
+	}
+	if v.Subscriptions != nil {
+		res.Subscriptions = make([]*controlplaneviews.InstanceSubscriptionView, len(v.Subscriptions))
+		for i, val := range v.Subscriptions {
+			res.Subscriptions[i] = unmarshalInstanceSubscriptionResponseBodyToControlplaneviewsInstanceSubscriptionView(val)
+		}
+	}
+
+	return res
+}
+
+// unmarshalInstanceSubscriptionResponseBodyToControlplaneviewsInstanceSubscriptionView
+// builds a value of type *controlplaneviews.InstanceSubscriptionView from a
+// value of type *InstanceSubscriptionResponseBody.
+func unmarshalInstanceSubscriptionResponseBodyToControlplaneviewsInstanceSubscriptionView(v *InstanceSubscriptionResponseBody) *controlplaneviews.InstanceSubscriptionView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.InstanceSubscriptionView{
+		ProviderNode: v.ProviderNode,
+		Name:         v.Name,
+		Status:       v.Status,
 	}
 
 	return res

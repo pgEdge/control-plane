@@ -14,6 +14,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/monitor"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
 )
 
@@ -124,6 +125,14 @@ func (a *App) runInitialized(ctx context.Context) error {
 		return fmt.Errorf("failed to initialize host ticker: %w", err)
 	}
 	hostTicker.Start(ctx)
+
+	monitorSvc, err := do.Invoke[*monitor.Service](a.i)
+	if err != nil {
+		return fmt.Errorf("failed to initialize monitor service: %w", err)
+	}
+	if err := monitorSvc.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start monitor service: %w", err)
+	}
 
 	worker, err := do.Invoke[*workflows.Worker](a.i)
 	if err != nil {

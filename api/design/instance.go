@@ -4,34 +4,27 @@ import (
 	g "goa.design/goa/v3/dsl"
 )
 
-var InstanceInterface = g.Type("InstanceInterface", func() {
-	g.Attribute("network_type", g.String, func() {
-		g.Description("The type of network for this interface.")
-		g.Enum("docker", "host")
-		g.Example("docker")
+var InstanceSubscription = g.Type("InstanceSubscription", func() {
+	g.Description("Status information for a Spock subscription.")
+	g.Attribute("provider_node", g.String, func() {
+		g.Example("n2")
+		g.Description("The Spock node name of the provider for this subscription.")
 	})
-	g.Attribute("network_id", g.String, func() {
-		g.Description("The unique identifier of the network for this interface.")
-		g.Example("l5imrq28sh6s")
+	g.Attribute("name", g.String, func() {
+		g.Example("sub_n1n2")
+		g.Description("The name of the subscription.")
 	})
-	g.Attribute("hostname", g.String, func() {
-		g.Description("The hostname of the instance on this interface.")
-		g.Example("postgres-n1")
-	})
-	g.Attribute("ipv4_address", g.String, func() {
-		g.Format(g.FormatIPv4)
-		g.Description("The IPv4 address of the instance on this interface.")
-		g.Example("10.1.0.113")
-	})
-	g.Attribute("port", g.Int, func() {
-		g.Description("The Postgres port for the instance on this interface.")
-		g.Example(5432)
+	g.Attribute("status", g.String, func() {
+		g.Example("replicating")
+		g.Example("down")
+		g.Description("The current status of the subscription.")
 	})
 
-	g.Required("network_type", "port")
+	g.Required("provider_node", "name", "status")
 })
 
 var Instance = g.ResultType("Instance", func() {
+	g.Description("An instance of pgEdge Postgres running on a host.")
 	g.Attributes(func() {
 		g.Attribute("id", g.String, func() {
 			g.Format(g.FormatUUID)
@@ -53,17 +46,20 @@ var Instance = g.ResultType("Instance", func() {
 		})
 		g.Attribute("updated_at", g.String, func() {
 			g.Format(g.FormatDateTime)
-			g.Description("The time that the instance was last updated.")
+			g.Description("The time that the instance was last modified.")
+		})
+		g.Attribute("status_updated_at", g.String, func() {
+			g.Format(g.FormatDateTime)
+			g.Description("The time that the instance status information was last updated.")
 		})
 		g.Attribute("state", g.String, func() {
 			g.Enum(
 				"creating",
 				"modifying",
 				"backing_up",
-				"restoring",
-				"deleting",
 				"available",
 				"degraded",
+				"failed",
 				"unknown",
 			)
 		})
@@ -89,8 +85,9 @@ var Instance = g.ResultType("Instance", func() {
 		g.Attribute("role", g.String, func() {
 			g.Enum("replica", "primary")
 		})
-		g.Attribute("read_only", g.Boolean, func() {
-			g.Description("True if this instance is in read-only mode.")
+		g.Attribute("read_only", g.String, func() {
+			g.Description("The current spock.readonly setting.")
+			g.Example("off")
 		})
 		g.Attribute("pending_restart", g.Boolean, func() {
 			g.Description("True if this instance is pending to be restarted from a configuration change.")
@@ -106,8 +103,25 @@ var Instance = g.ResultType("Instance", func() {
 			g.Description("The version of Spock for this instance.")
 			g.Example("4.0.9")
 		})
-		g.Attribute("interfaces", g.ArrayOf(InstanceInterface), func() {
-			g.Description("All interfaces that this instance serves on.")
+		g.Attribute("hostname", g.String, func() {
+			g.Description("The hostname of the host that's running this instance.")
+			g.Example("i-0123456789abcdef.ec2.internal")
+		})
+		g.Attribute("ipv4_address", g.String, func() {
+			g.Description("The IPv4 address of the host that's running this instance.")
+			g.Format(g.FormatIPv4)
+			g.Example("10.24.34.0")
+		})
+		g.Attribute("port", g.Int, func() {
+			g.Description("The host port that Postgres is listening on for this instance.")
+			g.Example(5432)
+		})
+		g.Attribute("subscriptions", g.ArrayOf(InstanceSubscription), func() {
+			g.Description("Status information for this instance's Spock subscriptions.")
+		})
+		g.Attribute("error", g.String, func() {
+			g.Description("An error message if the instance is in an error state.")
+			g.Example("failed to get patroni status: connection refused")
 		})
 	})
 
@@ -117,6 +131,7 @@ var Instance = g.ResultType("Instance", func() {
 		g.Attribute("node_name")
 		g.Attribute("created_at")
 		g.Attribute("updated_at")
+		g.Attribute("status_updated_at")
 		g.Attribute("state")
 		g.Attribute("patroni_state")
 		g.Attribute("role")
@@ -125,7 +140,11 @@ var Instance = g.ResultType("Instance", func() {
 		g.Attribute("patroni_paused")
 		g.Attribute("postgres_version")
 		g.Attribute("spock_version")
-		g.Attribute("interfaces")
+		g.Attribute("hostname")
+		g.Attribute("ipv4_address")
+		g.Attribute("port")
+		g.Attribute("subscriptions")
+		g.Attribute("error")
 	})
 
 	g.View("abbreviated", func() {

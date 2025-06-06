@@ -61,8 +61,8 @@ func CreateDatabaseControlPlanePath() string {
 	return "/databases"
 }
 
-// InspectDatabaseControlPlanePath returns the URL path to the control-plane service inspect-database HTTP endpoint.
-func InspectDatabaseControlPlanePath(databaseID string) string {
+// GetDatabaseControlPlanePath returns the URL path to the control-plane service get-database HTTP endpoint.
+func GetDatabaseControlPlanePath(databaseID string) string {
 	return fmt.Sprintf("/databases/%v", databaseID)
 }
 

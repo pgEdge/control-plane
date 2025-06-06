@@ -157,9 +157,9 @@ type CreateDatabaseResponseBody struct {
 	Database *DatabaseResponseBody `form:"database,omitempty" json:"database,omitempty" xml:"database,omitempty"`
 }
 
-// InspectDatabaseResponseBody is the type of the "control-plane" service
-// "inspect-database" endpoint HTTP response body.
-type InspectDatabaseResponseBody struct {
+// GetDatabaseResponseBody is the type of the "control-plane" service
+// "get-database" endpoint HTTP response body.
+type GetDatabaseResponseBody struct {
 	// Unique identifier for the database.
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// Unique identifier for the databases's owner.
@@ -171,7 +171,7 @@ type InspectDatabaseResponseBody struct {
 	// Current state of the database.
 	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
 	// All of the instances in the database.
-	Instances InstanceResponseBodyAbbreviatedCollection `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	Instances InstanceResponseBodyCollection `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
 }
@@ -571,10 +571,10 @@ type CreateDatabaseInvalidInputResponseBody struct {
 	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
-// InspectDatabaseClusterNotInitializedResponseBody is the type of the
-// "control-plane" service "inspect-database" endpoint HTTP response body for
-// the "cluster_not_initialized" error.
-type InspectDatabaseClusterNotInitializedResponseBody struct {
+// GetDatabaseClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "get-database" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type GetDatabaseClusterNotInitializedResponseBody struct {
 	// Name is the name of this class of errors.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -590,10 +590,9 @@ type InspectDatabaseClusterNotInitializedResponseBody struct {
 	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
-// InspectDatabaseNotFoundResponseBody is the type of the "control-plane"
-// service "inspect-database" endpoint HTTP response body for the "not_found"
-// error.
-type InspectDatabaseNotFoundResponseBody struct {
+// GetDatabaseNotFoundResponseBody is the type of the "control-plane" service
+// "get-database" endpoint HTTP response body for the "not_found" error.
+type GetDatabaseNotFoundResponseBody struct {
 	// Name is the name of this class of errors.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -1177,13 +1176,15 @@ type InstanceResponse struct {
 	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
 	// The time that the instance was created.
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
-	// The time that the instance was last updated.
-	UpdatedAt    *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-	State        *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
-	PatroniState *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
-	Role         *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
-	// True if this instance is in read-only mode.
-	ReadOnly *bool `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
+	// The time that the instance was last modified.
+	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
+	// The time that the instance status information was last updated.
+	StatusUpdatedAt *string `form:"status_updated_at,omitempty" json:"status_updated_at,omitempty" xml:"status_updated_at,omitempty"`
+	State           *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
+	PatroniState    *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
+	Role            *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
+	// The current spock.readonly setting.
+	ReadOnly *string `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
 	// True if this instance is pending to be restarted from a configuration change.
 	PendingRestart *bool `form:"pending_restart,omitempty" json:"pending_restart,omitempty" xml:"pending_restart,omitempty"`
 	// True if Patroni has been paused for this instance.
@@ -1192,22 +1193,26 @@ type InstanceResponse struct {
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
 	// The version of Spock for this instance.
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
-	// All interfaces that this instance serves on.
-	Interfaces []*InstanceInterfaceResponse `form:"interfaces,omitempty" json:"interfaces,omitempty" xml:"interfaces,omitempty"`
+	// The hostname of the host that's running this instance.
+	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
+	// The IPv4 address of the host that's running this instance.
+	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
+	// The host port that Postgres is listening on for this instance.
+	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	// Status information for this instance's Spock subscriptions.
+	Subscriptions []*InstanceSubscriptionResponse `form:"subscriptions,omitempty" json:"subscriptions,omitempty" xml:"subscriptions,omitempty"`
+	// An error message if the instance is in an error state.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
-// InstanceInterfaceResponse is used to define fields on response body types.
-type InstanceInterfaceResponse struct {
-	// The type of network for this interface.
-	NetworkType *string `form:"network_type,omitempty" json:"network_type,omitempty" xml:"network_type,omitempty"`
-	// The unique identifier of the network for this interface.
-	NetworkID *string `form:"network_id,omitempty" json:"network_id,omitempty" xml:"network_id,omitempty"`
-	// The hostname of the instance on this interface.
-	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
-	// The IPv4 address of the instance on this interface.
-	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
-	// The Postgres port for the instance on this interface.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+// InstanceSubscriptionResponse is used to define fields on response body types.
+type InstanceSubscriptionResponse struct {
+	// The Spock node name of the provider for this subscription.
+	ProviderNode *string `form:"provider_node,omitempty" json:"provider_node,omitempty" xml:"provider_node,omitempty"`
+	// The name of the subscription.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The current status of the subscription.
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 }
 
 // DatabaseSpecResponse is used to define fields on response body types.
@@ -1751,13 +1756,15 @@ type InstanceResponseBody struct {
 	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
 	// The time that the instance was created.
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
-	// The time that the instance was last updated.
-	UpdatedAt    *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-	State        *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
-	PatroniState *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
-	Role         *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
-	// True if this instance is in read-only mode.
-	ReadOnly *bool `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
+	// The time that the instance was last modified.
+	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
+	// The time that the instance status information was last updated.
+	StatusUpdatedAt *string `form:"status_updated_at,omitempty" json:"status_updated_at,omitempty" xml:"status_updated_at,omitempty"`
+	State           *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
+	PatroniState    *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
+	Role            *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
+	// The current spock.readonly setting.
+	ReadOnly *string `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
 	// True if this instance is pending to be restarted from a configuration change.
 	PendingRestart *bool `form:"pending_restart,omitempty" json:"pending_restart,omitempty" xml:"pending_restart,omitempty"`
 	// True if Patroni has been paused for this instance.
@@ -1766,23 +1773,27 @@ type InstanceResponseBody struct {
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
 	// The version of Spock for this instance.
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
-	// All interfaces that this instance serves on.
-	Interfaces []*InstanceInterfaceResponseBody `form:"interfaces,omitempty" json:"interfaces,omitempty" xml:"interfaces,omitempty"`
+	// The hostname of the host that's running this instance.
+	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
+	// The IPv4 address of the host that's running this instance.
+	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
+	// The host port that Postgres is listening on for this instance.
+	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	// Status information for this instance's Spock subscriptions.
+	Subscriptions []*InstanceSubscriptionResponseBody `form:"subscriptions,omitempty" json:"subscriptions,omitempty" xml:"subscriptions,omitempty"`
+	// An error message if the instance is in an error state.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
-// InstanceInterfaceResponseBody is used to define fields on response body
+// InstanceSubscriptionResponseBody is used to define fields on response body
 // types.
-type InstanceInterfaceResponseBody struct {
-	// The type of network for this interface.
-	NetworkType *string `form:"network_type,omitempty" json:"network_type,omitempty" xml:"network_type,omitempty"`
-	// The unique identifier of the network for this interface.
-	NetworkID *string `form:"network_id,omitempty" json:"network_id,omitempty" xml:"network_id,omitempty"`
-	// The hostname of the instance on this interface.
-	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
-	// The IPv4 address of the instance on this interface.
-	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
-	// The Postgres port for the instance on this interface.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+type InstanceSubscriptionResponseBody struct {
+	// The Spock node name of the provider for this subscription.
+	ProviderNode *string `form:"provider_node,omitempty" json:"provider_node,omitempty" xml:"provider_node,omitempty"`
+	// The name of the subscription.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The current status of the subscription.
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 }
 
 // DatabaseSpecResponseBody is used to define fields on response body types.
@@ -2029,21 +2040,9 @@ type DatabaseUserSpecResponseBody struct {
 	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
 }
 
-// InstanceResponseBodyAbbreviatedCollection is used to define fields on
-// response body types.
-type InstanceResponseBodyAbbreviatedCollection []*InstanceResponseBodyAbbreviated
-
-// InstanceResponseBodyAbbreviated is used to define fields on response body
+// InstanceResponseBodyCollection is used to define fields on response body
 // types.
-type InstanceResponseBodyAbbreviated struct {
-	// Unique identifier for the instance.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// The ID of the host this instance is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-	// The Spock node name for this instance.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	State    *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
-}
+type InstanceResponseBodyCollection []*InstanceResponseBody
 
 // DatabaseSpecRequestBodyRequestBody is used to define fields on request body
 // types.
@@ -2767,9 +2766,9 @@ func NewCreateDatabaseInvalidInput(body *CreateDatabaseInvalidInputResponseBody)
 	return v
 }
 
-// NewInspectDatabaseDatabaseOK builds a "control-plane" service
-// "inspect-database" endpoint result from a HTTP "OK" response.
-func NewInspectDatabaseDatabaseOK(body *InspectDatabaseResponseBody) *controlplaneviews.DatabaseView {
+// NewGetDatabaseDatabaseOK builds a "control-plane" service "get-database"
+// endpoint result from a HTTP "OK" response.
+func NewGetDatabaseDatabaseOK(body *GetDatabaseResponseBody) *controlplaneviews.DatabaseView {
 	v := &controlplaneviews.DatabaseView{
 		ID:        body.ID,
 		TenantID:  body.TenantID,
@@ -2780,7 +2779,7 @@ func NewInspectDatabaseDatabaseOK(body *InspectDatabaseResponseBody) *controlpla
 	if body.Instances != nil {
 		v.Instances = make([]*controlplaneviews.InstanceView, len(body.Instances))
 		for i, val := range body.Instances {
-			v.Instances[i] = unmarshalInstanceResponseBodyAbbreviatedToControlplaneviewsInstanceView(val)
+			v.Instances[i] = unmarshalInstanceResponseBodyToControlplaneviewsInstanceView(val)
 		}
 	}
 	if body.Spec != nil {
@@ -2790,9 +2789,9 @@ func NewInspectDatabaseDatabaseOK(body *InspectDatabaseResponseBody) *controlpla
 	return v
 }
 
-// NewInspectDatabaseClusterNotInitialized builds a control-plane service
-// inspect-database endpoint cluster_not_initialized error.
-func NewInspectDatabaseClusterNotInitialized(body *InspectDatabaseClusterNotInitializedResponseBody) *goa.ServiceError {
+// NewGetDatabaseClusterNotInitialized builds a control-plane service
+// get-database endpoint cluster_not_initialized error.
+func NewGetDatabaseClusterNotInitialized(body *GetDatabaseClusterNotInitializedResponseBody) *goa.ServiceError {
 	v := &goa.ServiceError{
 		Name:      *body.Name,
 		ID:        *body.ID,
@@ -2805,9 +2804,9 @@ func NewInspectDatabaseClusterNotInitialized(body *InspectDatabaseClusterNotInit
 	return v
 }
 
-// NewInspectDatabaseNotFound builds a control-plane service inspect-database
-// endpoint not_found error.
-func NewInspectDatabaseNotFound(body *InspectDatabaseNotFoundResponseBody) *goa.ServiceError {
+// NewGetDatabaseNotFound builds a control-plane service get-database endpoint
+// not_found error.
+func NewGetDatabaseNotFound(body *GetDatabaseNotFoundResponseBody) *goa.ServiceError {
 	v := &goa.ServiceError{
 		Name:      *body.Name,
 		ID:        *body.ID,
@@ -3951,9 +3950,9 @@ func ValidateCreateDatabaseInvalidInputResponseBody(body *CreateDatabaseInvalidI
 	return
 }
 
-// ValidateInspectDatabaseClusterNotInitializedResponseBody runs the
-// validations defined on inspect-database_cluster_not_initialized_response_body
-func ValidateInspectDatabaseClusterNotInitializedResponseBody(body *InspectDatabaseClusterNotInitializedResponseBody) (err error) {
+// ValidateGetDatabaseClusterNotInitializedResponseBody runs the validations
+// defined on get-database_cluster_not_initialized_response_body
+func ValidateGetDatabaseClusterNotInitializedResponseBody(body *GetDatabaseClusterNotInitializedResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
@@ -3975,9 +3974,9 @@ func ValidateInspectDatabaseClusterNotInitializedResponseBody(body *InspectDatab
 	return
 }
 
-// ValidateInspectDatabaseNotFoundResponseBody runs the validations defined on
-// inspect-database_not_found_response_body
-func ValidateInspectDatabaseNotFoundResponseBody(body *InspectDatabaseNotFoundResponseBody) (err error) {
+// ValidateGetDatabaseNotFoundResponseBody runs the validations defined on
+// get-database_not_found_response_body
+func ValidateGetDatabaseNotFoundResponseBody(body *GetDatabaseNotFoundResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
@@ -4895,9 +4894,12 @@ func ValidateInstanceResponse(body *InstanceResponse) (err error) {
 	if body.UpdatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
 	}
+	if body.StatusUpdatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.status_updated_at", *body.StatusUpdatedAt, goa.FormatDateTime))
+	}
 	if body.State != nil {
-		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "backing_up" || *body.State == "restoring" || *body.State == "deleting" || *body.State == "available" || *body.State == "degraded" || *body.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "backing_up", "restoring", "deleting", "available", "degraded", "unknown"}))
+		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "backing_up" || *body.State == "available" || *body.State == "degraded" || *body.State == "failed" || *body.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "backing_up", "available", "degraded", "failed", "unknown"}))
 		}
 	}
 	if body.PatroniState != nil {
@@ -4910,9 +4912,12 @@ func ValidateInstanceResponse(body *InstanceResponse) (err error) {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.role", *body.Role, []any{"replica", "primary"}))
 		}
 	}
-	for _, e := range body.Interfaces {
+	if body.Ipv4Address != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
+	}
+	for _, e := range body.Subscriptions {
 		if e != nil {
-			if err2 := ValidateInstanceInterfaceResponse(e); err2 != nil {
+			if err2 := ValidateInstanceSubscriptionResponse(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -4920,22 +4925,17 @@ func ValidateInstanceResponse(body *InstanceResponse) (err error) {
 	return
 }
 
-// ValidateInstanceInterfaceResponse runs the validations defined on
-// InstanceInterfaceResponse
-func ValidateInstanceInterfaceResponse(body *InstanceInterfaceResponse) (err error) {
-	if body.NetworkType == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("network_type", "body"))
+// ValidateInstanceSubscriptionResponse runs the validations defined on
+// InstanceSubscriptionResponse
+func ValidateInstanceSubscriptionResponse(body *InstanceSubscriptionResponse) (err error) {
+	if body.ProviderNode == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("provider_node", "body"))
 	}
-	if body.Port == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("port", "body"))
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.NetworkType != nil {
-		if !(*body.NetworkType == "docker" || *body.NetworkType == "host") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.network_type", *body.NetworkType, []any{"docker", "host"}))
-		}
-	}
-	if body.Ipv4Address != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
 	}
 	return
 }
@@ -5454,9 +5454,12 @@ func ValidateInstanceResponseBody(body *InstanceResponseBody) (err error) {
 	if body.UpdatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
 	}
+	if body.StatusUpdatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.status_updated_at", *body.StatusUpdatedAt, goa.FormatDateTime))
+	}
 	if body.State != nil {
-		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "backing_up" || *body.State == "restoring" || *body.State == "deleting" || *body.State == "available" || *body.State == "degraded" || *body.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "backing_up", "restoring", "deleting", "available", "degraded", "unknown"}))
+		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "backing_up" || *body.State == "available" || *body.State == "degraded" || *body.State == "failed" || *body.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "backing_up", "available", "degraded", "failed", "unknown"}))
 		}
 	}
 	if body.PatroniState != nil {
@@ -5469,9 +5472,12 @@ func ValidateInstanceResponseBody(body *InstanceResponseBody) (err error) {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.role", *body.Role, []any{"replica", "primary"}))
 		}
 	}
-	for _, e := range body.Interfaces {
+	if body.Ipv4Address != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
+	}
+	for _, e := range body.Subscriptions {
 		if e != nil {
-			if err2 := ValidateInstanceInterfaceResponseBody(e); err2 != nil {
+			if err2 := ValidateInstanceSubscriptionResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -5479,22 +5485,17 @@ func ValidateInstanceResponseBody(body *InstanceResponseBody) (err error) {
 	return
 }
 
-// ValidateInstanceInterfaceResponseBody runs the validations defined on
-// InstanceInterfaceResponseBody
-func ValidateInstanceInterfaceResponseBody(body *InstanceInterfaceResponseBody) (err error) {
-	if body.NetworkType == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("network_type", "body"))
+// ValidateInstanceSubscriptionResponseBody runs the validations defined on
+// InstanceSubscriptionResponseBody
+func ValidateInstanceSubscriptionResponseBody(body *InstanceSubscriptionResponseBody) (err error) {
+	if body.ProviderNode == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("provider_node", "body"))
 	}
-	if body.Port == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("port", "body"))
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.NetworkType != nil {
-		if !(*body.NetworkType == "docker" || *body.NetworkType == "host") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.network_type", *body.NetworkType, []any{"docker", "host"}))
-		}
-	}
-	if body.Ipv4Address != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
 	}
 	return
 }
@@ -5731,43 +5732,14 @@ func ValidateDatabaseUserSpecResponseBody(body *DatabaseUserSpecResponseBody) (e
 	return
 }
 
-// ValidateInstanceResponseBodyAbbreviatedCollection runs the validations
-// defined on InstanceResponseBodyAbbreviatedCollection
-func ValidateInstanceResponseBodyAbbreviatedCollection(body InstanceResponseBodyAbbreviatedCollection) (err error) {
+// ValidateInstanceResponseBodyCollection runs the validations defined on
+// InstanceResponseBodyCollection
+func ValidateInstanceResponseBodyCollection(body InstanceResponseBodyCollection) (err error) {
 	for _, e := range body {
 		if e != nil {
-			if err2 := ValidateInstanceResponseBodyAbbreviated(e); err2 != nil {
+			if err2 := ValidateInstanceResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
-		}
-	}
-	return
-}
-
-// ValidateInstanceResponseBodyAbbreviated runs the validations defined on
-// InstanceResponseBodyAbbreviated
-func ValidateInstanceResponseBodyAbbreviated(body *InstanceResponseBodyAbbreviated) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
-	if body.HostID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "body"))
-	}
-	if body.NodeName == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("node_name", "body"))
-	}
-	if body.State == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
-	}
-	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
-	}
-	if body.HostID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
-	}
-	if body.State != nil {
-		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "backing_up" || *body.State == "restoring" || *body.State == "deleting" || *body.State == "available" || *body.State == "degraded" || *body.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "backing_up", "restoring", "deleting", "available", "degraded", "unknown"}))
 		}
 	}
 	return

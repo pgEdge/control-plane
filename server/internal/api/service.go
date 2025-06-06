@@ -189,8 +189,20 @@ func (s *Service) CreateDatabase(ctx context.Context, req *api.CreateDatabaseReq
 	}, nil
 }
 
-func (s *Service) InspectDatabase(ctx context.Context, req *api.InspectDatabasePayload) (*api.Database, error) {
-	return nil, ErrNotImplemented
+func (s *Service) GetDatabase(ctx context.Context, req *api.GetDatabasePayload) (*api.Database, error) {
+	databaseID, err := parseUUIDPtr(req.DatabaseID)
+	if err != nil {
+		return nil, api.MakeInvalidInput(err)
+	}
+
+	db, err := s.dbSvc.GetDatabase(ctx, databaseID)
+	if errors.Is(err, database.ErrDatabaseNotFound) {
+		return nil, api.MakeNotFound(fmt.Errorf("database %s not found", databaseID))
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get database: %w", err)
+	}
+
+	return databaseToAPI(db), nil
 }
 
 func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePayload) (*api.UpdateDatabaseResponse, error) {
