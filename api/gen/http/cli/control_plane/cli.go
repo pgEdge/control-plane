@@ -314,7 +314,7 @@ Usage:
 
 COMMAND:
     init-cluster: Initializes a new cluster.
-    join-cluster: Join this host to an existing cluster.
+    join-cluster: Joins this host to an existing cluster.
     get-join-token: Gets the join token for this cluster.
     get-join-options: Internal endpoint for other cluster members seeking to join this cluster.
     get-cluster: Returns information about the cluster.
@@ -331,7 +331,7 @@ COMMAND:
     get-database-task: Returns information about a particular task.
     get-database-task-log: Returns the log of a particular task for a database.
     restore-database: Perform an in-place restore one or more nodes using the given restore configuration.
-    get-version: Returns version information for the Control Plane server.
+    get-version: Returns version information for this Control Plane server.
 
 Additional help:
     %[1]s control-plane COMMAND --help
@@ -350,7 +350,7 @@ Example:
 func controlPlaneJoinClusterUsage() {
 	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane join-cluster -body JSON
 
-Join this host to an existing cluster.
+Joins this host to an existing cluster.
     -body JSON: 
 
 Example:
@@ -1982,7 +1982,7 @@ Example:
 func controlPlaneGetVersionUsage() {
 	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane get-version
 
-Returns version information for the Control Plane server.
+Returns version information for this Control Plane server.
 
 Example:
     %[1]s control-plane get-version

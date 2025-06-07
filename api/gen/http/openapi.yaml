@@ -16,8 +16,8 @@ paths:
     /cluster:
         get:
             tags:
-                - control-plane
-            summary: get-cluster control-plane
+                - Cluster
+            summary: Get cluster
             description: Returns information about the cluster.
             operationId: control-plane#get-cluster
             responses:
@@ -49,8 +49,8 @@ paths:
     /cluster/init:
         get:
             tags:
-                - control-plane
-            summary: init-cluster control-plane
+                - Cluster
+            summary: Initialize cluster
             description: Initializes a new cluster.
             operationId: control-plane#init-cluster
             responses:
@@ -80,9 +80,9 @@ paths:
     /cluster/join:
         post:
             tags:
-                - control-plane
-            summary: join-cluster control-plane
-            description: Join this host to an existing cluster.
+                - Cluster
+            summary: Join cluster
+            description: Joins this host to an existing cluster.
             operationId: control-plane#join-cluster
             parameters:
                 - name: Join-ClusterRequestBody
@@ -122,8 +122,8 @@ paths:
     /cluster/join-token:
         get:
             tags:
-                - control-plane
-            summary: get-join-token control-plane
+                - Cluster
+            summary: Get cluster join token
             description: Gets the join token for this cluster.
             operationId: control-plane#get-join-token
             responses:
@@ -153,8 +153,8 @@ paths:
     /databases:
         get:
             tags:
-                - control-plane
-            summary: list-databases control-plane
+                - Database
+            summary: List databases
             description: Lists all databases in the cluster.
             operationId: control-plane#list-databases
             responses:
@@ -180,8 +180,8 @@ paths:
                 - http
         post:
             tags:
-                - control-plane
-            summary: create-database control-plane
+                - Database
+            summary: Create database
             description: Creates a new database in the cluster.
             operationId: control-plane#create-database
             parameters:
@@ -221,8 +221,8 @@ paths:
     /databases/{database_id}:
         get:
             tags:
-                - control-plane
-            summary: get-database control-plane
+                - Database
+            summary: Get database
             description: Returns information about a particular database in the cluster.
             operationId: control-plane#get-database
             parameters:
@@ -268,8 +268,8 @@ paths:
                 - http
         post:
             tags:
-                - control-plane
-            summary: update-database control-plane
+                - Database
+            summary: Update database
             description: Updates a database with the given specification.
             operationId: control-plane#update-database
             parameters:
@@ -325,8 +325,8 @@ paths:
                 - http
         delete:
             tags:
-                - control-plane
-            summary: delete-database control-plane
+                - Database
+            summary: Delete database
             description: Deletes a database from the cluster.
             operationId: control-plane#delete-database
             parameters:
@@ -374,8 +374,8 @@ paths:
     /databases/{database_id}/nodes/{node_name}/backups:
         post:
             tags:
-                - control-plane
-            summary: backup-database-node control-plane
+                - Database
+            summary: Backup database node
             description: Initiates a backup for a database node.
             operationId: control-plane#backup-database-node
             parameters:
@@ -433,8 +433,8 @@ paths:
     /databases/{database_id}/restore:
         post:
             tags:
-                - control-plane
-            summary: restore-database control-plane
+                - Database
+            summary: Restore database
             description: Perform an in-place restore one or more nodes using the given restore configuration.
             operationId: control-plane#restore-database
             parameters:
@@ -487,8 +487,8 @@ paths:
     /databases/{database_id}/tasks:
         get:
             tags:
-                - control-plane
-            summary: list-database-tasks control-plane
+                - Database
+            summary: List database tasks
             description: Lists all tasks for a database.
             operationId: control-plane#list-database-tasks
             parameters:
@@ -561,8 +561,8 @@ paths:
     /databases/{database_id}/tasks/{task_id}:
         get:
             tags:
-                - control-plane
-            summary: get-database-task control-plane
+                - Database
+            summary: Get database task
             description: Returns information about a particular task.
             operationId: control-plane#get-database-task
             parameters:
@@ -622,8 +622,8 @@ paths:
     /databases/{database_id}/tasks/{task_id}/log:
         get:
             tags:
-                - control-plane
-            summary: get-database-task-log control-plane
+                - Database
+            summary: Get database task log
             description: Returns the log of a particular task for a database.
             operationId: control-plane#get-database-task-log
             parameters:
@@ -693,8 +693,8 @@ paths:
     /hosts:
         get:
             tags:
-                - control-plane
-            summary: list-hosts control-plane
+                - Host
+            summary: List hosts
             description: Lists all hosts within the cluster.
             operationId: control-plane#list-hosts
             responses:
@@ -723,8 +723,8 @@ paths:
     /hosts/{host_id}:
         get:
             tags:
-                - control-plane
-            summary: get-host control-plane
+                - Host
+            summary: Get host
             description: Returns information about a particular host in the cluster.
             operationId: control-plane#get-host
             parameters:
@@ -780,8 +780,8 @@ paths:
                 - http
         delete:
             tags:
-                - control-plane
-            summary: remove-host control-plane
+                - Host
+            summary: Remove host
             description: Removes a host from the cluster.
             operationId: control-plane#remove-host
             parameters:
@@ -823,25 +823,12 @@ paths:
                             - message
             schemes:
                 - http
-    /openapi.json:
-        get:
-            tags:
-                - control-plane
-            summary: Download ./gen/http/openapi3.json
-            operationId: control-plane#/openapi.json
-            responses:
-                "200":
-                    description: File downloaded
-                    schema:
-                        type: file
-            schemes:
-                - http
     /version:
         get:
             tags:
-                - control-plane
-            summary: get-version control-plane
-            description: Returns version information for the Control Plane server.
+                - System
+            summary: Get version
+            description: Returns version information for this Control Plane server.
             operationId: control-plane#get-version
             responses:
                 "200":
