@@ -36,6 +36,8 @@ import (
 var _ common.HealthCheckable = (*EmbeddedEtcd)(nil)
 var _ do.Shutdownable = (*EmbeddedEtcd)(nil)
 
+var ErrInvalidJoinToken = errors.New("invalid join token")
+
 type JoinOptions struct {
 	Peer        Peer
 	Credentials *HostCredentials
@@ -380,7 +382,7 @@ func (e *EmbeddedEtcd) VerifyJoinToken(in string) error {
 	}
 	token := e.certSvc.JoinToken()
 	if subtle.ConstantTimeCompare([]byte(in), []byte(token)) != 1 {
-		return errors.New("invalid join token")
+		return ErrInvalidJoinToken
 	}
 	return nil
 }

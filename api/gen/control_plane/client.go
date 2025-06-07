@@ -64,6 +64,7 @@ func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluste
 // InitCluster calls the "init-cluster" endpoint of the "control-plane" service.
 // InitCluster may return the following errors:
 //   - "cluster_already_initialized" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) InitCluster(ctx context.Context) (res *ClusterJoinToken, err error) {
 	var ires any
@@ -77,6 +78,8 @@ func (c *Client) InitCluster(ctx context.Context) (res *ClusterJoinToken, err er
 // JoinCluster calls the "join-cluster" endpoint of the "control-plane" service.
 // JoinCluster may return the following errors:
 //   - "cluster_already_initialized" (type *goa.ServiceError)
+//   - "invalid_join_token" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) JoinCluster(ctx context.Context, p *ClusterJoinToken) (err error) {
 	_, err = c.JoinClusterEndpoint(ctx, p)
@@ -87,6 +90,7 @@ func (c *Client) JoinCluster(ctx context.Context, p *ClusterJoinToken) (err erro
 // service.
 // GetJoinToken may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) GetJoinToken(ctx context.Context) (res *ClusterJoinToken, err error) {
 	var ires any
@@ -102,6 +106,7 @@ func (c *Client) GetJoinToken(ctx context.Context) (res *ClusterJoinToken, err e
 // GetJoinOptions may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
 //   - "invalid_join_token" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) GetJoinOptions(ctx context.Context, p *ClusterJoinRequest) (res *ClusterJoinOptions, err error) {
 	var ires any
@@ -115,7 +120,7 @@ func (c *Client) GetJoinOptions(ctx context.Context, p *ClusterJoinRequest) (res
 // GetCluster calls the "get-cluster" endpoint of the "control-plane" service.
 // GetCluster may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
-//   - "not_found" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) GetCluster(ctx context.Context) (res *Cluster, err error) {
 	var ires any
@@ -129,6 +134,7 @@ func (c *Client) GetCluster(ctx context.Context) (res *Cluster, err error) {
 // ListHosts calls the "list-hosts" endpoint of the "control-plane" service.
 // ListHosts may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) ListHosts(ctx context.Context) (res []*Host, err error) {
 	var ires any
@@ -142,7 +148,9 @@ func (c *Client) ListHosts(ctx context.Context) (res []*Host, err error) {
 // GetHost calls the "get-host" endpoint of the "control-plane" service.
 // GetHost may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
 //   - "not_found" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) GetHost(ctx context.Context, p *GetHostPayload) (res *Host, err error) {
 	var ires any
@@ -156,7 +164,9 @@ func (c *Client) GetHost(ctx context.Context, p *GetHostPayload) (res *Host, err
 // RemoveHost calls the "remove-host" endpoint of the "control-plane" service.
 // RemoveHost may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
 //   - "not_found" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) RemoveHost(ctx context.Context, p *RemoveHostPayload) (err error) {
 	_, err = c.RemoveHostEndpoint(ctx, p)
@@ -167,6 +177,7 @@ func (c *Client) RemoveHost(ctx context.Context, p *RemoveHostPayload) (err erro
 // service.
 // ListDatabases may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) ListDatabases(ctx context.Context) (res DatabaseCollection, err error) {
 	var ires any
@@ -181,8 +192,10 @@ func (c *Client) ListDatabases(ctx context.Context) (res DatabaseCollection, err
 // service.
 // CreateDatabase may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "database_already_exists" (type *APIError)
 //   - "invalid_input" (type *goa.ServiceError)
-//   - "database_already_exists" (type *goa.ServiceError)
+//   - "operation_already_in_progress" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) CreateDatabase(ctx context.Context, p *CreateDatabaseRequest) (res *CreateDatabaseResponse, err error) {
 	var ires any
@@ -196,7 +209,9 @@ func (c *Client) CreateDatabase(ctx context.Context, p *CreateDatabaseRequest) (
 // GetDatabase calls the "get-database" endpoint of the "control-plane" service.
 // GetDatabase may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
 //   - "not_found" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) GetDatabase(ctx context.Context, p *GetDatabasePayload) (res *Database, err error) {
 	var ires any
@@ -211,8 +226,11 @@ func (c *Client) GetDatabase(ctx context.Context, p *GetDatabasePayload) (res *D
 // service.
 // UpdateDatabase may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
-//   - "not_found" (type *goa.ServiceError)
 //   - "database_not_modifiable" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
+//   - "operation_already_in_progress" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) UpdateDatabase(ctx context.Context, p *UpdateDatabasePayload) (res *UpdateDatabaseResponse, err error) {
 	var ires any
@@ -227,8 +245,11 @@ func (c *Client) UpdateDatabase(ctx context.Context, p *UpdateDatabasePayload) (
 // service.
 // DeleteDatabase may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
-//   - "not_found" (type *goa.ServiceError)
 //   - "database_not_modifiable" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
+//   - "operation_already_in_progress" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) DeleteDatabase(ctx context.Context, p *DeleteDatabasePayload) (res *DeleteDatabaseResponse, err error) {
 	var ires any
@@ -243,9 +264,11 @@ func (c *Client) DeleteDatabase(ctx context.Context, p *DeleteDatabasePayload) (
 // "control-plane" service.
 // BackupDatabaseNode may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
-//   - "not_found" (type *goa.ServiceError)
 //   - "database_not_modifiable" (type *goa.ServiceError)
-//   - "backup_already_in_progress" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
+//   - "operation_already_in_progress" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) BackupDatabaseNode(ctx context.Context, p *BackupDatabaseNodePayload) (res *BackupDatabaseNodeResponse, err error) {
 	var ires any
@@ -260,7 +283,9 @@ func (c *Client) BackupDatabaseNode(ctx context.Context, p *BackupDatabaseNodePa
 // "control-plane" service.
 // ListDatabaseTasks may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
 //   - "not_found" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) ListDatabaseTasks(ctx context.Context, p *ListDatabaseTasksPayload) (res []*Task, err error) {
 	var ires any
@@ -275,7 +300,9 @@ func (c *Client) ListDatabaseTasks(ctx context.Context, p *ListDatabaseTasksPayl
 // "control-plane" service.
 // GetDatabaseTask may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
 //   - "not_found" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) GetDatabaseTask(ctx context.Context, p *GetDatabaseTaskPayload) (res *Task, err error) {
 	var ires any
@@ -290,7 +317,9 @@ func (c *Client) GetDatabaseTask(ctx context.Context, p *GetDatabaseTaskPayload)
 // "control-plane" service.
 // GetDatabaseTaskLog may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
 //   - "not_found" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) GetDatabaseTaskLog(ctx context.Context, p *GetDatabaseTaskLogPayload) (res *TaskLog, err error) {
 	var ires any
@@ -305,9 +334,11 @@ func (c *Client) GetDatabaseTaskLog(ctx context.Context, p *GetDatabaseTaskLogPa
 // service.
 // RestoreDatabase may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
-//   - "not_found" (type *goa.ServiceError)
 //   - "database_not_modifiable" (type *goa.ServiceError)
 //   - "invalid_input" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
+//   - "operation_already_in_progress" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) RestoreDatabase(ctx context.Context, p *RestoreDatabasePayload) (res *RestoreDatabaseResponse, err error) {
 	var ires any
@@ -319,6 +350,9 @@ func (c *Client) RestoreDatabase(ctx context.Context, p *RestoreDatabasePayload)
 }
 
 // GetVersion calls the "get-version" endpoint of the "control-plane" service.
+// GetVersion may return the following errors:
+//   - "server_error" (type *goa.ServiceError)
+//   - error: internal error
 func (c *Client) GetVersion(ctx context.Context) (res *VersionInfo, err error) {
 	var ires any
 	ires, err = c.GetVersionEndpoint(ctx, nil)

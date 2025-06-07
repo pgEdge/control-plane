@@ -73,6 +73,14 @@ const ServiceName = "control-plane"
 // MethodKey key.
 var MethodNames = [19]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "delete-database", "backup-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "restore-database", "get-version"}
 
+// A Control Plane API error.
+type APIError struct {
+	// The name of the error.
+	Name string
+	// The error message.
+	Message string
+}
+
 type BackupConfigSpec struct {
 	// The backup provider for this backup configuration.
 	Provider string
@@ -739,14 +747,31 @@ type VersionInfo struct {
 	Arch string
 }
 
+// Error returns an error description.
+func (e *APIError) Error() string {
+	return "A Control Plane API error."
+}
+
+// ErrorName returns "APIError".
+//
+// Deprecated: Use GoaErrorName - https://github.com/goadesign/goa/issues/3105
+func (e *APIError) ErrorName() string {
+	return e.GoaErrorName()
+}
+
+// GoaErrorName returns "APIError".
+func (e *APIError) GoaErrorName() string {
+	return e.Name
+}
+
+// MakeServerError builds a goa.ServiceError from an error.
+func MakeServerError(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "server_error", false, false, false)
+}
+
 // MakeClusterAlreadyInitialized builds a goa.ServiceError from an error.
 func MakeClusterAlreadyInitialized(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "cluster_already_initialized", false, false, false)
-}
-
-// MakeClusterNotInitialized builds a goa.ServiceError from an error.
-func MakeClusterNotInitialized(err error) *goa.ServiceError {
-	return goa.NewServiceError(err, "cluster_not_initialized", false, false, false)
 }
 
 // MakeInvalidJoinToken builds a goa.ServiceError from an error.
@@ -754,9 +779,9 @@ func MakeInvalidJoinToken(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "invalid_join_token", false, false, false)
 }
 
-// MakeNotFound builds a goa.ServiceError from an error.
-func MakeNotFound(err error) *goa.ServiceError {
-	return goa.NewServiceError(err, "not_found", false, false, false)
+// MakeClusterNotInitialized builds a goa.ServiceError from an error.
+func MakeClusterNotInitialized(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "cluster_not_initialized", false, false, false)
 }
 
 // MakeInvalidInput builds a goa.ServiceError from an error.
@@ -764,19 +789,19 @@ func MakeInvalidInput(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "invalid_input", false, false, false)
 }
 
-// MakeDatabaseAlreadyExists builds a goa.ServiceError from an error.
-func MakeDatabaseAlreadyExists(err error) *goa.ServiceError {
-	return goa.NewServiceError(err, "database_already_exists", false, false, false)
+// MakeNotFound builds a goa.ServiceError from an error.
+func MakeNotFound(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "not_found", false, false, false)
+}
+
+// MakeOperationAlreadyInProgress builds a goa.ServiceError from an error.
+func MakeOperationAlreadyInProgress(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "operation_already_in_progress", false, false, false)
 }
 
 // MakeDatabaseNotModifiable builds a goa.ServiceError from an error.
 func MakeDatabaseNotModifiable(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "database_not_modifiable", false, false, false)
-}
-
-// MakeBackupAlreadyInProgress builds a goa.ServiceError from an error.
-func MakeBackupAlreadyInProgress(err error) *goa.ServiceError {
-	return goa.NewServiceError(err, "backup_already_in_progress", false, false, false)
 }
 
 // NewDatabaseCollection initializes result type DatabaseCollection from viewed

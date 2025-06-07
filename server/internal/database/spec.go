@@ -9,12 +9,13 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
-var ErrHostNotInDBSpec = errors.New("host not in db spec")
+var ErrNodeNotInDBSpec = errors.New("node not in db spec")
 
 type ExtraVolumesSpec struct {
 	HostPath        string `json:"host_path"`
@@ -189,7 +190,16 @@ func (s *Spec) Node(name string) (*Node, error) {
 			return node, nil
 		}
 	}
-	return nil, fmt.Errorf("node %s not found in spec", name)
+	return nil, fmt.Errorf("%w: %s", ErrNodeNotInDBSpec, name)
+}
+
+func (s *Spec) ValidateNodeNames(names ...string) error {
+	existing := ds.NewSet(s.NodeNames()...)
+	invalid := ds.NewSet(names...).Difference(existing)
+	if invalid.Size() > 0 {
+		return fmt.Errorf("%w: %v", ErrNodeNotInDBSpec, invalid.ToSlice())
+	}
+	return nil
 }
 
 func (s *Spec) NodeNames() []string {
