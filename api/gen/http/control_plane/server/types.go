@@ -1211,28 +1211,49 @@ type InstanceResponseBody struct {
 	// The time that the instance status information was last updated.
 	StatusUpdatedAt *string `form:"status_updated_at,omitempty" json:"status_updated_at,omitempty" xml:"status_updated_at,omitempty"`
 	State           string  `form:"state" json:"state" xml:"state"`
-	PatroniState    *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
-	Role            *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
-	// The current spock.readonly setting.
-	ReadOnly *string `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
-	// True if this instance is pending to be restarted from a configuration change.
-	PendingRestart *bool `form:"pending_restart,omitempty" json:"pending_restart,omitempty" xml:"pending_restart,omitempty"`
-	// True if Patroni has been paused for this instance.
-	PatroniPaused *bool `form:"patroni_paused,omitempty" json:"patroni_paused,omitempty" xml:"patroni_paused,omitempty"`
-	// The version of Postgres for this instance.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
-	// The version of Spock for this instance.
-	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
+	// Connection information for the instance.
+	ConnectionInfo *InstanceConnectionInfoResponseBody `form:"connection_info,omitempty" json:"connection_info,omitempty" xml:"connection_info,omitempty"`
+	// Postgres status information for the instance.
+	Postgres *InstancePostgresStatusResponseBody `form:"postgres,omitempty" json:"postgres,omitempty" xml:"postgres,omitempty"`
+	// Spock status information for the instance.
+	Spock *InstanceSpockStatusResponseBody `form:"spock,omitempty" json:"spock,omitempty" xml:"spock,omitempty"`
+	// An error message if the instance is in an error state.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
+// InstanceConnectionInfoResponseBody is used to define fields on response body
+// types.
+type InstanceConnectionInfoResponseBody struct {
 	// The hostname of the host that's running this instance.
 	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
 	// The IPv4 address of the host that's running this instance.
 	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
 	// The host port that Postgres is listening on for this instance.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+}
+
+// InstancePostgresStatusResponseBody is used to define fields on response body
+// types.
+type InstancePostgresStatusResponseBody struct {
+	// The version of Postgres for this instance.
+	Version      *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
+	PatroniState *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
+	Role         *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
+	// True if this instance is pending to be restarted from a configuration change.
+	PendingRestart *bool `form:"pending_restart,omitempty" json:"pending_restart,omitempty" xml:"pending_restart,omitempty"`
+	// True if Patroni has been paused for this instance.
+	PatroniPaused *bool `form:"patroni_paused,omitempty" json:"patroni_paused,omitempty" xml:"patroni_paused,omitempty"`
+}
+
+// InstanceSpockStatusResponseBody is used to define fields on response body
+// types.
+type InstanceSpockStatusResponseBody struct {
+	// The current spock.readonly setting.
+	ReadOnly *string `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
+	// The version of Spock for this instance.
+	Version *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
 	// Status information for this instance's Spock subscriptions.
 	Subscriptions []*InstanceSubscriptionResponseBody `form:"subscriptions,omitempty" json:"subscriptions,omitempty" xml:"subscriptions,omitempty"`
-	// An error message if the instance is in an error state.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
 // InstanceSubscriptionResponseBody is used to define fields on response body

@@ -857,14 +857,14 @@ definitions:
             message:
                 type: string
                 description: The error message.
-                example: Sit in.
+                example: Ut perspiciatis.
             name:
                 type: string
                 description: The name of the error.
-                example: Fugiat rerum totam sequi.
+                example: Sit in.
         example:
-            message: Placeat non id.
-            name: Ut perspiciatis.
+            message: Qui nihil molestiae cum.
+            name: Placeat non id.
         required:
             - name
             - message
@@ -1072,7 +1072,7 @@ definitions:
                     key: value
                 additionalProperties:
                     type: string
-                    example: Laudantium molestiae error quas iste.
+                    example: Molestiae error quas.
             backup_options:
                 type: object
                 description: Options for the backup.
@@ -1080,7 +1080,7 @@ definitions:
                     archive-check: "n"
                 additionalProperties:
                     type: string
-                    example: Assumenda et.
+                    example: Dicta assumenda et vero dolorem.
             type:
                 type: string
                 description: The type of backup.
@@ -1129,7 +1129,7 @@ definitions:
                     storage-upload-chunk-size: 5MiB
                 additionalProperties:
                     type: string
-                    example: Occaecati et et consequuntur.
+                    example: Veniam officia ratione minus vitae occaecati et.
             gcs_bucket:
                 type: string
                 description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -1326,6 +1326,45 @@ definitions:
                           spock_version: "4"
                         - postgres_version: "16"
                           spock_version: "4"
+                    - cohort:
+                        cohort_id: pps1n11hqijn9rbee4cjil453
+                        control_available: true
+                        member_id: lah4bsznw6kc0hp7biylmmmll
+                        type: swarm
+                      cpus: 4
+                      default_pgedge_version:
+                        postgres_version: "16"
+                        spock_version: "4"
+                      hostname: i-0123456789abcdef.ec2.internal
+                      id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      ipv4_address: 10.24.34.0
+                      memory: 16GiB
+                      orchestrator: swarm
+                      status:
+                        components:
+                            Et quis.:
+                                details:
+                                    alarms:
+                                        - '3: NOSPACE'
+                                error: failed to connect to etcd
+                                healthy: false
+                            Quibusdam aut ut ea.:
+                                details:
+                                    alarms:
+                                        - '3: NOSPACE'
+                                error: failed to connect to etcd
+                                healthy: false
+                        state: available
+                        updated_at: "2021-07-01T12:34:56Z"
+                      supported_pgedge_versions:
+                        - postgres_version: "16"
+                          spock_version: "4"
+                        - postgres_version: "16"
+                          spock_version: "4"
+                        - postgres_version: "16"
+                          spock_version: "4"
+                        - postgres_version: "16"
+                          spock_version: "4"
             id:
                 type: string
                 description: Unique identifier for the cluster.
@@ -1340,6 +1379,45 @@ definitions:
                 format: uuid
         example:
             hosts:
+                - cohort:
+                    cohort_id: pps1n11hqijn9rbee4cjil453
+                    control_available: true
+                    member_id: lah4bsznw6kc0hp7biylmmmll
+                    type: swarm
+                  cpus: 4
+                  default_pgedge_version:
+                    postgres_version: "16"
+                    spock_version: "4"
+                  hostname: i-0123456789abcdef.ec2.internal
+                  id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  ipv4_address: 10.24.34.0
+                  memory: 16GiB
+                  orchestrator: swarm
+                  status:
+                    components:
+                        Et quis.:
+                            details:
+                                alarms:
+                                    - '3: NOSPACE'
+                            error: failed to connect to etcd
+                            healthy: false
+                        Quibusdam aut ut ea.:
+                            details:
+                                alarms:
+                                    - '3: NOSPACE'
+                            error: failed to connect to etcd
+                            healthy: false
+                    state: available
+                    updated_at: "2021-07-01T12:34:56Z"
+                  supported_pgedge_versions:
+                    - postgres_version: "16"
+                      spock_version: "4"
+                    - postgres_version: "16"
+                      spock_version: "4"
+                    - postgres_version: "16"
+                      spock_version: "4"
+                    - postgres_version: "16"
+                      spock_version: "4"
                 - cohort:
                     cohort_id: pps1n11hqijn9rbee4cjil453
                     control_available: true
@@ -1453,7 +1531,7 @@ definitions:
             state:
                 type: string
                 description: The current state of the cluster.
-                example: available
+                example: error
                 enum:
                     - available
                     - error
@@ -1499,130 +1577,146 @@ definitions:
             - created_at: "2025-01-01T01:30:00Z"
               id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
               instances:
-                - created_at: "1979-05-18T16:44:00Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
                   error: 'failed to get patroni status: connection refused'
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  hostname: i-0123456789abcdef.ec2.internal
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  ipv4_address: 10.24.34.0
                   node_name: n1
-                  patroni_paused: false
-                  patroni_state: custom bootstrap failed
-                  pending_restart: false
-                  port: 5432
-                  postgres_version: "17.1"
-                  read_only: "off"
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  status_updated_at: "2007-07-21T10:25:45Z"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  updated_at: "1993-07-10T02:40:43Z"
-                - created_at: "1979-05-18T16:44:00Z"
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
                   error: 'failed to get patroni status: connection refused'
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  hostname: i-0123456789abcdef.ec2.internal
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  ipv4_address: 10.24.34.0
                   node_name: n1
-                  patroni_paused: false
-                  patroni_state: custom bootstrap failed
-                  pending_restart: false
-                  port: 5432
-                  postgres_version: "17.1"
-                  read_only: "off"
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  status_updated_at: "2007-07-21T10:25:45Z"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  updated_at: "1993-07-10T02:40:43Z"
-                - created_at: "1979-05-18T16:44:00Z"
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
                   error: 'failed to get patroni status: connection refused'
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  hostname: i-0123456789abcdef.ec2.internal
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  ipv4_address: 10.24.34.0
                   node_name: n1
-                  patroni_paused: false
-                  patroni_state: custom bootstrap failed
-                  pending_restart: false
-                  port: 5432
-                  postgres_version: "17.1"
-                  read_only: "off"
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  status_updated_at: "2007-07-21T10:25:45Z"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  updated_at: "1993-07-10T02:40:43Z"
-                - created_at: "1979-05-18T16:44:00Z"
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
                   error: 'failed to get patroni status: connection refused'
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  hostname: i-0123456789abcdef.ec2.internal
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  ipv4_address: 10.24.34.0
                   node_name: n1
-                  patroni_paused: false
-                  patroni_state: custom bootstrap failed
-                  pending_restart: false
-                  port: 5432
-                  postgres_version: "17.1"
-                  read_only: "off"
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  status_updated_at: "2007-07-21T10:25:45Z"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  updated_at: "1993-07-10T02:40:43Z"
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
               spec:
                 backup_config:
                     provider: pgbackrest
                     repositories:
-                        - azure_account: pgedge-backups
-                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          azure_endpoint: blob.core.usgovcloudapi.net
-                          azure_key: YXpLZXk=
-                          base_path: /backups
-                          custom_options:
-                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                            storage-upload-chunk-size: 5MiB
-                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          gcs_endpoint: localhost
-                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                          retention_full: 2
-                          retention_full_type: count
-                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          s3_endpoint: s3.us-east-1.amazonaws.com
-                          s3_key: AKIAIOSFODNN7EXAMPLE
-                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                          s3_region: us-east-1
-                          type: s3
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
@@ -1673,9 +1767,6 @@ definitions:
                         - cron_expression: 0 6 * * ?
                           id: daily-full-backup
                           type: full
-                        - cron_expression: 0 6 * * ?
-                          id: daily-full-backup
-                          type: full
                 cpus: 500m
                 database_name: northwind
                 database_users:
@@ -1706,17 +1797,10 @@ definitions:
                       roles:
                         - pgedge_superuser
                       username: admin
-                    - attributes:
-                        - LOGIN
-                        - CREATEDB
-                        - CREATEROLE
-                      db_owner: false
-                      password: secret
-                      roles:
-                        - pgedge_superuser
-                      username: admin
                 deletion_protection: true
                 extra_volumes:
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
                     - destination_path: /backups/container
                       host_path: /Users/user/backups/host
                     - destination_path: /backups/container
@@ -1770,30 +1854,7 @@ definitions:
                               s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                               s3_region: us-east-1
                               type: s3
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              azure_key: YXpLZXk=
-                              base_path: /backups
-                              custom_options:
-                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                storage-upload-chunk-size: 5MiB
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_key: AKIAIOSFODNN7EXAMPLE
-                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                              s3_region: us-east-1
-                              type: s3
                         schedules:
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
                             - cron_expression: 0 6 * * ?
                               id: daily-full-backup
                               type: full
@@ -1809,12 +1870,7 @@ definitions:
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
                       host_ids:
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M
@@ -1895,6 +1951,83 @@ definitions:
                               s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                               s3_region: us-east-1
                               type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                      cpus: 500m
+                      extra_volumes:
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      restore_config:
+                        provider: pgbackrest
+                        repository:
+                            azure_account: pgedge-backups
+                            azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            azure_endpoint: blob.core.usgovcloudapi.net
+                            azure_key: YXpLZXk=
+                            base_path: /backups
+                            custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            gcs_endpoint: localhost
+                            gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                            id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                            s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            s3_endpoint: s3.us-east-1.amazonaws.com
+                            s3_key: AKIAIOSFODNN7EXAMPLE
+                            s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                            s3_region: us-east-1
+                            type: s3
+                        restore_options:
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
+                        source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
+                        source_database_name: northwind
+                        source_node_name: n1
+                      storage_class: loop_device
+                      storage_size: 500GiB
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
@@ -1925,6 +2058,100 @@ definitions:
                             - cron_expression: 0 6 * * ?
                               id: daily-full-backup
                               type: full
+                      cpus: 500m
+                      extra_volumes:
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      restore_config:
+                        provider: pgbackrest
+                        repository:
+                            azure_account: pgedge-backups
+                            azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            azure_endpoint: blob.core.usgovcloudapi.net
+                            azure_key: YXpLZXk=
+                            base_path: /backups
+                            custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            gcs_endpoint: localhost
+                            gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                            id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                            s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            s3_endpoint: s3.us-east-1.amazonaws.com
+                            s3_key: AKIAIOSFODNN7EXAMPLE
+                            s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                            s3_region: us-east-1
+                            type: s3
+                        restore_options:
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
+                        source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
+                        source_database_name: northwind
+                        source_node_name: n1
+                      storage_class: loop_device
+                      storage_size: 500GiB
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
                             - cron_expression: 0 6 * * ?
                               id: daily-full-backup
                               type: full
@@ -1934,12 +2161,7 @@ definitions:
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
                       host_ids:
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M
@@ -2017,130 +2239,146 @@ definitions:
             - created_at: "2025-01-01T01:30:00Z"
               id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
               instances:
-                - created_at: "1979-05-18T16:44:00Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
                   error: 'failed to get patroni status: connection refused'
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  hostname: i-0123456789abcdef.ec2.internal
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  ipv4_address: 10.24.34.0
                   node_name: n1
-                  patroni_paused: false
-                  patroni_state: custom bootstrap failed
-                  pending_restart: false
-                  port: 5432
-                  postgres_version: "17.1"
-                  read_only: "off"
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  status_updated_at: "2007-07-21T10:25:45Z"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  updated_at: "1993-07-10T02:40:43Z"
-                - created_at: "1979-05-18T16:44:00Z"
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
                   error: 'failed to get patroni status: connection refused'
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  hostname: i-0123456789abcdef.ec2.internal
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  ipv4_address: 10.24.34.0
                   node_name: n1
-                  patroni_paused: false
-                  patroni_state: custom bootstrap failed
-                  pending_restart: false
-                  port: 5432
-                  postgres_version: "17.1"
-                  read_only: "off"
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  status_updated_at: "2007-07-21T10:25:45Z"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  updated_at: "1993-07-10T02:40:43Z"
-                - created_at: "1979-05-18T16:44:00Z"
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
                   error: 'failed to get patroni status: connection refused'
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  hostname: i-0123456789abcdef.ec2.internal
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  ipv4_address: 10.24.34.0
                   node_name: n1
-                  patroni_paused: false
-                  patroni_state: custom bootstrap failed
-                  pending_restart: false
-                  port: 5432
-                  postgres_version: "17.1"
-                  read_only: "off"
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  status_updated_at: "2007-07-21T10:25:45Z"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  updated_at: "1993-07-10T02:40:43Z"
-                - created_at: "1979-05-18T16:44:00Z"
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
                   error: 'failed to get patroni status: connection refused'
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  hostname: i-0123456789abcdef.ec2.internal
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  ipv4_address: 10.24.34.0
                   node_name: n1
-                  patroni_paused: false
-                  patroni_state: custom bootstrap failed
-                  pending_restart: false
-                  port: 5432
-                  postgres_version: "17.1"
-                  read_only: "off"
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  status_updated_at: "2007-07-21T10:25:45Z"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  updated_at: "1993-07-10T02:40:43Z"
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
               spec:
                 backup_config:
                     provider: pgbackrest
                     repositories:
-                        - azure_account: pgedge-backups
-                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          azure_endpoint: blob.core.usgovcloudapi.net
-                          azure_key: YXpLZXk=
-                          base_path: /backups
-                          custom_options:
-                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                            storage-upload-chunk-size: 5MiB
-                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          gcs_endpoint: localhost
-                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                          retention_full: 2
-                          retention_full_type: count
-                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          s3_endpoint: s3.us-east-1.amazonaws.com
-                          s3_key: AKIAIOSFODNN7EXAMPLE
-                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                          s3_region: us-east-1
-                          type: s3
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
@@ -2191,9 +2429,6 @@ definitions:
                         - cron_expression: 0 6 * * ?
                           id: daily-full-backup
                           type: full
-                        - cron_expression: 0 6 * * ?
-                          id: daily-full-backup
-                          type: full
                 cpus: 500m
                 database_name: northwind
                 database_users:
@@ -2224,17 +2459,10 @@ definitions:
                       roles:
                         - pgedge_superuser
                       username: admin
-                    - attributes:
-                        - LOGIN
-                        - CREATEDB
-                        - CREATEROLE
-                      db_owner: false
-                      password: secret
-                      roles:
-                        - pgedge_superuser
-                      username: admin
                 deletion_protection: true
                 extra_volumes:
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
                     - destination_path: /backups/container
                       host_path: /Users/user/backups/host
                     - destination_path: /backups/container
@@ -2288,30 +2516,7 @@ definitions:
                               s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                               s3_region: us-east-1
                               type: s3
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              azure_key: YXpLZXk=
-                              base_path: /backups
-                              custom_options:
-                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                storage-upload-chunk-size: 5MiB
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_key: AKIAIOSFODNN7EXAMPLE
-                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                              s3_region: us-east-1
-                              type: s3
                         schedules:
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
                             - cron_expression: 0 6 * * ?
                               id: daily-full-backup
                               type: full
@@ -2327,12 +2532,7 @@ definitions:
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
                       host_ids:
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M
@@ -2413,6 +2613,83 @@ definitions:
                               s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                               s3_region: us-east-1
                               type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                      cpus: 500m
+                      extra_volumes:
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      restore_config:
+                        provider: pgbackrest
+                        repository:
+                            azure_account: pgedge-backups
+                            azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            azure_endpoint: blob.core.usgovcloudapi.net
+                            azure_key: YXpLZXk=
+                            base_path: /backups
+                            custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            gcs_endpoint: localhost
+                            gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                            id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                            s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            s3_endpoint: s3.us-east-1.amazonaws.com
+                            s3_key: AKIAIOSFODNN7EXAMPLE
+                            s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                            s3_region: us-east-1
+                            type: s3
+                        restore_options:
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
+                        source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
+                        source_database_name: northwind
+                        source_node_name: n1
+                      storage_class: loop_device
+                      storage_size: 500GiB
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
@@ -2443,6 +2720,100 @@ definitions:
                             - cron_expression: 0 6 * * ?
                               id: daily-full-backup
                               type: full
+                      cpus: 500m
+                      extra_volumes:
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      restore_config:
+                        provider: pgbackrest
+                        repository:
+                            azure_account: pgedge-backups
+                            azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            azure_endpoint: blob.core.usgovcloudapi.net
+                            azure_key: YXpLZXk=
+                            base_path: /backups
+                            custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            gcs_endpoint: localhost
+                            gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                            id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                            s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            s3_endpoint: s3.us-east-1.amazonaws.com
+                            s3_key: AKIAIOSFODNN7EXAMPLE
+                            s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                            s3_region: us-east-1
+                            type: s3
+                        restore_options:
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
+                        source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
+                        source_database_name: northwind
+                        source_node_name: n1
+                      storage_class: loop_device
+                      storage_size: 500GiB
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
                             - cron_expression: 0 6 * * ?
                               id: daily-full-backup
                               type: full
@@ -2452,12 +2823,7 @@ definitions:
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
                       host_ids:
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M
@@ -2553,7 +2919,7 @@ definitions:
             state:
                 type: string
                 description: Current state of the database.
-                example: deleting
+                example: modifying
                 enum:
                     - creating
                     - modifying
@@ -2576,130 +2942,146 @@ definitions:
             created_at: "2025-01-01T01:30:00Z"
             id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
             instances:
-                - created_at: "1979-05-18T16:44:00Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
                   error: 'failed to get patroni status: connection refused'
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  hostname: i-0123456789abcdef.ec2.internal
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  ipv4_address: 10.24.34.0
                   node_name: n1
-                  patroni_paused: false
-                  patroni_state: custom bootstrap failed
-                  pending_restart: false
-                  port: 5432
-                  postgres_version: "17.1"
-                  read_only: "off"
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  status_updated_at: "2007-07-21T10:25:45Z"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  updated_at: "1993-07-10T02:40:43Z"
-                - created_at: "1979-05-18T16:44:00Z"
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
                   error: 'failed to get patroni status: connection refused'
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  hostname: i-0123456789abcdef.ec2.internal
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  ipv4_address: 10.24.34.0
                   node_name: n1
-                  patroni_paused: false
-                  patroni_state: custom bootstrap failed
-                  pending_restart: false
-                  port: 5432
-                  postgres_version: "17.1"
-                  read_only: "off"
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  status_updated_at: "2007-07-21T10:25:45Z"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  updated_at: "1993-07-10T02:40:43Z"
-                - created_at: "1979-05-18T16:44:00Z"
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
                   error: 'failed to get patroni status: connection refused'
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  hostname: i-0123456789abcdef.ec2.internal
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  ipv4_address: 10.24.34.0
                   node_name: n1
-                  patroni_paused: false
-                  patroni_state: custom bootstrap failed
-                  pending_restart: false
-                  port: 5432
-                  postgres_version: "17.1"
-                  read_only: "off"
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  status_updated_at: "2007-07-21T10:25:45Z"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  updated_at: "1993-07-10T02:40:43Z"
-                - created_at: "1979-05-18T16:44:00Z"
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
                   error: 'failed to get patroni status: connection refused'
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  hostname: i-0123456789abcdef.ec2.internal
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  ipv4_address: 10.24.34.0
                   node_name: n1
-                  patroni_paused: false
-                  patroni_state: custom bootstrap failed
-                  pending_restart: false
-                  port: 5432
-                  postgres_version: "17.1"
-                  read_only: "off"
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  status_updated_at: "2007-07-21T10:25:45Z"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  updated_at: "1993-07-10T02:40:43Z"
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
             spec:
                 backup_config:
                     provider: pgbackrest
                     repositories:
-                        - azure_account: pgedge-backups
-                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          azure_endpoint: blob.core.usgovcloudapi.net
-                          azure_key: YXpLZXk=
-                          base_path: /backups
-                          custom_options:
-                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                            storage-upload-chunk-size: 5MiB
-                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          gcs_endpoint: localhost
-                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                          retention_full: 2
-                          retention_full_type: count
-                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          s3_endpoint: s3.us-east-1.amazonaws.com
-                          s3_key: AKIAIOSFODNN7EXAMPLE
-                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                          s3_region: us-east-1
-                          type: s3
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
@@ -2750,9 +3132,6 @@ definitions:
                         - cron_expression: 0 6 * * ?
                           id: daily-full-backup
                           type: full
-                        - cron_expression: 0 6 * * ?
-                          id: daily-full-backup
-                          type: full
                 cpus: 500m
                 database_name: northwind
                 database_users:
@@ -2783,17 +3162,10 @@ definitions:
                       roles:
                         - pgedge_superuser
                       username: admin
-                    - attributes:
-                        - LOGIN
-                        - CREATEDB
-                        - CREATEROLE
-                      db_owner: false
-                      password: secret
-                      roles:
-                        - pgedge_superuser
-                      username: admin
                 deletion_protection: true
                 extra_volumes:
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
                     - destination_path: /backups/container
                       host_path: /Users/user/backups/host
                     - destination_path: /backups/container
@@ -2847,30 +3219,7 @@ definitions:
                               s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                               s3_region: us-east-1
                               type: s3
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              azure_key: YXpLZXk=
-                              base_path: /backups
-                              custom_options:
-                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                storage-upload-chunk-size: 5MiB
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_key: AKIAIOSFODNN7EXAMPLE
-                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                              s3_region: us-east-1
-                              type: s3
                         schedules:
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
                             - cron_expression: 0 6 * * ?
                               id: daily-full-backup
                               type: full
@@ -2886,12 +3235,7 @@ definitions:
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
                       host_ids:
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M
@@ -2972,6 +3316,83 @@ definitions:
                               s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                               s3_region: us-east-1
                               type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                      cpus: 500m
+                      extra_volumes:
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      restore_config:
+                        provider: pgbackrest
+                        repository:
+                            azure_account: pgedge-backups
+                            azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            azure_endpoint: blob.core.usgovcloudapi.net
+                            azure_key: YXpLZXk=
+                            base_path: /backups
+                            custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            gcs_endpoint: localhost
+                            gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                            id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                            s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            s3_endpoint: s3.us-east-1.amazonaws.com
+                            s3_key: AKIAIOSFODNN7EXAMPLE
+                            s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                            s3_region: us-east-1
+                            type: s3
+                        restore_options:
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
+                        source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
+                        source_database_name: northwind
+                        source_node_name: n1
+                      storage_class: loop_device
+                      storage_size: 500GiB
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
@@ -3002,6 +3423,100 @@ definitions:
                             - cron_expression: 0 6 * * ?
                               id: daily-full-backup
                               type: full
+                      cpus: 500m
+                      extra_volumes:
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      restore_config:
+                        provider: pgbackrest
+                        repository:
+                            azure_account: pgedge-backups
+                            azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            azure_endpoint: blob.core.usgovcloudapi.net
+                            azure_key: YXpLZXk=
+                            base_path: /backups
+                            custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            gcs_endpoint: localhost
+                            gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                            id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                            s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            s3_endpoint: s3.us-east-1.amazonaws.com
+                            s3_key: AKIAIOSFODNN7EXAMPLE
+                            s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                            s3_region: us-east-1
+                            type: s3
+                        restore_options:
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
+                        source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
+                        source_database_name: northwind
+                        source_node_name: n1
+                      storage_class: loop_device
+                      storage_size: 500GiB
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
                             - cron_expression: 0 6 * * ?
                               id: daily-full-backup
                               type: full
@@ -3011,12 +3526,7 @@ definitions:
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
                       host_ids:
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M
@@ -3534,67 +4044,73 @@ definitions:
                 created_at: "2025-01-01T01:30:00Z"
                 id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                 instances:
-                    - created_at: "2008-04-05T03:29:38Z"
+                    - connection_info:
+                        hostname: i-0123456789abcdef.ec2.internal
+                        ipv4_address: 10.24.34.0
+                        port: 5432
+                      created_at: "2008-04-05T03:29:38Z"
                       error: 'failed to get patroni status: connection refused'
                       host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      hostname: i-0123456789abcdef.ec2.internal
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      ipv4_address: 10.24.34.0
                       node_name: n1
-                      patroni_paused: false
-                      patroni_state: crashed
-                      pending_restart: true
-                      port: 5432
-                      postgres_version: "17.1"
-                      read_only: "off"
-                      role: primary
-                      spock_version: 4.0.9
+                      postgres:
+                        patroni_paused: false
+                        patroni_state: crashed
+                        pending_restart: true
+                        role: primary
+                        version: "17.5"
+                      spock:
+                        read_only: "off"
+                        subscriptions:
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                        version: 4.10.0
                       state: available
                       status_updated_at: "1989-01-18T08:35:28Z"
-                      subscriptions:
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
                       updated_at: "2003-08-09T22:13:38Z"
-                    - created_at: "2008-04-05T03:29:38Z"
+                    - connection_info:
+                        hostname: i-0123456789abcdef.ec2.internal
+                        ipv4_address: 10.24.34.0
+                        port: 5432
+                      created_at: "2008-04-05T03:29:38Z"
                       error: 'failed to get patroni status: connection refused'
                       host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      hostname: i-0123456789abcdef.ec2.internal
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      ipv4_address: 10.24.34.0
                       node_name: n1
-                      patroni_paused: false
-                      patroni_state: crashed
-                      pending_restart: true
-                      port: 5432
-                      postgres_version: "17.1"
-                      read_only: "off"
-                      role: primary
-                      spock_version: 4.0.9
+                      postgres:
+                        patroni_paused: false
+                        patroni_state: crashed
+                        pending_restart: true
+                        role: primary
+                        version: "17.5"
+                      spock:
+                        read_only: "off"
+                        subscriptions:
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                        version: 4.10.0
                       state: available
                       status_updated_at: "1989-01-18T08:35:28Z"
-                      subscriptions:
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
                       updated_at: "2003-08-09T22:13:38Z"
                 spec:
                     backup_config:
@@ -4140,7 +4656,7 @@ definitions:
             state:
                 type: string
                 description: Current state of the database.
-                example: creating
+                example: degraded
                 enum:
                     - creating
                     - modifying
@@ -4163,130 +4679,146 @@ definitions:
             created_at: "2025-01-01T01:30:00Z"
             id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
             instances:
-                - created_at: "1979-05-18T16:44:00Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
                   error: 'failed to get patroni status: connection refused'
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  hostname: i-0123456789abcdef.ec2.internal
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  ipv4_address: 10.24.34.0
                   node_name: n1
-                  patroni_paused: false
-                  patroni_state: custom bootstrap failed
-                  pending_restart: false
-                  port: 5432
-                  postgres_version: "17.1"
-                  read_only: "off"
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  status_updated_at: "2007-07-21T10:25:45Z"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  updated_at: "1993-07-10T02:40:43Z"
-                - created_at: "1979-05-18T16:44:00Z"
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
                   error: 'failed to get patroni status: connection refused'
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  hostname: i-0123456789abcdef.ec2.internal
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  ipv4_address: 10.24.34.0
                   node_name: n1
-                  patroni_paused: false
-                  patroni_state: custom bootstrap failed
-                  pending_restart: false
-                  port: 5432
-                  postgres_version: "17.1"
-                  read_only: "off"
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  status_updated_at: "2007-07-21T10:25:45Z"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  updated_at: "1993-07-10T02:40:43Z"
-                - created_at: "1979-05-18T16:44:00Z"
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
                   error: 'failed to get patroni status: connection refused'
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  hostname: i-0123456789abcdef.ec2.internal
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  ipv4_address: 10.24.34.0
                   node_name: n1
-                  patroni_paused: false
-                  patroni_state: custom bootstrap failed
-                  pending_restart: false
-                  port: 5432
-                  postgres_version: "17.1"
-                  read_only: "off"
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  status_updated_at: "2007-07-21T10:25:45Z"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  updated_at: "1993-07-10T02:40:43Z"
-                - created_at: "1979-05-18T16:44:00Z"
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
                   error: 'failed to get patroni status: connection refused'
                   host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  hostname: i-0123456789abcdef.ec2.internal
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  ipv4_address: 10.24.34.0
                   node_name: n1
-                  patroni_paused: false
-                  patroni_state: custom bootstrap failed
-                  pending_restart: false
-                  port: 5432
-                  postgres_version: "17.1"
-                  read_only: "off"
-                  role: primary
-                  spock_version: 4.0.9
-                  state: backing_up
-                  status_updated_at: "2007-07-21T10:25:45Z"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  updated_at: "1993-07-10T02:40:43Z"
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
             spec:
                 backup_config:
                     provider: pgbackrest
                     repositories:
-                        - azure_account: pgedge-backups
-                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          azure_endpoint: blob.core.usgovcloudapi.net
-                          azure_key: YXpLZXk=
-                          base_path: /backups
-                          custom_options:
-                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                            storage-upload-chunk-size: 5MiB
-                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          gcs_endpoint: localhost
-                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                          retention_full: 2
-                          retention_full_type: count
-                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          s3_endpoint: s3.us-east-1.amazonaws.com
-                          s3_key: AKIAIOSFODNN7EXAMPLE
-                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                          s3_region: us-east-1
-                          type: s3
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
@@ -4337,9 +4869,6 @@ definitions:
                         - cron_expression: 0 6 * * ?
                           id: daily-full-backup
                           type: full
-                        - cron_expression: 0 6 * * ?
-                          id: daily-full-backup
-                          type: full
                 cpus: 500m
                 database_name: northwind
                 database_users:
@@ -4370,17 +4899,10 @@ definitions:
                       roles:
                         - pgedge_superuser
                       username: admin
-                    - attributes:
-                        - LOGIN
-                        - CREATEDB
-                        - CREATEROLE
-                      db_owner: false
-                      password: secret
-                      roles:
-                        - pgedge_superuser
-                      username: admin
                 deletion_protection: true
                 extra_volumes:
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
                     - destination_path: /backups/container
                       host_path: /Users/user/backups/host
                     - destination_path: /backups/container
@@ -4434,30 +4956,7 @@ definitions:
                               s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                               s3_region: us-east-1
                               type: s3
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              azure_key: YXpLZXk=
-                              base_path: /backups
-                              custom_options:
-                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                storage-upload-chunk-size: 5MiB
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_key: AKIAIOSFODNN7EXAMPLE
-                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                              s3_region: us-east-1
-                              type: s3
                         schedules:
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
                             - cron_expression: 0 6 * * ?
                               id: daily-full-backup
                               type: full
@@ -4473,12 +4972,7 @@ definitions:
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
                       host_ids:
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M
@@ -4559,6 +5053,83 @@ definitions:
                               s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                               s3_region: us-east-1
                               type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                      cpus: 500m
+                      extra_volumes:
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      restore_config:
+                        provider: pgbackrest
+                        repository:
+                            azure_account: pgedge-backups
+                            azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            azure_endpoint: blob.core.usgovcloudapi.net
+                            azure_key: YXpLZXk=
+                            base_path: /backups
+                            custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            gcs_endpoint: localhost
+                            gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                            id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                            s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            s3_endpoint: s3.us-east-1.amazonaws.com
+                            s3_key: AKIAIOSFODNN7EXAMPLE
+                            s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                            s3_region: us-east-1
+                            type: s3
+                        restore_options:
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
+                        source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
+                        source_database_name: northwind
+                        source_node_name: n1
+                      storage_class: loop_device
+                      storage_size: 500GiB
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                               azure_endpoint: blob.core.usgovcloudapi.net
@@ -4589,6 +5160,100 @@ definitions:
                             - cron_expression: 0 6 * * ?
                               id: daily-full-backup
                               type: full
+                      cpus: 500m
+                      extra_volumes:
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                      host_ids:
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                      memory: 500M
+                      name: n1
+                      port: 5432
+                      postgres_version: "17"
+                      postgresql_conf:
+                        max_connections: 1000
+                      restore_config:
+                        provider: pgbackrest
+                        repository:
+                            azure_account: pgedge-backups
+                            azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            azure_endpoint: blob.core.usgovcloudapi.net
+                            azure_key: YXpLZXk=
+                            base_path: /backups
+                            custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            gcs_endpoint: localhost
+                            gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                            id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                            s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                            s3_endpoint: s3.us-east-1.amazonaws.com
+                            s3_key: AKIAIOSFODNN7EXAMPLE
+                            s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                            s3_region: us-east-1
+                            type: s3
+                        restore_options:
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
+                        source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
+                        source_database_name: northwind
+                        source_node_name: n1
+                      storage_class: loop_device
+                      storage_size: 500GiB
+                    - backup_config:
+                        provider: pgbackrest
+                        repositories:
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                            - azure_account: pgedge-backups
+                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              azure_endpoint: blob.core.usgovcloudapi.net
+                              azure_key: YXpLZXk=
+                              base_path: /backups
+                              custom_options:
+                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                                storage-upload-chunk-size: 5MiB
+                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              gcs_endpoint: localhost
+                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                              retention_full: 2
+                              retention_full_type: count
+                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                              s3_endpoint: s3.us-east-1.amazonaws.com
+                              s3_key: AKIAIOSFODNN7EXAMPLE
+                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                              s3_region: us-east-1
+                              type: s3
+                        schedules:
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
+                            - cron_expression: 0 6 * * ?
+                              id: daily-full-backup
+                              type: full
                             - cron_expression: 0 6 * * ?
                               id: daily-full-backup
                               type: full
@@ -4598,12 +5263,7 @@ definitions:
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
                       host_ids:
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M
@@ -4675,7 +5335,7 @@ definitions:
                 spock_version: "4"
                 storage_class: loop_device
                 storage_size: 500GiB
-            state: creating
+            state: deleting
             tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
             updated_at: "2025-01-01T02:30:00Z"
         required:
@@ -4800,30 +5460,7 @@ definitions:
                       s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                       s3_region: us-east-1
                       type: s3
-                    - azure_account: pgedge-backups
-                      azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      azure_endpoint: blob.core.usgovcloudapi.net
-                      azure_key: YXpLZXk=
-                      base_path: /backups
-                      custom_options:
-                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                        storage-upload-chunk-size: 5MiB
-                      gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      gcs_endpoint: localhost
-                      gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                      id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                      retention_full: 2
-                      retention_full_type: count
-                      s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      s3_endpoint: s3.us-east-1.amazonaws.com
-                      s3_key: AKIAIOSFODNN7EXAMPLE
-                      s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                      s3_region: us-east-1
-                      type: s3
                 schedules:
-                    - cron_expression: 0 6 * * ?
-                      id: daily-full-backup
-                      type: full
                     - cron_expression: 0 6 * * ?
                       id: daily-full-backup
                       type: full
@@ -4844,6 +5481,7 @@ definitions:
                 - destination_path: /backups/container
                   host_path: /Users/user/backups/host
             host_ids:
+                - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                 - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                 - de3b1388-1f0c-42f1-a86c-59ab72f255ec
             memory: 500M
@@ -4903,7 +5541,7 @@ definitions:
             state:
                 type: string
                 description: Current state of the database.
-                example: modifying
+                example: available
                 enum:
                     - creating
                     - modifying
@@ -4942,7 +5580,7 @@ definitions:
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
                   state: unknown
-            state: available
+            state: modifying
             tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
             updated_at: "2025-01-01T02:30:00Z"
         required:
@@ -4988,15 +5626,6 @@ definitions:
                       roles:
                         - pgedge_superuser
                       username: admin
-                    - attributes:
-                        - LOGIN
-                        - CREATEDB
-                        - CREATEROLE
-                      db_owner: false
-                      password: secret
-                      roles:
-                        - pgedge_superuser
-                      username: admin
             deletion_protection:
                 type: boolean
                 description: Prevents deletion when true.
@@ -5013,6 +5642,8 @@ definitions:
                       host_path: /Users/user/backups/host
                     - destination_path: /backups/container
                       host_path: /Users/user/backups/host
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
             features:
                 type: object
                 description: The feature flags for this database.
@@ -5020,7 +5651,7 @@ definitions:
                     some_feature: enabled
                 additionalProperties:
                     type: string
-                    example: Nesciunt quia quis aut ducimus deserunt.
+                    example: Quis aut ducimus deserunt quis.
             memory:
                 type: string
                 description: The amount of memory in SI or IEC notation to allocate for the database and to use for tuning Postgres. Defaults to the total available memory on the host. Whether this limit will be enforced depends on the orchestrator.
@@ -5074,30 +5705,7 @@ definitions:
                               s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                               s3_region: us-east-1
                               type: s3
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              azure_key: YXpLZXk=
-                              base_path: /backups
-                              custom_options:
-                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                storage-upload-chunk-size: 5MiB
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_key: AKIAIOSFODNN7EXAMPLE
-                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                              s3_region: us-east-1
-                              type: s3
                         schedules:
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
                             - cron_expression: 0 6 * * ?
                               id: daily-full-backup
                               type: full
@@ -5113,12 +5721,7 @@ definitions:
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
                       host_ids:
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M
@@ -5199,30 +5802,7 @@ definitions:
                               s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                               s3_region: us-east-1
                               type: s3
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              azure_key: YXpLZXk=
-                              base_path: /backups
-                              custom_options:
-                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                storage-upload-chunk-size: 5MiB
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_key: AKIAIOSFODNN7EXAMPLE
-                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                              s3_region: us-east-1
-                              type: s3
                         schedules:
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
                             - cron_expression: 0 6 * * ?
                               id: daily-full-backup
                               type: full
@@ -5238,12 +5818,7 @@ definitions:
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
                       host_ids:
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M
@@ -5324,30 +5899,7 @@ definitions:
                               s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                               s3_region: us-east-1
                               type: s3
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              azure_key: YXpLZXk=
-                              base_path: /backups
-                              custom_options:
-                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                storage-upload-chunk-size: 5MiB
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_key: AKIAIOSFODNN7EXAMPLE
-                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                              s3_region: us-east-1
-                              type: s3
                         schedules:
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
                             - cron_expression: 0 6 * * ?
                               id: daily-full-backup
                               type: full
@@ -5363,137 +5915,7 @@ definitions:
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
                       host_ids:
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      memory: 500M
-                      name: n1
-                      port: 5432
-                      postgres_version: "17"
-                      postgresql_conf:
-                        max_connections: 1000
-                      restore_config:
-                        provider: pgbackrest
-                        repository:
-                            azure_account: pgedge-backups
-                            azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                            azure_endpoint: blob.core.usgovcloudapi.net
-                            azure_key: YXpLZXk=
-                            base_path: /backups
-                            custom_options:
-                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                            gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                            gcs_endpoint: localhost
-                            gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                            id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                            s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                            s3_endpoint: s3.us-east-1.amazonaws.com
-                            s3_key: AKIAIOSFODNN7EXAMPLE
-                            s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                            s3_region: us-east-1
-                            type: s3
-                        restore_options:
-                            set: 20250505-153628F
-                            target: "123456"
-                            type: xid
-                        source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
-                        source_database_name: northwind
-                        source_node_name: n1
-                      storage_class: loop_device
-                      storage_size: 500GiB
-                    - backup_config:
-                        provider: pgbackrest
-                        repositories:
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              azure_key: YXpLZXk=
-                              base_path: /backups
-                              custom_options:
-                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                storage-upload-chunk-size: 5MiB
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_key: AKIAIOSFODNN7EXAMPLE
-                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                              s3_region: us-east-1
-                              type: s3
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              azure_key: YXpLZXk=
-                              base_path: /backups
-                              custom_options:
-                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                storage-upload-chunk-size: 5MiB
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_key: AKIAIOSFODNN7EXAMPLE
-                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                              s3_region: us-east-1
-                              type: s3
-                            - azure_account: pgedge-backups
-                              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              azure_endpoint: blob.core.usgovcloudapi.net
-                              azure_key: YXpLZXk=
-                              base_path: /backups
-                              custom_options:
-                                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                                storage-upload-chunk-size: 5MiB
-                              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              gcs_endpoint: localhost
-                              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                              retention_full: 2
-                              retention_full_type: count
-                              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                              s3_endpoint: s3.us-east-1.amazonaws.com
-                              s3_key: AKIAIOSFODNN7EXAMPLE
-                              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                              s3_region: us-east-1
-                              type: s3
-                        schedules:
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
-                            - cron_expression: 0 6 * * ?
-                              id: daily-full-backup
-                              type: full
-                      cpus: 500m
-                      extra_volumes:
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                      host_ids:
-                        - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M
@@ -5609,30 +6031,7 @@ definitions:
                       s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                       s3_region: us-east-1
                       type: s3
-                    - azure_account: pgedge-backups
-                      azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      azure_endpoint: blob.core.usgovcloudapi.net
-                      azure_key: YXpLZXk=
-                      base_path: /backups
-                      custom_options:
-                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                        storage-upload-chunk-size: 5MiB
-                      gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      gcs_endpoint: localhost
-                      gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                      id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                      retention_full: 2
-                      retention_full_type: count
-                      s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      s3_endpoint: s3.us-east-1.amazonaws.com
-                      s3_key: AKIAIOSFODNN7EXAMPLE
-                      s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                      s3_region: us-east-1
-                      type: s3
                 schedules:
-                    - cron_expression: 0 6 * * ?
-                      id: daily-full-backup
-                      type: full
                     - cron_expression: 0 6 * * ?
                       id: daily-full-backup
                       type: full
@@ -5645,24 +6044,6 @@ definitions:
             cpus: 500m
             database_name: northwind
             database_users:
-                - attributes:
-                    - LOGIN
-                    - CREATEDB
-                    - CREATEROLE
-                  db_owner: false
-                  password: secret
-                  roles:
-                    - pgedge_superuser
-                  username: admin
-                - attributes:
-                    - LOGIN
-                    - CREATEDB
-                    - CREATEROLE
-                  db_owner: false
-                  password: secret
-                  roles:
-                    - pgedge_superuser
-                  username: admin
                 - attributes:
                     - LOGIN
                     - CREATEDB
@@ -5734,30 +6115,7 @@ definitions:
                           s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                           s3_region: us-east-1
                           type: s3
-                        - azure_account: pgedge-backups
-                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          azure_endpoint: blob.core.usgovcloudapi.net
-                          azure_key: YXpLZXk=
-                          base_path: /backups
-                          custom_options:
-                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                            storage-upload-chunk-size: 5MiB
-                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          gcs_endpoint: localhost
-                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                          retention_full: 2
-                          retention_full_type: count
-                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          s3_endpoint: s3.us-east-1.amazonaws.com
-                          s3_key: AKIAIOSFODNN7EXAMPLE
-                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                          s3_region: us-east-1
-                          type: s3
                     schedules:
-                        - cron_expression: 0 6 * * ?
-                          id: daily-full-backup
-                          type: full
                         - cron_expression: 0 6 * * ?
                           id: daily-full-backup
                           type: full
@@ -5773,12 +6131,7 @@ definitions:
                       host_path: /Users/user/backups/host
                     - destination_path: /backups/container
                       host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
                   host_ids:
-                    - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                     - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                     - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   memory: 500M
@@ -5859,30 +6212,7 @@ definitions:
                           s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                           s3_region: us-east-1
                           type: s3
-                        - azure_account: pgedge-backups
-                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          azure_endpoint: blob.core.usgovcloudapi.net
-                          azure_key: YXpLZXk=
-                          base_path: /backups
-                          custom_options:
-                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                            storage-upload-chunk-size: 5MiB
-                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          gcs_endpoint: localhost
-                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                          retention_full: 2
-                          retention_full_type: count
-                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          s3_endpoint: s3.us-east-1.amazonaws.com
-                          s3_key: AKIAIOSFODNN7EXAMPLE
-                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                          s3_region: us-east-1
-                          type: s3
                     schedules:
-                        - cron_expression: 0 6 * * ?
-                          id: daily-full-backup
-                          type: full
                         - cron_expression: 0 6 * * ?
                           id: daily-full-backup
                           type: full
@@ -5898,12 +6228,7 @@ definitions:
                       host_path: /Users/user/backups/host
                     - destination_path: /backups/container
                       host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
                   host_ids:
-                    - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                     - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                     - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   memory: 500M
@@ -5984,30 +6309,7 @@ definitions:
                           s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                           s3_region: us-east-1
                           type: s3
-                        - azure_account: pgedge-backups
-                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          azure_endpoint: blob.core.usgovcloudapi.net
-                          azure_key: YXpLZXk=
-                          base_path: /backups
-                          custom_options:
-                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                            storage-upload-chunk-size: 5MiB
-                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          gcs_endpoint: localhost
-                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                          retention_full: 2
-                          retention_full_type: count
-                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          s3_endpoint: s3.us-east-1.amazonaws.com
-                          s3_key: AKIAIOSFODNN7EXAMPLE
-                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                          s3_region: us-east-1
-                          type: s3
                     schedules:
-                        - cron_expression: 0 6 * * ?
-                          id: daily-full-backup
-                          type: full
                         - cron_expression: 0 6 * * ?
                           id: daily-full-backup
                           type: full
@@ -6023,12 +6325,7 @@ definitions:
                       host_path: /Users/user/backups/host
                     - destination_path: /backups/container
                       host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
                   host_ids:
-                    - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                     - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                     - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   memory: 500M
@@ -6109,30 +6406,7 @@ definitions:
                           s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                           s3_region: us-east-1
                           type: s3
-                        - azure_account: pgedge-backups
-                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          azure_endpoint: blob.core.usgovcloudapi.net
-                          azure_key: YXpLZXk=
-                          base_path: /backups
-                          custom_options:
-                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                            storage-upload-chunk-size: 5MiB
-                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          gcs_endpoint: localhost
-                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                          retention_full: 2
-                          retention_full_type: count
-                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                          s3_endpoint: s3.us-east-1.amazonaws.com
-                          s3_key: AKIAIOSFODNN7EXAMPLE
-                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                          s3_region: us-east-1
-                          type: s3
                     schedules:
-                        - cron_expression: 0 6 * * ?
-                          id: daily-full-backup
-                          type: full
                         - cron_expression: 0 6 * * ?
                           id: daily-full-backup
                           type: full
@@ -6148,12 +6422,7 @@ definitions:
                       host_path: /Users/user/backups/host
                     - destination_path: /backups/container
                       host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
                   host_ids:
-                    - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                     - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                     - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   memory: 500M
@@ -6236,7 +6505,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Reiciendis asperiores.
+                    example: Dignissimos ducimus reiciendis asperiores explicabo.
                 description: The attributes to assign to this database user.
                 example:
                     - LOGIN
@@ -6254,7 +6523,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Veritatis consequuntur molestiae architecto.
+                    example: Consequuntur molestiae architecto iure molestiae.
                 description: The roles to assign to this database user.
                 example:
                     - pgedge_superuser
@@ -6362,8 +6631,6 @@ definitions:
                       spock_version: "4"
                     - postgres_version: "16"
                       spock_version: "4"
-                    - postgres_version: "16"
-                      spock_version: "4"
         example:
             cohort:
                 cohort_id: pps1n11hqijn9rbee4cjil453
@@ -6452,13 +6719,19 @@ definitions:
                 type: object
                 description: The status of each component of the host.
                 example:
-                    Aut ut modi et.:
+                    Et eum eius.:
                         details:
                             alarms:
                                 - '3: NOSPACE'
                         error: failed to connect to etcd
                         healthy: false
-                    Cum et quos dolore dolorem quia.:
+                    Modi et commodi aut.:
+                        details:
+                            alarms:
+                                - '3: NOSPACE'
+                        error: failed to connect to etcd
+                        healthy: false
+                    Quia itaque aut.:
                         details:
                             alarms:
                                 - '3: NOSPACE'
@@ -6481,19 +6754,13 @@ definitions:
                 format: date-time
         example:
             components:
-                Eligendi et eum eius sit non laboriosam.:
+                Incidunt suscipit quaerat qui ea.:
                     details:
                         alarms:
                             - '3: NOSPACE'
                     error: failed to connect to etcd
                     healthy: false
-                Et repudiandae quisquam assumenda mollitia aut incidunt.:
-                    details:
-                        alarms:
-                            - '3: NOSPACE'
-                    error: failed to connect to etcd
-                    healthy: false
-                Quaerat qui ea eum eos voluptas doloremque.:
+                Laboriosam blanditiis et repudiandae quisquam assumenda mollitia.:
                     details:
                         alarms:
                             - '3: NOSPACE'
@@ -6505,6 +6772,77 @@ definitions:
             - state
             - updated_at
             - components
+    InstanceConnectionInfo:
+        title: InstanceConnectionInfo
+        type: object
+        properties:
+            hostname:
+                type: string
+                description: The hostname of the host that's running this instance.
+                example: i-0123456789abcdef.ec2.internal
+            ipv4_address:
+                type: string
+                description: The IPv4 address of the host that's running this instance.
+                example: 10.24.34.0
+                format: ipv4
+            port:
+                type: integer
+                description: The host port that Postgres is listening on for this instance.
+                example: 5432
+                format: int64
+        description: Connection information for a pgEdge instance.
+        example:
+            hostname: i-0123456789abcdef.ec2.internal
+            ipv4_address: 10.24.34.0
+            port: 5432
+    InstancePostgresStatus:
+        title: InstancePostgresStatus
+        type: object
+        properties:
+            patroni_paused:
+                type: boolean
+                description: True if Patroni has been paused for this instance.
+                example: true
+            patroni_state:
+                type: string
+                example: stop failed
+                enum:
+                    - stopping
+                    - stopped
+                    - stop failed
+                    - crashed
+                    - running
+                    - starting
+                    - start failed
+                    - restarting
+                    - restart failed
+                    - initializing new cluster
+                    - initdb failed
+                    - running custom bootstrap script
+                    - custom bootstrap failed
+                    - creating replica
+                    - unknown
+            pending_restart:
+                type: boolean
+                description: True if this instance is pending to be restarted from a configuration change.
+                example: true
+            role:
+                type: string
+                example: primary
+                enum:
+                    - replica
+                    - primary
+            version:
+                type: string
+                description: The version of Postgres for this instance.
+                example: "17.5"
+        description: Postgres status information for a pgEdge instance.
+        example:
+            patroni_paused: false
+            patroni_state: starting
+            pending_restart: true
+            role: primary
+            version: "17.5"
     InstanceResponseAbbreviated:
         title: 'Mediatype identifier: instance; view=default'
         type: object
@@ -6525,7 +6863,7 @@ definitions:
                 example: n1
             state:
                 type: string
-                example: unknown
+                example: failed
                 enum:
                     - creating
                     - modifying
@@ -6539,7 +6877,7 @@ definitions:
             host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: degraded
+            state: available
         required:
             - id
             - host_id
@@ -6552,64 +6890,84 @@ definitions:
             $ref: '#/definitions/InstanceResponseAbbreviated'
         description: InstanceResponseAbbreviatedCollection is the result type for an array of InstanceResponseAbbreviated (default view)
         example:
-            - created_at: "1979-05-18T16:44:00Z"
+            - connection_info:
+                hostname: i-0123456789abcdef.ec2.internal
+                ipv4_address: 10.24.34.0
+                port: 5432
+              created_at: "1991-01-18T08:21:24Z"
               error: 'failed to get patroni status: connection refused'
               host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              hostname: i-0123456789abcdef.ec2.internal
               id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              ipv4_address: 10.24.34.0
               node_name: n1
-              patroni_paused: false
-              patroni_state: custom bootstrap failed
-              pending_restart: false
-              port: 5432
-              postgres_version: "17.1"
-              read_only: "off"
-              role: primary
-              spock_version: 4.0.9
-              state: backing_up
-              status_updated_at: "2007-07-21T10:25:45Z"
-              subscriptions:
-                - name: sub_n1n2
-                  provider_node: n2
-                  status: down
-                - name: sub_n1n2
-                  provider_node: n2
-                  status: down
-              updated_at: "1993-07-10T02:40:43Z"
-            - created_at: "1979-05-18T16:44:00Z"
+              postgres:
+                patroni_paused: false
+                patroni_state: initializing new cluster
+                pending_restart: false
+                role: primary
+                version: "17.5"
+              spock:
+                read_only: "off"
+                subscriptions:
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                version: 4.10.0
+              state: modifying
+              status_updated_at: "1981-04-02T10:17:50Z"
+              updated_at: "1991-01-13T22:07:17Z"
+            - connection_info:
+                hostname: i-0123456789abcdef.ec2.internal
+                ipv4_address: 10.24.34.0
+                port: 5432
+              created_at: "1991-01-18T08:21:24Z"
               error: 'failed to get patroni status: connection refused'
               host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              hostname: i-0123456789abcdef.ec2.internal
               id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              ipv4_address: 10.24.34.0
               node_name: n1
-              patroni_paused: false
-              patroni_state: custom bootstrap failed
-              pending_restart: false
-              port: 5432
-              postgres_version: "17.1"
-              read_only: "off"
-              role: primary
-              spock_version: 4.0.9
-              state: backing_up
-              status_updated_at: "2007-07-21T10:25:45Z"
-              subscriptions:
-                - name: sub_n1n2
-                  provider_node: n2
-                  status: down
-                - name: sub_n1n2
-                  provider_node: n2
-                  status: down
-              updated_at: "1993-07-10T02:40:43Z"
+              postgres:
+                patroni_paused: false
+                patroni_state: initializing new cluster
+                pending_restart: false
+                role: primary
+                version: "17.5"
+              spock:
+                read_only: "off"
+                subscriptions:
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                version: 4.10.0
+              state: modifying
+              status_updated_at: "1981-04-02T10:17:50Z"
+              updated_at: "1991-01-13T22:07:17Z"
     InstanceResponseBody:
         title: 'Mediatype identifier: instance; view=default'
         type: object
         properties:
+            connection_info:
+                $ref: '#/definitions/InstanceConnectionInfo'
             created_at:
                 type: string
                 description: The time that the instance was created.
-                example: "1980-07-07T10:02:08Z"
+                example: "1982-12-11T10:43:34Z"
                 format: date-time
             error:
                 type: string
@@ -6620,77 +6978,22 @@ definitions:
                 description: The ID of the host this instance is running on.
                 example: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                 format: uuid
-            hostname:
-                type: string
-                description: The hostname of the host that's running this instance.
-                example: i-0123456789abcdef.ec2.internal
             id:
                 type: string
                 description: Unique identifier for the instance.
                 example: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                 format: uuid
-            ipv4_address:
-                type: string
-                description: The IPv4 address of the host that's running this instance.
-                example: 10.24.34.0
-                format: ipv4
             node_name:
                 type: string
                 description: The Spock node name for this instance.
                 example: n1
-            patroni_paused:
-                type: boolean
-                description: True if Patroni has been paused for this instance.
-                example: false
-            patroni_state:
-                type: string
-                example: unknown
-                enum:
-                    - stopping
-                    - stopped
-                    - stop failed
-                    - crashed
-                    - running
-                    - starting
-                    - start failed
-                    - restarting
-                    - restart failed
-                    - initializing new cluster
-                    - initdb failed
-                    - running custom bootstrap script
-                    - custom bootstrap failed
-                    - creating replica
-                    - unknown
-            pending_restart:
-                type: boolean
-                description: True if this instance is pending to be restarted from a configuration change.
-                example: false
-            port:
-                type: integer
-                description: The host port that Postgres is listening on for this instance.
-                example: 5432
-                format: int64
-            postgres_version:
-                type: string
-                description: The version of Postgres for this instance.
-                example: "17.1"
-            read_only:
-                type: string
-                description: The current spock.readonly setting.
-                example: "off"
-            role:
-                type: string
-                example: primary
-                enum:
-                    - replica
-                    - primary
-            spock_version:
-                type: string
-                description: The version of Spock for this instance.
-                example: 4.0.9
+            postgres:
+                $ref: '#/definitions/InstancePostgresStatus'
+            spock:
+                $ref: '#/definitions/InstanceSpockStatus'
             state:
                 type: string
-                example: modifying
+                example: creating
                 enum:
                     - creating
                     - modifying
@@ -6702,60 +7005,48 @@ definitions:
             status_updated_at:
                 type: string
                 description: The time that the instance status information was last updated.
-                example: "1987-05-30T08:13:40Z"
+                example: "1978-12-17T01:14:06Z"
                 format: date-time
-            subscriptions:
-                type: array
-                items:
-                    $ref: '#/definitions/InstanceSubscription'
-                description: Status information for this instance's Spock subscriptions.
-                example:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
             updated_at:
                 type: string
                 description: The time that the instance was last modified.
-                example: "1986-08-23T06:59:48Z"
+                example: "2010-08-13T18:38:44Z"
                 format: date-time
         description: An instance of pgEdge Postgres running on a host. (default view)
         example:
+            connection_info:
+                hostname: i-0123456789abcdef.ec2.internal
+                ipv4_address: 10.24.34.0
+                port: 5432
             created_at: "1976-03-01T20:13:25Z"
             error: 'failed to get patroni status: connection refused'
             host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-            hostname: i-0123456789abcdef.ec2.internal
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-            ipv4_address: 10.24.34.0
             node_name: n1
-            patroni_paused: false
-            patroni_state: stopping
-            pending_restart: false
-            port: 5432
-            postgres_version: "17.1"
-            read_only: "off"
-            role: primary
-            spock_version: 4.0.9
+            postgres:
+                patroni_paused: false
+                patroni_state: initializing new cluster
+                pending_restart: false
+                role: primary
+                version: "17.5"
+            spock:
+                read_only: "off"
+                subscriptions:
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                version: 4.10.0
             state: failed
             status_updated_at: "2002-03-20T15:42:21Z"
-            subscriptions:
-                - name: sub_n1n2
-                  provider_node: n2
-                  status: down
-                - name: sub_n1n2
-                  provider_node: n2
-                  status: down
-                - name: sub_n1n2
-                  provider_node: n2
-                  status: down
-                - name: sub_n1n2
-                  provider_node: n2
-                  status: down
             updated_at: "1977-03-14T09:54:12Z"
         required:
             - id
@@ -6771,106 +7062,118 @@ definitions:
             $ref: '#/definitions/InstanceResponseBody'
         description: InstanceCollectionResponseBody is the result type for an array of InstanceResponseBody (default view)
         example:
-            - created_at: "1979-05-18T16:44:00Z"
+            - connection_info:
+                hostname: i-0123456789abcdef.ec2.internal
+                ipv4_address: 10.24.34.0
+                port: 5432
+              created_at: "1991-01-18T08:21:24Z"
               error: 'failed to get patroni status: connection refused'
               host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              hostname: i-0123456789abcdef.ec2.internal
               id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              ipv4_address: 10.24.34.0
               node_name: n1
-              patroni_paused: false
-              patroni_state: custom bootstrap failed
-              pending_restart: false
-              port: 5432
-              postgres_version: "17.1"
-              read_only: "off"
-              role: primary
-              spock_version: 4.0.9
-              state: backing_up
-              status_updated_at: "2007-07-21T10:25:45Z"
-              subscriptions:
-                - name: sub_n1n2
-                  provider_node: n2
-                  status: down
-                - name: sub_n1n2
-                  provider_node: n2
-                  status: down
-              updated_at: "1993-07-10T02:40:43Z"
-            - created_at: "1979-05-18T16:44:00Z"
+              postgres:
+                patroni_paused: false
+                patroni_state: initializing new cluster
+                pending_restart: false
+                role: primary
+                version: "17.5"
+              spock:
+                read_only: "off"
+                subscriptions:
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                version: 4.10.0
+              state: modifying
+              status_updated_at: "1981-04-02T10:17:50Z"
+              updated_at: "1991-01-13T22:07:17Z"
+            - connection_info:
+                hostname: i-0123456789abcdef.ec2.internal
+                ipv4_address: 10.24.34.0
+                port: 5432
+              created_at: "1991-01-18T08:21:24Z"
               error: 'failed to get patroni status: connection refused'
               host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              hostname: i-0123456789abcdef.ec2.internal
               id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              ipv4_address: 10.24.34.0
               node_name: n1
-              patroni_paused: false
-              patroni_state: custom bootstrap failed
-              pending_restart: false
-              port: 5432
-              postgres_version: "17.1"
-              read_only: "off"
-              role: primary
-              spock_version: 4.0.9
-              state: backing_up
-              status_updated_at: "2007-07-21T10:25:45Z"
-              subscriptions:
+              postgres:
+                patroni_paused: false
+                patroni_state: initializing new cluster
+                pending_restart: false
+                role: primary
+                version: "17.5"
+              spock:
+                read_only: "off"
+                subscriptions:
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                version: 4.10.0
+              state: modifying
+              status_updated_at: "1981-04-02T10:17:50Z"
+              updated_at: "1991-01-13T22:07:17Z"
+    InstanceSpockStatus:
+        title: InstanceSpockStatus
+        type: object
+        properties:
+            read_only:
+                type: string
+                description: The current spock.readonly setting.
+                example: "off"
+            subscriptions:
+                type: array
+                items:
+                    $ref: '#/definitions/InstanceSubscription'
+                description: Status information for this instance's Spock subscriptions.
+                example:
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+            version:
+                type: string
+                description: The version of Spock for this instance.
+                example: 4.10.0
+        description: Spock status information for a pgEdge instance.
+        example:
+            read_only: "off"
+            subscriptions:
                 - name: sub_n1n2
                   provider_node: n2
                   status: down
                 - name: sub_n1n2
                   provider_node: n2
                   status: down
-              updated_at: "1993-07-10T02:40:43Z"
-            - created_at: "1979-05-18T16:44:00Z"
-              error: 'failed to get patroni status: connection refused'
-              host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              hostname: i-0123456789abcdef.ec2.internal
-              id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              ipv4_address: 10.24.34.0
-              node_name: n1
-              patroni_paused: false
-              patroni_state: custom bootstrap failed
-              pending_restart: false
-              port: 5432
-              postgres_version: "17.1"
-              read_only: "off"
-              role: primary
-              spock_version: 4.0.9
-              state: backing_up
-              status_updated_at: "2007-07-21T10:25:45Z"
-              subscriptions:
                 - name: sub_n1n2
                   provider_node: n2
                   status: down
-                - name: sub_n1n2
-                  provider_node: n2
-                  status: down
-              updated_at: "1993-07-10T02:40:43Z"
-            - created_at: "1979-05-18T16:44:00Z"
-              error: 'failed to get patroni status: connection refused'
-              host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              hostname: i-0123456789abcdef.ec2.internal
-              id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              ipv4_address: 10.24.34.0
-              node_name: n1
-              patroni_paused: false
-              patroni_state: custom bootstrap failed
-              pending_restart: false
-              port: 5432
-              postgres_version: "17.1"
-              read_only: "off"
-              role: primary
-              spock_version: 4.0.9
-              state: backing_up
-              status_updated_at: "2007-07-21T10:25:45Z"
-              subscriptions:
-                - name: sub_n1n2
-                  provider_node: n2
-                  status: down
-                - name: sub_n1n2
-                  provider_node: n2
-                  status: down
-              updated_at: "1993-07-10T02:40:43Z"
+            version: 4.10.0
     InstanceSubscription:
         title: InstanceSubscription
         type: object
@@ -6936,7 +7239,7 @@ definitions:
                     type: xid
                 additionalProperties:
                     type: string
-                    example: Tempore et aut.
+                    example: Sit quae et tempore.
             source_database_id:
                 type: string
                 description: The ID of the database to restore this database from.
@@ -6991,7 +7294,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Quisquam officiis modi.
+                    example: Modi facere est.
                 description: The nodes to restore. Defaults to all nodes if empty or unspecified.
                 example:
                     - n1
@@ -7072,6 +7375,17 @@ definitions:
                       status: pending
                       task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
                       type: restore
+                    - completed_at: "2025-01-01T02:30:00Z"
+                      created_at: "2025-01-01T01:30:00Z"
+                      database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+                      error: failed to connect to database
+                      host_id: 2e52dcde-86d8-4f71-b58e-8dc3a10c936a
+                      instance_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+                      node_name: n1
+                      parent_id: 439eb515-e700-4740-b508-4a3f12ec4f83
+                      status: pending
+                      task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+                      type: restore
             task:
                 $ref: '#/definitions/Task'
         example:
@@ -7079,67 +7393,73 @@ definitions:
                 created_at: "2025-01-01T01:30:00Z"
                 id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                 instances:
-                    - created_at: "2008-04-05T03:29:38Z"
+                    - connection_info:
+                        hostname: i-0123456789abcdef.ec2.internal
+                        ipv4_address: 10.24.34.0
+                        port: 5432
+                      created_at: "2008-04-05T03:29:38Z"
                       error: 'failed to get patroni status: connection refused'
                       host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      hostname: i-0123456789abcdef.ec2.internal
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      ipv4_address: 10.24.34.0
                       node_name: n1
-                      patroni_paused: false
-                      patroni_state: crashed
-                      pending_restart: true
-                      port: 5432
-                      postgres_version: "17.1"
-                      read_only: "off"
-                      role: primary
-                      spock_version: 4.0.9
+                      postgres:
+                        patroni_paused: false
+                        patroni_state: crashed
+                        pending_restart: true
+                        role: primary
+                        version: "17.5"
+                      spock:
+                        read_only: "off"
+                        subscriptions:
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                        version: 4.10.0
                       state: available
                       status_updated_at: "1989-01-18T08:35:28Z"
-                      subscriptions:
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
                       updated_at: "2003-08-09T22:13:38Z"
-                    - created_at: "2008-04-05T03:29:38Z"
+                    - connection_info:
+                        hostname: i-0123456789abcdef.ec2.internal
+                        ipv4_address: 10.24.34.0
+                        port: 5432
+                      created_at: "2008-04-05T03:29:38Z"
                       error: 'failed to get patroni status: connection refused'
                       host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      hostname: i-0123456789abcdef.ec2.internal
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      ipv4_address: 10.24.34.0
                       node_name: n1
-                      patroni_paused: false
-                      patroni_state: crashed
-                      pending_restart: true
-                      port: 5432
-                      postgres_version: "17.1"
-                      read_only: "off"
-                      role: primary
-                      spock_version: 4.0.9
+                      postgres:
+                        patroni_paused: false
+                        patroni_state: crashed
+                        pending_restart: true
+                        role: primary
+                        version: "17.5"
+                      spock:
+                        read_only: "off"
+                        subscriptions:
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                        version: 4.10.0
                       state: available
                       status_updated_at: "1989-01-18T08:35:28Z"
-                      subscriptions:
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
                       updated_at: "2003-08-09T22:13:38Z"
                 spec:
                     backup_config:
@@ -7686,6 +8006,17 @@ definitions:
                   status: pending
                   task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
                   type: restore
+                - completed_at: "2025-01-01T02:30:00Z"
+                  created_at: "2025-01-01T01:30:00Z"
+                  database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+                  error: failed to connect to database
+                  host_id: 2e52dcde-86d8-4f71-b58e-8dc3a10c936a
+                  instance_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+                  node_name: n1
+                  parent_id: 439eb515-e700-4740-b508-4a3f12ec4f83
+                  status: pending
+                  task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+                  type: restore
             task:
                 completed_at: "2025-01-01T02:30:00Z"
                 created_at: "2025-01-01T01:30:00Z"
@@ -7729,7 +8060,7 @@ definitions:
                     s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
                 additionalProperties:
                     type: string
-                    example: Nobis dolor sit quae.
+                    example: Nulla omnis nobis.
             gcs_bucket:
                 type: string
                 description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -7890,6 +8221,11 @@ definitions:
                     $ref: '#/definitions/TaskLogEntry'
                 description: Entries in the task log.
                 example:
+                    - fields:
+                        option.enabled: true
+                        status: creating
+                      message: task started
+                      timestamp: "2025-05-29T15:43:13Z"
                     - fields:
                         option.enabled: true
                         status: creating
@@ -8657,67 +8993,73 @@ definitions:
                 created_at: "2025-01-01T01:30:00Z"
                 id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                 instances:
-                    - created_at: "2008-04-05T03:29:38Z"
+                    - connection_info:
+                        hostname: i-0123456789abcdef.ec2.internal
+                        ipv4_address: 10.24.34.0
+                        port: 5432
+                      created_at: "2008-04-05T03:29:38Z"
                       error: 'failed to get patroni status: connection refused'
                       host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      hostname: i-0123456789abcdef.ec2.internal
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      ipv4_address: 10.24.34.0
                       node_name: n1
-                      patroni_paused: false
-                      patroni_state: crashed
-                      pending_restart: true
-                      port: 5432
-                      postgres_version: "17.1"
-                      read_only: "off"
-                      role: primary
-                      spock_version: 4.0.9
+                      postgres:
+                        patroni_paused: false
+                        patroni_state: crashed
+                        pending_restart: true
+                        role: primary
+                        version: "17.5"
+                      spock:
+                        read_only: "off"
+                        subscriptions:
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                        version: 4.10.0
                       state: available
                       status_updated_at: "1989-01-18T08:35:28Z"
-                      subscriptions:
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
                       updated_at: "2003-08-09T22:13:38Z"
-                    - created_at: "2008-04-05T03:29:38Z"
+                    - connection_info:
+                        hostname: i-0123456789abcdef.ec2.internal
+                        ipv4_address: 10.24.34.0
+                        port: 5432
+                      created_at: "2008-04-05T03:29:38Z"
                       error: 'failed to get patroni status: connection refused'
                       host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      hostname: i-0123456789abcdef.ec2.internal
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      ipv4_address: 10.24.34.0
                       node_name: n1
-                      patroni_paused: false
-                      patroni_state: crashed
-                      pending_restart: true
-                      port: 5432
-                      postgres_version: "17.1"
-                      read_only: "off"
-                      role: primary
-                      spock_version: 4.0.9
+                      postgres:
+                        patroni_paused: false
+                        patroni_state: crashed
+                        pending_restart: true
+                        role: primary
+                        version: "17.5"
+                      spock:
+                        read_only: "off"
+                        subscriptions:
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                            - name: sub_n1n2
+                              provider_node: n2
+                              status: down
+                        version: 4.10.0
                       state: available
                       status_updated_at: "1989-01-18T08:35:28Z"
-                      subscriptions:
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
                       updated_at: "2003-08-09T22:13:38Z"
                 spec:
                     backup_config:

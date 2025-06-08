@@ -230,6 +230,49 @@ func databaseToAPI(d *database.Database) *api.Database {
 	}
 }
 
+func instanceConnectionInfoToAPI(status *database.InstanceStatus) *api.InstanceConnectionInfo {
+	if status == nil {
+		return nil
+	}
+	return &api.InstanceConnectionInfo{
+		Hostname:    status.Hostname,
+		Ipv4Address: status.IPv4Address,
+		Port:        status.Port,
+	}
+}
+
+func instancePostgresStatusToAPI(status *database.InstanceStatus) *api.InstancePostgresStatus {
+	if status == nil {
+		return nil
+	}
+	return &api.InstancePostgresStatus{
+		Version:        status.PostgresVersion,
+		PatroniState:   stringifyStringerPtr(status.PatroniState),
+		Role:           stringifyStringerPtr(status.Role),
+		PendingRestart: status.PendingRestart,
+		PatroniPaused:  status.PatroniPaused,
+	}
+}
+
+func instanceSpockStatusToAPI(status *database.InstanceStatus) *api.InstanceSpockStatus {
+	if status == nil {
+		return nil
+	}
+	subs := make([]*api.InstanceSubscription, len(status.Subscriptions))
+	for i, sub := range status.Subscriptions {
+		subs[i] = &api.InstanceSubscription{
+			ProviderNode: sub.ProviderNode,
+			Name:         sub.Name,
+			Status:       sub.Status,
+		}
+	}
+	return &api.InstanceSpockStatus{
+		Version:       status.SpockVersion,
+		Subscriptions: subs,
+		ReadOnly:      status.ReadOnly,
+	}
+}
+
 func instanceToAPI(instance *database.Instance) *api.Instance {
 	if instance == nil {
 		return nil
@@ -246,16 +289,9 @@ func instanceToAPI(instance *database.Instance) *api.Instance {
 	}
 
 	if status := instance.Status; status != nil {
-		apiInst.PostgresVersion = status.PostgresVersion
-		apiInst.SpockVersion = status.SpockVersion
-		apiInst.Hostname = status.Hostname
-		apiInst.Ipv4Address = status.IPv4Address
-		apiInst.Port = status.Port
-		apiInst.PatroniState = stringifyStringerPtr(status.PatroniState)
-		apiInst.Role = stringifyStringerPtr(status.Role)
-		apiInst.ReadOnly = status.ReadOnly
-		apiInst.PendingRestart = status.PendingRestart
-		apiInst.PatroniPaused = status.PatroniPaused
+		apiInst.ConnectionInfo = instanceConnectionInfoToAPI(status)
+		apiInst.Postgres = instancePostgresStatusToAPI(status)
+		apiInst.Spock = instanceSpockStatusToAPI(status)
 		if status.StatusUpdatedAt != nil {
 			apiInst.StatusUpdatedAt = utils.PointerTo(status.StatusUpdatedAt.Format(time.RFC3339))
 		}
@@ -265,16 +301,6 @@ func instanceToAPI(instance *database.Instance) *api.Instance {
 		if apiInst.Error == nil && status.Error != nil {
 			apiInst.Error = status.Error
 		}
-
-		subs := make([]*api.InstanceSubscription, len(status.Subscriptions))
-		for i, sub := range status.Subscriptions {
-			subs[i] = &api.InstanceSubscription{
-				ProviderNode: sub.ProviderNode,
-				Name:         sub.Name,
-				Status:       sub.Status,
-			}
-		}
-		apiInst.Subscriptions = subs
 	}
 
 	return apiInst

@@ -67,28 +67,48 @@ type InstanceView struct {
 	// The time that the instance status information was last updated.
 	StatusUpdatedAt *string
 	State           *string
-	PatroniState    *string
-	Role            *string
-	// The current spock.readonly setting.
-	ReadOnly *string
-	// True if this instance is pending to be restarted from a configuration change.
-	PendingRestart *bool
-	// True if Patroni has been paused for this instance.
-	PatroniPaused *bool
-	// The version of Postgres for this instance.
-	PostgresVersion *string
-	// The version of Spock for this instance.
-	SpockVersion *string
+	// Connection information for the instance.
+	ConnectionInfo *InstanceConnectionInfoView
+	// Postgres status information for the instance.
+	Postgres *InstancePostgresStatusView
+	// Spock status information for the instance.
+	Spock *InstanceSpockStatusView
+	// An error message if the instance is in an error state.
+	Error *string
+}
+
+// InstanceConnectionInfoView is a type that runs validations on a projected
+// type.
+type InstanceConnectionInfoView struct {
 	// The hostname of the host that's running this instance.
 	Hostname *string
 	// The IPv4 address of the host that's running this instance.
 	Ipv4Address *string
 	// The host port that Postgres is listening on for this instance.
 	Port *int
+}
+
+// InstancePostgresStatusView is a type that runs validations on a projected
+// type.
+type InstancePostgresStatusView struct {
+	// The version of Postgres for this instance.
+	Version      *string
+	PatroniState *string
+	Role         *string
+	// True if this instance is pending to be restarted from a configuration change.
+	PendingRestart *bool
+	// True if Patroni has been paused for this instance.
+	PatroniPaused *bool
+}
+
+// InstanceSpockStatusView is a type that runs validations on a projected type.
+type InstanceSpockStatusView struct {
+	// The current spock.readonly setting.
+	ReadOnly *string
+	// The version of Spock for this instance.
+	Version *string
 	// Status information for this instance's Spock subscriptions.
 	Subscriptions []*InstanceSubscriptionView
-	// An error message if the instance is in an error state.
-	Error *string
 }
 
 // InstanceSubscriptionView is a type that runs validations on a projected type.
@@ -450,17 +470,9 @@ var (
 			"updated_at",
 			"status_updated_at",
 			"state",
-			"patroni_state",
-			"role",
-			"read_only",
-			"pending_restart",
-			"patroni_paused",
-			"postgres_version",
-			"spock_version",
-			"hostname",
-			"ipv4_address",
-			"port",
-			"subscriptions",
+			"connection_info",
+			"postgres",
+			"spock",
 			"error",
 		},
 		"abbreviated": {
@@ -480,17 +492,9 @@ var (
 			"updated_at",
 			"status_updated_at",
 			"state",
-			"patroni_state",
-			"role",
-			"read_only",
-			"pending_restart",
-			"patroni_paused",
-			"postgres_version",
-			"spock_version",
-			"hostname",
-			"ipv4_address",
-			"port",
-			"subscriptions",
+			"connection_info",
+			"postgres",
+			"spock",
 			"error",
 		},
 		"abbreviated": {
@@ -700,24 +704,19 @@ func ValidateInstanceView(result *InstanceView) (err error) {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "backing_up", "available", "degraded", "failed", "unknown"}))
 		}
 	}
-	if result.PatroniState != nil {
-		if !(*result.PatroniState == "stopping" || *result.PatroniState == "stopped" || *result.PatroniState == "stop failed" || *result.PatroniState == "crashed" || *result.PatroniState == "running" || *result.PatroniState == "starting" || *result.PatroniState == "start failed" || *result.PatroniState == "restarting" || *result.PatroniState == "restart failed" || *result.PatroniState == "initializing new cluster" || *result.PatroniState == "initdb failed" || *result.PatroniState == "running custom bootstrap script" || *result.PatroniState == "custom bootstrap failed" || *result.PatroniState == "creating replica" || *result.PatroniState == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.patroni_state", *result.PatroniState, []any{"stopping", "stopped", "stop failed", "crashed", "running", "starting", "start failed", "restarting", "restart failed", "initializing new cluster", "initdb failed", "running custom bootstrap script", "custom bootstrap failed", "creating replica", "unknown"}))
+	if result.ConnectionInfo != nil {
+		if err2 := ValidateInstanceConnectionInfoView(result.ConnectionInfo); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if result.Role != nil {
-		if !(*result.Role == "replica" || *result.Role == "primary") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.role", *result.Role, []any{"replica", "primary"}))
+	if result.Postgres != nil {
+		if err2 := ValidateInstancePostgresStatusView(result.Postgres); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if result.Ipv4Address != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.ipv4_address", *result.Ipv4Address, goa.FormatIPv4))
-	}
-	for _, e := range result.Subscriptions {
-		if e != nil {
-			if err2 := ValidateInstanceSubscriptionView(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if result.Spock != nil {
+		if err2 := ValidateInstanceSpockStatusView(result.Spock); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -747,6 +746,44 @@ func ValidateInstanceViewAbbreviated(result *InstanceView) (err error) {
 	if result.State != nil {
 		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "backing_up" || *result.State == "available" || *result.State == "degraded" || *result.State == "failed" || *result.State == "unknown") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "backing_up", "available", "degraded", "failed", "unknown"}))
+		}
+	}
+	return
+}
+
+// ValidateInstanceConnectionInfoView runs the validations defined on
+// InstanceConnectionInfoView.
+func ValidateInstanceConnectionInfoView(result *InstanceConnectionInfoView) (err error) {
+	if result.Ipv4Address != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.ipv4_address", *result.Ipv4Address, goa.FormatIPv4))
+	}
+	return
+}
+
+// ValidateInstancePostgresStatusView runs the validations defined on
+// InstancePostgresStatusView.
+func ValidateInstancePostgresStatusView(result *InstancePostgresStatusView) (err error) {
+	if result.PatroniState != nil {
+		if !(*result.PatroniState == "stopping" || *result.PatroniState == "stopped" || *result.PatroniState == "stop failed" || *result.PatroniState == "crashed" || *result.PatroniState == "running" || *result.PatroniState == "starting" || *result.PatroniState == "start failed" || *result.PatroniState == "restarting" || *result.PatroniState == "restart failed" || *result.PatroniState == "initializing new cluster" || *result.PatroniState == "initdb failed" || *result.PatroniState == "running custom bootstrap script" || *result.PatroniState == "custom bootstrap failed" || *result.PatroniState == "creating replica" || *result.PatroniState == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.patroni_state", *result.PatroniState, []any{"stopping", "stopped", "stop failed", "crashed", "running", "starting", "start failed", "restarting", "restart failed", "initializing new cluster", "initdb failed", "running custom bootstrap script", "custom bootstrap failed", "creating replica", "unknown"}))
+		}
+	}
+	if result.Role != nil {
+		if !(*result.Role == "replica" || *result.Role == "primary") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.role", *result.Role, []any{"replica", "primary"}))
+		}
+	}
+	return
+}
+
+// ValidateInstanceSpockStatusView runs the validations defined on
+// InstanceSpockStatusView.
+func ValidateInstanceSpockStatusView(result *InstanceSpockStatusView) (err error) {
+	for _, e := range result.Subscriptions {
+		if e != nil {
+			if err2 := ValidateInstanceSubscriptionView(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	return

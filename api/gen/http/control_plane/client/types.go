@@ -1153,28 +1153,48 @@ type InstanceResponse struct {
 	// The time that the instance status information was last updated.
 	StatusUpdatedAt *string `form:"status_updated_at,omitempty" json:"status_updated_at,omitempty" xml:"status_updated_at,omitempty"`
 	State           *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
-	PatroniState    *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
-	Role            *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
-	// The current spock.readonly setting.
-	ReadOnly *string `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
-	// True if this instance is pending to be restarted from a configuration change.
-	PendingRestart *bool `form:"pending_restart,omitempty" json:"pending_restart,omitempty" xml:"pending_restart,omitempty"`
-	// True if Patroni has been paused for this instance.
-	PatroniPaused *bool `form:"patroni_paused,omitempty" json:"patroni_paused,omitempty" xml:"patroni_paused,omitempty"`
-	// The version of Postgres for this instance.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
-	// The version of Spock for this instance.
-	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
+	// Connection information for the instance.
+	ConnectionInfo *InstanceConnectionInfoResponse `form:"connection_info,omitempty" json:"connection_info,omitempty" xml:"connection_info,omitempty"`
+	// Postgres status information for the instance.
+	Postgres *InstancePostgresStatusResponse `form:"postgres,omitempty" json:"postgres,omitempty" xml:"postgres,omitempty"`
+	// Spock status information for the instance.
+	Spock *InstanceSpockStatusResponse `form:"spock,omitempty" json:"spock,omitempty" xml:"spock,omitempty"`
+	// An error message if the instance is in an error state.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
+// InstanceConnectionInfoResponse is used to define fields on response body
+// types.
+type InstanceConnectionInfoResponse struct {
 	// The hostname of the host that's running this instance.
 	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
 	// The IPv4 address of the host that's running this instance.
 	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
 	// The host port that Postgres is listening on for this instance.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+}
+
+// InstancePostgresStatusResponse is used to define fields on response body
+// types.
+type InstancePostgresStatusResponse struct {
+	// The version of Postgres for this instance.
+	Version      *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
+	PatroniState *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
+	Role         *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
+	// True if this instance is pending to be restarted from a configuration change.
+	PendingRestart *bool `form:"pending_restart,omitempty" json:"pending_restart,omitempty" xml:"pending_restart,omitempty"`
+	// True if Patroni has been paused for this instance.
+	PatroniPaused *bool `form:"patroni_paused,omitempty" json:"patroni_paused,omitempty" xml:"patroni_paused,omitempty"`
+}
+
+// InstanceSpockStatusResponse is used to define fields on response body types.
+type InstanceSpockStatusResponse struct {
+	// The current spock.readonly setting.
+	ReadOnly *string `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
+	// The version of Spock for this instance.
+	Version *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
 	// Status information for this instance's Spock subscriptions.
 	Subscriptions []*InstanceSubscriptionResponse `form:"subscriptions,omitempty" json:"subscriptions,omitempty" xml:"subscriptions,omitempty"`
-	// An error message if the instance is in an error state.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
 // InstanceSubscriptionResponse is used to define fields on response body types.
@@ -1733,28 +1753,49 @@ type InstanceResponseBody struct {
 	// The time that the instance status information was last updated.
 	StatusUpdatedAt *string `form:"status_updated_at,omitempty" json:"status_updated_at,omitempty" xml:"status_updated_at,omitempty"`
 	State           *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
-	PatroniState    *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
-	Role            *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
-	// The current spock.readonly setting.
-	ReadOnly *string `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
-	// True if this instance is pending to be restarted from a configuration change.
-	PendingRestart *bool `form:"pending_restart,omitempty" json:"pending_restart,omitempty" xml:"pending_restart,omitempty"`
-	// True if Patroni has been paused for this instance.
-	PatroniPaused *bool `form:"patroni_paused,omitempty" json:"patroni_paused,omitempty" xml:"patroni_paused,omitempty"`
-	// The version of Postgres for this instance.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
-	// The version of Spock for this instance.
-	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
+	// Connection information for the instance.
+	ConnectionInfo *InstanceConnectionInfoResponseBody `form:"connection_info,omitempty" json:"connection_info,omitempty" xml:"connection_info,omitempty"`
+	// Postgres status information for the instance.
+	Postgres *InstancePostgresStatusResponseBody `form:"postgres,omitempty" json:"postgres,omitempty" xml:"postgres,omitempty"`
+	// Spock status information for the instance.
+	Spock *InstanceSpockStatusResponseBody `form:"spock,omitempty" json:"spock,omitempty" xml:"spock,omitempty"`
+	// An error message if the instance is in an error state.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
+// InstanceConnectionInfoResponseBody is used to define fields on response body
+// types.
+type InstanceConnectionInfoResponseBody struct {
 	// The hostname of the host that's running this instance.
 	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
 	// The IPv4 address of the host that's running this instance.
 	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
 	// The host port that Postgres is listening on for this instance.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+}
+
+// InstancePostgresStatusResponseBody is used to define fields on response body
+// types.
+type InstancePostgresStatusResponseBody struct {
+	// The version of Postgres for this instance.
+	Version      *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
+	PatroniState *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
+	Role         *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
+	// True if this instance is pending to be restarted from a configuration change.
+	PendingRestart *bool `form:"pending_restart,omitempty" json:"pending_restart,omitempty" xml:"pending_restart,omitempty"`
+	// True if Patroni has been paused for this instance.
+	PatroniPaused *bool `form:"patroni_paused,omitempty" json:"patroni_paused,omitempty" xml:"patroni_paused,omitempty"`
+}
+
+// InstanceSpockStatusResponseBody is used to define fields on response body
+// types.
+type InstanceSpockStatusResponseBody struct {
+	// The current spock.readonly setting.
+	ReadOnly *string `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
+	// The version of Spock for this instance.
+	Version *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
 	// Status information for this instance's Spock subscriptions.
 	Subscriptions []*InstanceSubscriptionResponseBody `form:"subscriptions,omitempty" json:"subscriptions,omitempty" xml:"subscriptions,omitempty"`
-	// An error message if the instance is in an error state.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
 // InstanceSubscriptionResponseBody is used to define fields on response body
@@ -5008,6 +5049,36 @@ func ValidateInstanceResponse(body *InstanceResponse) (err error) {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "backing_up", "available", "degraded", "failed", "unknown"}))
 		}
 	}
+	if body.ConnectionInfo != nil {
+		if err2 := ValidateInstanceConnectionInfoResponse(body.ConnectionInfo); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.Postgres != nil {
+		if err2 := ValidateInstancePostgresStatusResponse(body.Postgres); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.Spock != nil {
+		if err2 := ValidateInstanceSpockStatusResponse(body.Spock); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateInstanceConnectionInfoResponse runs the validations defined on
+// InstanceConnectionInfoResponse
+func ValidateInstanceConnectionInfoResponse(body *InstanceConnectionInfoResponse) (err error) {
+	if body.Ipv4Address != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
+	}
+	return
+}
+
+// ValidateInstancePostgresStatusResponse runs the validations defined on
+// InstancePostgresStatusResponse
+func ValidateInstancePostgresStatusResponse(body *InstancePostgresStatusResponse) (err error) {
 	if body.PatroniState != nil {
 		if !(*body.PatroniState == "stopping" || *body.PatroniState == "stopped" || *body.PatroniState == "stop failed" || *body.PatroniState == "crashed" || *body.PatroniState == "running" || *body.PatroniState == "starting" || *body.PatroniState == "start failed" || *body.PatroniState == "restarting" || *body.PatroniState == "restart failed" || *body.PatroniState == "initializing new cluster" || *body.PatroniState == "initdb failed" || *body.PatroniState == "running custom bootstrap script" || *body.PatroniState == "custom bootstrap failed" || *body.PatroniState == "creating replica" || *body.PatroniState == "unknown") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.patroni_state", *body.PatroniState, []any{"stopping", "stopped", "stop failed", "crashed", "running", "starting", "start failed", "restarting", "restart failed", "initializing new cluster", "initdb failed", "running custom bootstrap script", "custom bootstrap failed", "creating replica", "unknown"}))
@@ -5018,9 +5089,12 @@ func ValidateInstanceResponse(body *InstanceResponse) (err error) {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.role", *body.Role, []any{"replica", "primary"}))
 		}
 	}
-	if body.Ipv4Address != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
-	}
+	return
+}
+
+// ValidateInstanceSpockStatusResponse runs the validations defined on
+// InstanceSpockStatusResponse
+func ValidateInstanceSpockStatusResponse(body *InstanceSpockStatusResponse) (err error) {
 	for _, e := range body.Subscriptions {
 		if e != nil {
 			if err2 := ValidateInstanceSubscriptionResponse(e); err2 != nil {
@@ -5568,6 +5642,36 @@ func ValidateInstanceResponseBody(body *InstanceResponseBody) (err error) {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "backing_up", "available", "degraded", "failed", "unknown"}))
 		}
 	}
+	if body.ConnectionInfo != nil {
+		if err2 := ValidateInstanceConnectionInfoResponseBody(body.ConnectionInfo); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.Postgres != nil {
+		if err2 := ValidateInstancePostgresStatusResponseBody(body.Postgres); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.Spock != nil {
+		if err2 := ValidateInstanceSpockStatusResponseBody(body.Spock); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateInstanceConnectionInfoResponseBody runs the validations defined on
+// InstanceConnectionInfoResponseBody
+func ValidateInstanceConnectionInfoResponseBody(body *InstanceConnectionInfoResponseBody) (err error) {
+	if body.Ipv4Address != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
+	}
+	return
+}
+
+// ValidateInstancePostgresStatusResponseBody runs the validations defined on
+// InstancePostgresStatusResponseBody
+func ValidateInstancePostgresStatusResponseBody(body *InstancePostgresStatusResponseBody) (err error) {
 	if body.PatroniState != nil {
 		if !(*body.PatroniState == "stopping" || *body.PatroniState == "stopped" || *body.PatroniState == "stop failed" || *body.PatroniState == "crashed" || *body.PatroniState == "running" || *body.PatroniState == "starting" || *body.PatroniState == "start failed" || *body.PatroniState == "restarting" || *body.PatroniState == "restart failed" || *body.PatroniState == "initializing new cluster" || *body.PatroniState == "initdb failed" || *body.PatroniState == "running custom bootstrap script" || *body.PatroniState == "custom bootstrap failed" || *body.PatroniState == "creating replica" || *body.PatroniState == "unknown") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.patroni_state", *body.PatroniState, []any{"stopping", "stopped", "stop failed", "crashed", "running", "starting", "start failed", "restarting", "restart failed", "initializing new cluster", "initdb failed", "running custom bootstrap script", "custom bootstrap failed", "creating replica", "unknown"}))
@@ -5578,9 +5682,12 @@ func ValidateInstanceResponseBody(body *InstanceResponseBody) (err error) {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.role", *body.Role, []any{"replica", "primary"}))
 		}
 	}
-	if body.Ipv4Address != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
-	}
+	return
+}
+
+// ValidateInstanceSpockStatusResponseBody runs the validations defined on
+// InstanceSpockStatusResponseBody
+func ValidateInstanceSpockStatusResponseBody(body *InstanceSpockStatusResponseBody) (err error) {
 	for _, e := range body.Subscriptions {
 		if e != nil {
 			if err2 := ValidateInstanceSubscriptionResponseBody(e); err2 != nil {
