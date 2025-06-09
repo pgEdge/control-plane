@@ -17,7 +17,6 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/task"
-	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
 var ErrDuplicateWorkflow = errors.New("duplicate workflow already in progress")
@@ -235,9 +234,9 @@ func (s *Service) translateCreateErr(err error) error {
 	return fmt.Errorf("failed to create workflow instance: %w", err)
 }
 
-func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) *activities.ValidateSpec {
+func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) *ValidateSpecOutput {
 	if spec == nil {
-		return &activities.ValidateSpec{
+		return &ValidateSpecOutput{
 			Valid:  false,
 			Errors: []string{"spec is nil"},
 		}
@@ -248,7 +247,7 @@ func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) *activi
 		Queue:      core.Queue(s.cfg.HostID.String()),
 		InstanceID: databaseID.String(),
 	}
-	input := &ValidateVolumesInput{
+	input := &ValidateSpecInput{
 		DatabaseID: databaseID,
 		Spec:       spec,
 	}
@@ -256,18 +255,18 @@ func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) *activi
 	instance, err := s.client.CreateWorkflowInstance(ctx, opts, s.workflows.ValidateSpec, input)
 	if err != nil {
 		s.logger.Error().Err(err).Str("database_id", databaseID.String()).Msg("Failed to create volume validation workflow")
-		return &activities.ValidateSpec{
+		return &ValidateSpecOutput{
 			Valid:  false,
 			Errors: []string{fmt.Sprintf("failed to create workflow instance: %v", err)},
 		}
 	}
 
-	output, err := client.GetWorkflowResult[*activities.ValidateSpec](ctx, s.client, instance, 5*time.Minute)
+	output, err := client.GetWorkflowResult[*ValidateSpecOutput](ctx, s.client, instance, 5*time.Minute)
 	if err != nil {
 		s.logger.Error().Err(err).Str("database_id", databaseID.String()).Msg("Failed to get result from volume validation workflow")
 
 		if output == nil {
-			return &activities.ValidateSpec{
+			return &ValidateSpecOutput{
 				Valid:  false,
 				Errors: []string{fmt.Sprintf("failed to get workflow result: %v", err)},
 			}

@@ -10,12 +10,17 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
-type ValidateVolumesInput struct {
+type ValidateSpecInput struct {
 	DatabaseID uuid.UUID
 	Spec       *database.Spec
 }
 
-func (w *Workflows) ValidateSpec(ctx workflow.Context, input *ValidateVolumesInput) (*activities.ValidateSpec, error) {
+type ValidateSpecOutput struct {
+	Valid  bool     `json:"valid"`
+	Errors []string `json:"errors,omitempty"`
+}
+
+func (w *Workflows) ValidateSpec(ctx workflow.Context, input *ValidateSpecInput) (*ValidateSpecOutput, error) {
 	databaseID := input.DatabaseID
 	logger := workflow.Logger(ctx).With("database_id", databaseID.String())
 	logger.Info("Starting volume validation")
@@ -25,7 +30,7 @@ func (w *Workflows) ValidateSpec(ctx workflow.Context, input *ValidateVolumesInp
 		logger.Error("Failed to get node instances", "error", err)
 		return nil, fmt.Errorf("failed to get node instances: %w", err)
 	}
-	var instanceFutures []workflow.Future[*activities.ValidateSpec]
+	var instanceFutures []workflow.Future[*activities.ValidateVolumesOutput]
 	for _, nodeInstance := range nodeInstances {
 		for _, instance := range nodeInstance.Instances {
 			instanceFuture := w.Activities.ExecuteValidateVolumes(ctx, instance.HostID, &activities.ValidateVolumesInput{
@@ -52,12 +57,12 @@ func (w *Workflows) ValidateSpec(ctx workflow.Context, input *ValidateVolumesInp
 	}
 
 	if len(allErrors) > 0 {
-		return &activities.ValidateSpec{
+		return &ValidateSpecOutput{
 			Valid:  false,
 			Errors: allErrors,
 		}, fmt.Errorf("volume validation encountered %d issues", len(allErrors))
 	}
 
 	logger.Info("Volume validation succeeded")
-	return &activities.ValidateSpec{Valid: true}, nil
+	return &ValidateSpecOutput{Valid: true}, nil
 }
