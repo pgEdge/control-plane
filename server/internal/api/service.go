@@ -508,11 +508,6 @@ func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) error {
 		return errors.New("spec cannot be nil")
 	}
 
-	if len(spec.ExtraVolumes) == 0 {
-		s.logger.Info().Msg("No volumes to validate, skipping volume validation")
-		return nil
-	}
-
 	output := s.workflowSvc.ValidateSpec(ctx, spec)
 	if output == nil {
 		return errors.New("failed to validate spec")
