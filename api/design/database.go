@@ -39,15 +39,6 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 		g.Description("The port used by the Postgres database for this node. Overrides the Postgres port set in the DatabaseSpec.")
 		g.Example(5432)
 	})
-	g.Attribute("storage_class", g.String, func() {
-		g.Description("The storage class to use for the database on this node. The possible values and defaults depend on the orchestrator.")
-		g.Example("host")
-		g.Example("loop_device")
-	})
-	g.Attribute("storage_size", g.String, func() {
-		g.Description("The size of the storage for this node in SI or IEC notation. Support for this value depends on the orchestrator and storage class.")
-		g.Example("500GiB")
-	})
 	g.Attribute("cpus", g.String, func() {
 		g.Description("The number of CPUs to allocate for the database on this node and to use for tuning Postgres. Defaults to the number of available CPUs on the host. Can include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be enforced depends on the orchestrator.")
 		g.Example("14")
@@ -205,12 +196,6 @@ var BackupScheduleSpec = g.Type("BackupScheduleSpec", func() {
 })
 
 var BackupConfigSpec = g.Type("BackupConfigSpec", func() {
-	g.Attribute("provider", g.String, func() {
-		g.Description("The backup provider for this backup configuration.")
-		g.Default("pgbackrest")
-		g.Enum("pgbackrest")
-		g.Example("pgbackrest")
-	})
 	g.Attribute("repositories", g.ArrayOf(BackupRepositorySpec), func() {
 		g.Description("The repositories for this backup configuration.")
 		g.MinLength(1)
@@ -295,12 +280,6 @@ var RestoreRepositorySpec = g.Type("RestoreRepositorySpec", func() {
 })
 
 var RestoreConfigSpec = g.Type("RestoreConfigSpec", func() {
-	g.Attribute("provider", g.String, func() {
-		g.Description("The backup provider for this restore configuration.")
-		g.Default("pgbackrest")
-		g.Enum("pgbackrest")
-		g.Example("pgbackrest")
-	})
 	g.Attribute("source_database_id", g.String, func() {
 		g.Description("The ID of the database to restore this database from.")
 		g.Example("6c8e43ee-26ea-47b8-a8f8-89897e0137bd")
@@ -355,19 +334,6 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 		g.Description("The port used by the Postgres database.")
 		g.Example(5432)
 	})
-	g.Attribute("deletion_protection", g.Boolean, func() {
-		g.Description("Prevents deletion when true.")
-		g.Example(true)
-	})
-	g.Attribute("storage_class", g.String, func() {
-		g.Description("The storage class to use for the database. The possible values and defaults depend on the orchestrator.")
-		g.Example("host")
-		g.Example("loop_device")
-	})
-	g.Attribute("storage_size", g.String, func() {
-		g.Description("The size of the storage in SI or IEC notation. Support for this value depends on the orchestrator and storage class.")
-		g.Example("500GiB")
-	})
 	g.Attribute("cpus", g.String, func() {
 		g.Description("The number of CPUs to allocate for the database and to use for tuning Postgres. Defaults to the number of available CPUs on the host. Can include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be enforced depends on the orchestrator.")
 		g.Example("14")
@@ -384,12 +350,6 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 	})
 	g.Attribute("database_users", g.ArrayOf(DatabaseUserSpec), func() {
 		g.Description("The users to create for this database.")
-	})
-	g.Attribute("features", g.MapOf(g.String, g.String), func() {
-		g.Description("The feature flags for this database.")
-		g.Example(map[string]string{
-			"some_feature": "enabled",
-		})
 	})
 	g.Attribute("backup_config", BackupConfigSpec, func() {
 		g.Description("The backup configuration for this database.")

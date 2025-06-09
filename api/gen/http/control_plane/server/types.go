@@ -139,9 +139,9 @@ type GetHostResponseBody struct {
 	// Current status of the host.
 	Status *HostStatusResponseBody `form:"status" json:"status" xml:"status"`
 	// The default PgEdge version for this host.
-	DefaultPgedgeVersion *PgEdgeVersionResponseBody `form:"default_pgedge_version" json:"default_pgedge_version" xml:"default_pgedge_version"`
+	DefaultPgedgeVersion *PgEdgeVersionResponseBody `form:"default_pgedge_version,omitempty" json:"default_pgedge_version,omitempty" xml:"default_pgedge_version,omitempty"`
 	// The PgEdge versions supported by this host.
-	SupportedPgedgeVersions []*PgEdgeVersionResponseBody `form:"supported_pgedge_versions" json:"supported_pgedge_versions" xml:"supported_pgedge_versions"`
+	SupportedPgedgeVersions []*PgEdgeVersionResponseBody `form:"supported_pgedge_versions,omitempty" json:"supported_pgedge_versions,omitempty" xml:"supported_pgedge_versions,omitempty"`
 }
 
 // DatabaseResponseAbbreviatedCollection is the type of the "control-plane"
@@ -1010,9 +1010,9 @@ type HostResponseBody struct {
 	// Current status of the host.
 	Status *HostStatusResponseBody `form:"status" json:"status" xml:"status"`
 	// The default PgEdge version for this host.
-	DefaultPgedgeVersion *PgEdgeVersionResponseBody `form:"default_pgedge_version" json:"default_pgedge_version" xml:"default_pgedge_version"`
+	DefaultPgedgeVersion *PgEdgeVersionResponseBody `form:"default_pgedge_version,omitempty" json:"default_pgedge_version,omitempty" xml:"default_pgedge_version,omitempty"`
 	// The PgEdge versions supported by this host.
-	SupportedPgedgeVersions []*PgEdgeVersionResponseBody `form:"supported_pgedge_versions" json:"supported_pgedge_versions" xml:"supported_pgedge_versions"`
+	SupportedPgedgeVersions []*PgEdgeVersionResponseBody `form:"supported_pgedge_versions,omitempty" json:"supported_pgedge_versions,omitempty" xml:"supported_pgedge_versions,omitempty"`
 }
 
 // HostCohortResponseBody is used to define fields on response body types.
@@ -1073,9 +1073,9 @@ type HostResponse struct {
 	// Current status of the host.
 	Status *HostStatusResponse `form:"status" json:"status" xml:"status"`
 	// The default PgEdge version for this host.
-	DefaultPgedgeVersion *PgEdgeVersionResponse `form:"default_pgedge_version" json:"default_pgedge_version" xml:"default_pgedge_version"`
+	DefaultPgedgeVersion *PgEdgeVersionResponse `form:"default_pgedge_version,omitempty" json:"default_pgedge_version,omitempty" xml:"default_pgedge_version,omitempty"`
 	// The PgEdge versions supported by this host.
-	SupportedPgedgeVersions []*PgEdgeVersionResponse `form:"supported_pgedge_versions" json:"supported_pgedge_versions" xml:"supported_pgedge_versions"`
+	SupportedPgedgeVersions []*PgEdgeVersionResponse `form:"supported_pgedge_versions,omitempty" json:"supported_pgedge_versions,omitempty" xml:"supported_pgedge_versions,omitempty"`
 }
 
 // HostCohortResponse is used to define fields on response body types.
@@ -1277,14 +1277,6 @@ type DatabaseSpecResponseBody struct {
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
 	// The port used by the Postgres database.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
-	// Prevents deletion when true.
-	DeletionProtection *bool `form:"deletion_protection,omitempty" json:"deletion_protection,omitempty" xml:"deletion_protection,omitempty"`
-	// The storage class to use for the database. The possible values and defaults
-	// depend on the orchestrator.
-	StorageClass *string `form:"storage_class,omitempty" json:"storage_class,omitempty" xml:"storage_class,omitempty"`
-	// The size of the storage in SI or IEC notation. Support for this value
-	// depends on the orchestrator and storage class.
-	StorageSize *string `form:"storage_size,omitempty" json:"storage_size,omitempty" xml:"storage_size,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
 	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
@@ -1298,8 +1290,6 @@ type DatabaseSpecResponseBody struct {
 	Nodes []*DatabaseNodeSpecResponseBody `form:"nodes" json:"nodes" xml:"nodes"`
 	// The users to create for this database.
 	DatabaseUsers []*DatabaseUserSpecResponseBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
-	// The feature flags for this database.
-	Features map[string]string `form:"features,omitempty" json:"features,omitempty" xml:"features,omitempty"`
 	// The backup configuration for this database.
 	BackupConfig *BackupConfigSpecResponseBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
 	// The restore configuration for this database.
@@ -1326,12 +1316,6 @@ type DatabaseNodeSpecResponseBody struct {
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
-	// The storage class to use for the database on this node. The possible values
-	// and defaults depend on the orchestrator.
-	StorageClass *string `form:"storage_class,omitempty" json:"storage_class,omitempty" xml:"storage_class,omitempty"`
-	// The size of the storage for this node in SI or IEC notation. Support for
-	// this value depends on the orchestrator and storage class.
-	StorageSize *string `form:"storage_size,omitempty" json:"storage_size,omitempty" xml:"storage_size,omitempty"`
 	// The number of CPUs to allocate for the database on this node and to use for
 	// tuning Postgres. Defaults to the number of available CPUs on the host. Can
 	// include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will
@@ -1357,8 +1341,6 @@ type DatabaseNodeSpecResponseBody struct {
 
 // BackupConfigSpecResponseBody is used to define fields on response body types.
 type BackupConfigSpecResponseBody struct {
-	// The backup provider for this backup configuration.
-	Provider string `form:"provider" json:"provider" xml:"provider"`
 	// The repositories for this backup configuration.
 	Repositories []*BackupRepositorySpecResponseBody `form:"repositories" json:"repositories" xml:"repositories"`
 	// The schedules for this backup configuration.
@@ -1428,8 +1410,6 @@ type BackupScheduleSpecResponseBody struct {
 // RestoreConfigSpecResponseBody is used to define fields on response body
 // types.
 type RestoreConfigSpecResponseBody struct {
-	// The backup provider for this restore configuration.
-	Provider string `form:"provider" json:"provider" xml:"provider"`
 	// The ID of the database to restore this database from.
 	SourceDatabaseID string `form:"source_database_id" json:"source_database_id" xml:"source_database_id"`
 	// The name of the node to restore this database from.
@@ -1561,14 +1541,6 @@ type DatabaseSpecRequestBody struct {
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
 	// The port used by the Postgres database.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
-	// Prevents deletion when true.
-	DeletionProtection *bool `form:"deletion_protection,omitempty" json:"deletion_protection,omitempty" xml:"deletion_protection,omitempty"`
-	// The storage class to use for the database. The possible values and defaults
-	// depend on the orchestrator.
-	StorageClass *string `form:"storage_class,omitempty" json:"storage_class,omitempty" xml:"storage_class,omitempty"`
-	// The size of the storage in SI or IEC notation. Support for this value
-	// depends on the orchestrator and storage class.
-	StorageSize *string `form:"storage_size,omitempty" json:"storage_size,omitempty" xml:"storage_size,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
 	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
@@ -1582,8 +1554,6 @@ type DatabaseSpecRequestBody struct {
 	Nodes []*DatabaseNodeSpecRequestBody `form:"nodes,omitempty" json:"nodes,omitempty" xml:"nodes,omitempty"`
 	// The users to create for this database.
 	DatabaseUsers []*DatabaseUserSpecRequestBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
-	// The feature flags for this database.
-	Features map[string]string `form:"features,omitempty" json:"features,omitempty" xml:"features,omitempty"`
 	// The backup configuration for this database.
 	BackupConfig *BackupConfigSpecRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
 	// The restore configuration for this database.
@@ -1610,12 +1580,6 @@ type DatabaseNodeSpecRequestBody struct {
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
-	// The storage class to use for the database on this node. The possible values
-	// and defaults depend on the orchestrator.
-	StorageClass *string `form:"storage_class,omitempty" json:"storage_class,omitempty" xml:"storage_class,omitempty"`
-	// The size of the storage for this node in SI or IEC notation. Support for
-	// this value depends on the orchestrator and storage class.
-	StorageSize *string `form:"storage_size,omitempty" json:"storage_size,omitempty" xml:"storage_size,omitempty"`
 	// The number of CPUs to allocate for the database on this node and to use for
 	// tuning Postgres. Defaults to the number of available CPUs on the host. Can
 	// include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will
@@ -1641,8 +1605,6 @@ type DatabaseNodeSpecRequestBody struct {
 
 // BackupConfigSpecRequestBody is used to define fields on request body types.
 type BackupConfigSpecRequestBody struct {
-	// The backup provider for this backup configuration.
-	Provider *string `form:"provider,omitempty" json:"provider,omitempty" xml:"provider,omitempty"`
 	// The repositories for this backup configuration.
 	Repositories []*BackupRepositorySpecRequestBody `form:"repositories,omitempty" json:"repositories,omitempty" xml:"repositories,omitempty"`
 	// The schedules for this backup configuration.
@@ -1710,8 +1672,6 @@ type BackupScheduleSpecRequestBody struct {
 
 // RestoreConfigSpecRequestBody is used to define fields on request body types.
 type RestoreConfigSpecRequestBody struct {
-	// The backup provider for this restore configuration.
-	Provider *string `form:"provider,omitempty" json:"provider,omitempty" xml:"provider,omitempty"`
 	// The ID of the database to restore this database from.
 	SourceDatabaseID *string `form:"source_database_id,omitempty" json:"source_database_id,omitempty" xml:"source_database_id,omitempty"`
 	// The name of the node to restore this database from.
@@ -1804,14 +1764,6 @@ type DatabaseSpecRequestBodyRequestBody struct {
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
 	// The port used by the Postgres database.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
-	// Prevents deletion when true.
-	DeletionProtection *bool `form:"deletion_protection,omitempty" json:"deletion_protection,omitempty" xml:"deletion_protection,omitempty"`
-	// The storage class to use for the database. The possible values and defaults
-	// depend on the orchestrator.
-	StorageClass *string `form:"storage_class,omitempty" json:"storage_class,omitempty" xml:"storage_class,omitempty"`
-	// The size of the storage in SI or IEC notation. Support for this value
-	// depends on the orchestrator and storage class.
-	StorageSize *string `form:"storage_size,omitempty" json:"storage_size,omitempty" xml:"storage_size,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
 	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
@@ -1825,8 +1777,6 @@ type DatabaseSpecRequestBodyRequestBody struct {
 	Nodes []*DatabaseNodeSpecRequestBodyRequestBody `form:"nodes,omitempty" json:"nodes,omitempty" xml:"nodes,omitempty"`
 	// The users to create for this database.
 	DatabaseUsers []*DatabaseUserSpecRequestBodyRequestBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
-	// The feature flags for this database.
-	Features map[string]string `form:"features,omitempty" json:"features,omitempty" xml:"features,omitempty"`
 	// The backup configuration for this database.
 	BackupConfig *BackupConfigSpecRequestBodyRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
 	// The restore configuration for this database.
@@ -1854,12 +1804,6 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
-	// The storage class to use for the database on this node. The possible values
-	// and defaults depend on the orchestrator.
-	StorageClass *string `form:"storage_class,omitempty" json:"storage_class,omitempty" xml:"storage_class,omitempty"`
-	// The size of the storage for this node in SI or IEC notation. Support for
-	// this value depends on the orchestrator and storage class.
-	StorageSize *string `form:"storage_size,omitempty" json:"storage_size,omitempty" xml:"storage_size,omitempty"`
 	// The number of CPUs to allocate for the database on this node and to use for
 	// tuning Postgres. Defaults to the number of available CPUs on the host. Can
 	// include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will
@@ -1886,8 +1830,6 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 // BackupConfigSpecRequestBodyRequestBody is used to define fields on request
 // body types.
 type BackupConfigSpecRequestBodyRequestBody struct {
-	// The backup provider for this backup configuration.
-	Provider *string `form:"provider,omitempty" json:"provider,omitempty" xml:"provider,omitempty"`
 	// The repositories for this backup configuration.
 	Repositories []*BackupRepositorySpecRequestBodyRequestBody `form:"repositories,omitempty" json:"repositories,omitempty" xml:"repositories,omitempty"`
 	// The schedules for this backup configuration.
@@ -1957,8 +1899,6 @@ type BackupScheduleSpecRequestBodyRequestBody struct {
 // RestoreConfigSpecRequestBodyRequestBody is used to define fields on request
 // body types.
 type RestoreConfigSpecRequestBodyRequestBody struct {
-	// The backup provider for this restore configuration.
-	Provider *string `form:"provider,omitempty" json:"provider,omitempty" xml:"provider,omitempty"`
 	// The ID of the database to restore this database from.
 	SourceDatabaseID *string `form:"source_database_id,omitempty" json:"source_database_id,omitempty" xml:"source_database_id,omitempty"`
 	// The name of the node to restore this database from.
@@ -2131,8 +2071,6 @@ func NewGetHostResponseBody(res *controlplane.Host) *GetHostResponseBody {
 		for i, val := range res.SupportedPgedgeVersions {
 			body.SupportedPgedgeVersions[i] = marshalControlplanePgEdgeVersionToPgEdgeVersionResponseBody(val)
 		}
-	} else {
-		body.SupportedPgedgeVersions = []*PgEdgeVersionResponseBody{}
 	}
 	return body
 }
@@ -3410,11 +3348,6 @@ func ValidateBackupConfigSpecRequestBody(body *BackupConfigSpecRequestBody) (err
 	if body.Repositories == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("repositories", "body"))
 	}
-	if body.Provider != nil {
-		if !(*body.Provider == "pgbackrest") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.provider", *body.Provider, []any{"pgbackrest"}))
-		}
-	}
 	if len(body.Repositories) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.repositories", body.Repositories, len(body.Repositories), 1, true))
 	}
@@ -3488,11 +3421,6 @@ func ValidateRestoreConfigSpecRequestBody(body *RestoreConfigSpecRequestBody) (e
 	}
 	if body.Repository == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
-	}
-	if body.Provider != nil {
-		if !(*body.Provider == "pgbackrest") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.provider", *body.Provider, []any{"pgbackrest"}))
-		}
 	}
 	if body.Repository != nil {
 		if err2 := ValidateRestoreRepositorySpecRequestBody(body.Repository); err2 != nil {
@@ -3642,11 +3570,6 @@ func ValidateBackupConfigSpecRequestBodyRequestBody(body *BackupConfigSpecReques
 	if body.Repositories == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("repositories", "body"))
 	}
-	if body.Provider != nil {
-		if !(*body.Provider == "pgbackrest") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.provider", *body.Provider, []any{"pgbackrest"}))
-		}
-	}
 	if len(body.Repositories) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.repositories", body.Repositories, len(body.Repositories), 1, true))
 	}
@@ -3720,11 +3643,6 @@ func ValidateRestoreConfigSpecRequestBodyRequestBody(body *RestoreConfigSpecRequ
 	}
 	if body.Repository == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
-	}
-	if body.Provider != nil {
-		if !(*body.Provider == "pgbackrest") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.provider", *body.Provider, []any{"pgbackrest"}))
-		}
 	}
 	if body.Repository != nil {
 		if err2 := ValidateRestoreRepositorySpecRequestBodyRequestBody(body.Repository); err2 != nil {

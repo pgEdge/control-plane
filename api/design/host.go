@@ -122,7 +122,5 @@ var Host = g.Type("Host", func() {
 		"cpus",
 		"memory",
 		"status",
-		"default_pgedge_version",
-		"supported_pgedge_versions",
 	)
 })

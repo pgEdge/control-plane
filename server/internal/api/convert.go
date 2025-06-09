@@ -75,8 +75,6 @@ func databaseNodesToAPI(nodes []*database.Node) []*api.DatabaseNodeSpec {
 			HostIds:         hostIDs,
 			PostgresVersion: utils.NillablePointerTo(node.PostgresVersion),
 			Port:            utils.NillablePointerTo(node.Port),
-			StorageClass:    utils.NillablePointerTo(node.StorageClass),
-			StorageSize:     utils.NillablePointerTo(humanizeBytes(node.StorageSizeBytes)),
 			Cpus:            utils.NillablePointerTo(humanizeCPUs(node.CPUs)),
 			Memory:          utils.NillablePointerTo(humanizeBytes(node.MemoryBytes)),
 			PostgresqlConf:  node.PostgreSQLConf,
@@ -139,7 +137,6 @@ func backupConfigToAPI(config *database.BackupConfig) *api.BackupConfigSpec {
 	}
 
 	return &api.BackupConfigSpec{
-		Provider:     string(config.Provider),
 		Repositories: repositories,
 		Schedules:    schedules,
 	}
@@ -150,7 +147,6 @@ func restoreConfigToAPI(config *database.RestoreConfig) *api.RestoreConfigSpec {
 		return nil
 	}
 	return &api.RestoreConfigSpec{
-		Provider:           string(config.Provider),
 		SourceDatabaseID:   config.SourceDatabaseID.String(),
 		SourceNodeName:     config.SourceNodeName,
 		SourceDatabaseName: config.SourceDatabaseName,
@@ -178,22 +174,18 @@ func restoreConfigToAPI(config *database.RestoreConfig) *api.RestoreConfigSpec {
 
 func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 	return &api.DatabaseSpec{
-		DatabaseName:       d.DatabaseName,
-		PostgresVersion:    utils.NillablePointerTo(d.PostgresVersion),
-		SpockVersion:       utils.NillablePointerTo(d.SpockVersion),
-		Port:               utils.NillablePointerTo(d.Port),
-		DeletionProtection: utils.NillablePointerTo(d.DeletionProtection),
-		StorageClass:       utils.NillablePointerTo(d.StorageClass),
-		StorageSize:        utils.NillablePointerTo(humanizeBytes(d.StorageSizeBytes)),
-		Cpus:               utils.NillablePointerTo(humanizeCPUs(d.CPUs)),
-		Memory:             utils.NillablePointerTo(humanizeBytes(d.MemoryBytes)),
-		Nodes:              databaseNodesToAPI(d.Nodes),
-		DatabaseUsers:      databaseUsersToAPI(d.DatabaseUsers),
-		Features:           d.Features,
-		BackupConfig:       backupConfigToAPI(d.BackupConfig),
-		RestoreConfig:      restoreConfigToAPI(d.RestoreConfig),
-		PostgresqlConf:     d.PostgreSQLConf,
-		ExtraVolumes:       extraVolumesToAPI(d.ExtraVolumes),
+		DatabaseName:    d.DatabaseName,
+		PostgresVersion: utils.NillablePointerTo(d.PostgresVersion),
+		SpockVersion:    utils.NillablePointerTo(d.SpockVersion),
+		Port:            utils.NillablePointerTo(d.Port),
+		Cpus:            utils.NillablePointerTo(humanizeCPUs(d.CPUs)),
+		Memory:          utils.NillablePointerTo(humanizeBytes(d.MemoryBytes)),
+		Nodes:           databaseNodesToAPI(d.Nodes),
+		DatabaseUsers:   databaseUsersToAPI(d.DatabaseUsers),
+		BackupConfig:    backupConfigToAPI(d.BackupConfig),
+		RestoreConfig:   restoreConfigToAPI(d.RestoreConfig),
+		PostgresqlConf:  d.PostgreSQLConf,
+		ExtraVolumes:    extraVolumesToAPI(d.ExtraVolumes),
 	}
 }
 
@@ -309,10 +301,6 @@ func instanceToAPI(instance *database.Instance) *api.Instance {
 func apiToDatabaseNodes(apiNodes []*api.DatabaseNodeSpec) ([]*database.Node, error) {
 	nodes := make([]*database.Node, len(apiNodes))
 	for i, apiNode := range apiNodes {
-		storageSize, err := parseBytes(apiNode.StorageSize)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse storage size: %w", err)
-		}
 		cpus, err := parseCPUs(apiNode.Cpus)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse CPUs: %w", err)
@@ -338,18 +326,16 @@ func apiToDatabaseNodes(apiNodes []*api.DatabaseNodeSpec) ([]*database.Node, err
 			return nil, fmt.Errorf("failed to parse restore config: %w", err)
 		}
 		nodes[i] = &database.Node{
-			Name:             apiNode.Name,
-			HostIDs:          hostIDs,
-			PostgresVersion:  utils.FromPointer(apiNode.PostgresVersion),
-			Port:             utils.FromPointer(apiNode.Port),
-			StorageClass:     utils.FromPointer(apiNode.StorageClass),
-			StorageSizeBytes: storageSize,
-			CPUs:             cpus,
-			MemoryBytes:      memory,
-			PostgreSQLConf:   apiNode.PostgresqlConf,
-			BackupConfig:     backupConfig,
-			RestoreConfig:    restoreConfig,
-			ExtraVolumes:     extraVolumesToDatabase(apiNode.ExtraVolumes),
+			Name:            apiNode.Name,
+			HostIDs:         hostIDs,
+			PostgresVersion: utils.FromPointer(apiNode.PostgresVersion),
+			Port:            utils.FromPointer(apiNode.Port),
+			CPUs:            cpus,
+			MemoryBytes:     memory,
+			PostgreSQLConf:  apiNode.PostgresqlConf,
+			BackupConfig:    backupConfig,
+			RestoreConfig:   restoreConfig,
+			ExtraVolumes:    extraVolumesToDatabase(apiNode.ExtraVolumes),
 		}
 	}
 	return nodes, nil
@@ -392,49 +378,49 @@ func apiToBackupConfig(apiConfig *api.BackupConfigSpec) (*database.BackupConfig,
 		}
 	}
 	return &database.BackupConfig{
-		Provider:     database.BackupProvider(apiConfig.Provider),
 		Repositories: repositories,
 		Schedules:    schedules,
 	}, nil
+}
+
+func apiRestoreToRepository(apiRepository *api.RestoreRepositorySpec) *pgbackrest.Repository {
+	if apiRepository == nil {
+		return nil
+	}
+	return &pgbackrest.Repository{
+		ID:             utils.FromPointer(apiRepository.ID),
+		Type:           pgbackrest.RepositoryType(apiRepository.Type),
+		S3Bucket:       utils.FromPointer(apiRepository.S3Bucket),
+		S3Region:       utils.FromPointer(apiRepository.S3Region),
+		S3Endpoint:     utils.FromPointer(apiRepository.S3Endpoint),
+		S3Key:          utils.FromPointer(apiRepository.S3Key),
+		S3KeySecret:    utils.FromPointer(apiRepository.S3KeySecret),
+		GCSBucket:      utils.FromPointer(apiRepository.GcsBucket),
+		GCSEndpoint:    utils.FromPointer(apiRepository.GcsEndpoint),
+		GCSKey:         utils.FromPointer(apiRepository.GcsKey),
+		AzureAccount:   utils.FromPointer(apiRepository.AzureAccount),
+		AzureContainer: utils.FromPointer(apiRepository.AzureContainer),
+		AzureEndpoint:  utils.FromPointer(apiRepository.AzureEndpoint),
+		AzureKey:       utils.FromPointer(apiRepository.AzureKey),
+		BasePath:       utils.FromPointer(apiRepository.BasePath),
+		CustomOptions:  apiRepository.CustomOptions,
+	}
 }
 
 func apiToRestoreConfig(apiConfig *api.RestoreConfigSpec) (*database.RestoreConfig, error) {
 	if apiConfig == nil {
 		return nil, nil
 	}
-	if apiConfig.Repository == nil {
-		return &database.RestoreConfig{
-			Provider: database.BackupProvider(apiConfig.Provider),
-		}, nil
-	}
 	databaseID, err := uuid.Parse(apiConfig.SourceDatabaseID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse database ID: %w", err)
 	}
 	return &database.RestoreConfig{
-		Provider:           database.BackupProvider(apiConfig.Provider),
 		SourceDatabaseID:   databaseID,
 		SourceNodeName:     apiConfig.SourceNodeName,
 		SourceDatabaseName: apiConfig.SourceDatabaseName,
 		RestoreOptions:     apiConfig.RestoreOptions,
-		Repository: &pgbackrest.Repository{
-			ID:             utils.FromPointer(apiConfig.Repository.ID),
-			Type:           pgbackrest.RepositoryType(apiConfig.Repository.Type),
-			S3Bucket:       utils.FromPointer(apiConfig.Repository.S3Bucket),
-			S3Region:       utils.FromPointer(apiConfig.Repository.S3Region),
-			S3Endpoint:     utils.FromPointer(apiConfig.Repository.S3Endpoint),
-			S3Key:          utils.FromPointer(apiConfig.Repository.S3Key),
-			S3KeySecret:    utils.FromPointer(apiConfig.Repository.S3KeySecret),
-			GCSBucket:      utils.FromPointer(apiConfig.Repository.GcsBucket),
-			GCSEndpoint:    utils.FromPointer(apiConfig.Repository.GcsEndpoint),
-			GCSKey:         utils.FromPointer(apiConfig.Repository.GcsKey),
-			AzureAccount:   utils.FromPointer(apiConfig.Repository.AzureAccount),
-			AzureContainer: utils.FromPointer(apiConfig.Repository.AzureContainer),
-			AzureEndpoint:  utils.FromPointer(apiConfig.Repository.AzureEndpoint),
-			AzureKey:       utils.FromPointer(apiConfig.Repository.AzureKey),
-			BasePath:       utils.FromPointer(apiConfig.Repository.BasePath),
-			CustomOptions:  apiConfig.Repository.CustomOptions,
-		},
+		Repository:         apiRestoreToRepository(apiConfig.Repository),
 	}, nil
 }
 
@@ -450,10 +436,6 @@ func apiToDatabaseSpec(id, tID *string, apiSpec *api.DatabaseSpec) (*database.Sp
 			return nil, fmt.Errorf("failed to parse tenant ID: %w", err)
 		}
 		tenantID = &parsedTenantID
-	}
-	storageSize, err := parseBytes(apiSpec.StorageSize)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse storage size: %w", err)
 	}
 	cpus, err := parseCPUs(apiSpec.Cpus)
 	if err != nil {
@@ -486,24 +468,20 @@ func apiToDatabaseSpec(id, tID *string, apiSpec *api.DatabaseSpec) (*database.Sp
 		return nil, fmt.Errorf("failed to parse restore config: %w", err)
 	}
 	return &database.Spec{
-		DatabaseID:         databaseID,
-		TenantID:           tenantID,
-		DatabaseName:       apiSpec.DatabaseName,
-		PostgresVersion:    utils.FromPointer(apiSpec.PostgresVersion),
-		SpockVersion:       utils.FromPointer(apiSpec.SpockVersion),
-		Port:               utils.FromPointer(apiSpec.Port),
-		DeletionProtection: utils.FromPointer(apiSpec.DeletionProtection),
-		StorageClass:       utils.FromPointer(apiSpec.StorageClass),
-		StorageSizeBytes:   storageSize,
-		CPUs:               cpus,
-		MemoryBytes:        memory,
-		Nodes:              nodes,
-		DatabaseUsers:      users,
-		Features:           apiSpec.Features,
-		BackupConfig:       backupConfig,
-		PostgreSQLConf:     apiSpec.PostgresqlConf,
-		RestoreConfig:      restoreConfig,
-		ExtraVolumes:       extraVolumesToDatabase(apiSpec.ExtraVolumes),
+		DatabaseID:      databaseID,
+		TenantID:        tenantID,
+		DatabaseName:    apiSpec.DatabaseName,
+		PostgresVersion: utils.FromPointer(apiSpec.PostgresVersion),
+		SpockVersion:    utils.FromPointer(apiSpec.SpockVersion),
+		Port:            utils.FromPointer(apiSpec.Port),
+		CPUs:            cpus,
+		MemoryBytes:     memory,
+		Nodes:           nodes,
+		DatabaseUsers:   users,
+		BackupConfig:    backupConfig,
+		PostgreSQLConf:  apiSpec.PostgresqlConf,
+		RestoreConfig:   restoreConfig,
+		ExtraVolumes:    extraVolumesToDatabase(apiSpec.ExtraVolumes),
 	}, nil
 }
 

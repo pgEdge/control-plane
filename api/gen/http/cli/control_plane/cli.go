@@ -450,7 +450,6 @@ Example:
       "id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
       "spec": {
          "backup_config": {
-            "provider": "pgbackrest",
             "repositories": [
                {
                   "azure_account": "pgedge-backups",
@@ -542,7 +541,6 @@ Example:
                "username": "admin"
             }
          ],
-         "deletion_protection": true,
          "extra_volumes": [
             {
                "destination_path": "/backups/container",
@@ -557,14 +555,10 @@ Example:
                "host_path": "/Users/user/backups/host"
             }
          ],
-         "features": {
-            "some_feature": "enabled"
-         },
          "memory": "500M",
          "nodes": [
             {
                "backup_config": {
-                  "provider": "pgbackrest",
                   "repositories": [
                      {
                         "azure_account": "pgedge-backups",
@@ -653,7 +647,6 @@ Example:
                   "max_connections": 1000
                },
                "restore_config": {
-                  "provider": "pgbackrest",
                   "repository": {
                      "azure_account": "pgedge-backups",
                      "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -682,13 +675,10 @@ Example:
                   "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
-               },
-               "storage_class": "loop_device",
-               "storage_size": "500GiB"
+               }
             },
             {
                "backup_config": {
-                  "provider": "pgbackrest",
                   "repositories": [
                      {
                         "azure_account": "pgedge-backups",
@@ -777,7 +767,6 @@ Example:
                   "max_connections": 1000
                },
                "restore_config": {
-                  "provider": "pgbackrest",
                   "repository": {
                      "azure_account": "pgedge-backups",
                      "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -806,13 +795,10 @@ Example:
                   "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
-               },
-               "storage_class": "loop_device",
-               "storage_size": "500GiB"
+               }
             },
             {
                "backup_config": {
-                  "provider": "pgbackrest",
                   "repositories": [
                      {
                         "azure_account": "pgedge-backups",
@@ -901,7 +887,6 @@ Example:
                   "max_connections": 1000
                },
                "restore_config": {
-                  "provider": "pgbackrest",
                   "repository": {
                      "azure_account": "pgedge-backups",
                      "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -930,9 +915,7 @@ Example:
                   "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
-               },
-               "storage_class": "loop_device",
-               "storage_size": "500GiB"
+               }
             }
          ],
          "port": 5432,
@@ -941,7 +924,6 @@ Example:
             "max_connections": 1000
          },
          "restore_config": {
-            "provider": "pgbackrest",
             "repository": {
                "azure_account": "pgedge-backups",
                "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -971,9 +953,7 @@ Example:
             "source_database_name": "northwind",
             "source_node_name": "n1"
          },
-         "spock_version": "4",
-         "storage_class": "loop_device",
-         "storage_size": "500GiB"
+         "spock_version": "4"
       },
       "tenant_id": "8210ec10-2dca-406c-ac4a-0661d2189954"
    }'
@@ -1003,7 +983,6 @@ Example:
     %[1]s control-plane update-database --body '{
       "spec": {
          "backup_config": {
-            "provider": "pgbackrest",
             "repositories": [
                {
                   "azure_account": "pgedge-backups",
@@ -1154,7 +1133,6 @@ Example:
                "username": "admin"
             }
          ],
-         "deletion_protection": true,
          "extra_volumes": [
             {
                "destination_path": "/backups/container",
@@ -1165,14 +1143,10 @@ Example:
                "host_path": "/Users/user/backups/host"
             }
          ],
-         "features": {
-            "some_feature": "enabled"
-         },
          "memory": "500M",
          "nodes": [
             {
                "backup_config": {
-                  "provider": "pgbackrest",
                   "repositories": [
                      {
                         "azure_account": "pgedge-backups",
@@ -1298,7 +1272,6 @@ Example:
                   "max_connections": 1000
                },
                "restore_config": {
-                  "provider": "pgbackrest",
                   "repository": {
                      "azure_account": "pgedge-backups",
                      "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -1327,13 +1300,10 @@ Example:
                   "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
-               },
-               "storage_class": "loop_device",
-               "storage_size": "500GiB"
+               }
             },
             {
                "backup_config": {
-                  "provider": "pgbackrest",
                   "repositories": [
                      {
                         "azure_account": "pgedge-backups",
@@ -1459,7 +1429,6 @@ Example:
                   "max_connections": 1000
                },
                "restore_config": {
-                  "provider": "pgbackrest",
                   "repository": {
                      "azure_account": "pgedge-backups",
                      "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -1488,13 +1457,10 @@ Example:
                   "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
-               },
-               "storage_class": "loop_device",
-               "storage_size": "500GiB"
+               }
             },
             {
                "backup_config": {
-                  "provider": "pgbackrest",
                   "repositories": [
                      {
                         "azure_account": "pgedge-backups",
@@ -1620,7 +1586,6 @@ Example:
                   "max_connections": 1000
                },
                "restore_config": {
-                  "provider": "pgbackrest",
                   "repository": {
                      "azure_account": "pgedge-backups",
                      "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -1649,13 +1614,10 @@ Example:
                   "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
-               },
-               "storage_class": "loop_device",
-               "storage_size": "500GiB"
+               }
             },
             {
                "backup_config": {
-                  "provider": "pgbackrest",
                   "repositories": [
                      {
                         "azure_account": "pgedge-backups",
@@ -1781,7 +1743,6 @@ Example:
                   "max_connections": 1000
                },
                "restore_config": {
-                  "provider": "pgbackrest",
                   "repository": {
                      "azure_account": "pgedge-backups",
                      "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -1810,9 +1771,7 @@ Example:
                   "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
-               },
-               "storage_class": "loop_device",
-               "storage_size": "500GiB"
+               }
             }
          ],
          "port": 5432,
@@ -1821,7 +1780,6 @@ Example:
             "max_connections": 1000
          },
          "restore_config": {
-            "provider": "pgbackrest",
             "repository": {
                "azure_account": "pgedge-backups",
                "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -1851,9 +1809,7 @@ Example:
             "source_database_name": "northwind",
             "source_node_name": "n1"
          },
-         "spock_version": "4",
-         "storage_class": "loop_device",
-         "storage_size": "500GiB"
+         "spock_version": "4"
       },
       "tenant_id": "8210ec10-2dca-406c-ac4a-0661d2189954"
    }' --database-id "02f1a7db-fca8-4521-b57a-2a375c1ced51" --force-update true
@@ -1942,7 +1898,6 @@ Perform an in-place restore one or more nodes using the given restore configurat
 Example:
     %[1]s control-plane restore-database --body '{
       "restore_config": {
-         "provider": "pgbackrest",
          "repository": {
             "azure_account": "pgedge-backups",
             "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
