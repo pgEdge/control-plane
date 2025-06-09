@@ -172,7 +172,12 @@ func (s *Service) CreateDatabase(ctx context.Context, req *api.CreateDatabaseReq
 		return nil, api.MakeInvalidInput(err)
 	}
 
-	err = s.ValidateVolumes(ctx, spec)
+	err = s.dbSvc.PopulateSpecDefaults(ctx, spec)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("failed to validate database spec: %w", err))
+	}
+
+	err = s.ValidateSpec(ctx, spec)
 	if err != nil {
 		return nil, api.MakeInvalidInput(fmt.Errorf("%w", err))
 	}
@@ -217,7 +222,12 @@ func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePay
 		return nil, api.MakeInvalidInput(err)
 	}
 
-	err = s.ValidateVolumes(ctx, spec)
+	err = s.dbSvc.PopulateSpecDefaults(ctx, spec)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("failed to validate database spec: %w", err))
+	}
+
+	err = s.ValidateSpec(ctx, spec)
 	if err != nil {
 		return nil, api.MakeInvalidInput(fmt.Errorf("%w", err))
 	}
@@ -435,6 +445,12 @@ func (s *Service) RestoreDatabase(ctx context.Context, req *api.RestoreDatabaseP
 	// Remove backup configuration from nodes that are being restored and
 	// persist the updated spec.
 	db.Spec.RemoveBackupConfigFrom(targetNodes...)
+
+	err = s.dbSvc.PopulateSpecDefaults(ctx, db.Spec)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("failed to validate database spec: %w", err))
+	}
+
 	db, err = s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateRestoring, db.Spec)
 	if err != nil {
 		return nil, fmt.Errorf("failed to persist db spec updates: %w", err)
@@ -487,7 +503,7 @@ func (s *Service) JoinCluster(ctx context.Context, token *api.ClusterJoinToken) 
 	return ErrAlreadyInitialized
 }
 
-func (s *Service) ValidateVolumes(ctx context.Context, spec *database.Spec) error {
+func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) error {
 	if spec == nil {
 		return errors.New("spec cannot be nil")
 	}
@@ -497,18 +513,18 @@ func (s *Service) ValidateVolumes(ctx context.Context, spec *database.Spec) erro
 		return nil
 	}
 
-	output := s.workflowSvc.ValidateVolumes(ctx, spec)
+	output := s.workflowSvc.ValidateSpec(ctx, spec)
 	if output == nil {
-		return errors.New("failed to validate volumes")
+		return errors.New("failed to validate spec")
 
 	}
 	if !output.Valid {
 		return fmt.Errorf(
-			"volume validation failed. Please ensure that the paths provided in 'extra_volumes' exist and are accessible on the host system.\nDetails: %s",
+			"spec validation failed. Please ensure all required fields in the provided spec are valid.\nDetails: %s",
 			strings.Join(output.Errors, " "),
 		)
 	}
-	s.logger.Info().Msg("Volume validation succeeded")
+	s.logger.Info().Msg("Spec validation succeeded")
 
 	return nil
 }

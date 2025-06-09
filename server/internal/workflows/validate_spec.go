@@ -15,7 +15,7 @@ type ValidateVolumesInput struct {
 	Spec       *database.Spec
 }
 
-func (w *Workflows) ValidateSpec(ctx workflow.Context, input *ValidateVolumesInput) (*activities.ValidateVolumesOutput, error) {
+func (w *Workflows) ValidateSpec(ctx workflow.Context, input *ValidateVolumesInput) (*activities.ValidateSpec, error) {
 	databaseID := input.DatabaseID
 	logger := workflow.Logger(ctx).With("database_id", databaseID.String())
 	logger.Info("Starting volume validation")
@@ -25,7 +25,7 @@ func (w *Workflows) ValidateSpec(ctx workflow.Context, input *ValidateVolumesInp
 		logger.Error("Failed to get node instances", "error", err)
 		return nil, fmt.Errorf("failed to get node instances: %w", err)
 	}
-	var instanceFutures []workflow.Future[*activities.ValidateVolumesOutput]
+	var instanceFutures []workflow.Future[*activities.ValidateSpec]
 	for _, nodeInstance := range nodeInstances {
 		for _, instance := range nodeInstance.Instances {
 			instanceFuture := w.Activities.ExecuteValidateVolumes(ctx, instance.HostID, &activities.ValidateVolumesInput{
@@ -52,12 +52,12 @@ func (w *Workflows) ValidateSpec(ctx workflow.Context, input *ValidateVolumesInp
 	}
 
 	if len(allErrors) > 0 {
-		return &activities.ValidateVolumesOutput{
+		return &activities.ValidateSpec{
 			Valid:  false,
 			Errors: allErrors,
 		}, fmt.Errorf("volume validation encountered %d issues", len(allErrors))
 	}
 
 	logger.Info("Volume validation succeeded")
-	return &activities.ValidateVolumesOutput{Valid: true}, nil
+	return &activities.ValidateSpec{Valid: true}, nil
 }

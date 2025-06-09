@@ -16,7 +16,7 @@ type ValidateVolumesInput struct {
 	Spec       *database.InstanceSpec `json:"spec"`
 }
 
-type ValidateVolumesOutput struct {
+type ValidateSpec struct {
 	Valid  bool     `json:"valid"`
 	Errors []string `json:"errors,omitempty"`
 }
@@ -25,22 +25,22 @@ func (a *Activities) ExecuteValidateVolumes(
 	ctx workflow.Context,
 	hostID uuid.UUID,
 	input *ValidateVolumesInput,
-) workflow.Future[*ValidateVolumesOutput] {
+) workflow.Future[*ValidateSpec] {
 	options := workflow.ActivityOptions{
 		Queue: workflow.Queue(hostID.String()),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
 	}
-	return workflow.ExecuteActivity[*ValidateVolumesOutput](ctx, options, a.ValidateVolumes, input)
+	return workflow.ExecuteActivity[*ValidateSpec](ctx, options, a.ValidateVolumes, input)
 }
 
-func (a *Activities) ValidateVolumes(ctx context.Context, input *ValidateVolumesInput) (*ValidateVolumesOutput, error) {
+func (a *Activities) ValidateVolumes(ctx context.Context, input *ValidateVolumesInput) (*ValidateSpec, error) {
 	logger := activity.Logger(ctx)
 
-	fail := func(err error, msg string) (*ValidateVolumesOutput, error) {
+	fail := func(err error, msg string) (*ValidateSpec, error) {
 		logger.Error(msg, "error", err)
-		return &ValidateVolumesOutput{
+		return &ValidateSpec{
 			Valid:  false,
 			Errors: []string{msg + ": " + err.Error()},
 		}, err
@@ -71,7 +71,7 @@ func (a *Activities) ValidateVolumes(ctx context.Context, input *ValidateVolumes
 	}
 
 	logger.Info("volume validation completed", "success", result.Success)
-	return &ValidateVolumesOutput{
+	return &ValidateSpec{
 		Valid: result.Success,
 	}, nil
 }
