@@ -360,7 +360,10 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		// Create a merged PostgreSQL configuration with node-level overrides
 		postgresqlConf := maps.Clone(s.PostgreSQLConf)
 		maps.Copy(node.PostgreSQLConf, postgresqlConf)
-		extrernalVolumes := slices.Clone(node.ExtraVolumes)
+		extraVolumes := s.ExtraVolumes
+		if len(node.ExtraVolumes) > 0 {
+			extraVolumes = node.ExtraVolumes
+		}
 
 		instances := make([]*InstanceSpec, len(node.HostIDs))
 		for hostIdx, hostID := range node.HostIDs {
@@ -388,7 +391,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				// cluster into this decision when we implement updates.
 				EnableBackups: backupConfig != nil && hostIdx == len(node.HostIDs)-1,
 				ClusterSize:   clusterSize,
-				ExtraVolumes:  extrernalVolumes,
+				ExtraVolumes:  extraVolumes,
 			}
 		}
 
