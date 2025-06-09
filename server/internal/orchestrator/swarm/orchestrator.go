@@ -30,7 +30,6 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/resource"
-	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 var defaultVersion = host.MustPgEdgeVersion("17", "4")
@@ -443,17 +442,11 @@ func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, 
 	return nil
 }
 
-func (o *Orchestrator) ValidateVolumes(ctx context.Context, spec *database.Spec) (*database.ValidationResult, error) {
-	var specVersion *host.PgEdgeVersion
-	if spec.PostgresVersion == "" || spec.SpockVersion == "" {
-		o.logger.Warn().Msg("PostgresVersion or SpockVersion not provided, using default version")
+func (o *Orchestrator) ValidateVolumes(ctx context.Context, spec *database.InstanceSpec) (*database.ValidationResult, error) {
+	specVersion := spec.PgEdgeVersion
+	if specVersion == nil {
+		o.logger.Warn().Msg("PostgresVersion not provided, using default version")
 		specVersion = defaultVersion
-	} else {
-		var err error
-		specVersion, err = host.NewPgEdgeVersion(spec.PostgresVersion, spec.SpockVersion)
-		if err != nil {
-			return nil, fmt.Errorf("invalid version: %w", err)
-		}
 	}
 
 	images, err := GetImages(o.cfg, specVersion)
@@ -464,7 +457,7 @@ func (o *Orchestrator) ValidateVolumes(ctx context.Context, spec *database.Spec)
 	var mounts []mount.Mount
 	var mountTargets []string
 	for _, vol := range spec.ExtraVolumes {
-		mounts = append(mounts, utils.BuildMount(vol.HostPath, vol.DestinationPath, false))
+		mounts = append(mounts, docker.BuildMount(vol.HostPath, vol.DestinationPath, false))
 		mountTargets = append(mountTargets, vol.DestinationPath)
 	}
 
@@ -513,8 +506,8 @@ func (o *Orchestrator) runVolumeValidationContainer(ctx context.Context, image s
 	}
 
 	// Stop the container gracefully
-	timeout := 5
-	if err := o.docker.ContainerStop(ctx, containerID, &timeout); err != nil {
+	timeoutSeconds := 5
+	if err := o.docker.ContainerStop(ctx, containerID, &timeoutSeconds); err != nil {
 		o.logger.Warn().Err(err).Msg("graceful stop failed")
 	}
 

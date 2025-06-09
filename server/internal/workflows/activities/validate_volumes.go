@@ -12,8 +12,8 @@ import (
 )
 
 type ValidateVolumesInput struct {
-	DatabaseID uuid.UUID      `json:"database_id"`
-	Spec       *database.Spec `json:"spec"`
+	DatabaseID uuid.UUID              `json:"database_id"`
+	Spec       *database.InstanceSpec `json:"spec"`
 }
 
 type ValidateVolumesOutput struct {
@@ -23,10 +23,11 @@ type ValidateVolumesOutput struct {
 
 func (a *Activities) ExecuteValidateVolumes(
 	ctx workflow.Context,
+	hostID uuid.UUID,
 	input *ValidateVolumesInput,
 ) workflow.Future[*ValidateVolumesOutput] {
 	options := workflow.ActivityOptions{
-		Queue: workflow.Queue(a.Config.HostID.String()),
+		Queue: workflow.Queue(hostID.String()),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},

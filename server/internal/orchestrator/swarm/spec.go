@@ -8,7 +8,7 @@ import (
 	"github.com/docker/docker/api/types/swarm"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
-	"github.com/pgEdge/control-plane/server/internal/utils"
+	"github.com/pgEdge/control-plane/server/internal/docker"
 )
 
 type Paths struct {
@@ -42,16 +42,16 @@ func DatabaseServiceSpec(
 	}
 
 	mounts := []mount.Mount{
-		utils.BuildMount(options.Paths.Configs, "/opt/pgedge/configs", true),
+		docker.BuildMount(options.Paths.Configs, "/opt/pgedge/configs", true),
 		// We're using a mount for the certificates instead of
 		// a secret because secrets can't be rotated without
 		// restarting the container.
-		utils.BuildMount(options.Paths.Certificates, "/opt/pgedge/certificates", true),
-		utils.BuildMount(options.Paths.Data, "/opt/pgedge/data", false),
+		docker.BuildMount(options.Paths.Certificates, "/opt/pgedge/certificates", true),
+		docker.BuildMount(options.Paths.Data, "/opt/pgedge/data", false),
 	}
 
 	for _, vol := range instance.ExtraVolumes {
-		mounts = append(mounts, utils.BuildMount(vol.HostPath, vol.DestinationPath, false))
+		mounts = append(mounts, docker.BuildMount(vol.HostPath, vol.DestinationPath, false))
 	}
 
 	return swarm.ServiceSpec{
