@@ -1,6 +1,7 @@
 package swarm
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -8,8 +9,12 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/cschleiden/go-workflows/workflow"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/go-connections/nat"
@@ -435,4 +440,80 @@ func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, 
 	}
 
 	return nil
+}
+
+func (o *Orchestrator) ValidateVolumes(ctx context.Context, spec *database.InstanceSpec) (*database.ValidationResult, error) {
+	specVersion := spec.PgEdgeVersion
+	if specVersion == nil {
+		o.logger.Warn().Msg("PostgresVersion not provided, using default version")
+		specVersion = defaultVersion
+	}
+
+	images, err := GetImages(o.cfg, specVersion)
+	if err != nil {
+		return nil, fmt.Errorf("image fetch error: %w", err)
+	}
+
+	var mounts []mount.Mount
+	var mountTargets []string
+	for _, vol := range spec.ExtraVolumes {
+		mounts = append(mounts, docker.BuildMount(vol.HostPath, vol.DestinationPath, false))
+		mountTargets = append(mountTargets, vol.DestinationPath)
+	}
+
+	cmd := buildVolumeCheckCommand(mountTargets)
+	output, err := o.runVolumeValidationContainer(ctx, images.PgEdgeImage, cmd, mounts)
+	if err != nil {
+		return nil, err
+	}
+
+	if strings.HasSuffix(output, "OK") {
+		return &database.ValidationResult{Success: true, Reason: "All volumes are valid"}, nil
+	}
+	return &database.ValidationResult{Success: false, Reason: output}, nil
+}
+
+func (o *Orchestrator) runVolumeValidationContainer(ctx context.Context, image string, cmd []string, mounts []mount.Mount) (string, error) {
+	// Start container
+	containerID, err := o.docker.ContainerRun(ctx, docker.ContainerRunOptions{
+		Config: &container.Config{
+			Image:      image,
+			Entrypoint: cmd,
+		},
+		Host: &container.HostConfig{
+			Mounts: mounts,
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to start container: %w", err)
+	}
+	// Ensure container is removed afterward
+	defer func() {
+		if err := o.docker.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true}); err != nil {
+			o.logger.Error().Err(err).Msg("container cleanup failed")
+		}
+	}()
+
+	// Wait for the container to complete
+	if err := o.docker.ContainerWait(ctx, containerID, container.WaitConditionNotRunning, 30*time.Second); err != nil {
+		return "", fmt.Errorf("container wait failed: %w", err)
+	}
+
+	// Capture logs
+	buf := new(bytes.Buffer)
+	if err := o.docker.ContainerLogs(ctx, buf, containerID, container.LogsOptions{ShowStdout: true}); err != nil {
+		return "", fmt.Errorf("log fetch failed: %w", err)
+	}
+
+	// Stop the container gracefully
+	timeoutSeconds := 5
+	if err := o.docker.ContainerStop(ctx, containerID, &timeoutSeconds); err != nil {
+		o.logger.Warn().Err(err).Msg("graceful stop failed")
+	}
+
+	return strings.TrimSpace(buf.String()), nil
+}
+
+func buildVolumeCheckCommand(mountTargets []string) []string {
+	return []string{"sh", "-c", fmt.Sprintf("for d in %s; do [ -d \"$d\" ] || { echo \"FAIL: $d not found\"; exit 1; }; done; echo OK", strings.Join(mountTargets, " "))}
 }

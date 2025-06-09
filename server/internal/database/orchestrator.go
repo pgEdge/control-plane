@@ -19,6 +19,11 @@ type InstanceResources struct {
 	Resources []*resource.ResourceData
 }
 
+type ValidationResult struct {
+	Success bool
+	Reason  string
+}
+
 func NewInstanceResources(instance *InstanceResource, resources []resource.Resource) (*InstanceResources, error) {
 	data := make([]*resource.ResourceData, len(resources))
 	for i, res := range resources {
@@ -83,4 +88,5 @@ type Orchestrator interface {
 	GenerateInstanceRestoreResources(spec *InstanceSpec, taskID uuid.UUID) (*InstanceResources, error)
 	GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID uuid.UUID) (*ConnectionInfo, error)
 	CreatePgBackRestBackup(ctx context.Context, w io.Writer, instanceID uuid.UUID, options *pgbackrest.BackupOptions) error
+	ValidateVolumes(ctx context.Context, spec *InstanceSpec) (*ValidationResult, error)
 }

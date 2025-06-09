@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -171,6 +172,16 @@ func (s *Service) CreateDatabase(ctx context.Context, req *api.CreateDatabaseReq
 		return nil, api.MakeInvalidInput(err)
 	}
 
+	err = s.dbSvc.PopulateSpecDefaults(ctx, spec)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("failed to validate database spec: %w", err))
+	}
+
+	err = s.ValidateSpec(ctx, spec)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("%w", err))
+	}
+
 	db, err := s.dbSvc.CreateDatabase(ctx, spec)
 	if errors.Is(err, database.ErrDatabaseAlreadyExists) {
 		return nil, api.MakeDatabaseAlreadyExists(err)
@@ -209,6 +220,16 @@ func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePay
 	spec, err := apiToDatabaseSpec(req.DatabaseID, req.Request.TenantID, req.Request.Spec)
 	if err != nil {
 		return nil, api.MakeInvalidInput(err)
+	}
+
+	err = s.dbSvc.PopulateSpecDefaults(ctx, spec)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("failed to validate database spec: %w", err))
+	}
+
+	err = s.ValidateSpec(ctx, spec)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("%w", err))
 	}
 
 	db, err := s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateModifying, spec)
@@ -424,6 +445,12 @@ func (s *Service) RestoreDatabase(ctx context.Context, req *api.RestoreDatabaseP
 	// Remove backup configuration from nodes that are being restored and
 	// persist the updated spec.
 	db.Spec.RemoveBackupConfigFrom(targetNodes...)
+
+	err = s.dbSvc.PopulateSpecDefaults(ctx, db.Spec)
+	if err != nil {
+		return nil, api.MakeInvalidInput(fmt.Errorf("failed to validate database spec: %w", err))
+	}
+
 	db, err = s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateRestoring, db.Spec)
 	if err != nil {
 		return nil, fmt.Errorf("failed to persist db spec updates: %w", err)
@@ -474,4 +501,25 @@ func (s *Service) InitCluster(ctx context.Context) (*api.ClusterJoinToken, error
 
 func (s *Service) JoinCluster(ctx context.Context, token *api.ClusterJoinToken) error {
 	return ErrAlreadyInitialized
+}
+
+func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) error {
+	if spec == nil {
+		return errors.New("spec cannot be nil")
+	}
+
+	output := s.workflowSvc.ValidateSpec(ctx, spec)
+	if output == nil {
+		return errors.New("failed to validate spec")
+
+	}
+	if !output.Valid {
+		return fmt.Errorf(
+			"spec validation failed. Please ensure all required fields in the provided spec are valid.\nDetails: %s",
+			strings.Join(output.Errors, " "),
+		)
+	}
+	s.logger.Info().Msg("Spec validation succeeded")
+
+	return nil
 }

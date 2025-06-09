@@ -42,10 +42,6 @@ func (s *Service) CreateDatabase(ctx context.Context, spec *Spec) (*Database, er
 		return nil, ErrDatabaseAlreadyExists
 	}
 
-	if err := s.populateSpecDefaults(ctx, spec); err != nil {
-		return nil, fmt.Errorf("failed to validate database spec: %w", err)
-	}
-
 	now := time.Now()
 	db := &Database{
 		DatabaseID: spec.DatabaseID,
@@ -86,9 +82,6 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 	}
 	if !DatabaseStateModifiable(currentDB.State) {
 		return nil, ErrDatabaseNotModifiable
-	}
-	if err := s.populateSpecDefaults(ctx, spec); err != nil {
-		return nil, fmt.Errorf("failed to validate database spec: %w", err)
 	}
 
 	instances, err := s.GetInstances(ctx, spec.DatabaseID)
@@ -314,7 +307,7 @@ func (s *Service) GetAllInstances(ctx context.Context) ([]*Instance, error) {
 	return instances, nil
 }
 
-func (s *Service) populateSpecDefaults(ctx context.Context, spec *Spec) error {
+func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 	var hostIDs []uuid.UUID
 	// First pass to build out hostID list
 	for _, node := range spec.Nodes {

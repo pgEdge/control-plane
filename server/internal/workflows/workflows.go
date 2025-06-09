@@ -28,6 +28,7 @@ func (w *Workflows) Register(work *worker.Worker) error {
 		work.RegisterWorkflow(w.ReconcileState),
 		work.RegisterWorkflow(w.RefreshCurrentState),
 		work.RegisterWorkflow(w.UpdateDatabase),
+		work.RegisterWorkflow(w.ValidateSpec),
 	}
 	return errors.Join(errs...)
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/api/types/system"
@@ -135,6 +136,14 @@ func (d *Docker) ContainerRemove(ctx context.Context, containerID string, opts c
 	err := d.client.ContainerRemove(ctx, containerID, opts)
 	if err != nil {
 		return fmt.Errorf("failed to remove container: %w", errTranslate(err))
+	}
+	return nil
+}
+
+func (d *Docker) ContainerStop(ctx context.Context, containerID string, timeoutSeconds *int) error {
+	err := d.client.ContainerStop(ctx, containerID, container.StopOptions{Timeout: timeoutSeconds})
+	if err != nil {
+		return fmt.Errorf("failed to stop container: %w", errTranslate(err))
 	}
 	return nil
 }
@@ -479,4 +488,13 @@ func errTranslate(err error) error {
 		return fmt.Errorf("%w: %s", ErrNotFound, err.Error())
 	}
 	return err
+}
+
+func BuildMount(source, target string, readOnly bool) mount.Mount {
+	return mount.Mount{
+		Type:     mount.TypeBind,
+		Source:   source,
+		Target:   target,
+		ReadOnly: readOnly,
+	}
 }
