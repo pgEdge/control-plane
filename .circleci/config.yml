@@ -12,7 +12,11 @@ commands:
             md5sum tools.mk >> /tmp/mod-checksums.txt
       - restore_cache:
           keys:
-            - v1-go-mod-{{ arch }}-{{ checksum "/tmp/mod-checksums.txt" }}
+            - v2-go-mod-{{ arch }}-{{ checksum "/tmp/mod-checksums.txt" }}
+            # Fallback to the most recently-generated cache if an exact match
+            # does not exist.
+            - v2-go-mod-
+            - v1-go-mod-
       - run:
           name: go mod download
           command: |
@@ -23,10 +27,11 @@ commands:
           name: Install tools
           command: make install-tools
       - save_cache:
-          key: v1-go-mod-{{ arch }}-{{ checksum "/tmp/mod-checksums.txt" }}
+          key: v2-go-mod-{{ arch }}-{{ checksum "/tmp/mod-checksums.txt" }}
           paths:
             - /home/circleci/go/pkg/mod
             - /home/circleci/go/bin
+            - /home/circleci/.cache/go-build
 jobs:
   test:
     docker:
