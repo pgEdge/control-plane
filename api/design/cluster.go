@@ -51,6 +51,7 @@ var ClusterJoinToken = g.Type("ClusterJoinToken", func() {
 var ClusterJoinRequest = g.Type("ClusterJoinRequest", func() {
 	g.Attribute("token", g.String, func() {
 		g.Description("Token to join the cluster.")
+		g.Pattern(`^PGEDGE-[\w]{64}-[\w]{32}$`)
 		g.Example("PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd")
 	})
 	g.Attribute("host_id", g.String, func() {
@@ -60,6 +61,8 @@ var ClusterJoinRequest = g.Type("ClusterJoinRequest", func() {
 	})
 	g.Attribute("hostname", g.String, func() {
 		g.Description("The hostname of the host that's joining the cluster.")
+		g.MinLength(3)
+		g.MaxLength(128)
 		g.Example("ip-10-1-0-113.ec2.internal")
 	})
 	g.Attribute("ipv4_address", g.String, func() {
@@ -124,5 +127,5 @@ var ClusterJoinOptions = g.Type("ClusterJoinOptions", func() {
 		g.Description("Credentials for the new host joining the cluster.")
 	})
 
-	g.Required("peer")
+	g.Required("peer", "credentials")
 })

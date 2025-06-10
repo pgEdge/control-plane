@@ -20,7 +20,7 @@ var ComponentStatus = g.Type("ComponentStatus", func() {
 		})
 	})
 
-	g.Required("error", "details")
+	g.Required("healthy")
 })
 
 var HostStatus = g.Type("HostStatus", func() {
@@ -85,7 +85,7 @@ var Host = g.Type("Host", func() {
 		g.Example("swarm")
 	})
 	g.Attribute("cohort", HostCohort, func() {
-		g.Description("The cohort that this host belongs to/")
+		g.Description("The cohort that this host belongs to.")
 	})
 	g.Attribute("hostname", g.String, func() {
 		g.Description("The hostname of this host.")
@@ -119,8 +119,6 @@ var Host = g.Type("Host", func() {
 		"orchestrator",
 		"hostname",
 		"ipv4_address",
-		"cpus",
-		"memory",
 		"status",
 	)
 })

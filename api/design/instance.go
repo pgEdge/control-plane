@@ -60,17 +60,18 @@ var InstancePostgresStatus = g.Type("InstancePostgresStatus", func() {
 var InstanceSubscription = g.Type("InstanceSubscription", func() {
 	g.Description("Status information for a Spock subscription.")
 	g.Attribute("provider_node", g.String, func() {
-		g.Example("n2")
 		g.Description("The Spock node name of the provider for this subscription.")
+		g.Pattern(nodeNamePattern)
+		g.Example("n2")
 	})
 	g.Attribute("name", g.String, func() {
-		g.Example("sub_n1n2")
 		g.Description("The name of the subscription.")
+		g.Example("sub_n1n2")
 	})
 	g.Attribute("status", g.String, func() {
+		g.Description("The current status of the subscription.")
 		g.Example("replicating")
 		g.Example("down")
-		g.Description("The current status of the subscription.")
 	})
 
 	g.Required("provider_node", "name", "status")

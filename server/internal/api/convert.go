@@ -21,8 +21,8 @@ func hostToAPI(h *host.Host) *api.Host {
 	components := make(map[string]*api.ComponentStatus, len(h.Status.Components))
 	for name, status := range h.Status.Components {
 		components[name] = &api.ComponentStatus{
-			Healthy: utils.PointerTo(status.Healthy),
-			Error:   status.Error,
+			Healthy: status.Healthy,
+			Error:   utils.PointerTo(status.Error),
 			Details: status.Details,
 		}
 	}
@@ -46,8 +46,8 @@ func hostToAPI(h *host.Host) *api.Host {
 		Orchestrator: string(h.Orchestrator),
 		Hostname:     h.Hostname,
 		Ipv4Address:  h.IPv4Address,
-		Cpus:         h.CPUs,
-		Memory:       humanizeBytes(h.MemBytes),
+		Cpus:         utils.NillablePointerTo(h.CPUs),
+		Memory:       utils.NillablePointerTo(humanizeBytes(h.MemBytes)),
 		Cohort:       cohort,
 		ID:           h.ID.String(),
 		DefaultPgedgeVersion: &api.PgEdgeVersion{

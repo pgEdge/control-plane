@@ -609,9 +609,7 @@ func (c *Client) BuildGetHostRequest(ctx context.Context, v any) (*http.Request,
 		if !ok {
 			return nil, goahttp.ErrInvalidType("control-plane", "get-host", "*controlplane.GetHostPayload", v)
 		}
-		if p.HostID != nil {
-			hostID = *p.HostID
-		}
+		hostID = p.HostID
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetHostControlPlanePath(hostID)}
 	req, err := http.NewRequest("GET", u.String(), nil)
@@ -738,9 +736,7 @@ func (c *Client) BuildRemoveHostRequest(ctx context.Context, v any) (*http.Reque
 		if !ok {
 			return nil, goahttp.ErrInvalidType("control-plane", "remove-host", "*controlplane.RemoveHostPayload", v)
 		}
-		if p.HostID != nil {
-			hostID = *p.HostID
-		}
+		hostID = p.HostID
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: RemoveHostControlPlanePath(hostID)}
 	req, err := http.NewRequest("DELETE", u.String(), nil)
@@ -1098,9 +1094,7 @@ func (c *Client) BuildGetDatabaseRequest(ctx context.Context, v any) (*http.Requ
 		if !ok {
 			return nil, goahttp.ErrInvalidType("control-plane", "get-database", "*controlplane.GetDatabasePayload", v)
 		}
-		if p.DatabaseID != nil {
-			databaseID = *p.DatabaseID
-		}
+		databaseID = p.DatabaseID
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetDatabaseControlPlanePath(databaseID)}
 	req, err := http.NewRequest("GET", u.String(), nil)
@@ -1229,9 +1223,7 @@ func (c *Client) BuildUpdateDatabaseRequest(ctx context.Context, v any) (*http.R
 		if !ok {
 			return nil, goahttp.ErrInvalidType("control-plane", "update-database", "*controlplane.UpdateDatabasePayload", v)
 		}
-		if p.DatabaseID != nil {
-			databaseID = *p.DatabaseID
-		}
+		databaseID = p.DatabaseID
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateDatabaseControlPlanePath(databaseID)}
 	req, err := http.NewRequest("POST", u.String(), nil)
@@ -1254,9 +1246,7 @@ func EncodeUpdateDatabaseRequest(encoder func(*http.Request) goahttp.Encoder) fu
 			return goahttp.ErrInvalidType("control-plane", "update-database", "*controlplane.UpdateDatabasePayload", v)
 		}
 		values := req.URL.Query()
-		if p.ForceUpdate != nil {
-			values.Add("force_update", fmt.Sprintf("%v", *p.ForceUpdate))
-		}
+		values.Add("force_update", fmt.Sprintf("%v", p.ForceUpdate))
 		req.URL.RawQuery = values.Encode()
 		body := NewUpdateDatabaseRequestBody(p)
 		if err := encoder(req).Encode(&body); err != nil {
@@ -2456,9 +2446,6 @@ func unmarshalClusterPeerResponseBodyToControlplaneClusterPeer(v *ClusterPeerRes
 // builds a value of type *controlplane.ClusterCredentials from a value of type
 // *ClusterCredentialsResponseBody.
 func unmarshalClusterCredentialsResponseBodyToControlplaneClusterCredentials(v *ClusterCredentialsResponseBody) *controlplane.ClusterCredentials {
-	if v == nil {
-		return nil
-	}
 	res := &controlplane.ClusterCredentials{
 		CaCert:     *v.CaCert,
 		ClientCert: *v.ClientCert,
@@ -2489,8 +2476,8 @@ func unmarshalHostResponseBodyToControlplaneHost(v *HostResponseBody) *controlpl
 		Orchestrator: *v.Orchestrator,
 		Hostname:     *v.Hostname,
 		Ipv4Address:  *v.Ipv4Address,
-		Cpus:         *v.Cpus,
-		Memory:       *v.Memory,
+		Cpus:         v.Cpus,
+		Memory:       v.Memory,
 	}
 	if v.Cohort != nil {
 		res.Cohort = unmarshalHostCohortResponseBodyToControlplaneHostCohort(v.Cohort)
@@ -2550,14 +2537,16 @@ func unmarshalHostStatusResponseBodyToControlplaneHostStatus(v *HostStatusRespon
 // *ComponentStatusResponseBody.
 func unmarshalComponentStatusResponseBodyToControlplaneComponentStatus(v *ComponentStatusResponseBody) *controlplane.ComponentStatus {
 	res := &controlplane.ComponentStatus{
-		Healthy: v.Healthy,
-		Error:   *v.Error,
+		Healthy: *v.Healthy,
+		Error:   v.Error,
 	}
-	res.Details = make(map[string]any, len(v.Details))
-	for key, val := range v.Details {
-		tk := key
-		tv := val
-		res.Details[tk] = tv
+	if v.Details != nil {
+		res.Details = make(map[string]any, len(v.Details))
+		for key, val := range v.Details {
+			tk := key
+			tv := val
+			res.Details[tk] = tv
+		}
 	}
 
 	return res
@@ -2586,8 +2575,8 @@ func unmarshalHostResponseToControlplaneHost(v *HostResponse) *controlplane.Host
 		Orchestrator: *v.Orchestrator,
 		Hostname:     *v.Hostname,
 		Ipv4Address:  *v.Ipv4Address,
-		Cpus:         *v.Cpus,
-		Memory:       *v.Memory,
+		Cpus:         v.Cpus,
+		Memory:       v.Memory,
 	}
 	if v.Cohort != nil {
 		res.Cohort = unmarshalHostCohortResponseToControlplaneHostCohort(v.Cohort)
@@ -2647,14 +2636,16 @@ func unmarshalHostStatusResponseToControlplaneHostStatus(v *HostStatusResponse) 
 // *ComponentStatusResponse.
 func unmarshalComponentStatusResponseToControlplaneComponentStatus(v *ComponentStatusResponse) *controlplane.ComponentStatus {
 	res := &controlplane.ComponentStatus{
-		Healthy: v.Healthy,
-		Error:   *v.Error,
+		Healthy: *v.Healthy,
+		Error:   v.Error,
 	}
-	res.Details = make(map[string]any, len(v.Details))
-	for key, val := range v.Details {
-		tk := key
-		tv := val
-		res.Details[tk] = tv
+	if v.Details != nil {
+		res.Details = make(map[string]any, len(v.Details))
+		for key, val := range v.Details {
+			tk := key
+			tv := val
+			res.Details[tk] = tv
+		}
 	}
 
 	return res
@@ -3063,9 +3054,6 @@ func unmarshalDatabaseUserSpecResponseToControlplaneviewsDatabaseUserSpecView(v 
 // type *DatabaseSpecRequestBody from a value of type
 // *controlplane.DatabaseSpec.
 func marshalControlplaneDatabaseSpecToDatabaseSpecRequestBody(v *controlplane.DatabaseSpec) *DatabaseSpecRequestBody {
-	if v == nil {
-		return nil
-	}
 	res := &DatabaseSpecRequestBody{
 		DatabaseName:    v.DatabaseName,
 		PostgresVersion: v.PostgresVersion,
@@ -3339,9 +3327,6 @@ func marshalControlplaneDatabaseUserSpecToDatabaseUserSpecRequestBody(v *control
 // type *controlplane.DatabaseSpec from a value of type
 // *DatabaseSpecRequestBody.
 func marshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecRequestBody) *controlplane.DatabaseSpec {
-	if v == nil {
-		return nil
-	}
 	res := &controlplane.DatabaseSpec{
 		DatabaseName:    v.DatabaseName,
 		PostgresVersion: v.PostgresVersion,
@@ -3614,9 +3599,6 @@ func marshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec(v *Databas
 // unmarshalTaskResponseBodyToControlplaneTask builds a value of type
 // *controlplane.Task from a value of type *TaskResponseBody.
 func unmarshalTaskResponseBodyToControlplaneTask(v *TaskResponseBody) *controlplane.Task {
-	if v == nil {
-		return nil
-	}
 	res := &controlplane.Task{
 		ParentID:    v.ParentID,
 		DatabaseID:  *v.DatabaseID,
@@ -3637,9 +3619,6 @@ func unmarshalTaskResponseBodyToControlplaneTask(v *TaskResponseBody) *controlpl
 // unmarshalDatabaseResponseBodyToControlplaneDatabase builds a value of type
 // *controlplane.Database from a value of type *DatabaseResponseBody.
 func unmarshalDatabaseResponseBodyToControlplaneDatabase(v *DatabaseResponseBody) *controlplane.Database {
-	if v == nil {
-		return nil
-	}
 	res := &controlplane.Database{
 		ID:        *v.ID,
 		TenantID:  v.TenantID,
@@ -4389,9 +4368,6 @@ func unmarshalDatabaseUserSpecResponseBodyToControlplaneviewsDatabaseUserSpecVie
 // value of type *DatabaseSpecRequestBodyRequestBody from a value of type
 // *controlplane.DatabaseSpec.
 func marshalControlplaneDatabaseSpecToDatabaseSpecRequestBodyRequestBody(v *controlplane.DatabaseSpec) *DatabaseSpecRequestBodyRequestBody {
-	if v == nil {
-		return nil
-	}
 	res := &DatabaseSpecRequestBodyRequestBody{
 		DatabaseName:    v.DatabaseName,
 		PostgresVersion: v.PostgresVersion,
@@ -4665,9 +4641,6 @@ func marshalControlplaneDatabaseUserSpecToDatabaseUserSpecRequestBodyRequestBody
 // value of type *controlplane.DatabaseSpec from a value of type
 // *DatabaseSpecRequestBodyRequestBody.
 func marshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecRequestBodyRequestBody) *controlplane.DatabaseSpec {
-	if v == nil {
-		return nil
-	}
 	res := &controlplane.DatabaseSpec{
 		DatabaseName:    v.DatabaseName,
 		PostgresVersion: v.PostgresVersion,

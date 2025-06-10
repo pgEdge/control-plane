@@ -8,6 +8,8 @@
 package views
 
 import (
+	"unicode/utf8"
+
 	goa "goa.design/goa/v3/pkg"
 )
 
@@ -171,9 +173,11 @@ type DatabaseNodeSpecView struct {
 	// port set in the DatabaseSpec.
 	Port *int
 	// The number of CPUs to allocate for the database on this node and to use for
-	// tuning Postgres. Defaults to the number of available CPUs on the host. Can
-	// include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will
-	// be enforced depends on the orchestrator.
+	// tuning Postgres. Can include the SI suffix 'm', e.g. '500m' for 500
+	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
+	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
+	// than are available on the host. Whether this limit will be enforced depends
+	// on the orchestrator.
 	Cpus *string
 	// The amount of memory in SI or IEC notation to allocate for the database on
 	// this node and to use for tuning Postgres. Defaults to the total available
@@ -781,6 +785,9 @@ func ValidateInstanceSubscriptionView(result *InstanceSubscriptionView) (err err
 	if result.Status == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("status", "result"))
 	}
+	if result.ProviderNode != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.provider_node", *result.ProviderNode, "n[0-9]+"))
+	}
 	return
 }
 
@@ -792,9 +799,19 @@ func ValidateDatabaseSpecView(result *DatabaseSpecView) (err error) {
 	if result.Nodes == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("nodes", "result"))
 	}
+	if result.DatabaseName != nil {
+		if utf8.RuneCountInString(*result.DatabaseName) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.database_name", *result.DatabaseName, utf8.RuneCountInString(*result.DatabaseName), 1, true))
+		}
+	}
+	if result.DatabaseName != nil {
+		if utf8.RuneCountInString(*result.DatabaseName) > 31 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.database_name", *result.DatabaseName, utf8.RuneCountInString(*result.DatabaseName), 31, false))
+		}
+	}
 	if result.PostgresVersion != nil {
-		if !(*result.PostgresVersion == "16" || *result.PostgresVersion == "17") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.postgres_version", *result.PostgresVersion, []any{"16", "17"}))
+		if !(*result.PostgresVersion == "15" || *result.PostgresVersion == "16" || *result.PostgresVersion == "17") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.postgres_version", *result.PostgresVersion, []any{"15", "16", "17"}))
 		}
 	}
 	if result.SpockVersion != nil {
@@ -802,12 +819,39 @@ func ValidateDatabaseSpecView(result *DatabaseSpecView) (err error) {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.spock_version", *result.SpockVersion, []any{"4"}))
 		}
 	}
+	if result.Port != nil {
+		if *result.Port < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("result.port", *result.Port, 1, true))
+		}
+	}
+	if result.Port != nil {
+		if *result.Port > 65535 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("result.port", *result.Port, 65535, false))
+		}
+	}
+	if result.Cpus != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.cpus", *result.Cpus, "^[0-9]+(\\.[0-9]{1,3}|m)?$"))
+	}
+	if result.Memory != nil {
+		if utf8.RuneCountInString(*result.Memory) > 16 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.memory", *result.Memory, utf8.RuneCountInString(*result.Memory), 16, false))
+		}
+	}
+	if len(result.Nodes) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.nodes", result.Nodes, len(result.Nodes), 1, true))
+	}
+	if len(result.Nodes) > 9 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.nodes", result.Nodes, len(result.Nodes), 9, false))
+	}
 	for _, e := range result.Nodes {
 		if e != nil {
 			if err2 := ValidateDatabaseNodeSpecView(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
+	}
+	if len(result.DatabaseUsers) > 16 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.database_users", result.DatabaseUsers, len(result.DatabaseUsers), 16, false))
 	}
 	for _, e := range result.DatabaseUsers {
 		if e != nil {
@@ -825,6 +869,12 @@ func ValidateDatabaseSpecView(result *DatabaseSpecView) (err error) {
 		if err2 := ValidateRestoreConfigSpecView(result.RestoreConfig); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
+	}
+	if len(result.PostgresqlConf) > 64 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.postgresql_conf", result.PostgresqlConf, len(result.PostgresqlConf), 64, false))
+	}
+	if len(result.ExtraVolumes) > 16 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.extra_volumes", result.ExtraVolumes, len(result.ExtraVolumes), 16, false))
 	}
 	for _, e := range result.ExtraVolumes {
 		if e != nil {
@@ -855,9 +905,30 @@ func ValidateDatabaseNodeSpecView(result *DatabaseNodeSpecView) (err error) {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.host_ids[*]", e, goa.FormatUUID))
 	}
 	if result.PostgresVersion != nil {
-		if !(*result.PostgresVersion == "16" || *result.PostgresVersion == "17") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.postgres_version", *result.PostgresVersion, []any{"16", "17"}))
+		if !(*result.PostgresVersion == "15" || *result.PostgresVersion == "16" || *result.PostgresVersion == "17") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.postgres_version", *result.PostgresVersion, []any{"15", "16", "17"}))
 		}
+	}
+	if result.Port != nil {
+		if *result.Port < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("result.port", *result.Port, 1, true))
+		}
+	}
+	if result.Port != nil {
+		if *result.Port > 65535 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("result.port", *result.Port, 65535, false))
+		}
+	}
+	if result.Cpus != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.cpus", *result.Cpus, "^[0-9]+(\\.[0-9]{1,3}|m)?$"))
+	}
+	if result.Memory != nil {
+		if utf8.RuneCountInString(*result.Memory) > 16 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.memory", *result.Memory, utf8.RuneCountInString(*result.Memory), 16, false))
+		}
+	}
+	if len(result.PostgresqlConf) > 64 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.postgresql_conf", result.PostgresqlConf, len(result.PostgresqlConf), 64, false))
 	}
 	if result.BackupConfig != nil {
 		if err2 := ValidateBackupConfigSpecView(result.BackupConfig); err2 != nil {
@@ -868,6 +939,9 @@ func ValidateDatabaseNodeSpecView(result *DatabaseNodeSpecView) (err error) {
 		if err2 := ValidateRestoreConfigSpecView(result.RestoreConfig); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
+	}
+	if len(result.ExtraVolumes) > 16 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.extra_volumes", result.ExtraVolumes, len(result.ExtraVolumes), 16, false))
 	}
 	for _, e := range result.ExtraVolumes {
 		if e != nil {
@@ -895,6 +969,9 @@ func ValidateBackupConfigSpecView(result *BackupConfigSpecView) (err error) {
 			}
 		}
 	}
+	if len(result.Schedules) > 32 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.schedules", result.Schedules, len(result.Schedules), 32, false))
+	}
 	for _, e := range result.Schedules {
 		if e != nil {
 			if err2 := ValidateBackupScheduleSpecView(e); err2 != nil {
@@ -911,15 +988,148 @@ func ValidateBackupRepositorySpecView(result *BackupRepositorySpecView) (err err
 	if result.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "result"))
 	}
+	if result.ID != nil {
+		if utf8.RuneCountInString(*result.ID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", *result.ID, utf8.RuneCountInString(*result.ID), 1, true))
+		}
+	}
+	if result.ID != nil {
+		if utf8.RuneCountInString(*result.ID) > 64 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", *result.ID, utf8.RuneCountInString(*result.ID), 64, false))
+		}
+	}
 	if result.Type != nil {
 		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure" || *result.Type == "posix" || *result.Type == "cifs") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.type", *result.Type, []any{"s3", "gcs", "azure", "posix", "cifs"}))
+		}
+	}
+	if result.S3Bucket != nil {
+		if utf8.RuneCountInString(*result.S3Bucket) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_bucket", *result.S3Bucket, utf8.RuneCountInString(*result.S3Bucket), 3, true))
+		}
+	}
+	if result.S3Bucket != nil {
+		if utf8.RuneCountInString(*result.S3Bucket) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_bucket", *result.S3Bucket, utf8.RuneCountInString(*result.S3Bucket), 63, false))
+		}
+	}
+	if result.S3Region != nil {
+		if utf8.RuneCountInString(*result.S3Region) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_region", *result.S3Region, utf8.RuneCountInString(*result.S3Region), 1, true))
+		}
+	}
+	if result.S3Region != nil {
+		if utf8.RuneCountInString(*result.S3Region) > 32 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_region", *result.S3Region, utf8.RuneCountInString(*result.S3Region), 32, false))
+		}
+	}
+	if result.S3Endpoint != nil {
+		if utf8.RuneCountInString(*result.S3Endpoint) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_endpoint", *result.S3Endpoint, utf8.RuneCountInString(*result.S3Endpoint), 3, true))
+		}
+	}
+	if result.S3Endpoint != nil {
+		if utf8.RuneCountInString(*result.S3Endpoint) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_endpoint", *result.S3Endpoint, utf8.RuneCountInString(*result.S3Endpoint), 128, false))
+		}
+	}
+	if result.S3Key != nil {
+		if utf8.RuneCountInString(*result.S3Key) < 16 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_key", *result.S3Key, utf8.RuneCountInString(*result.S3Key), 16, true))
+		}
+	}
+	if result.S3Key != nil {
+		if utf8.RuneCountInString(*result.S3Key) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_key", *result.S3Key, utf8.RuneCountInString(*result.S3Key), 128, false))
+		}
+	}
+	if result.S3KeySecret != nil {
+		if utf8.RuneCountInString(*result.S3KeySecret) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_key_secret", *result.S3KeySecret, utf8.RuneCountInString(*result.S3KeySecret), 128, false))
+		}
+	}
+	if result.GcsBucket != nil {
+		if utf8.RuneCountInString(*result.GcsBucket) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.gcs_bucket", *result.GcsBucket, utf8.RuneCountInString(*result.GcsBucket), 3, true))
+		}
+	}
+	if result.GcsBucket != nil {
+		if utf8.RuneCountInString(*result.GcsBucket) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.gcs_bucket", *result.GcsBucket, utf8.RuneCountInString(*result.GcsBucket), 63, false))
+		}
+	}
+	if result.GcsEndpoint != nil {
+		if utf8.RuneCountInString(*result.GcsEndpoint) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.gcs_endpoint", *result.GcsEndpoint, utf8.RuneCountInString(*result.GcsEndpoint), 3, true))
+		}
+	}
+	if result.GcsEndpoint != nil {
+		if utf8.RuneCountInString(*result.GcsEndpoint) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.gcs_endpoint", *result.GcsEndpoint, utf8.RuneCountInString(*result.GcsEndpoint), 128, false))
+		}
+	}
+	if result.GcsKey != nil {
+		if utf8.RuneCountInString(*result.GcsKey) > 1024 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.gcs_key", *result.GcsKey, utf8.RuneCountInString(*result.GcsKey), 1024, false))
+		}
+	}
+	if result.AzureAccount != nil {
+		if utf8.RuneCountInString(*result.AzureAccount) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.azure_account", *result.AzureAccount, utf8.RuneCountInString(*result.AzureAccount), 3, true))
+		}
+	}
+	if result.AzureAccount != nil {
+		if utf8.RuneCountInString(*result.AzureAccount) > 24 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.azure_account", *result.AzureAccount, utf8.RuneCountInString(*result.AzureAccount), 24, false))
+		}
+	}
+	if result.AzureContainer != nil {
+		if utf8.RuneCountInString(*result.AzureContainer) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.azure_container", *result.AzureContainer, utf8.RuneCountInString(*result.AzureContainer), 3, true))
+		}
+	}
+	if result.AzureContainer != nil {
+		if utf8.RuneCountInString(*result.AzureContainer) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.azure_container", *result.AzureContainer, utf8.RuneCountInString(*result.AzureContainer), 63, false))
+		}
+	}
+	if result.AzureEndpoint != nil {
+		if utf8.RuneCountInString(*result.AzureEndpoint) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.azure_endpoint", *result.AzureEndpoint, utf8.RuneCountInString(*result.AzureEndpoint), 3, true))
+		}
+	}
+	if result.AzureEndpoint != nil {
+		if utf8.RuneCountInString(*result.AzureEndpoint) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.azure_endpoint", *result.AzureEndpoint, utf8.RuneCountInString(*result.AzureEndpoint), 128, false))
+		}
+	}
+	if result.AzureKey != nil {
+		if utf8.RuneCountInString(*result.AzureKey) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.azure_key", *result.AzureKey, utf8.RuneCountInString(*result.AzureKey), 128, false))
+		}
+	}
+	if result.RetentionFull != nil {
+		if *result.RetentionFull < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("result.retention_full", *result.RetentionFull, 1, true))
+		}
+	}
+	if result.RetentionFull != nil {
+		if *result.RetentionFull > 9.999999e+06 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("result.retention_full", *result.RetentionFull, 9.999999e+06, false))
 		}
 	}
 	if result.RetentionFullType != nil {
 		if !(*result.RetentionFullType == "time" || *result.RetentionFullType == "count") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.retention_full_type", *result.RetentionFullType, []any{"time", "count"}))
 		}
+	}
+	if result.BasePath != nil {
+		if utf8.RuneCountInString(*result.BasePath) > 256 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.base_path", *result.BasePath, utf8.RuneCountInString(*result.BasePath), 256, false))
+		}
+	}
+	if len(result.CustomOptions) > 32 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.custom_options", result.CustomOptions, len(result.CustomOptions), 32, false))
 	}
 	return
 }
@@ -936,9 +1146,19 @@ func ValidateBackupScheduleSpecView(result *BackupScheduleSpecView) (err error) 
 	if result.CronExpression == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("cron_expression", "result"))
 	}
+	if result.ID != nil {
+		if utf8.RuneCountInString(*result.ID) > 64 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", *result.ID, utf8.RuneCountInString(*result.ID), 64, false))
+		}
+	}
 	if result.Type != nil {
 		if !(*result.Type == "full" || *result.Type == "incr") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.type", *result.Type, []any{"full", "incr"}))
+		}
+	}
+	if result.CronExpression != nil {
+		if utf8.RuneCountInString(*result.CronExpression) > 32 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.cron_expression", *result.CronExpression, utf8.RuneCountInString(*result.CronExpression), 32, false))
 		}
 	}
 	return
@@ -959,10 +1179,29 @@ func ValidateRestoreConfigSpecView(result *RestoreConfigSpecView) (err error) {
 	if result.Repository == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "result"))
 	}
+	if result.SourceDatabaseID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.source_database_id", *result.SourceDatabaseID, goa.FormatUUID))
+	}
+	if result.SourceNodeName != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.source_node_name", *result.SourceNodeName, "n[0-9]+"))
+	}
+	if result.SourceDatabaseName != nil {
+		if utf8.RuneCountInString(*result.SourceDatabaseName) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.source_database_name", *result.SourceDatabaseName, utf8.RuneCountInString(*result.SourceDatabaseName), 1, true))
+		}
+	}
+	if result.SourceDatabaseName != nil {
+		if utf8.RuneCountInString(*result.SourceDatabaseName) > 31 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.source_database_name", *result.SourceDatabaseName, utf8.RuneCountInString(*result.SourceDatabaseName), 31, false))
+		}
+	}
 	if result.Repository != nil {
 		if err2 := ValidateRestoreRepositorySpecView(result.Repository); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
+	}
+	if len(result.RestoreOptions) > 32 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.restore_options", result.RestoreOptions, len(result.RestoreOptions), 32, false))
 	}
 	return
 }
@@ -973,9 +1212,129 @@ func ValidateRestoreRepositorySpecView(result *RestoreRepositorySpecView) (err e
 	if result.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "result"))
 	}
+	if result.ID != nil {
+		if utf8.RuneCountInString(*result.ID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", *result.ID, utf8.RuneCountInString(*result.ID), 1, true))
+		}
+	}
+	if result.ID != nil {
+		if utf8.RuneCountInString(*result.ID) > 64 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", *result.ID, utf8.RuneCountInString(*result.ID), 64, false))
+		}
+	}
 	if result.Type != nil {
 		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure" || *result.Type == "posix" || *result.Type == "cifs") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.type", *result.Type, []any{"s3", "gcs", "azure", "posix", "cifs"}))
+		}
+	}
+	if result.S3Bucket != nil {
+		if utf8.RuneCountInString(*result.S3Bucket) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_bucket", *result.S3Bucket, utf8.RuneCountInString(*result.S3Bucket), 3, true))
+		}
+	}
+	if result.S3Bucket != nil {
+		if utf8.RuneCountInString(*result.S3Bucket) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_bucket", *result.S3Bucket, utf8.RuneCountInString(*result.S3Bucket), 63, false))
+		}
+	}
+	if result.S3Region != nil {
+		if utf8.RuneCountInString(*result.S3Region) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_region", *result.S3Region, utf8.RuneCountInString(*result.S3Region), 1, true))
+		}
+	}
+	if result.S3Region != nil {
+		if utf8.RuneCountInString(*result.S3Region) > 32 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_region", *result.S3Region, utf8.RuneCountInString(*result.S3Region), 32, false))
+		}
+	}
+	if result.S3Endpoint != nil {
+		if utf8.RuneCountInString(*result.S3Endpoint) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_endpoint", *result.S3Endpoint, utf8.RuneCountInString(*result.S3Endpoint), 3, true))
+		}
+	}
+	if result.S3Endpoint != nil {
+		if utf8.RuneCountInString(*result.S3Endpoint) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_endpoint", *result.S3Endpoint, utf8.RuneCountInString(*result.S3Endpoint), 128, false))
+		}
+	}
+	if result.S3Key != nil {
+		if utf8.RuneCountInString(*result.S3Key) < 16 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_key", *result.S3Key, utf8.RuneCountInString(*result.S3Key), 16, true))
+		}
+	}
+	if result.S3Key != nil {
+		if utf8.RuneCountInString(*result.S3Key) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_key", *result.S3Key, utf8.RuneCountInString(*result.S3Key), 128, false))
+		}
+	}
+	if result.S3KeySecret != nil {
+		if utf8.RuneCountInString(*result.S3KeySecret) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_key_secret", *result.S3KeySecret, utf8.RuneCountInString(*result.S3KeySecret), 128, false))
+		}
+	}
+	if result.GcsBucket != nil {
+		if utf8.RuneCountInString(*result.GcsBucket) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.gcs_bucket", *result.GcsBucket, utf8.RuneCountInString(*result.GcsBucket), 3, true))
+		}
+	}
+	if result.GcsBucket != nil {
+		if utf8.RuneCountInString(*result.GcsBucket) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.gcs_bucket", *result.GcsBucket, utf8.RuneCountInString(*result.GcsBucket), 63, false))
+		}
+	}
+	if result.GcsEndpoint != nil {
+		if utf8.RuneCountInString(*result.GcsEndpoint) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.gcs_endpoint", *result.GcsEndpoint, utf8.RuneCountInString(*result.GcsEndpoint), 3, true))
+		}
+	}
+	if result.GcsEndpoint != nil {
+		if utf8.RuneCountInString(*result.GcsEndpoint) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.gcs_endpoint", *result.GcsEndpoint, utf8.RuneCountInString(*result.GcsEndpoint), 128, false))
+		}
+	}
+	if result.GcsKey != nil {
+		if utf8.RuneCountInString(*result.GcsKey) > 1024 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.gcs_key", *result.GcsKey, utf8.RuneCountInString(*result.GcsKey), 1024, false))
+		}
+	}
+	if result.AzureAccount != nil {
+		if utf8.RuneCountInString(*result.AzureAccount) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.azure_account", *result.AzureAccount, utf8.RuneCountInString(*result.AzureAccount), 3, true))
+		}
+	}
+	if result.AzureAccount != nil {
+		if utf8.RuneCountInString(*result.AzureAccount) > 24 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.azure_account", *result.AzureAccount, utf8.RuneCountInString(*result.AzureAccount), 24, false))
+		}
+	}
+	if result.AzureContainer != nil {
+		if utf8.RuneCountInString(*result.AzureContainer) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.azure_container", *result.AzureContainer, utf8.RuneCountInString(*result.AzureContainer), 3, true))
+		}
+	}
+	if result.AzureContainer != nil {
+		if utf8.RuneCountInString(*result.AzureContainer) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.azure_container", *result.AzureContainer, utf8.RuneCountInString(*result.AzureContainer), 63, false))
+		}
+	}
+	if result.AzureEndpoint != nil {
+		if utf8.RuneCountInString(*result.AzureEndpoint) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.azure_endpoint", *result.AzureEndpoint, utf8.RuneCountInString(*result.AzureEndpoint), 3, true))
+		}
+	}
+	if result.AzureEndpoint != nil {
+		if utf8.RuneCountInString(*result.AzureEndpoint) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.azure_endpoint", *result.AzureEndpoint, utf8.RuneCountInString(*result.AzureEndpoint), 128, false))
+		}
+	}
+	if result.AzureKey != nil {
+		if utf8.RuneCountInString(*result.AzureKey) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.azure_key", *result.AzureKey, utf8.RuneCountInString(*result.AzureKey), 128, false))
+		}
+	}
+	if result.BasePath != nil {
+		if utf8.RuneCountInString(*result.BasePath) > 256 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.base_path", *result.BasePath, utf8.RuneCountInString(*result.BasePath), 256, false))
 		}
 	}
 	return
@@ -990,6 +1349,16 @@ func ValidateExtraVolumesSpecView(result *ExtraVolumesSpecView) (err error) {
 	if result.DestinationPath == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("destination_path", "result"))
 	}
+	if result.HostPath != nil {
+		if utf8.RuneCountInString(*result.HostPath) > 256 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.host_path", *result.HostPath, utf8.RuneCountInString(*result.HostPath), 256, false))
+		}
+	}
+	if result.DestinationPath != nil {
+		if utf8.RuneCountInString(*result.DestinationPath) > 256 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.destination_path", *result.DestinationPath, utf8.RuneCountInString(*result.DestinationPath), 256, false))
+		}
+	}
 	return
 }
 
@@ -1002,12 +1371,34 @@ func ValidateDatabaseUserSpecView(result *DatabaseUserSpecView) (err error) {
 	if result.Password == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("password", "result"))
 	}
+	if result.Username != nil {
+		if utf8.RuneCountInString(*result.Username) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.username", *result.Username, utf8.RuneCountInString(*result.Username), 1, true))
+		}
+	}
+	if result.Password != nil {
+		if utf8.RuneCountInString(*result.Password) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.password", *result.Password, utf8.RuneCountInString(*result.Password), 1, true))
+		}
+	}
+	if len(result.Attributes) > 16 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.attributes", result.Attributes, len(result.Attributes), 16, false))
+	}
+	if len(result.Roles) > 16 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.roles", result.Roles, len(result.Roles), 16, false))
+	}
 	return
 }
 
 // ValidateCreateDatabaseResponseView runs the validations defined on
 // CreateDatabaseResponseView.
 func ValidateCreateDatabaseResponseView(result *CreateDatabaseResponseView) (err error) {
+	if result.Task == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task", "result"))
+	}
+	if result.Database == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database", "result"))
+	}
 	if result.Task != nil {
 		if err2 := ValidateTaskView(result.Task); err2 != nil {
 			err = goa.MergeErrors(err, err2)
@@ -1070,6 +1461,12 @@ func ValidateTaskView(result *TaskView) (err error) {
 // ValidateUpdateDatabaseResponseView runs the validations defined on
 // UpdateDatabaseResponseView.
 func ValidateUpdateDatabaseResponseView(result *UpdateDatabaseResponseView) (err error) {
+	if result.Task == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task", "result"))
+	}
+	if result.Database == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database", "result"))
+	}
 	if result.Task != nil {
 		if err2 := ValidateTaskView(result.Task); err2 != nil {
 			err = goa.MergeErrors(err, err2)
@@ -1086,6 +1483,15 @@ func ValidateUpdateDatabaseResponseView(result *UpdateDatabaseResponseView) (err
 // ValidateRestoreDatabaseResponseView runs the validations defined on
 // RestoreDatabaseResponseView.
 func ValidateRestoreDatabaseResponseView(result *RestoreDatabaseResponseView) (err error) {
+	if result.Task == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task", "result"))
+	}
+	if result.NodeTasks == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("node_tasks", "result"))
+	}
+	if result.Database == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database", "result"))
+	}
 	if result.Task != nil {
 		if err2 := ValidateTaskView(result.Task); err2 != nil {
 			err = goa.MergeErrors(err, err2)
