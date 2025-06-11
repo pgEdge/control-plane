@@ -3,15 +3,14 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	goahttp "goa.design/goa/v3/http"
 
-	"github.com/pgEdge/control-plane/api"
-	controlplane "github.com/pgEdge/control-plane/api/gen/control_plane"
-	"github.com/pgEdge/control-plane/api/gen/http/control_plane/server"
+	v1 "github.com/pgEdge/control-plane/server/internal/api/v1"
 	"github.com/pgEdge/control-plane/server/internal/config"
 )
 
@@ -20,26 +19,26 @@ var _ do.Shutdownable = (*Server)(nil)
 type Server struct {
 	started bool
 	cfg     config.Config
-	svc     *DynamicService
+	v1Svc   *v1.Service
 	http    *httpServer
 	mqtt    *mqttServer
 	errCh   chan error
 }
 
-func NewServer(cfg config.Config, logger zerolog.Logger) *Server {
+func NewServer(
+	cfg config.Config,
+	logger zerolog.Logger,
+	v1Svc *v1.Service,
+) *Server {
 	mux := goahttp.NewMuxer()
 	mux.Handle("GET", "/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Link", `</openapi.json>; rel="service-desc"`)
+		// Direct clients to the v1 API spec by default
+		w.Header().Add("Link", `</v1/openapi.json>; rel="service-desc"`)
 		w.WriteHeader(204)
 	})
 
-	svc := NewDynamicService()
-	endpoints := controlplane.NewEndpoints(svc)
-	dec := goahttp.RequestDecoder
-	enc := goahttp.ResponseEncoder
-	fs := http.FS(api.OpenAPISpecFS)
-	svr := server.New(endpoints, mux, dec, enc, nil, nil, fs)
-	server.Mount(mux, svr)
+	// Mount all the v1 handlers
+	v1Svc.Mount(mux)
 
 	logger = logger.With().
 		Str("component", "api_server").
@@ -61,15 +60,34 @@ func NewServer(cfg config.Config, logger zerolog.Logger) *Server {
 
 	return &Server{
 		cfg:   cfg,
-		svc:   svc,
+		v1Svc: v1Svc,
 		http:  httpSvr,
 		mqtt:  mqttSvr,
 		errCh: make(chan error, 2),
 	}
 }
 
-func (s *Server) Serve(ctx context.Context, impl controlplane.Service) {
-	s.svc.UpdateImpl(impl)
+func (s *Server) ServePreInit(ctx context.Context) error {
+	if err := s.v1Svc.UsePreInitHandlers(); err != nil {
+		return fmt.Errorf("failed to set v1 api to use pre-init handlers: %w", err)
+	}
+
+	s.serve(ctx)
+
+	return nil
+}
+
+func (s *Server) ServePostInit(ctx context.Context) error {
+	if err := s.v1Svc.UsePostInitHandlers(); err != nil {
+		return fmt.Errorf("failed to set v1 api to use post-init handlers: %w", err)
+	}
+
+	s.serve(ctx)
+
+	return nil
+}
+
+func (s *Server) serve(ctx context.Context) {
 	if s.started {
 		return
 	}
