@@ -272,7 +272,7 @@ type RestoreConfigSpecView struct {
 	Repository *RestoreRepositorySpecView
 	// Additional options to use when restoring this database. If omitted, the
 	// database will be restored to the latest point in the given repository.
-	RestoreOptions []string
+	RestoreOptions map[string]string
 }
 
 // RestoreRepositorySpecView is a type that runs validations on a projected

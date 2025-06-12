@@ -117,7 +117,7 @@ func (s *Service) CreatePgBackRestBackup(
 	nodeName string,
 	backupFromStandby bool,
 	instances []*InstanceHost,
-	options *pgbackrest.BackupOptions,
+	backupOptions *pgbackrest.BackupOptions,
 ) (*task.Task, error) {
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
 		DatabaseID: databaseID,
@@ -132,7 +132,7 @@ func (s *Service) CreatePgBackRestBackup(
 		TaskID:            t.TaskID,
 		BackupFromStandby: backupFromStandby,
 		Instances:         instances,
-		Options:           options,
+		BackupOptions:     backupOptions,
 	}
 	instanceID := databaseID.String() + "-" + nodeName
 	err = s.createWorkflow(ctx, t, instanceID, s.workflows.CreatePgBackRestBackup, input)
@@ -182,7 +182,7 @@ func (s *Service) PgBackRestRestore(
 		TaskID:        t.TaskID,
 		Spec:          spec,
 		TargetNodes:   targetNodes,
-		RestoreConfig: restoreConfig,
+		RestoreConfig: restoreConfig.Clone(),
 		NodeTaskIDs:   nodeTaskIDs,
 	}
 	err = s.createWorkflow(ctx, t, databaseID.String(), s.workflows.PgBackRestRestore, input)

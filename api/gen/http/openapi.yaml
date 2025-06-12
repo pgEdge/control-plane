@@ -720,15 +720,14 @@ definitions:
                 additionalProperties:
                     type: string
                     example: Ut ut error consequuntur aut assumenda.
-            extra_options:
-                type: array
-                items:
+            backup_options:
+                type: object
+                description: Options for the backup.
+                example:
+                    archive-check: "n"
+                additionalProperties:
                     type: string
                     example: Est ut et autem in ut labore.
-                description: Extra options for the backup.
-                example:
-                    - --option1
-                    - --option2
             type:
                 type: string
                 description: The type of backup.
@@ -740,9 +739,8 @@ definitions:
         example:
             annotations:
                 key: value
-            extra_options:
-                - --option1
-                - --option2
+            backup_options:
+                archive-check: "n"
             type: full
         required:
             - type
@@ -1894,9 +1892,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -2015,9 +2013,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -2048,9 +2046,9 @@ definitions:
                         s3_region: us-east-1
                         type: s3
                     restore_options:
-                        - --set=20250505-153628F
-                        - --type=xid
-                        - --target=123456
+                        set: 20250505-153628F
+                        target: "123456"
+                        type: xid
                     source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                     source_database_name: northwind
                     source_node_name: n1
@@ -2418,9 +2416,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -2539,9 +2537,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -2572,9 +2570,9 @@ definitions:
                         s3_region: us-east-1
                         type: s3
                     restore_options:
-                        - --set=20250505-153628F
-                        - --type=xid
-                        - --target=123456
+                        set: 20250505-153628F
+                        target: "123456"
+                        type: xid
                     source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                     source_database_name: northwind
                     source_node_name: n1
@@ -3198,9 +3196,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -3319,9 +3317,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -3352,9 +3350,9 @@ definitions:
                         s3_region: us-east-1
                         type: s3
                     restore_options:
-                        - --set=20250505-153628F
-                        - --type=xid
-                        - --target=123456
+                        set: 20250505-153628F
+                        target: "123456"
+                        type: xid
                     source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                     source_database_name: northwind
                     source_node_name: n1
@@ -4639,9 +4637,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -4754,9 +4752,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -4869,9 +4867,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -4984,9 +4982,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -5017,9 +5015,9 @@ definitions:
                         s3_region: us-east-1
                         type: s3
                     restore_options:
-                        - --set=20250505-153628F
-                        - --type=xid
-                        - --target=123456
+                        set: 20250505-153628F
+                        target: "123456"
+                        type: xid
                     source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                     source_database_name: northwind
                     source_node_name: n1
@@ -5324,9 +5322,9 @@ definitions:
                                 s3_region: us-east-1
                                 type: s3
                             restore_options:
-                                - --set=20250505-153628F
-                                - --type=xid
-                                - --target=123456
+                                set: 20250505-153628F
+                                target: "123456"
+                                type: xid
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
@@ -5446,9 +5444,9 @@ definitions:
                                 s3_region: us-east-1
                                 type: s3
                             restore_options:
-                                - --set=20250505-153628F
-                                - --type=xid
-                                - --target=123456
+                                set: 20250505-153628F
+                                target: "123456"
+                                type: xid
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
@@ -5568,9 +5566,9 @@ definitions:
                                 s3_region: us-east-1
                                 type: s3
                             restore_options:
-                                - --set=20250505-153628F
-                                - --type=xid
-                                - --target=123456
+                                set: 20250505-153628F
+                                target: "123456"
+                                type: xid
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
@@ -5601,9 +5599,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -6024,9 +6022,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -6145,9 +6143,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -6178,9 +6176,9 @@ definitions:
                         s3_region: us-east-1
                         type: s3
                     restore_options:
-                        - --set=20250505-153628F
-                        - --type=xid
-                        - --target=123456
+                        set: 20250505-153628F
+                        target: "123456"
+                        type: xid
                     source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                     source_database_name: northwind
                     source_node_name: n1
@@ -6377,9 +6375,9 @@ definitions:
                     s3_region: us-east-1
                     type: s3
                 restore_options:
-                    - --set=20250505-153628F
-                    - --type=xid
-                    - --target=123456
+                    set: 20250505-153628F
+                    target: "123456"
+                    type: xid
                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                 source_database_name: northwind
                 source_node_name: n1
@@ -6648,9 +6646,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -6769,9 +6767,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -6890,9 +6888,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -7159,9 +7157,9 @@ definitions:
                         s3_region: us-east-1
                         type: s3
                     restore_options:
-                        - --set=20250505-153628F
-                        - --type=xid
-                        - --target=123456
+                        set: 20250505-153628F
+                        target: "123456"
+                        type: xid
                     source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                     source_database_name: northwind
                     source_node_name: n1
@@ -7280,9 +7278,9 @@ definitions:
                         s3_region: us-east-1
                         type: s3
                     restore_options:
-                        - --set=20250505-153628F
-                        - --type=xid
-                        - --target=123456
+                        set: 20250505-153628F
+                        target: "123456"
+                        type: xid
                     source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                     source_database_name: northwind
                     source_node_name: n1
@@ -7313,9 +7311,9 @@ definitions:
                     s3_region: us-east-1
                     type: s3
                 restore_options:
-                    - --set=20250505-153628F
-                    - --type=xid
-                    - --target=123456
+                    set: 20250505-153628F
+                    target: "123456"
+                    type: xid
                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                 source_database_name: northwind
                 source_node_name: n1
@@ -8113,15 +8111,15 @@ definitions:
             repository:
                 $ref: '#/definitions/RestoreRepositorySpec'
             restore_options:
-                type: array
-                items:
-                    type: string
-                    example: Enim quisquam.
+                type: object
                 description: Additional options to use when restoring this database. If omitted, the database will be restored to the latest point in the given repository.
                 example:
-                    - --set=20250505-153628F
-                    - --type=xid
-                    - --target=123456
+                    set: 20250505-153628F
+                    target: "123456"
+                    type: xid
+                additionalProperties:
+                    type: string
+                    example: Enim quisquam.
             source_database_id:
                 type: string
                 description: The ID of the database to restore this database from.
@@ -8155,9 +8153,9 @@ definitions:
                 s3_region: us-east-1
                 type: s3
             restore_options:
-                - --set=20250505-153628F
-                - --type=xid
-                - --target=123456
+                set: 20250505-153628F
+                target: "123456"
+                type: xid
             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
             source_database_name: northwind
             source_node_name: n1
@@ -8202,9 +8200,9 @@ definitions:
                     s3_region: us-east-1
                     type: s3
                 restore_options:
-                    - --set=20250505-153628F
-                    - --type=xid
-                    - --target=123456
+                    set: 20250505-153628F
+                    target: "123456"
+                    type: xid
                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                 source_database_name: northwind
                 source_node_name: n1
@@ -8537,9 +8535,9 @@ definitions:
                                 s3_region: us-east-1
                                 type: s3
                             restore_options:
-                                - --set=20250505-153628F
-                                - --type=xid
-                                - --target=123456
+                                set: 20250505-153628F
+                                target: "123456"
+                                type: xid
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
@@ -8659,9 +8657,9 @@ definitions:
                                 s3_region: us-east-1
                                 type: s3
                             restore_options:
-                                - --set=20250505-153628F
-                                - --type=xid
-                                - --target=123456
+                                set: 20250505-153628F
+                                target: "123456"
+                                type: xid
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
@@ -8781,9 +8779,9 @@ definitions:
                                 s3_region: us-east-1
                                 type: s3
                             restore_options:
-                                - --set=20250505-153628F
-                                - --type=xid
-                                - --target=123456
+                                set: 20250505-153628F
+                                target: "123456"
+                                type: xid
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
@@ -8814,9 +8812,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -9351,9 +9349,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -9448,9 +9446,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -9545,9 +9543,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -9642,9 +9640,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
@@ -9675,9 +9673,9 @@ definitions:
                         s3_region: us-east-1
                         type: s3
                     restore_options:
-                        - --set=20250505-153628F
-                        - --type=xid
-                        - --target=123456
+                        set: 20250505-153628F
+                        target: "123456"
+                        type: xid
                     source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                     source_database_name: northwind
                     source_node_name: n1
@@ -9982,9 +9980,9 @@ definitions:
                                 s3_region: us-east-1
                                 type: s3
                             restore_options:
-                                - --set=20250505-153628F
-                                - --type=xid
-                                - --target=123456
+                                set: 20250505-153628F
+                                target: "123456"
+                                type: xid
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
@@ -10104,9 +10102,9 @@ definitions:
                                 s3_region: us-east-1
                                 type: s3
                             restore_options:
-                                - --set=20250505-153628F
-                                - --type=xid
-                                - --target=123456
+                                set: 20250505-153628F
+                                target: "123456"
+                                type: xid
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
@@ -10226,9 +10224,9 @@ definitions:
                                 s3_region: us-east-1
                                 type: s3
                             restore_options:
-                                - --set=20250505-153628F
-                                - --type=xid
-                                - --target=123456
+                                set: 20250505-153628F
+                                target: "123456"
+                                type: xid
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
@@ -10259,9 +10257,9 @@ definitions:
                             s3_region: us-east-1
                             type: s3
                         restore_options:
-                            - --set=20250505-153628F
-                            - --type=xid
-                            - --target=123456
+                            set: 20250505-153628F
+                            target: "123456"
+                            type: xid
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1

@@ -16,9 +16,11 @@ var BackupOptions = g.Type("BackupOptions", func() {
 			"key": "value",
 		})
 	})
-	g.Attribute("extra_options", g.ArrayOf(g.String), func() {
-		g.Description("Extra options for the backup.")
-		g.Example([]string{"--option1", "--option2"})
+	g.Attribute("backup_options", g.MapOf(g.String, g.String), func() {
+		g.Description("Options for the backup.")
+		g.Example(map[string]string{
+			"archive-check": "n",
+		})
 	})
 
 	g.Required("type")

@@ -104,8 +104,8 @@ type BackupOptions struct {
 	Type string
 	// Annotations for the backup.
 	Annotations map[string]string
-	// Extra options for the backup.
-	ExtraOptions []string
+	// Options for the backup.
+	BackupOptions map[string]string
 }
 
 type BackupRepositorySpec struct {
@@ -578,7 +578,7 @@ type RestoreConfigSpec struct {
 	Repository *RestoreRepositorySpec
 	// Additional options to use when restoring this database. If omitted, the
 	// database will be restored to the latest point in the given repository.
-	RestoreOptions []string
+	RestoreOptions map[string]string
 }
 
 // RestoreDatabasePayload is the payload type of the control-plane service
@@ -1320,9 +1320,11 @@ func transformControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpec(v *contr
 		res.Repository = transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec(v.Repository)
 	}
 	if v.RestoreOptions != nil {
-		res.RestoreOptions = make([]string, len(v.RestoreOptions))
-		for i, val := range v.RestoreOptions {
-			res.RestoreOptions[i] = val
+		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
+		for key, val := range v.RestoreOptions {
+			tk := key
+			tv := val
+			res.RestoreOptions[tk] = tv
 		}
 	}
 
@@ -1609,9 +1611,11 @@ func transformRestoreConfigSpecToControlplaneviewsRestoreConfigSpecView(v *Resto
 		res.Repository = transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView(v.Repository)
 	}
 	if v.RestoreOptions != nil {
-		res.RestoreOptions = make([]string, len(v.RestoreOptions))
-		for i, val := range v.RestoreOptions {
-			res.RestoreOptions[i] = val
+		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
+		for key, val := range v.RestoreOptions {
+			tk := key
+			tv := val
+			res.RestoreOptions[tk] = tv
 		}
 	}
 

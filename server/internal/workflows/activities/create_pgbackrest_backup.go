@@ -16,10 +16,10 @@ import (
 )
 
 type CreatePgBackRestBackupInput struct {
-	DatabaseID uuid.UUID                 `json:"database_id"`
-	InstanceID uuid.UUID                 `json:"instance_id"`
-	TaskID     uuid.UUID                 `json:"task_id"`
-	Options    *pgbackrest.BackupOptions `json:"options"`
+	DatabaseID    uuid.UUID                 `json:"database_id"`
+	InstanceID    uuid.UUID                 `json:"instance_id"`
+	TaskID        uuid.UUID                 `json:"task_id"`
+	BackupOptions *pgbackrest.BackupOptions `json:"backup_options"`
 }
 
 type CreatePgBackRestBackupOutput struct{}
@@ -85,7 +85,7 @@ func (a *Activities) CreatePgBackRestBackup(ctx context.Context, input *CreatePg
 	taskLogWriter := task.NewTaskLogWriter(ctx, taskSvc, input.DatabaseID, input.TaskID)
 	defer taskLogWriter.Close()
 
-	err = orch.CreatePgBackRestBackup(ctx, taskLogWriter, input.InstanceID, input.Options)
+	err = orch.CreatePgBackRestBackup(ctx, taskLogWriter, input.InstanceID, input.BackupOptions)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pgBackRest backup: %w", err)
 	}

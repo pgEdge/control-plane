@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"net/netip"
 	"path"
 	"path/filepath"
@@ -353,14 +354,19 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate instance resources: %w", err)
 	}
+
+	var restoreOptions map[string]string
+	if spec.RestoreConfig != nil && spec.RestoreConfig.RestoreOptions != nil {
+		restoreOptions = maps.Clone(spec.RestoreConfig.RestoreOptions)
+	}
 	restoreResource, err := resource.ToResourceData(&PgBackRestRestore{
-		DatabaseID: spec.DatabaseID,
-		HostID:     spec.HostID,
-		InstanceID: spec.InstanceID,
-		TaskID:     taskID,
-		DataDirID:  spec.InstanceID.String() + "-data",
-		NodeName:   spec.NodeName,
-		Options:    spec.RestoreConfig.RestoreOptions,
+		DatabaseID:     spec.DatabaseID,
+		HostID:         spec.HostID,
+		InstanceID:     spec.InstanceID,
+		TaskID:         taskID,
+		DataDirID:      spec.InstanceID.String() + "-data",
+		NodeName:       spec.NodeName,
+		RestoreOptions: restoreOptions,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert restore resource to resource data: %w", err)

@@ -443,9 +443,10 @@ func generatePatroniConfig(
 	}
 
 	if spec.RestoreConfig != nil && spec.RestoreConfig.Provider == database.BackupProviderPgBackRest {
+		restoreOptions := utils.BuildOptionArgs(spec.RestoreConfig.RestoreOptions)
 		cfg.Bootstrap.Method = utils.PointerTo(patroni.BootstrapMethodNameRestore)
 		cfg.Bootstrap.Restore = &patroni.BootstrapMethodConf{
-			Command:                  utils.PointerTo(PgBackRestRestoreCmd("restore", spec.RestoreConfig.RestoreOptions...).String()),
+			Command:                  utils.PointerTo(PgBackRestRestoreCmd("restore", restoreOptions...).String()),
 			NoParams:                 utils.PointerTo(true),
 			KeepExistingRecoveryConf: utils.PointerTo(true),
 		}
