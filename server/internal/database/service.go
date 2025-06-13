@@ -33,7 +33,7 @@ func NewService(orchestrator Orchestrator, store *Store, hostSvc *host.Service) 
 
 func (s *Service) CreateDatabase(ctx context.Context, spec *Spec) (*Database, error) {
 	if spec.DatabaseID == uuid.Nil {
-		spec.DatabaseID = uuid.New()
+		return nil, fmt.Errorf("DatabaseID must be set before creating a Database")
 	}
 	specExists, err := s.store.Spec.ExistsByKey(spec.DatabaseID).Exec(ctx)
 	if err != nil {
