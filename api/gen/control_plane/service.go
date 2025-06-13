@@ -18,7 +18,7 @@ import (
 type Service interface {
 	// Initializes a new cluster.
 	InitCluster(context.Context) (res *ClusterJoinToken, err error)
-	// Join this host to an existing cluster.
+	// Joins this host to an existing cluster.
 	JoinCluster(context.Context, *ClusterJoinToken) (err error)
 	// Gets the join token for this cluster.
 	GetJoinToken(context.Context) (res *ClusterJoinToken, err error)
@@ -53,7 +53,7 @@ type Service interface {
 	// Perform an in-place restore one or more nodes using the given restore
 	// configuration.
 	RestoreDatabase(context.Context, *RestoreDatabasePayload) (res *RestoreDatabaseResponse, err error)
-	// Returns version information for the Control Plane server.
+	// Returns version information for this Control Plane server.
 	GetVersion(context.Context) (res *VersionInfo, err error)
 }
 

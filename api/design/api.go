@@ -43,36 +43,63 @@ var _ = g.API("control-plane", func() {
 })
 
 var _ = g.Service("control-plane", func() {
+	g.HTTP(func() {
+		g.Meta("openapi:tag:Cluster:name", "Cluster")
+		g.Meta("openapi:tag:Cluster:x-displayName", "Cluster")
+		g.Meta("openapi:tag:Cluster:description", "Cluster operations")
+
+		g.Meta("openapi:tag:Host:name", "Host")
+		g.Meta("openapi:tag:Host:x-displayName", "Hosts")
+		g.Meta("openapi:tag:Host:description", "Host operations")
+
+		g.Meta("openapi:tag:Database:name", "Database")
+		g.Meta("openapi:tag:Database:x-displayName", "Databases")
+		g.Meta("openapi:tag:Database:description", "Database operations")
+
+		g.Meta("openapi:tag:System:name", "System")
+		g.Meta("openapi:tag:System:x-displayName", "System")
+		g.Meta("openapi:tag:System:description", "System operations")
+	})
+
 	g.Error("server_error")
 
 	g.Method("init-cluster", func() {
 		g.Description("Initializes a new cluster.")
+		g.Meta("openapi:summary", "Initialize cluster")
 		g.Result(ClusterJoinToken)
 		g.Error("cluster_already_initialized")
 
 		g.HTTP(func() {
 			g.GET("/cluster/init")
+
+			g.Meta("openapi:tag:Cluster")
 		})
 	})
 
 	g.Method("join-cluster", func() {
-		g.Description("Join this host to an existing cluster.")
+		g.Description("Joins this host to an existing cluster.")
+		g.Meta("openapi:summary", "Join cluster")
 		g.Payload(ClusterJoinToken)
 		g.Error("cluster_already_initialized")
 		g.Error("invalid_join_token")
 
 		g.HTTP(func() {
 			g.POST("/cluster/join")
+
+			g.Meta("openapi:tag:Cluster")
 		})
 	})
 
 	g.Method("get-join-token", func() {
 		g.Description("Gets the join token for this cluster.")
+		g.Meta("openapi:summary", "Get cluster join token")
 		g.Result(ClusterJoinToken)
 		g.Error("cluster_not_initialized")
 
 		g.HTTP(func() {
 			g.GET("/cluster/join-token")
+
+			g.Meta("openapi:tag:Cluster")
 		})
 	})
 
@@ -91,26 +118,33 @@ var _ = g.Service("control-plane", func() {
 
 	g.Method("get-cluster", func() {
 		g.Description("Returns information about the cluster.")
+		g.Meta("openapi:summary", "Get cluster")
 		g.Result(Cluster)
 		g.Error("cluster_not_initialized")
 
 		g.HTTP(func() {
 			g.GET("/cluster")
+
+			g.Meta("openapi:tag:Cluster")
 		})
 	})
 
 	g.Method("list-hosts", func() {
 		g.Description("Lists all hosts within the cluster.")
+		g.Meta("openapi:summary", "List hosts")
 		g.Result(g.ArrayOf(Host))
 		g.Error("cluster_not_initialized")
 
 		g.HTTP(func() {
 			g.GET("/hosts")
+
+			g.Meta("openapi:tag:Host")
 		})
 	})
 
 	g.Method("get-host", func() {
 		g.Description("Returns information about a particular host in the cluster.")
+		g.Meta("openapi:summary", "Get host")
 		g.Payload(func() {
 			g.Attribute("host_id", g.String, func() {
 				g.Description("ID of the host to get.")
@@ -124,11 +158,14 @@ var _ = g.Service("control-plane", func() {
 
 		g.HTTP(func() {
 			g.GET("/hosts/{host_id}")
+
+			g.Meta("openapi:tag:Host")
 		})
 	})
 
 	g.Method("remove-host", func() {
 		g.Description("Removes a host from the cluster.")
+		g.Meta("openapi:summary", "Remove host")
 		g.Payload(func() {
 			g.Attribute("host_id", g.String, func() {
 				g.Description("ID of the host to remove.")
@@ -141,11 +178,14 @@ var _ = g.Service("control-plane", func() {
 
 		g.HTTP(func() {
 			g.DELETE("/hosts/{host_id}")
+
+			g.Meta("openapi:tag:Host")
 		})
 	})
 
 	g.Method("list-databases", func() {
 		g.Description("Lists all databases in the cluster.")
+		g.Meta("openapi:summary", "List databases")
 		g.Result(g.CollectionOf(Database), func() {
 			g.View("abbreviated")
 		})
@@ -153,11 +193,14 @@ var _ = g.Service("control-plane", func() {
 
 		g.HTTP(func() {
 			g.GET("/databases")
+
+			g.Meta("openapi:tag:Database")
 		})
 	})
 
 	g.Method("create-database", func() {
 		g.Description("Creates a new database in the cluster.")
+		g.Meta("openapi:summary", "Create database")
 		g.Payload(CreateDatabaseRequest)
 		g.Result(CreateDatabaseResponse)
 		g.Error("cluster_not_initialized")
@@ -168,11 +211,14 @@ var _ = g.Service("control-plane", func() {
 		g.HTTP(func() {
 			g.POST("/databases")
 			g.Response("database_already_exists", http.StatusConflict)
+
+			g.Meta("openapi:tag:Database")
 		})
 	})
 
 	g.Method("get-database", func() {
 		g.Description("Returns information about a particular database in the cluster.")
+		g.Meta("openapi:summary", "Get database")
 		g.Payload(func() {
 			g.Attribute("database_id", g.String, func() {
 				g.Description("ID of the database to get.")
@@ -188,11 +234,14 @@ var _ = g.Service("control-plane", func() {
 
 		g.HTTP(func() {
 			g.GET("/databases/{database_id}")
+
+			g.Meta("openapi:tag:Database")
 		})
 	})
 
 	g.Method("update-database", func() {
 		g.Description("Updates a database with the given specification.")
+		g.Meta("openapi:summary", "Update database")
 		g.Payload(func() {
 			g.Attribute("database_id", g.String, func() {
 				g.Description("ID of the database to update.")
@@ -215,11 +264,14 @@ var _ = g.Service("control-plane", func() {
 			g.POST("/databases/{database_id}")
 			g.Param("force_update")
 			g.Body("request")
+
+			g.Meta("openapi:tag:Database")
 		})
 	})
 
 	g.Method("delete-database", func() {
 		g.Description("Deletes a database from the cluster.")
+		g.Meta("openapi:summary", "Delete database")
 		g.Payload(func() {
 			g.Attribute("database_id", g.String, func() {
 				g.Format(g.FormatUUID)
@@ -238,11 +290,14 @@ var _ = g.Service("control-plane", func() {
 
 		g.HTTP(func() {
 			g.DELETE("/databases/{database_id}")
+
+			g.Meta("openapi:tag:Database")
 		})
 	})
 
 	g.Method("backup-database-node", func() {
 		g.Description("Initiates a backup for a database node.")
+		g.Meta("openapi:summary", "Backup database node")
 		g.Payload(func() {
 			g.Attribute("database_id", g.String, func() {
 				g.Format(g.FormatUUID)
@@ -267,11 +322,14 @@ var _ = g.Service("control-plane", func() {
 		g.HTTP(func() {
 			g.POST("/databases/{database_id}/nodes/{node_name}/backups")
 			g.Body("options")
+
+			g.Meta("openapi:tag:Database")
 		})
 	})
 
 	g.Method("list-database-tasks", func() {
 		g.Description("Lists all tasks for a database.")
+		g.Meta("openapi:summary", "List database tasks")
 		g.Payload(func() {
 			g.Attribute("database_id", g.String, func() {
 				g.Format(g.FormatUUID)
@@ -305,11 +363,14 @@ var _ = g.Service("control-plane", func() {
 			g.Param("after_task_id")
 			g.Param("limit")
 			g.Param("sort_order")
+
+			g.Meta("openapi:tag:Database")
 		})
 	})
 
 	g.Method("get-database-task", func() {
 		g.Description("Returns information about a particular task.")
+		g.Meta("openapi:summary", "Get database task")
 		g.Payload(func() {
 			g.Attribute("database_id", g.String, func() {
 				g.Format(g.FormatUUID)
@@ -331,11 +392,14 @@ var _ = g.Service("control-plane", func() {
 
 		g.HTTP(func() {
 			g.GET("/databases/{database_id}/tasks/{task_id}")
+
+			g.Meta("openapi:tag:Database")
 		})
 	})
 
 	g.Method("get-database-task-log", func() {
 		g.Description("Returns the log of a particular task for a database.")
+		g.Meta("openapi:summary", "Get database task log")
 		g.Payload(func() {
 			g.Attribute("database_id", g.String, func() {
 				g.Format(g.FormatUUID)
@@ -368,11 +432,14 @@ var _ = g.Service("control-plane", func() {
 			g.GET("/databases/{database_id}/tasks/{task_id}/log")
 			g.Param("after_entry_id")
 			g.Param("limit")
+
+			g.Meta("openapi:tag:Database")
 		})
 	})
 
 	g.Method("restore-database", func() {
 		g.Description("Perform an in-place restore one or more nodes using the given restore configuration.")
+		g.Meta("openapi:summary", "Restore database")
 		g.Payload(func() {
 			g.Attribute("database_id", g.String, func() {
 				g.Format(g.FormatUUID)
@@ -393,20 +460,27 @@ var _ = g.Service("control-plane", func() {
 		g.HTTP(func() {
 			g.POST("/databases/{database_id}/restore")
 			g.Body("request")
+
+			g.Meta("openapi:tag:Database")
 		})
 	})
 
 	g.Method("get-version", func() {
-		g.Description("Returns version information for the Control Plane server.")
+		g.Description("Returns version information for this Control Plane server.")
+		g.Meta("openapi:summary", "Get version")
 		g.Result(VersionInfo)
 
 		g.HTTP(func() {
 			g.GET("/version")
+
+			g.Meta("openapi:tag:System")
 		})
 	})
 
 	// Serves the OpenAPI spec as a static file
-	g.Files("/openapi.json", "./gen/http/openapi3.json")
+	g.Files("/openapi.json", "./gen/http/openapi3.json", func() {
+		g.Meta("openapi:generate", "false")
+	})
 })
 
 var APIError = g.Type("APIError", func() {
