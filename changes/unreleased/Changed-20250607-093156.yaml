@@ -1,0 +1,3 @@
+kind: Changed
+body: "Renamed `inspect` endpoints to `get`: `get-cluster`, `get-host`, `get-database-task`."
+time: 2025-06-07T09:31:56.385964-04:00

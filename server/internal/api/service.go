@@ -115,7 +115,7 @@ func (s *Service) ServiceDescription(ctx context.Context) (string, error) {
 	return "", ErrNotImplemented
 }
 
-func (s *Service) InspectCluster(ctx context.Context) (*api.Cluster, error) {
+func (s *Service) GetCluster(ctx context.Context) (*api.Cluster, error) {
 	return nil, ErrNotImplemented
 }
 
@@ -132,7 +132,7 @@ func (s *Service) ListHosts(ctx context.Context) ([]*api.Host, error) {
 	return apiHosts, nil
 }
 
-func (s *Service) InspectHost(ctx context.Context, req *api.InspectHostPayload) (*api.Host, error) {
+func (s *Service) GetHost(ctx context.Context, req *api.GetHostPayload) (*api.Host, error) {
 	return nil, ErrNotImplemented
 }
 
@@ -360,7 +360,7 @@ func (s *Service) ListDatabaseTasks(ctx context.Context, req *api.ListDatabaseTa
 	return tasksToAPI(tasks), nil
 }
 
-func (s *Service) InspectDatabaseTask(ctx context.Context, req *api.InspectDatabaseTaskPayload) (*api.Task, error) {
+func (s *Service) GetDatabaseTask(ctx context.Context, req *api.GetDatabaseTaskPayload) (*api.Task, error) {
 	databaseID, err := uuid.Parse(req.DatabaseID)
 	if err != nil {
 		return nil, api.MakeInvalidInput(fmt.Errorf("invalid database ID %q: %w", req.DatabaseID, err))

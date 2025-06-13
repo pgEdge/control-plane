@@ -10,9 +10,9 @@ paths:
         get:
             tags:
                 - control-plane
-            summary: inspect-cluster control-plane
+            summary: get-cluster control-plane
             description: Returns information about the cluster.
-            operationId: inspect-cluster
+            operationId: get-cluster
             responses:
                 "200":
                     description: OK response.
@@ -4208,27 +4208,27 @@ paths:
         get:
             tags:
                 - control-plane
-            summary: inspect-database-task control-plane
-            description: Returns information about a particular task for a database.
-            operationId: inspect-database-task
+            summary: get-database-task control-plane
+            description: Returns information about a particular task.
+            operationId: get-database-task
             parameters:
                 - name: database_id
                   in: path
-                  description: ID of the database to inspect tasks for.
+                  description: ID of the database the task belongs to.
                   required: true
                   schema:
                     type: string
-                    description: ID of the database to inspect tasks for.
+                    description: ID of the database the task belongs to.
                     example: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                     format: uuid
                   example: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                 - name: task_id
                   in: path
-                  description: ID of the task to inspect.
+                  description: ID of the task to get.
                   required: true
                   schema:
                     type: string
-                    description: ID of the task to inspect.
+                    description: ID of the task to get.
                     example: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
                     format: uuid
                   example: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
@@ -4582,17 +4582,17 @@ paths:
         get:
             tags:
                 - control-plane
-            summary: inspect-host control-plane
+            summary: get-host control-plane
             description: Returns information about a particular host in the cluster.
-            operationId: inspect-host
+            operationId: get-host
             parameters:
                 - name: host_id
                   in: path
-                  description: ID of the host to inspect.
+                  description: ID of the host to get.
                   required: true
                   schema:
                     type: string
-                    description: ID of the host to inspect.
+                    description: ID of the host to get.
                     example: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   example: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             responses:

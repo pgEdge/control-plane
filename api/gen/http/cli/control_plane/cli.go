@@ -22,7 +22,7 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `control-plane (init-cluster|join-cluster|get-join-token|get-join-options|inspect-cluster|list-hosts|inspect-host|remove-host|list-databases|create-database|get-database|update-database|delete-database|backup-database-node|list-database-tasks|inspect-database-task|get-database-task-log|restore-database|get-version)
+	return `control-plane (init-cluster|join-cluster|get-join-token|get-join-options|get-cluster|list-hosts|get-host|remove-host|list-databases|create-database|get-database|update-database|delete-database|backup-database-node|list-database-tasks|get-database-task|get-database-task-log|restore-database|get-version)
 `
 }
 
@@ -54,12 +54,12 @@ func ParseEndpoint(
 		controlPlaneGetJoinOptionsFlags    = flag.NewFlagSet("get-join-options", flag.ExitOnError)
 		controlPlaneGetJoinOptionsBodyFlag = controlPlaneGetJoinOptionsFlags.String("body", "REQUIRED", "")
 
-		controlPlaneInspectClusterFlags = flag.NewFlagSet("inspect-cluster", flag.ExitOnError)
+		controlPlaneGetClusterFlags = flag.NewFlagSet("get-cluster", flag.ExitOnError)
 
 		controlPlaneListHostsFlags = flag.NewFlagSet("list-hosts", flag.ExitOnError)
 
-		controlPlaneInspectHostFlags      = flag.NewFlagSet("inspect-host", flag.ExitOnError)
-		controlPlaneInspectHostHostIDFlag = controlPlaneInspectHostFlags.String("host-id", "REQUIRED", "ID of the host to inspect.")
+		controlPlaneGetHostFlags      = flag.NewFlagSet("get-host", flag.ExitOnError)
+		controlPlaneGetHostHostIDFlag = controlPlaneGetHostFlags.String("host-id", "REQUIRED", "ID of the host to get.")
 
 		controlPlaneRemoveHostFlags      = flag.NewFlagSet("remove-host", flag.ExitOnError)
 		controlPlaneRemoveHostHostIDFlag = controlPlaneRemoveHostFlags.String("host-id", "REQUIRED", "ID of the host to remove.")
@@ -91,9 +91,9 @@ func ParseEndpoint(
 		controlPlaneListDatabaseTasksLimitFlag       = controlPlaneListDatabaseTasksFlags.String("limit", "", "")
 		controlPlaneListDatabaseTasksSortOrderFlag   = controlPlaneListDatabaseTasksFlags.String("sort-order", "", "")
 
-		controlPlaneInspectDatabaseTaskFlags          = flag.NewFlagSet("inspect-database-task", flag.ExitOnError)
-		controlPlaneInspectDatabaseTaskDatabaseIDFlag = controlPlaneInspectDatabaseTaskFlags.String("database-id", "REQUIRED", "ID of the database to inspect tasks for.")
-		controlPlaneInspectDatabaseTaskTaskIDFlag     = controlPlaneInspectDatabaseTaskFlags.String("task-id", "REQUIRED", "ID of the task to inspect.")
+		controlPlaneGetDatabaseTaskFlags          = flag.NewFlagSet("get-database-task", flag.ExitOnError)
+		controlPlaneGetDatabaseTaskDatabaseIDFlag = controlPlaneGetDatabaseTaskFlags.String("database-id", "REQUIRED", "ID of the database the task belongs to.")
+		controlPlaneGetDatabaseTaskTaskIDFlag     = controlPlaneGetDatabaseTaskFlags.String("task-id", "REQUIRED", "ID of the task to get.")
 
 		controlPlaneGetDatabaseTaskLogFlags            = flag.NewFlagSet("get-database-task-log", flag.ExitOnError)
 		controlPlaneGetDatabaseTaskLogDatabaseIDFlag   = controlPlaneGetDatabaseTaskLogFlags.String("database-id", "REQUIRED", "ID of the database to get task log for.")
@@ -112,9 +112,9 @@ func ParseEndpoint(
 	controlPlaneJoinClusterFlags.Usage = controlPlaneJoinClusterUsage
 	controlPlaneGetJoinTokenFlags.Usage = controlPlaneGetJoinTokenUsage
 	controlPlaneGetJoinOptionsFlags.Usage = controlPlaneGetJoinOptionsUsage
-	controlPlaneInspectClusterFlags.Usage = controlPlaneInspectClusterUsage
+	controlPlaneGetClusterFlags.Usage = controlPlaneGetClusterUsage
 	controlPlaneListHostsFlags.Usage = controlPlaneListHostsUsage
-	controlPlaneInspectHostFlags.Usage = controlPlaneInspectHostUsage
+	controlPlaneGetHostFlags.Usage = controlPlaneGetHostUsage
 	controlPlaneRemoveHostFlags.Usage = controlPlaneRemoveHostUsage
 	controlPlaneListDatabasesFlags.Usage = controlPlaneListDatabasesUsage
 	controlPlaneCreateDatabaseFlags.Usage = controlPlaneCreateDatabaseUsage
@@ -123,7 +123,7 @@ func ParseEndpoint(
 	controlPlaneDeleteDatabaseFlags.Usage = controlPlaneDeleteDatabaseUsage
 	controlPlaneBackupDatabaseNodeFlags.Usage = controlPlaneBackupDatabaseNodeUsage
 	controlPlaneListDatabaseTasksFlags.Usage = controlPlaneListDatabaseTasksUsage
-	controlPlaneInspectDatabaseTaskFlags.Usage = controlPlaneInspectDatabaseTaskUsage
+	controlPlaneGetDatabaseTaskFlags.Usage = controlPlaneGetDatabaseTaskUsage
 	controlPlaneGetDatabaseTaskLogFlags.Usage = controlPlaneGetDatabaseTaskLogUsage
 	controlPlaneRestoreDatabaseFlags.Usage = controlPlaneRestoreDatabaseUsage
 	controlPlaneGetVersionFlags.Usage = controlPlaneGetVersionUsage
@@ -174,14 +174,14 @@ func ParseEndpoint(
 			case "get-join-options":
 				epf = controlPlaneGetJoinOptionsFlags
 
-			case "inspect-cluster":
-				epf = controlPlaneInspectClusterFlags
+			case "get-cluster":
+				epf = controlPlaneGetClusterFlags
 
 			case "list-hosts":
 				epf = controlPlaneListHostsFlags
 
-			case "inspect-host":
-				epf = controlPlaneInspectHostFlags
+			case "get-host":
+				epf = controlPlaneGetHostFlags
 
 			case "remove-host":
 				epf = controlPlaneRemoveHostFlags
@@ -207,8 +207,8 @@ func ParseEndpoint(
 			case "list-database-tasks":
 				epf = controlPlaneListDatabaseTasksFlags
 
-			case "inspect-database-task":
-				epf = controlPlaneInspectDatabaseTaskFlags
+			case "get-database-task":
+				epf = controlPlaneGetDatabaseTaskFlags
 
 			case "get-database-task-log":
 				epf = controlPlaneGetDatabaseTaskLogFlags
@@ -254,13 +254,13 @@ func ParseEndpoint(
 			case "get-join-options":
 				endpoint = c.GetJoinOptions()
 				data, err = controlplanec.BuildGetJoinOptionsPayload(*controlPlaneGetJoinOptionsBodyFlag)
-			case "inspect-cluster":
-				endpoint = c.InspectCluster()
+			case "get-cluster":
+				endpoint = c.GetCluster()
 			case "list-hosts":
 				endpoint = c.ListHosts()
-			case "inspect-host":
-				endpoint = c.InspectHost()
-				data, err = controlplanec.BuildInspectHostPayload(*controlPlaneInspectHostHostIDFlag)
+			case "get-host":
+				endpoint = c.GetHost()
+				data, err = controlplanec.BuildGetHostPayload(*controlPlaneGetHostHostIDFlag)
 			case "remove-host":
 				endpoint = c.RemoveHost()
 				data, err = controlplanec.BuildRemoveHostPayload(*controlPlaneRemoveHostHostIDFlag)
@@ -284,9 +284,9 @@ func ParseEndpoint(
 			case "list-database-tasks":
 				endpoint = c.ListDatabaseTasks()
 				data, err = controlplanec.BuildListDatabaseTasksPayload(*controlPlaneListDatabaseTasksDatabaseIDFlag, *controlPlaneListDatabaseTasksAfterTaskIDFlag, *controlPlaneListDatabaseTasksLimitFlag, *controlPlaneListDatabaseTasksSortOrderFlag)
-			case "inspect-database-task":
-				endpoint = c.InspectDatabaseTask()
-				data, err = controlplanec.BuildInspectDatabaseTaskPayload(*controlPlaneInspectDatabaseTaskDatabaseIDFlag, *controlPlaneInspectDatabaseTaskTaskIDFlag)
+			case "get-database-task":
+				endpoint = c.GetDatabaseTask()
+				data, err = controlplanec.BuildGetDatabaseTaskPayload(*controlPlaneGetDatabaseTaskDatabaseIDFlag, *controlPlaneGetDatabaseTaskTaskIDFlag)
 			case "get-database-task-log":
 				endpoint = c.GetDatabaseTaskLog()
 				data, err = controlplanec.BuildGetDatabaseTaskLogPayload(*controlPlaneGetDatabaseTaskLogDatabaseIDFlag, *controlPlaneGetDatabaseTaskLogTaskIDFlag, *controlPlaneGetDatabaseTaskLogAfterEntryIDFlag, *controlPlaneGetDatabaseTaskLogLimitFlag)
@@ -317,9 +317,9 @@ COMMAND:
     join-cluster: Join this host to an existing cluster.
     get-join-token: Gets the join token for this cluster.
     get-join-options: Internal endpoint for other cluster members seeking to join this cluster.
-    inspect-cluster: Returns information about the cluster.
+    get-cluster: Returns information about the cluster.
     list-hosts: Lists all hosts within the cluster.
-    inspect-host: Returns information about a particular host in the cluster.
+    get-host: Returns information about a particular host in the cluster.
     remove-host: Removes a host from the cluster.
     list-databases: Lists all databases in the cluster.
     create-database: Creates a new database in the cluster.
@@ -328,7 +328,7 @@ COMMAND:
     delete-database: Deletes a database from the cluster.
     backup-database-node: Initiates a backup for a database node.
     list-database-tasks: Lists all tasks for a database.
-    inspect-database-task: Returns information about a particular task for a database.
+    get-database-task: Returns information about a particular task.
     get-database-task-log: Returns the log of a particular task for a database.
     restore-database: Perform an in-place restore one or more nodes using the given restore configuration.
     get-version: Returns version information for the Control Plane server.
@@ -387,13 +387,13 @@ Example:
 `, os.Args[0])
 }
 
-func controlPlaneInspectClusterUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane inspect-cluster
+func controlPlaneGetClusterUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane get-cluster
 
 Returns information about the cluster.
 
 Example:
-    %[1]s control-plane inspect-cluster
+    %[1]s control-plane get-cluster
 `, os.Args[0])
 }
 
@@ -407,14 +407,14 @@ Example:
 `, os.Args[0])
 }
 
-func controlPlaneInspectHostUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane inspect-host -host-id STRING
+func controlPlaneGetHostUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane get-host -host-id STRING
 
 Returns information about a particular host in the cluster.
-    -host-id STRING: ID of the host to inspect.
+    -host-id STRING: ID of the host to get.
 
 Example:
-    %[1]s control-plane inspect-host --host-id "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+    %[1]s control-plane get-host --host-id "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
 `, os.Args[0])
 }
 
@@ -1973,15 +1973,15 @@ Example:
 `, os.Args[0])
 }
 
-func controlPlaneInspectDatabaseTaskUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane inspect-database-task -database-id STRING -task-id STRING
+func controlPlaneGetDatabaseTaskUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane get-database-task -database-id STRING -task-id STRING
 
-Returns information about a particular task for a database.
-    -database-id STRING: ID of the database to inspect tasks for.
-    -task-id STRING: ID of the task to inspect.
+Returns information about a particular task.
+    -database-id STRING: ID of the database the task belongs to.
+    -task-id STRING: ID of the task to get.
 
 Example:
-    %[1]s control-plane inspect-database-task --database-id "02f1a7db-fca8-4521-b57a-2a375c1ced51" --task-id "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348"
+    %[1]s control-plane get-database-task --database-id "02f1a7db-fca8-4521-b57a-2a375c1ced51" --task-id "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348"
 `, os.Args[0])
 }
 

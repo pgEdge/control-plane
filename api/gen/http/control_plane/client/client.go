@@ -33,17 +33,17 @@ type Client struct {
 	// get-join-options endpoint.
 	GetJoinOptionsDoer goahttp.Doer
 
-	// InspectCluster Doer is the HTTP client used to make requests to the
-	// inspect-cluster endpoint.
-	InspectClusterDoer goahttp.Doer
+	// GetCluster Doer is the HTTP client used to make requests to the get-cluster
+	// endpoint.
+	GetClusterDoer goahttp.Doer
 
 	// ListHosts Doer is the HTTP client used to make requests to the list-hosts
 	// endpoint.
 	ListHostsDoer goahttp.Doer
 
-	// InspectHost Doer is the HTTP client used to make requests to the
-	// inspect-host endpoint.
-	InspectHostDoer goahttp.Doer
+	// GetHost Doer is the HTTP client used to make requests to the get-host
+	// endpoint.
+	GetHostDoer goahttp.Doer
 
 	// RemoveHost Doer is the HTTP client used to make requests to the remove-host
 	// endpoint.
@@ -77,9 +77,9 @@ type Client struct {
 	// list-database-tasks endpoint.
 	ListDatabaseTasksDoer goahttp.Doer
 
-	// InspectDatabaseTask Doer is the HTTP client used to make requests to the
-	// inspect-database-task endpoint.
-	InspectDatabaseTaskDoer goahttp.Doer
+	// GetDatabaseTask Doer is the HTTP client used to make requests to the
+	// get-database-task endpoint.
+	GetDatabaseTaskDoer goahttp.Doer
 
 	// GetDatabaseTaskLog Doer is the HTTP client used to make requests to the
 	// get-database-task-log endpoint.
@@ -114,30 +114,30 @@ func NewClient(
 	restoreBody bool,
 ) *Client {
 	return &Client{
-		InitClusterDoer:         doer,
-		JoinClusterDoer:         doer,
-		GetJoinTokenDoer:        doer,
-		GetJoinOptionsDoer:      doer,
-		InspectClusterDoer:      doer,
-		ListHostsDoer:           doer,
-		InspectHostDoer:         doer,
-		RemoveHostDoer:          doer,
-		ListDatabasesDoer:       doer,
-		CreateDatabaseDoer:      doer,
-		GetDatabaseDoer:         doer,
-		UpdateDatabaseDoer:      doer,
-		DeleteDatabaseDoer:      doer,
-		BackupDatabaseNodeDoer:  doer,
-		ListDatabaseTasksDoer:   doer,
-		InspectDatabaseTaskDoer: doer,
-		GetDatabaseTaskLogDoer:  doer,
-		RestoreDatabaseDoer:     doer,
-		GetVersionDoer:          doer,
-		RestoreResponseBody:     restoreBody,
-		scheme:                  scheme,
-		host:                    host,
-		decoder:                 dec,
-		encoder:                 enc,
+		InitClusterDoer:        doer,
+		JoinClusterDoer:        doer,
+		GetJoinTokenDoer:       doer,
+		GetJoinOptionsDoer:     doer,
+		GetClusterDoer:         doer,
+		ListHostsDoer:          doer,
+		GetHostDoer:            doer,
+		RemoveHostDoer:         doer,
+		ListDatabasesDoer:      doer,
+		CreateDatabaseDoer:     doer,
+		GetDatabaseDoer:        doer,
+		UpdateDatabaseDoer:     doer,
+		DeleteDatabaseDoer:     doer,
+		BackupDatabaseNodeDoer: doer,
+		ListDatabaseTasksDoer:  doer,
+		GetDatabaseTaskDoer:    doer,
+		GetDatabaseTaskLogDoer: doer,
+		RestoreDatabaseDoer:    doer,
+		GetVersionDoer:         doer,
+		RestoreResponseBody:    restoreBody,
+		scheme:                 scheme,
+		host:                   host,
+		decoder:                dec,
+		encoder:                enc,
 	}
 }
 
@@ -227,20 +227,20 @@ func (c *Client) GetJoinOptions() goa.Endpoint {
 	}
 }
 
-// InspectCluster returns an endpoint that makes HTTP requests to the
-// control-plane service inspect-cluster server.
-func (c *Client) InspectCluster() goa.Endpoint {
+// GetCluster returns an endpoint that makes HTTP requests to the control-plane
+// service get-cluster server.
+func (c *Client) GetCluster() goa.Endpoint {
 	var (
-		decodeResponse = DecodeInspectClusterResponse(c.decoder, c.RestoreResponseBody)
+		decodeResponse = DecodeGetClusterResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildInspectClusterRequest(ctx, v)
+		req, err := c.BuildGetClusterRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.InspectClusterDoer.Do(req)
+		resp, err := c.GetClusterDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("control-plane", "inspect-cluster", err)
+			return nil, goahttp.ErrRequestError("control-plane", "get-cluster", err)
 		}
 		return decodeResponse(resp)
 	}
@@ -265,20 +265,20 @@ func (c *Client) ListHosts() goa.Endpoint {
 	}
 }
 
-// InspectHost returns an endpoint that makes HTTP requests to the
-// control-plane service inspect-host server.
-func (c *Client) InspectHost() goa.Endpoint {
+// GetHost returns an endpoint that makes HTTP requests to the control-plane
+// service get-host server.
+func (c *Client) GetHost() goa.Endpoint {
 	var (
-		decodeResponse = DecodeInspectHostResponse(c.decoder, c.RestoreResponseBody)
+		decodeResponse = DecodeGetHostResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildInspectHostRequest(ctx, v)
+		req, err := c.BuildGetHostRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.InspectHostDoer.Do(req)
+		resp, err := c.GetHostDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("control-plane", "inspect-host", err)
+			return nil, goahttp.ErrRequestError("control-plane", "get-host", err)
 		}
 		return decodeResponse(resp)
 	}
@@ -456,20 +456,20 @@ func (c *Client) ListDatabaseTasks() goa.Endpoint {
 	}
 }
 
-// InspectDatabaseTask returns an endpoint that makes HTTP requests to the
-// control-plane service inspect-database-task server.
-func (c *Client) InspectDatabaseTask() goa.Endpoint {
+// GetDatabaseTask returns an endpoint that makes HTTP requests to the
+// control-plane service get-database-task server.
+func (c *Client) GetDatabaseTask() goa.Endpoint {
 	var (
-		decodeResponse = DecodeInspectDatabaseTaskResponse(c.decoder, c.RestoreResponseBody)
+		decodeResponse = DecodeGetDatabaseTaskResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
-		req, err := c.BuildInspectDatabaseTaskRequest(ctx, v)
+		req, err := c.BuildGetDatabaseTaskRequest(ctx, v)
 		if err != nil {
 			return nil, err
 		}
-		resp, err := c.InspectDatabaseTaskDoer.Do(req)
+		resp, err := c.GetDatabaseTaskDoer.Do(req)
 		if err != nil {
-			return nil, goahttp.ErrRequestError("control-plane", "inspect-database-task", err)
+			return nil, goahttp.ErrRequestError("control-plane", "get-database-task", err)
 		}
 		return decodeResponse(resp)
 	}

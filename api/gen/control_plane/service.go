@@ -25,11 +25,11 @@ type Service interface {
 	// Internal endpoint for other cluster members seeking to join this cluster.
 	GetJoinOptions(context.Context, *ClusterJoinRequest) (res *ClusterJoinOptions, err error)
 	// Returns information about the cluster.
-	InspectCluster(context.Context) (res *Cluster, err error)
+	GetCluster(context.Context) (res *Cluster, err error)
 	// Lists all hosts within the cluster.
 	ListHosts(context.Context) (res []*Host, err error)
 	// Returns information about a particular host in the cluster.
-	InspectHost(context.Context, *InspectHostPayload) (res *Host, err error)
+	GetHost(context.Context, *GetHostPayload) (res *Host, err error)
 	// Removes a host from the cluster.
 	RemoveHost(context.Context, *RemoveHostPayload) (err error)
 	// Lists all databases in the cluster.
@@ -46,8 +46,8 @@ type Service interface {
 	BackupDatabaseNode(context.Context, *BackupDatabaseNodePayload) (res *BackupDatabaseNodeResponse, err error)
 	// Lists all tasks for a database.
 	ListDatabaseTasks(context.Context, *ListDatabaseTasksPayload) (res []*Task, err error)
-	// Returns information about a particular task for a database.
-	InspectDatabaseTask(context.Context, *InspectDatabaseTaskPayload) (res *Task, err error)
+	// Returns information about a particular task.
+	GetDatabaseTask(context.Context, *GetDatabaseTaskPayload) (res *Task, err error)
 	// Returns the log of a particular task for a database.
 	GetDatabaseTaskLog(context.Context, *GetDatabaseTaskLogPayload) (res *TaskLog, err error)
 	// Perform an in-place restore one or more nodes using the given restore
@@ -71,7 +71,7 @@ const ServiceName = "control-plane"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [19]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "inspect-cluster", "list-hosts", "inspect-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "delete-database", "backup-database-node", "list-database-tasks", "inspect-database-task", "get-database-task-log", "restore-database", "get-version"}
+var MethodNames = [19]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "delete-database", "backup-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "restore-database", "get-version"}
 
 type BackupConfigSpec struct {
 	// The backup provider for this backup configuration.
@@ -164,8 +164,7 @@ type BackupScheduleSpec struct {
 	CronExpression string
 }
 
-// Cluster is the result type of the control-plane service inspect-cluster
-// method.
+// Cluster is the result type of the control-plane service get-cluster method.
 type Cluster struct {
 	// Unique identifier for the cluster.
 	ID string
@@ -427,7 +426,23 @@ type GetDatabaseTaskLogPayload struct {
 	Limit *int
 }
 
-// Host is the result type of the control-plane service inspect-host method.
+// GetDatabaseTaskPayload is the payload type of the control-plane service
+// get-database-task method.
+type GetDatabaseTaskPayload struct {
+	// ID of the database the task belongs to.
+	DatabaseID string
+	// ID of the task to get.
+	TaskID string
+}
+
+// GetHostPayload is the payload type of the control-plane service get-host
+// method.
+type GetHostPayload struct {
+	// ID of the host to get.
+	HostID *string
+}
+
+// Host is the result type of the control-plane service get-host method.
 type Host struct {
 	// Unique identifier for the host.
 	ID string
@@ -468,22 +483,6 @@ type HostStatus struct {
 	UpdatedAt string
 	// The status of each component of the host.
 	Components map[string]*ComponentStatus
-}
-
-// InspectDatabaseTaskPayload is the payload type of the control-plane service
-// inspect-database-task method.
-type InspectDatabaseTaskPayload struct {
-	// ID of the database to inspect tasks for.
-	DatabaseID string
-	// ID of the task to inspect.
-	TaskID string
-}
-
-// InspectHostPayload is the payload type of the control-plane service
-// inspect-host method.
-type InspectHostPayload struct {
-	// ID of the host to inspect.
-	HostID *string
 }
 
 // An instance of pgEdge Postgres running on a host.
@@ -650,7 +649,7 @@ type RestoreRepositorySpec struct {
 	CustomOptions map[string]string
 }
 
-// Task is the result type of the control-plane service inspect-database-task
+// Task is the result type of the control-plane service get-database-task
 // method.
 type Task struct {
 	// The parent task ID of the task.

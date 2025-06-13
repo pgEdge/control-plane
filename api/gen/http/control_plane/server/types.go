@@ -102,9 +102,9 @@ type GetJoinOptionsResponseBody struct {
 	Credentials *ClusterCredentialsResponseBody `form:"credentials,omitempty" json:"credentials,omitempty" xml:"credentials,omitempty"`
 }
 
-// InspectClusterResponseBody is the type of the "control-plane" service
-// "inspect-cluster" endpoint HTTP response body.
-type InspectClusterResponseBody struct {
+// GetClusterResponseBody is the type of the "control-plane" service
+// "get-cluster" endpoint HTTP response body.
+type GetClusterResponseBody struct {
 	// Unique identifier for the cluster.
 	ID string `form:"id" json:"id" xml:"id"`
 	// Unique identifier for the cluster's owner.
@@ -119,9 +119,9 @@ type InspectClusterResponseBody struct {
 // "list-hosts" endpoint HTTP response body.
 type ListHostsResponseBody []*HostResponse
 
-// InspectHostResponseBody is the type of the "control-plane" service
-// "inspect-host" endpoint HTTP response body.
-type InspectHostResponseBody struct {
+// GetHostResponseBody is the type of the "control-plane" service "get-host"
+// endpoint HTTP response body.
+type GetHostResponseBody struct {
 	// Unique identifier for the host.
 	ID string `form:"id" json:"id" xml:"id"`
 	// The orchestrator used by this host.
@@ -203,9 +203,9 @@ type BackupDatabaseNodeResponseBody struct {
 // "list-database-tasks" endpoint HTTP response body.
 type ListDatabaseTasksResponseBody []*TaskResponse
 
-// InspectDatabaseTaskResponseBody is the type of the "control-plane" service
-// "inspect-database-task" endpoint HTTP response body.
-type InspectDatabaseTaskResponseBody struct {
+// GetDatabaseTaskResponseBody is the type of the "control-plane" service
+// "get-database-task" endpoint HTTP response body.
+type GetDatabaseTaskResponseBody struct {
 	// The parent task ID of the task.
 	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
 	// The database ID of the task.
@@ -364,10 +364,10 @@ type GetJoinOptionsInvalidJoinTokenResponseBody struct {
 	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
-// InspectClusterClusterNotInitializedResponseBody is the type of the
-// "control-plane" service "inspect-cluster" endpoint HTTP response body for
-// the "cluster_not_initialized" error.
-type InspectClusterClusterNotInitializedResponseBody struct {
+// GetClusterClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "get-cluster" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type GetClusterClusterNotInitializedResponseBody struct {
 	// Name is the name of this class of errors.
 	Name string `form:"name" json:"name" xml:"name"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -383,10 +383,9 @@ type InspectClusterClusterNotInitializedResponseBody struct {
 	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
-// InspectClusterNotFoundResponseBody is the type of the "control-plane"
-// service "inspect-cluster" endpoint HTTP response body for the "not_found"
-// error.
-type InspectClusterNotFoundResponseBody struct {
+// GetClusterNotFoundResponseBody is the type of the "control-plane" service
+// "get-cluster" endpoint HTTP response body for the "not_found" error.
+type GetClusterNotFoundResponseBody struct {
 	// Name is the name of this class of errors.
 	Name string `form:"name" json:"name" xml:"name"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -421,10 +420,10 @@ type ListHostsClusterNotInitializedResponseBody struct {
 	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
-// InspectHostClusterNotInitializedResponseBody is the type of the
-// "control-plane" service "inspect-host" endpoint HTTP response body for the
+// GetHostClusterNotInitializedResponseBody is the type of the "control-plane"
+// service "get-host" endpoint HTTP response body for the
 // "cluster_not_initialized" error.
-type InspectHostClusterNotInitializedResponseBody struct {
+type GetHostClusterNotInitializedResponseBody struct {
 	// Name is the name of this class of errors.
 	Name string `form:"name" json:"name" xml:"name"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -440,9 +439,9 @@ type InspectHostClusterNotInitializedResponseBody struct {
 	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
-// InspectHostNotFoundResponseBody is the type of the "control-plane" service
-// "inspect-host" endpoint HTTP response body for the "not_found" error.
-type InspectHostNotFoundResponseBody struct {
+// GetHostNotFoundResponseBody is the type of the "control-plane" service
+// "get-host" endpoint HTTP response body for the "not_found" error.
+type GetHostNotFoundResponseBody struct {
 	// Name is the name of this class of errors.
 	Name string `form:"name" json:"name" xml:"name"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -836,10 +835,10 @@ type ListDatabaseTasksNotFoundResponseBody struct {
 	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
-// InspectDatabaseTaskClusterNotInitializedResponseBody is the type of the
-// "control-plane" service "inspect-database-task" endpoint HTTP response body
-// for the "cluster_not_initialized" error.
-type InspectDatabaseTaskClusterNotInitializedResponseBody struct {
+// GetDatabaseTaskClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "get-database-task" endpoint HTTP response body for
+// the "cluster_not_initialized" error.
+type GetDatabaseTaskClusterNotInitializedResponseBody struct {
 	// Name is the name of this class of errors.
 	Name string `form:"name" json:"name" xml:"name"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -855,10 +854,10 @@ type InspectDatabaseTaskClusterNotInitializedResponseBody struct {
 	Fault bool `form:"fault" json:"fault" xml:"fault"`
 }
 
-// InspectDatabaseTaskNotFoundResponseBody is the type of the "control-plane"
-// service "inspect-database-task" endpoint HTTP response body for the
-// "not_found" error.
-type InspectDatabaseTaskNotFoundResponseBody struct {
+// GetDatabaseTaskNotFoundResponseBody is the type of the "control-plane"
+// service "get-database-task" endpoint HTTP response body for the "not_found"
+// error.
+type GetDatabaseTaskNotFoundResponseBody struct {
 	// Name is the name of this class of errors.
 	Name string `form:"name" json:"name" xml:"name"`
 	// ID is a unique identifier for this particular occurrence of the problem.
@@ -2082,10 +2081,10 @@ func NewGetJoinOptionsResponseBody(res *controlplane.ClusterJoinOptions) *GetJoi
 	return body
 }
 
-// NewInspectClusterResponseBody builds the HTTP response body from the result
-// of the "inspect-cluster" endpoint of the "control-plane" service.
-func NewInspectClusterResponseBody(res *controlplane.Cluster) *InspectClusterResponseBody {
-	body := &InspectClusterResponseBody{
+// NewGetClusterResponseBody builds the HTTP response body from the result of
+// the "get-cluster" endpoint of the "control-plane" service.
+func NewGetClusterResponseBody(res *controlplane.Cluster) *GetClusterResponseBody {
+	body := &GetClusterResponseBody{
 		ID:       res.ID,
 		TenantID: res.TenantID,
 	}
@@ -2113,10 +2112,10 @@ func NewListHostsResponseBody(res []*controlplane.Host) ListHostsResponseBody {
 	return body
 }
 
-// NewInspectHostResponseBody builds the HTTP response body from the result of
-// the "inspect-host" endpoint of the "control-plane" service.
-func NewInspectHostResponseBody(res *controlplane.Host) *InspectHostResponseBody {
-	body := &InspectHostResponseBody{
+// NewGetHostResponseBody builds the HTTP response body from the result of the
+// "get-host" endpoint of the "control-plane" service.
+func NewGetHostResponseBody(res *controlplane.Host) *GetHostResponseBody {
+	body := &GetHostResponseBody{
 		ID:           res.ID,
 		Orchestrator: res.Orchestrator,
 		Hostname:     res.Hostname,
@@ -2232,11 +2231,10 @@ func NewListDatabaseTasksResponseBody(res []*controlplane.Task) ListDatabaseTask
 	return body
 }
 
-// NewInspectDatabaseTaskResponseBody builds the HTTP response body from the
-// result of the "inspect-database-task" endpoint of the "control-plane"
-// service.
-func NewInspectDatabaseTaskResponseBody(res *controlplane.Task) *InspectDatabaseTaskResponseBody {
-	body := &InspectDatabaseTaskResponseBody{
+// NewGetDatabaseTaskResponseBody builds the HTTP response body from the result
+// of the "get-database-task" endpoint of the "control-plane" service.
+func NewGetDatabaseTaskResponseBody(res *controlplane.Task) *GetDatabaseTaskResponseBody {
+	body := &GetDatabaseTaskResponseBody{
 		ParentID:    res.ParentID,
 		DatabaseID:  res.DatabaseID,
 		NodeName:    res.NodeName,
@@ -2379,11 +2377,10 @@ func NewGetJoinOptionsInvalidJoinTokenResponseBody(res *goa.ServiceError) *GetJo
 	return body
 }
 
-// NewInspectClusterClusterNotInitializedResponseBody builds the HTTP response
-// body from the result of the "inspect-cluster" endpoint of the
-// "control-plane" service.
-func NewInspectClusterClusterNotInitializedResponseBody(res *goa.ServiceError) *InspectClusterClusterNotInitializedResponseBody {
-	body := &InspectClusterClusterNotInitializedResponseBody{
+// NewGetClusterClusterNotInitializedResponseBody builds the HTTP response body
+// from the result of the "get-cluster" endpoint of the "control-plane" service.
+func NewGetClusterClusterNotInitializedResponseBody(res *goa.ServiceError) *GetClusterClusterNotInitializedResponseBody {
+	body := &GetClusterClusterNotInitializedResponseBody{
 		Name:      res.Name,
 		ID:        res.ID,
 		Message:   res.Message,
@@ -2394,10 +2391,10 @@ func NewInspectClusterClusterNotInitializedResponseBody(res *goa.ServiceError) *
 	return body
 }
 
-// NewInspectClusterNotFoundResponseBody builds the HTTP response body from the
-// result of the "inspect-cluster" endpoint of the "control-plane" service.
-func NewInspectClusterNotFoundResponseBody(res *goa.ServiceError) *InspectClusterNotFoundResponseBody {
-	body := &InspectClusterNotFoundResponseBody{
+// NewGetClusterNotFoundResponseBody builds the HTTP response body from the
+// result of the "get-cluster" endpoint of the "control-plane" service.
+func NewGetClusterNotFoundResponseBody(res *goa.ServiceError) *GetClusterNotFoundResponseBody {
+	body := &GetClusterNotFoundResponseBody{
 		Name:      res.Name,
 		ID:        res.ID,
 		Message:   res.Message,
@@ -2422,11 +2419,10 @@ func NewListHostsClusterNotInitializedResponseBody(res *goa.ServiceError) *ListH
 	return body
 }
 
-// NewInspectHostClusterNotInitializedResponseBody builds the HTTP response
-// body from the result of the "inspect-host" endpoint of the "control-plane"
-// service.
-func NewInspectHostClusterNotInitializedResponseBody(res *goa.ServiceError) *InspectHostClusterNotInitializedResponseBody {
-	body := &InspectHostClusterNotInitializedResponseBody{
+// NewGetHostClusterNotInitializedResponseBody builds the HTTP response body
+// from the result of the "get-host" endpoint of the "control-plane" service.
+func NewGetHostClusterNotInitializedResponseBody(res *goa.ServiceError) *GetHostClusterNotInitializedResponseBody {
+	body := &GetHostClusterNotInitializedResponseBody{
 		Name:      res.Name,
 		ID:        res.ID,
 		Message:   res.Message,
@@ -2437,10 +2433,10 @@ func NewInspectHostClusterNotInitializedResponseBody(res *goa.ServiceError) *Ins
 	return body
 }
 
-// NewInspectHostNotFoundResponseBody builds the HTTP response body from the
-// result of the "inspect-host" endpoint of the "control-plane" service.
-func NewInspectHostNotFoundResponseBody(res *goa.ServiceError) *InspectHostNotFoundResponseBody {
-	body := &InspectHostNotFoundResponseBody{
+// NewGetHostNotFoundResponseBody builds the HTTP response body from the result
+// of the "get-host" endpoint of the "control-plane" service.
+func NewGetHostNotFoundResponseBody(res *goa.ServiceError) *GetHostNotFoundResponseBody {
+	body := &GetHostNotFoundResponseBody{
 		Name:      res.Name,
 		ID:        res.ID,
 		Message:   res.Message,
@@ -2745,11 +2741,11 @@ func NewListDatabaseTasksNotFoundResponseBody(res *goa.ServiceError) *ListDataba
 	return body
 }
 
-// NewInspectDatabaseTaskClusterNotInitializedResponseBody builds the HTTP
-// response body from the result of the "inspect-database-task" endpoint of the
+// NewGetDatabaseTaskClusterNotInitializedResponseBody builds the HTTP response
+// body from the result of the "get-database-task" endpoint of the
 // "control-plane" service.
-func NewInspectDatabaseTaskClusterNotInitializedResponseBody(res *goa.ServiceError) *InspectDatabaseTaskClusterNotInitializedResponseBody {
-	body := &InspectDatabaseTaskClusterNotInitializedResponseBody{
+func NewGetDatabaseTaskClusterNotInitializedResponseBody(res *goa.ServiceError) *GetDatabaseTaskClusterNotInitializedResponseBody {
+	body := &GetDatabaseTaskClusterNotInitializedResponseBody{
 		Name:      res.Name,
 		ID:        res.ID,
 		Message:   res.Message,
@@ -2760,11 +2756,11 @@ func NewInspectDatabaseTaskClusterNotInitializedResponseBody(res *goa.ServiceErr
 	return body
 }
 
-// NewInspectDatabaseTaskNotFoundResponseBody builds the HTTP response body
-// from the result of the "inspect-database-task" endpoint of the
-// "control-plane" service.
-func NewInspectDatabaseTaskNotFoundResponseBody(res *goa.ServiceError) *InspectDatabaseTaskNotFoundResponseBody {
-	body := &InspectDatabaseTaskNotFoundResponseBody{
+// NewGetDatabaseTaskNotFoundResponseBody builds the HTTP response body from
+// the result of the "get-database-task" endpoint of the "control-plane"
+// service.
+func NewGetDatabaseTaskNotFoundResponseBody(res *goa.ServiceError) *GetDatabaseTaskNotFoundResponseBody {
+	body := &GetDatabaseTaskNotFoundResponseBody{
 		Name:      res.Name,
 		ID:        res.ID,
 		Message:   res.Message,
@@ -2888,10 +2884,9 @@ func NewGetJoinOptionsClusterJoinRequest(body *GetJoinOptionsRequestBody) *contr
 	return v
 }
 
-// NewInspectHostPayload builds a control-plane service inspect-host endpoint
-// payload.
-func NewInspectHostPayload(hostID string) *controlplane.InspectHostPayload {
-	v := &controlplane.InspectHostPayload{}
+// NewGetHostPayload builds a control-plane service get-host endpoint payload.
+func NewGetHostPayload(hostID string) *controlplane.GetHostPayload {
+	v := &controlplane.GetHostPayload{}
 	v.HostID = &hostID
 
 	return v
@@ -2999,10 +2994,10 @@ func NewListDatabaseTasksPayload(databaseID string, afterTaskID *string, limit *
 	return v
 }
 
-// NewInspectDatabaseTaskPayload builds a control-plane service
-// inspect-database-task endpoint payload.
-func NewInspectDatabaseTaskPayload(databaseID string, taskID string) *controlplane.InspectDatabaseTaskPayload {
-	v := &controlplane.InspectDatabaseTaskPayload{}
+// NewGetDatabaseTaskPayload builds a control-plane service get-database-task
+// endpoint payload.
+func NewGetDatabaseTaskPayload(databaseID string, taskID string) *controlplane.GetDatabaseTaskPayload {
+	v := &controlplane.GetDatabaseTaskPayload{}
 	v.DatabaseID = databaseID
 	v.TaskID = taskID
 

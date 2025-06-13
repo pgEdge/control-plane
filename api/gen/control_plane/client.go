@@ -15,49 +15,49 @@ import (
 
 // Client is the "control-plane" service client.
 type Client struct {
-	InitClusterEndpoint         goa.Endpoint
-	JoinClusterEndpoint         goa.Endpoint
-	GetJoinTokenEndpoint        goa.Endpoint
-	GetJoinOptionsEndpoint      goa.Endpoint
-	InspectClusterEndpoint      goa.Endpoint
-	ListHostsEndpoint           goa.Endpoint
-	InspectHostEndpoint         goa.Endpoint
-	RemoveHostEndpoint          goa.Endpoint
-	ListDatabasesEndpoint       goa.Endpoint
-	CreateDatabaseEndpoint      goa.Endpoint
-	GetDatabaseEndpoint         goa.Endpoint
-	UpdateDatabaseEndpoint      goa.Endpoint
-	DeleteDatabaseEndpoint      goa.Endpoint
-	BackupDatabaseNodeEndpoint  goa.Endpoint
-	ListDatabaseTasksEndpoint   goa.Endpoint
-	InspectDatabaseTaskEndpoint goa.Endpoint
-	GetDatabaseTaskLogEndpoint  goa.Endpoint
-	RestoreDatabaseEndpoint     goa.Endpoint
-	GetVersionEndpoint          goa.Endpoint
+	InitClusterEndpoint        goa.Endpoint
+	JoinClusterEndpoint        goa.Endpoint
+	GetJoinTokenEndpoint       goa.Endpoint
+	GetJoinOptionsEndpoint     goa.Endpoint
+	GetClusterEndpoint         goa.Endpoint
+	ListHostsEndpoint          goa.Endpoint
+	GetHostEndpoint            goa.Endpoint
+	RemoveHostEndpoint         goa.Endpoint
+	ListDatabasesEndpoint      goa.Endpoint
+	CreateDatabaseEndpoint     goa.Endpoint
+	GetDatabaseEndpoint        goa.Endpoint
+	UpdateDatabaseEndpoint     goa.Endpoint
+	DeleteDatabaseEndpoint     goa.Endpoint
+	BackupDatabaseNodeEndpoint goa.Endpoint
+	ListDatabaseTasksEndpoint  goa.Endpoint
+	GetDatabaseTaskEndpoint    goa.Endpoint
+	GetDatabaseTaskLogEndpoint goa.Endpoint
+	RestoreDatabaseEndpoint    goa.Endpoint
+	GetVersionEndpoint         goa.Endpoint
 }
 
 // NewClient initializes a "control-plane" service client given the endpoints.
-func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, inspectCluster, listHosts, inspectHost, removeHost, listDatabases, createDatabase, getDatabase, updateDatabase, deleteDatabase, backupDatabaseNode, listDatabaseTasks, inspectDatabaseTask, getDatabaseTaskLog, restoreDatabase, getVersion goa.Endpoint) *Client {
+func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluster, listHosts, getHost, removeHost, listDatabases, createDatabase, getDatabase, updateDatabase, deleteDatabase, backupDatabaseNode, listDatabaseTasks, getDatabaseTask, getDatabaseTaskLog, restoreDatabase, getVersion goa.Endpoint) *Client {
 	return &Client{
-		InitClusterEndpoint:         initCluster,
-		JoinClusterEndpoint:         joinCluster,
-		GetJoinTokenEndpoint:        getJoinToken,
-		GetJoinOptionsEndpoint:      getJoinOptions,
-		InspectClusterEndpoint:      inspectCluster,
-		ListHostsEndpoint:           listHosts,
-		InspectHostEndpoint:         inspectHost,
-		RemoveHostEndpoint:          removeHost,
-		ListDatabasesEndpoint:       listDatabases,
-		CreateDatabaseEndpoint:      createDatabase,
-		GetDatabaseEndpoint:         getDatabase,
-		UpdateDatabaseEndpoint:      updateDatabase,
-		DeleteDatabaseEndpoint:      deleteDatabase,
-		BackupDatabaseNodeEndpoint:  backupDatabaseNode,
-		ListDatabaseTasksEndpoint:   listDatabaseTasks,
-		InspectDatabaseTaskEndpoint: inspectDatabaseTask,
-		GetDatabaseTaskLogEndpoint:  getDatabaseTaskLog,
-		RestoreDatabaseEndpoint:     restoreDatabase,
-		GetVersionEndpoint:          getVersion,
+		InitClusterEndpoint:        initCluster,
+		JoinClusterEndpoint:        joinCluster,
+		GetJoinTokenEndpoint:       getJoinToken,
+		GetJoinOptionsEndpoint:     getJoinOptions,
+		GetClusterEndpoint:         getCluster,
+		ListHostsEndpoint:          listHosts,
+		GetHostEndpoint:            getHost,
+		RemoveHostEndpoint:         removeHost,
+		ListDatabasesEndpoint:      listDatabases,
+		CreateDatabaseEndpoint:     createDatabase,
+		GetDatabaseEndpoint:        getDatabase,
+		UpdateDatabaseEndpoint:     updateDatabase,
+		DeleteDatabaseEndpoint:     deleteDatabase,
+		BackupDatabaseNodeEndpoint: backupDatabaseNode,
+		ListDatabaseTasksEndpoint:  listDatabaseTasks,
+		GetDatabaseTaskEndpoint:    getDatabaseTask,
+		GetDatabaseTaskLogEndpoint: getDatabaseTaskLog,
+		RestoreDatabaseEndpoint:    restoreDatabase,
+		GetVersionEndpoint:         getVersion,
 	}
 }
 
@@ -112,15 +112,14 @@ func (c *Client) GetJoinOptions(ctx context.Context, p *ClusterJoinRequest) (res
 	return ires.(*ClusterJoinOptions), nil
 }
 
-// InspectCluster calls the "inspect-cluster" endpoint of the "control-plane"
-// service.
-// InspectCluster may return the following errors:
+// GetCluster calls the "get-cluster" endpoint of the "control-plane" service.
+// GetCluster may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
 //   - "not_found" (type *goa.ServiceError)
 //   - error: internal error
-func (c *Client) InspectCluster(ctx context.Context) (res *Cluster, err error) {
+func (c *Client) GetCluster(ctx context.Context) (res *Cluster, err error) {
 	var ires any
-	ires, err = c.InspectClusterEndpoint(ctx, nil)
+	ires, err = c.GetClusterEndpoint(ctx, nil)
 	if err != nil {
 		return
 	}
@@ -140,14 +139,14 @@ func (c *Client) ListHosts(ctx context.Context) (res []*Host, err error) {
 	return ires.([]*Host), nil
 }
 
-// InspectHost calls the "inspect-host" endpoint of the "control-plane" service.
-// InspectHost may return the following errors:
+// GetHost calls the "get-host" endpoint of the "control-plane" service.
+// GetHost may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
 //   - "not_found" (type *goa.ServiceError)
 //   - error: internal error
-func (c *Client) InspectHost(ctx context.Context, p *InspectHostPayload) (res *Host, err error) {
+func (c *Client) GetHost(ctx context.Context, p *GetHostPayload) (res *Host, err error) {
 	var ires any
-	ires, err = c.InspectHostEndpoint(ctx, p)
+	ires, err = c.GetHostEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
@@ -272,15 +271,15 @@ func (c *Client) ListDatabaseTasks(ctx context.Context, p *ListDatabaseTasksPayl
 	return ires.([]*Task), nil
 }
 
-// InspectDatabaseTask calls the "inspect-database-task" endpoint of the
+// GetDatabaseTask calls the "get-database-task" endpoint of the
 // "control-plane" service.
-// InspectDatabaseTask may return the following errors:
+// GetDatabaseTask may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
 //   - "not_found" (type *goa.ServiceError)
 //   - error: internal error
-func (c *Client) InspectDatabaseTask(ctx context.Context, p *InspectDatabaseTaskPayload) (res *Task, err error) {
+func (c *Client) GetDatabaseTask(ctx context.Context, p *GetDatabaseTaskPayload) (res *Task, err error) {
 	var ires any
-	ires, err = c.InspectDatabaseTaskEndpoint(ctx, p)
+	ires, err = c.GetDatabaseTaskEndpoint(ctx, p)
 	if err != nil {
 		return
 	}

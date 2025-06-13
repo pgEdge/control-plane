@@ -252,21 +252,21 @@ func EncodeGetJoinOptionsError(encoder func(context.Context, http.ResponseWriter
 	}
 }
 
-// EncodeInspectClusterResponse returns an encoder for responses returned by
-// the control-plane inspect-cluster endpoint.
-func EncodeInspectClusterResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeGetClusterResponse returns an encoder for responses returned by the
+// control-plane get-cluster endpoint.
+func EncodeGetClusterResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*controlplane.Cluster)
 		enc := encoder(ctx, w)
-		body := NewInspectClusterResponseBody(res)
+		body := NewGetClusterResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// EncodeInspectClusterError returns an encoder for errors returned by the
-// inspect-cluster control-plane endpoint.
-func EncodeInspectClusterError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeGetClusterError returns an encoder for errors returned by the
+// get-cluster control-plane endpoint.
+func EncodeGetClusterError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -282,7 +282,7 @@ func EncodeInspectClusterError(encoder func(context.Context, http.ResponseWriter
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewInspectClusterClusterNotInitializedResponseBody(res)
+				body = NewGetClusterClusterNotInitializedResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
@@ -295,7 +295,7 @@ func EncodeInspectClusterError(encoder func(context.Context, http.ResponseWriter
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewInspectClusterNotFoundResponseBody(res)
+				body = NewGetClusterNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -347,21 +347,21 @@ func EncodeListHostsError(encoder func(context.Context, http.ResponseWriter) goa
 	}
 }
 
-// EncodeInspectHostResponse returns an encoder for responses returned by the
-// control-plane inspect-host endpoint.
-func EncodeInspectHostResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeGetHostResponse returns an encoder for responses returned by the
+// control-plane get-host endpoint.
+func EncodeGetHostResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*controlplane.Host)
 		enc := encoder(ctx, w)
-		body := NewInspectHostResponseBody(res)
+		body := NewGetHostResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeInspectHostRequest returns a decoder for requests sent to the
-// control-plane inspect-host endpoint.
-func DecodeInspectHostRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeGetHostRequest returns a decoder for requests sent to the
+// control-plane get-host endpoint.
+func DecodeGetHostRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
 			hostID string
@@ -369,15 +369,15 @@ func DecodeInspectHostRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 			params = mux.Vars(r)
 		)
 		hostID = params["host_id"]
-		payload := NewInspectHostPayload(hostID)
+		payload := NewGetHostPayload(hostID)
 
 		return payload, nil
 	}
 }
 
-// EncodeInspectHostError returns an encoder for errors returned by the
-// inspect-host control-plane endpoint.
-func EncodeInspectHostError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeGetHostError returns an encoder for errors returned by the get-host
+// control-plane endpoint.
+func EncodeGetHostError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -393,7 +393,7 @@ func EncodeInspectHostError(encoder func(context.Context, http.ResponseWriter) g
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewInspectHostClusterNotInitializedResponseBody(res)
+				body = NewGetHostClusterNotInitializedResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
@@ -406,7 +406,7 @@ func EncodeInspectHostError(encoder func(context.Context, http.ResponseWriter) g
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewInspectHostNotFoundResponseBody(res)
+				body = NewGetHostNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
@@ -1125,21 +1125,21 @@ func EncodeListDatabaseTasksError(encoder func(context.Context, http.ResponseWri
 	}
 }
 
-// EncodeInspectDatabaseTaskResponse returns an encoder for responses returned
-// by the control-plane inspect-database-task endpoint.
-func EncodeInspectDatabaseTaskResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+// EncodeGetDatabaseTaskResponse returns an encoder for responses returned by
+// the control-plane get-database-task endpoint.
+func EncodeGetDatabaseTaskResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
 		res, _ := v.(*controlplane.Task)
 		enc := encoder(ctx, w)
-		body := NewInspectDatabaseTaskResponseBody(res)
+		body := NewGetDatabaseTaskResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
 }
 
-// DecodeInspectDatabaseTaskRequest returns a decoder for requests sent to the
-// control-plane inspect-database-task endpoint.
-func DecodeInspectDatabaseTaskRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+// DecodeGetDatabaseTaskRequest returns a decoder for requests sent to the
+// control-plane get-database-task endpoint.
+func DecodeGetDatabaseTaskRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
 			databaseID string
@@ -1155,15 +1155,15 @@ func DecodeInspectDatabaseTaskRequest(mux goahttp.Muxer, decoder func(*http.Requ
 		if err != nil {
 			return nil, err
 		}
-		payload := NewInspectDatabaseTaskPayload(databaseID, taskID)
+		payload := NewGetDatabaseTaskPayload(databaseID, taskID)
 
 		return payload, nil
 	}
 }
 
-// EncodeInspectDatabaseTaskError returns an encoder for errors returned by the
-// inspect-database-task control-plane endpoint.
-func EncodeInspectDatabaseTaskError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+// EncodeGetDatabaseTaskError returns an encoder for errors returned by the
+// get-database-task control-plane endpoint.
+func EncodeGetDatabaseTaskError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
 	encodeError := goahttp.ErrorEncoder(encoder, formatter)
 	return func(ctx context.Context, w http.ResponseWriter, v error) error {
 		var en goa.GoaErrorNamer
@@ -1179,7 +1179,7 @@ func EncodeInspectDatabaseTaskError(encoder func(context.Context, http.ResponseW
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewInspectDatabaseTaskClusterNotInitializedResponseBody(res)
+				body = NewGetDatabaseTaskClusterNotInitializedResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
@@ -1192,7 +1192,7 @@ func EncodeInspectDatabaseTaskError(encoder func(context.Context, http.ResponseW
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewInspectDatabaseTaskNotFoundResponseBody(res)
+				body = NewGetDatabaseTaskNotFoundResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
