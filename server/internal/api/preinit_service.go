@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -16,8 +15,6 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/version"
 )
-
-var ErrUninitialized = api.MakeClusterNotInitialized(errors.New("cluster is not initialized"))
 
 var _ api.Service = (*PreInitService)(nil)
 
@@ -35,11 +32,11 @@ func NewPreInitService(cfg config.Config, etcd *etcd.EmbeddedEtcd) *PreInitServi
 
 func (s *PreInitService) InitCluster(ctx context.Context) (*api.ClusterJoinToken, error) {
 	if err := s.etcd.Start(ctx); err != nil {
-		return nil, fmt.Errorf("failed to start etcd: %w", err)
+		return nil, apiErr(err)
 	}
 	token, err := s.etcd.JoinToken()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get join token: %w", err)
+		return nil, apiErr(err)
 	}
 
 	// TODO: Https support
@@ -57,7 +54,7 @@ func (s *PreInitService) InitCluster(ctx context.Context) (*api.ClusterJoinToken
 func (s *PreInitService) JoinCluster(ctx context.Context, token *api.ClusterJoinToken) error {
 	serverURL, err := url.Parse(token.ServerURL)
 	if err != nil {
-		return fmt.Errorf("invalid server URL %q: %w", serverURL, err)
+		return ErrInvalidServerURL
 	}
 
 	enc := goahttp.RequestEncoder
@@ -74,28 +71,28 @@ func (s *PreInitService) JoinCluster(ctx context.Context, token *api.ClusterJoin
 		Token:       token.Token,
 	})
 	if err != nil {
-		return err
+		return apiErr(err)
 	}
 
 	caCert, err := base64.StdEncoding.DecodeString(opts.Credentials.CaCert)
 	if err != nil {
-		return fmt.Errorf("failed to decode CA certificate: %w", err)
+		return apiErr(fmt.Errorf("failed to decode CA certificate: %w", err))
 	}
 	clientCert, err := base64.StdEncoding.DecodeString(opts.Credentials.ClientCert)
 	if err != nil {
-		return fmt.Errorf("failed to decode client certificate: %w", err)
+		return apiErr(fmt.Errorf("failed to decode client certificate: %w", err))
 	}
 	clientKey, err := base64.StdEncoding.DecodeString(opts.Credentials.ClientKey)
 	if err != nil {
-		return fmt.Errorf("failed to decode client key: %w", err)
+		return apiErr(fmt.Errorf("failed to decode client key: %w", err))
 	}
 	serverCert, err := base64.StdEncoding.DecodeString(opts.Credentials.ServerCert)
 	if err != nil {
-		return fmt.Errorf("failed to decode server certificate: %w", err)
+		return apiErr(fmt.Errorf("failed to decode server certificate: %w", err))
 	}
 	serverKey, err := base64.StdEncoding.DecodeString(opts.Credentials.ServerKey)
 	if err != nil {
-		return fmt.Errorf("failed to decode server key: %w", err)
+		return apiErr(fmt.Errorf("failed to decode server key: %w", err))
 	}
 
 	err = s.etcd.Join(ctx, etcd.JoinOptions{
@@ -113,7 +110,7 @@ func (s *PreInitService) JoinCluster(ctx context.Context, token *api.ClusterJoin
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to join existing cluster: %w", err)
+		return apiErr(fmt.Errorf("failed to join existing cluster: %w", err))
 	}
 
 	return nil
@@ -122,7 +119,7 @@ func (s *PreInitService) JoinCluster(ctx context.Context, token *api.ClusterJoin
 func (s *PreInitService) GetVersion(context.Context) (res *api.VersionInfo, err error) {
 	info, err := version.GetInfo()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get version info: %w", err)
+		return nil, apiErr(err)
 	}
 
 	return &api.VersionInfo{

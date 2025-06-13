@@ -22,23 +22,29 @@ var _ = g.API("control-plane", func() {
 	g.Meta("openapi:operationId", "{method}")
 
 	// Common errors
-	g.Error("cluster_already_initialized")
-	g.Error("cluster_not_initialized")
-	g.Error("invalid_join_token")
-	g.Error("invalid_input")
-	g.Error("not_found")
-	g.Error("database_not_modifiable")
+	g.Error("cluster_already_initialized", APIError)
+	g.Error("cluster_not_initialized", APIError)
+	g.Error("database_not_modifiable", APIError)
+	g.Error("invalid_input", APIError)
+	g.Error("invalid_join_token", APIError)
+	g.Error("not_found", APIError)
+	g.Error("operation_already_in_progress", APIError)
+	g.Error("server_error", APIError)
 	g.HTTP(func() {
 		g.Response("cluster_already_initialized", http.StatusConflict)
 		g.Response("cluster_not_initialized", http.StatusConflict)
-		g.Response("invalid_join_token", http.StatusUnauthorized)
-		g.Response("invalid_input", http.StatusBadRequest)
-		g.Response("not_found", http.StatusNotFound)
 		g.Response("database_not_modifiable", http.StatusConflict)
+		g.Response("invalid_input", http.StatusBadRequest)
+		g.Response("invalid_join_token", http.StatusUnauthorized)
+		g.Response("not_found", http.StatusNotFound)
+		g.Response("operation_already_in_progress", http.StatusConflict)
+		g.Response("server_error", http.StatusInternalServerError)
 	})
 })
 
 var _ = g.Service("control-plane", func() {
+	g.Error("server_error")
+
 	g.Method("init-cluster", func() {
 		g.Description("Initializes a new cluster.")
 		g.Result(ClusterJoinToken)
@@ -53,6 +59,7 @@ var _ = g.Service("control-plane", func() {
 		g.Description("Join this host to an existing cluster.")
 		g.Payload(ClusterJoinToken)
 		g.Error("cluster_already_initialized")
+		g.Error("invalid_join_token")
 
 		g.HTTP(func() {
 			g.POST("/cluster/join")
@@ -86,7 +93,6 @@ var _ = g.Service("control-plane", func() {
 		g.Description("Returns information about the cluster.")
 		g.Result(Cluster)
 		g.Error("cluster_not_initialized")
-		g.Error("not_found")
 
 		g.HTTP(func() {
 			g.GET("/cluster")
@@ -113,6 +119,7 @@ var _ = g.Service("control-plane", func() {
 		})
 		g.Result(Host)
 		g.Error("cluster_not_initialized")
+		g.Error("invalid_input")
 		g.Error("not_found")
 
 		g.HTTP(func() {
@@ -129,6 +136,7 @@ var _ = g.Service("control-plane", func() {
 			})
 		})
 		g.Error("cluster_not_initialized")
+		g.Error("invalid_input")
 		g.Error("not_found")
 
 		g.HTTP(func() {
@@ -153,8 +161,9 @@ var _ = g.Service("control-plane", func() {
 		g.Payload(CreateDatabaseRequest)
 		g.Result(CreateDatabaseResponse)
 		g.Error("cluster_not_initialized")
+		g.Error("database_already_exists", APIError)
 		g.Error("invalid_input")
-		g.Error("database_already_exists")
+		g.Error("operation_already_in_progress")
 
 		g.HTTP(func() {
 			g.POST("/databases")
@@ -174,6 +183,7 @@ var _ = g.Service("control-plane", func() {
 			g.View("default")
 		})
 		g.Error("cluster_not_initialized")
+		g.Error("invalid_input")
 		g.Error("not_found")
 
 		g.HTTP(func() {
@@ -196,8 +206,10 @@ var _ = g.Service("control-plane", func() {
 		})
 		g.Result(UpdateDatabaseResponse)
 		g.Error("cluster_not_initialized")
-		g.Error("not_found")
 		g.Error("database_not_modifiable")
+		g.Error("invalid_input")
+		g.Error("not_found")
+		g.Error("operation_already_in_progress")
 
 		g.HTTP(func() {
 			g.POST("/databases/{database_id}")
@@ -219,8 +231,10 @@ var _ = g.Service("control-plane", func() {
 		})
 		g.Result(DeleteDatabaseResponse)
 		g.Error("cluster_not_initialized")
-		g.Error("not_found")
 		g.Error("database_not_modifiable")
+		g.Error("invalid_input")
+		g.Error("not_found")
+		g.Error("operation_already_in_progress")
 
 		g.HTTP(func() {
 			g.DELETE("/databases/{database_id}")
@@ -245,14 +259,14 @@ var _ = g.Service("control-plane", func() {
 		})
 		g.Result(BackupDatabaseNodeResponse)
 		g.Error("cluster_not_initialized")
-		g.Error("not_found")
 		g.Error("database_not_modifiable")
-		g.Error("backup_already_in_progress")
+		g.Error("invalid_input")
+		g.Error("not_found")
+		g.Error("operation_already_in_progress")
 
 		g.HTTP(func() {
 			g.POST("/databases/{database_id}/nodes/{node_name}/backups")
 			g.Body("options")
-			g.Response("backup_already_in_progress", http.StatusConflict)
 		})
 	})
 
@@ -283,6 +297,7 @@ var _ = g.Service("control-plane", func() {
 		})
 		g.Result(g.ArrayOf(Task))
 		g.Error("cluster_not_initialized")
+		g.Error("invalid_input")
 		g.Error("not_found")
 
 		g.HTTP(func() {
@@ -311,6 +326,7 @@ var _ = g.Service("control-plane", func() {
 		})
 		g.Result(Task)
 		g.Error("cluster_not_initialized")
+		g.Error("invalid_input")
 		g.Error("not_found")
 
 		g.HTTP(func() {
@@ -345,6 +361,7 @@ var _ = g.Service("control-plane", func() {
 		})
 		g.Result(TaskLog)
 		g.Error("cluster_not_initialized")
+		g.Error("invalid_input")
 		g.Error("not_found")
 
 		g.HTTP(func() {
@@ -368,9 +385,10 @@ var _ = g.Service("control-plane", func() {
 		})
 		g.Result(RestoreDatabaseResponse)
 		g.Error("cluster_not_initialized")
-		g.Error("not_found")
 		g.Error("database_not_modifiable")
 		g.Error("invalid_input")
+		g.Error("not_found")
+		g.Error("operation_already_in_progress")
 
 		g.HTTP(func() {
 			g.POST("/databases/{database_id}/restore")
@@ -389,4 +407,11 @@ var _ = g.Service("control-plane", func() {
 
 	// Serves the OpenAPI spec as a static file
 	g.Files("/openapi.json", "./gen/http/openapi3.json")
+})
+
+var APIError = g.Type("APIError", func() {
+	g.Description("A Control Plane API error.")
+	g.ErrorName("name", g.String, "The name of the error.")
+	g.Attribute("message", g.String, "The error message.")
+	g.Required("name", "message")
 })

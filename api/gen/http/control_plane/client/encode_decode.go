@@ -40,7 +40,8 @@ func (c *Client) BuildInitClusterRequest(ctx context.Context, v any) (*http.Requ
 // control-plane init-cluster endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeInitClusterResponse may return the following errors:
-//   - "cluster_already_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "cluster_already_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeInitClusterResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -86,6 +87,20 @@ func DecodeInitClusterResponse(decoder func(*http.Response) goahttp.Decoder, res
 				return nil, goahttp.ErrValidationError("control-plane", "init-cluster", err)
 			}
 			return nil, NewInitClusterClusterAlreadyInitialized(&body)
+		case http.StatusInternalServerError:
+			var (
+				body InitClusterServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "init-cluster", err)
+			}
+			err = ValidateInitClusterServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "init-cluster", err)
+			}
+			return nil, NewInitClusterServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "init-cluster", resp.StatusCode, string(body))
@@ -128,7 +143,9 @@ func EncodeJoinClusterRequest(encoder func(*http.Request) goahttp.Encoder) func(
 // control-plane join-cluster endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeJoinClusterResponse may return the following errors:
-//   - "cluster_already_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "cluster_already_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_join_token" (type *controlplane.APIError): http.StatusUnauthorized
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeJoinClusterResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -161,6 +178,34 @@ func DecodeJoinClusterResponse(decoder func(*http.Response) goahttp.Decoder, res
 				return nil, goahttp.ErrValidationError("control-plane", "join-cluster", err)
 			}
 			return nil, NewJoinClusterClusterAlreadyInitialized(&body)
+		case http.StatusUnauthorized:
+			var (
+				body JoinClusterInvalidJoinTokenResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "join-cluster", err)
+			}
+			err = ValidateJoinClusterInvalidJoinTokenResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "join-cluster", err)
+			}
+			return nil, NewJoinClusterInvalidJoinToken(&body)
+		case http.StatusInternalServerError:
+			var (
+				body JoinClusterServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "join-cluster", err)
+			}
+			err = ValidateJoinClusterServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "join-cluster", err)
+			}
+			return nil, NewJoinClusterServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "join-cluster", resp.StatusCode, string(body))
@@ -187,7 +232,8 @@ func (c *Client) BuildGetJoinTokenRequest(ctx context.Context, v any) (*http.Req
 // control-plane get-join-token endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeGetJoinTokenResponse may return the following errors:
-//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeGetJoinTokenResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -233,6 +279,20 @@ func DecodeGetJoinTokenResponse(decoder func(*http.Response) goahttp.Decoder, re
 				return nil, goahttp.ErrValidationError("control-plane", "get-join-token", err)
 			}
 			return nil, NewGetJoinTokenClusterNotInitialized(&body)
+		case http.StatusInternalServerError:
+			var (
+				body GetJoinTokenServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-join-token", err)
+			}
+			err = ValidateGetJoinTokenServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-join-token", err)
+			}
+			return nil, NewGetJoinTokenServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "get-join-token", resp.StatusCode, string(body))
@@ -275,8 +335,9 @@ func EncodeGetJoinOptionsRequest(encoder func(*http.Request) goahttp.Encoder) fu
 // control-plane get-join-options endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeGetJoinOptionsResponse may return the following errors:
-//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
-//   - "invalid_join_token" (type *goa.ServiceError): http.StatusUnauthorized
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_join_token" (type *controlplane.APIError): http.StatusUnauthorized
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeGetJoinOptionsResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -336,6 +397,20 @@ func DecodeGetJoinOptionsResponse(decoder func(*http.Response) goahttp.Decoder, 
 				return nil, goahttp.ErrValidationError("control-plane", "get-join-options", err)
 			}
 			return nil, NewGetJoinOptionsInvalidJoinToken(&body)
+		case http.StatusInternalServerError:
+			var (
+				body GetJoinOptionsServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-join-options", err)
+			}
+			err = ValidateGetJoinOptionsServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-join-options", err)
+			}
+			return nil, NewGetJoinOptionsServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "get-join-options", resp.StatusCode, string(body))
@@ -362,8 +437,8 @@ func (c *Client) BuildGetClusterRequest(ctx context.Context, v any) (*http.Reque
 // control-plane get-cluster endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeGetClusterResponse may return the following errors:
-//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
-//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeGetClusterResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -409,20 +484,20 @@ func DecodeGetClusterResponse(decoder func(*http.Response) goahttp.Decoder, rest
 				return nil, goahttp.ErrValidationError("control-plane", "get-cluster", err)
 			}
 			return nil, NewGetClusterClusterNotInitialized(&body)
-		case http.StatusNotFound:
+		case http.StatusInternalServerError:
 			var (
-				body GetClusterNotFoundResponseBody
+				body GetClusterServerErrorResponseBody
 				err  error
 			)
 			err = decoder(resp).Decode(&body)
 			if err != nil {
 				return nil, goahttp.ErrDecodingError("control-plane", "get-cluster", err)
 			}
-			err = ValidateGetClusterNotFoundResponseBody(&body)
+			err = ValidateGetClusterServerErrorResponseBody(&body)
 			if err != nil {
 				return nil, goahttp.ErrValidationError("control-plane", "get-cluster", err)
 			}
-			return nil, NewGetClusterNotFound(&body)
+			return nil, NewGetClusterServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "get-cluster", resp.StatusCode, string(body))
@@ -449,7 +524,8 @@ func (c *Client) BuildListHostsRequest(ctx context.Context, v any) (*http.Reques
 // control-plane list-hosts endpoint. restoreBody controls whether the response
 // body should be restored after having been read.
 // DecodeListHostsResponse may return the following errors:
-//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeListHostsResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -501,6 +577,20 @@ func DecodeListHostsResponse(decoder func(*http.Response) goahttp.Decoder, resto
 				return nil, goahttp.ErrValidationError("control-plane", "list-hosts", err)
 			}
 			return nil, NewListHostsClusterNotInitialized(&body)
+		case http.StatusInternalServerError:
+			var (
+				body ListHostsServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "list-hosts", err)
+			}
+			err = ValidateListHostsServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "list-hosts", err)
+			}
+			return nil, NewListHostsServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "list-hosts", resp.StatusCode, string(body))
@@ -539,8 +629,10 @@ func (c *Client) BuildGetHostRequest(ctx context.Context, v any) (*http.Request,
 // control-plane get-host endpoint. restoreBody controls whether the response
 // body should be restored after having been read.
 // DecodeGetHostResponse may return the following errors:
-//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
-//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeGetHostResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -586,6 +678,20 @@ func DecodeGetHostResponse(decoder func(*http.Response) goahttp.Decoder, restore
 				return nil, goahttp.ErrValidationError("control-plane", "get-host", err)
 			}
 			return nil, NewGetHostClusterNotInitialized(&body)
+		case http.StatusBadRequest:
+			var (
+				body GetHostInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-host", err)
+			}
+			err = ValidateGetHostInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-host", err)
+			}
+			return nil, NewGetHostInvalidInput(&body)
 		case http.StatusNotFound:
 			var (
 				body GetHostNotFoundResponseBody
@@ -600,6 +706,20 @@ func DecodeGetHostResponse(decoder func(*http.Response) goahttp.Decoder, restore
 				return nil, goahttp.ErrValidationError("control-plane", "get-host", err)
 			}
 			return nil, NewGetHostNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body GetHostServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-host", err)
+			}
+			err = ValidateGetHostServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-host", err)
+			}
+			return nil, NewGetHostServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "get-host", resp.StatusCode, string(body))
@@ -638,8 +758,10 @@ func (c *Client) BuildRemoveHostRequest(ctx context.Context, v any) (*http.Reque
 // control-plane remove-host endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeRemoveHostResponse may return the following errors:
-//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
-//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeRemoveHostResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -672,6 +794,20 @@ func DecodeRemoveHostResponse(decoder func(*http.Response) goahttp.Decoder, rest
 				return nil, goahttp.ErrValidationError("control-plane", "remove-host", err)
 			}
 			return nil, NewRemoveHostClusterNotInitialized(&body)
+		case http.StatusBadRequest:
+			var (
+				body RemoveHostInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "remove-host", err)
+			}
+			err = ValidateRemoveHostInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "remove-host", err)
+			}
+			return nil, NewRemoveHostInvalidInput(&body)
 		case http.StatusNotFound:
 			var (
 				body RemoveHostNotFoundResponseBody
@@ -686,6 +822,20 @@ func DecodeRemoveHostResponse(decoder func(*http.Response) goahttp.Decoder, rest
 				return nil, goahttp.ErrValidationError("control-plane", "remove-host", err)
 			}
 			return nil, NewRemoveHostNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body RemoveHostServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "remove-host", err)
+			}
+			err = ValidateRemoveHostServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "remove-host", err)
+			}
+			return nil, NewRemoveHostServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "remove-host", resp.StatusCode, string(body))
@@ -712,7 +862,8 @@ func (c *Client) BuildListDatabasesRequest(ctx context.Context, v any) (*http.Re
 // control-plane list-databases endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeListDatabasesResponse may return the following errors:
-//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeListDatabasesResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -760,6 +911,20 @@ func DecodeListDatabasesResponse(decoder func(*http.Response) goahttp.Decoder, r
 				return nil, goahttp.ErrValidationError("control-plane", "list-databases", err)
 			}
 			return nil, NewListDatabasesClusterNotInitialized(&body)
+		case http.StatusInternalServerError:
+			var (
+				body ListDatabasesServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "list-databases", err)
+			}
+			err = ValidateListDatabasesServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "list-databases", err)
+			}
+			return nil, NewListDatabasesServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "list-databases", resp.StatusCode, string(body))
@@ -802,9 +967,11 @@ func EncodeCreateDatabaseRequest(encoder func(*http.Request) goahttp.Encoder) fu
 // control-plane create-database endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeCreateDatabaseResponse may return the following errors:
-//   - "database_already_exists" (type *goa.ServiceError): http.StatusConflict
-//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
-//   - "invalid_input" (type *goa.ServiceError): http.StatusBadRequest
+//   - "database_already_exists" (type *controlplane.APIError): http.StatusConflict
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "operation_already_in_progress" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeCreateDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -867,6 +1034,20 @@ func DecodeCreateDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, 
 					return nil, goahttp.ErrValidationError("control-plane", "create-database", err)
 				}
 				return nil, NewCreateDatabaseClusterNotInitialized(&body)
+			case "operation_already_in_progress":
+				var (
+					body CreateDatabaseOperationAlreadyInProgressResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "create-database", err)
+				}
+				err = ValidateCreateDatabaseOperationAlreadyInProgressResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "create-database", err)
+				}
+				return nil, NewCreateDatabaseOperationAlreadyInProgress(&body)
 			default:
 				body, _ := io.ReadAll(resp.Body)
 				return nil, goahttp.ErrInvalidResponse("control-plane", "create-database", resp.StatusCode, string(body))
@@ -885,6 +1066,20 @@ func DecodeCreateDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, 
 				return nil, goahttp.ErrValidationError("control-plane", "create-database", err)
 			}
 			return nil, NewCreateDatabaseInvalidInput(&body)
+		case http.StatusInternalServerError:
+			var (
+				body CreateDatabaseServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "create-database", err)
+			}
+			err = ValidateCreateDatabaseServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "create-database", err)
+			}
+			return nil, NewCreateDatabaseServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "create-database", resp.StatusCode, string(body))
@@ -923,8 +1118,10 @@ func (c *Client) BuildGetDatabaseRequest(ctx context.Context, v any) (*http.Requ
 // control-plane get-database endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeGetDatabaseResponse may return the following errors:
-//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
-//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeGetDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -972,6 +1169,20 @@ func DecodeGetDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, res
 				return nil, goahttp.ErrValidationError("control-plane", "get-database", err)
 			}
 			return nil, NewGetDatabaseClusterNotInitialized(&body)
+		case http.StatusBadRequest:
+			var (
+				body GetDatabaseInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-database", err)
+			}
+			err = ValidateGetDatabaseInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-database", err)
+			}
+			return nil, NewGetDatabaseInvalidInput(&body)
 		case http.StatusNotFound:
 			var (
 				body GetDatabaseNotFoundResponseBody
@@ -986,6 +1197,20 @@ func DecodeGetDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, res
 				return nil, goahttp.ErrValidationError("control-plane", "get-database", err)
 			}
 			return nil, NewGetDatabaseNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body GetDatabaseServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-database", err)
+			}
+			err = ValidateGetDatabaseServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-database", err)
+			}
+			return nil, NewGetDatabaseServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "get-database", resp.StatusCode, string(body))
@@ -1045,9 +1270,12 @@ func EncodeUpdateDatabaseRequest(encoder func(*http.Request) goahttp.Encoder) fu
 // control-plane update-database endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeUpdateDatabaseResponse may return the following errors:
-//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
-//   - "database_not_modifiable" (type *goa.ServiceError): http.StatusConflict
-//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "database_not_modifiable" (type *controlplane.APIError): http.StatusConflict
+//   - "operation_already_in_progress" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeUpdateDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -1110,10 +1338,38 @@ func DecodeUpdateDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, 
 					return nil, goahttp.ErrValidationError("control-plane", "update-database", err)
 				}
 				return nil, NewUpdateDatabaseDatabaseNotModifiable(&body)
+			case "operation_already_in_progress":
+				var (
+					body UpdateDatabaseOperationAlreadyInProgressResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "update-database", err)
+				}
+				err = ValidateUpdateDatabaseOperationAlreadyInProgressResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "update-database", err)
+				}
+				return nil, NewUpdateDatabaseOperationAlreadyInProgress(&body)
 			default:
 				body, _ := io.ReadAll(resp.Body)
 				return nil, goahttp.ErrInvalidResponse("control-plane", "update-database", resp.StatusCode, string(body))
 			}
+		case http.StatusBadRequest:
+			var (
+				body UpdateDatabaseInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "update-database", err)
+			}
+			err = ValidateUpdateDatabaseInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "update-database", err)
+			}
+			return nil, NewUpdateDatabaseInvalidInput(&body)
 		case http.StatusNotFound:
 			var (
 				body UpdateDatabaseNotFoundResponseBody
@@ -1128,6 +1384,20 @@ func DecodeUpdateDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, 
 				return nil, goahttp.ErrValidationError("control-plane", "update-database", err)
 			}
 			return nil, NewUpdateDatabaseNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body UpdateDatabaseServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "update-database", err)
+			}
+			err = ValidateUpdateDatabaseServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "update-database", err)
+			}
+			return nil, NewUpdateDatabaseServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "update-database", resp.StatusCode, string(body))
@@ -1164,9 +1434,12 @@ func (c *Client) BuildDeleteDatabaseRequest(ctx context.Context, v any) (*http.R
 // control-plane delete-database endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeDeleteDatabaseResponse may return the following errors:
-//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
-//   - "database_not_modifiable" (type *goa.ServiceError): http.StatusConflict
-//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "database_not_modifiable" (type *controlplane.APIError): http.StatusConflict
+//   - "operation_already_in_progress" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeDeleteDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -1229,10 +1502,38 @@ func DecodeDeleteDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, 
 					return nil, goahttp.ErrValidationError("control-plane", "delete-database", err)
 				}
 				return nil, NewDeleteDatabaseDatabaseNotModifiable(&body)
+			case "operation_already_in_progress":
+				var (
+					body DeleteDatabaseOperationAlreadyInProgressResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "delete-database", err)
+				}
+				err = ValidateDeleteDatabaseOperationAlreadyInProgressResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "delete-database", err)
+				}
+				return nil, NewDeleteDatabaseOperationAlreadyInProgress(&body)
 			default:
 				body, _ := io.ReadAll(resp.Body)
 				return nil, goahttp.ErrInvalidResponse("control-plane", "delete-database", resp.StatusCode, string(body))
 			}
+		case http.StatusBadRequest:
+			var (
+				body DeleteDatabaseInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "delete-database", err)
+			}
+			err = ValidateDeleteDatabaseInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "delete-database", err)
+			}
+			return nil, NewDeleteDatabaseInvalidInput(&body)
 		case http.StatusNotFound:
 			var (
 				body DeleteDatabaseNotFoundResponseBody
@@ -1247,6 +1548,20 @@ func DecodeDeleteDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, 
 				return nil, goahttp.ErrValidationError("control-plane", "delete-database", err)
 			}
 			return nil, NewDeleteDatabaseNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body DeleteDatabaseServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "delete-database", err)
+			}
+			err = ValidateDeleteDatabaseServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "delete-database", err)
+			}
+			return nil, NewDeleteDatabaseServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "delete-database", resp.StatusCode, string(body))
@@ -1302,10 +1617,12 @@ func EncodeBackupDatabaseNodeRequest(encoder func(*http.Request) goahttp.Encoder
 // the control-plane backup-database-node endpoint. restoreBody controls
 // whether the response body should be restored after having been read.
 // DecodeBackupDatabaseNodeResponse may return the following errors:
-//   - "backup_already_in_progress" (type *goa.ServiceError): http.StatusConflict
-//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
-//   - "database_not_modifiable" (type *goa.ServiceError): http.StatusConflict
-//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "database_not_modifiable" (type *controlplane.APIError): http.StatusConflict
+//   - "operation_already_in_progress" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeBackupDatabaseNodeResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -1340,20 +1657,6 @@ func DecodeBackupDatabaseNodeResponse(decoder func(*http.Response) goahttp.Decod
 		case http.StatusConflict:
 			en := resp.Header.Get("goa-error")
 			switch en {
-			case "backup_already_in_progress":
-				var (
-					body BackupDatabaseNodeBackupAlreadyInProgressResponseBody
-					err  error
-				)
-				err = decoder(resp).Decode(&body)
-				if err != nil {
-					return nil, goahttp.ErrDecodingError("control-plane", "backup-database-node", err)
-				}
-				err = ValidateBackupDatabaseNodeBackupAlreadyInProgressResponseBody(&body)
-				if err != nil {
-					return nil, goahttp.ErrValidationError("control-plane", "backup-database-node", err)
-				}
-				return nil, NewBackupDatabaseNodeBackupAlreadyInProgress(&body)
 			case "cluster_not_initialized":
 				var (
 					body BackupDatabaseNodeClusterNotInitializedResponseBody
@@ -1382,10 +1685,38 @@ func DecodeBackupDatabaseNodeResponse(decoder func(*http.Response) goahttp.Decod
 					return nil, goahttp.ErrValidationError("control-plane", "backup-database-node", err)
 				}
 				return nil, NewBackupDatabaseNodeDatabaseNotModifiable(&body)
+			case "operation_already_in_progress":
+				var (
+					body BackupDatabaseNodeOperationAlreadyInProgressResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "backup-database-node", err)
+				}
+				err = ValidateBackupDatabaseNodeOperationAlreadyInProgressResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "backup-database-node", err)
+				}
+				return nil, NewBackupDatabaseNodeOperationAlreadyInProgress(&body)
 			default:
 				body, _ := io.ReadAll(resp.Body)
 				return nil, goahttp.ErrInvalidResponse("control-plane", "backup-database-node", resp.StatusCode, string(body))
 			}
+		case http.StatusBadRequest:
+			var (
+				body BackupDatabaseNodeInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "backup-database-node", err)
+			}
+			err = ValidateBackupDatabaseNodeInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "backup-database-node", err)
+			}
+			return nil, NewBackupDatabaseNodeInvalidInput(&body)
 		case http.StatusNotFound:
 			var (
 				body BackupDatabaseNodeNotFoundResponseBody
@@ -1400,6 +1731,20 @@ func DecodeBackupDatabaseNodeResponse(decoder func(*http.Response) goahttp.Decod
 				return nil, goahttp.ErrValidationError("control-plane", "backup-database-node", err)
 			}
 			return nil, NewBackupDatabaseNodeNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body BackupDatabaseNodeServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "backup-database-node", err)
+			}
+			err = ValidateBackupDatabaseNodeServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "backup-database-node", err)
+			}
+			return nil, NewBackupDatabaseNodeServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "backup-database-node", resp.StatusCode, string(body))
@@ -1460,8 +1805,10 @@ func EncodeListDatabaseTasksRequest(encoder func(*http.Request) goahttp.Encoder)
 // the control-plane list-database-tasks endpoint. restoreBody controls whether
 // the response body should be restored after having been read.
 // DecodeListDatabaseTasksResponse may return the following errors:
-//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
-//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeListDatabaseTasksResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -1513,6 +1860,20 @@ func DecodeListDatabaseTasksResponse(decoder func(*http.Response) goahttp.Decode
 				return nil, goahttp.ErrValidationError("control-plane", "list-database-tasks", err)
 			}
 			return nil, NewListDatabaseTasksClusterNotInitialized(&body)
+		case http.StatusBadRequest:
+			var (
+				body ListDatabaseTasksInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "list-database-tasks", err)
+			}
+			err = ValidateListDatabaseTasksInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "list-database-tasks", err)
+			}
+			return nil, NewListDatabaseTasksInvalidInput(&body)
 		case http.StatusNotFound:
 			var (
 				body ListDatabaseTasksNotFoundResponseBody
@@ -1527,6 +1888,20 @@ func DecodeListDatabaseTasksResponse(decoder func(*http.Response) goahttp.Decode
 				return nil, goahttp.ErrValidationError("control-plane", "list-database-tasks", err)
 			}
 			return nil, NewListDatabaseTasksNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body ListDatabaseTasksServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "list-database-tasks", err)
+			}
+			err = ValidateListDatabaseTasksServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "list-database-tasks", err)
+			}
+			return nil, NewListDatabaseTasksServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "list-database-tasks", resp.StatusCode, string(body))
@@ -1565,8 +1940,10 @@ func (c *Client) BuildGetDatabaseTaskRequest(ctx context.Context, v any) (*http.
 // the control-plane get-database-task endpoint. restoreBody controls whether
 // the response body should be restored after having been read.
 // DecodeGetDatabaseTaskResponse may return the following errors:
-//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
-//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeGetDatabaseTaskResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -1612,6 +1989,20 @@ func DecodeGetDatabaseTaskResponse(decoder func(*http.Response) goahttp.Decoder,
 				return nil, goahttp.ErrValidationError("control-plane", "get-database-task", err)
 			}
 			return nil, NewGetDatabaseTaskClusterNotInitialized(&body)
+		case http.StatusBadRequest:
+			var (
+				body GetDatabaseTaskInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-database-task", err)
+			}
+			err = ValidateGetDatabaseTaskInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-database-task", err)
+			}
+			return nil, NewGetDatabaseTaskInvalidInput(&body)
 		case http.StatusNotFound:
 			var (
 				body GetDatabaseTaskNotFoundResponseBody
@@ -1626,6 +2017,20 @@ func DecodeGetDatabaseTaskResponse(decoder func(*http.Response) goahttp.Decoder,
 				return nil, goahttp.ErrValidationError("control-plane", "get-database-task", err)
 			}
 			return nil, NewGetDatabaseTaskNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body GetDatabaseTaskServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-database-task", err)
+			}
+			err = ValidateGetDatabaseTaskServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-database-task", err)
+			}
+			return nil, NewGetDatabaseTaskServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "get-database-task", resp.StatusCode, string(body))
@@ -1685,8 +2090,10 @@ func EncodeGetDatabaseTaskLogRequest(encoder func(*http.Request) goahttp.Encoder
 // the control-plane get-database-task-log endpoint. restoreBody controls
 // whether the response body should be restored after having been read.
 // DecodeGetDatabaseTaskLogResponse may return the following errors:
-//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
-//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeGetDatabaseTaskLogResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -1732,6 +2139,20 @@ func DecodeGetDatabaseTaskLogResponse(decoder func(*http.Response) goahttp.Decod
 				return nil, goahttp.ErrValidationError("control-plane", "get-database-task-log", err)
 			}
 			return nil, NewGetDatabaseTaskLogClusterNotInitialized(&body)
+		case http.StatusBadRequest:
+			var (
+				body GetDatabaseTaskLogInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-database-task-log", err)
+			}
+			err = ValidateGetDatabaseTaskLogInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-database-task-log", err)
+			}
+			return nil, NewGetDatabaseTaskLogInvalidInput(&body)
 		case http.StatusNotFound:
 			var (
 				body GetDatabaseTaskLogNotFoundResponseBody
@@ -1746,6 +2167,20 @@ func DecodeGetDatabaseTaskLogResponse(decoder func(*http.Response) goahttp.Decod
 				return nil, goahttp.ErrValidationError("control-plane", "get-database-task-log", err)
 			}
 			return nil, NewGetDatabaseTaskLogNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body GetDatabaseTaskLogServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-database-task-log", err)
+			}
+			err = ValidateGetDatabaseTaskLogServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-database-task-log", err)
+			}
+			return nil, NewGetDatabaseTaskLogServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "get-database-task-log", resp.StatusCode, string(body))
@@ -1798,10 +2233,12 @@ func EncodeRestoreDatabaseRequest(encoder func(*http.Request) goahttp.Encoder) f
 // the control-plane restore-database endpoint. restoreBody controls whether
 // the response body should be restored after having been read.
 // DecodeRestoreDatabaseResponse may return the following errors:
-//   - "cluster_not_initialized" (type *goa.ServiceError): http.StatusConflict
-//   - "database_not_modifiable" (type *goa.ServiceError): http.StatusConflict
-//   - "not_found" (type *goa.ServiceError): http.StatusNotFound
-//   - "invalid_input" (type *goa.ServiceError): http.StatusBadRequest
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "database_not_modifiable" (type *controlplane.APIError): http.StatusConflict
+//   - "operation_already_in_progress" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeRestoreDatabaseResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
@@ -1864,24 +2301,24 @@ func DecodeRestoreDatabaseResponse(decoder func(*http.Response) goahttp.Decoder,
 					return nil, goahttp.ErrValidationError("control-plane", "restore-database", err)
 				}
 				return nil, NewRestoreDatabaseDatabaseNotModifiable(&body)
+			case "operation_already_in_progress":
+				var (
+					body RestoreDatabaseOperationAlreadyInProgressResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "restore-database", err)
+				}
+				err = ValidateRestoreDatabaseOperationAlreadyInProgressResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "restore-database", err)
+				}
+				return nil, NewRestoreDatabaseOperationAlreadyInProgress(&body)
 			default:
 				body, _ := io.ReadAll(resp.Body)
 				return nil, goahttp.ErrInvalidResponse("control-plane", "restore-database", resp.StatusCode, string(body))
 			}
-		case http.StatusNotFound:
-			var (
-				body RestoreDatabaseNotFoundResponseBody
-				err  error
-			)
-			err = decoder(resp).Decode(&body)
-			if err != nil {
-				return nil, goahttp.ErrDecodingError("control-plane", "restore-database", err)
-			}
-			err = ValidateRestoreDatabaseNotFoundResponseBody(&body)
-			if err != nil {
-				return nil, goahttp.ErrValidationError("control-plane", "restore-database", err)
-			}
-			return nil, NewRestoreDatabaseNotFound(&body)
 		case http.StatusBadRequest:
 			var (
 				body RestoreDatabaseInvalidInputResponseBody
@@ -1896,6 +2333,34 @@ func DecodeRestoreDatabaseResponse(decoder func(*http.Response) goahttp.Decoder,
 				return nil, goahttp.ErrValidationError("control-plane", "restore-database", err)
 			}
 			return nil, NewRestoreDatabaseInvalidInput(&body)
+		case http.StatusNotFound:
+			var (
+				body RestoreDatabaseNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "restore-database", err)
+			}
+			err = ValidateRestoreDatabaseNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "restore-database", err)
+			}
+			return nil, NewRestoreDatabaseNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body RestoreDatabaseServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "restore-database", err)
+			}
+			err = ValidateRestoreDatabaseServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "restore-database", err)
+			}
+			return nil, NewRestoreDatabaseServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "restore-database", resp.StatusCode, string(body))
@@ -1921,6 +2386,9 @@ func (c *Client) BuildGetVersionRequest(ctx context.Context, v any) (*http.Reque
 // DecodeGetVersionResponse returns a decoder for responses returned by the
 // control-plane get-version endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
+// DecodeGetVersionResponse may return the following errors:
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
+//   - error: internal error
 func DecodeGetVersionResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
 	return func(resp *http.Response) (any, error) {
 		if restoreBody {
@@ -1951,6 +2419,20 @@ func DecodeGetVersionResponse(decoder func(*http.Response) goahttp.Decoder, rest
 			}
 			res := NewGetVersionVersionInfoOK(&body)
 			return res, nil
+		case http.StatusInternalServerError:
+			var (
+				body GetVersionServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-version", err)
+			}
+			err = ValidateGetVersionServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-version", err)
+			}
+			return nil, NewGetVersionServerError(&body)
 		default:
 			body, _ := io.ReadAll(resp.Body)
 			return nil, goahttp.ErrInvalidResponse("control-plane", "get-version", resp.StatusCode, string(body))

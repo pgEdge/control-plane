@@ -273,718 +273,691 @@ type GetVersionResponseBody struct {
 // "control-plane" service "init-cluster" endpoint HTTP response body for the
 // "cluster_already_initialized" error.
 type InitClusterClusterAlreadyInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// InitClusterServerErrorResponseBody is the type of the "control-plane"
+// service "init-cluster" endpoint HTTP response body for the "server_error"
+// error.
+type InitClusterServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // JoinClusterClusterAlreadyInitializedResponseBody is the type of the
 // "control-plane" service "join-cluster" endpoint HTTP response body for the
 // "cluster_already_initialized" error.
 type JoinClusterClusterAlreadyInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// JoinClusterInvalidJoinTokenResponseBody is the type of the "control-plane"
+// service "join-cluster" endpoint HTTP response body for the
+// "invalid_join_token" error.
+type JoinClusterInvalidJoinTokenResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// JoinClusterServerErrorResponseBody is the type of the "control-plane"
+// service "join-cluster" endpoint HTTP response body for the "server_error"
+// error.
+type JoinClusterServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // GetJoinTokenClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "get-join-token" endpoint HTTP response body for the
 // "cluster_not_initialized" error.
 type GetJoinTokenClusterNotInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// GetJoinTokenServerErrorResponseBody is the type of the "control-plane"
+// service "get-join-token" endpoint HTTP response body for the "server_error"
+// error.
+type GetJoinTokenServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // GetJoinOptionsClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "get-join-options" endpoint HTTP response body for
 // the "cluster_not_initialized" error.
 type GetJoinOptionsClusterNotInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
 // GetJoinOptionsInvalidJoinTokenResponseBody is the type of the
 // "control-plane" service "get-join-options" endpoint HTTP response body for
 // the "invalid_join_token" error.
 type GetJoinOptionsInvalidJoinTokenResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// GetJoinOptionsServerErrorResponseBody is the type of the "control-plane"
+// service "get-join-options" endpoint HTTP response body for the
+// "server_error" error.
+type GetJoinOptionsServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // GetClusterClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "get-cluster" endpoint HTTP response body for the
 // "cluster_not_initialized" error.
 type GetClusterClusterNotInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
-// GetClusterNotFoundResponseBody is the type of the "control-plane" service
-// "get-cluster" endpoint HTTP response body for the "not_found" error.
-type GetClusterNotFoundResponseBody struct {
-	// Name is the name of this class of errors.
+// GetClusterServerErrorResponseBody is the type of the "control-plane" service
+// "get-cluster" endpoint HTTP response body for the "server_error" error.
+type GetClusterServerErrorResponseBody struct {
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
 // ListHostsClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "list-hosts" endpoint HTTP response body for the
 // "cluster_not_initialized" error.
 type ListHostsClusterNotInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// ListHostsServerErrorResponseBody is the type of the "control-plane" service
+// "list-hosts" endpoint HTTP response body for the "server_error" error.
+type ListHostsServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // GetHostClusterNotInitializedResponseBody is the type of the "control-plane"
 // service "get-host" endpoint HTTP response body for the
 // "cluster_not_initialized" error.
 type GetHostClusterNotInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// GetHostInvalidInputResponseBody is the type of the "control-plane" service
+// "get-host" endpoint HTTP response body for the "invalid_input" error.
+type GetHostInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // GetHostNotFoundResponseBody is the type of the "control-plane" service
 // "get-host" endpoint HTTP response body for the "not_found" error.
 type GetHostNotFoundResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// GetHostServerErrorResponseBody is the type of the "control-plane" service
+// "get-host" endpoint HTTP response body for the "server_error" error.
+type GetHostServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // RemoveHostClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "remove-host" endpoint HTTP response body for the
 // "cluster_not_initialized" error.
 type RemoveHostClusterNotInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// RemoveHostInvalidInputResponseBody is the type of the "control-plane"
+// service "remove-host" endpoint HTTP response body for the "invalid_input"
+// error.
+type RemoveHostInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // RemoveHostNotFoundResponseBody is the type of the "control-plane" service
 // "remove-host" endpoint HTTP response body for the "not_found" error.
 type RemoveHostNotFoundResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// RemoveHostServerErrorResponseBody is the type of the "control-plane" service
+// "remove-host" endpoint HTTP response body for the "server_error" error.
+type RemoveHostServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // ListDatabasesClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "list-databases" endpoint HTTP response body for the
 // "cluster_not_initialized" error.
 type ListDatabasesClusterNotInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// ListDatabasesServerErrorResponseBody is the type of the "control-plane"
+// service "list-databases" endpoint HTTP response body for the "server_error"
+// error.
+type ListDatabasesServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // CreateDatabaseDatabaseAlreadyExistsResponseBody is the type of the
 // "control-plane" service "create-database" endpoint HTTP response body for
 // the "database_already_exists" error.
 type CreateDatabaseDatabaseAlreadyExistsResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
 // CreateDatabaseClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "create-database" endpoint HTTP response body for
 // the "cluster_not_initialized" error.
 type CreateDatabaseClusterNotInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// CreateDatabaseOperationAlreadyInProgressResponseBody is the type of the
+// "control-plane" service "create-database" endpoint HTTP response body for
+// the "operation_already_in_progress" error.
+type CreateDatabaseOperationAlreadyInProgressResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // CreateDatabaseInvalidInputResponseBody is the type of the "control-plane"
 // service "create-database" endpoint HTTP response body for the
 // "invalid_input" error.
 type CreateDatabaseInvalidInputResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// CreateDatabaseServerErrorResponseBody is the type of the "control-plane"
+// service "create-database" endpoint HTTP response body for the "server_error"
+// error.
+type CreateDatabaseServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // GetDatabaseClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "get-database" endpoint HTTP response body for the
 // "cluster_not_initialized" error.
 type GetDatabaseClusterNotInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// GetDatabaseInvalidInputResponseBody is the type of the "control-plane"
+// service "get-database" endpoint HTTP response body for the "invalid_input"
+// error.
+type GetDatabaseInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // GetDatabaseNotFoundResponseBody is the type of the "control-plane" service
 // "get-database" endpoint HTTP response body for the "not_found" error.
 type GetDatabaseNotFoundResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// GetDatabaseServerErrorResponseBody is the type of the "control-plane"
+// service "get-database" endpoint HTTP response body for the "server_error"
+// error.
+type GetDatabaseServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // UpdateDatabaseClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "update-database" endpoint HTTP response body for
 // the "cluster_not_initialized" error.
 type UpdateDatabaseClusterNotInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
 // UpdateDatabaseDatabaseNotModifiableResponseBody is the type of the
 // "control-plane" service "update-database" endpoint HTTP response body for
 // the "database_not_modifiable" error.
 type UpdateDatabaseDatabaseNotModifiableResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// UpdateDatabaseOperationAlreadyInProgressResponseBody is the type of the
+// "control-plane" service "update-database" endpoint HTTP response body for
+// the "operation_already_in_progress" error.
+type UpdateDatabaseOperationAlreadyInProgressResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateDatabaseInvalidInputResponseBody is the type of the "control-plane"
+// service "update-database" endpoint HTTP response body for the
+// "invalid_input" error.
+type UpdateDatabaseInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // UpdateDatabaseNotFoundResponseBody is the type of the "control-plane"
 // service "update-database" endpoint HTTP response body for the "not_found"
 // error.
 type UpdateDatabaseNotFoundResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// UpdateDatabaseServerErrorResponseBody is the type of the "control-plane"
+// service "update-database" endpoint HTTP response body for the "server_error"
+// error.
+type UpdateDatabaseServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // DeleteDatabaseClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "delete-database" endpoint HTTP response body for
 // the "cluster_not_initialized" error.
 type DeleteDatabaseClusterNotInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
 // DeleteDatabaseDatabaseNotModifiableResponseBody is the type of the
 // "control-plane" service "delete-database" endpoint HTTP response body for
 // the "database_not_modifiable" error.
 type DeleteDatabaseDatabaseNotModifiableResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// DeleteDatabaseOperationAlreadyInProgressResponseBody is the type of the
+// "control-plane" service "delete-database" endpoint HTTP response body for
+// the "operation_already_in_progress" error.
+type DeleteDatabaseOperationAlreadyInProgressResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// DeleteDatabaseInvalidInputResponseBody is the type of the "control-plane"
+// service "delete-database" endpoint HTTP response body for the
+// "invalid_input" error.
+type DeleteDatabaseInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // DeleteDatabaseNotFoundResponseBody is the type of the "control-plane"
 // service "delete-database" endpoint HTTP response body for the "not_found"
 // error.
 type DeleteDatabaseNotFoundResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
-// BackupDatabaseNodeBackupAlreadyInProgressResponseBody is the type of the
-// "control-plane" service "backup-database-node" endpoint HTTP response body
-// for the "backup_already_in_progress" error.
-type BackupDatabaseNodeBackupAlreadyInProgressResponseBody struct {
-	// Name is the name of this class of errors.
+// DeleteDatabaseServerErrorResponseBody is the type of the "control-plane"
+// service "delete-database" endpoint HTTP response body for the "server_error"
+// error.
+type DeleteDatabaseServerErrorResponseBody struct {
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
 // BackupDatabaseNodeClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "backup-database-node" endpoint HTTP response body
 // for the "cluster_not_initialized" error.
 type BackupDatabaseNodeClusterNotInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
 // BackupDatabaseNodeDatabaseNotModifiableResponseBody is the type of the
 // "control-plane" service "backup-database-node" endpoint HTTP response body
 // for the "database_not_modifiable" error.
 type BackupDatabaseNodeDatabaseNotModifiableResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// BackupDatabaseNodeOperationAlreadyInProgressResponseBody is the type of the
+// "control-plane" service "backup-database-node" endpoint HTTP response body
+// for the "operation_already_in_progress" error.
+type BackupDatabaseNodeOperationAlreadyInProgressResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// BackupDatabaseNodeInvalidInputResponseBody is the type of the
+// "control-plane" service "backup-database-node" endpoint HTTP response body
+// for the "invalid_input" error.
+type BackupDatabaseNodeInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // BackupDatabaseNodeNotFoundResponseBody is the type of the "control-plane"
 // service "backup-database-node" endpoint HTTP response body for the
 // "not_found" error.
 type BackupDatabaseNodeNotFoundResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// BackupDatabaseNodeServerErrorResponseBody is the type of the "control-plane"
+// service "backup-database-node" endpoint HTTP response body for the
+// "server_error" error.
+type BackupDatabaseNodeServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // ListDatabaseTasksClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "list-database-tasks" endpoint HTTP response body
 // for the "cluster_not_initialized" error.
 type ListDatabaseTasksClusterNotInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// ListDatabaseTasksInvalidInputResponseBody is the type of the "control-plane"
+// service "list-database-tasks" endpoint HTTP response body for the
+// "invalid_input" error.
+type ListDatabaseTasksInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // ListDatabaseTasksNotFoundResponseBody is the type of the "control-plane"
 // service "list-database-tasks" endpoint HTTP response body for the
 // "not_found" error.
 type ListDatabaseTasksNotFoundResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// ListDatabaseTasksServerErrorResponseBody is the type of the "control-plane"
+// service "list-database-tasks" endpoint HTTP response body for the
+// "server_error" error.
+type ListDatabaseTasksServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // GetDatabaseTaskClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "get-database-task" endpoint HTTP response body for
 // the "cluster_not_initialized" error.
 type GetDatabaseTaskClusterNotInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// GetDatabaseTaskInvalidInputResponseBody is the type of the "control-plane"
+// service "get-database-task" endpoint HTTP response body for the
+// "invalid_input" error.
+type GetDatabaseTaskInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // GetDatabaseTaskNotFoundResponseBody is the type of the "control-plane"
 // service "get-database-task" endpoint HTTP response body for the "not_found"
 // error.
 type GetDatabaseTaskNotFoundResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// GetDatabaseTaskServerErrorResponseBody is the type of the "control-plane"
+// service "get-database-task" endpoint HTTP response body for the
+// "server_error" error.
+type GetDatabaseTaskServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // GetDatabaseTaskLogClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "get-database-task-log" endpoint HTTP response body
 // for the "cluster_not_initialized" error.
 type GetDatabaseTaskLogClusterNotInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// GetDatabaseTaskLogInvalidInputResponseBody is the type of the
+// "control-plane" service "get-database-task-log" endpoint HTTP response body
+// for the "invalid_input" error.
+type GetDatabaseTaskLogInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // GetDatabaseTaskLogNotFoundResponseBody is the type of the "control-plane"
 // service "get-database-task-log" endpoint HTTP response body for the
 // "not_found" error.
 type GetDatabaseTaskLogNotFoundResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// GetDatabaseTaskLogServerErrorResponseBody is the type of the "control-plane"
+// service "get-database-task-log" endpoint HTTP response body for the
+// "server_error" error.
+type GetDatabaseTaskLogServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // RestoreDatabaseClusterNotInitializedResponseBody is the type of the
 // "control-plane" service "restore-database" endpoint HTTP response body for
 // the "cluster_not_initialized" error.
 type RestoreDatabaseClusterNotInitializedResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
 // RestoreDatabaseDatabaseNotModifiableResponseBody is the type of the
 // "control-plane" service "restore-database" endpoint HTTP response body for
 // the "database_not_modifiable" error.
 type RestoreDatabaseDatabaseNotModifiableResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
-// RestoreDatabaseNotFoundResponseBody is the type of the "control-plane"
-// service "restore-database" endpoint HTTP response body for the "not_found"
-// error.
-type RestoreDatabaseNotFoundResponseBody struct {
-	// Name is the name of this class of errors.
+// RestoreDatabaseOperationAlreadyInProgressResponseBody is the type of the
+// "control-plane" service "restore-database" endpoint HTTP response body for
+// the "operation_already_in_progress" error.
+type RestoreDatabaseOperationAlreadyInProgressResponseBody struct {
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
 }
 
 // RestoreDatabaseInvalidInputResponseBody is the type of the "control-plane"
 // service "restore-database" endpoint HTTP response body for the
 // "invalid_input" error.
 type RestoreDatabaseInvalidInputResponseBody struct {
-	// Name is the name of this class of errors.
+	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// ID is a unique identifier for this particular occurrence of the problem.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Message is a human-readable explanation specific to this occurrence of the
-	// problem.
+	// The error message.
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-	// Is the error temporary?
-	Temporary *bool `form:"temporary,omitempty" json:"temporary,omitempty" xml:"temporary,omitempty"`
-	// Is the error a timeout?
-	Timeout *bool `form:"timeout,omitempty" json:"timeout,omitempty" xml:"timeout,omitempty"`
-	// Is the error a server-side fault?
-	Fault *bool `form:"fault,omitempty" json:"fault,omitempty" xml:"fault,omitempty"`
+}
+
+// RestoreDatabaseNotFoundResponseBody is the type of the "control-plane"
+// service "restore-database" endpoint HTTP response body for the "not_found"
+// error.
+type RestoreDatabaseNotFoundResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// RestoreDatabaseServerErrorResponseBody is the type of the "control-plane"
+// service "restore-database" endpoint HTTP response body for the
+// "server_error" error.
+type RestoreDatabaseServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetVersionServerErrorResponseBody is the type of the "control-plane" service
+// "get-version" endpoint HTTP response body for the "server_error" error.
+type GetVersionServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
 // ClusterPeerResponseBody is used to define fields on response body types.
@@ -2430,14 +2403,21 @@ func NewInitClusterClusterJoinTokenOK(body *InitClusterResponseBody) *controlpla
 
 // NewInitClusterClusterAlreadyInitialized builds a control-plane service
 // init-cluster endpoint cluster_already_initialized error.
-func NewInitClusterClusterAlreadyInitialized(body *InitClusterClusterAlreadyInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewInitClusterClusterAlreadyInitialized(body *InitClusterClusterAlreadyInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewInitClusterServerError builds a control-plane service init-cluster
+// endpoint server_error error.
+func NewInitClusterServerError(body *InitClusterServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2445,14 +2425,32 @@ func NewInitClusterClusterAlreadyInitialized(body *InitClusterClusterAlreadyInit
 
 // NewJoinClusterClusterAlreadyInitialized builds a control-plane service
 // join-cluster endpoint cluster_already_initialized error.
-func NewJoinClusterClusterAlreadyInitialized(body *JoinClusterClusterAlreadyInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewJoinClusterClusterAlreadyInitialized(body *JoinClusterClusterAlreadyInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewJoinClusterInvalidJoinToken builds a control-plane service join-cluster
+// endpoint invalid_join_token error.
+func NewJoinClusterInvalidJoinToken(body *JoinClusterInvalidJoinTokenResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewJoinClusterServerError builds a control-plane service join-cluster
+// endpoint server_error error.
+func NewJoinClusterServerError(body *JoinClusterServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2471,14 +2469,21 @@ func NewGetJoinTokenClusterJoinTokenOK(body *GetJoinTokenResponseBody) *controlp
 
 // NewGetJoinTokenClusterNotInitialized builds a control-plane service
 // get-join-token endpoint cluster_not_initialized error.
-func NewGetJoinTokenClusterNotInitialized(body *GetJoinTokenClusterNotInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewGetJoinTokenClusterNotInitialized(body *GetJoinTokenClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetJoinTokenServerError builds a control-plane service get-join-token
+// endpoint server_error error.
+func NewGetJoinTokenServerError(body *GetJoinTokenServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2498,14 +2503,10 @@ func NewGetJoinOptionsClusterJoinOptionsOK(body *GetJoinOptionsResponseBody) *co
 
 // NewGetJoinOptionsClusterNotInitialized builds a control-plane service
 // get-join-options endpoint cluster_not_initialized error.
-func NewGetJoinOptionsClusterNotInitialized(body *GetJoinOptionsClusterNotInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewGetJoinOptionsClusterNotInitialized(body *GetJoinOptionsClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2513,14 +2514,21 @@ func NewGetJoinOptionsClusterNotInitialized(body *GetJoinOptionsClusterNotInitia
 
 // NewGetJoinOptionsInvalidJoinToken builds a control-plane service
 // get-join-options endpoint invalid_join_token error.
-func NewGetJoinOptionsInvalidJoinToken(body *GetJoinOptionsInvalidJoinTokenResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewGetJoinOptionsInvalidJoinToken(body *GetJoinOptionsInvalidJoinTokenResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetJoinOptionsServerError builds a control-plane service get-join-options
+// endpoint server_error error.
+func NewGetJoinOptionsServerError(body *GetJoinOptionsServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2544,29 +2552,21 @@ func NewGetClusterClusterOK(body *GetClusterResponseBody) *controlplane.Cluster 
 
 // NewGetClusterClusterNotInitialized builds a control-plane service
 // get-cluster endpoint cluster_not_initialized error.
-func NewGetClusterClusterNotInitialized(body *GetClusterClusterNotInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewGetClusterClusterNotInitialized(body *GetClusterClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
 }
 
-// NewGetClusterNotFound builds a control-plane service get-cluster endpoint
-// not_found error.
-func NewGetClusterNotFound(body *GetClusterNotFoundResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+// NewGetClusterServerError builds a control-plane service get-cluster endpoint
+// server_error error.
+func NewGetClusterServerError(body *GetClusterServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2585,14 +2585,21 @@ func NewListHostsHostOK(body []*HostResponse) []*controlplane.Host {
 
 // NewListHostsClusterNotInitialized builds a control-plane service list-hosts
 // endpoint cluster_not_initialized error.
-func NewListHostsClusterNotInitialized(body *ListHostsClusterNotInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewListHostsClusterNotInitialized(body *ListHostsClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewListHostsServerError builds a control-plane service list-hosts endpoint
+// server_error error.
+func NewListHostsServerError(body *ListHostsServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2624,14 +2631,21 @@ func NewGetHostHostOK(body *GetHostResponseBody) *controlplane.Host {
 
 // NewGetHostClusterNotInitialized builds a control-plane service get-host
 // endpoint cluster_not_initialized error.
-func NewGetHostClusterNotInitialized(body *GetHostClusterNotInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewGetHostClusterNotInitialized(body *GetHostClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetHostInvalidInput builds a control-plane service get-host endpoint
+// invalid_input error.
+func NewGetHostInvalidInput(body *GetHostInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2639,14 +2653,21 @@ func NewGetHostClusterNotInitialized(body *GetHostClusterNotInitializedResponseB
 
 // NewGetHostNotFound builds a control-plane service get-host endpoint
 // not_found error.
-func NewGetHostNotFound(body *GetHostNotFoundResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewGetHostNotFound(body *GetHostNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetHostServerError builds a control-plane service get-host endpoint
+// server_error error.
+func NewGetHostServerError(body *GetHostServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2654,14 +2675,21 @@ func NewGetHostNotFound(body *GetHostNotFoundResponseBody) *goa.ServiceError {
 
 // NewRemoveHostClusterNotInitialized builds a control-plane service
 // remove-host endpoint cluster_not_initialized error.
-func NewRemoveHostClusterNotInitialized(body *RemoveHostClusterNotInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewRemoveHostClusterNotInitialized(body *RemoveHostClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewRemoveHostInvalidInput builds a control-plane service remove-host
+// endpoint invalid_input error.
+func NewRemoveHostInvalidInput(body *RemoveHostInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2669,14 +2697,21 @@ func NewRemoveHostClusterNotInitialized(body *RemoveHostClusterNotInitializedRes
 
 // NewRemoveHostNotFound builds a control-plane service remove-host endpoint
 // not_found error.
-func NewRemoveHostNotFound(body *RemoveHostNotFoundResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewRemoveHostNotFound(body *RemoveHostNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewRemoveHostServerError builds a control-plane service remove-host endpoint
+// server_error error.
+func NewRemoveHostServerError(body *RemoveHostServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2695,14 +2730,21 @@ func NewListDatabasesDatabaseCollectionOK(body ListDatabasesResponseBody) contro
 
 // NewListDatabasesClusterNotInitialized builds a control-plane service
 // list-databases endpoint cluster_not_initialized error.
-func NewListDatabasesClusterNotInitialized(body *ListDatabasesClusterNotInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewListDatabasesClusterNotInitialized(body *ListDatabasesClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewListDatabasesServerError builds a control-plane service list-databases
+// endpoint server_error error.
+func NewListDatabasesServerError(body *ListDatabasesServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2724,14 +2766,10 @@ func NewCreateDatabaseResponseOK(body *CreateDatabaseResponseBody) *controlplane
 
 // NewCreateDatabaseDatabaseAlreadyExists builds a control-plane service
 // create-database endpoint database_already_exists error.
-func NewCreateDatabaseDatabaseAlreadyExists(body *CreateDatabaseDatabaseAlreadyExistsResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewCreateDatabaseDatabaseAlreadyExists(body *CreateDatabaseDatabaseAlreadyExistsResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2739,14 +2777,21 @@ func NewCreateDatabaseDatabaseAlreadyExists(body *CreateDatabaseDatabaseAlreadyE
 
 // NewCreateDatabaseClusterNotInitialized builds a control-plane service
 // create-database endpoint cluster_not_initialized error.
-func NewCreateDatabaseClusterNotInitialized(body *CreateDatabaseClusterNotInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewCreateDatabaseClusterNotInitialized(body *CreateDatabaseClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateDatabaseOperationAlreadyInProgress builds a control-plane service
+// create-database endpoint operation_already_in_progress error.
+func NewCreateDatabaseOperationAlreadyInProgress(body *CreateDatabaseOperationAlreadyInProgressResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2754,14 +2799,21 @@ func NewCreateDatabaseClusterNotInitialized(body *CreateDatabaseClusterNotInitia
 
 // NewCreateDatabaseInvalidInput builds a control-plane service create-database
 // endpoint invalid_input error.
-func NewCreateDatabaseInvalidInput(body *CreateDatabaseInvalidInputResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewCreateDatabaseInvalidInput(body *CreateDatabaseInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateDatabaseServerError builds a control-plane service create-database
+// endpoint server_error error.
+func NewCreateDatabaseServerError(body *CreateDatabaseServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2792,14 +2844,21 @@ func NewGetDatabaseDatabaseOK(body *GetDatabaseResponseBody) *controlplaneviews.
 
 // NewGetDatabaseClusterNotInitialized builds a control-plane service
 // get-database endpoint cluster_not_initialized error.
-func NewGetDatabaseClusterNotInitialized(body *GetDatabaseClusterNotInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewGetDatabaseClusterNotInitialized(body *GetDatabaseClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetDatabaseInvalidInput builds a control-plane service get-database
+// endpoint invalid_input error.
+func NewGetDatabaseInvalidInput(body *GetDatabaseInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2807,14 +2866,21 @@ func NewGetDatabaseClusterNotInitialized(body *GetDatabaseClusterNotInitializedR
 
 // NewGetDatabaseNotFound builds a control-plane service get-database endpoint
 // not_found error.
-func NewGetDatabaseNotFound(body *GetDatabaseNotFoundResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewGetDatabaseNotFound(body *GetDatabaseNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetDatabaseServerError builds a control-plane service get-database
+// endpoint server_error error.
+func NewGetDatabaseServerError(body *GetDatabaseServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2836,14 +2902,10 @@ func NewUpdateDatabaseResponseOK(body *UpdateDatabaseResponseBody) *controlplane
 
 // NewUpdateDatabaseClusterNotInitialized builds a control-plane service
 // update-database endpoint cluster_not_initialized error.
-func NewUpdateDatabaseClusterNotInitialized(body *UpdateDatabaseClusterNotInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewUpdateDatabaseClusterNotInitialized(body *UpdateDatabaseClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2851,14 +2913,32 @@ func NewUpdateDatabaseClusterNotInitialized(body *UpdateDatabaseClusterNotInitia
 
 // NewUpdateDatabaseDatabaseNotModifiable builds a control-plane service
 // update-database endpoint database_not_modifiable error.
-func NewUpdateDatabaseDatabaseNotModifiable(body *UpdateDatabaseDatabaseNotModifiableResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewUpdateDatabaseDatabaseNotModifiable(body *UpdateDatabaseDatabaseNotModifiableResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateDatabaseOperationAlreadyInProgress builds a control-plane service
+// update-database endpoint operation_already_in_progress error.
+func NewUpdateDatabaseOperationAlreadyInProgress(body *UpdateDatabaseOperationAlreadyInProgressResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateDatabaseInvalidInput builds a control-plane service update-database
+// endpoint invalid_input error.
+func NewUpdateDatabaseInvalidInput(body *UpdateDatabaseInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2866,14 +2946,21 @@ func NewUpdateDatabaseDatabaseNotModifiable(body *UpdateDatabaseDatabaseNotModif
 
 // NewUpdateDatabaseNotFound builds a control-plane service update-database
 // endpoint not_found error.
-func NewUpdateDatabaseNotFound(body *UpdateDatabaseNotFoundResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewUpdateDatabaseNotFound(body *UpdateDatabaseNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateDatabaseServerError builds a control-plane service update-database
+// endpoint server_error error.
+func NewUpdateDatabaseServerError(body *UpdateDatabaseServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2892,14 +2979,10 @@ func NewDeleteDatabaseResponseOK(body *DeleteDatabaseResponseBody) *controlplane
 
 // NewDeleteDatabaseClusterNotInitialized builds a control-plane service
 // delete-database endpoint cluster_not_initialized error.
-func NewDeleteDatabaseClusterNotInitialized(body *DeleteDatabaseClusterNotInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewDeleteDatabaseClusterNotInitialized(body *DeleteDatabaseClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2907,14 +2990,32 @@ func NewDeleteDatabaseClusterNotInitialized(body *DeleteDatabaseClusterNotInitia
 
 // NewDeleteDatabaseDatabaseNotModifiable builds a control-plane service
 // delete-database endpoint database_not_modifiable error.
-func NewDeleteDatabaseDatabaseNotModifiable(body *DeleteDatabaseDatabaseNotModifiableResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewDeleteDatabaseDatabaseNotModifiable(body *DeleteDatabaseDatabaseNotModifiableResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewDeleteDatabaseOperationAlreadyInProgress builds a control-plane service
+// delete-database endpoint operation_already_in_progress error.
+func NewDeleteDatabaseOperationAlreadyInProgress(body *DeleteDatabaseOperationAlreadyInProgressResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewDeleteDatabaseInvalidInput builds a control-plane service delete-database
+// endpoint invalid_input error.
+func NewDeleteDatabaseInvalidInput(body *DeleteDatabaseInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2922,14 +3023,21 @@ func NewDeleteDatabaseDatabaseNotModifiable(body *DeleteDatabaseDatabaseNotModif
 
 // NewDeleteDatabaseNotFound builds a control-plane service delete-database
 // endpoint not_found error.
-func NewDeleteDatabaseNotFound(body *DeleteDatabaseNotFoundResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewDeleteDatabaseNotFound(body *DeleteDatabaseNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewDeleteDatabaseServerError builds a control-plane service delete-database
+// endpoint server_error error.
+func NewDeleteDatabaseServerError(body *DeleteDatabaseServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2946,31 +3054,12 @@ func NewBackupDatabaseNodeResponseOK(body *BackupDatabaseNodeResponseBody) *cont
 	return v
 }
 
-// NewBackupDatabaseNodeBackupAlreadyInProgress builds a control-plane service
-// backup-database-node endpoint backup_already_in_progress error.
-func NewBackupDatabaseNodeBackupAlreadyInProgress(body *BackupDatabaseNodeBackupAlreadyInProgressResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
-	}
-
-	return v
-}
-
 // NewBackupDatabaseNodeClusterNotInitialized builds a control-plane service
 // backup-database-node endpoint cluster_not_initialized error.
-func NewBackupDatabaseNodeClusterNotInitialized(body *BackupDatabaseNodeClusterNotInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewBackupDatabaseNodeClusterNotInitialized(body *BackupDatabaseNodeClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2978,14 +3067,32 @@ func NewBackupDatabaseNodeClusterNotInitialized(body *BackupDatabaseNodeClusterN
 
 // NewBackupDatabaseNodeDatabaseNotModifiable builds a control-plane service
 // backup-database-node endpoint database_not_modifiable error.
-func NewBackupDatabaseNodeDatabaseNotModifiable(body *BackupDatabaseNodeDatabaseNotModifiableResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewBackupDatabaseNodeDatabaseNotModifiable(body *BackupDatabaseNodeDatabaseNotModifiableResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewBackupDatabaseNodeOperationAlreadyInProgress builds a control-plane
+// service backup-database-node endpoint operation_already_in_progress error.
+func NewBackupDatabaseNodeOperationAlreadyInProgress(body *BackupDatabaseNodeOperationAlreadyInProgressResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewBackupDatabaseNodeInvalidInput builds a control-plane service
+// backup-database-node endpoint invalid_input error.
+func NewBackupDatabaseNodeInvalidInput(body *BackupDatabaseNodeInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -2993,14 +3100,21 @@ func NewBackupDatabaseNodeDatabaseNotModifiable(body *BackupDatabaseNodeDatabase
 
 // NewBackupDatabaseNodeNotFound builds a control-plane service
 // backup-database-node endpoint not_found error.
-func NewBackupDatabaseNodeNotFound(body *BackupDatabaseNodeNotFoundResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewBackupDatabaseNodeNotFound(body *BackupDatabaseNodeNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewBackupDatabaseNodeServerError builds a control-plane service
+// backup-database-node endpoint server_error error.
+func NewBackupDatabaseNodeServerError(body *BackupDatabaseNodeServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -3019,14 +3133,21 @@ func NewListDatabaseTasksTaskOK(body []*TaskResponse) []*controlplane.Task {
 
 // NewListDatabaseTasksClusterNotInitialized builds a control-plane service
 // list-database-tasks endpoint cluster_not_initialized error.
-func NewListDatabaseTasksClusterNotInitialized(body *ListDatabaseTasksClusterNotInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewListDatabaseTasksClusterNotInitialized(body *ListDatabaseTasksClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewListDatabaseTasksInvalidInput builds a control-plane service
+// list-database-tasks endpoint invalid_input error.
+func NewListDatabaseTasksInvalidInput(body *ListDatabaseTasksInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -3034,14 +3155,21 @@ func NewListDatabaseTasksClusterNotInitialized(body *ListDatabaseTasksClusterNot
 
 // NewListDatabaseTasksNotFound builds a control-plane service
 // list-database-tasks endpoint not_found error.
-func NewListDatabaseTasksNotFound(body *ListDatabaseTasksNotFoundResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewListDatabaseTasksNotFound(body *ListDatabaseTasksNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewListDatabaseTasksServerError builds a control-plane service
+// list-database-tasks endpoint server_error error.
+func NewListDatabaseTasksServerError(body *ListDatabaseTasksServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -3069,14 +3197,21 @@ func NewGetDatabaseTaskTaskOK(body *GetDatabaseTaskResponseBody) *controlplane.T
 
 // NewGetDatabaseTaskClusterNotInitialized builds a control-plane service
 // get-database-task endpoint cluster_not_initialized error.
-func NewGetDatabaseTaskClusterNotInitialized(body *GetDatabaseTaskClusterNotInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewGetDatabaseTaskClusterNotInitialized(body *GetDatabaseTaskClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetDatabaseTaskInvalidInput builds a control-plane service
+// get-database-task endpoint invalid_input error.
+func NewGetDatabaseTaskInvalidInput(body *GetDatabaseTaskInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -3084,14 +3219,21 @@ func NewGetDatabaseTaskClusterNotInitialized(body *GetDatabaseTaskClusterNotInit
 
 // NewGetDatabaseTaskNotFound builds a control-plane service get-database-task
 // endpoint not_found error.
-func NewGetDatabaseTaskNotFound(body *GetDatabaseTaskNotFoundResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewGetDatabaseTaskNotFound(body *GetDatabaseTaskNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetDatabaseTaskServerError builds a control-plane service
+// get-database-task endpoint server_error error.
+func NewGetDatabaseTaskServerError(body *GetDatabaseTaskServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -3116,14 +3258,21 @@ func NewGetDatabaseTaskLogTaskLogOK(body *GetDatabaseTaskLogResponseBody) *contr
 
 // NewGetDatabaseTaskLogClusterNotInitialized builds a control-plane service
 // get-database-task-log endpoint cluster_not_initialized error.
-func NewGetDatabaseTaskLogClusterNotInitialized(body *GetDatabaseTaskLogClusterNotInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewGetDatabaseTaskLogClusterNotInitialized(body *GetDatabaseTaskLogClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetDatabaseTaskLogInvalidInput builds a control-plane service
+// get-database-task-log endpoint invalid_input error.
+func NewGetDatabaseTaskLogInvalidInput(body *GetDatabaseTaskLogInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -3131,14 +3280,21 @@ func NewGetDatabaseTaskLogClusterNotInitialized(body *GetDatabaseTaskLogClusterN
 
 // NewGetDatabaseTaskLogNotFound builds a control-plane service
 // get-database-task-log endpoint not_found error.
-func NewGetDatabaseTaskLogNotFound(body *GetDatabaseTaskLogNotFoundResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewGetDatabaseTaskLogNotFound(body *GetDatabaseTaskLogNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetDatabaseTaskLogServerError builds a control-plane service
+// get-database-task-log endpoint server_error error.
+func NewGetDatabaseTaskLogServerError(body *GetDatabaseTaskLogServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -3166,14 +3322,10 @@ func NewRestoreDatabaseResponseOK(body *RestoreDatabaseResponseBody) *controlpla
 
 // NewRestoreDatabaseClusterNotInitialized builds a control-plane service
 // restore-database endpoint cluster_not_initialized error.
-func NewRestoreDatabaseClusterNotInitialized(body *RestoreDatabaseClusterNotInitializedResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewRestoreDatabaseClusterNotInitialized(body *RestoreDatabaseClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -3181,29 +3333,21 @@ func NewRestoreDatabaseClusterNotInitialized(body *RestoreDatabaseClusterNotInit
 
 // NewRestoreDatabaseDatabaseNotModifiable builds a control-plane service
 // restore-database endpoint database_not_modifiable error.
-func NewRestoreDatabaseDatabaseNotModifiable(body *RestoreDatabaseDatabaseNotModifiableResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewRestoreDatabaseDatabaseNotModifiable(body *RestoreDatabaseDatabaseNotModifiableResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
 }
 
-// NewRestoreDatabaseNotFound builds a control-plane service restore-database
-// endpoint not_found error.
-func NewRestoreDatabaseNotFound(body *RestoreDatabaseNotFoundResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+// NewRestoreDatabaseOperationAlreadyInProgress builds a control-plane service
+// restore-database endpoint operation_already_in_progress error.
+func NewRestoreDatabaseOperationAlreadyInProgress(body *RestoreDatabaseOperationAlreadyInProgressResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -3211,14 +3355,32 @@ func NewRestoreDatabaseNotFound(body *RestoreDatabaseNotFoundResponseBody) *goa.
 
 // NewRestoreDatabaseInvalidInput builds a control-plane service
 // restore-database endpoint invalid_input error.
-func NewRestoreDatabaseInvalidInput(body *RestoreDatabaseInvalidInputResponseBody) *goa.ServiceError {
-	v := &goa.ServiceError{
-		Name:      *body.Name,
-		ID:        *body.ID,
-		Message:   *body.Message,
-		Temporary: *body.Temporary,
-		Timeout:   *body.Timeout,
-		Fault:     *body.Fault,
+func NewRestoreDatabaseInvalidInput(body *RestoreDatabaseInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewRestoreDatabaseNotFound builds a control-plane service restore-database
+// endpoint not_found error.
+func NewRestoreDatabaseNotFound(body *RestoreDatabaseNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewRestoreDatabaseServerError builds a control-plane service
+// restore-database endpoint server_error error.
+func NewRestoreDatabaseServerError(body *RestoreDatabaseServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -3232,6 +3394,17 @@ func NewGetVersionVersionInfoOK(body *GetVersionResponseBody) *controlplane.Vers
 		Revision:     *body.Revision,
 		RevisionTime: *body.RevisionTime,
 		Arch:         *body.Arch,
+	}
+
+	return v
+}
+
+// NewGetVersionServerError builds a control-plane service get-version endpoint
+// server_error error.
+func NewGetVersionServerError(body *GetVersionServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
 	}
 
 	return v
@@ -3573,20 +3746,20 @@ func ValidateInitClusterClusterAlreadyInitializedResponseBody(body *InitClusterC
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateInitClusterServerErrorResponseBody runs the validations defined on
+// init-cluster_server_error_response_body
+func ValidateInitClusterServerErrorResponseBody(body *InitClusterServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -3597,20 +3770,32 @@ func ValidateJoinClusterClusterAlreadyInitializedResponseBody(body *JoinClusterC
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateJoinClusterInvalidJoinTokenResponseBody runs the validations defined
+// on join-cluster_invalid_join_token_response_body
+func ValidateJoinClusterInvalidJoinTokenResponseBody(body *JoinClusterInvalidJoinTokenResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateJoinClusterServerErrorResponseBody runs the validations defined on
+// join-cluster_server_error_response_body
+func ValidateJoinClusterServerErrorResponseBody(body *JoinClusterServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -3621,20 +3806,20 @@ func ValidateGetJoinTokenClusterNotInitializedResponseBody(body *GetJoinTokenClu
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateGetJoinTokenServerErrorResponseBody runs the validations defined on
+// get-join-token_server_error_response_body
+func ValidateGetJoinTokenServerErrorResponseBody(body *GetJoinTokenServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -3645,20 +3830,8 @@ func ValidateGetJoinOptionsClusterNotInitializedResponseBody(body *GetJoinOption
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
-	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
 	}
 	return
 }
@@ -3669,20 +3842,20 @@ func ValidateGetJoinOptionsInvalidJoinTokenResponseBody(body *GetJoinOptionsInva
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateGetJoinOptionsServerErrorResponseBody runs the validations defined
+// on get-join-options_server_error_response_body
+func ValidateGetJoinOptionsServerErrorResponseBody(body *GetJoinOptionsServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -3693,44 +3866,20 @@ func ValidateGetClusterClusterNotInitializedResponseBody(body *GetClusterCluster
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
-	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
 	}
 	return
 }
 
-// ValidateGetClusterNotFoundResponseBody runs the validations defined on
-// get-cluster_not_found_response_body
-func ValidateGetClusterNotFoundResponseBody(body *GetClusterNotFoundResponseBody) (err error) {
+// ValidateGetClusterServerErrorResponseBody runs the validations defined on
+// get-cluster_server_error_response_body
+func ValidateGetClusterServerErrorResponseBody(body *GetClusterServerErrorResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
-	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
 	}
 	return
 }
@@ -3741,20 +3890,20 @@ func ValidateListHostsClusterNotInitializedResponseBody(body *ListHostsClusterNo
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateListHostsServerErrorResponseBody runs the validations defined on
+// list-hosts_server_error_response_body
+func ValidateListHostsServerErrorResponseBody(body *ListHostsServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -3765,20 +3914,20 @@ func ValidateGetHostClusterNotInitializedResponseBody(body *GetHostClusterNotIni
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateGetHostInvalidInputResponseBody runs the validations defined on
+// get-host_invalid_input_response_body
+func ValidateGetHostInvalidInputResponseBody(body *GetHostInvalidInputResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -3789,20 +3938,20 @@ func ValidateGetHostNotFoundResponseBody(body *GetHostNotFoundResponseBody) (err
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateGetHostServerErrorResponseBody runs the validations defined on
+// get-host_server_error_response_body
+func ValidateGetHostServerErrorResponseBody(body *GetHostServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -3813,20 +3962,20 @@ func ValidateRemoveHostClusterNotInitializedResponseBody(body *RemoveHostCluster
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateRemoveHostInvalidInputResponseBody runs the validations defined on
+// remove-host_invalid_input_response_body
+func ValidateRemoveHostInvalidInputResponseBody(body *RemoveHostInvalidInputResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -3837,20 +3986,20 @@ func ValidateRemoveHostNotFoundResponseBody(body *RemoveHostNotFoundResponseBody
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateRemoveHostServerErrorResponseBody runs the validations defined on
+// remove-host_server_error_response_body
+func ValidateRemoveHostServerErrorResponseBody(body *RemoveHostServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -3861,20 +4010,20 @@ func ValidateListDatabasesClusterNotInitializedResponseBody(body *ListDatabasesC
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateListDatabasesServerErrorResponseBody runs the validations defined on
+// list-databases_server_error_response_body
+func ValidateListDatabasesServerErrorResponseBody(body *ListDatabasesServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -3885,20 +4034,8 @@ func ValidateCreateDatabaseDatabaseAlreadyExistsResponseBody(body *CreateDatabas
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
-	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
 	}
 	return
 }
@@ -3909,20 +4046,21 @@ func ValidateCreateDatabaseClusterNotInitializedResponseBody(body *CreateDatabas
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateCreateDatabaseOperationAlreadyInProgressResponseBody runs the
+// validations defined on
+// create-database_operation_already_in_progress_response_body
+func ValidateCreateDatabaseOperationAlreadyInProgressResponseBody(body *CreateDatabaseOperationAlreadyInProgressResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -3933,20 +4071,20 @@ func ValidateCreateDatabaseInvalidInputResponseBody(body *CreateDatabaseInvalidI
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateCreateDatabaseServerErrorResponseBody runs the validations defined
+// on create-database_server_error_response_body
+func ValidateCreateDatabaseServerErrorResponseBody(body *CreateDatabaseServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -3957,20 +4095,20 @@ func ValidateGetDatabaseClusterNotInitializedResponseBody(body *GetDatabaseClust
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateGetDatabaseInvalidInputResponseBody runs the validations defined on
+// get-database_invalid_input_response_body
+func ValidateGetDatabaseInvalidInputResponseBody(body *GetDatabaseInvalidInputResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -3981,20 +4119,20 @@ func ValidateGetDatabaseNotFoundResponseBody(body *GetDatabaseNotFoundResponseBo
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateGetDatabaseServerErrorResponseBody runs the validations defined on
+// get-database_server_error_response_body
+func ValidateGetDatabaseServerErrorResponseBody(body *GetDatabaseServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -4005,20 +4143,8 @@ func ValidateUpdateDatabaseClusterNotInitializedResponseBody(body *UpdateDatabas
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
-	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
 	}
 	return
 }
@@ -4029,20 +4155,33 @@ func ValidateUpdateDatabaseDatabaseNotModifiableResponseBody(body *UpdateDatabas
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateDatabaseOperationAlreadyInProgressResponseBody runs the
+// validations defined on
+// update-database_operation_already_in_progress_response_body
+func ValidateUpdateDatabaseOperationAlreadyInProgressResponseBody(body *UpdateDatabaseOperationAlreadyInProgressResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateUpdateDatabaseInvalidInputResponseBody runs the validations defined
+// on update-database_invalid_input_response_body
+func ValidateUpdateDatabaseInvalidInputResponseBody(body *UpdateDatabaseInvalidInputResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -4053,20 +4192,20 @@ func ValidateUpdateDatabaseNotFoundResponseBody(body *UpdateDatabaseNotFoundResp
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateUpdateDatabaseServerErrorResponseBody runs the validations defined
+// on update-database_server_error_response_body
+func ValidateUpdateDatabaseServerErrorResponseBody(body *UpdateDatabaseServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -4077,20 +4216,8 @@ func ValidateDeleteDatabaseClusterNotInitializedResponseBody(body *DeleteDatabas
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
-	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
 	}
 	return
 }
@@ -4101,20 +4228,33 @@ func ValidateDeleteDatabaseDatabaseNotModifiableResponseBody(body *DeleteDatabas
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateDeleteDatabaseOperationAlreadyInProgressResponseBody runs the
+// validations defined on
+// delete-database_operation_already_in_progress_response_body
+func ValidateDeleteDatabaseOperationAlreadyInProgressResponseBody(body *DeleteDatabaseOperationAlreadyInProgressResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateDeleteDatabaseInvalidInputResponseBody runs the validations defined
+// on delete-database_invalid_input_response_body
+func ValidateDeleteDatabaseInvalidInputResponseBody(body *DeleteDatabaseInvalidInputResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -4125,45 +4265,20 @@ func ValidateDeleteDatabaseNotFoundResponseBody(body *DeleteDatabaseNotFoundResp
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
-	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
 	}
 	return
 }
 
-// ValidateBackupDatabaseNodeBackupAlreadyInProgressResponseBody runs the
-// validations defined on
-// backup-database-node_backup_already_in_progress_response_body
-func ValidateBackupDatabaseNodeBackupAlreadyInProgressResponseBody(body *BackupDatabaseNodeBackupAlreadyInProgressResponseBody) (err error) {
+// ValidateDeleteDatabaseServerErrorResponseBody runs the validations defined
+// on delete-database_server_error_response_body
+func ValidateDeleteDatabaseServerErrorResponseBody(body *DeleteDatabaseServerErrorResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
-	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
 	}
 	return
 }
@@ -4175,20 +4290,8 @@ func ValidateBackupDatabaseNodeClusterNotInitializedResponseBody(body *BackupDat
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
-	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
 	}
 	return
 }
@@ -4200,20 +4303,33 @@ func ValidateBackupDatabaseNodeDatabaseNotModifiableResponseBody(body *BackupDat
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateBackupDatabaseNodeOperationAlreadyInProgressResponseBody runs the
+// validations defined on
+// backup-database-node_operation_already_in_progress_response_body
+func ValidateBackupDatabaseNodeOperationAlreadyInProgressResponseBody(body *BackupDatabaseNodeOperationAlreadyInProgressResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateBackupDatabaseNodeInvalidInputResponseBody runs the validations
+// defined on backup-database-node_invalid_input_response_body
+func ValidateBackupDatabaseNodeInvalidInputResponseBody(body *BackupDatabaseNodeInvalidInputResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -4224,20 +4340,20 @@ func ValidateBackupDatabaseNodeNotFoundResponseBody(body *BackupDatabaseNodeNotF
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateBackupDatabaseNodeServerErrorResponseBody runs the validations
+// defined on backup-database-node_server_error_response_body
+func ValidateBackupDatabaseNodeServerErrorResponseBody(body *BackupDatabaseNodeServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -4249,20 +4365,20 @@ func ValidateListDatabaseTasksClusterNotInitializedResponseBody(body *ListDataba
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateListDatabaseTasksInvalidInputResponseBody runs the validations
+// defined on list-database-tasks_invalid_input_response_body
+func ValidateListDatabaseTasksInvalidInputResponseBody(body *ListDatabaseTasksInvalidInputResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -4273,20 +4389,20 @@ func ValidateListDatabaseTasksNotFoundResponseBody(body *ListDatabaseTasksNotFou
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateListDatabaseTasksServerErrorResponseBody runs the validations
+// defined on list-database-tasks_server_error_response_body
+func ValidateListDatabaseTasksServerErrorResponseBody(body *ListDatabaseTasksServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -4298,20 +4414,20 @@ func ValidateGetDatabaseTaskClusterNotInitializedResponseBody(body *GetDatabaseT
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateGetDatabaseTaskInvalidInputResponseBody runs the validations defined
+// on get-database-task_invalid_input_response_body
+func ValidateGetDatabaseTaskInvalidInputResponseBody(body *GetDatabaseTaskInvalidInputResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -4322,20 +4438,20 @@ func ValidateGetDatabaseTaskNotFoundResponseBody(body *GetDatabaseTaskNotFoundRe
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateGetDatabaseTaskServerErrorResponseBody runs the validations defined
+// on get-database-task_server_error_response_body
+func ValidateGetDatabaseTaskServerErrorResponseBody(body *GetDatabaseTaskServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -4347,20 +4463,20 @@ func ValidateGetDatabaseTaskLogClusterNotInitializedResponseBody(body *GetDataba
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateGetDatabaseTaskLogInvalidInputResponseBody runs the validations
+// defined on get-database-task-log_invalid_input_response_body
+func ValidateGetDatabaseTaskLogInvalidInputResponseBody(body *GetDatabaseTaskLogInvalidInputResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -4371,20 +4487,20 @@ func ValidateGetDatabaseTaskLogNotFoundResponseBody(body *GetDatabaseTaskLogNotF
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateGetDatabaseTaskLogServerErrorResponseBody runs the validations
+// defined on get-database-task-log_server_error_response_body
+func ValidateGetDatabaseTaskLogServerErrorResponseBody(body *GetDatabaseTaskLogServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }
@@ -4395,20 +4511,8 @@ func ValidateRestoreDatabaseClusterNotInitializedResponseBody(body *RestoreDatab
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
-	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
 	}
 	return
 }
@@ -4419,44 +4523,21 @@ func ValidateRestoreDatabaseDatabaseNotModifiableResponseBody(body *RestoreDatab
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
-	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
 	}
 	return
 }
 
-// ValidateRestoreDatabaseNotFoundResponseBody runs the validations defined on
-// restore-database_not_found_response_body
-func ValidateRestoreDatabaseNotFoundResponseBody(body *RestoreDatabaseNotFoundResponseBody) (err error) {
+// ValidateRestoreDatabaseOperationAlreadyInProgressResponseBody runs the
+// validations defined on
+// restore-database_operation_already_in_progress_response_body
+func ValidateRestoreDatabaseOperationAlreadyInProgressResponseBody(body *RestoreDatabaseOperationAlreadyInProgressResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
-	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
-	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
 	}
 	return
 }
@@ -4467,20 +4548,44 @@ func ValidateRestoreDatabaseInvalidInputResponseBody(body *RestoreDatabaseInvali
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateRestoreDatabaseNotFoundResponseBody runs the validations defined on
+// restore-database_not_found_response_body
+func ValidateRestoreDatabaseNotFoundResponseBody(body *RestoreDatabaseNotFoundResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
 	if body.Message == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Temporary == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("temporary", "body"))
+	return
+}
+
+// ValidateRestoreDatabaseServerErrorResponseBody runs the validations defined
+// on restore-database_server_error_response_body
+func ValidateRestoreDatabaseServerErrorResponseBody(body *RestoreDatabaseServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.Timeout == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timeout", "body"))
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
-	if body.Fault == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("fault", "body"))
+	return
+}
+
+// ValidateGetVersionServerErrorResponseBody runs the validations defined on
+// get-version_server_error_response_body
+func ValidateGetVersionServerErrorResponseBody(body *GetVersionServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
 	}
 	return
 }

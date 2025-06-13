@@ -43,7 +43,7 @@ func EncodeInitClusterError(encoder func(context.Context, http.ResponseWriter) g
 		}
 		switch en.GoaErrorName() {
 		case "cluster_already_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -54,6 +54,19 @@ func EncodeInitClusterError(encoder func(context.Context, http.ResponseWriter) g
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewInitClusterServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -110,7 +123,7 @@ func EncodeJoinClusterError(encoder func(context.Context, http.ResponseWriter) g
 		}
 		switch en.GoaErrorName() {
 		case "cluster_already_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -121,6 +134,32 @@ func EncodeJoinClusterError(encoder func(context.Context, http.ResponseWriter) g
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "invalid_join_token":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewJoinClusterInvalidJoinTokenResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusUnauthorized)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewJoinClusterServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -151,7 +190,7 @@ func EncodeGetJoinTokenError(encoder func(context.Context, http.ResponseWriter) 
 		}
 		switch en.GoaErrorName() {
 		case "cluster_not_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -162,6 +201,19 @@ func EncodeGetJoinTokenError(encoder func(context.Context, http.ResponseWriter) 
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetJoinTokenServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -221,7 +273,7 @@ func EncodeGetJoinOptionsError(encoder func(context.Context, http.ResponseWriter
 		}
 		switch en.GoaErrorName() {
 		case "cluster_not_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -234,7 +286,7 @@ func EncodeGetJoinOptionsError(encoder func(context.Context, http.ResponseWriter
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
 		case "invalid_join_token":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -245,6 +297,19 @@ func EncodeGetJoinOptionsError(encoder func(context.Context, http.ResponseWriter
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusUnauthorized)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetJoinOptionsServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -275,7 +340,7 @@ func EncodeGetClusterError(encoder func(context.Context, http.ResponseWriter) go
 		}
 		switch en.GoaErrorName() {
 		case "cluster_not_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -287,18 +352,18 @@ func EncodeGetClusterError(encoder func(context.Context, http.ResponseWriter) go
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
-		case "not_found":
-			var res *goa.ServiceError
+		case "server_error":
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewGetClusterNotFoundResponseBody(res)
+				body = NewGetClusterServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusNotFound)
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -329,7 +394,7 @@ func EncodeListHostsError(encoder func(context.Context, http.ResponseWriter) goa
 		}
 		switch en.GoaErrorName() {
 		case "cluster_not_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -340,6 +405,19 @@ func EncodeListHostsError(encoder func(context.Context, http.ResponseWriter) goa
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListHostsServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -386,7 +464,7 @@ func EncodeGetHostError(encoder func(context.Context, http.ResponseWriter) goaht
 		}
 		switch en.GoaErrorName() {
 		case "cluster_not_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -398,8 +476,21 @@ func EncodeGetHostError(encoder func(context.Context, http.ResponseWriter) goaht
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetHostInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
 		case "not_found":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -410,6 +501,19 @@ func EncodeGetHostError(encoder func(context.Context, http.ResponseWriter) goaht
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetHostServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -453,7 +557,7 @@ func EncodeRemoveHostError(encoder func(context.Context, http.ResponseWriter) go
 		}
 		switch en.GoaErrorName() {
 		case "cluster_not_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -465,8 +569,21 @@ func EncodeRemoveHostError(encoder func(context.Context, http.ResponseWriter) go
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewRemoveHostInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
 		case "not_found":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -477,6 +594,19 @@ func EncodeRemoveHostError(encoder func(context.Context, http.ResponseWriter) go
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewRemoveHostServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -507,7 +637,7 @@ func EncodeListDatabasesError(encoder func(context.Context, http.ResponseWriter)
 		}
 		switch en.GoaErrorName() {
 		case "cluster_not_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -518,6 +648,19 @@ func EncodeListDatabasesError(encoder func(context.Context, http.ResponseWriter)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListDatabasesServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -577,7 +720,7 @@ func EncodeCreateDatabaseError(encoder func(context.Context, http.ResponseWriter
 		}
 		switch en.GoaErrorName() {
 		case "database_already_exists":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -590,7 +733,7 @@ func EncodeCreateDatabaseError(encoder func(context.Context, http.ResponseWriter
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
 		case "cluster_not_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -602,8 +745,21 @@ func EncodeCreateDatabaseError(encoder func(context.Context, http.ResponseWriter
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
+		case "operation_already_in_progress":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewCreateDatabaseOperationAlreadyInProgressResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
 		case "invalid_input":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -614,6 +770,19 @@ func EncodeCreateDatabaseError(encoder func(context.Context, http.ResponseWriter
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewCreateDatabaseServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -660,7 +829,7 @@ func EncodeGetDatabaseError(encoder func(context.Context, http.ResponseWriter) g
 		}
 		switch en.GoaErrorName() {
 		case "cluster_not_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -672,8 +841,21 @@ func EncodeGetDatabaseError(encoder func(context.Context, http.ResponseWriter) g
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetDatabaseInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
 		case "not_found":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -684,6 +866,19 @@ func EncodeGetDatabaseError(encoder func(context.Context, http.ResponseWriter) g
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetDatabaseServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -765,7 +960,7 @@ func EncodeUpdateDatabaseError(encoder func(context.Context, http.ResponseWriter
 		}
 		switch en.GoaErrorName() {
 		case "cluster_not_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -778,7 +973,7 @@ func EncodeUpdateDatabaseError(encoder func(context.Context, http.ResponseWriter
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
 		case "database_not_modifiable":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -790,8 +985,34 @@ func EncodeUpdateDatabaseError(encoder func(context.Context, http.ResponseWriter
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
+		case "operation_already_in_progress":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewUpdateDatabaseOperationAlreadyInProgressResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewUpdateDatabaseInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
 		case "not_found":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -802,6 +1023,19 @@ func EncodeUpdateDatabaseError(encoder func(context.Context, http.ResponseWriter
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewUpdateDatabaseServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -853,7 +1087,7 @@ func EncodeDeleteDatabaseError(encoder func(context.Context, http.ResponseWriter
 		}
 		switch en.GoaErrorName() {
 		case "cluster_not_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -866,7 +1100,7 @@ func EncodeDeleteDatabaseError(encoder func(context.Context, http.ResponseWriter
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
 		case "database_not_modifiable":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -878,8 +1112,34 @@ func EncodeDeleteDatabaseError(encoder func(context.Context, http.ResponseWriter
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
+		case "operation_already_in_progress":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewDeleteDatabaseOperationAlreadyInProgressResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewDeleteDatabaseInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
 		case "not_found":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -890,6 +1150,19 @@ func EncodeDeleteDatabaseError(encoder func(context.Context, http.ResponseWriter
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewDeleteDatabaseServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -961,21 +1234,8 @@ func EncodeBackupDatabaseNodeError(encoder func(context.Context, http.ResponseWr
 			return encodeError(ctx, w, v)
 		}
 		switch en.GoaErrorName() {
-		case "backup_already_in_progress":
-			var res *goa.ServiceError
-			errors.As(v, &res)
-			enc := encoder(ctx, w)
-			var body any
-			if formatter != nil {
-				body = formatter(ctx, res)
-			} else {
-				body = NewBackupDatabaseNodeBackupAlreadyInProgressResponseBody(res)
-			}
-			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusConflict)
-			return enc.Encode(body)
 		case "cluster_not_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -988,7 +1248,7 @@ func EncodeBackupDatabaseNodeError(encoder func(context.Context, http.ResponseWr
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
 		case "database_not_modifiable":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -1000,8 +1260,34 @@ func EncodeBackupDatabaseNodeError(encoder func(context.Context, http.ResponseWr
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
+		case "operation_already_in_progress":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewBackupDatabaseNodeOperationAlreadyInProgressResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewBackupDatabaseNodeInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
 		case "not_found":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -1012,6 +1298,19 @@ func EncodeBackupDatabaseNodeError(encoder func(context.Context, http.ResponseWr
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewBackupDatabaseNodeServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -1094,7 +1393,7 @@ func EncodeListDatabaseTasksError(encoder func(context.Context, http.ResponseWri
 		}
 		switch en.GoaErrorName() {
 		case "cluster_not_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -1106,8 +1405,21 @@ func EncodeListDatabaseTasksError(encoder func(context.Context, http.ResponseWri
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListDatabaseTasksInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
 		case "not_found":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -1118,6 +1430,19 @@ func EncodeListDatabaseTasksError(encoder func(context.Context, http.ResponseWri
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListDatabaseTasksServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -1172,7 +1497,7 @@ func EncodeGetDatabaseTaskError(encoder func(context.Context, http.ResponseWrite
 		}
 		switch en.GoaErrorName() {
 		case "cluster_not_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -1184,8 +1509,21 @@ func EncodeGetDatabaseTaskError(encoder func(context.Context, http.ResponseWrite
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetDatabaseTaskInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
 		case "not_found":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -1196,6 +1534,19 @@ func EncodeGetDatabaseTaskError(encoder func(context.Context, http.ResponseWrite
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetDatabaseTaskServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -1271,7 +1622,7 @@ func EncodeGetDatabaseTaskLogError(encoder func(context.Context, http.ResponseWr
 		}
 		switch en.GoaErrorName() {
 		case "cluster_not_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -1283,8 +1634,21 @@ func EncodeGetDatabaseTaskLogError(encoder func(context.Context, http.ResponseWr
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetDatabaseTaskLogInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
 		case "not_found":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -1295,6 +1659,19 @@ func EncodeGetDatabaseTaskLogError(encoder func(context.Context, http.ResponseWr
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetDatabaseTaskLogServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -1365,7 +1742,7 @@ func EncodeRestoreDatabaseError(encoder func(context.Context, http.ResponseWrite
 		}
 		switch en.GoaErrorName() {
 		case "cluster_not_initialized":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -1378,7 +1755,7 @@ func EncodeRestoreDatabaseError(encoder func(context.Context, http.ResponseWrite
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
 		case "database_not_modifiable":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -1390,8 +1767,34 @@ func EncodeRestoreDatabaseError(encoder func(context.Context, http.ResponseWrite
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
+		case "operation_already_in_progress":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewRestoreDatabaseOperationAlreadyInProgressResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewRestoreDatabaseInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
 		case "not_found":
-			var res *goa.ServiceError
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
@@ -1403,18 +1806,18 @@ func EncodeRestoreDatabaseError(encoder func(context.Context, http.ResponseWrite
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusNotFound)
 			return enc.Encode(body)
-		case "invalid_input":
-			var res *goa.ServiceError
+		case "server_error":
+			var res *controlplane.APIError
 			errors.As(v, &res)
 			enc := encoder(ctx, w)
 			var body any
 			if formatter != nil {
 				body = formatter(ctx, res)
 			} else {
-				body = NewRestoreDatabaseInvalidInputResponseBody(res)
+				body = NewRestoreDatabaseServerErrorResponseBody(res)
 			}
 			w.Header().Set("goa-error", res.GoaErrorName())
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusInternalServerError)
 			return enc.Encode(body)
 		default:
 			return encodeError(ctx, w, v)
@@ -1431,6 +1834,35 @@ func EncodeGetVersionResponse(encoder func(context.Context, http.ResponseWriter)
 		body := NewGetVersionResponseBody(res)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
+	}
+}
+
+// EncodeGetVersionError returns an encoder for errors returned by the
+// get-version control-plane endpoint.
+func EncodeGetVersionError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetVersionServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
 	}
 }
 
