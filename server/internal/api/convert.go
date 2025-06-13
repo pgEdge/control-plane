@@ -417,6 +417,9 @@ func apiToDatabaseSpec(id, tID *string, apiSpec *api.DatabaseSpec) (*database.Sp
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse database ID: %w", err)
 	}
+	if databaseID == uuid.Nil {
+		databaseID = uuid.New()
+	}
 	var tenantID *uuid.UUID
 	if tID != nil {
 		parsedTenantID, err := parseUUID(*tID)

@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/swarm"
@@ -84,6 +85,14 @@ type ContainerRunOptions struct {
 }
 
 func (d *Docker) ContainerRun(ctx context.Context, opts ContainerRunOptions) (string, error) {
+	if opts.Config != nil {
+		if opts.Config.Image == "" {
+			return "", errors.New("image must be specified in container config")
+		}
+		if err := d.ensureDockerImage(ctx, opts.Config.Image); err != nil {
+			return "", fmt.Errorf("failed to ensure docker image %q: %w", opts.Config.Image, err)
+		}
+	}
 	resp, err := d.client.ContainerCreate(ctx, opts.Config, opts.Host, opts.Net, opts.Platform, opts.Name)
 	if err != nil {
 		return "", fmt.Errorf("failed to create container: %w", err)
@@ -450,6 +459,22 @@ func (d *Docker) Shutdown() error {
 	if err := d.client.Close(); err != nil {
 		return fmt.Errorf("failed to close docker client: %w", err)
 	}
+	return nil
+}
+
+func (d *Docker) ensureDockerImage(ctx context.Context, img string) error {
+	// Pull the image
+	reader, err := d.client.ImagePull(ctx, img, image.PullOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to pull image %q: %w", img, err)
+	}
+	defer reader.Close()
+
+	// Read the output from the pull operation
+	if _, err := io.Copy(io.Discard, reader); err != nil {
+		return fmt.Errorf("failed to read image pull output: %w", err)
+	}
+
 	return nil
 }
 
