@@ -316,11 +316,21 @@ var RestoreConfigSpec = g.Type("RestoreConfigSpec", func() {
 	g.Attribute("repository", RestoreRepositorySpec, func() {
 		g.Description("The repository to restore this database from.")
 	})
-	g.Attribute("restore_options", g.ArrayOf(g.String), func() {
+	g.Attribute("restore_options", g.MapOf(g.String, g.String), func() {
 		g.Description("Additional options to use when restoring this database. If omitted, the database will be restored to the latest point in the given repository.")
-		g.Example([]string{"--type=time", "--target=2025-01-01T01:30:00Z"})
-		g.Example([]string{"--type=lsn", "--target=0/30000000"})
-		g.Example([]string{"--set=20250505-153628F", "--type=xid", "--target=123456"})
+		g.Example(map[string]string{
+			"type":   "time",
+			"target": "2025-01-01T01:30:00Z",
+		})
+		g.Example(map[string]string{
+			"type":   "lsn",
+			"target": "0/30000000",
+		})
+		g.Example(map[string]string{
+			"set":    "20250505-153628F",
+			"type":   "xid",
+			"target": "123456",
+		})
 	})
 
 	g.Required("source_database_id", "source_node_name", "source_database_name", "repository")

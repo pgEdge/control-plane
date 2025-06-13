@@ -2,6 +2,8 @@ package pgbackrest
 
 import (
 	"strings"
+
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 type Cmd struct {
@@ -49,9 +51,9 @@ const (
 )
 
 type BackupOptions struct {
-	Type         BackupType        `json:"type"`
-	Annotations  map[string]string `json:"annotations,omitempty"`
-	ExtraOptions []string          `json:"extra_options,omitempty"`
+	Type          BackupType        `json:"type"`
+	Annotations   map[string]string `json:"annotations,omitempty"`
+	BackupOptions map[string]string `json:"backup_options,omitempty"`
 }
 
 func (b BackupOptions) StringSlice() []string {
@@ -62,6 +64,10 @@ func (b BackupOptions) StringSlice() []string {
 	for k, v := range b.Annotations {
 		options = append(options, "--annotation", k+"="+v)
 	}
-	options = append(options, b.ExtraOptions...)
+	backupOptions := utils.BuildOptionArgs(b.BackupOptions)
+	if len(backupOptions) > 0 {
+		options = append(options, backupOptions...)
+	}
+
 	return options
 }

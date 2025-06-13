@@ -1916,9 +1916,11 @@ func unmarshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec(v *Res
 	}
 	res.Repository = unmarshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpec(v.Repository)
 	if v.RestoreOptions != nil {
-		res.RestoreOptions = make([]string, len(v.RestoreOptions))
-		for i, val := range v.RestoreOptions {
-			res.RestoreOptions[i] = val
+		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
+		for key, val := range v.RestoreOptions {
+			tk := key
+			tv := val
+			res.RestoreOptions[tk] = tv
 		}
 	}
 
@@ -2319,9 +2321,11 @@ func marshalControlplaneRestoreConfigSpecToRestoreConfigSpecResponseBody(v *cont
 		res.Repository = marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecResponseBody(v.Repository)
 	}
 	if v.RestoreOptions != nil {
-		res.RestoreOptions = make([]string, len(v.RestoreOptions))
-		for i, val := range v.RestoreOptions {
-			res.RestoreOptions[i] = val
+		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
+		for key, val := range v.RestoreOptions {
+			tk := key
+			tv := val
+			res.RestoreOptions[tk] = tv
 		}
 	}
 
@@ -2671,9 +2675,11 @@ func marshalControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpecResponseBod
 		res.Repository = marshalControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpecResponseBody(v.Repository)
 	}
 	if v.RestoreOptions != nil {
-		res.RestoreOptions = make([]string, len(v.RestoreOptions))
-		for i, val := range v.RestoreOptions {
-			res.RestoreOptions[i] = val
+		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
+		for key, val := range v.RestoreOptions {
+			tk := key
+			tv := val
+			res.RestoreOptions[tk] = tv
 		}
 	}
 
@@ -2956,9 +2962,11 @@ func unmarshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfig
 	}
 	res.Repository = unmarshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRepositorySpec(v.Repository)
 	if v.RestoreOptions != nil {
-		res.RestoreOptions = make([]string, len(v.RestoreOptions))
-		for i, val := range v.RestoreOptions {
-			res.RestoreOptions[i] = val
+		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
+		for key, val := range v.RestoreOptions {
+			tk := key
+			tv := val
+			res.RestoreOptions[tk] = tv
 		}
 	}
 

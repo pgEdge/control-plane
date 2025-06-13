@@ -62,8 +62,8 @@ type BackupDatabaseNodeRequestBody struct {
 	Type string `form:"type" json:"type" xml:"type"`
 	// Annotations for the backup.
 	Annotations map[string]string `form:"annotations,omitempty" json:"annotations,omitempty" xml:"annotations,omitempty"`
-	// Extra options for the backup.
-	ExtraOptions []string `form:"extra_options,omitempty" json:"extra_options,omitempty" xml:"extra_options,omitempty"`
+	// Options for the backup.
+	BackupOptions map[string]string `form:"backup_options,omitempty" json:"backup_options,omitempty" xml:"backup_options,omitempty"`
 }
 
 // RestoreDatabaseRequestBody is the type of the "control-plane" service
@@ -1386,7 +1386,7 @@ type RestoreConfigSpecResponse struct {
 	Repository *RestoreRepositorySpecResponse `form:"repository,omitempty" json:"repository,omitempty" xml:"repository,omitempty"`
 	// Additional options to use when restoring this database. If omitted, the
 	// database will be restored to the latest point in the given repository.
-	RestoreOptions []string `form:"restore_options,omitempty" json:"restore_options,omitempty" xml:"restore_options,omitempty"`
+	RestoreOptions map[string]string `form:"restore_options,omitempty" json:"restore_options,omitempty" xml:"restore_options,omitempty"`
 }
 
 // RestoreRepositorySpecResponse is used to define fields on response body
@@ -1628,7 +1628,7 @@ type RestoreConfigSpecRequestBody struct {
 	Repository *RestoreRepositorySpecRequestBody `form:"repository" json:"repository" xml:"repository"`
 	// Additional options to use when restoring this database. If omitted, the
 	// database will be restored to the latest point in the given repository.
-	RestoreOptions []string `form:"restore_options,omitempty" json:"restore_options,omitempty" xml:"restore_options,omitempty"`
+	RestoreOptions map[string]string `form:"restore_options,omitempty" json:"restore_options,omitempty" xml:"restore_options,omitempty"`
 }
 
 // RestoreRepositorySpecRequestBody is used to define fields on request body
@@ -1970,7 +1970,7 @@ type RestoreConfigSpecResponseBody struct {
 	Repository *RestoreRepositorySpecResponseBody `form:"repository,omitempty" json:"repository,omitempty" xml:"repository,omitempty"`
 	// Additional options to use when restoring this database. If omitted, the
 	// database will be restored to the latest point in the given repository.
-	RestoreOptions []string `form:"restore_options,omitempty" json:"restore_options,omitempty" xml:"restore_options,omitempty"`
+	RestoreOptions map[string]string `form:"restore_options,omitempty" json:"restore_options,omitempty" xml:"restore_options,omitempty"`
 }
 
 // RestoreRepositorySpecResponseBody is used to define fields on response body
@@ -2221,7 +2221,7 @@ type RestoreConfigSpecRequestBodyRequestBody struct {
 	Repository *RestoreRepositorySpecRequestBodyRequestBody `form:"repository" json:"repository" xml:"repository"`
 	// Additional options to use when restoring this database. If omitted, the
 	// database will be restored to the latest point in the given repository.
-	RestoreOptions []string `form:"restore_options,omitempty" json:"restore_options,omitempty" xml:"restore_options,omitempty"`
+	RestoreOptions map[string]string `form:"restore_options,omitempty" json:"restore_options,omitempty" xml:"restore_options,omitempty"`
 }
 
 // RestoreRepositorySpecRequestBodyRequestBody is used to define fields on
@@ -2391,10 +2391,12 @@ func NewBackupDatabaseNodeRequestBody(p *controlplane.BackupDatabaseNodePayload)
 			body.Annotations[tk] = tv
 		}
 	}
-	if p.Options.ExtraOptions != nil {
-		body.ExtraOptions = make([]string, len(p.Options.ExtraOptions))
-		for i, val := range p.Options.ExtraOptions {
-			body.ExtraOptions[i] = val
+	if p.Options.BackupOptions != nil {
+		body.BackupOptions = make(map[string]string, len(p.Options.BackupOptions))
+		for key, val := range p.Options.BackupOptions {
+			tk := key
+			tv := val
+			body.BackupOptions[tk] = tv
 		}
 	}
 	return body

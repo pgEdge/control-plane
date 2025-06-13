@@ -2445,9 +2445,11 @@ func unmarshalRestoreConfigSpecResponseToControlplaneviewsRestoreConfigSpecView(
 	}
 	res.Repository = unmarshalRestoreRepositorySpecResponseToControlplaneviewsRestoreRepositorySpecView(v.Repository)
 	if v.RestoreOptions != nil {
-		res.RestoreOptions = make([]string, len(v.RestoreOptions))
-		for i, val := range v.RestoreOptions {
-			res.RestoreOptions[i] = val
+		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
+		for key, val := range v.RestoreOptions {
+			tk := key
+			tv := val
+			res.RestoreOptions[tk] = tv
 		}
 	}
 
@@ -2747,9 +2749,11 @@ func marshalControlplaneRestoreConfigSpecToRestoreConfigSpecRequestBody(v *contr
 		res.Repository = marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecRequestBody(v.Repository)
 	}
 	if v.RestoreOptions != nil {
-		res.RestoreOptions = make([]string, len(v.RestoreOptions))
-		for i, val := range v.RestoreOptions {
-			res.RestoreOptions[i] = val
+		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
+		for key, val := range v.RestoreOptions {
+			tk := key
+			tv := val
+			res.RestoreOptions[tk] = tv
 		}
 	}
 
@@ -3049,9 +3053,11 @@ func marshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec(v *Resto
 		res.Repository = marshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpec(v.Repository)
 	}
 	if v.RestoreOptions != nil {
-		res.RestoreOptions = make([]string, len(v.RestoreOptions))
-		for i, val := range v.RestoreOptions {
-			res.RestoreOptions[i] = val
+		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
+		for key, val := range v.RestoreOptions {
+			tk := key
+			tv := val
+			res.RestoreOptions[tk] = tv
 		}
 	}
 
@@ -3435,9 +3441,11 @@ func unmarshalRestoreConfigSpecResponseBodyToControlplaneRestoreConfigSpec(v *Re
 	}
 	res.Repository = unmarshalRestoreRepositorySpecResponseBodyToControlplaneRestoreRepositorySpec(v.Repository)
 	if v.RestoreOptions != nil {
-		res.RestoreOptions = make([]string, len(v.RestoreOptions))
-		for i, val := range v.RestoreOptions {
-			res.RestoreOptions[i] = val
+		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
+		for key, val := range v.RestoreOptions {
+			tk := key
+			tv := val
+			res.RestoreOptions[tk] = tv
 		}
 	}
 
@@ -3764,9 +3772,11 @@ func unmarshalRestoreConfigSpecResponseBodyToControlplaneviewsRestoreConfigSpecV
 	}
 	res.Repository = unmarshalRestoreRepositorySpecResponseBodyToControlplaneviewsRestoreRepositorySpecView(v.Repository)
 	if v.RestoreOptions != nil {
-		res.RestoreOptions = make([]string, len(v.RestoreOptions))
-		for i, val := range v.RestoreOptions {
-			res.RestoreOptions[i] = val
+		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
+		for key, val := range v.RestoreOptions {
+			tk := key
+			tv := val
+			res.RestoreOptions[tk] = tv
 		}
 	}
 
@@ -4066,9 +4076,11 @@ func marshalControlplaneRestoreConfigSpecToRestoreConfigSpecRequestBodyRequestBo
 		res.Repository = marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecRequestBodyRequestBody(v.Repository)
 	}
 	if v.RestoreOptions != nil {
-		res.RestoreOptions = make([]string, len(v.RestoreOptions))
-		for i, val := range v.RestoreOptions {
-			res.RestoreOptions[i] = val
+		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
+		for key, val := range v.RestoreOptions {
+			tk := key
+			tv := val
+			res.RestoreOptions[tk] = tv
 		}
 	}
 
@@ -4368,9 +4380,11 @@ func marshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSp
 		res.Repository = marshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRepositorySpec(v.Repository)
 	}
 	if v.RestoreOptions != nil {
-		res.RestoreOptions = make([]string, len(v.RestoreOptions))
-		for i, val := range v.RestoreOptions {
-			res.RestoreOptions[i] = val
+		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
+		for key, val := range v.RestoreOptions {
+			tk := key
+			tv := val
+			res.RestoreOptions[tk] = tv
 		}
 	}
 

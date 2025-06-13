@@ -14,6 +14,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/task"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	"github.com/spf13/afero"
@@ -31,13 +32,13 @@ func PgBackRestRestoreResourceIdentifier(instanceID uuid.UUID) resource.Identifi
 }
 
 type PgBackRestRestore struct {
-	DatabaseID uuid.UUID `json:"database_id"`
-	HostID     uuid.UUID `json:"host_id"`
-	InstanceID uuid.UUID `json:"instance_id"`
-	TaskID     uuid.UUID `json:"task_id"`
-	NodeName   string    `json:"node_name"`
-	DataDirID  string    `json:"data_dir_id"`
-	Options    []string  `json:"options"`
+	DatabaseID     uuid.UUID         `json:"database_id"`
+	HostID         uuid.UUID         `json:"host_id"`
+	InstanceID     uuid.UUID         `json:"instance_id"`
+	TaskID         uuid.UUID         `json:"task_id"`
+	NodeName       string            `json:"node_name"`
+	DataDirID      string            `json:"data_dir_id"`
+	RestoreOptions map[string]string `json:"restore_options"`
 }
 
 func (p *PgBackRestRestore) ResourceVersion() string {
@@ -230,7 +231,8 @@ func (p *PgBackRestRestore) runRestoreContainer(
 		limits = *swarmService.Spec.TaskTemplate.Resources.Limits
 	}
 	containerSpec := swarmService.Spec.TaskTemplate.ContainerSpec
-	opts := append([]string{"--log-timestamp=n"}, p.Options...)
+	restoreOptions := utils.BuildOptionArgs(p.RestoreOptions)
+	opts := append([]string{"--log-timestamp=n"}, restoreOptions...)
 	containerID, err := dockerClient.ContainerRun(ctx, docker.ContainerRunOptions{
 		Config: &container.Config{
 			Image: containerSpec.Image,

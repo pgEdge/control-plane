@@ -322,9 +322,9 @@ func (s *Service) BackupDatabaseNode(ctx context.Context, req *api.BackupDatabas
 		false,
 		instances,
 		&pgbackrest.BackupOptions{
-			Type:         pgbackrest.BackupType(req.Options.Type),
-			Annotations:  req.Options.Annotations,
-			ExtraOptions: req.Options.ExtraOptions,
+			Type:          pgbackrest.BackupType(req.Options.Type),
+			Annotations:   req.Options.Annotations,
+			BackupOptions: req.Options.BackupOptions,
 		},
 	)
 	if err != nil {

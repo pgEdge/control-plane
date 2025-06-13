@@ -145,7 +145,7 @@ type RestoreConfig struct {
 	SourceNodeName     string                 `json:"source_node_name"`
 	SourceDatabaseName string                 `json:"source_database_name"`
 	Repository         *pgbackrest.Repository `json:"repository"`
-	RestoreOptions     []string               `json:"restore_options"`
+	RestoreOptions     map[string]string      `json:"restore_options"`
 }
 
 func (r *RestoreConfig) Clone() *RestoreConfig {
@@ -158,7 +158,7 @@ func (r *RestoreConfig) Clone() *RestoreConfig {
 		SourceNodeName:     r.SourceNodeName,
 		SourceDatabaseName: r.SourceDatabaseName,
 		Repository:         r.Repository.Clone(),
-		RestoreOptions:     slices.Clone(r.RestoreOptions),
+		RestoreOptions:     maps.Clone(r.RestoreOptions),
 	}
 }
 

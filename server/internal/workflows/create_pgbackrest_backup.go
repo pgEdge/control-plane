@@ -24,7 +24,7 @@ type CreatePgBackRestBackupInput struct {
 	NodeName          string                    `json:"node_name"`
 	BackupFromStandby bool                      `json:"backup_from_standby"`
 	Instances         []*InstanceHost           `json:"instances"`
-	Options           *pgbackrest.BackupOptions `json:"options"`
+	BackupOptions     *pgbackrest.BackupOptions `json:"backup_options"`
 }
 
 type CreatePgBackRestBackupOutput struct{}
@@ -99,10 +99,10 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 	}
 
 	backupInput := &activities.CreatePgBackRestBackupInput{
-		DatabaseID: input.DatabaseID,
-		InstanceID: backupInstance.InstanceID,
-		TaskID:     input.TaskID,
-		Options:    input.Options,
+		DatabaseID:    input.DatabaseID,
+		InstanceID:    backupInstance.InstanceID,
+		TaskID:        input.TaskID,
+		BackupOptions: input.BackupOptions,
 	}
 	_, err = w.Activities.
 		ExecuteCreatePgBackRestBackup(ctx, backupInstance.HostID, backupInput).

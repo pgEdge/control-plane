@@ -3,7 +3,6 @@ package workflows
 import (
 	"fmt"
 	"log/slog"
-	"slices"
 
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
@@ -31,11 +30,11 @@ func (w *Workflows) PgBackRestRestore(ctx workflow.Context, input *PgBackRestRes
 	// This is an 'in-place' restore, meaning that the data directory is left
 	// intact. We always want to include the 'delta' option for this type of
 	// restore.
-	if !slices.Contains(input.RestoreConfig.RestoreOptions, "--delta") {
-		input.RestoreConfig.RestoreOptions = append(
-			input.RestoreConfig.RestoreOptions,
-			"--delta",
-		)
+	if input.RestoreConfig.RestoreOptions == nil {
+		input.RestoreConfig.RestoreOptions = make(map[string]string)
+	}
+	if _, ok := input.RestoreConfig.RestoreOptions["delta"]; !ok {
+		input.RestoreConfig.RestoreOptions["delta"] = ""
 	}
 
 	handleError := func(err error) error {

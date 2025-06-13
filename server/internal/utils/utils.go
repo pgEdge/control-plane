@@ -100,3 +100,25 @@ func Clean(s string) string {
 		return -1
 	}, s)
 }
+
+func BuildOptionArgs(options map[string]string) []string {
+	var res []string
+	for k, v := range options {
+		prefix := ""
+		if !strings.HasPrefix(k, "--") {
+			prefix = "--"
+		}
+
+		if v == "" {
+			res = append(res, prefix+k)
+			continue
+		}
+		// Quote value if it contains whitespace
+		if strings.ContainsAny(v, " \t\r\n") {
+			v = `"` + v + `"`
+		}
+
+		res = append(res, prefix+k+"="+v)
+	}
+	return res
+}
