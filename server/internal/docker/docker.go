@@ -463,16 +463,7 @@ func (d *Docker) Shutdown() error {
 }
 
 func (d *Docker) ensureDockerImage(ctx context.Context, img string) error {
-	// Check if the image exists
-	images, err := d.client.ImageList(ctx, image.ListOptions{Filters: filters.NewArgs(filters.Arg("reference", img))})
-	if err != nil {
-		return fmt.Errorf("failed to list images: %w", err)
-	}
-	if len(images) > 0 {
-		return nil // Image already exists
-	}
-
-	// Pull the image if it doesn't exist
+	// Pull the image
 	reader, err := d.client.ImagePull(ctx, img, image.PullOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to pull image %q: %w", img, err)
