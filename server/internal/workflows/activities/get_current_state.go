@@ -8,14 +8,13 @@ import (
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
-	"github.com/google/uuid"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
 type GetCurrentStateInput struct {
-	DatabaseID uuid.UUID `json:"database_id"`
+	DatabaseID string `json:"database_id"`
 }
 
 type GetCurrentStateOutput struct {
@@ -27,7 +26,7 @@ func (a *Activities) ExecuteGetCurrentState(
 	input *GetCurrentStateInput,
 ) workflow.Future[*GetCurrentStateOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(a.Config.HostID.String()),
+		Queue: core.Queue(a.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
@@ -36,7 +35,7 @@ func (a *Activities) ExecuteGetCurrentState(
 }
 
 func (a *Activities) GetCurrentState(ctx context.Context, input *GetCurrentStateInput) (*GetCurrentStateOutput, error) {
-	logger := activity.Logger(ctx).With("database_id", input.DatabaseID.String())
+	logger := activity.Logger(ctx).With("database_id", input.DatabaseID)
 	logger.Info("getting current state")
 
 	service, err := do.Invoke[*resource.Service](a.Injector)

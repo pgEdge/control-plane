@@ -12,7 +12,7 @@ import (
 )
 
 type RefreshCurrentStateInput struct {
-	DatabaseID uuid.UUID `json:"database_id"`
+	DatabaseID string    `json:"database_id"`
 	TaskID     uuid.UUID `json:"task_id"`
 }
 
@@ -25,7 +25,7 @@ func (w *Workflows) ExecuteRefreshCurrentState(
 	input *RefreshCurrentStateInput,
 ) workflow.Future[*RefreshCurrentStateOutput] {
 	options := workflow.SubWorkflowOptions{
-		Queue: core.Queue(w.Config.HostID.String()),
+		Queue: core.Queue(w.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
@@ -34,7 +34,7 @@ func (w *Workflows) ExecuteRefreshCurrentState(
 }
 
 func (w *Workflows) RefreshCurrentState(ctx workflow.Context, input *RefreshCurrentStateInput) (*RefreshCurrentStateOutput, error) {
-	logger := workflow.Logger(ctx).With("database_id", input.DatabaseID.String())
+	logger := workflow.Logger(ctx).With("database_id", input.DatabaseID)
 	logger.Info("getting current database state")
 
 	getCurrentInput := &activities.GetCurrentStateInput{

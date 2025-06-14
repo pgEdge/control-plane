@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -20,10 +19,10 @@ func NodeResourceIdentifier(nodeName string) resource.Identifier {
 }
 
 type NodeResource struct {
-	ClusterID         uuid.UUID   `json:"cluster_id"`
-	Name              string      `json:"name"`
-	InstanceIDs       []uuid.UUID `json:"instance_ids"`
-	PrimaryInstanceID uuid.UUID   `json:"primary_instance_id"`
+	ClusterID         string   `json:"cluster_id"`
+	Name              string   `json:"name"`
+	InstanceIDs       []string `json:"instance_ids"`
+	PrimaryInstanceID string   `json:"primary_instance_id"`
 }
 
 func (n *NodeResource) ResourceVersion() string {
@@ -39,7 +38,7 @@ func (n *NodeResource) DiffIgnore() []string {
 func (n *NodeResource) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeCluster,
-		ID:   n.ClusterID.String(),
+		ID:   n.ClusterID,
 	}
 }
 

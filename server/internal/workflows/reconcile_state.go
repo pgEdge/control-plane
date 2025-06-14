@@ -12,7 +12,7 @@ import (
 )
 
 type ReconcileStateInput struct {
-	DatabaseID  uuid.UUID       `json:"database_id"`
+	DatabaseID  string          `json:"database_id"`
 	TaskID      uuid.UUID       `json:"task_id"`
 	Current     *resource.State `json:"current"`
 	Desired     *resource.State `json:"desired"`
@@ -28,7 +28,7 @@ func (w *Workflows) ExecuteReconcileState(
 	input *ReconcileStateInput,
 ) workflow.Future[*ReconcileStateOutput] {
 	options := workflow.SubWorkflowOptions{
-		Queue: core.Queue(w.Config.HostID.String()),
+		Queue: core.Queue(w.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
@@ -37,7 +37,7 @@ func (w *Workflows) ExecuteReconcileState(
 }
 
 func (w *Workflows) ReconcileState(ctx workflow.Context, input *ReconcileStateInput) (*ReconcileStateOutput, error) {
-	logger := workflow.Logger(ctx).With("database_id", input.DatabaseID.String())
+	logger := workflow.Logger(ctx).With("database_id", input.DatabaseID)
 	logger.Info("reconciling database state")
 
 	planInput := &activities.PlanInput{

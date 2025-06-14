@@ -17,7 +17,7 @@ import (
 )
 
 type ApplyEventInput struct {
-	DatabaseID uuid.UUID       `json:"database_id"`
+	DatabaseID string          `json:"database_id"`
 	TaskID     uuid.UUID       `json:"task_id"`
 	State      *resource.State `json:"state"`
 	Event      *resource.Event `json:"event"`
@@ -46,7 +46,7 @@ func (a *Activities) ExecuteApplyEvent(
 }
 
 func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*ApplyEventOutput, error) {
-	logger := activity.Logger(ctx).With("database_id", input.DatabaseID.String())
+	logger := activity.Logger(ctx).With("database_id", input.DatabaseID)
 	logger.With(
 		"event_type", input.Event.Type,
 		"event_resource_type", input.Event.Resource.Identifier.Type,
@@ -121,7 +121,7 @@ func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*A
 
 func (a *Activities) logEvent(
 	ctx context.Context,
-	databaseID uuid.UUID,
+	databaseID string,
 	taskID uuid.UUID,
 	verb string,
 	resource resource.Resource,
@@ -131,7 +131,7 @@ func (a *Activities) logEvent(
 	fields := map[string]any{
 		"resource_type": resourceIdentifier.Type,
 		"resource_id":   resourceIdentifier.ID,
-		"host_id":       a.Config.HostID.String(),
+		"host_id":       a.Config.HostID,
 	}
 	// Currying AddLogEntry
 	log := func(entry task.LogEntry) error {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/common"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
@@ -115,7 +114,7 @@ func (s *Service) GetAllHosts(ctx context.Context) ([]*Host, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch host statuses from storage: %w", err)
 	}
-	statusMap := make(map[uuid.UUID]*StoredHostStatus, len(storedStatuses))
+	statusMap := make(map[string]*StoredHostStatus, len(storedStatuses))
 	for _, status := range storedStatuses {
 		statusMap[status.HostID] = status
 	}
@@ -138,7 +137,7 @@ func (s *Service) GetAllHosts(ctx context.Context) ([]*Host, error) {
 	return hosts, nil
 }
 
-func (s *Service) GetHosts(ctx context.Context, hostIDs []uuid.UUID) ([]*Host, error) {
+func (s *Service) GetHosts(ctx context.Context, hostIDs []string) ([]*Host, error) {
 	storedHosts, err := s.store.Host.
 		GetByKeys(hostIDs...).
 		Exec(ctx)
@@ -151,7 +150,7 @@ func (s *Service) GetHosts(ctx context.Context, hostIDs []uuid.UUID) ([]*Host, e
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch host statuses from storage: %w", err)
 	}
-	statusMap := make(map[uuid.UUID]*StoredHostStatus, len(storedStatuses))
+	statusMap := make(map[string]*StoredHostStatus, len(storedStatuses))
 	for _, status := range storedStatuses {
 		statusMap[status.HostID] = status
 	}
@@ -174,7 +173,7 @@ func (s *Service) GetHosts(ctx context.Context, hostIDs []uuid.UUID) ([]*Host, e
 	return hosts, nil
 }
 
-func (s *Service) GetHost(ctx context.Context, hostID uuid.UUID) (*Host, error) {
+func (s *Service) GetHost(ctx context.Context, hostID string) (*Host, error) {
 	storedHost, err := s.store.Host.
 		GetByKey(hostID).
 		Exec(ctx)
@@ -192,7 +191,7 @@ func (s *Service) GetHost(ctx context.Context, hostID uuid.UUID) (*Host, error) 
 	} else if err != nil {
 		return nil, fmt.Errorf("failed to fetch host statuses from storage: %w", err)
 	}
-	// statusMap := make(map[uuid.UUID]*StoredHostStatus, len(storedStatuses))
+	// statusMap := make(map[string]*StoredHostStatus, len(storedStatuses))
 	// for _, status := range storedStatuses {
 	// 	statusMap[status.HostID] = status
 	// }

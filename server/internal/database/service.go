@@ -16,6 +16,7 @@ var ErrDatabaseAlreadyExists = errors.New("database already exists")
 var ErrDatabaseNotFound = errors.New("database not found")
 var ErrDatabaseNotModifiable = errors.New("database not modifiable")
 var ErrInstanceNotFound = errors.New("instance not found")
+var ErrTenantIDCannotBeChanged = errors.New("tenant ID cannot be changed")
 
 type Service struct {
 	orchestrator Orchestrator
@@ -32,8 +33,8 @@ func NewService(orchestrator Orchestrator, store *Store, hostSvc *host.Service) 
 }
 
 func (s *Service) CreateDatabase(ctx context.Context, spec *Spec) (*Database, error) {
-	if spec.DatabaseID == uuid.Nil {
-		return nil, fmt.Errorf("DatabaseID must be set before creating a Database")
+	if spec.DatabaseID == "" {
+		spec.DatabaseID = uuid.NewString()
 	}
 	specExists, err := s.store.Spec.ExistsByKey(spec.DatabaseID).Exec(ctx)
 	if err != nil {
@@ -70,8 +71,8 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 		}
 		return nil, fmt.Errorf("failed to get database spec: %w", err)
 	}
-	if currentSpec.TenantID != spec.TenantID {
-		return nil, fmt.Errorf("tenant ID cannot be changed")
+	if !tenantIDsMatch(currentSpec.TenantID, spec.TenantID) {
+		return nil, ErrTenantIDCannotBeChanged
 	}
 	currentDB, err := s.store.Database.GetByKey(spec.DatabaseID).Exec(ctx)
 	if err != nil {
@@ -105,7 +106,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 	return db, nil
 }
 
-func (s *Service) DeleteDatabase(ctx context.Context, databaseID uuid.UUID) error {
+func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) error {
 	var ops []storage.TxnOperation
 
 	spec, err := s.store.Spec.GetByKey(databaseID).Exec(ctx)
@@ -132,7 +133,7 @@ func (s *Service) DeleteDatabase(ctx context.Context, databaseID uuid.UUID) erro
 	return nil
 }
 
-func (s *Service) GetDatabase(ctx context.Context, databaseID uuid.UUID) (*Database, error) {
+func (s *Service) GetDatabase(ctx context.Context, databaseID string) (*Database, error) {
 	storedDb, err := s.store.Database.GetByKey(databaseID).Exec(ctx)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrDatabaseNotFound
@@ -175,7 +176,7 @@ func (s *Service) GetDatabases(ctx context.Context) ([]*Database, error) {
 	return databases, nil
 }
 
-func (s *Service) UpdateDatabaseState(ctx context.Context, databaseID uuid.UUID, from, to DatabaseState) error {
+func (s *Service) UpdateDatabaseState(ctx context.Context, databaseID string, from, to DatabaseState) error {
 	storedDb, err := s.store.Database.GetByKey(databaseID).Exec(ctx)
 	if errors.Is(err, storage.ErrNotFound) {
 		return ErrDatabaseNotFound
@@ -218,7 +219,7 @@ func (s *Service) UpdateInstance(ctx context.Context, opts *InstanceUpdateOption
 	return nil
 }
 
-func (s *Service) DeleteInstance(ctx context.Context, databaseID, instanceID uuid.UUID) error {
+func (s *Service) DeleteInstance(ctx context.Context, databaseID, instanceID string) error {
 	_, err := s.store.Instance.
 		DeleteByKey(databaseID, instanceID).
 		Exec(ctx)
@@ -237,8 +238,8 @@ func (s *Service) DeleteInstance(ctx context.Context, databaseID, instanceID uui
 
 func (s *Service) UpdateInstanceStatus(
 	ctx context.Context,
-	databaseID uuid.UUID,
-	instanceID uuid.UUID,
+	databaseID string,
+	instanceID string,
 	status *InstanceStatus,
 ) error {
 	stored := &StoredInstanceStatus{
@@ -256,7 +257,7 @@ func (s *Service) UpdateInstanceStatus(
 	return nil
 }
 
-func (s *Service) GetStoredInstanceState(ctx context.Context, databaseID, instanceID uuid.UUID) (InstanceState, error) {
+func (s *Service) GetStoredInstanceState(ctx context.Context, databaseID, instanceID string) (InstanceState, error) {
 	storedInstance, err := s.store.Instance.
 		GetByKey(databaseID, instanceID).
 		Exec(ctx)
@@ -269,7 +270,7 @@ func (s *Service) GetStoredInstanceState(ctx context.Context, databaseID, instan
 	return storedInstance.State, nil
 }
 
-func (s *Service) GetInstances(ctx context.Context, databaseID uuid.UUID) ([]*Instance, error) {
+func (s *Service) GetInstances(ctx context.Context, databaseID string) ([]*Instance, error) {
 	storedInstances, err := s.store.Instance.
 		GetByDatabaseID(databaseID).
 		Exec(ctx)
@@ -308,7 +309,7 @@ func (s *Service) GetAllInstances(ctx context.Context) ([]*Instance, error) {
 }
 
 func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
-	var hostIDs []uuid.UUID
+	var hostIDs []string
 	// First pass to build out hostID list
 	for _, node := range spec.Nodes {
 		hostIDs = append(hostIDs, node.HostIDs...)
@@ -332,7 +333,7 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 		return fmt.Errorf("failed to parse versions from spec: %w", err)
 	}
 	// Validate spec version and build up hosts by ID map for node validation
-	hostsByID := map[uuid.UUID]*host.Host{}
+	hostsByID := map[string]*host.Host{}
 	for _, h := range hosts {
 		hostsByID[h.ID] = h
 		if !h.Supports(specVersion) {
@@ -359,4 +360,15 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 	}
 
 	return nil
+}
+
+func tenantIDsMatch(a, b *string) bool {
+	switch {
+	case a == nil && b == nil:
+		return true
+	case a != nil && b != nil:
+		return *a == *b
+	default:
+		return false
+	}
 }

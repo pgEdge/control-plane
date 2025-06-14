@@ -14,14 +14,14 @@ var ClusterStatus = g.Type("ClusterStatus", func() {
 })
 
 var Cluster = g.Type("Cluster", func() {
-	g.Attribute("id", g.String, func() {
-		g.Format(g.FormatUUID)
+	g.Attribute("id", Identifier, func() {
 		g.Description("Unique identifier for the cluster.")
+		g.Example("production")
 		g.Example("a67cbb36-c3c3-49c9-8aac-f4a0438a883d")
 	})
-	g.Attribute("tenant_id", g.String, func() {
-		g.Format(g.FormatUUID)
+	g.Attribute("tenant_id", Identifier, func() {
 		g.Description("Unique identifier for the cluster's owner.")
+		g.Example("engineering")
 		g.Example("8210ec10-2dca-406c-ac4a-0661d2189954")
 	})
 	g.Attribute("status", ClusterStatus, func() {
@@ -54,9 +54,10 @@ var ClusterJoinRequest = g.Type("ClusterJoinRequest", func() {
 		g.Pattern(`^PGEDGE-[\w]{64}-[\w]{32}$`)
 		g.Example("PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd")
 	})
-	g.Attribute("host_id", g.String, func() {
-		g.Format(g.FormatUUID)
+	g.Attribute("host_id", Identifier, func() {
 		g.Description("The unique identifier for the host that's joining the cluster.")
+		g.Example("host-1")
+		g.Example("us-east-1")
 		g.Example("de3b1388-1f0c-42f1-a86c-59ab72f255ec")
 	})
 	g.Attribute("hostname", g.String, func() {
@@ -76,8 +77,9 @@ var ClusterJoinRequest = g.Type("ClusterJoinRequest", func() {
 
 var ClusterPeer = g.Type("ClusterPeer", func() {
 	g.Attribute("name", g.String, func() {
-		g.Format(g.FormatUUID)
-		g.Description("The name of the cluster member.")
+		g.Description("The name of the Etcd cluster member.")
+		g.Example("host-1")
+		g.Example("us-east-1")
 		g.Example("de3b1388-1f0c-42f1-a86c-59ab72f255ec")
 	})
 	g.Attribute("peer_url", g.String, func() {

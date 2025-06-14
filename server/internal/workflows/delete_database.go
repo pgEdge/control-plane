@@ -13,14 +13,14 @@ import (
 )
 
 type DeleteDatabaseInput struct {
-	DatabaseID uuid.UUID `json:"database_id"`
+	DatabaseID string    `json:"database_id"`
 	TaskID     uuid.UUID `json:"task_id"`
 }
 
 type DeleteDatabaseOutput struct{}
 
 func (w *Workflows) DeleteDatabase(ctx workflow.Context, input *DeleteDatabaseInput) (*DeleteDatabaseOutput, error) {
-	logger := workflow.Logger(ctx).With("database_id", input.DatabaseID.String())
+	logger := workflow.Logger(ctx).With("database_id", input.DatabaseID)
 	logger.Info("deleting database")
 
 	handleError := func(cause error) error {

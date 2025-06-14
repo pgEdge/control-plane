@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/samber/do"
 	"github.com/spf13/afero"
@@ -27,7 +26,7 @@ func DirResourceIdentifier(id string) resource.Identifier {
 type DirResource struct {
 	ID       string      `json:"id"`
 	ParentID string      `json:"parent_id"`
-	HostID   uuid.UUID   `json:"host_id"`
+	HostID   string      `json:"host_id"`
 	Path     string      `json:"path"`
 	OwnerUID int         `json:"owner_uid"`
 	OwnerGID int         `json:"owner_gid"`
@@ -48,7 +47,7 @@ func (d *DirResource) DiffIgnore() []string {
 func (d *DirResource) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeHost,
-		ID:   d.HostID.String(),
+		ID:   d.HostID,
 	}
 }
 

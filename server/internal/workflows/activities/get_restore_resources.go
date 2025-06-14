@@ -25,7 +25,7 @@ func (a *Activities) ExecuteGetRestoreResources(
 	ctx workflow.Context,
 	input *GetRestoreResourcesInput,
 ) workflow.Future[*GetRestoreResourcesOutput] {
-	executor := input.Spec.HostID.String()
+	executor := input.Spec.HostID
 	options := workflow.ActivityOptions{
 		Queue: core.Queue(executor),
 		RetryOptions: workflow.RetryOptions{
@@ -37,8 +37,8 @@ func (a *Activities) ExecuteGetRestoreResources(
 
 func (a *Activities) GetRestoreResources(ctx context.Context, input *GetRestoreResourcesInput) (*GetRestoreResourcesOutput, error) {
 	logger := activity.Logger(ctx).With(
-		"database_id", input.Spec.DatabaseID.String(),
-		"instance_id", input.Spec.InstanceID.String(),
+		"database_id", input.Spec.DatabaseID,
+		"instance_id", input.Spec.InstanceID,
 	)
 	logger.Info("getting restore resources")
 

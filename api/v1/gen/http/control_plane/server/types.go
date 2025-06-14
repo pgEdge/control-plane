@@ -164,7 +164,7 @@ type CreateDatabaseResponseBody struct {
 type GetDatabaseResponseBody struct {
 	// Unique identifier for the database.
 	ID string `form:"id" json:"id" xml:"id"`
-	// Unique identifier for the databases's owner.
+	// Unique identifier for the database.
 	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
 	// The time that the database was created.
 	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
@@ -964,7 +964,7 @@ type GetVersionServerErrorResponseBody struct {
 
 // ClusterPeerResponseBody is used to define fields on response body types.
 type ClusterPeerResponseBody struct {
-	// The name of the cluster member.
+	// The name of the Etcd cluster member.
 	Name string `form:"name" json:"name" xml:"name"`
 	// The Etcd peer endpoint for this cluster member.
 	PeerURL string `form:"peer_url" json:"peer_url" xml:"peer_url"`
@@ -2027,8 +2027,8 @@ func NewGetJoinOptionsResponseBody(res *controlplane.ClusterJoinOptions) *GetJoi
 // the "get-cluster" endpoint of the "control-plane" service.
 func NewGetClusterResponseBody(res *controlplane.Cluster) *GetClusterResponseBody {
 	body := &GetClusterResponseBody{
-		ID:       res.ID,
-		TenantID: res.TenantID,
+		ID:       string(res.ID),
+		TenantID: string(res.TenantID),
 	}
 	if res.Status != nil {
 		body.Status = marshalControlplaneClusterStatusToClusterStatusResponseBody(res.Status)
@@ -2058,7 +2058,7 @@ func NewListHostsResponseBody(res []*controlplane.Host) ListHostsResponseBody {
 // "get-host" endpoint of the "control-plane" service.
 func NewGetHostResponseBody(res *controlplane.Host) *GetHostResponseBody {
 	body := &GetHostResponseBody{
-		ID:           res.ID,
+		ID:           string(res.ID),
 		Orchestrator: res.Orchestrator,
 		Hostname:     res.Hostname,
 		Ipv4Address:  res.Ipv4Address,
@@ -2110,11 +2110,14 @@ func NewCreateDatabaseResponseBody(res *controlplane.CreateDatabaseResponse) *Cr
 // the "get-database" endpoint of the "control-plane" service.
 func NewGetDatabaseResponseBody(res *controlplaneviews.DatabaseView) *GetDatabaseResponseBody {
 	body := &GetDatabaseResponseBody{
-		ID:        *res.ID,
-		TenantID:  res.TenantID,
+		ID:        string(*res.ID),
 		CreatedAt: *res.CreatedAt,
 		UpdatedAt: *res.UpdatedAt,
 		State:     *res.State,
+	}
+	if res.TenantID != nil {
+		tenantID := string(*res.TenantID)
+		body.TenantID = &tenantID
 	}
 	if res.Instances != nil {
 		body.Instances = make([]*InstanceResponseBody, len(res.Instances))
@@ -2999,7 +3002,7 @@ func NewJoinClusterClusterJoinToken(body *JoinClusterRequestBody) *controlplane.
 func NewGetJoinOptionsClusterJoinRequest(body *GetJoinOptionsRequestBody) *controlplane.ClusterJoinRequest {
 	v := &controlplane.ClusterJoinRequest{
 		Token:       *body.Token,
-		HostID:      *body.HostID,
+		HostID:      controlplane.Identifier(*body.HostID),
 		Hostname:    *body.Hostname,
 		Ipv4Address: *body.Ipv4Address,
 	}
@@ -3010,7 +3013,7 @@ func NewGetJoinOptionsClusterJoinRequest(body *GetJoinOptionsRequestBody) *contr
 // NewGetHostPayload builds a control-plane service get-host endpoint payload.
 func NewGetHostPayload(hostID string) *controlplane.GetHostPayload {
 	v := &controlplane.GetHostPayload{}
-	v.HostID = hostID
+	v.HostID = controlplane.Identifier(hostID)
 
 	return v
 }
@@ -3019,7 +3022,7 @@ func NewGetHostPayload(hostID string) *controlplane.GetHostPayload {
 // payload.
 func NewRemoveHostPayload(hostID string) *controlplane.RemoveHostPayload {
 	v := &controlplane.RemoveHostPayload{}
-	v.HostID = hostID
+	v.HostID = controlplane.Identifier(hostID)
 
 	return v
 }
@@ -3027,9 +3030,14 @@ func NewRemoveHostPayload(hostID string) *controlplane.RemoveHostPayload {
 // NewCreateDatabaseRequest builds a control-plane service create-database
 // endpoint payload.
 func NewCreateDatabaseRequest(body *CreateDatabaseRequestBody) *controlplane.CreateDatabaseRequest {
-	v := &controlplane.CreateDatabaseRequest{
-		ID:       body.ID,
-		TenantID: body.TenantID,
+	v := &controlplane.CreateDatabaseRequest{}
+	if body.ID != nil {
+		id := controlplane.Identifier(*body.ID)
+		v.ID = &id
+	}
+	if body.TenantID != nil {
+		tenantID := controlplane.Identifier(*body.TenantID)
+		v.TenantID = &tenantID
 	}
 	v.Spec = unmarshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(body.Spec)
 
@@ -3040,7 +3048,7 @@ func NewCreateDatabaseRequest(body *CreateDatabaseRequestBody) *controlplane.Cre
 // payload.
 func NewGetDatabasePayload(databaseID string) *controlplane.GetDatabasePayload {
 	v := &controlplane.GetDatabasePayload{}
-	v.DatabaseID = databaseID
+	v.DatabaseID = controlplane.Identifier(databaseID)
 
 	return v
 }
@@ -3048,14 +3056,16 @@ func NewGetDatabasePayload(databaseID string) *controlplane.GetDatabasePayload {
 // NewUpdateDatabasePayload builds a control-plane service update-database
 // endpoint payload.
 func NewUpdateDatabasePayload(body *UpdateDatabaseRequestBody, databaseID string, forceUpdate bool) *controlplane.UpdateDatabasePayload {
-	v := &controlplane.UpdateDatabaseRequest{
-		TenantID: body.TenantID,
+	v := &controlplane.UpdateDatabaseRequest{}
+	if body.TenantID != nil {
+		tenantID := controlplane.Identifier(*body.TenantID)
+		v.TenantID = &tenantID
 	}
 	v.Spec = unmarshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(body.Spec)
 	res := &controlplane.UpdateDatabasePayload{
 		Request: v,
 	}
-	res.DatabaseID = databaseID
+	res.DatabaseID = controlplane.Identifier(databaseID)
 	res.ForceUpdate = forceUpdate
 
 	return res
@@ -3065,7 +3075,7 @@ func NewUpdateDatabasePayload(body *UpdateDatabaseRequestBody, databaseID string
 // endpoint payload.
 func NewDeleteDatabasePayload(databaseID string) *controlplane.DeleteDatabasePayload {
 	v := &controlplane.DeleteDatabasePayload{}
-	v.DatabaseID = databaseID
+	v.DatabaseID = controlplane.Identifier(databaseID)
 
 	return v
 }
@@ -3095,7 +3105,7 @@ func NewBackupDatabaseNodePayload(body *BackupDatabaseNodeRequestBody, databaseI
 	res := &controlplane.BackupDatabaseNodePayload{
 		Options: v,
 	}
-	res.DatabaseID = databaseID
+	res.DatabaseID = controlplane.Identifier(databaseID)
 	res.NodeName = nodeName
 
 	return res
@@ -3105,7 +3115,7 @@ func NewBackupDatabaseNodePayload(body *BackupDatabaseNodeRequestBody, databaseI
 // list-database-tasks endpoint payload.
 func NewListDatabaseTasksPayload(databaseID string, afterTaskID *string, limit *int, sortOrder *string) *controlplane.ListDatabaseTasksPayload {
 	v := &controlplane.ListDatabaseTasksPayload{}
-	v.DatabaseID = databaseID
+	v.DatabaseID = controlplane.Identifier(databaseID)
 	v.AfterTaskID = afterTaskID
 	v.Limit = limit
 	v.SortOrder = sortOrder
@@ -3117,7 +3127,7 @@ func NewListDatabaseTasksPayload(databaseID string, afterTaskID *string, limit *
 // endpoint payload.
 func NewGetDatabaseTaskPayload(databaseID string, taskID string) *controlplane.GetDatabaseTaskPayload {
 	v := &controlplane.GetDatabaseTaskPayload{}
-	v.DatabaseID = databaseID
+	v.DatabaseID = controlplane.Identifier(databaseID)
 	v.TaskID = taskID
 
 	return v
@@ -3127,7 +3137,7 @@ func NewGetDatabaseTaskPayload(databaseID string, taskID string) *controlplane.G
 // get-database-task-log endpoint payload.
 func NewGetDatabaseTaskLogPayload(databaseID string, taskID string, afterEntryID *string, limit *int) *controlplane.GetDatabaseTaskLogPayload {
 	v := &controlplane.GetDatabaseTaskLogPayload{}
-	v.DatabaseID = databaseID
+	v.DatabaseID = controlplane.Identifier(databaseID)
 	v.TaskID = taskID
 	v.AfterEntryID = afterEntryID
 	v.Limit = limit
@@ -3149,7 +3159,7 @@ func NewRestoreDatabasePayload(body *RestoreDatabaseRequestBody, databaseID stri
 	res := &controlplane.RestoreDatabasePayload{
 		Request: v,
 	}
-	res.DatabaseID = databaseID
+	res.DatabaseID = controlplane.Identifier(databaseID)
 
 	return res
 }
@@ -3188,7 +3198,7 @@ func ValidateGetJoinOptionsRequestBody(body *GetJoinOptionsRequestBody) (err err
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.token", *body.Token, "^PGEDGE-[\\w]{64}-[\\w]{32}$"))
 	}
 	if body.HostID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.host_id", *body.HostID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.Hostname != nil {
 		if utf8.RuneCountInString(*body.Hostname) < 3 {
@@ -3213,10 +3223,10 @@ func ValidateCreateDatabaseRequestBody(body *CreateDatabaseRequestBody) (err err
 		err = goa.MergeErrors(err, goa.MissingFieldError("spec", "body"))
 	}
 	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.TenantID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.tenant_id", *body.TenantID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.tenant_id", *body.TenantID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.Spec != nil {
 		if err2 := ValidateDatabaseSpecRequestBody(body.Spec); err2 != nil {
@@ -3233,7 +3243,7 @@ func ValidateUpdateDatabaseRequestBody(body *UpdateDatabaseRequestBody) (err err
 		err = goa.MergeErrors(err, goa.MissingFieldError("spec", "body"))
 	}
 	if body.TenantID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.tenant_id", *body.TenantID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.tenant_id", *body.TenantID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.Spec != nil {
 		if err2 := ValidateDatabaseSpecRequestBodyRequestBody(body.Spec); err2 != nil {
@@ -3392,7 +3402,7 @@ func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
 	}
 	for _, e := range body.HostIds {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_ids[*]", e, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.host_ids[*]", e, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.PostgresVersion != nil {
 		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
@@ -3479,14 +3489,7 @@ func ValidateBackupRepositorySpecRequestBody(body *BackupRepositorySpecRequestBo
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 64 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 64, false))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure" || *body.Type == "posix" || *body.Type == "cifs") {
@@ -3670,7 +3673,7 @@ func ValidateRestoreConfigSpecRequestBody(body *RestoreConfigSpecRequestBody) (e
 		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
 	}
 	if body.SourceDatabaseID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.source_database_id", *body.SourceDatabaseID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.source_database_id", *body.SourceDatabaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.SourceNodeName != nil {
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", *body.SourceNodeName, "n[0-9]+"))
@@ -3703,14 +3706,7 @@ func ValidateRestoreRepositorySpecRequestBody(body *RestoreRepositorySpecRequest
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 64 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 64, false))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure" || *body.Type == "posix" || *body.Type == "cifs") {
@@ -3992,7 +3988,7 @@ func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecReques
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
 	}
 	for _, e := range body.HostIds {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_ids[*]", e, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.host_ids[*]", e, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.PostgresVersion != nil {
 		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
@@ -4079,14 +4075,7 @@ func ValidateBackupRepositorySpecRequestBodyRequestBody(body *BackupRepositorySp
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 64 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 64, false))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure" || *body.Type == "posix" || *body.Type == "cifs") {
@@ -4270,7 +4259,7 @@ func ValidateRestoreConfigSpecRequestBodyRequestBody(body *RestoreConfigSpecRequ
 		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
 	}
 	if body.SourceDatabaseID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.source_database_id", *body.SourceDatabaseID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.source_database_id", *body.SourceDatabaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.SourceNodeName != nil {
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", *body.SourceNodeName, "n[0-9]+"))
@@ -4303,14 +4292,7 @@ func ValidateRestoreRepositorySpecRequestBodyRequestBody(body *RestoreRepository
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 64 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 64, false))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure" || *body.Type == "posix" || *body.Type == "cifs") {

@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"path/filepath"
 
-	"github.com/google/uuid"
 	"github.com/samber/do"
 	"github.com/spf13/afero"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -28,9 +27,9 @@ var _ resource.Resource = (*PatroniConfig)(nil)
 
 const ResourceTypePatroniConfig resource.Type = "swarm.patroni_config"
 
-func PatroniConfigIdentifier(instanceID uuid.UUID) resource.Identifier {
+func PatroniConfigIdentifier(instanceID string) resource.Identifier {
 	return resource.Identifier{
-		ID:   instanceID.String(),
+		ID:   instanceID,
 		Type: ResourceTypePatroniConfig,
 	}
 }
@@ -58,7 +57,7 @@ func (c *PatroniConfig) DiffIgnore() []string {
 func (c *PatroniConfig) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeHost,
-		ID:   c.Spec.HostID.String(),
+		ID:   c.Spec.HostID,
 	}
 }
 
@@ -242,12 +241,12 @@ func generatePatroniConfig(
 	dcsParameters := patroni.ExtractPatroniControlledGUCs(parameters)
 
 	staticLogFields := map[string]string{
-		"database_id": spec.DatabaseID.String(),
-		"instance_id": spec.InstanceID.String(),
+		"database_id": spec.DatabaseID,
+		"instance_id": spec.InstanceID,
 		"node_name":   spec.NodeName,
 	}
 	if spec.TenantID != nil {
-		staticLogFields["tenant_id"] = spec.TenantID.String()
+		staticLogFields["tenant_id"] = *spec.TenantID
 	}
 
 	// Patroni requires the etcd endpoints to be in the format "host:port"
@@ -261,9 +260,9 @@ func generatePatroniConfig(
 	}
 
 	cfg := &patroni.Config{
-		Name:      utils.PointerTo(spec.InstanceID.String()),
+		Name:      utils.PointerTo(spec.InstanceID),
 		Namespace: utils.PointerTo(patroni.Namespace(spec.DatabaseID, spec.NodeName)),
-		Scope:     utils.PointerTo(spec.DatabaseID.String() + ":" + spec.NodeName),
+		Scope:     utils.PointerTo(spec.DatabaseID + ":" + spec.NodeName),
 		Log: &patroni.Log{
 			Type:         utils.PointerTo(patroni.LogTypeJson),
 			Level:        utils.PointerTo(patroni.LogLevelInfo),

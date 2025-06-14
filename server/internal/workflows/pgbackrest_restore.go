@@ -24,7 +24,7 @@ type PgBackRestRestoreInput struct {
 type PgBackRestRestoreOutput struct{}
 
 func (w *Workflows) PgBackRestRestore(ctx workflow.Context, input *PgBackRestRestoreInput) (*PgBackRestRestoreOutput, error) {
-	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID.String())
+	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID)
 	logger.Info("restoring database from pgbackrest backup")
 
 	// This is an 'in-place' restore, meaning that the data directory is left

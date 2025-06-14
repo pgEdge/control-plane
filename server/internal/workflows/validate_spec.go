@@ -4,14 +4,13 @@ import (
 	"fmt"
 
 	"github.com/cschleiden/go-workflows/workflow"
-	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
 type ValidateSpecInput struct {
-	DatabaseID uuid.UUID
+	DatabaseID string
 	Spec       *database.Spec
 }
 
@@ -22,7 +21,7 @@ type ValidateSpecOutput struct {
 
 func (w *Workflows) ValidateSpec(ctx workflow.Context, input *ValidateSpecInput) (*ValidateSpecOutput, error) {
 	databaseID := input.DatabaseID
-	logger := workflow.Logger(ctx).With("database_id", databaseID.String())
+	logger := workflow.Logger(ctx).With("database_id", databaseID)
 	logger.Info("Starting volume validation")
 
 	nodeInstances, err := input.Spec.NodeInstances()

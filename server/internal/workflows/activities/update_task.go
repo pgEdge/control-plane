@@ -14,7 +14,7 @@ import (
 )
 
 type UpdateTaskInput struct {
-	DatabaseID    uuid.UUID          `json:"database_id"`
+	DatabaseID    string             `json:"database_id"`
 	TaskID        uuid.UUID          `json:"task_id"`
 	UpdateOptions task.UpdateOptions `json:"update_options,omitempty"`
 }
@@ -26,7 +26,7 @@ func (a *Activities) ExecuteUpdateTask(
 	input *UpdateTaskInput,
 ) workflow.Future[*UpdateTaskOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(a.Config.HostID.String()),
+		Queue: core.Queue(a.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
@@ -36,7 +36,7 @@ func (a *Activities) ExecuteUpdateTask(
 
 func (a *Activities) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*UpdateTaskOutput, error) {
 	logger := activity.Logger(ctx).With(
-		"database_id", input.DatabaseID.String(),
+		"database_id", input.DatabaseID,
 		"task_id", input.TaskID.String(),
 	)
 	logger.Info("updating task")

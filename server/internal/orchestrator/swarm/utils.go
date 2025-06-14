@@ -11,18 +11,17 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/swarm"
-	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/docker"
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 )
 
-func GetPostgresContainer(ctx context.Context, dockerClient *docker.Docker, instanceID uuid.UUID) (types.Container, error) {
+func GetPostgresContainer(ctx context.Context, dockerClient *docker.Docker, instanceID string) (types.Container, error) {
 	matches, err := dockerClient.ContainerList(ctx, container.ListOptions{
 		Filters: filters.NewArgs(
 			// Multiple filters get AND'd together
-			filters.Arg("label", fmt.Sprintf("pgedge.instance.id=%s", instanceID.String())),
+			filters.Arg("label", fmt.Sprintf("pgedge.instance.id=%s", instanceID)),
 			filters.Arg("label", fmt.Sprintf("pgedge.component=%s", "postgres")),
 		),
 	})
@@ -30,12 +29,12 @@ func GetPostgresContainer(ctx context.Context, dockerClient *docker.Docker, inst
 		return types.Container{}, fmt.Errorf("failed to list containers: %w", err)
 	}
 	if len(matches) == 0 {
-		return types.Container{}, fmt.Errorf("no postgres container found for %q", instanceID.String())
+		return types.Container{}, fmt.Errorf("no postgres container found for %q", instanceID)
 	}
 	return matches[0], nil
 }
 
-func PostgresContainerExec(ctx context.Context, w io.Writer, dockerClient *docker.Docker, instanceID uuid.UUID, cmd []string) error {
+func PostgresContainerExec(ctx context.Context, w io.Writer, dockerClient *docker.Docker, instanceID string, cmd []string) error {
 	container, err := GetPostgresContainer(ctx, dockerClient, instanceID)
 	if err != nil {
 		return fmt.Errorf("failed to get postgres container: %w", err)
@@ -47,10 +46,10 @@ func PostgresContainerExec(ctx context.Context, w io.Writer, dockerClient *docke
 	return nil
 }
 
-func GetPostgresService(ctx context.Context, dockerClient *docker.Docker, instanceID uuid.UUID) (swarm.Service, error) {
+func GetPostgresService(ctx context.Context, dockerClient *docker.Docker, instanceID string) (swarm.Service, error) {
 	matches, err := dockerClient.ServiceList(ctx, types.ServiceListOptions{
 		Filters: filters.NewArgs(
-			filters.Arg("label", fmt.Sprintf("pgedge.instance.id=%s", instanceID.String())),
+			filters.Arg("label", fmt.Sprintf("pgedge.instance.id=%s", instanceID)),
 			filters.Arg("label", fmt.Sprintf("pgedge.component=%s", "postgres")),
 		),
 	})
@@ -58,12 +57,12 @@ func GetPostgresService(ctx context.Context, dockerClient *docker.Docker, instan
 		return swarm.Service{}, fmt.Errorf("failed to list services: %w", err)
 	}
 	if len(matches) == 0 {
-		return swarm.Service{}, fmt.Errorf("no postgres service found for %q", instanceID.String())
+		return swarm.Service{}, fmt.Errorf("no postgres service found for %q", instanceID)
 	}
 	return matches[0], nil
 }
 
-func PostgresServiceScale(ctx context.Context, dockerClient *docker.Docker, instanceID uuid.UUID, replicas int, timeout time.Duration) error {
+func PostgresServiceScale(ctx context.Context, dockerClient *docker.Docker, instanceID string, replicas int, timeout time.Duration) error {
 	service, err := GetPostgresService(ctx, dockerClient, instanceID)
 	if err != nil {
 		return fmt.Errorf("failed to get postgres service: %w", err)

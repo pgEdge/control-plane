@@ -164,7 +164,7 @@ type CreateDatabaseResponseBody struct {
 type GetDatabaseResponseBody struct {
 	// Unique identifier for the database.
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Unique identifier for the databases's owner.
+	// Unique identifier for the database.
 	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
 	// The time that the database was created.
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
@@ -964,7 +964,7 @@ type GetVersionServerErrorResponseBody struct {
 
 // ClusterPeerResponseBody is used to define fields on response body types.
 type ClusterPeerResponseBody struct {
-	// The name of the cluster member.
+	// The name of the Etcd cluster member.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// The Etcd peer endpoint for this cluster member.
 	PeerURL *string `form:"peer_url,omitempty" json:"peer_url,omitempty" xml:"peer_url,omitempty"`
@@ -2287,7 +2287,7 @@ func NewJoinClusterRequestBody(p *controlplane.ClusterJoinToken) *JoinClusterReq
 func NewGetJoinOptionsRequestBody(p *controlplane.ClusterJoinRequest) *GetJoinOptionsRequestBody {
 	body := &GetJoinOptionsRequestBody{
 		Token:       p.Token,
-		HostID:      p.HostID,
+		HostID:      string(p.HostID),
 		Hostname:    p.Hostname,
 		Ipv4Address: p.Ipv4Address,
 	}
@@ -2297,9 +2297,14 @@ func NewGetJoinOptionsRequestBody(p *controlplane.ClusterJoinRequest) *GetJoinOp
 // NewCreateDatabaseRequestBody builds the HTTP request body from the payload
 // of the "create-database" endpoint of the "control-plane" service.
 func NewCreateDatabaseRequestBody(p *controlplane.CreateDatabaseRequest) *CreateDatabaseRequestBody {
-	body := &CreateDatabaseRequestBody{
-		ID:       p.ID,
-		TenantID: p.TenantID,
+	body := &CreateDatabaseRequestBody{}
+	if p.ID != nil {
+		id := string(*p.ID)
+		body.ID = &id
+	}
+	if p.TenantID != nil {
+		tenantID := string(*p.TenantID)
+		body.TenantID = &tenantID
 	}
 	if p.Spec != nil {
 		body.Spec = marshalControlplaneDatabaseSpecToDatabaseSpecRequestBody(p.Spec)
@@ -2310,8 +2315,10 @@ func NewCreateDatabaseRequestBody(p *controlplane.CreateDatabaseRequest) *Create
 // NewUpdateDatabaseRequestBody builds the HTTP request body from the payload
 // of the "update-database" endpoint of the "control-plane" service.
 func NewUpdateDatabaseRequestBody(p *controlplane.UpdateDatabasePayload) *UpdateDatabaseRequestBody {
-	body := &UpdateDatabaseRequestBody{
-		TenantID: p.Request.TenantID,
+	body := &UpdateDatabaseRequestBody{}
+	if p.Request.TenantID != nil {
+		tenantID := string(*p.Request.TenantID)
+		body.TenantID = &tenantID
 	}
 	if p.Request.Spec != nil {
 		body.Spec = marshalControlplaneDatabaseSpecToDatabaseSpecRequestBodyRequestBody(p.Request.Spec)
@@ -2507,8 +2514,8 @@ func NewGetJoinOptionsServerError(body *GetJoinOptionsServerErrorResponseBody) *
 // endpoint result from a HTTP "OK" response.
 func NewGetClusterClusterOK(body *GetClusterResponseBody) *controlplane.Cluster {
 	v := &controlplane.Cluster{
-		ID:       *body.ID,
-		TenantID: *body.TenantID,
+		ID:       controlplane.Identifier(*body.ID),
+		TenantID: controlplane.Identifier(*body.TenantID),
 	}
 	v.Status = unmarshalClusterStatusResponseBodyToControlplaneClusterStatus(body.Status)
 	v.Hosts = make([]*controlplane.Host, len(body.Hosts))
@@ -2578,7 +2585,7 @@ func NewListHostsServerError(body *ListHostsServerErrorResponseBody) *controlpla
 // from a HTTP "OK" response.
 func NewGetHostHostOK(body *GetHostResponseBody) *controlplane.Host {
 	v := &controlplane.Host{
-		ID:           *body.ID,
+		ID:           controlplane.Identifier(*body.ID),
 		Orchestrator: *body.Orchestrator,
 		Hostname:     *body.Hostname,
 		Ipv4Address:  *body.Ipv4Address,
@@ -2792,11 +2799,15 @@ func NewCreateDatabaseServerError(body *CreateDatabaseServerErrorResponseBody) *
 // endpoint result from a HTTP "OK" response.
 func NewGetDatabaseDatabaseOK(body *GetDatabaseResponseBody) *controlplaneviews.DatabaseView {
 	v := &controlplaneviews.DatabaseView{
-		ID:        body.ID,
-		TenantID:  body.TenantID,
 		CreatedAt: body.CreatedAt,
 		UpdatedAt: body.UpdatedAt,
 		State:     body.State,
+	}
+	id := controlplaneviews.IdentifierView(*body.ID)
+	v.ID = &id
+	if body.TenantID != nil {
+		tenantID := controlplaneviews.IdentifierView(*body.TenantID)
+		v.TenantID = &tenantID
 	}
 	if body.Instances != nil {
 		v.Instances = make([]*controlplaneviews.InstanceView, len(body.Instances))
@@ -3433,10 +3444,10 @@ func ValidateGetClusterResponseBody(body *GetClusterResponseBody) (err error) {
 		err = goa.MergeErrors(err, goa.MissingFieldError("hosts", "body"))
 	}
 	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.TenantID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.tenant_id", *body.TenantID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.tenant_id", *body.TenantID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.Status != nil {
 		if err2 := ValidateClusterStatusResponseBody(body.Status); err2 != nil {
@@ -3472,7 +3483,7 @@ func ValidateGetHostResponseBody(body *GetHostResponseBody) (err error) {
 		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
 	}
 	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.Cohort != nil {
 		if err2 := ValidateHostCohortResponseBody(body.Cohort); err2 != nil {
@@ -3595,15 +3606,6 @@ func ValidateGetDatabaseTaskResponseBody(body *GetDatabaseTaskResponseBody) (err
 	if body.ParentID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
 	}
-	if body.DatabaseID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.database_id", *body.DatabaseID, goa.FormatUUID))
-	}
-	if body.InstanceID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.instance_id", *body.InstanceID, goa.FormatUUID))
-	}
-	if body.HostID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
-	}
 	if body.TaskID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
 	}
@@ -3636,19 +3638,10 @@ func ValidateGetDatabaseTaskLogResponseBody(body *GetDatabaseTaskLogResponseBody
 	if body.Entries == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("entries", "body"))
 	}
-	if body.DatabaseID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.database_id", *body.DatabaseID, goa.FormatUUID))
-	}
-	if body.TaskID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
-	}
 	if body.TaskStatus != nil {
 		if !(*body.TaskStatus == "pending" || *body.TaskStatus == "running" || *body.TaskStatus == "completed" || *body.TaskStatus == "failed" || *body.TaskStatus == "unknown") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.task_status", *body.TaskStatus, []any{"pending", "running", "completed", "failed", "unknown"}))
 		}
-	}
-	if body.LastEntryID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.last_entry_id", *body.LastEntryID, goa.FormatUUID))
 	}
 	for _, e := range body.Entries {
 		if e != nil {
@@ -4575,9 +4568,6 @@ func ValidateClusterPeerResponseBody(body *ClusterPeerResponseBody) (err error) 
 	if body.ClientURL == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("client_url", "body"))
 	}
-	if body.Name != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.name", *body.Name, goa.FormatUUID))
-	}
 	if body.PeerURL != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.peer_url", *body.PeerURL, goa.FormatURI))
 	}
@@ -4640,7 +4630,7 @@ func ValidateHostResponseBody(body *HostResponseBody) (err error) {
 		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
 	}
 	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.Cohort != nil {
 		if err2 := ValidateHostCohortResponseBody(body.Cohort); err2 != nil {
@@ -4750,7 +4740,7 @@ func ValidateHostResponse(body *HostResponse) (err error) {
 		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
 	}
 	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.Cohort != nil {
 		if err2 := ValidateHostCohortResponse(body.Cohort); err2 != nil {
@@ -4855,10 +4845,10 @@ func ValidateDatabaseResponse(body *DatabaseResponse) (err error) {
 		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
 	}
 	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.TenantID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.tenant_id", *body.TenantID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.tenant_id", *body.TenantID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.CreatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
@@ -4916,12 +4906,6 @@ func ValidateInstanceResponse(body *InstanceResponse) (err error) {
 	}
 	if body.State == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
-	}
-	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
-	}
-	if body.HostID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
 	}
 	if body.CreatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
@@ -5123,7 +5107,7 @@ func ValidateDatabaseNodeSpecResponse(body *DatabaseNodeSpecResponse) (err error
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
 	}
 	for _, e := range body.HostIds {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_ids[*]", e, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.host_ids[*]", e, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.PostgresVersion != nil {
 		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
@@ -5210,14 +5194,7 @@ func ValidateBackupRepositorySpecResponse(body *BackupRepositorySpecResponse) (e
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 64 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 64, false))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure" || *body.Type == "posix" || *body.Type == "cifs") {
@@ -5401,7 +5378,7 @@ func ValidateRestoreConfigSpecResponse(body *RestoreConfigSpecResponse) (err err
 		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
 	}
 	if body.SourceDatabaseID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.source_database_id", *body.SourceDatabaseID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.source_database_id", *body.SourceDatabaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.SourceNodeName != nil {
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", *body.SourceNodeName, "n[0-9]+"))
@@ -5434,14 +5411,7 @@ func ValidateRestoreRepositorySpecResponse(body *RestoreRepositorySpecResponse) 
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 64 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 64, false))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure" || *body.Type == "posix" || *body.Type == "cifs") {
@@ -5711,7 +5681,7 @@ func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
 	}
 	for _, e := range body.HostIds {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_ids[*]", e, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.host_ids[*]", e, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.PostgresVersion != nil {
 		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
@@ -5795,14 +5765,7 @@ func ValidateBackupConfigSpecRequestBody(body *BackupConfigSpecRequestBody) (err
 // BackupRepositorySpecRequestBody
 func ValidateBackupRepositorySpecRequestBody(body *BackupRepositorySpecRequestBody) (err error) {
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 64 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 64, false))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure" || body.Type == "posix" || body.Type == "cifs") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure", "posix", "cifs"}))
@@ -5959,7 +5922,7 @@ func ValidateRestoreConfigSpecRequestBody(body *RestoreConfigSpecRequestBody) (e
 	if body.Repository == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
 	}
-	err = goa.MergeErrors(err, goa.ValidateFormat("body.source_database_id", body.SourceDatabaseID, goa.FormatUUID))
+	err = goa.MergeErrors(err, goa.ValidatePattern("body.source_database_id", body.SourceDatabaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", body.SourceNodeName, "n[0-9]+"))
 	if utf8.RuneCountInString(body.SourceDatabaseName) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_name", body.SourceDatabaseName, utf8.RuneCountInString(body.SourceDatabaseName), 1, true))
@@ -5982,14 +5945,7 @@ func ValidateRestoreConfigSpecRequestBody(body *RestoreConfigSpecRequestBody) (e
 // RestoreRepositorySpecRequestBody
 func ValidateRestoreRepositorySpecRequestBody(body *RestoreRepositorySpecRequestBody) (err error) {
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 64 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 64, false))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure" || body.Type == "posix" || body.Type == "cifs") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure", "posix", "cifs"}))
@@ -6157,15 +6113,6 @@ func ValidateTaskResponseBody(body *TaskResponseBody) (err error) {
 	if body.ParentID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
 	}
-	if body.DatabaseID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.database_id", *body.DatabaseID, goa.FormatUUID))
-	}
-	if body.InstanceID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.instance_id", *body.InstanceID, goa.FormatUUID))
-	}
-	if body.HostID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
-	}
 	if body.TaskID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
 	}
@@ -6199,10 +6146,10 @@ func ValidateDatabaseResponseBody(body *DatabaseResponseBody) (err error) {
 		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
 	}
 	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.TenantID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.tenant_id", *body.TenantID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.tenant_id", *body.TenantID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.CreatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
@@ -6261,12 +6208,6 @@ func ValidateInstanceResponseBody(body *InstanceResponseBody) (err error) {
 	}
 	if body.State == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
-	}
-	if body.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.id", *body.ID, goa.FormatUUID))
-	}
-	if body.HostID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
 	}
 	if body.CreatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
@@ -6468,7 +6409,7 @@ func ValidateDatabaseNodeSpecResponseBody(body *DatabaseNodeSpecResponseBody) (e
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
 	}
 	for _, e := range body.HostIds {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_ids[*]", e, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.host_ids[*]", e, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.PostgresVersion != nil {
 		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
@@ -6555,14 +6496,7 @@ func ValidateBackupRepositorySpecResponseBody(body *BackupRepositorySpecResponse
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 64 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 64, false))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure" || *body.Type == "posix" || *body.Type == "cifs") {
@@ -6746,7 +6680,7 @@ func ValidateRestoreConfigSpecResponseBody(body *RestoreConfigSpecResponseBody) 
 		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
 	}
 	if body.SourceDatabaseID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.source_database_id", *body.SourceDatabaseID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.source_database_id", *body.SourceDatabaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.SourceNodeName != nil {
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", *body.SourceNodeName, "n[0-9]+"))
@@ -6779,14 +6713,7 @@ func ValidateRestoreRepositorySpecResponseBody(body *RestoreRepositorySpecRespon
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 64 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 64, false))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.Type != nil {
 		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure" || *body.Type == "posix" || *body.Type == "cifs") {
@@ -7069,7 +6996,7 @@ func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecReques
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
 	}
 	for _, e := range body.HostIds {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_ids[*]", e, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.host_ids[*]", e, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if body.PostgresVersion != nil {
 		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
@@ -7153,14 +7080,7 @@ func ValidateBackupConfigSpecRequestBodyRequestBody(body *BackupConfigSpecReques
 // defined on BackupRepositorySpecRequestBodyRequestBody
 func ValidateBackupRepositorySpecRequestBodyRequestBody(body *BackupRepositorySpecRequestBodyRequestBody) (err error) {
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 64 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 64, false))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure" || body.Type == "posix" || body.Type == "cifs") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure", "posix", "cifs"}))
@@ -7317,7 +7237,7 @@ func ValidateRestoreConfigSpecRequestBodyRequestBody(body *RestoreConfigSpecRequ
 	if body.Repository == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
 	}
-	err = goa.MergeErrors(err, goa.ValidateFormat("body.source_database_id", body.SourceDatabaseID, goa.FormatUUID))
+	err = goa.MergeErrors(err, goa.ValidatePattern("body.source_database_id", body.SourceDatabaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", body.SourceNodeName, "n[0-9]+"))
 	if utf8.RuneCountInString(body.SourceDatabaseName) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_name", body.SourceDatabaseName, utf8.RuneCountInString(body.SourceDatabaseName), 1, true))
@@ -7340,14 +7260,7 @@ func ValidateRestoreConfigSpecRequestBodyRequestBody(body *RestoreConfigSpecRequ
 // defined on RestoreRepositorySpecRequestBodyRequestBody
 func ValidateRestoreRepositorySpecRequestBodyRequestBody(body *RestoreRepositorySpecRequestBodyRequestBody) (err error) {
 	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 64 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 64, false))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure" || body.Type == "posix" || body.Type == "cifs") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure", "posix", "cifs"}))
@@ -7514,15 +7427,6 @@ func ValidateTaskResponse(body *TaskResponse) (err error) {
 	}
 	if body.ParentID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
-	}
-	if body.DatabaseID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.database_id", *body.DatabaseID, goa.FormatUUID))
-	}
-	if body.InstanceID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.instance_id", *body.InstanceID, goa.FormatUUID))
-	}
-	if body.HostID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.host_id", *body.HostID, goa.FormatUUID))
 	}
 	if body.TaskID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))

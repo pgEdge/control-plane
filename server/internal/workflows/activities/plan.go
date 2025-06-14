@@ -6,13 +6,12 @@ import (
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
-	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
 type PlanInput struct {
-	DatabaseID  uuid.UUID       `json:"database_id"`
+	DatabaseID  string          `json:"database_id"`
 	Current     *resource.State `json:"current"`
 	Desired     *resource.State `json:"desired"`
 	ForceUpdate bool            `json:"force_update"`
@@ -27,7 +26,7 @@ func (a *Activities) ExecutePlan(
 	input *PlanInput,
 ) workflow.Future[*PlanOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(a.Config.HostID.String()),
+		Queue: core.Queue(a.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
@@ -36,7 +35,7 @@ func (a *Activities) ExecutePlan(
 }
 
 func (a *Activities) Plan(ctx context.Context, input *PlanInput) (*PlanOutput, error) {
-	logger := activity.Logger(ctx).With("database_id", input.DatabaseID.String())
+	logger := activity.Logger(ctx).With("database_id", input.DatabaseID)
 	logger.Info("generating update plan")
 
 	// This needs to be in an activity because it's non-deterministic and can

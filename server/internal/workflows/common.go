@@ -13,7 +13,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
-func (w *Workflows) applyEvents(ctx workflow.Context, databaseID, taskID uuid.UUID, state *resource.State, phases [][]*resource.Event) error {
+func (w *Workflows) applyEvents(ctx workflow.Context, databaseID string, taskID uuid.UUID, state *resource.State, phases [][]*resource.Event) error {
 	for _, phase := range phases {
 		futures := make([]workflow.Future[*activities.ApplyEventOutput], len(phase))
 		for i, event := range phase {
@@ -81,7 +81,7 @@ func (w *Workflows) updateTask(
 
 func (w *Workflows) logTaskEvent(
 	ctx workflow.Context,
-	databaseID uuid.UUID,
+	databaseID string,
 	taskID uuid.UUID,
 	entries ...task.LogEntry,
 ) error {

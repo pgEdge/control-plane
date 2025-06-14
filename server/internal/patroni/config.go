@@ -2,12 +2,10 @@ package patroni
 
 import (
 	"fmt"
-
-	"github.com/google/uuid"
 )
 
-func Namespace(databaseID uuid.UUID, nodeName string) string {
-	return fmt.Sprintf("/patroni/%s/%s", databaseID.String(), nodeName)
+func Namespace(databaseID string, nodeName string) string {
+	return fmt.Sprintf("/patroni/%s/%s", databaseID, nodeName)
 }
 
 type LogType string

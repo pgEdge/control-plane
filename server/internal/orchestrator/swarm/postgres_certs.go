@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/resource"
@@ -17,27 +16,27 @@ var _ resource.Resource = (*PostgresCerts)(nil)
 
 const ResourceTypePostgresCerts resource.Type = "swarm.postgres_certs"
 
-func PostgresCertsIdentifier(instanceID uuid.UUID) resource.Identifier {
+func PostgresCertsIdentifier(instanceID string) resource.Identifier {
 	return resource.Identifier{
-		ID:   instanceID.String(),
+		ID:   instanceID,
 		Type: ResourceTypePostgresCerts,
 	}
 }
 
 type PostgresCerts struct {
-	InstanceID       uuid.UUID `json:"instance_id"`
-	HostID           uuid.UUID `json:"host_id"`
-	InstanceHostname string    `json:"instance_hostname"`
-	ParentID         string    `json:"parent_id"`
-	OwnerUID         int       `json:"owner_uid"`
-	OwnerGID         int       `json:"owner_gid"`
-	CaCert           []byte    `json:"ca_cert"`
-	ServerCert       []byte    `json:"server_cert"`
-	ServerKey        []byte    `json:"server_key"`
-	SuperuserCert    []byte    `json:"superuser_cert"`
-	SuperuserKey     []byte    `json:"superuser_key"`
-	ReplicationCert  []byte    `json:"replication_cert"`
-	ReplicationKey   []byte    `json:"replication_key"`
+	InstanceID       string `json:"instance_id"`
+	HostID           string `json:"host_id"`
+	InstanceHostname string `json:"instance_hostname"`
+	ParentID         string `json:"parent_id"`
+	OwnerUID         int    `json:"owner_uid"`
+	OwnerGID         int    `json:"owner_gid"`
+	CaCert           []byte `json:"ca_cert"`
+	ServerCert       []byte `json:"server_cert"`
+	ServerKey        []byte `json:"server_key"`
+	SuperuserCert    []byte `json:"superuser_cert"`
+	SuperuserKey     []byte `json:"superuser_key"`
+	ReplicationCert  []byte `json:"replication_cert"`
+	ReplicationKey   []byte `json:"replication_key"`
 }
 
 func (c *PostgresCerts) ResourceVersion() string {
@@ -59,7 +58,7 @@ func (c *PostgresCerts) DiffIgnore() []string {
 func (c *PostgresCerts) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeHost,
-		ID:   c.HostID.String(),
+		ID:   c.HostID,
 	}
 }
 

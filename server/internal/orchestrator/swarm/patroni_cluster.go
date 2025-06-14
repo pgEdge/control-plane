@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/samber/do"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -22,10 +21,10 @@ func PatroniClusterResourceIdentifier(nodeName string) resource.Identifier {
 }
 
 type PatroniCluster struct {
-	ClusterID        uuid.UUID `json:"cluster_id"`
-	DatabaseID       uuid.UUID `json:"database_id"`
-	NodeName         string    `json:"node_name"`
-	PatroniNamespace string    `json:"patroni_namespace"`
+	ClusterID        string `json:"cluster_id"`
+	DatabaseID       string `json:"database_id"`
+	NodeName         string `json:"node_name"`
+	PatroniNamespace string `json:"patroni_namespace"`
 }
 
 func (p *PatroniCluster) ResourceVersion() string {
@@ -39,7 +38,7 @@ func (p *PatroniCluster) DiffIgnore() []string {
 func (p *PatroniCluster) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeCluster,
-		ID:   p.ClusterID.String(),
+		ID:   p.ClusterID,
 	}
 }
 

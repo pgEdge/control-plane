@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 
 	"github.com/pgEdge/control-plane/server/internal/certificates"
@@ -20,8 +19,8 @@ const statusMonitorInterval = 5 * time.Second
 
 type InstanceMonitor struct {
 	statusMonitor *Monitor
-	databaseID    uuid.UUID
-	instanceID    uuid.UUID
+	databaseID    string
+	instanceID    string
 	dbName        string
 	orch          database.Orchestrator
 	dbSvc         *database.Service
@@ -33,8 +32,8 @@ func NewInstanceMonitor(
 	dbSvc *database.Service,
 	certSvc *certificates.Service,
 	logger zerolog.Logger,
-	databaseID uuid.UUID,
-	instanceID uuid.UUID,
+	databaseID string,
+	instanceID string,
 	dbName string,
 ) *InstanceMonitor {
 	m := &InstanceMonitor{

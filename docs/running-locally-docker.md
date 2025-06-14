@@ -119,7 +119,7 @@ initialize a new cluster and create a new database:
 restish control-plane-local-1 init-cluster
 restish control-plane-local-2 join-cluster "$(restish control-plane-local-1 get-join-token)"
 restish control-plane-local-3 join-cluster "$(restish control-plane-local-1 get-join-token)"
-restish control-plane-local-1 create-database '{"spec":{"database_name":"my_app","database_users":[{"username":"admin","password":"password","attributes":["SUPERUSER","LOGIN"]},{"username":"app","password":"password","attributes":["LOGIN"],"roles":["pgedge_application"]}],"nodes":[{"name":"n1","host_ids":["8f6e5455-e228-4e2e-9129-a86cba1437c8"]},{"name":"n2","host_ids":["36dcd7ff-9f04-476e-ac6f-5495d075607d"]},{"name":"n3","host_ids":["fa461a39-5867-4a72-9923-dd7ce91e1eab"]}]}}'
+restish control-plane-local-1 create-database '{"spec":{"database_name":"my_app","database_users":[{"username":"admin","password":"password","attributes":["SUPERUSER","LOGIN"]},{"username":"app","password":"password","attributes":["LOGIN"],"roles":["pgedge_application"]}],"nodes":[{"name":"n1","host_ids":["host-1"]},{"name":"n2","host_ids":["host-2"]},{"name":"n3","host_ids":["host-3"]}]}}'
 ```
 
 The API is under active development. You can find the current set of endpoints

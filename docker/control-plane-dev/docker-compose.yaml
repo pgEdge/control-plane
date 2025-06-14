@@ -12,7 +12,7 @@ services:
     working_dir: ${WORKSPACE_DIR}
     environment:
       - DEBUG=${DEBUG}
-      - PGEDGE_HOST_ID=8f6e5455-e228-4e2e-9129-a86cba1437c8
+      - PGEDGE_HOST_ID=host-1
       - PGEDGE_DATA_DIR=${WORKSPACE_DIR}/docker/control-plane-dev/data/host-1
     cap_drop:
       - ALL
@@ -29,7 +29,7 @@ services:
       service: host-1
     environment:
       - DEBUG=0
-      - PGEDGE_HOST_ID=36dcd7ff-9f04-476e-ac6f-5495d075607d
+      - PGEDGE_HOST_ID=host-2
       - PGEDGE_DATA_DIR=${WORKSPACE_DIR}/docker/control-plane-dev/data/host-2
       - PGEDGE_HTTP__PORT=3001
       - PGEDGE_EMBEDDED_ETCD__PEER_PORT=2480
@@ -39,7 +39,7 @@ services:
       service: host-1
     environment:
       - DEBUG=0
-      - PGEDGE_HOST_ID=fa461a39-5867-4a72-9923-dd7ce91e1eab
+      - PGEDGE_HOST_ID=host-3
       - PGEDGE_DATA_DIR=${WORKSPACE_DIR}/docker/control-plane-dev/data/host-3
       - PGEDGE_HTTP__PORT=3002
       - PGEDGE_EMBEDDED_ETCD__PEER_PORT=2580

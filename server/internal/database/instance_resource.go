@@ -8,7 +8,6 @@ import (
 	"slices"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
@@ -24,9 +23,9 @@ var _ resource.Resource = (*InstanceResource)(nil)
 
 const ResourceTypeInstance resource.Type = "database.instance"
 
-func InstanceResourceIdentifier(instanceID uuid.UUID) resource.Identifier {
+func InstanceResourceIdentifier(instanceID string) resource.Identifier {
 	return resource.Identifier{
-		ID:   instanceID.String(),
+		ID:   instanceID,
 		Type: ResourceTypeInstance,
 	}
 }
@@ -34,7 +33,7 @@ func InstanceResourceIdentifier(instanceID uuid.UUID) resource.Identifier {
 type InstanceResource struct {
 	Spec                     *InstanceSpec         `json:"spec"`
 	InstanceHostname         string                `json:"instance_hostname"`
-	PrimaryInstanceID        uuid.UUID             `json:"primary_instance_id"`
+	PrimaryInstanceID        string                `json:"primary_instance_id"`
 	OrchestratorDependencies []resource.Identifier `json:"dependencies"`
 	ConnectionInfo           *ConnectionInfo       `json:"connection_info"`
 }
@@ -53,7 +52,7 @@ func (r *InstanceResource) DiffIgnore() []string {
 func (r *InstanceResource) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeHost,
-		ID:   r.Spec.HostID.String(),
+		ID:   r.Spec.HostID,
 	}
 }
 

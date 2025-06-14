@@ -16,7 +16,7 @@ type Instance struct {
 func (i *Instance) Identifier() resource.Identifier {
 	return resource.Identifier{
 		Type: "swarm.database_instance",
-		ID:   i.Spec.InstanceID.String(),
+		ID:   i.Spec.InstanceID,
 	}
 }
 
@@ -32,7 +32,7 @@ func (i *Instance) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
 		{
 			Type: "swarm.service",
-			ID:   i.Spec.InstanceID.String(),
+			ID:   i.Spec.InstanceID,
 		},
 	}
 }

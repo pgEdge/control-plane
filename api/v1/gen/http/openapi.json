@@ -335,10 +335,9 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "ID of the database to get.",
+            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
-            "type": "string",
-            "format": "uuid"
+            "type": "string"
           }
         ],
         "responses": {
@@ -412,10 +411,9 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "ID of the database to update.",
+            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
-            "type": "string",
-            "format": "uuid"
+            "type": "string"
           },
           {
             "name": "Update-DatabaseRequestBody",
@@ -493,10 +491,9 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "ID of the database to delete.",
+            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
-            "type": "string",
-            "format": "uuid"
+            "type": "string"
           }
         ],
         "responses": {
@@ -567,10 +564,9 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "ID of the database to back up.",
+            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
-            "type": "string",
-            "format": "uuid"
+            "type": "string"
           },
           {
             "name": "node_name",
@@ -657,10 +653,9 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "ID of the database to restore.",
+            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
-            "type": "string",
-            "format": "uuid"
+            "type": "string"
           },
           {
             "name": "Restore-DatabaseRequestBody",
@@ -771,10 +766,9 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "ID of the database to list tasks for.",
+            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
-            "type": "string",
-            "format": "uuid"
+            "type": "string"
           }
         ],
         "responses": {
@@ -845,10 +839,9 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "ID of the database the task belongs to.",
+            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
-            "type": "string",
-            "format": "uuid"
+            "type": "string"
           },
           {
             "name": "task_id",
@@ -946,10 +939,9 @@
           {
             "name": "database_id",
             "in": "path",
-            "description": "ID of the database to get task log for.",
+            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
-            "type": "string",
-            "format": "uuid"
+            "type": "string"
           },
           {
             "name": "task_id",
@@ -1075,10 +1067,9 @@
           {
             "name": "host_id",
             "in": "path",
-            "description": "ID of the host to get.",
+            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
-            "type": "string",
-            "format": "uuid"
+            "type": "string"
           }
         ],
         "responses": {
@@ -1151,10 +1142,9 @@
           {
             "name": "host_id",
             "in": "path",
-            "description": "ID of the host to remove.",
+            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
-            "type": "string",
-            "format": "uuid"
+            "type": "string"
           }
         ],
         "responses": {
@@ -1626,8 +1616,7 @@
           "type": "string",
           "description": "The unique identifier of this repository.",
           "example": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-          "minLength": 1,
-          "maxLength": 64
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
         },
         "retention_full": {
           "type": "integer",
@@ -1954,7 +1943,7 @@
           "type": "string",
           "description": "Unique identifier for the cluster.",
           "example": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
-          "format": "uuid"
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
         },
         "status": {
           "$ref": "#/definitions/ClusterStatus"
@@ -1963,7 +1952,7 @@
           "type": "string",
           "description": "Unique identifier for the cluster's owner.",
           "example": "8210ec10-2dca-406c-ac4a-0661d2189954",
-          "format": "uuid"
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
         }
       },
       "example": {
@@ -2698,7 +2687,7 @@
                     "target": "123456",
                     "type": "xid"
                   },
-                  "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
                 }
@@ -2823,7 +2812,7 @@
                     "target": "123456",
                     "type": "xid"
                   },
-                  "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
                 }
@@ -2948,7 +2937,7 @@
                     "target": "123456",
                     "type": "xid"
                   },
-                  "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
                 }
@@ -2985,14 +2974,14 @@
                 "target": "123456",
                 "type": "xid"
               },
-              "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+              "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
               "source_database_name": "northwind",
               "source_node_name": "n1"
             },
             "spock_version": "4"
           },
           "state": "available",
-          "tenant_id": "8210ec10-2dca-406c-ac4a-0661d2189954",
+          "tenant_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
           "updated_at": "2025-01-01T02:30:00Z"
         },
         {
@@ -3439,7 +3428,7 @@
                     "target": "123456",
                     "type": "xid"
                   },
-                  "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
                 }
@@ -3564,7 +3553,7 @@
                     "target": "123456",
                     "type": "xid"
                   },
-                  "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
                 }
@@ -3689,7 +3678,7 @@
                     "target": "123456",
                     "type": "xid"
                   },
-                  "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
                 }
@@ -3726,14 +3715,14 @@
                 "target": "123456",
                 "type": "xid"
               },
-              "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+              "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
               "source_database_name": "northwind",
               "source_node_name": "n1"
             },
             "spock_version": "4"
           },
           "state": "available",
-          "tenant_id": "8210ec10-2dca-406c-ac4a-0661d2189954",
+          "tenant_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
           "updated_at": "2025-01-01T02:30:00Z"
         }
       ]
@@ -3752,7 +3741,7 @@
           "type": "string",
           "description": "Unique identifier for the database.",
           "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-          "format": "uuid"
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
         },
         "instances": {
           "$ref": "#/definitions/InstanceResponseBodyCollection"
@@ -3775,9 +3764,9 @@
         },
         "tenant_id": {
           "type": "string",
-          "description": "Unique identifier for the databases's owner.",
-          "example": "8210ec10-2dca-406c-ac4a-0661d2189954",
-          "format": "uuid"
+          "description": "Unique identifier for the database.",
+          "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
         },
         "updated_at": {
           "type": "string",
@@ -4231,7 +4220,7 @@
                   "target": "123456",
                   "type": "xid"
                 },
-                "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
               }
@@ -4356,7 +4345,7 @@
                   "target": "123456",
                   "type": "xid"
                 },
-                "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
               }
@@ -4481,7 +4470,7 @@
                   "target": "123456",
                   "type": "xid"
                 },
-                "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
               }
@@ -4518,14 +4507,14 @@
               "target": "123456",
               "type": "xid"
             },
-            "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+            "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
             "source_database_name": "northwind",
             "source_node_name": "n1"
           },
           "spock_version": "4"
         },
         "state": "unknown",
-        "tenant_id": "8210ec10-2dca-406c-ac4a-0661d2189954",
+        "tenant_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
         "updated_at": "2025-01-01T02:30:00Z"
       },
       "required": [
@@ -4543,7 +4532,7 @@
           "type": "string",
           "description": "Unique identifier for the database.",
           "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-          "format": "uuid"
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
         },
         "spec": {
           "$ref": "#/definitions/DatabaseSpec"
@@ -4552,7 +4541,7 @@
           "type": "string",
           "description": "Unique identifier for the databases's owner.",
           "example": "8210ec10-2dca-406c-ac4a-0661d2189954",
-          "format": "uuid"
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
         }
       },
       "example": {
@@ -4804,7 +4793,7 @@
                   "target": "123456",
                   "type": "xid"
                 },
-                "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
               }
@@ -4929,7 +4918,7 @@
                   "target": "123456",
                   "type": "xid"
                 },
-                "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
               }
@@ -4966,7 +4955,7 @@
               "target": "123456",
               "type": "xid"
             },
-            "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+            "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
             "source_database_name": "northwind",
             "source_node_name": "n1"
           },
@@ -5384,7 +5373,7 @@
                     "target": "123456",
                     "type": "xid"
                   },
-                  "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
                 }
@@ -5532,7 +5521,7 @@
                     "target": "123456",
                     "type": "xid"
                   },
-                  "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
                 }
@@ -5569,7 +5558,7 @@
                 "target": "123456",
                 "type": "xid"
               },
-              "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+              "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
               "source_database_name": "northwind",
               "source_node_name": "n1"
             },
@@ -5612,7 +5601,7 @@
           "type": "string",
           "description": "Unique identifier for the database.",
           "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-          "format": "uuid"
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
         },
         "instances": {
           "$ref": "#/definitions/InstanceResponseBodyCollection"
@@ -5637,7 +5626,7 @@
           "type": "string",
           "description": "Unique identifier for the databases's owner.",
           "example": "8210ec10-2dca-406c-ac4a-0661d2189954",
-          "format": "uuid"
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
         },
         "updated_at": {
           "type": "string",
@@ -6091,7 +6080,7 @@
                   "target": "123456",
                   "type": "xid"
                 },
-                "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
               }
@@ -6216,7 +6205,7 @@
                   "target": "123456",
                   "type": "xid"
                 },
-                "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
               }
@@ -6341,7 +6330,7 @@
                   "target": "123456",
                   "type": "xid"
                 },
-                "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
               }
@@ -6378,7 +6367,7 @@
               "target": "123456",
               "type": "xid"
             },
-            "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+            "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
             "source_database_name": "northwind",
             "source_node_name": "n1"
           },
@@ -6435,7 +6424,7 @@
           "items": {
             "type": "string",
             "example": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-            "format": "uuid"
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
           },
           "description": "The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary and the others will be read replicas.",
           "example": [
@@ -6609,7 +6598,7 @@
             "target": "123456",
             "type": "xid"
           },
-          "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+          "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
           "source_database_name": "northwind",
           "source_node_name": "n1"
         }
@@ -6633,7 +6622,7 @@
           "type": "string",
           "description": "Unique identifier for the database.",
           "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-          "format": "uuid"
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
         },
         "instances": {
           "$ref": "#/definitions/InstanceResponseAbbreviatedCollection"
@@ -6655,7 +6644,7 @@
           "type": "string",
           "description": "Unique identifier for the databases's owner.",
           "example": "8210ec10-2dca-406c-ac4a-0661d2189954",
-          "format": "uuid"
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
         },
         "updated_at": {
           "type": "string",
@@ -6929,7 +6918,7 @@
                   "target": "123456",
                   "type": "xid"
                 },
-                "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
               }
@@ -7054,7 +7043,7 @@
                   "target": "123456",
                   "type": "xid"
                 },
-                "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
               }
@@ -7349,7 +7338,7 @@
                 "target": "123456",
                 "type": "xid"
               },
-              "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+              "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
               "source_database_name": "northwind",
               "source_node_name": "n1"
             }
@@ -7386,7 +7375,7 @@
             "target": "123456",
             "type": "xid"
           },
-          "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+          "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
           "source_database_name": "northwind",
           "source_node_name": "n1"
         },
@@ -7542,7 +7531,7 @@
           "type": "string",
           "description": "Unique identifier for the host.",
           "example": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-          "format": "uuid"
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
         },
         "ipv4_address": {
           "type": "string",
@@ -7872,14 +7861,12 @@
         "host_id": {
           "type": "string",
           "description": "The ID of the host this instance is running on.",
-          "example": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-          "format": "uuid"
+          "example": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
         },
         "id": {
           "type": "string",
           "description": "Unique identifier for the instance.",
-          "example": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
-          "format": "uuid"
+          "example": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d"
         },
         "node_name": {
           "type": "string",
@@ -8041,14 +8028,12 @@
         "host_id": {
           "type": "string",
           "description": "The ID of the host this instance is running on.",
-          "example": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-          "format": "uuid"
+          "example": "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
         },
         "id": {
           "type": "string",
           "description": "Unique identifier for the instance.",
-          "example": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
-          "format": "uuid"
+          "example": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d"
         },
         "node_name": {
           "type": "string",
@@ -8399,8 +8384,8 @@
         "source_database_id": {
           "type": "string",
           "description": "The ID of the database to restore this database from.",
-          "example": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
-          "format": "uuid"
+          "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
         },
         "source_database_name": {
           "type": "string",
@@ -8442,7 +8427,7 @@
           "target": "123456",
           "type": "xid"
         },
-        "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+        "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
         "source_database_name": "northwind",
         "source_node_name": "n1"
       },
@@ -8500,7 +8485,7 @@
             "target": "123456",
             "type": "xid"
           },
-          "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+          "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
           "source_database_name": "northwind",
           "source_node_name": "n1"
         },
@@ -8953,7 +8938,7 @@
                     "target": "123456",
                     "type": "xid"
                   },
-                  "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
                 }
@@ -9101,7 +9086,7 @@
                     "target": "123456",
                     "type": "xid"
                   },
-                  "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
                 }
@@ -9138,7 +9123,7 @@
                 "target": "123456",
                 "type": "xid"
               },
-              "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+              "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
               "source_database_name": "northwind",
               "source_node_name": "n1"
             },
@@ -9281,8 +9266,7 @@
           "type": "string",
           "description": "The unique identifier of this repository.",
           "example": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-          "minLength": 1,
-          "maxLength": 64
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
         },
         "s3_bucket": {
           "type": "string",
@@ -9374,8 +9358,7 @@
         "database_id": {
           "type": "string",
           "description": "The database ID of the task.",
-          "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-          "format": "uuid"
+          "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51"
         },
         "error": {
           "type": "string",
@@ -9385,14 +9368,12 @@
         "host_id": {
           "type": "string",
           "description": "The ID of the host that the task is running on.",
-          "example": "2e52dcde-86d8-4f71-b58e-8dc3a10c936a",
-          "format": "uuid"
+          "example": "2e52dcde-86d8-4f71-b58e-8dc3a10c936a"
         },
         "instance_id": {
           "type": "string",
           "description": "The ID of the instance that the task is operating on.",
-          "example": "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348",
-          "format": "uuid"
+          "example": "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348"
         },
         "node_name": {
           "type": "string",
@@ -9457,8 +9438,7 @@
         "database_id": {
           "type": "string",
           "description": "The database ID of the task log.",
-          "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-          "format": "uuid"
+          "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51"
         },
         "entries": {
           "type": "array",
@@ -9488,14 +9468,12 @@
         "last_entry_id": {
           "type": "string",
           "description": "The ID of the last entry in the task log.",
-          "example": "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348",
-          "format": "uuid"
+          "example": "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348"
         },
         "task_id": {
           "type": "string",
           "description": "The unique ID of the task log.",
-          "example": "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348",
-          "format": "uuid"
+          "example": "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348"
         },
         "task_status": {
           "type": "string",
@@ -9590,7 +9568,7 @@
           "type": "string",
           "description": "Unique identifier for the databases's owner.",
           "example": "8210ec10-2dca-406c-ac4a-0661d2189954",
-          "format": "uuid"
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
         }
       },
       "example": {
@@ -9887,7 +9865,7 @@
                   "target": "123456",
                   "type": "xid"
                 },
-                "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
               }
@@ -10035,7 +10013,7 @@
                   "target": "123456",
                   "type": "xid"
                 },
-                "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
               }
@@ -10183,7 +10161,7 @@
                   "target": "123456",
                   "type": "xid"
                 },
-                "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
               }
@@ -10220,7 +10198,7 @@
               "target": "123456",
               "type": "xid"
             },
-            "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+            "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
             "source_database_name": "northwind",
             "source_node_name": "n1"
           },
@@ -10638,7 +10616,7 @@
                     "target": "123456",
                     "type": "xid"
                   },
-                  "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
                 }
@@ -10786,7 +10764,7 @@
                     "target": "123456",
                     "type": "xid"
                   },
-                  "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
                 }
@@ -10823,7 +10801,7 @@
                 "target": "123456",
                 "type": "xid"
               },
-              "source_database_id": "6c8e43ee-26ea-47b8-a8f8-89897e0137bd",
+              "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
               "source_database_name": "northwind",
               "source_node_name": "n1"
             },

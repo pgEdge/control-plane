@@ -49,7 +49,7 @@ func hostToAPI(h *host.Host) *api.Host {
 		Cpus:         utils.NillablePointerTo(h.CPUs),
 		Memory:       utils.NillablePointerTo(humanizeBytes(h.MemBytes)),
 		Cohort:       cohort,
-		ID:           h.ID.String(),
+		ID:           api.Identifier(h.ID),
 		DefaultPgedgeVersion: &api.PgEdgeVersion{
 			PostgresVersion: h.DefaultPgEdgeVersion.PostgresVersion.String(),
 			SpockVersion:    h.DefaultPgEdgeVersion.SpockVersion.String(),
@@ -66,9 +66,9 @@ func hostToAPI(h *host.Host) *api.Host {
 func databaseNodesToAPI(nodes []*database.Node) []*api.DatabaseNodeSpec {
 	apiNodes := make([]*api.DatabaseNodeSpec, len(nodes))
 	for i, node := range nodes {
-		hostIDs := make([]string, len(node.HostIDs))
+		hostIDs := make([]api.Identifier, len(node.HostIDs))
 		for j, hostID := range node.HostIDs {
-			hostIDs[j] = hostID.String()
+			hostIDs[j] = api.Identifier(hostID)
 		}
 		apiNodes[i] = &api.DatabaseNodeSpec{
 			Name:            node.Name,
@@ -106,8 +106,12 @@ func backupConfigToAPI(config *database.BackupConfig) *api.BackupConfigSpec {
 	}
 	repositories := make([]*api.BackupRepositorySpec, len(config.Repositories))
 	for i, repo := range config.Repositories {
+		var id *api.Identifier
+		if repo.ID != "" {
+			id = utils.PointerTo(api.Identifier(repo.ID))
+		}
 		repositories[i] = &api.BackupRepositorySpec{
-			ID:                utils.NillablePointerTo(repo.ID),
+			ID:                id,
 			Type:              string(repo.Type),
 			S3Bucket:          utils.NillablePointerTo(repo.S3Bucket),
 			S3Region:          utils.NillablePointerTo(repo.S3Region),
@@ -146,13 +150,19 @@ func restoreConfigToAPI(config *database.RestoreConfig) *api.RestoreConfigSpec {
 	if config == nil {
 		return nil
 	}
-	return &api.RestoreConfigSpec{
-		SourceDatabaseID:   config.SourceDatabaseID.String(),
+	out := &api.RestoreConfigSpec{
+		SourceDatabaseID:   api.Identifier(config.SourceDatabaseID),
 		SourceNodeName:     config.SourceNodeName,
 		SourceDatabaseName: config.SourceDatabaseName,
 		RestoreOptions:     config.RestoreOptions,
-		Repository: &api.RestoreRepositorySpec{
-			ID:             utils.NillablePointerTo(config.Repository.ID),
+	}
+	if config.Repository != nil {
+		var id *api.Identifier
+		if config.Repository.ID != "" {
+			id = utils.PointerTo(api.Identifier(config.Repository.ID))
+		}
+		out.Repository = &api.RestoreRepositorySpec{
+			ID:             id,
 			Type:           string(config.Repository.Type),
 			S3Bucket:       utils.NillablePointerTo(config.Repository.S3Bucket),
 			S3Region:       utils.NillablePointerTo(config.Repository.S3Region),
@@ -168,8 +178,9 @@ func restoreConfigToAPI(config *database.RestoreConfig) *api.RestoreConfigSpec {
 			AzureKey:       utils.NillablePointerTo(config.Repository.AzureKey),
 			BasePath:       utils.NillablePointerTo(config.Repository.BasePath),
 			CustomOptions:  config.Repository.CustomOptions,
-		},
+		}
 	}
+	return out
 }
 
 func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
@@ -211,9 +222,14 @@ func databaseToAPI(d *database.Database) *api.Database {
 		return strings.Compare(a.ID, b.ID)
 	})
 
+	var tenantID *api.Identifier
+	if d.TenantID != nil {
+		tenantID = utils.PointerTo(api.Identifier(*d.TenantID))
+	}
+
 	return &api.Database{
-		ID:        d.DatabaseID.String(),
-		TenantID:  stringifyStringerPtr(d.TenantID),
+		ID:        api.Identifier(d.DatabaseID),
+		TenantID:  tenantID,
 		CreatedAt: d.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: d.UpdatedAt.Format(time.RFC3339),
 		State:     string(d.State),
@@ -271,8 +287,8 @@ func instanceToAPI(instance *database.Instance) *api.Instance {
 	}
 
 	apiInst := &api.Instance{
-		ID:        instance.InstanceID.String(),
-		HostID:    instance.HostID.String(),
+		ID:        instance.InstanceID,
+		HostID:    instance.HostID,
 		NodeName:  instance.NodeName,
 		State:     string(instance.State),
 		CreatedAt: instance.CreatedAt.Format(time.RFC3339),
@@ -309,13 +325,13 @@ func apiToDatabaseNodes(apiNodes []*api.DatabaseNodeSpec) ([]*database.Node, err
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse memory: %w", err)
 		}
-		hostIDs := make([]uuid.UUID, len(apiNode.HostIds))
-		for i, hostID := range apiNode.HostIds {
-			parsedHostID, err := uuid.Parse(hostID)
+		hostIDs := make([]string, len(apiNode.HostIds))
+		for i, h := range apiNode.HostIds {
+			hostID, err := hostIdentToString(h)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse host ID: %w", err)
+				return nil, fmt.Errorf("%w: %q", err, h)
 			}
-			hostIDs[i] = parsedHostID
+			hostIDs[i] = hostID
 		}
 		backupConfig, err := apiToBackupConfig(apiNode.BackupConfig)
 		if err != nil {
@@ -348,8 +364,15 @@ func apiToBackupConfig(apiConfig *api.BackupConfigSpec) (*database.BackupConfig,
 
 	repositories := make([]*pgbackrest.Repository, len(apiConfig.Repositories))
 	for i, apiRepo := range apiConfig.Repositories {
+		var id string
+		if apiRepo.ID != nil {
+			id = string(*apiRepo.ID)
+			if err := utils.ValidateID(id); err != nil {
+				return nil, ErrInvalidRepositoryID
+			}
+		}
 		repositories[i] = &pgbackrest.Repository{
-			ID:                utils.FromPointer(apiRepo.ID),
+			ID:                id,
 			Type:              pgbackrest.RepositoryType(apiRepo.Type),
 			S3Bucket:          utils.FromPointer(apiRepo.S3Bucket),
 			S3Region:          utils.FromPointer(apiRepo.S3Region),
@@ -383,12 +406,19 @@ func apiToBackupConfig(apiConfig *api.BackupConfigSpec) (*database.BackupConfig,
 	}, nil
 }
 
-func apiRestoreToRepository(apiRepository *api.RestoreRepositorySpec) *pgbackrest.Repository {
+func apiRestoreToRepository(apiRepository *api.RestoreRepositorySpec) (*pgbackrest.Repository, error) {
 	if apiRepository == nil {
-		return nil
+		return nil, nil
+	}
+	var id string
+	if apiRepository.ID != nil {
+		id = string(*apiRepository.ID)
+		if err := utils.ValidateID(id); err != nil {
+			return nil, ErrInvalidRepositoryID
+		}
 	}
 	return &pgbackrest.Repository{
-		ID:             utils.FromPointer(apiRepository.ID),
+		ID:             id,
 		Type:           pgbackrest.RepositoryType(apiRepository.Type),
 		S3Bucket:       utils.FromPointer(apiRepository.S3Bucket),
 		S3Region:       utils.FromPointer(apiRepository.S3Region),
@@ -404,41 +434,48 @@ func apiRestoreToRepository(apiRepository *api.RestoreRepositorySpec) *pgbackres
 		AzureKey:       utils.FromPointer(apiRepository.AzureKey),
 		BasePath:       utils.FromPointer(apiRepository.BasePath),
 		CustomOptions:  apiRepository.CustomOptions,
-	}
+	}, nil
 }
 
 func apiToRestoreConfig(apiConfig *api.RestoreConfigSpec) (*database.RestoreConfig, error) {
 	if apiConfig == nil {
 		return nil, nil
 	}
-	databaseID, err := uuid.Parse(apiConfig.SourceDatabaseID)
+	sourceDatabaseID, err := dbIdentToString(apiConfig.SourceDatabaseID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse database ID: %w", err)
+		return nil, ErrInvalidSourceDatabaseID
+	}
+	repo, err := apiRestoreToRepository(apiConfig.Repository)
+	if err != nil {
+		return nil, err
 	}
 	return &database.RestoreConfig{
-		SourceDatabaseID:   databaseID,
+		SourceDatabaseID:   sourceDatabaseID,
 		SourceNodeName:     apiConfig.SourceNodeName,
 		SourceDatabaseName: apiConfig.SourceDatabaseName,
 		RestoreOptions:     apiConfig.RestoreOptions,
-		Repository:         apiRestoreToRepository(apiConfig.Repository),
+		Repository:         repo,
 	}, nil
 }
 
-func apiToDatabaseSpec(id, tID *string, apiSpec *api.DatabaseSpec) (*database.Spec, error) {
-	databaseID, err := parseUUIDPtr(id)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse database ID: %w", err)
-	}
-	if databaseID == uuid.Nil {
-		databaseID = uuid.New()
-	}
-	var tenantID *uuid.UUID
-	if tID != nil {
-		parsedTenantID, err := parseUUID(*tID)
+func apiToDatabaseSpec(id, tID *api.Identifier, apiSpec *api.DatabaseSpec) (*database.Spec, error) {
+	var databaseID string
+	var err error
+	if id != nil {
+		databaseID, err = dbIdentToString(*id)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse tenant ID: %w", err)
+			return nil, err
 		}
-		tenantID = &parsedTenantID
+	} else {
+		databaseID = uuid.NewString()
+	}
+	var tenantID *string
+	if tID != nil {
+		t, err := tenantIdentToString(*tID)
+		if err != nil {
+			return nil, err
+		}
+		tenantID = &t
 	}
 	cpus, err := parseCPUs(apiSpec.Cpus)
 	if err != nil {
@@ -491,29 +528,21 @@ func apiToDatabaseSpec(id, tID *string, apiSpec *api.DatabaseSpec) (*database.Sp
 func taskToAPI(t *task.Task) *api.Task {
 	var (
 		completedAt *string
-		hostID      *string
-		instanceID  *string
 		parentID    *string
 	)
 	if !t.CompletedAt.IsZero() {
 		completedAt = utils.PointerTo(t.CompletedAt.Format(time.RFC3339))
-	}
-	if t.HostID != uuid.Nil {
-		hostID = utils.PointerTo(t.HostID.String())
-	}
-	if t.InstanceID != uuid.Nil {
-		instanceID = utils.PointerTo(t.InstanceID.String())
 	}
 	if t.ParentID != uuid.Nil {
 		parentID = utils.PointerTo(t.ParentID.String())
 	}
 	return &api.Task{
 		ParentID:    parentID,
-		DatabaseID:  t.DatabaseID.String(),
+		DatabaseID:  t.DatabaseID,
 		TaskID:      t.TaskID.String(),
 		NodeName:    utils.NillablePointerTo(t.NodeName),
-		HostID:      hostID,
-		InstanceID:  instanceID,
+		HostID:      utils.NillablePointerTo(t.HostID),
+		InstanceID:  utils.NillablePointerTo(t.InstanceID),
 		CreatedAt:   t.CreatedAt.Format(time.RFC3339),
 		CompletedAt: completedAt,
 		Type:        string(t.Type),
@@ -536,7 +565,7 @@ func taskLogToAPI(t *task.TaskLog, status task.Status) *api.TaskLog {
 		lastEntryID = utils.PointerTo(t.LastEntryID.String())
 	}
 	return &api.TaskLog{
-		DatabaseID:  t.DatabaseID.String(),
+		DatabaseID:  t.DatabaseID,
 		TaskID:      t.TaskID.String(),
 		TaskStatus:  string(status),
 		LastEntryID: lastEntryID,
@@ -648,20 +677,6 @@ func parseCPUs(cpus *string) (float64, error) {
 	return c, nil
 }
 
-func parseUUID(id string) (uuid.UUID, error) {
-	if id == "" {
-		return uuid.Nil, nil
-	}
-	return uuid.Parse(id)
-}
-
-func parseUUIDPtr(id *string) (uuid.UUID, error) {
-	if id == nil {
-		return uuid.Nil, nil
-	}
-	return uuid.Parse(*id)
-}
-
 type stringer interface {
 	String() string
 }
@@ -700,4 +715,24 @@ func extraVolumesToAPI(vols []database.ExtraVolumesSpec) []*api.ExtraVolumesSpec
 		}
 	}
 	return result
+}
+
+func dbIdentToString(id api.Identifier) (string, error) {
+	return identToString(id, ErrInvalidDatabaseID)
+}
+
+func hostIdentToString(id api.Identifier) (string, error) {
+	return identToString(id, ErrInvalidHostID)
+}
+
+func tenantIdentToString(id api.Identifier) (string, error) {
+	return identToString(id, ErrInvalidTenantID)
+}
+
+func identToString(id api.Identifier, invalidErr error) (string, error) {
+	out := string(id)
+	if err := utils.ValidateID(out); err != nil {
+		return "", invalidErr
+	}
+	return out, nil
 }

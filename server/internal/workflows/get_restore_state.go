@@ -25,7 +25,7 @@ func (w *Workflows) ExecuteGetRestoreState(
 	input *GetRestoreStateInput,
 ) workflow.Future[*GetRestoreStateOutput] {
 	options := workflow.SubWorkflowOptions{
-		Queue: core.Queue(w.Config.HostID.String()),
+		Queue: core.Queue(w.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
@@ -34,7 +34,7 @@ func (w *Workflows) ExecuteGetRestoreState(
 }
 
 func (w *Workflows) GetRestoreState(ctx workflow.Context, input *GetRestoreStateInput) (*GetRestoreStateOutput, error) {
-	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID.String())
+	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID)
 	logger.Info("getting restore state")
 
 	nodeInstances, err := input.Spec.NodeInstances()
@@ -46,7 +46,7 @@ func (w *Workflows) GetRestoreState(ctx workflow.Context, input *GetRestoreState
 
 	var instanceFutures []workflow.Future[*activities.GetRestoreResourcesOutput]
 	for i, nodeInstance := range nodeInstances {
-		var instanceIDs []uuid.UUID
+		var instanceIDs []string
 		// Nil task ID is handled in the activity
 		taskID := input.NodeTaskIDs[nodeInstance.NodeName]
 		for _, instance := range nodeInstance.Instances {

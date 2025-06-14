@@ -36,9 +36,9 @@ type DatabaseCollectionView []*DatabaseView
 // DatabaseView is a type that runs validations on a projected type.
 type DatabaseView struct {
 	// Unique identifier for the database.
-	ID *string
+	ID *IdentifierView
 	// Unique identifier for the databases's owner.
-	TenantID *string
+	TenantID *IdentifierView
 	// The time that the database was created.
 	CreatedAt *string
 	// The time that the database was last updated.
@@ -50,6 +50,9 @@ type DatabaseView struct {
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecView
 }
+
+// IdentifierView is a type that runs validations on a projected type.
+type IdentifierView string
 
 // InstanceCollectionView is a type that runs validations on a projected type.
 type InstanceCollectionView []*InstanceView
@@ -165,7 +168,7 @@ type DatabaseNodeSpecView struct {
 	// The IDs of the hosts that should run this node. When multiple hosts are
 	// specified, one host will chosen as a primary and the others will be read
 	// replicas.
-	HostIds []string
+	HostIds []IdentifierView
 	// The major version of Postgres for this node. Overrides the Postgres version
 	// set in the DatabaseSpec.
 	PostgresVersion *string
@@ -208,7 +211,7 @@ type BackupConfigSpecView struct {
 // BackupRepositorySpecView is a type that runs validations on a projected type.
 type BackupRepositorySpecView struct {
 	// The unique identifier of this repository.
-	ID *string
+	ID *IdentifierView
 	// The type of this repository.
 	Type *string
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
@@ -266,7 +269,7 @@ type BackupScheduleSpecView struct {
 // RestoreConfigSpecView is a type that runs validations on a projected type.
 type RestoreConfigSpecView struct {
 	// The ID of the database to restore this database from.
-	SourceDatabaseID *string
+	SourceDatabaseID *IdentifierView
 	// The name of the node to restore this database from.
 	SourceNodeName *string
 	// The name of the database in this repository. This database will be renamed
@@ -283,7 +286,7 @@ type RestoreConfigSpecView struct {
 // type.
 type RestoreRepositorySpecView struct {
 	// The unique identifier of this repository.
-	ID *string
+	ID *IdentifierView
 	// The type of this repository.
 	Type *string
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
@@ -556,10 +559,10 @@ func ValidateDatabaseView(result *DatabaseView) (err error) {
 		err = goa.MergeErrors(err, goa.MissingFieldError("state", "result"))
 	}
 	if result.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.id", *result.ID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.id", string(*result.ID), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if result.TenantID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.tenant_id", *result.TenantID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.tenant_id", string(*result.TenantID), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if result.CreatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.created_at", *result.CreatedAt, goa.FormatDateTime))
@@ -601,10 +604,10 @@ func ValidateDatabaseViewAbbreviated(result *DatabaseView) (err error) {
 		err = goa.MergeErrors(err, goa.MissingFieldError("state", "result"))
 	}
 	if result.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.id", *result.ID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.id", string(*result.ID), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if result.TenantID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.tenant_id", *result.TenantID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.tenant_id", string(*result.TenantID), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if result.CreatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.created_at", *result.CreatedAt, goa.FormatDateTime))
@@ -622,6 +625,12 @@ func ValidateDatabaseViewAbbreviated(result *DatabaseView) (err error) {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
+	return
+}
+
+// ValidateIdentifierView runs the validations defined on IdentifierView.
+func ValidateIdentifierView(result IdentifierView) (err error) {
+	err = goa.MergeErrors(err, goa.ValidatePattern("result", string(result), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	return
 }
 
@@ -667,12 +676,6 @@ func ValidateInstanceView(result *InstanceView) (err error) {
 	}
 	if result.State == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("state", "result"))
-	}
-	if result.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.id", *result.ID, goa.FormatUUID))
-	}
-	if result.HostID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.host_id", *result.HostID, goa.FormatUUID))
 	}
 	if result.CreatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.created_at", *result.CreatedAt, goa.FormatDateTime))
@@ -720,12 +723,6 @@ func ValidateInstanceViewAbbreviated(result *InstanceView) (err error) {
 	}
 	if result.State == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("state", "result"))
-	}
-	if result.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.id", *result.ID, goa.FormatUUID))
-	}
-	if result.HostID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.host_id", *result.HostID, goa.FormatUUID))
 	}
 	if result.State != nil {
 		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "backing_up" || *result.State == "available" || *result.State == "degraded" || *result.State == "failed" || *result.State == "unknown") {
@@ -902,7 +899,7 @@ func ValidateDatabaseNodeSpecView(result *DatabaseNodeSpecView) (err error) {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("result.host_ids", result.HostIds, len(result.HostIds), 1, true))
 	}
 	for _, e := range result.HostIds {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.host_ids[*]", e, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.host_ids[*]", string(e), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if result.PostgresVersion != nil {
 		if !(*result.PostgresVersion == "15" || *result.PostgresVersion == "16" || *result.PostgresVersion == "17") {
@@ -989,14 +986,7 @@ func ValidateBackupRepositorySpecView(result *BackupRepositorySpecView) (err err
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "result"))
 	}
 	if result.ID != nil {
-		if utf8.RuneCountInString(*result.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", *result.ID, utf8.RuneCountInString(*result.ID), 1, true))
-		}
-	}
-	if result.ID != nil {
-		if utf8.RuneCountInString(*result.ID) > 64 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", *result.ID, utf8.RuneCountInString(*result.ID), 64, false))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.id", string(*result.ID), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if result.Type != nil {
 		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure" || *result.Type == "posix" || *result.Type == "cifs") {
@@ -1180,7 +1170,7 @@ func ValidateRestoreConfigSpecView(result *RestoreConfigSpecView) (err error) {
 		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "result"))
 	}
 	if result.SourceDatabaseID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.source_database_id", *result.SourceDatabaseID, goa.FormatUUID))
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.source_database_id", string(*result.SourceDatabaseID), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if result.SourceNodeName != nil {
 		err = goa.MergeErrors(err, goa.ValidatePattern("result.source_node_name", *result.SourceNodeName, "n[0-9]+"))
@@ -1213,14 +1203,7 @@ func ValidateRestoreRepositorySpecView(result *RestoreRepositorySpecView) (err e
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "result"))
 	}
 	if result.ID != nil {
-		if utf8.RuneCountInString(*result.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", *result.ID, utf8.RuneCountInString(*result.ID), 1, true))
-		}
-	}
-	if result.ID != nil {
-		if utf8.RuneCountInString(*result.ID) > 64 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", *result.ID, utf8.RuneCountInString(*result.ID), 64, false))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.id", string(*result.ID), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
 	}
 	if result.Type != nil {
 		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure" || *result.Type == "posix" || *result.Type == "cifs") {
@@ -1431,15 +1414,6 @@ func ValidateTaskView(result *TaskView) (err error) {
 	}
 	if result.ParentID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.parent_id", *result.ParentID, goa.FormatUUID))
-	}
-	if result.DatabaseID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.database_id", *result.DatabaseID, goa.FormatUUID))
-	}
-	if result.InstanceID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.instance_id", *result.InstanceID, goa.FormatUUID))
-	}
-	if result.HostID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("result.host_id", *result.HostID, goa.FormatUUID))
 	}
 	if result.TaskID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.task_id", *result.TaskID, goa.FormatUUID))

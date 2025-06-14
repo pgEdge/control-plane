@@ -75,9 +75,10 @@ var HostCohort = g.Type("HostCohort", func() {
 })
 
 var Host = g.Type("Host", func() {
-	g.Attribute("id", g.String, func() {
-		g.Format(g.FormatUUID)
+	g.Attribute("id", Identifier, func() {
 		g.Description("Unique identifier for the host.")
+		g.Example("host-1")
+		g.Example("us-east-1")
 		g.Example("de3b1388-1f0c-42f1-a86c-59ab72f255ec")
 	})
 	g.Attribute("orchestrator", g.String, func() {

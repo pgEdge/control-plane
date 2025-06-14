@@ -55,7 +55,7 @@ func (s *Service) UpdateTask(ctx context.Context, task *Task) error {
 	return nil
 }
 
-func (s *Service) GetTask(ctx context.Context, databaseID, taskID uuid.UUID) (*Task, error) {
+func (s *Service) GetTask(ctx context.Context, databaseID string, taskID uuid.UUID) (*Task, error) {
 	stored, err := s.Store.Task.GetByKey(databaseID, taskID).Exec(ctx)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrTaskNotFound
@@ -66,7 +66,7 @@ func (s *Service) GetTask(ctx context.Context, databaseID, taskID uuid.UUID) (*T
 	return stored.Task, nil
 }
 
-func (s *Service) GetTasks(ctx context.Context, databaseID uuid.UUID, options TaskListOptions) ([]*Task, error) {
+func (s *Service) GetTasks(ctx context.Context, databaseID string, options TaskListOptions) ([]*Task, error) {
 	stored, err := s.Store.Task.GetAllByDatabaseID(databaseID, options).Exec(ctx)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrTaskNotFound
@@ -82,7 +82,7 @@ func (s *Service) GetTasks(ctx context.Context, databaseID uuid.UUID, options Ta
 	return tasks, nil
 }
 
-func (s *Service) DeleteTask(ctx context.Context, databaseID, taskID uuid.UUID) error {
+func (s *Service) DeleteTask(ctx context.Context, databaseID string, taskID uuid.UUID) error {
 	deleted, err := s.Store.Task.Delete(databaseID, taskID).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to delete task: %w", err)
@@ -96,7 +96,7 @@ func (s *Service) DeleteTask(ctx context.Context, databaseID, taskID uuid.UUID) 
 	return nil
 }
 
-func (s *Service) DeleteAllTasks(ctx context.Context, databaseID uuid.UUID) error {
+func (s *Service) DeleteAllTasks(ctx context.Context, databaseID string) error {
 	_, err := s.Store.Task.DeleteByDatabaseID(databaseID).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to delete tasks: %w", err)
@@ -113,7 +113,7 @@ type LogEntry struct {
 	Fields    map[string]any
 }
 
-func (s *Service) AddLogEntry(ctx context.Context, databaseID, taskID uuid.UUID, entry LogEntry) error {
+func (s *Service) AddLogEntry(ctx context.Context, databaseID string, taskID uuid.UUID, entry LogEntry) error {
 	entryID, err := uuid.NewV7()
 	if err != nil {
 		return fmt.Errorf("failed to create entry ID: %w", err)
@@ -138,7 +138,7 @@ func (s *Service) AddLogEntry(ctx context.Context, databaseID, taskID uuid.UUID,
 	return nil
 }
 
-func (s *Service) GetTaskLog(ctx context.Context, databaseID, taskID uuid.UUID, options TaskLogOptions) (*TaskLog, error) {
+func (s *Service) GetTaskLog(ctx context.Context, databaseID string, taskID uuid.UUID, options TaskLogOptions) (*TaskLog, error) {
 	stored, err := s.Store.TaskLogMessage.GetAllByTaskID(databaseID, taskID, options).Exec(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get task log: %w", err)
@@ -163,7 +163,7 @@ func (s *Service) GetTaskLog(ctx context.Context, databaseID, taskID uuid.UUID, 
 	return log, nil
 }
 
-func (s *Service) DeleteTaskLogs(ctx context.Context, databaseID, taskID uuid.UUID) error {
+func (s *Service) DeleteTaskLogs(ctx context.Context, databaseID string, taskID uuid.UUID) error {
 	_, err := s.Store.TaskLogMessage.DeleteByTaskID(databaseID, taskID).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to delete task logs: %w", err)
@@ -171,7 +171,7 @@ func (s *Service) DeleteTaskLogs(ctx context.Context, databaseID, taskID uuid.UU
 	return nil
 }
 
-func (s *Service) DeleteAllTaskLogs(ctx context.Context, databaseID uuid.UUID) error {
+func (s *Service) DeleteAllTaskLogs(ctx context.Context, databaseID string) error {
 	_, err := s.Store.TaskLogMessage.DeleteByDatabaseID(databaseID).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to delete task logs: %w", err)

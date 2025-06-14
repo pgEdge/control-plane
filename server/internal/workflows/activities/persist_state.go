@@ -6,14 +6,13 @@ import (
 
 	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
-	"github.com/google/uuid"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
 type PersistStateInput struct {
-	DatabaseID uuid.UUID       `json:"database_id"`
+	DatabaseID string          `json:"database_id"`
 	State      *resource.State `json:"state"`
 }
 
@@ -24,7 +23,7 @@ func (a *Activities) ExecutePersistState(
 	input *PersistStateInput,
 ) workflow.Future[*PersistStateOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(a.Config.HostID.String()),
+		Queue: core.Queue(a.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},

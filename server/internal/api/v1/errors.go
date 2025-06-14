@@ -30,6 +30,8 @@ var (
 	ErrUninitialized              = newAPIError(errClusterNotInitialized, "This operation is invalid on an uninitialized cluster.")
 	ErrInvalidHostID              = newAPIError(errInvalidInput, "The given host ID is invalid.")
 	ErrInvalidDatabaseID          = newAPIError(errInvalidInput, "The given database ID is invalid.")
+	ErrInvalidSourceDatabaseID    = newAPIError(errInvalidInput, "The given source database ID is invalid.")
+	ErrInvalidTenantID            = newAPIError(errInvalidInput, "The given tenant ID is invalid.")
 	ErrInvalidTaskID              = newAPIError(errInvalidInput, "The given task ID is invalid.")
 	ErrInvalidServerURL           = newAPIError(errInvalidInput, "The given server URL is invalid.")
 	ErrDatabaseNotModifiable      = newAPIError(errDatabaseNotModifiable, "The target database is not modifiable in its current state.")
@@ -38,6 +40,7 @@ var (
 	ErrTaskNotFound               = newAPIError(errNotFound, "No task found with the given ID.")
 	ErrInvalidJoinToken           = newAPIError(errInvalidJoinToken, "The given join token is invalid.")
 	ErrDatabaseAlreadyExists      = newAPIError(errDatabaseAlreadyExists, "A database already exists with the given ID.")
+	ErrInvalidRepositoryID        = newAPIError(errInvalidInput, "The given repository ID is invalid.")
 )
 
 func apiErr(err error) error {
@@ -62,6 +65,8 @@ func apiErr(err error) error {
 		return ErrOperationAlreadyInProgress
 	case errors.Is(err, database.ErrDatabaseAlreadyExists):
 		return ErrDatabaseAlreadyExists
+	case errors.Is(err, database.ErrTenantIDCannotBeChanged):
+		return makeInvalidInputErr(err)
 	default:
 		return newAPIError(errServerError, err.Error())
 	}

@@ -181,12 +181,12 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 
 	// directory resources
 	instanceDir := &filesystem.DirResource{
-		ID:     spec.InstanceID.String() + "-instance",
+		ID:     spec.InstanceID + "-instance",
 		HostID: spec.HostID,
-		Path:   filepath.Join(o.cfg.DataDir, "instances", spec.InstanceID.String()),
+		Path:   filepath.Join(o.cfg.DataDir, "instances", spec.InstanceID),
 	}
 	dataDir := &filesystem.DirResource{
-		ID:       spec.InstanceID.String() + "-data",
+		ID:       spec.InstanceID + "-data",
 		HostID:   spec.HostID,
 		ParentID: instanceDir.ID,
 		Path:     "data",
@@ -194,7 +194,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		OwnerGID: o.cfg.DatabaseOwnerUID,
 	}
 	configsDir := &filesystem.DirResource{
-		ID:       spec.InstanceID.String() + "-configs",
+		ID:       spec.InstanceID + "-configs",
 		HostID:   spec.HostID,
 		ParentID: instanceDir.ID,
 		Path:     "configs",
@@ -202,7 +202,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		OwnerGID: o.cfg.DatabaseOwnerUID,
 	}
 	certificatesDir := &filesystem.DirResource{
-		ID:       spec.InstanceID.String() + "-certificates",
+		ID:       spec.InstanceID + "-certificates",
 		HostID:   spec.HostID,
 		ParentID: instanceDir.ID,
 		Path:     "certificates",
@@ -364,7 +364,7 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 		HostID:         spec.HostID,
 		InstanceID:     spec.InstanceID,
 		TaskID:         taskID,
-		DataDirID:      spec.InstanceID.String() + "-data",
+		DataDirID:      spec.InstanceID + "-data",
 		NodeName:       spec.NodeName,
 		RestoreOptions: restoreOptions,
 	})
@@ -380,7 +380,7 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 	return resources, nil
 }
 
-func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID uuid.UUID) (*database.ConnectionInfo, error) {
+func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*database.ConnectionInfo, error) {
 	container, err := GetPostgresContainer(ctx, o.docker, instanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get postgres container: %w", err)
@@ -428,8 +428,8 @@ func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID
 
 func (o *Orchestrator) WorkerQueues() ([]workflow.Queue, error) {
 	queues := []workflow.Queue{
-		workflow.Queue(o.cfg.HostID.String()),
-		workflow.Queue(o.cfg.ClusterID.String()),
+		workflow.Queue(o.cfg.HostID),
+		workflow.Queue(o.cfg.ClusterID),
 	}
 	if o.controlAvailable {
 		queues = append(queues, workflow.Queue(o.swarmID))
@@ -437,7 +437,7 @@ func (o *Orchestrator) WorkerQueues() ([]workflow.Queue, error) {
 	return queues, nil
 }
 
-func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, instanceID uuid.UUID, options *pgbackrest.BackupOptions) error {
+func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, instanceID string, options *pgbackrest.BackupOptions) error {
 	backupCmd := PgBackRestBackupCmd("backup", options.StringSlice()...)
 
 	err := PostgresContainerExec(ctx, w, o.docker, instanceID, backupCmd.StringSlice())

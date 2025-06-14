@@ -2,8 +2,6 @@ package database
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type DatabaseState string
@@ -30,8 +28,8 @@ func DatabaseStateModifiable(state DatabaseState) bool {
 }
 
 type Database struct {
-	DatabaseID uuid.UUID
-	TenantID   *uuid.UUID
+	DatabaseID string
+	TenantID   *string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	State      DatabaseState
@@ -62,12 +60,12 @@ func storedToDatabase(d *StoredDatabase, storedSpec *StoredSpec, instances []*In
 }
 
 func storedToDatabases(storedDbs []*StoredDatabase, storedSpecs []*StoredSpec, allInstances []*Instance) []*Database {
-	specsByID := make(map[uuid.UUID]*StoredSpec, len(storedSpecs))
+	specsByID := make(map[string]*StoredSpec, len(storedSpecs))
 	for _, spec := range storedSpecs {
 		specsByID[spec.DatabaseID] = spec
 	}
 
-	instancesByID := make(map[uuid.UUID][]*Instance, len(allInstances))
+	instancesByID := make(map[string][]*Instance, len(allInstances))
 	for _, instance := range allInstances {
 		instancesByID[instance.DatabaseID] = append(instancesByID[instance.DatabaseID], instance)
 	}

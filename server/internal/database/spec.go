@@ -1,13 +1,13 @@
 package database
 
 import (
+	"crypto/sha1"
 	"errors"
 	"fmt"
 	"maps"
+	"math/big"
 	"slices"
 	"strconv"
-
-	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/host"
@@ -24,7 +24,7 @@ type ExtraVolumesSpec struct {
 
 type Node struct {
 	Name            string             `json:"name"`
-	HostIDs         []uuid.UUID        `json:"host_ids"`
+	HostIDs         []string           `json:"host_ids"`
 	PostgresVersion string             `json:"postgres_version"`
 	Port            int                `json:"port"`
 	CPUs            float64            `json:"cpus"`
@@ -128,7 +128,7 @@ func (b *BackupConfig) Clone() *BackupConfig {
 }
 
 type RestoreConfig struct {
-	SourceDatabaseID   uuid.UUID              `json:"source_database_id"`
+	SourceDatabaseID   string                 `json:"source_database_id"`
 	SourceNodeName     string                 `json:"source_node_name"`
 	SourceDatabaseName string                 `json:"source_database_name"`
 	Repository         *pgbackrest.Repository `json:"repository"`
@@ -149,8 +149,8 @@ func (r *RestoreConfig) Clone() *RestoreConfig {
 }
 
 type Spec struct {
-	DatabaseID      uuid.UUID          `json:"database_id"`
-	TenantID        *uuid.UUID         `json:"tenant_id,omitempty"`
+	DatabaseID      string             `json:"database_id"`
+	TenantID        *string            `json:"tenant_id,omitempty"`
 	DatabaseName    string             `json:"database_name"`
 	PostgresVersion string             `json:"postgres_version"`
 	SpockVersion    string             `json:"spock_version"`
@@ -247,17 +247,33 @@ func (s *Spec) Clone() *Spec {
 	}
 }
 
-func InstanceIDFor(hostID, databaseID uuid.UUID, nodeName string) uuid.UUID {
-	space := uuid.UUID(hostID)
-	data := []byte(databaseID.String() + ":" + nodeName)
-	return uuid.NewSHA1(space, data)
+func InstanceIDFor(hostID, databaseID, nodeName string) string {
+	// We're using a shortened hash of the host ID to strike a compromise
+	// between readability and global uniqueness.
+	// Example outputs:
+	// - Input:
+	//   	hostID:     "dbf5779c-492a-11f0-b11a-1b8cb15693a8"
+	//		databaseID: "ed2362ea-492a-11f0-956c-9f2171e8b9ab"
+	//		nodeName:   "n1"
+	//   Output: "ed2362ea-492a-11f0-956c-9f2171e8b9ab-n1-io5979nh"
+	// - Input:
+	//   	hostID:     "us-east-1"
+	//		databaseID: "my-app"
+	//		nodeName:   "n1"
+	//   Output: "my-app-n1-n5fe2mcy"
+	hash := sha1.Sum([]byte(hostID))
+	base36 := new(big.Int).
+		SetBytes(hash[:]).
+		Text(36)
+
+	return databaseID + "-" + nodeName + "-" + base36[:8]
 }
 
 type InstanceSpec struct {
-	InstanceID     uuid.UUID           `json:"instance_id"`
-	TenantID       *uuid.UUID          `json:"tenant_id,omitempty"`
-	DatabaseID     uuid.UUID           `json:"database_id"`
-	HostID         uuid.UUID           `json:"host_id"`
+	InstanceID     string              `json:"instance_id"`
+	TenantID       *string             `json:"tenant_id,omitempty"`
+	DatabaseID     string              `json:"database_id"`
+	HostID         string              `json:"host_id"`
 	DatabaseName   string              `json:"database_name"`
 	NodeName       string              `json:"node_name"`
 	NodeOrdinal    int                 `json:"node_ordinal"`

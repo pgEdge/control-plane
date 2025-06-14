@@ -3,7 +3,6 @@ package database
 import (
 	"path"
 
-	"github.com/google/uuid"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/storage"
@@ -30,21 +29,21 @@ func (s *SpecStore) Prefix() string {
 	return path.Join("/", s.root, "database_specs")
 }
 
-func (s *SpecStore) Key(databaseID uuid.UUID) string {
-	return path.Join(s.Prefix(), databaseID.String())
+func (s *SpecStore) Key(databaseID string) string {
+	return path.Join(s.Prefix(), databaseID)
 }
 
-func (s *SpecStore) ExistsByKey(databaseID uuid.UUID) storage.ExistsOp {
+func (s *SpecStore) ExistsByKey(databaseID string) storage.ExistsOp {
 	key := s.Key(databaseID)
 	return storage.NewExistsOp(s.client, key)
 }
 
-func (s *SpecStore) GetByKey(databaseID uuid.UUID) storage.GetOp[*StoredSpec] {
+func (s *SpecStore) GetByKey(databaseID string) storage.GetOp[*StoredSpec] {
 	key := s.Key(databaseID)
 	return storage.NewGetOp[*StoredSpec](s.client, key)
 }
 
-func (s *SpecStore) GetByKeys(databaseIDs ...uuid.UUID) storage.GetMultipleOp[*StoredSpec] {
+func (s *SpecStore) GetByKeys(databaseIDs ...string) storage.GetMultipleOp[*StoredSpec] {
 	keys := make([]string, len(databaseIDs))
 	for idx, databaseID := range databaseIDs {
 		keys[idx] = s.Key(databaseID)

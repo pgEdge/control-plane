@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/docker"
 	"github.com/pgEdge/control-plane/server/internal/resource"
@@ -17,9 +16,9 @@ var _ resource.Resource = (*PostgresService)(nil)
 
 const ResourceTypePostgresService resource.Type = "swarm.postgres_service"
 
-func PostgresServiceResourceIdentifier(instanceID uuid.UUID) resource.Identifier {
+func PostgresServiceResourceIdentifier(instanceID string) resource.Identifier {
 	return resource.Identifier{
-		ID:   instanceID.String(),
+		ID:   instanceID,
 		Type: ResourceTypePostgresService,
 	}
 }

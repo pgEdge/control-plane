@@ -5,8 +5,6 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/common"
 	"github.com/pgEdge/control-plane/server/internal/config"
-
-	"github.com/google/uuid"
 )
 
 type HostState string
@@ -38,7 +36,7 @@ type Cohort struct {
 }
 
 type Host struct {
-	ID                      uuid.UUID
+	ID                      string
 	Orchestrator            config.Orchestrator
 	Cohort                  *Cohort
 	Hostname                string

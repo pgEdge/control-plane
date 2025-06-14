@@ -146,9 +146,10 @@ var _ = g.Service("control-plane", func() {
 		g.Description("Returns information about a particular host in the cluster.")
 		g.Meta("openapi:summary", "Get host")
 		g.Payload(func() {
-			g.Attribute("host_id", g.String, func() {
+			g.Attribute("host_id", Identifier, func() {
 				g.Description("ID of the host to get.")
-				g.Format(g.FormatUUID)
+				g.Example("host-1")
+				g.Example("us-east-1")
 				g.Example("de3b1388-1f0c-42f1-a86c-59ab72f255ec")
 			})
 
@@ -170,9 +171,10 @@ var _ = g.Service("control-plane", func() {
 		g.Description("Removes a host from the cluster.")
 		g.Meta("openapi:summary", "Remove host")
 		g.Payload(func() {
-			g.Attribute("host_id", g.String, func() {
+			g.Attribute("host_id", Identifier, func() {
 				g.Description("ID of the host to remove.")
-				g.Format(g.FormatUUID)
+				g.Example("host-1")
+				g.Example("us-east-1")
 				g.Example("de3b1388-1f0c-42f1-a86c-59ab72f255ec")
 			})
 
@@ -226,9 +228,10 @@ var _ = g.Service("control-plane", func() {
 		g.Description("Returns information about a particular database in the cluster.")
 		g.Meta("openapi:summary", "Get database")
 		g.Payload(func() {
-			g.Attribute("database_id", g.String, func() {
+			g.Attribute("database_id", Identifier, func() {
 				g.Description("ID of the database to get.")
-				g.Format(g.FormatUUID)
+				g.Example("production")
+				g.Example("my-app")
 				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 
@@ -252,9 +255,10 @@ var _ = g.Service("control-plane", func() {
 		g.Description("Updates a database with the given specification.")
 		g.Meta("openapi:summary", "Update database")
 		g.Payload(func() {
-			g.Attribute("database_id", g.String, func() {
+			g.Attribute("database_id", Identifier, func() {
 				g.Description("ID of the database to update.")
-				g.Format(g.FormatUUID)
+				g.Example("production")
+				g.Example("my-app")
 				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 			g.Attribute("force_update", g.Boolean, func() {
@@ -286,9 +290,10 @@ var _ = g.Service("control-plane", func() {
 		g.Description("Deletes a database from the cluster.")
 		g.Meta("openapi:summary", "Delete database")
 		g.Payload(func() {
-			g.Attribute("database_id", g.String, func() {
-				g.Format(g.FormatUUID)
+			g.Attribute("database_id", Identifier, func() {
 				g.Description("ID of the database to delete.")
+				g.Example("production")
+				g.Example("my-app")
 				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 
@@ -312,9 +317,10 @@ var _ = g.Service("control-plane", func() {
 		g.Description("Initiates a backup for a database node.")
 		g.Meta("openapi:summary", "Backup database node")
 		g.Payload(func() {
-			g.Attribute("database_id", g.String, func() {
-				g.Format(g.FormatUUID)
+			g.Attribute("database_id", Identifier, func() {
 				g.Description("ID of the database to back up.")
+				g.Example("production")
+				g.Example("my-app")
 				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 			g.Attribute("node_name", g.String, func() {
@@ -345,14 +351,15 @@ var _ = g.Service("control-plane", func() {
 		g.Description("Lists all tasks for a database.")
 		g.Meta("openapi:summary", "List database tasks")
 		g.Payload(func() {
-			g.Attribute("database_id", g.String, func() {
-				g.Format(g.FormatUUID)
+			g.Attribute("database_id", Identifier, func() {
 				g.Description("ID of the database to list tasks for.")
+				g.Example("production")
+				g.Example("my-app")
 				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 			g.Attribute("after_task_id", g.String, func() {
-				g.Format(g.FormatUUID)
 				g.Description("ID of the task to start from.")
+				g.Format(g.FormatUUID)
 				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 			})
 			g.Attribute("limit", g.Int, func() {
@@ -386,14 +393,15 @@ var _ = g.Service("control-plane", func() {
 		g.Description("Returns information about a particular task.")
 		g.Meta("openapi:summary", "Get database task")
 		g.Payload(func() {
-			g.Attribute("database_id", g.String, func() {
-				g.Format(g.FormatUUID)
+			g.Attribute("database_id", Identifier, func() {
 				g.Description("ID of the database the task belongs to.")
+				g.Example("production")
+				g.Example("my-app")
 				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 			g.Attribute("task_id", g.String, func() {
-				g.Format(g.FormatUUID)
 				g.Description("ID of the task to get.")
+				g.Format(g.FormatUUID)
 				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 			})
 
@@ -415,19 +423,20 @@ var _ = g.Service("control-plane", func() {
 		g.Description("Returns the log of a particular task for a database.")
 		g.Meta("openapi:summary", "Get database task log")
 		g.Payload(func() {
-			g.Attribute("database_id", g.String, func() {
-				g.Format(g.FormatUUID)
+			g.Attribute("database_id", Identifier, func() {
 				g.Description("ID of the database to get task log for.")
+				g.Example("production")
+				g.Example("my-app")
 				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 			g.Attribute("task_id", g.String, func() {
-				g.Format(g.FormatUUID)
 				g.Description("ID of the task to get log for.")
+				g.Format(g.FormatUUID)
 				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 			})
 			g.Attribute("after_entry_id", g.String, func() {
-				g.Format(g.FormatUUID)
 				g.Description("ID of the entry to start from.")
+				g.Format(g.FormatUUID)
 				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 			})
 			g.Attribute("limit", g.Int, func() {
@@ -455,9 +464,10 @@ var _ = g.Service("control-plane", func() {
 		g.Description("Perform an in-place restore one or more nodes using the given restore configuration.")
 		g.Meta("openapi:summary", "Restore database")
 		g.Payload(func() {
-			g.Attribute("database_id", g.String, func() {
-				g.Format(g.FormatUUID)
+			g.Attribute("database_id", Identifier, func() {
 				g.Description("ID of the database to restore.")
+				g.Example("production")
+				g.Example("my-app")
 				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 			g.Attribute("request", RestoreDatabaseRequest)
