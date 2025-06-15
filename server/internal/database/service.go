@@ -90,6 +90,10 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 		return nil, fmt.Errorf("failed to get database instances: %w", err)
 	}
 
+	// Copy sensitive fields from the previous spec to the current spec if they
+	// are unset.
+	spec.DefaultSensitiveFieldsFrom(currentSpec.Spec)
+
 	currentSpec.Spec = spec
 	currentDB.UpdatedAt = time.Now()
 	currentDB.State = state

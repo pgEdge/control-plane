@@ -6368,7 +6368,7 @@
           },
           "azure_key": {
             "type": "string",
-            "description": "An optional Azure storage account access key to use for this repository. If not provided, pgbackrest will use the VM's managed identity.",
+            "description": "The Azure storage account access key to use for this repository. This field will be excluded from the response of all endpoints.",
             "example": "YXpLZXk=",
             "maxLength": 128
           },
@@ -6407,7 +6407,7 @@
           },
           "gcs_key": {
             "type": "string",
-            "description": "Optional base64-encoded private key data. If omitted, pgbackrest will use the service account attached to the instance profile.",
+            "description": "Optional base64-encoded private key data. If omitted, pgbackrest will use the service account attached to the instance profile. This field will be excluded from the response of all endpoints.",
             "example": "ZXhhbXBsZSBnY3Mga2V5Cg==",
             "maxLength": 1024
           },
@@ -6450,14 +6450,14 @@
           },
           "s3_key": {
             "type": "string",
-            "description": "An optional AWS access key ID to use for this repository. If not provided, pgbackrest will use the default credential provider chain.",
+            "description": "An optional AWS access key ID to use for this repository. If not provided, pgbackrest will use the default credential provider chain. This field will be excluded from the response of all endpoints.",
             "example": "AKIAIOSFODNN7EXAMPLE",
             "minLength": 16,
             "maxLength": 128
           },
           "s3_key_secret": {
             "type": "string",
-            "description": "The corresponding secret for the AWS access key ID in s3_key.",
+            "description": "The corresponding secret for the AWS access key ID in s3_key. This field will be excluded from the response of all endpoints.",
             "example": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
             "maxLength": 128
           },
@@ -11159,7 +11159,7 @@
           },
           "password": {
             "type": "string",
-            "description": "The password for this database user.",
+            "description": "The password for this database user. This field will be excluded from the response of all endpoints.",
             "example": "secret",
             "minLength": 1
           },
@@ -11196,8 +11196,7 @@
           "username": "admin"
         },
         "required": [
-          "username",
-          "password"
+          "username"
         ]
       },
       "DeleteDatabaseResponse": {

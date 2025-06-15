@@ -4014,7 +4014,7 @@ func unmarshalDatabaseUserSpecResponseBodyToControlplaneDatabaseUserSpec(v *Data
 	}
 	res := &controlplane.DatabaseUserSpec{
 		Username: *v.Username,
-		Password: *v.Password,
+		Password: v.Password,
 		DbOwner:  v.DbOwner,
 	}
 	if v.Attributes != nil {

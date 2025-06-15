@@ -80,7 +80,7 @@ var DatabaseUserSpec = g.Type("DatabaseUserSpec", func() {
 		g.MinLength(1)
 	})
 	g.Attribute("password", g.String, func() {
-		g.Description("The password for this database user.")
+		g.Description("The password for this database user. This field will be excluded from the response of all endpoints.")
 		g.Example("secret")
 		g.MinLength(1)
 	})
@@ -101,7 +101,7 @@ var DatabaseUserSpec = g.Type("DatabaseUserSpec", func() {
 		g.Example([]string{"pgedge_superuser"})
 	})
 
-	g.Required("username", "password")
+	g.Required("username")
 })
 
 var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
@@ -134,13 +134,13 @@ var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
 		g.Example("s3.us-east-1.amazonaws.com")
 	})
 	g.Attribute("s3_key", g.String, func() {
-		g.Description("An optional AWS access key ID to use for this repository. If not provided, pgbackrest will use the default credential provider chain.")
+		g.Description("An optional AWS access key ID to use for this repository. If not provided, pgbackrest will use the default credential provider chain. This field will be excluded from the response of all endpoints.")
 		g.MinLength(16)
 		g.MaxLength(128)
 		g.Example("AKIAIOSFODNN7EXAMPLE")
 	})
 	g.Attribute("s3_key_secret", g.String, func() {
-		g.Description("The corresponding secret for the AWS access key ID in s3_key.")
+		g.Description("The corresponding secret for the AWS access key ID in s3_key. This field will be excluded from the response of all endpoints.")
 		g.MaxLength(128)
 		g.Example("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
 	})
@@ -157,7 +157,7 @@ var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
 		g.Example("localhost")
 	})
 	g.Attribute("gcs_key", g.String, func() {
-		g.Description("Optional base64-encoded private key data. If omitted, pgbackrest will use the service account attached to the instance profile.")
+		g.Description("Optional base64-encoded private key data. If omitted, pgbackrest will use the service account attached to the instance profile. This field will be excluded from the response of all endpoints.")
 		g.MaxLength(1024)
 		g.Example("ZXhhbXBsZSBnY3Mga2V5Cg==")
 	})
@@ -180,7 +180,7 @@ var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
 		g.Example("blob.core.usgovcloudapi.net")
 	})
 	g.Attribute("azure_key", g.String, func() {
-		g.Description("An optional Azure storage account access key to use for this repository. If not provided, pgbackrest will use the VM's managed identity.")
+		g.Description("The Azure storage account access key to use for this repository. This field will be excluded from the response of all endpoints.")
 		g.MaxLength(128)
 		g.Example("YXpLZXk=")
 	})

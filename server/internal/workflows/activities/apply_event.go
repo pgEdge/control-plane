@@ -47,11 +47,17 @@ func (a *Activities) ExecuteApplyEvent(
 
 func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*ApplyEventOutput, error) {
 	logger := activity.Logger(ctx).With("database_id", input.DatabaseID)
-	logger.With(
+	logStart := logger.With(
 		"event_type", input.Event.Type,
 		"event_resource_type", input.Event.Resource.Identifier.Type,
 		"event_resource_id", input.Event.Resource.Identifier.ID,
-	).Info("applying resource event to state")
+	)
+	if input.Event.Type == resource.EventTypeRefresh {
+		// Refresh messages are less helpful during normal operation
+		logStart.Debug("applying resource event to state")
+	} else {
+		logStart.Info("applying resource event to state")
+	}
 
 	registry, err := do.Invoke[*resource.Registry](a.Injector)
 	if err != nil {

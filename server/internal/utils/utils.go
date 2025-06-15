@@ -57,6 +57,8 @@ func PointerTo[T any](v T) *T {
 	return &v
 }
 
+// FromPointer dereferences the input pointer if it's non-nil or returns the
+// zero value for T if the pointer is nil.
 func FromPointer[T comparable](v *T) T {
 	var zero T
 	if v == nil {
