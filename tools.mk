@@ -5,6 +5,7 @@ golangcilint=$(gobin)/golangci-lint
 goa=$(gobin)/goa
 goreleaser=$(gobin)/goreleaser
 changie=$(gobin)/changie
+yamlfmt=$(gobin)/yamlfmt
 
 .PHONY: install-tools
 install-tools:
@@ -15,3 +16,4 @@ install-tools:
 	go install github.com/goreleaser/goreleaser/v2@v2.9.0
 	go install github.com/anchore/syft/cmd/syft@v1.25.1
 	go install github.com/miniscruff/changie@v1.21.1
+	go install github.com/google/yamlfmt/cmd/yamlfmt@v0.17.0
