@@ -44,3 +44,11 @@ services:
       - PGEDGE_HTTP__PORT=3002
       - PGEDGE_EMBEDDED_ETCD__PEER_PORT=2580
       - PGEDGE_EMBEDDED_ETCD__CLIENT_PORT=2579
+  api-docs:
+    image: redocly/redoc
+    ports:
+      - 8999:80
+    volumes:
+      - ../../api/v1/gen/http:/usr/share/nginx/html/specs
+    environment:
+      - SPEC_URL=specs/openapi3.yaml

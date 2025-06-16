@@ -14,6 +14,7 @@ Control Plane cluster that runs in Docker via Docker Compose.
   - [Development workflow](#development-workflow)
     - [Rebuilding the `control-plane` binary](#rebuilding-the-control-plane-binary)
     - [Debugging](#debugging)
+  - [API documentation](#api-documentation)
 
 ## Prerequisites
 
@@ -183,3 +184,14 @@ This is an example remote debugging configuration for VSCode:
 ```
 
 After attaching the debugger, the server will start normally.
+
+## API documentation
+
+The `docker-compose.yaml` file for this configuration includes an API
+documentation server. You can access the documentation in your browser at
+http://localhost:8999.
+
+This uses the OpenAPI spec from the `api/v1/gen` directory and generates the
+documentation on the client side. When you regenerate the OpenAPI spec, for
+example by running `make -C api generate`, you only need to refresh the page to
+see the updates.
