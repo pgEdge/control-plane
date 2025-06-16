@@ -175,7 +175,7 @@ func (s *PostInitHandlers) CreateDatabase(ctx context.Context, req *api.CreateDa
 
 	err = s.ValidateSpec(ctx, spec)
 	if err != nil {
-		return nil, makeInvalidInputErr(fmt.Errorf("%w", err))
+		return nil, apiErr(err)
 	}
 
 	db, err := s.dbSvc.CreateDatabase(ctx, spec)
@@ -221,7 +221,7 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 
 	err = s.ValidateSpec(ctx, spec)
 	if err != nil {
-		return nil, api.MakeInvalidInput(fmt.Errorf("%w", err))
+		return nil, apiErr(err)
 	}
 
 	db, err := s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateModifying, spec)
@@ -474,18 +474,14 @@ func (s *PostInitHandlers) ValidateSpec(ctx context.Context, spec *database.Spec
 		return errors.New("spec cannot be nil")
 	}
 
-	output := s.workflowSvc.ValidateSpec(ctx, spec)
-	if output == nil {
-		return errors.New("failed to validate spec")
-
+	output, err := s.workflowSvc.ValidateSpec(ctx, spec)
+	if err != nil {
+		return fmt.Errorf("failed to validate spec: %w", err)
 	}
 	if !output.Valid {
-		return fmt.Errorf(
-			"spec validation failed. Please ensure all required fields in the provided spec are valid.\nDetails: %s",
-			strings.Join(output.Errors, " "),
-		)
+		return makeInvalidInputErr(errors.New(strings.Join(output.Errors, "\n")))
 	}
-	s.logger.Info().Msg("Spec validation succeeded")
+	s.logger.Info().Msg("spec validation succeeded")
 
 	return nil
 }

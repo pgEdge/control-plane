@@ -20,8 +20,8 @@ type InstanceResources struct {
 }
 
 type ValidationResult struct {
-	Success bool
-	Reason  string
+	Valid bool
+	Error string
 }
 
 func NewInstanceResources(instance *InstanceResource, resources []resource.Resource) (*InstanceResources, error) {

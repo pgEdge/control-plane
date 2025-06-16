@@ -469,14 +469,24 @@ func (o *Orchestrator) ValidateVolumes(ctx context.Context, spec *database.Insta
 
 	cmd := buildVolumeCheckCommand(mountTargets)
 	output, err := o.runVolumeValidationContainer(ctx, images.PgEdgeImage, cmd, mounts)
+	if msg := docker.ExtractBindErrorMsg(err); msg != "" {
+		return &database.ValidationResult{
+			Valid: false,
+			Error: msg,
+		}, nil
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	if strings.HasSuffix(output, "OK") {
-		return &database.ValidationResult{Success: true, Reason: "All volumes are valid"}, nil
+	if len(output) > 0 {
+		return &database.ValidationResult{
+			Valid: false,
+			Error: output,
+		}, nil
 	}
-	return &database.ValidationResult{Success: false, Reason: output}, nil
+
+	return &database.ValidationResult{Valid: true}, nil
 }
 
 func (o *Orchestrator) runVolumeValidationContainer(ctx context.Context, image string, cmd []string, mounts []mount.Mount) (string, error) {
@@ -521,5 +531,5 @@ func (o *Orchestrator) runVolumeValidationContainer(ctx context.Context, image s
 }
 
 func buildVolumeCheckCommand(mountTargets []string) []string {
-	return []string{"sh", "-c", fmt.Sprintf("for d in %s; do [ -d \"$d\" ] || { echo \"FAIL: $d not found\"; exit 1; }; done; echo OK", strings.Join(mountTargets, " "))}
+	return []string{"sh", "-c", fmt.Sprintf(`for d in %s; do if [ -d "$d" ]; then echo "$d is not a directory"; fi; done"`, strings.Join(mountTargets, " "))}
 }

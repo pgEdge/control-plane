@@ -1,6 +1,7 @@
 package workflows
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/cschleiden/go-workflows/workflow"
@@ -22,16 +23,20 @@ type ValidateSpecOutput struct {
 func (w *Workflows) ValidateSpec(ctx workflow.Context, input *ValidateSpecInput) (*ValidateSpecOutput, error) {
 	databaseID := input.DatabaseID
 	logger := workflow.Logger(ctx).With("database_id", databaseID)
-	logger.Info("Starting volume validation")
+	logger.Info("starting volume validation")
 
 	nodeInstances, err := input.Spec.NodeInstances()
 	if err != nil {
-		logger.Error("Failed to get node instances", "error", err)
+		logger.Error("failed to get node instances", "error", err)
 		return nil, fmt.Errorf("failed to get node instances: %w", err)
 	}
 	var instanceFutures []workflow.Future[*activities.ValidateVolumesOutput]
 	for _, nodeInstance := range nodeInstances {
 		for _, instance := range nodeInstance.Instances {
+			if len(instance.ExtraVolumes) < 1 {
+				continue
+			}
+
 			instanceFuture := w.Activities.ExecuteValidateVolumes(ctx, instance.HostID, &activities.ValidateVolumesInput{
 				DatabaseID: databaseID,
 				Spec:       instance,
@@ -40,28 +45,32 @@ func (w *Workflows) ValidateSpec(ctx workflow.Context, input *ValidateSpecInput)
 		}
 	}
 
-	var allErrors []string
+	overallResult := &ValidateSpecOutput{
+		Valid: true,
+	}
+
+	var allErrors []error
 	for _, instanceFuture := range instanceFutures {
 		output, err := instanceFuture.Get(ctx)
 		if err != nil {
-			logger.Error("Volume validation activity failed", "error", err)
-			allErrors = append(allErrors, fmt.Sprintf("activity error: %v", err))
+			allErrors = append(allErrors, err)
 			continue
 		}
 
 		if !output.Valid {
-			logger.Error("Volume validation failed", "errors", output.Errors)
-			allErrors = append(allErrors, output.Errors...)
+			overallResult.Valid = false
+			overallResult.Errors = append(
+				overallResult.Errors,
+				fmt.Sprintf("invalid volumes for node %s, host %s: %s", output.NodeName, output.HostID, output.Error),
+			)
 		}
 	}
 
-	if len(allErrors) > 0 {
-		return &ValidateSpecOutput{
-			Valid:  false,
-			Errors: allErrors,
-		}, fmt.Errorf("volume validation encountered %d issues", len(allErrors))
+	if err := errors.Join(allErrors...); err != nil {
+		logger.Error("failed to validate volumes", "error", err)
+		return nil, fmt.Errorf("failed to validate volumes: %w", err)
 	}
 
-	logger.Info("Volume validation succeeded")
-	return &ValidateSpecOutput{Valid: true}, nil
+	logger.Info("volume validation succeeded")
+	return overallResult, nil
 }

@@ -3,11 +3,11 @@ package activities
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/pgEdge/control-plane/server/internal/database"
-	"github.com/samber/do"
 )
 
 type ValidateVolumesInput struct {
@@ -16,8 +16,10 @@ type ValidateVolumesInput struct {
 }
 
 type ValidateVolumesOutput struct {
-	Valid  bool     `json:"valid"`
-	Errors []string `json:"errors,omitempty"`
+	HostID   string `json:"host_id"`
+	NodeName string `json:"node_name"`
+	Valid    bool   `json:"valid"`
+	Error    string `json:"errors,omitempty"`
 }
 
 func (a *Activities) ExecuteValidateVolumes(
@@ -37,40 +39,27 @@ func (a *Activities) ExecuteValidateVolumes(
 func (a *Activities) ValidateVolumes(ctx context.Context, input *ValidateVolumesInput) (*ValidateVolumesOutput, error) {
 	logger := activity.Logger(ctx)
 
-	fail := func(err error, msg string) (*ValidateVolumesOutput, error) {
-		logger.Error(msg, "error", err)
-		return &ValidateVolumesOutput{
-			Valid:  false,
-			Errors: []string{msg + ": " + err.Error()},
-		}, err
-	}
-
 	if input == nil {
-		return fail(errors.New("input is nil"), "input cannot be nil")
-	}
-	if input.DatabaseID == "" {
-		return fail(errors.New("invalid UUID"), "invalid database ID")
+		return nil, errors.New("input is nil")
 	}
 
 	logger = logger.With("database_id", input.DatabaseID)
 	logger.Info("starting volume validation")
 
 	if input.Spec == nil {
-		return fail(errors.New("spec is nil"), "spec is required for volume validation")
+		return nil, errors.New("spec is nil")
 	}
 
-	orch, err := do.Invoke[database.Orchestrator](a.Injector)
+	result, err := a.Orchestrator.ValidateVolumes(ctx, input.Spec)
 	if err != nil {
-		return fail(err, "failed to resolve orchestrator")
+		return nil, fmt.Errorf("volume validation failed: %w", err)
 	}
 
-	result, err := orch.ValidateVolumes(ctx, input.Spec)
-	if err != nil {
-		return fail(err, "volume validation failed")
-	}
-
-	logger.Info("volume validation completed", "success", result.Success)
+	logger.Info("volume validation completed", "success", result.Valid)
 	return &ValidateVolumesOutput{
-		Valid: result.Success,
+		HostID:   input.Spec.HostID,
+		NodeName: input.Spec.NodeName,
+		Valid:    result.Valid,
+		Error:    result.Error,
 	}, nil
 }

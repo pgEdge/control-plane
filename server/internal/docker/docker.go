@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/netip"
+	"strings"
 	"time"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
@@ -503,6 +504,27 @@ func ExtractNetworkInfo(info network.Inspect) (*NetworkInfo, error) {
 		Subnet:  subnet,
 		Gateway: gateway,
 	}, nil
+}
+
+// This is an unexported error type, so we have limited options to test for
+// it. This error message has been stable for 9 years, so it's likely safe
+// to rely on.
+// https://github.com/moby/moby/blob/cab4ac834e8bf36aa38a2ca49599773df6e6805a/volume/mounts/validate.go#L16
+const bindErrPrefix = `invalid mount config for type "bind":`
+
+// ExtractBindError extracts the bind error message from the given error if it
+// is a bind error. Otherwise, returns an empty string.
+func ExtractBindErrorMsg(err error) string {
+	if err == nil {
+		return ""
+	}
+	msg := err.Error()
+	idx := strings.Index(msg, bindErrPrefix)
+	if idx < 0 {
+		return ""
+	}
+
+	return strings.TrimPrefix(msg[idx:], bindErrPrefix)
 }
 
 // The docker errors are annoying to check further up in the stack since they
