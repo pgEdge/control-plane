@@ -1,6 +1,8 @@
 package host
 
 import (
+	"fmt"
+
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -19,11 +21,11 @@ func provideTicker(i *do.Injector) {
 	do.Provide(i, func(i *do.Injector) (*UpdateTicker, error) {
 		logger, err := do.Invoke[zerolog.Logger](i)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get logger: %w", err)
 		}
 		svc, err := do.Invoke[*Service](i)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get host service: %w", err)
 		}
 		return NewUpdateTicker(logger, svc), nil
 	})
@@ -33,19 +35,19 @@ func provideService(i *do.Injector) {
 	do.Provide(i, func(i *do.Injector) (*Service, error) {
 		cfg, err := do.Invoke[config.Config](i)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get config: %w", err)
 		}
 		embeddedEtcd, err := do.Invoke[*etcd.EmbeddedEtcd](i)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get embedded etcd: %w", err)
 		}
 		store, err := do.Invoke[*Store](i)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get host store: %w", err)
 		}
 		orchestrator, err := do.Invoke[Orchestrator](i)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get orchestrator: %w", err)
 		}
 		return NewService(cfg, embeddedEtcd, store, orchestrator), nil
 	})
@@ -55,11 +57,11 @@ func provideStore(i *do.Injector) {
 	do.Provide(i, func(i *do.Injector) (*Store, error) {
 		cfg, err := do.Invoke[config.Config](i)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get config: %w", err)
 		}
 		client, err := do.Invoke[*clientv3.Client](i)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get etcd client: %w", err)
 		}
 		return NewStore(client, cfg.EtcdKeyRoot), nil
 	})

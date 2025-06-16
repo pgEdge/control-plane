@@ -78,12 +78,9 @@ func (a *App) Run(ctx context.Context) error {
 }
 
 func (a *App) runPreInitialization(ctx context.Context) error {
-	svc, err := do.Invoke[*api.PreInitService](a.i)
-	if err != nil {
-		return fmt.Errorf("failed to initialize pre-init api service: %w", err)
+	if err := a.api.ServePreInit(ctx); err != nil {
+		return fmt.Errorf("failed to serve pre-init API: %w", err)
 	}
-
-	a.api.Serve(ctx, svc)
 
 	select {
 	case <-ctx.Done():
@@ -98,11 +95,9 @@ func (a *App) runPreInitialization(ctx context.Context) error {
 }
 
 func (a *App) runInitialized(ctx context.Context) error {
-	svc, err := do.Invoke[*api.Service](a.i)
-	if err != nil {
-		return fmt.Errorf("failed to initialize api service: %w", err)
+	if err := a.api.ServePostInit(ctx); err != nil {
+		return fmt.Errorf("failed to serve post-init API: %w", err)
 	}
-	a.api.Serve(ctx, svc)
 
 	certSvc, err := do.Invoke[*certificates.Service](a.i)
 	if err != nil {

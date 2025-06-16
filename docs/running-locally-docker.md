@@ -44,7 +44,7 @@ like the Control Plane API. It's not strictly required, but it is recommended.
 [Installation guide](https://rest.sh/#/guide)
 
 ```sh
-brew install danielgtaylor/restish/restish
+brew install rest-sh/tap/restish
 ```
 
 It's recommended to add this environment variable to your `.zshrc` as well to
