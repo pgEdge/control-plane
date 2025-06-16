@@ -74,10 +74,10 @@ func (c *PatroniConfig) Dependencies() []resource.Identifier {
 		PatroniMemberResourceIdentifier(c.Spec.InstanceID),
 		PatroniClusterResourceIdentifier(c.Spec.NodeName),
 	}
-	if c.Spec.RestoreConfig != nil && c.Spec.RestoreConfig.Provider == database.BackupProviderPgBackRest {
+	if c.Spec.RestoreConfig != nil {
 		deps = append(deps, PgBackRestConfigIdentifier(c.Spec.InstanceID, PgBackRestConfigTypeRestore))
 	}
-	if c.Spec.BackupConfig != nil && c.Spec.BackupConfig.Provider == database.BackupProviderPgBackRest {
+	if c.Spec.BackupConfig != nil {
 		deps = append(deps, PgBackRestConfigIdentifier(c.Spec.InstanceID, PgBackRestConfigTypeBackup))
 	}
 	return deps
@@ -224,7 +224,7 @@ func generatePatroniConfig(
 		"ssl_cert_file":            "/opt/pgedge/certificates/postgres/server.crt",
 		"ssl_key_file":             "/opt/pgedge/certificates/postgres/server.key",
 	})
-	if spec.BackupConfig != nil && spec.BackupConfig.Provider == database.BackupProviderPgBackRest {
+	if spec.BackupConfig != nil {
 		maps.Copy(parameters, map[string]any{
 			// It's safe to set this to "on" on every instance in the node
 			// because "on" (as opposed to "always") will only archive from the
@@ -442,7 +442,7 @@ func generatePatroniConfig(
 		},
 	}
 
-	if spec.RestoreConfig != nil && spec.RestoreConfig.Provider == database.BackupProviderPgBackRest {
+	if spec.RestoreConfig != nil {
 		restoreOptions := utils.BuildOptionArgs(spec.RestoreConfig.RestoreOptions)
 		cfg.Bootstrap.Method = utils.PointerTo(patroni.BootstrapMethodNameRestore)
 		cfg.Bootstrap.Restore = &patroni.BootstrapMethodConf{

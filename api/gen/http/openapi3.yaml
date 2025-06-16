@@ -392,7 +392,6 @@ paths:
                             id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                             spec:
                                 backup_config:
-                                    provider: pgbackrest
                                     repositories:
                                         - azure_account: pgedge-backups
                                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -462,7 +461,6 @@ paths:
                                       roles:
                                         - pgedge_superuser
                                       username: admin
-                                deletion_protection: true
                                 extra_volumes:
                                     - destination_path: /backups/container
                                       host_path: /Users/user/backups/host
@@ -470,12 +468,9 @@ paths:
                                       host_path: /Users/user/backups/host
                                     - destination_path: /backups/container
                                       host_path: /Users/user/backups/host
-                                features:
-                                    some_feature: enabled
                                 memory: 500M
                                 nodes:
                                     - backup_config:
-                                        provider: pgbackrest
                                         repositories:
                                             - azure_account: pgedge-backups
                                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -542,7 +537,6 @@ paths:
                                       postgresql_conf:
                                         max_connections: 1000
                                       restore_config:
-                                        provider: pgbackrest
                                         repository:
                                             azure_account: pgedge-backups
                                             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -568,10 +562,7 @@ paths:
                                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                         source_database_name: northwind
                                         source_node_name: n1
-                                      storage_class: loop_device
-                                      storage_size: 500GiB
                                     - backup_config:
-                                        provider: pgbackrest
                                         repositories:
                                             - azure_account: pgedge-backups
                                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -638,7 +629,6 @@ paths:
                                       postgresql_conf:
                                         max_connections: 1000
                                       restore_config:
-                                        provider: pgbackrest
                                         repository:
                                             azure_account: pgedge-backups
                                             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -664,10 +654,7 @@ paths:
                                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                         source_database_name: northwind
                                         source_node_name: n1
-                                      storage_class: loop_device
-                                      storage_size: 500GiB
                                     - backup_config:
-                                        provider: pgbackrest
                                         repositories:
                                             - azure_account: pgedge-backups
                                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -734,7 +721,6 @@ paths:
                                       postgresql_conf:
                                         max_connections: 1000
                                       restore_config:
-                                        provider: pgbackrest
                                         repository:
                                             azure_account: pgedge-backups
                                             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -760,14 +746,11 @@ paths:
                                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                         source_database_name: northwind
                                         source_node_name: n1
-                                      storage_class: loop_device
-                                      storage_size: 500GiB
                                 port: 5432
                                 postgres_version: "17"
                                 postgresql_conf:
                                     max_connections: 1000
                                 restore_config:
-                                    provider: pgbackrest
                                     repository:
                                         azure_account: pgedge-backups
                                         azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -794,8 +777,6 @@ paths:
                                     source_database_name: northwind
                                     source_node_name: n1
                                 spock_version: "4"
-                                storage_class: loop_device
-                                storage_size: 500GiB
                             tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
             responses:
                 "200":
@@ -879,7 +860,6 @@ paths:
                                           updated_at: "2003-08-09T22:13:38Z"
                                     spec:
                                         backup_config:
-                                            provider: pgbackrest
                                             repositories:
                                                 - azure_account: pgedge-backups
                                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -975,18 +955,14 @@ paths:
                                               roles:
                                                 - pgedge_superuser
                                               username: admin
-                                        deletion_protection: true
                                         extra_volumes:
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
-                                        features:
-                                            some_feature: enabled
                                         memory: 500M
                                         nodes:
                                             - backup_config:
-                                                provider: pgbackrest
                                                 repositories:
                                                     - azure_account: pgedge-backups
                                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -1079,7 +1055,6 @@ paths:
                                               postgresql_conf:
                                                 max_connections: 1000
                                               restore_config:
-                                                provider: pgbackrest
                                                 repository:
                                                     azure_account: pgedge-backups
                                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -1105,10 +1080,7 @@ paths:
                                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                                 source_database_name: northwind
                                                 source_node_name: n1
-                                              storage_class: loop_device
-                                              storage_size: 500GiB
                                             - backup_config:
-                                                provider: pgbackrest
                                                 repositories:
                                                     - azure_account: pgedge-backups
                                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -1201,7 +1173,6 @@ paths:
                                               postgresql_conf:
                                                 max_connections: 1000
                                               restore_config:
-                                                provider: pgbackrest
                                                 repository:
                                                     azure_account: pgedge-backups
                                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -1227,10 +1198,7 @@ paths:
                                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                                 source_database_name: northwind
                                                 source_node_name: n1
-                                              storage_class: loop_device
-                                              storage_size: 500GiB
                                             - backup_config:
-                                                provider: pgbackrest
                                                 repositories:
                                                     - azure_account: pgedge-backups
                                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -1323,7 +1291,6 @@ paths:
                                               postgresql_conf:
                                                 max_connections: 1000
                                               restore_config:
-                                                provider: pgbackrest
                                                 repository:
                                                     azure_account: pgedge-backups
                                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -1349,14 +1316,11 @@ paths:
                                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                                 source_database_name: northwind
                                                 source_node_name: n1
-                                              storage_class: loop_device
-                                              storage_size: 500GiB
                                         port: 5432
                                         postgres_version: "17"
                                         postgresql_conf:
                                             max_connections: 1000
                                         restore_config:
-                                            provider: pgbackrest
                                             repository:
                                                 azure_account: pgedge-backups
                                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -1383,8 +1347,6 @@ paths:
                                             source_database_name: northwind
                                             source_node_name: n1
                                         spock_version: "4"
-                                        storage_class: loop_device
-                                        storage_size: 500GiB
                                     state: modifying
                                     tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                                     updated_at: "2025-01-01T02:30:00Z"
@@ -1666,7 +1628,6 @@ paths:
                                       updated_at: "1991-01-13T22:07:17Z"
                                 spec:
                                     backup_config:
-                                        provider: pgbackrest
                                         repositories:
                                             - azure_account: pgedge-backups
                                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -1748,7 +1709,6 @@ paths:
                                           roles:
                                             - pgedge_superuser
                                           username: admin
-                                    deletion_protection: true
                                     extra_volumes:
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
@@ -1758,12 +1718,9 @@ paths:
                                           host_path: /Users/user/backups/host
                                         - destination_path: /backups/container
                                           host_path: /Users/user/backups/host
-                                    features:
-                                        some_feature: enabled
                                     memory: 500M
                                     nodes:
                                         - backup_config:
-                                            provider: pgbackrest
                                             repositories:
                                                 - azure_account: pgedge-backups
                                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -1831,7 +1788,6 @@ paths:
                                           postgresql_conf:
                                             max_connections: 1000
                                           restore_config:
-                                            provider: pgbackrest
                                             repository:
                                                 azure_account: pgedge-backups
                                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -1857,10 +1813,7 @@ paths:
                                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                             source_database_name: northwind
                                             source_node_name: n1
-                                          storage_class: loop_device
-                                          storage_size: 500GiB
                                         - backup_config:
-                                            provider: pgbackrest
                                             repositories:
                                                 - azure_account: pgedge-backups
                                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -1928,7 +1881,6 @@ paths:
                                           postgresql_conf:
                                             max_connections: 1000
                                           restore_config:
-                                            provider: pgbackrest
                                             repository:
                                                 azure_account: pgedge-backups
                                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -1954,10 +1906,7 @@ paths:
                                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                             source_database_name: northwind
                                             source_node_name: n1
-                                          storage_class: loop_device
-                                          storage_size: 500GiB
                                         - backup_config:
-                                            provider: pgbackrest
                                             repositories:
                                                 - azure_account: pgedge-backups
                                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -2025,7 +1974,6 @@ paths:
                                           postgresql_conf:
                                             max_connections: 1000
                                           restore_config:
-                                            provider: pgbackrest
                                             repository:
                                                 azure_account: pgedge-backups
                                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -2051,10 +1999,7 @@ paths:
                                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                             source_database_name: northwind
                                             source_node_name: n1
-                                          storage_class: loop_device
-                                          storage_size: 500GiB
                                         - backup_config:
-                                            provider: pgbackrest
                                             repositories:
                                                 - azure_account: pgedge-backups
                                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -2122,7 +2067,6 @@ paths:
                                           postgresql_conf:
                                             max_connections: 1000
                                           restore_config:
-                                            provider: pgbackrest
                                             repository:
                                                 azure_account: pgedge-backups
                                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -2148,14 +2092,11 @@ paths:
                                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                             source_database_name: northwind
                                             source_node_name: n1
-                                          storage_class: loop_device
-                                          storage_size: 500GiB
                                     port: 5432
                                     postgres_version: "17"
                                     postgresql_conf:
                                         max_connections: 1000
                                     restore_config:
-                                        provider: pgbackrest
                                         repository:
                                             azure_account: pgedge-backups
                                             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -2182,8 +2123,6 @@ paths:
                                         source_database_name: northwind
                                         source_node_name: n1
                                     spock_version: "4"
-                                    storage_class: loop_device
-                                    storage_size: 500GiB
                                 state: available
                                 tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                                 updated_at: "2025-01-01T02:30:00Z"
@@ -2257,7 +2196,6 @@ paths:
                         example:
                             spec:
                                 backup_config:
-                                    provider: pgbackrest
                                     repositories:
                                         - azure_account: pgedge-backups
                                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -2371,18 +2309,14 @@ paths:
                                       roles:
                                         - pgedge_superuser
                                       username: admin
-                                deletion_protection: true
                                 extra_volumes:
                                     - destination_path: /backups/container
                                       host_path: /Users/user/backups/host
                                     - destination_path: /backups/container
                                       host_path: /Users/user/backups/host
-                                features:
-                                    some_feature: enabled
                                 memory: 500M
                                 nodes:
                                     - backup_config:
-                                        provider: pgbackrest
                                         repositories:
                                             - azure_account: pgedge-backups
                                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -2477,7 +2411,6 @@ paths:
                                       postgresql_conf:
                                         max_connections: 1000
                                       restore_config:
-                                        provider: pgbackrest
                                         repository:
                                             azure_account: pgedge-backups
                                             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -2503,10 +2436,7 @@ paths:
                                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                         source_database_name: northwind
                                         source_node_name: n1
-                                      storage_class: loop_device
-                                      storage_size: 500GiB
                                     - backup_config:
-                                        provider: pgbackrest
                                         repositories:
                                             - azure_account: pgedge-backups
                                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -2601,7 +2531,6 @@ paths:
                                       postgresql_conf:
                                         max_connections: 1000
                                       restore_config:
-                                        provider: pgbackrest
                                         repository:
                                             azure_account: pgedge-backups
                                             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -2627,10 +2556,7 @@ paths:
                                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                         source_database_name: northwind
                                         source_node_name: n1
-                                      storage_class: loop_device
-                                      storage_size: 500GiB
                                     - backup_config:
-                                        provider: pgbackrest
                                         repositories:
                                             - azure_account: pgedge-backups
                                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -2725,7 +2651,6 @@ paths:
                                       postgresql_conf:
                                         max_connections: 1000
                                       restore_config:
-                                        provider: pgbackrest
                                         repository:
                                             azure_account: pgedge-backups
                                             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -2751,10 +2676,7 @@ paths:
                                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                         source_database_name: northwind
                                         source_node_name: n1
-                                      storage_class: loop_device
-                                      storage_size: 500GiB
                                     - backup_config:
-                                        provider: pgbackrest
                                         repositories:
                                             - azure_account: pgedge-backups
                                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -2849,7 +2771,6 @@ paths:
                                       postgresql_conf:
                                         max_connections: 1000
                                       restore_config:
-                                        provider: pgbackrest
                                         repository:
                                             azure_account: pgedge-backups
                                             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -2875,14 +2796,11 @@ paths:
                                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                         source_database_name: northwind
                                         source_node_name: n1
-                                      storage_class: loop_device
-                                      storage_size: 500GiB
                                 port: 5432
                                 postgres_version: "17"
                                 postgresql_conf:
                                     max_connections: 1000
                                 restore_config:
-                                    provider: pgbackrest
                                     repository:
                                         azure_account: pgedge-backups
                                         azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -2909,8 +2827,6 @@ paths:
                                     source_database_name: northwind
                                     source_node_name: n1
                                 spock_version: "4"
-                                storage_class: loop_device
-                                storage_size: 500GiB
                             tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
             responses:
                 "200":
@@ -2994,7 +2910,6 @@ paths:
                                           updated_at: "2003-08-09T22:13:38Z"
                                     spec:
                                         backup_config:
-                                            provider: pgbackrest
                                             repositories:
                                                 - azure_account: pgedge-backups
                                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -3090,18 +3005,14 @@ paths:
                                               roles:
                                                 - pgedge_superuser
                                               username: admin
-                                        deletion_protection: true
                                         extra_volumes:
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
-                                        features:
-                                            some_feature: enabled
                                         memory: 500M
                                         nodes:
                                             - backup_config:
-                                                provider: pgbackrest
                                                 repositories:
                                                     - azure_account: pgedge-backups
                                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -3194,7 +3105,6 @@ paths:
                                               postgresql_conf:
                                                 max_connections: 1000
                                               restore_config:
-                                                provider: pgbackrest
                                                 repository:
                                                     azure_account: pgedge-backups
                                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -3220,10 +3130,7 @@ paths:
                                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                                 source_database_name: northwind
                                                 source_node_name: n1
-                                              storage_class: loop_device
-                                              storage_size: 500GiB
                                             - backup_config:
-                                                provider: pgbackrest
                                                 repositories:
                                                     - azure_account: pgedge-backups
                                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -3316,7 +3223,6 @@ paths:
                                               postgresql_conf:
                                                 max_connections: 1000
                                               restore_config:
-                                                provider: pgbackrest
                                                 repository:
                                                     azure_account: pgedge-backups
                                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -3342,10 +3248,7 @@ paths:
                                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                                 source_database_name: northwind
                                                 source_node_name: n1
-                                              storage_class: loop_device
-                                              storage_size: 500GiB
                                             - backup_config:
-                                                provider: pgbackrest
                                                 repositories:
                                                     - azure_account: pgedge-backups
                                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -3438,7 +3341,6 @@ paths:
                                               postgresql_conf:
                                                 max_connections: 1000
                                               restore_config:
-                                                provider: pgbackrest
                                                 repository:
                                                     azure_account: pgedge-backups
                                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -3464,14 +3366,11 @@ paths:
                                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                                 source_database_name: northwind
                                                 source_node_name: n1
-                                              storage_class: loop_device
-                                              storage_size: 500GiB
                                         port: 5432
                                         postgres_version: "17"
                                         postgresql_conf:
                                             max_connections: 1000
                                         restore_config:
-                                            provider: pgbackrest
                                             repository:
                                                 azure_account: pgedge-backups
                                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -3498,8 +3397,6 @@ paths:
                                             source_database_name: northwind
                                             source_node_name: n1
                                         spock_version: "4"
-                                        storage_class: loop_device
-                                        storage_size: 500GiB
                                     state: modifying
                                     tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                                     updated_at: "2025-01-01T02:30:00Z"
@@ -3672,7 +3569,6 @@ paths:
                             $ref: '#/components/schemas/RestoreDatabaseRequest'
                         example:
                             restore_config:
-                                provider: pgbackrest
                                 repository:
                                     azure_account: pgedge-backups
                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -3782,7 +3678,6 @@ paths:
                                           updated_at: "2003-08-09T22:13:38Z"
                                     spec:
                                         backup_config:
-                                            provider: pgbackrest
                                             repositories:
                                                 - azure_account: pgedge-backups
                                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -3878,18 +3773,14 @@ paths:
                                               roles:
                                                 - pgedge_superuser
                                               username: admin
-                                        deletion_protection: true
                                         extra_volumes:
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
                                             - destination_path: /backups/container
                                               host_path: /Users/user/backups/host
-                                        features:
-                                            some_feature: enabled
                                         memory: 500M
                                         nodes:
                                             - backup_config:
-                                                provider: pgbackrest
                                                 repositories:
                                                     - azure_account: pgedge-backups
                                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -3982,7 +3873,6 @@ paths:
                                               postgresql_conf:
                                                 max_connections: 1000
                                               restore_config:
-                                                provider: pgbackrest
                                                 repository:
                                                     azure_account: pgedge-backups
                                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -4008,10 +3898,7 @@ paths:
                                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                                 source_database_name: northwind
                                                 source_node_name: n1
-                                              storage_class: loop_device
-                                              storage_size: 500GiB
                                             - backup_config:
-                                                provider: pgbackrest
                                                 repositories:
                                                     - azure_account: pgedge-backups
                                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -4104,7 +3991,6 @@ paths:
                                               postgresql_conf:
                                                 max_connections: 1000
                                               restore_config:
-                                                provider: pgbackrest
                                                 repository:
                                                     azure_account: pgedge-backups
                                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -4130,10 +4016,7 @@ paths:
                                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                                 source_database_name: northwind
                                                 source_node_name: n1
-                                              storage_class: loop_device
-                                              storage_size: 500GiB
                                             - backup_config:
-                                                provider: pgbackrest
                                                 repositories:
                                                     - azure_account: pgedge-backups
                                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -4226,7 +4109,6 @@ paths:
                                               postgresql_conf:
                                                 max_connections: 1000
                                               restore_config:
-                                                provider: pgbackrest
                                                 repository:
                                                     azure_account: pgedge-backups
                                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -4252,14 +4134,11 @@ paths:
                                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                                 source_database_name: northwind
                                                 source_node_name: n1
-                                              storage_class: loop_device
-                                              storage_size: 500GiB
                                         port: 5432
                                         postgres_version: "17"
                                         postgresql_conf:
                                             max_connections: 1000
                                         restore_config:
-                                            provider: pgbackrest
                                             repository:
                                                 azure_account: pgedge-backups
                                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -4286,8 +4165,6 @@ paths:
                                             source_database_name: northwind
                                             source_node_name: n1
                                         spock_version: "4"
-                                        storage_class: loop_device
-                                        storage_size: 500GiB
                                     state: modifying
                                     tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                                     updated_at: "2025-01-01T02:30:00Z"
@@ -4470,29 +4347,7 @@ paths:
                                       status: pending
                                       task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
                                       type: restore
-                                    - completed_at: "2025-01-01T02:30:00Z"
-                                      created_at: "2025-01-01T01:30:00Z"
-                                      database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-                                      error: failed to connect to database
-                                      host_id: 2e52dcde-86d8-4f71-b58e-8dc3a10c936a
-                                      instance_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
-                                      node_name: n1
-                                      parent_id: 439eb515-e700-4740-b508-4a3f12ec4f83
-                                      status: pending
-                                      task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
-                                      type: restore
                             example:
-                                - completed_at: "2025-01-01T02:30:00Z"
-                                  created_at: "2025-01-01T01:30:00Z"
-                                  database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-                                  error: failed to connect to database
-                                  host_id: 2e52dcde-86d8-4f71-b58e-8dc3a10c936a
-                                  instance_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
-                                  node_name: n1
-                                  parent_id: 439eb515-e700-4740-b508-4a3f12ec4f83
-                                  status: pending
-                                  task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
-                                  type: restore
                                 - completed_at: "2025-01-01T02:30:00Z"
                                   created_at: "2025-01-01T01:30:00Z"
                                   database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
@@ -4956,6 +4811,37 @@ paths:
                                       spock_version: "4"
                                     - postgres_version: "16"
                                       spock_version: "4"
+                                - cohort:
+                                    cohort_id: pps1n11hqijn9rbee4cjil453
+                                    control_available: true
+                                    member_id: lah4bsznw6kc0hp7biylmmmll
+                                    type: swarm
+                                  cpus: 4
+                                  default_pgedge_version:
+                                    postgres_version: "16"
+                                    spock_version: "4"
+                                  hostname: i-0123456789abcdef.ec2.internal
+                                  id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                                  ipv4_address: 10.24.34.0
+                                  memory: 16GiB
+                                  orchestrator: swarm
+                                  status:
+                                    components:
+                                        Expedita quia debitis in.:
+                                            details:
+                                                alarms:
+                                                    - '3: NOSPACE'
+                                            error: failed to connect to etcd
+                                            healthy: false
+                                    state: available
+                                    updated_at: "2021-07-01T12:34:56Z"
+                                  supported_pgedge_versions:
+                                    - postgres_version: "16"
+                                      spock_version: "4"
+                                    - postgres_version: "16"
+                                      spock_version: "4"
+                                    - postgres_version: "16"
+                                      spock_version: "4"
                 "409":
                     description: 'cluster_not_initialized: Conflict response.'
                     content:
@@ -5165,34 +5051,47 @@ components:
                 message:
                     type: string
                     description: The error message.
-                    example: Consectetur facilis autem molestiae voluptatem velit.
+                    example: Rerum at eveniet consectetur facilis autem molestiae.
                 name:
                     type: string
                     description: The name of the error.
-                    example: Qui excepturi debitis aperiam rerum at.
+                    example: Facere est mollitia qui excepturi debitis.
             description: A Control Plane API error.
             example:
-                message: Sed delectus vel ut distinctio expedita.
-                name: Sed alias est mollitia praesentium possimus id.
+                message: Id laudantium sed delectus vel ut distinctio.
+                name: Velit dolorem sed alias est mollitia praesentium.
             required:
                 - name
                 - message
         BackupConfigSpec:
             type: object
             properties:
-                provider:
-                    type: string
-                    description: The backup provider for this backup configuration.
-                    default: pgbackrest
-                    example: pgbackrest
-                    enum:
-                        - pgbackrest
                 repositories:
                     type: array
                     items:
                         $ref: '#/components/schemas/BackupRepositorySpec'
                     description: The repositories for this backup configuration.
                     example:
+                        - azure_account: pgedge-backups
+                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          azure_endpoint: blob.core.usgovcloudapi.net
+                          azure_key: YXpLZXk=
+                          base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
+                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          gcs_endpoint: localhost
+                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                          retention_full: 2
+                          retention_full_type: count
+                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          s3_endpoint: s3.us-east-1.amazonaws.com
+                          s3_key: AKIAIOSFODNN7EXAMPLE
+                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                          s3_region: us-east-1
+                          type: s3
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                           azure_endpoint: blob.core.usgovcloudapi.net
@@ -5227,28 +5126,7 @@ components:
                           id: daily-full-backup
                           type: full
             example:
-                provider: pgbackrest
                 repositories:
-                    - azure_account: pgedge-backups
-                      azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      azure_endpoint: blob.core.usgovcloudapi.net
-                      azure_key: YXpLZXk=
-                      base_path: /backups
-                      custom_options:
-                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                        storage-upload-chunk-size: 5MiB
-                      gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      gcs_endpoint: localhost
-                      gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                      id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                      retention_full: 2
-                      retention_full_type: count
-                      s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      s3_endpoint: s3.us-east-1.amazonaws.com
-                      s3_key: AKIAIOSFODNN7EXAMPLE
-                      s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                      s3_region: us-east-1
-                      type: s3
                     - azure_account: pgedge-backups
                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                       azure_endpoint: blob.core.usgovcloudapi.net
@@ -5306,7 +5184,7 @@ components:
                         key: value
                     additionalProperties:
                         type: string
-                        example: Cumque esse odit placeat.
+                        example: Maiores cumque esse.
                 backup_options:
                     type: object
                     description: Options for the backup.
@@ -5314,7 +5192,7 @@ components:
                         archive-check: "n"
                     additionalProperties:
                         type: string
-                        example: Facere possimus sit commodi in dolor.
+                        example: Placeat quod facere possimus sit commodi in.
                 type:
                     type: string
                     description: The type of backup.
@@ -5362,7 +5240,7 @@ components:
                         storage-upload-chunk-size: 5MiB
                     additionalProperties:
                         type: string
-                        example: Id natus aut.
+                        example: Esse id natus aut omnis minus.
                 gcs_bucket:
                     type: string
                     description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -5614,6 +5492,51 @@ components:
                               spock_version: "4"
                             - postgres_version: "16"
                               spock_version: "4"
+                        - cohort:
+                            cohort_id: pps1n11hqijn9rbee4cjil453
+                            control_available: true
+                            member_id: lah4bsznw6kc0hp7biylmmmll
+                            type: swarm
+                          cpus: 4
+                          default_pgedge_version:
+                            postgres_version: "16"
+                            spock_version: "4"
+                          hostname: i-0123456789abcdef.ec2.internal
+                          id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                          ipv4_address: 10.24.34.0
+                          memory: 16GiB
+                          orchestrator: swarm
+                          status:
+                            components:
+                                Dolorem veniam non.:
+                                    details:
+                                        alarms:
+                                            - '3: NOSPACE'
+                                    error: failed to connect to etcd
+                                    healthy: false
+                                Et voluptatum ex ea.:
+                                    details:
+                                        alarms:
+                                            - '3: NOSPACE'
+                                    error: failed to connect to etcd
+                                    healthy: false
+                                Nostrum repellendus sint qui qui.:
+                                    details:
+                                        alarms:
+                                            - '3: NOSPACE'
+                                    error: failed to connect to etcd
+                                    healthy: false
+                            state: available
+                            updated_at: "2021-07-01T12:34:56Z"
+                          supported_pgedge_versions:
+                            - postgres_version: "16"
+                              spock_version: "4"
+                            - postgres_version: "16"
+                              spock_version: "4"
+                            - postgres_version: "16"
+                              spock_version: "4"
+                            - postgres_version: "16"
+                              spock_version: "4"
                 id:
                     type: string
                     description: Unique identifier for the cluster.
@@ -5628,51 +5551,6 @@ components:
                     format: uuid
             example:
                 hosts:
-                    - cohort:
-                        cohort_id: pps1n11hqijn9rbee4cjil453
-                        control_available: true
-                        member_id: lah4bsznw6kc0hp7biylmmmll
-                        type: swarm
-                      cpus: 4
-                      default_pgedge_version:
-                        postgres_version: "16"
-                        spock_version: "4"
-                      hostname: i-0123456789abcdef.ec2.internal
-                      id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      ipv4_address: 10.24.34.0
-                      memory: 16GiB
-                      orchestrator: swarm
-                      status:
-                        components:
-                            Dolorem veniam non.:
-                                details:
-                                    alarms:
-                                        - '3: NOSPACE'
-                                error: failed to connect to etcd
-                                healthy: false
-                            Et voluptatum ex ea.:
-                                details:
-                                    alarms:
-                                        - '3: NOSPACE'
-                                error: failed to connect to etcd
-                                healthy: false
-                            Nostrum repellendus sint qui qui.:
-                                details:
-                                    alarms:
-                                        - '3: NOSPACE'
-                                error: failed to connect to etcd
-                                healthy: false
-                        state: available
-                        updated_at: "2021-07-01T12:34:56Z"
-                      supported_pgedge_versions:
-                        - postgres_version: "16"
-                          spock_version: "4"
-                        - postgres_version: "16"
-                          spock_version: "4"
-                        - postgres_version: "16"
-                          spock_version: "4"
-                        - postgres_version: "16"
-                          spock_version: "4"
                     - cohort:
                         cohort_id: pps1n11hqijn9rbee4cjil453
                         control_available: true
@@ -5963,7 +5841,7 @@ components:
                 state:
                     type: string
                     description: Current state of the database.
-                    example: deleting
+                    example: degraded
                     enum:
                         - creating
                         - modifying
@@ -6124,7 +6002,6 @@ components:
                       updated_at: "1991-01-13T22:07:17Z"
                 spec:
                     backup_config:
-                        provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -6206,7 +6083,6 @@ components:
                           roles:
                             - pgedge_superuser
                           username: admin
-                    deletion_protection: true
                     extra_volumes:
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
@@ -6216,12 +6092,9 @@ components:
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
-                    features:
-                        some_feature: enabled
                     memory: 500M
                     nodes:
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -6289,7 +6162,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -6315,10 +6187,7 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -6386,7 +6255,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -6412,10 +6280,7 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -6483,7 +6348,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -6509,10 +6373,7 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -6580,7 +6441,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -6606,14 +6466,11 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                     port: 5432
                     postgres_version: "17"
                     postgresql_conf:
                         max_connections: 1000
                     restore_config:
-                        provider: pgbackrest
                         repository:
                             azure_account: pgedge-backups
                             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -6640,9 +6497,7 @@ components:
                         source_database_name: northwind
                         source_node_name: n1
                     spock_version: "4"
-                    storage_class: loop_device
-                    storage_size: 500GiB
-                state: unknown
+                state: available
                 tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                 updated_at: "2025-01-01T02:30:00Z"
             required:
@@ -6669,7 +6524,6 @@ components:
                 id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                 spec:
                     backup_config:
-                        provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -6765,18 +6619,14 @@ components:
                           roles:
                             - pgedge_superuser
                           username: admin
-                    deletion_protection: true
                     extra_volumes:
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
-                    features:
-                        some_feature: enabled
                     memory: 500M
                     nodes:
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -6869,7 +6719,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -6895,10 +6744,7 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -6991,7 +6837,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -7017,10 +6862,7 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -7113,7 +6955,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -7139,14 +6980,11 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                     port: 5432
                     postgres_version: "17"
                     postgresql_conf:
                         max_connections: 1000
                     restore_config:
-                        provider: pgbackrest
                         repository:
                             azure_account: pgedge-backups
                             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -7173,8 +7011,6 @@ components:
                         source_database_name: northwind
                         source_node_name: n1
                     spock_version: "4"
-                    storage_class: loop_device
-                    storage_size: 500GiB
                 tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
         CreateDatabaseResponse:
             type: object
@@ -7258,7 +7094,6 @@ components:
                           updated_at: "2003-08-09T22:13:38Z"
                     spec:
                         backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -7354,18 +7189,14 @@ components:
                               roles:
                                 - pgedge_superuser
                               username: admin
-                        deletion_protection: true
                         extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
-                        features:
-                            some_feature: enabled
                         memory: 500M
                         nodes:
                             - backup_config:
-                                provider: pgbackrest
                                 repositories:
                                     - azure_account: pgedge-backups
                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -7458,7 +7289,6 @@ components:
                               postgresql_conf:
                                 max_connections: 1000
                               restore_config:
-                                provider: pgbackrest
                                 repository:
                                     azure_account: pgedge-backups
                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -7484,10 +7314,7 @@ components:
                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                 source_database_name: northwind
                                 source_node_name: n1
-                              storage_class: loop_device
-                              storage_size: 500GiB
                             - backup_config:
-                                provider: pgbackrest
                                 repositories:
                                     - azure_account: pgedge-backups
                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -7580,7 +7407,6 @@ components:
                               postgresql_conf:
                                 max_connections: 1000
                               restore_config:
-                                provider: pgbackrest
                                 repository:
                                     azure_account: pgedge-backups
                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -7606,10 +7432,7 @@ components:
                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                 source_database_name: northwind
                                 source_node_name: n1
-                              storage_class: loop_device
-                              storage_size: 500GiB
                             - backup_config:
-                                provider: pgbackrest
                                 repositories:
                                     - azure_account: pgedge-backups
                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -7702,7 +7525,6 @@ components:
                               postgresql_conf:
                                 max_connections: 1000
                               restore_config:
-                                provider: pgbackrest
                                 repository:
                                     azure_account: pgedge-backups
                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -7728,14 +7550,11 @@ components:
                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                 source_database_name: northwind
                                 source_node_name: n1
-                              storage_class: loop_device
-                              storage_size: 500GiB
                         port: 5432
                         postgres_version: "17"
                         postgresql_conf:
                             max_connections: 1000
                         restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -7762,8 +7581,6 @@ components:
                             source_database_name: northwind
                             source_node_name: n1
                         spock_version: "4"
-                        storage_class: loop_device
-                        storage_size: 500GiB
                     state: modifying
                     tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                     updated_at: "2025-01-01T02:30:00Z"
@@ -7799,7 +7616,7 @@ components:
                 state:
                     type: string
                     description: Current state of the database.
-                    example: degraded
+                    example: modifying
                     enum:
                         - creating
                         - modifying
@@ -7891,7 +7708,6 @@ components:
                       updated_at: "2003-08-09T22:13:38Z"
                 spec:
                     backup_config:
-                        provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -7987,18 +7803,14 @@ components:
                           roles:
                             - pgedge_superuser
                           username: admin
-                    deletion_protection: true
                     extra_volumes:
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
-                    features:
-                        some_feature: enabled
                     memory: 500M
                     nodes:
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -8091,7 +7903,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -8117,10 +7928,7 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -8213,7 +8021,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -8239,10 +8046,7 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -8335,7 +8139,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -8361,14 +8164,11 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                     port: 5432
                     postgres_version: "17"
                     postgresql_conf:
                         max_connections: 1000
                     restore_config:
-                        provider: pgbackrest
                         repository:
                             azure_account: pgedge-backups
                             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -8395,9 +8195,7 @@ components:
                         source_database_name: northwind
                         source_node_name: n1
                     spock_version: "4"
-                    storage_class: loop_device
-                    storage_size: 500GiB
-                state: degraded
+                state: available
                 tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                 updated_at: "2025-01-01T02:30:00Z"
             required:
@@ -8468,17 +8266,8 @@ components:
                     additionalProperties: true
                 restore_config:
                     $ref: '#/components/schemas/RestoreConfigSpec'
-                storage_class:
-                    type: string
-                    description: The storage class to use for the database on this node. The possible values and defaults depend on the orchestrator.
-                    example: loop_device
-                storage_size:
-                    type: string
-                    description: The size of the storage for this node in SI or IEC notation. Support for this value depends on the orchestrator and storage class.
-                    example: 500GiB
             example:
                 backup_config:
-                    provider: pgbackrest
                     repositories:
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -8571,7 +8360,6 @@ components:
                 postgresql_conf:
                     max_connections: 1000
                 restore_config:
-                    provider: pgbackrest
                     repository:
                         azure_account: pgedge-backups
                         azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -8597,8 +8385,6 @@ components:
                     source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                     source_database_name: northwind
                     source_node_name: n1
-                storage_class: loop_device
-                storage_size: 500GiB
             required:
                 - name
                 - host_ids
@@ -8632,7 +8418,7 @@ components:
                 state:
                     type: string
                     description: Current state of the database.
-                    example: creating
+                    example: deleting
                     enum:
                         - creating
                         - modifying
@@ -8671,7 +8457,7 @@ components:
                       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                       node_name: n1
                       state: unknown
-                state: modifying
+                state: unknown
                 tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                 updated_at: "2025-01-01T02:30:00Z"
             required:
@@ -8685,50 +8471,6 @@ components:
                 $ref: '#/components/schemas/DatabaseResponseAbbreviated'
             description: List-DatabasesResponseBody is the result type for an array of DatabaseResponse (abbreviated view)
             example:
-                - created_at: "2025-01-01T01:30:00Z"
-                  id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-                  instances:
-                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      node_name: n1
-                      state: unknown
-                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      node_name: n1
-                      state: unknown
-                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      node_name: n1
-                      state: unknown
-                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      node_name: n1
-                      state: unknown
-                  state: creating
-                  tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
-                  updated_at: "2025-01-01T02:30:00Z"
-                - created_at: "2025-01-01T01:30:00Z"
-                  id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-                  instances:
-                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      node_name: n1
-                      state: unknown
-                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      node_name: n1
-                      state: unknown
-                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      node_name: n1
-                      state: unknown
-                    - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                      id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                      node_name: n1
-                      state: unknown
-                  state: creating
-                  tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
-                  updated_at: "2025-01-01T02:30:00Z"
                 - created_at: "2025-01-01T01:30:00Z"
                   id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                   instances:
@@ -8810,10 +8552,6 @@ components:
                           roles:
                             - pgedge_superuser
                           username: admin
-                deletion_protection:
-                    type: boolean
-                    description: Prevents deletion when true.
-                    example: true
                 extra_volumes:
                     type: array
                     items:
@@ -8824,16 +8562,6 @@ components:
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                features:
-                    type: object
-                    description: The feature flags for this database.
-                    example:
-                        some_feature: enabled
-                    additionalProperties:
-                        type: string
-                        example: Aut dolorum.
                 memory:
                     type: string
                     description: The amount of memory in SI or IEC notation to allocate for the database and to use for tuning Postgres. Defaults to the total available memory on the host. Whether this limit will be enforced depends on the orchestrator.
@@ -8845,7 +8573,6 @@ components:
                     description: The Spock nodes for this database.
                     example:
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -8938,7 +8665,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -8964,10 +8690,7 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -9060,7 +8783,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -9086,10 +8808,7 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -9182,7 +8901,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -9208,10 +8926,7 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -9304,7 +9019,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -9330,8 +9044,6 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                 port:
                     type: integer
                     description: The port used by the Postgres database.
@@ -9358,17 +9070,8 @@ components:
                     example: "4"
                     enum:
                         - "4"
-                storage_class:
-                    type: string
-                    description: The storage class to use for the database. The possible values and defaults depend on the orchestrator.
-                    example: loop_device
-                storage_size:
-                    type: string
-                    description: The size of the storage in SI or IEC notation. Support for this value depends on the orchestrator and storage class.
-                    example: 500GiB
             example:
                 backup_config:
-                    provider: pgbackrest
                     repositories:
                         - azure_account: pgedge-backups
                           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -9482,18 +9185,16 @@ components:
                       roles:
                         - pgedge_superuser
                       username: admin
-                deletion_protection: true
                 extra_volumes:
                     - destination_path: /backups/container
                       host_path: /Users/user/backups/host
                     - destination_path: /backups/container
                       host_path: /Users/user/backups/host
-                features:
-                    some_feature: enabled
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
                 memory: 500M
                 nodes:
                     - backup_config:
-                        provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -9586,7 +9287,6 @@ components:
                       postgresql_conf:
                         max_connections: 1000
                       restore_config:
-                        provider: pgbackrest
                         repository:
                             azure_account: pgedge-backups
                             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -9612,10 +9312,7 @@ components:
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
-                      storage_class: loop_device
-                      storage_size: 500GiB
                     - backup_config:
-                        provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -9708,7 +9405,6 @@ components:
                       postgresql_conf:
                         max_connections: 1000
                       restore_config:
-                        provider: pgbackrest
                         repository:
                             azure_account: pgedge-backups
                             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -9734,14 +9430,11 @@ components:
                         source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                         source_database_name: northwind
                         source_node_name: n1
-                      storage_class: loop_device
-                      storage_size: 500GiB
                 port: 5432
                 postgres_version: "17"
                 postgresql_conf:
                     max_connections: 1000
                 restore_config:
-                    provider: pgbackrest
                     repository:
                         azure_account: pgedge-backups
                         azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -9768,8 +9461,6 @@ components:
                     source_database_name: northwind
                     source_node_name: n1
                 spock_version: "4"
-                storage_class: loop_device
-                storage_size: 500GiB
             required:
                 - database_name
                 - nodes
@@ -9780,7 +9471,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Sint cumque quia non.
+                        example: Ut sint cumque quia non enim.
                     description: The attributes to assign to this database user.
                     example:
                         - LOGIN
@@ -9789,7 +9480,7 @@ components:
                 db_owner:
                     type: boolean
                     description: If true, this user will be granted database ownership.
-                    example: false
+                    example: true
                 password:
                     type: string
                     description: The password for this database user.
@@ -9798,7 +9489,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Perferendis doloremque nam cumque.
+                        example: Doloremque nam.
                     description: The roles to assign to this database user.
                     example:
                         - pgedge_superuser
@@ -9903,6 +9594,8 @@ components:
                           spock_version: "4"
                         - postgres_version: "16"
                           spock_version: "4"
+                        - postgres_version: "16"
+                          spock_version: "4"
             example:
                 cohort:
                     cohort_id: pps1n11hqijn9rbee4cjil453
@@ -9953,8 +9646,6 @@ components:
                 - cpus
                 - memory
                 - status
-                - default_pgedge_version
-                - supported_pgedge_versions
         HostCohort:
             type: object
             properties:
@@ -9991,7 +9682,7 @@ components:
                     type: object
                     description: The status of each component of the host.
                     example:
-                        Dolorum aut.:
+                        Mollitia illo delectus.:
                             details:
                                 alarms:
                                     - '3: NOSPACE'
@@ -10014,19 +9705,7 @@ components:
                     format: date-time
             example:
                 components:
-                    Aut veritatis ut nulla ea earum distinctio.:
-                        details:
-                            alarms:
-                                - '3: NOSPACE'
-                        error: failed to connect to etcd
-                        healthy: false
-                    Qui dolores quibusdam.:
-                        details:
-                            alarms:
-                                - '3: NOSPACE'
-                        error: failed to connect to etcd
-                        healthy: false
-                    Repellat recusandae sequi.:
+                    Ducimus aut aut.:
                         details:
                             alarms:
                                 - '3: NOSPACE'
@@ -10046,7 +9725,7 @@ components:
                 created_at:
                     type: string
                     description: The time that the instance was created.
-                    example: "1984-09-28T23:14:34Z"
+                    example: "1986-10-09T14:26:27Z"
                     format: date-time
                 error:
                     type: string
@@ -10072,7 +9751,7 @@ components:
                     $ref: '#/components/schemas/InstanceSpockStatus'
                 state:
                     type: string
-                    example: available
+                    example: modifying
                     enum:
                         - creating
                         - modifying
@@ -10084,12 +9763,12 @@ components:
                 status_updated_at:
                     type: string
                     description: The time that the instance status information was last updated.
-                    example: "1994-10-07T02:08:33Z"
+                    example: "1978-03-05T05:43:46Z"
                     format: date-time
                 updated_at:
                     type: string
                     description: The time that the instance was last modified.
-                    example: "2007-01-17T15:30:01Z"
+                    example: "1977-01-02T23:24:38Z"
                     format: date-time
             description: An instance of pgEdge Postgres running on a host.
             example:
@@ -10097,7 +9776,7 @@ components:
                     hostname: i-0123456789abcdef.ec2.internal
                     ipv4_address: 10.24.34.0
                     port: 5432
-                created_at: "1988-03-06T15:37:30Z"
+                created_at: "1976-02-15T17:18:05Z"
                 error: 'failed to get patroni status: connection refused'
                 host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                 id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
@@ -10124,9 +9803,9 @@ components:
                           provider_node: n2
                           status: down
                     version: 4.10.0
-                state: unknown
-                status_updated_at: "2003-03-16T23:12:44Z"
-                updated_at: "1970-09-06T13:27:08Z"
+                state: backing_up
+                status_updated_at: "2009-02-23T04:10:14Z"
+                updated_at: "1981-05-31T12:05:44Z"
             required:
                 - id
                 - host_id
@@ -10139,40 +9818,6 @@ components:
             items:
                 $ref: '#/components/schemas/Instance'
             example:
-                - connection_info:
-                    hostname: i-0123456789abcdef.ec2.internal
-                    ipv4_address: 10.24.34.0
-                    port: 5432
-                  created_at: "2008-04-05T03:29:38Z"
-                  error: 'failed to get patroni status: connection refused'
-                  host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  node_name: n1
-                  postgres:
-                    patroni_paused: false
-                    patroni_state: crashed
-                    pending_restart: true
-                    role: primary
-                    version: "17.5"
-                  spock:
-                    read_only: "off"
-                    subscriptions:
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                        - name: sub_n1n2
-                          provider_node: n2
-                          status: down
-                    version: 4.10.0
-                  state: available
-                  status_updated_at: "1989-01-18T08:35:28Z"
-                  updated_at: "2003-08-09T22:13:38Z"
                 - connection_info:
                     hostname: i-0123456789abcdef.ec2.internal
                     ipv4_address: 10.24.34.0
@@ -10272,7 +9917,7 @@ components:
                     example: true
                 patroni_state:
                     type: string
-                    example: restarting
+                    example: initdb failed
                     enum:
                         - stopping
                         - stopped
@@ -10292,7 +9937,7 @@ components:
                 pending_restart:
                     type: boolean
                     description: True if this instance is pending to be restarted from a configuration change.
-                    example: false
+                    example: true
                 role:
                     type: string
                     example: replica
@@ -10305,8 +9950,8 @@ components:
                     example: "17.5"
             description: Postgres status information for a pgEdge instance.
             example:
-                patroni_paused: false
-                patroni_state: custom bootstrap failed
+                patroni_paused: true
+                patroni_state: restarting
                 pending_restart: true
                 role: primary
                 version: "17.5"
@@ -10329,7 +9974,7 @@ components:
                     example: n1
                 state:
                     type: string
-                    example: available
+                    example: degraded
                     enum:
                         - creating
                         - modifying
@@ -10367,6 +10012,10 @@ components:
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
                   state: unknown
+                - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                  node_name: n1
+                  state: unknown
         InstanceResponseBody:
             type: object
             properties:
@@ -10375,7 +10024,7 @@ components:
                 created_at:
                     type: string
                     description: The time that the instance was created.
-                    example: "1997-01-18T11:34:05Z"
+                    example: "1984-03-28T06:30:57Z"
                     format: date-time
                 error:
                     type: string
@@ -10401,7 +10050,7 @@ components:
                     $ref: '#/components/schemas/InstanceSpockStatus'
                 state:
                     type: string
-                    example: degraded
+                    example: failed
                     enum:
                         - creating
                         - modifying
@@ -10413,12 +10062,12 @@ components:
                 status_updated_at:
                     type: string
                     description: The time that the instance status information was last updated.
-                    example: "1990-08-29T07:55:06Z"
+                    example: "1990-07-04T21:41:39Z"
                     format: date-time
                 updated_at:
                     type: string
                     description: The time that the instance was last modified.
-                    example: "2002-09-21T01:55:37Z"
+                    example: "1982-03-17T12:09:06Z"
                     format: date-time
             description: An instance of pgEdge Postgres running on a host. (default view)
             example:
@@ -10426,7 +10075,7 @@ components:
                     hostname: i-0123456789abcdef.ec2.internal
                     ipv4_address: 10.24.34.0
                     port: 5432
-                created_at: "1976-10-30T05:11:34Z"
+                created_at: "1974-10-01T05:04:45Z"
                 error: 'failed to get patroni status: connection refused'
                 host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                 id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
@@ -10453,9 +10102,9 @@ components:
                           provider_node: n2
                           status: down
                     version: 4.10.0
-                state: failed
-                status_updated_at: "2009-10-13T17:15:31Z"
-                updated_at: "2002-05-27T17:46:27Z"
+                state: backing_up
+                status_updated_at: "1984-08-18T00:36:49Z"
+                updated_at: "1981-11-12T00:59:51Z"
             required:
                 - id
                 - host_id
@@ -10469,6 +10118,74 @@ components:
                 $ref: '#/components/schemas/InstanceResponseBody'
             description: InstanceCollectionResponseBody is the result type for an array of InstanceResponseBody (default view)
             example:
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
+                  error: 'failed to get patroni status: connection refused'
+                  host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                  node_name: n1
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
+                - connection_info:
+                    hostname: i-0123456789abcdef.ec2.internal
+                    ipv4_address: 10.24.34.0
+                    port: 5432
+                  created_at: "1991-01-18T08:21:24Z"
+                  error: 'failed to get patroni status: connection refused'
+                  host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                  node_name: n1
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: initializing new cluster
+                    pending_restart: false
+                    role: primary
+                    version: "17.5"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "1981-04-02T10:17:50Z"
+                  updated_at: "1991-01-13T22:07:17Z"
                 - connection_info:
                     hostname: i-0123456789abcdef.ec2.internal
                     ipv4_address: 10.24.34.0
@@ -10559,6 +10276,9 @@ components:
                         - name: sub_n1n2
                           provider_node: n2
                           status: down
+                        - name: sub_n1n2
+                          provider_node: n2
+                          status: down
                 version:
                     type: string
                     description: The version of Spock for this instance.
@@ -10567,12 +10287,6 @@ components:
             example:
                 read_only: "off"
                 subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
                     - name: sub_n1n2
                       provider_node: n2
                       status: down
@@ -10624,13 +10338,6 @@ components:
         RestoreConfigSpec:
             type: object
             properties:
-                provider:
-                    type: string
-                    description: The backup provider for this restore configuration.
-                    default: pgbackrest
-                    example: pgbackrest
-                    enum:
-                        - pgbackrest
                 repository:
                     $ref: '#/components/schemas/RestoreRepositorySpec'
                 restore_options:
@@ -10642,7 +10349,7 @@ components:
                         type: xid
                     additionalProperties:
                         type: string
-                        example: Quia fuga qui id libero dignissimos voluptates.
+                        example: Qui id libero dignissimos voluptates est numquam.
                 source_database_id:
                     type: string
                     description: The ID of the database to restore this database from.
@@ -10656,7 +10363,6 @@ components:
                     description: The name of the node to restore this database from.
                     example: n1
             example:
-                provider: pgbackrest
                 repository:
                     azure_account: pgedge-backups
                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -10696,13 +10402,12 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Numquam perspiciatis et exercitationem sequi saepe velit.
+                        example: Et exercitationem sequi saepe velit.
                     description: The nodes to restore. Defaults to all nodes if empty or unspecified.
                     example:
                         - n1
             example:
                 restore_config:
-                    provider: pgbackrest
                     repository:
                         azure_account: pgedge-backups
                         azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -10743,17 +10448,6 @@ components:
                         $ref: '#/components/schemas/Task'
                     description: The tasks that will restore each database node.
                     example:
-                        - completed_at: "2025-01-01T02:30:00Z"
-                          created_at: "2025-01-01T01:30:00Z"
-                          database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-                          error: failed to connect to database
-                          host_id: 2e52dcde-86d8-4f71-b58e-8dc3a10c936a
-                          instance_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
-                          node_name: n1
-                          parent_id: 439eb515-e700-4740-b508-4a3f12ec4f83
-                          status: pending
-                          task_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
-                          type: restore
                         - completed_at: "2025-01-01T02:30:00Z"
                           created_at: "2025-01-01T01:30:00Z"
                           database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
@@ -10864,7 +10558,6 @@ components:
                           updated_at: "2003-08-09T22:13:38Z"
                     spec:
                         backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -10960,18 +10653,14 @@ components:
                               roles:
                                 - pgedge_superuser
                               username: admin
-                        deletion_protection: true
                         extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
-                        features:
-                            some_feature: enabled
                         memory: 500M
                         nodes:
                             - backup_config:
-                                provider: pgbackrest
                                 repositories:
                                     - azure_account: pgedge-backups
                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -11064,7 +10753,6 @@ components:
                               postgresql_conf:
                                 max_connections: 1000
                               restore_config:
-                                provider: pgbackrest
                                 repository:
                                     azure_account: pgedge-backups
                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -11090,10 +10778,7 @@ components:
                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                 source_database_name: northwind
                                 source_node_name: n1
-                              storage_class: loop_device
-                              storage_size: 500GiB
                             - backup_config:
-                                provider: pgbackrest
                                 repositories:
                                     - azure_account: pgedge-backups
                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -11186,7 +10871,6 @@ components:
                               postgresql_conf:
                                 max_connections: 1000
                               restore_config:
-                                provider: pgbackrest
                                 repository:
                                     azure_account: pgedge-backups
                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -11212,10 +10896,7 @@ components:
                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                 source_database_name: northwind
                                 source_node_name: n1
-                              storage_class: loop_device
-                              storage_size: 500GiB
                             - backup_config:
-                                provider: pgbackrest
                                 repositories:
                                     - azure_account: pgedge-backups
                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -11308,7 +10989,6 @@ components:
                               postgresql_conf:
                                 max_connections: 1000
                               restore_config:
-                                provider: pgbackrest
                                 repository:
                                     azure_account: pgedge-backups
                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -11334,14 +11014,11 @@ components:
                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                 source_database_name: northwind
                                 source_node_name: n1
-                              storage_class: loop_device
-                              storage_size: 500GiB
                         port: 5432
                         postgres_version: "17"
                         postgresql_conf:
                             max_connections: 1000
                         restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -11368,8 +11045,6 @@ components:
                             source_database_name: northwind
                             source_node_name: n1
                         spock_version: "4"
-                        storage_class: loop_device
-                        storage_size: 500GiB
                     state: modifying
                     tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                     updated_at: "2025-01-01T02:30:00Z"
@@ -11449,7 +11124,7 @@ components:
                         s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
                     additionalProperties:
                         type: string
-                        example: Et architecto.
+                        example: Voluptatem quia.
                 gcs_bucket:
                     type: string
                     description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -11618,6 +11293,16 @@ components:
                             status: creating
                           message: task started
                           timestamp: "2025-05-29T15:43:13Z"
+                        - fields:
+                            option.enabled: true
+                            status: creating
+                          message: task started
+                          timestamp: "2025-05-29T15:43:13Z"
+                        - fields:
+                            option.enabled: true
+                            status: creating
+                          message: task started
+                          timestamp: "2025-05-29T15:43:13Z"
                 last_entry_id:
                     type: string
                     description: The ID of the last entry in the task log.
@@ -11641,16 +11326,6 @@ components:
             example:
                 database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                 entries:
-                    - fields:
-                        option.enabled: true
-                        status: creating
-                      message: task started
-                      timestamp: "2025-05-29T15:43:13Z"
-                    - fields:
-                        option.enabled: true
-                        status: creating
-                      message: task started
-                      timestamp: "2025-05-29T15:43:13Z"
                     - fields:
                         option.enabled: true
                         status: creating
@@ -11710,7 +11385,6 @@ components:
             example:
                 spec:
                     backup_config:
-                        provider: pgbackrest
                         repositories:
                             - azure_account: pgedge-backups
                               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -11806,18 +11480,14 @@ components:
                           roles:
                             - pgedge_superuser
                           username: admin
-                    deletion_protection: true
                     extra_volumes:
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
-                    features:
-                        some_feature: enabled
                     memory: 500M
                     nodes:
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -11910,7 +11580,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -11936,10 +11605,7 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -12032,7 +11698,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -12058,10 +11723,7 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                         - backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -12154,7 +11816,6 @@ components:
                           postgresql_conf:
                             max_connections: 1000
                           restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -12180,14 +11841,11 @@ components:
                             source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                             source_database_name: northwind
                             source_node_name: n1
-                          storage_class: loop_device
-                          storage_size: 500GiB
                     port: 5432
                     postgres_version: "17"
                     postgresql_conf:
                         max_connections: 1000
                     restore_config:
-                        provider: pgbackrest
                         repository:
                             azure_account: pgedge-backups
                             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -12214,8 +11872,6 @@ components:
                         source_database_name: northwind
                         source_node_name: n1
                     spock_version: "4"
-                    storage_class: loop_device
-                    storage_size: 500GiB
                 tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
         UpdateDatabaseResponse:
             type: object
@@ -12299,7 +11955,6 @@ components:
                           updated_at: "2003-08-09T22:13:38Z"
                     spec:
                         backup_config:
-                            provider: pgbackrest
                             repositories:
                                 - azure_account: pgedge-backups
                                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -12395,18 +12050,14 @@ components:
                               roles:
                                 - pgedge_superuser
                               username: admin
-                        deletion_protection: true
                         extra_volumes:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
-                        features:
-                            some_feature: enabled
                         memory: 500M
                         nodes:
                             - backup_config:
-                                provider: pgbackrest
                                 repositories:
                                     - azure_account: pgedge-backups
                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -12499,7 +12150,6 @@ components:
                               postgresql_conf:
                                 max_connections: 1000
                               restore_config:
-                                provider: pgbackrest
                                 repository:
                                     azure_account: pgedge-backups
                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -12525,10 +12175,7 @@ components:
                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                 source_database_name: northwind
                                 source_node_name: n1
-                              storage_class: loop_device
-                              storage_size: 500GiB
                             - backup_config:
-                                provider: pgbackrest
                                 repositories:
                                     - azure_account: pgedge-backups
                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -12621,7 +12268,6 @@ components:
                               postgresql_conf:
                                 max_connections: 1000
                               restore_config:
-                                provider: pgbackrest
                                 repository:
                                     azure_account: pgedge-backups
                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -12647,10 +12293,7 @@ components:
                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                 source_database_name: northwind
                                 source_node_name: n1
-                              storage_class: loop_device
-                              storage_size: 500GiB
                             - backup_config:
-                                provider: pgbackrest
                                 repositories:
                                     - azure_account: pgedge-backups
                                       azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -12743,7 +12386,6 @@ components:
                               postgresql_conf:
                                 max_connections: 1000
                               restore_config:
-                                provider: pgbackrest
                                 repository:
                                     azure_account: pgedge-backups
                                     azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -12769,14 +12411,11 @@ components:
                                 source_database_id: 6c8e43ee-26ea-47b8-a8f8-89897e0137bd
                                 source_database_name: northwind
                                 source_node_name: n1
-                              storage_class: loop_device
-                              storage_size: 500GiB
                         port: 5432
                         postgres_version: "17"
                         postgresql_conf:
                             max_connections: 1000
                         restore_config:
-                            provider: pgbackrest
                             repository:
                                 azure_account: pgedge-backups
                                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
@@ -12803,8 +12442,6 @@ components:
                             source_database_name: northwind
                             source_node_name: n1
                         spock_version: "4"
-                        storage_class: loop_device
-                        storage_size: 500GiB
                     state: modifying
                     tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
                     updated_at: "2025-01-01T02:30:00Z"

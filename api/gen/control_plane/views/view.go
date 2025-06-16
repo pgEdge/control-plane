@@ -131,14 +131,6 @@ type DatabaseSpecView struct {
 	SpockVersion *string
 	// The port used by the Postgres database.
 	Port *int
-	// Prevents deletion when true.
-	DeletionProtection *bool
-	// The storage class to use for the database. The possible values and defaults
-	// depend on the orchestrator.
-	StorageClass *string
-	// The size of the storage in SI or IEC notation. Support for this value
-	// depends on the orchestrator and storage class.
-	StorageSize *string
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
 	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
@@ -152,8 +144,6 @@ type DatabaseSpecView struct {
 	Nodes []*DatabaseNodeSpecView
 	// The users to create for this database.
 	DatabaseUsers []*DatabaseUserSpecView
-	// The feature flags for this database.
-	Features map[string]string
 	// The backup configuration for this database.
 	BackupConfig *BackupConfigSpecView
 	// The restore configuration for this database.
@@ -180,12 +170,6 @@ type DatabaseNodeSpecView struct {
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int
-	// The storage class to use for the database on this node. The possible values
-	// and defaults depend on the orchestrator.
-	StorageClass *string
-	// The size of the storage for this node in SI or IEC notation. Support for
-	// this value depends on the orchestrator and storage class.
-	StorageSize *string
 	// The number of CPUs to allocate for the database on this node and to use for
 	// tuning Postgres. Defaults to the number of available CPUs on the host. Can
 	// include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will
@@ -211,8 +195,6 @@ type DatabaseNodeSpecView struct {
 
 // BackupConfigSpecView is a type that runs validations on a projected type.
 type BackupConfigSpecView struct {
-	// The backup provider for this backup configuration.
-	Provider *string
 	// The repositories for this backup configuration.
 	Repositories []*BackupRepositorySpecView
 	// The schedules for this backup configuration.
@@ -279,8 +261,6 @@ type BackupScheduleSpecView struct {
 
 // RestoreConfigSpecView is a type that runs validations on a projected type.
 type RestoreConfigSpecView struct {
-	// The backup provider for this restore configuration.
-	Provider *string
 	// The ID of the database to restore this database from.
 	SourceDatabaseID *string
 	// The name of the node to restore this database from.
@@ -905,11 +885,6 @@ func ValidateBackupConfigSpecView(result *BackupConfigSpecView) (err error) {
 	if result.Repositories == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("repositories", "result"))
 	}
-	if result.Provider != nil {
-		if !(*result.Provider == "pgbackrest") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.provider", *result.Provider, []any{"pgbackrest"}))
-		}
-	}
 	if len(result.Repositories) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("result.repositories", result.Repositories, len(result.Repositories), 1, true))
 	}
@@ -983,11 +958,6 @@ func ValidateRestoreConfigSpecView(result *RestoreConfigSpecView) (err error) {
 	}
 	if result.Repository == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "result"))
-	}
-	if result.Provider != nil {
-		if !(*result.Provider == "pgbackrest") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.provider", *result.Provider, []any{"pgbackrest"}))
-		}
 	}
 	if result.Repository != nil {
 		if err2 := ValidateRestoreRepositorySpecView(result.Repository); err2 != nil {

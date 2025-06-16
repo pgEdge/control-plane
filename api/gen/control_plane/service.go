@@ -82,8 +82,6 @@ type APIError struct {
 }
 
 type BackupConfigSpec struct {
-	// The backup provider for this backup configuration.
-	Provider string
 	// The repositories for this backup configuration.
 	Repositories []*BackupRepositorySpec
 	// The schedules for this backup configuration.
@@ -306,12 +304,6 @@ type DatabaseNodeSpec struct {
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int
-	// The storage class to use for the database on this node. The possible values
-	// and defaults depend on the orchestrator.
-	StorageClass *string
-	// The size of the storage for this node in SI or IEC notation. Support for
-	// this value depends on the orchestrator and storage class.
-	StorageSize *string
 	// The number of CPUs to allocate for the database on this node and to use for
 	// tuning Postgres. Defaults to the number of available CPUs on the host. Can
 	// include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will
@@ -344,14 +336,6 @@ type DatabaseSpec struct {
 	SpockVersion *string
 	// The port used by the Postgres database.
 	Port *int
-	// Prevents deletion when true.
-	DeletionProtection *bool
-	// The storage class to use for the database. The possible values and defaults
-	// depend on the orchestrator.
-	StorageClass *string
-	// The size of the storage in SI or IEC notation. Support for this value
-	// depends on the orchestrator and storage class.
-	StorageSize *string
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
 	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
@@ -365,8 +349,6 @@ type DatabaseSpec struct {
 	Nodes []*DatabaseNodeSpec
 	// The users to create for this database.
 	DatabaseUsers []*DatabaseUserSpec
-	// The feature flags for this database.
-	Features map[string]string
 	// The backup configuration for this database.
 	BackupConfig *BackupConfigSpec
 	// The restore configuration for this database.
@@ -590,8 +572,6 @@ type RemoveHostPayload struct {
 }
 
 type RestoreConfigSpec struct {
-	// The backup provider for this restore configuration.
-	Provider string
 	// The ID of the database to restore this database from.
 	SourceDatabaseID string
 	// The name of the node to restore this database from.
@@ -1142,15 +1122,12 @@ func transformControlplaneviewsDatabaseSpecViewToDatabaseSpec(v *controlplanevie
 		return nil
 	}
 	res := &DatabaseSpec{
-		DatabaseName:       *v.DatabaseName,
-		PostgresVersion:    v.PostgresVersion,
-		SpockVersion:       v.SpockVersion,
-		Port:               v.Port,
-		DeletionProtection: v.DeletionProtection,
-		StorageClass:       v.StorageClass,
-		StorageSize:        v.StorageSize,
-		Cpus:               v.Cpus,
-		Memory:             v.Memory,
+		DatabaseName:    *v.DatabaseName,
+		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
+		Port:            v.Port,
+		Cpus:            v.Cpus,
+		Memory:          v.Memory,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*DatabaseNodeSpec, len(v.Nodes))
@@ -1164,14 +1141,6 @@ func transformControlplaneviewsDatabaseSpecViewToDatabaseSpec(v *controlplanevie
 		res.DatabaseUsers = make([]*DatabaseUserSpec, len(v.DatabaseUsers))
 		for i, val := range v.DatabaseUsers {
 			res.DatabaseUsers[i] = transformControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpec(val)
-		}
-	}
-	if v.Features != nil {
-		res.Features = make(map[string]string, len(v.Features))
-		for key, val := range v.Features {
-			tk := key
-			tv := val
-			res.Features[tk] = tv
 		}
 	}
 	if v.BackupConfig != nil {
@@ -1206,8 +1175,6 @@ func transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec(v *control
 		Name:            *v.Name,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
-		StorageClass:    v.StorageClass,
-		StorageSize:     v.StorageSize,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
@@ -1251,12 +1218,6 @@ func transformControlplaneviewsBackupConfigSpecViewToBackupConfigSpec(v *control
 		return nil
 	}
 	res := &BackupConfigSpec{}
-	if v.Provider != nil {
-		res.Provider = *v.Provider
-	}
-	if v.Provider == nil {
-		res.Provider = "pgbackrest"
-	}
 	if v.Repositories != nil {
 		res.Repositories = make([]*BackupRepositorySpec, len(v.Repositories))
 		for i, val := range v.Repositories {
@@ -1337,12 +1298,6 @@ func transformControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpec(v *contr
 		SourceDatabaseID:   *v.SourceDatabaseID,
 		SourceNodeName:     *v.SourceNodeName,
 		SourceDatabaseName: *v.SourceDatabaseName,
-	}
-	if v.Provider != nil {
-		res.Provider = *v.Provider
-	}
-	if v.Provider == nil {
-		res.Provider = "pgbackrest"
 	}
 	if v.Repository != nil {
 		res.Repository = transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec(v.Repository)
@@ -1442,15 +1397,12 @@ func transformDatabaseSpecToControlplaneviewsDatabaseSpecView(v *DatabaseSpec) *
 		return nil
 	}
 	res := &controlplaneviews.DatabaseSpecView{
-		DatabaseName:       &v.DatabaseName,
-		PostgresVersion:    v.PostgresVersion,
-		SpockVersion:       v.SpockVersion,
-		Port:               v.Port,
-		DeletionProtection: v.DeletionProtection,
-		StorageClass:       v.StorageClass,
-		StorageSize:        v.StorageSize,
-		Cpus:               v.Cpus,
-		Memory:             v.Memory,
+		DatabaseName:    &v.DatabaseName,
+		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
+		Port:            v.Port,
+		Cpus:            v.Cpus,
+		Memory:          v.Memory,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*controlplaneviews.DatabaseNodeSpecView, len(v.Nodes))
@@ -1464,14 +1416,6 @@ func transformDatabaseSpecToControlplaneviewsDatabaseSpecView(v *DatabaseSpec) *
 		res.DatabaseUsers = make([]*controlplaneviews.DatabaseUserSpecView, len(v.DatabaseUsers))
 		for i, val := range v.DatabaseUsers {
 			res.DatabaseUsers[i] = transformDatabaseUserSpecToControlplaneviewsDatabaseUserSpecView(val)
-		}
-	}
-	if v.Features != nil {
-		res.Features = make(map[string]string, len(v.Features))
-		for key, val := range v.Features {
-			tk := key
-			tv := val
-			res.Features[tk] = tv
 		}
 	}
 	if v.BackupConfig != nil {
@@ -1506,8 +1450,6 @@ func transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView(v *Databas
 		Name:            &v.Name,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
-		StorageClass:    v.StorageClass,
-		StorageSize:     v.StorageSize,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
@@ -1550,9 +1492,7 @@ func transformBackupConfigSpecToControlplaneviewsBackupConfigSpecView(v *BackupC
 	if v == nil {
 		return nil
 	}
-	res := &controlplaneviews.BackupConfigSpecView{
-		Provider: &v.Provider,
-	}
+	res := &controlplaneviews.BackupConfigSpecView{}
 	if v.Repositories != nil {
 		res.Repositories = make([]*controlplaneviews.BackupRepositorySpecView, len(v.Repositories))
 		for i, val := range v.Repositories {
@@ -1630,7 +1570,6 @@ func transformRestoreConfigSpecToControlplaneviewsRestoreConfigSpecView(v *Resto
 		return nil
 	}
 	res := &controlplaneviews.RestoreConfigSpecView{
-		Provider:           &v.Provider,
 		SourceDatabaseID:   &v.SourceDatabaseID,
 		SourceNodeName:     &v.SourceNodeName,
 		SourceDatabaseName: &v.SourceDatabaseName,

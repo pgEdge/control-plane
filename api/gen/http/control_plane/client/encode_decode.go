@@ -2496,10 +2496,14 @@ func unmarshalHostResponseBodyToControlplaneHost(v *HostResponseBody) *controlpl
 		res.Cohort = unmarshalHostCohortResponseBodyToControlplaneHostCohort(v.Cohort)
 	}
 	res.Status = unmarshalHostStatusResponseBodyToControlplaneHostStatus(v.Status)
-	res.DefaultPgedgeVersion = unmarshalPgEdgeVersionResponseBodyToControlplanePgEdgeVersion(v.DefaultPgedgeVersion)
-	res.SupportedPgedgeVersions = make([]*controlplane.PgEdgeVersion, len(v.SupportedPgedgeVersions))
-	for i, val := range v.SupportedPgedgeVersions {
-		res.SupportedPgedgeVersions[i] = unmarshalPgEdgeVersionResponseBodyToControlplanePgEdgeVersion(val)
+	if v.DefaultPgedgeVersion != nil {
+		res.DefaultPgedgeVersion = unmarshalPgEdgeVersionResponseBodyToControlplanePgEdgeVersion(v.DefaultPgedgeVersion)
+	}
+	if v.SupportedPgedgeVersions != nil {
+		res.SupportedPgedgeVersions = make([]*controlplane.PgEdgeVersion, len(v.SupportedPgedgeVersions))
+		for i, val := range v.SupportedPgedgeVersions {
+			res.SupportedPgedgeVersions[i] = unmarshalPgEdgeVersionResponseBodyToControlplanePgEdgeVersion(val)
+		}
 	}
 
 	return res
@@ -2563,6 +2567,9 @@ func unmarshalComponentStatusResponseBodyToControlplaneComponentStatus(v *Compon
 // of type *controlplane.PgEdgeVersion from a value of type
 // *PgEdgeVersionResponseBody.
 func unmarshalPgEdgeVersionResponseBodyToControlplanePgEdgeVersion(v *PgEdgeVersionResponseBody) *controlplane.PgEdgeVersion {
+	if v == nil {
+		return nil
+	}
 	res := &controlplane.PgEdgeVersion{
 		PostgresVersion: *v.PostgresVersion,
 		SpockVersion:    *v.SpockVersion,
@@ -2586,10 +2593,14 @@ func unmarshalHostResponseToControlplaneHost(v *HostResponse) *controlplane.Host
 		res.Cohort = unmarshalHostCohortResponseToControlplaneHostCohort(v.Cohort)
 	}
 	res.Status = unmarshalHostStatusResponseToControlplaneHostStatus(v.Status)
-	res.DefaultPgedgeVersion = unmarshalPgEdgeVersionResponseToControlplanePgEdgeVersion(v.DefaultPgedgeVersion)
-	res.SupportedPgedgeVersions = make([]*controlplane.PgEdgeVersion, len(v.SupportedPgedgeVersions))
-	for i, val := range v.SupportedPgedgeVersions {
-		res.SupportedPgedgeVersions[i] = unmarshalPgEdgeVersionResponseToControlplanePgEdgeVersion(val)
+	if v.DefaultPgedgeVersion != nil {
+		res.DefaultPgedgeVersion = unmarshalPgEdgeVersionResponseToControlplanePgEdgeVersion(v.DefaultPgedgeVersion)
+	}
+	if v.SupportedPgedgeVersions != nil {
+		res.SupportedPgedgeVersions = make([]*controlplane.PgEdgeVersion, len(v.SupportedPgedgeVersions))
+		for i, val := range v.SupportedPgedgeVersions {
+			res.SupportedPgedgeVersions[i] = unmarshalPgEdgeVersionResponseToControlplanePgEdgeVersion(val)
+		}
 	}
 
 	return res
@@ -2652,6 +2663,9 @@ func unmarshalComponentStatusResponseToControlplaneComponentStatus(v *ComponentS
 // unmarshalPgEdgeVersionResponseToControlplanePgEdgeVersion builds a value of
 // type *controlplane.PgEdgeVersion from a value of type *PgEdgeVersionResponse.
 func unmarshalPgEdgeVersionResponseToControlplanePgEdgeVersion(v *PgEdgeVersionResponse) *controlplane.PgEdgeVersion {
+	if v == nil {
+		return nil
+	}
 	res := &controlplane.PgEdgeVersion{
 		PostgresVersion: *v.PostgresVersion,
 		SpockVersion:    *v.SpockVersion,
@@ -2791,15 +2805,12 @@ func unmarshalDatabaseSpecResponseToControlplaneviewsDatabaseSpecView(v *Databas
 		return nil
 	}
 	res := &controlplaneviews.DatabaseSpecView{
-		DatabaseName:       v.DatabaseName,
-		PostgresVersion:    v.PostgresVersion,
-		SpockVersion:       v.SpockVersion,
-		Port:               v.Port,
-		DeletionProtection: v.DeletionProtection,
-		StorageClass:       v.StorageClass,
-		StorageSize:        v.StorageSize,
-		Cpus:               v.Cpus,
-		Memory:             v.Memory,
+		DatabaseName:    v.DatabaseName,
+		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
+		Port:            v.Port,
+		Cpus:            v.Cpus,
+		Memory:          v.Memory,
 	}
 	res.Nodes = make([]*controlplaneviews.DatabaseNodeSpecView, len(v.Nodes))
 	for i, val := range v.Nodes {
@@ -2809,14 +2820,6 @@ func unmarshalDatabaseSpecResponseToControlplaneviewsDatabaseSpecView(v *Databas
 		res.DatabaseUsers = make([]*controlplaneviews.DatabaseUserSpecView, len(v.DatabaseUsers))
 		for i, val := range v.DatabaseUsers {
 			res.DatabaseUsers[i] = unmarshalDatabaseUserSpecResponseToControlplaneviewsDatabaseUserSpecView(val)
-		}
-	}
-	if v.Features != nil {
-		res.Features = make(map[string]string, len(v.Features))
-		for key, val := range v.Features {
-			tk := key
-			tv := val
-			res.Features[tk] = tv
 		}
 	}
 	if v.BackupConfig != nil {
@@ -2851,8 +2854,6 @@ func unmarshalDatabaseNodeSpecResponseToControlplaneviewsDatabaseNodeSpecView(v 
 		Name:            v.Name,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
-		StorageClass:    v.StorageClass,
-		StorageSize:     v.StorageSize,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
@@ -2891,9 +2892,7 @@ func unmarshalBackupConfigSpecResponseToControlplaneviewsBackupConfigSpecView(v 
 	if v == nil {
 		return nil
 	}
-	res := &controlplaneviews.BackupConfigSpecView{
-		Provider: v.Provider,
-	}
+	res := &controlplaneviews.BackupConfigSpecView{}
 	res.Repositories = make([]*controlplaneviews.BackupRepositorySpecView, len(v.Repositories))
 	for i, val := range v.Repositories {
 		res.Repositories[i] = unmarshalBackupRepositorySpecResponseToControlplaneviewsBackupRepositorySpecView(val)
@@ -2967,7 +2966,6 @@ func unmarshalRestoreConfigSpecResponseToControlplaneviewsRestoreConfigSpecView(
 		return nil
 	}
 	res := &controlplaneviews.RestoreConfigSpecView{
-		Provider:           v.Provider,
 		SourceDatabaseID:   v.SourceDatabaseID,
 		SourceNodeName:     v.SourceNodeName,
 		SourceDatabaseName: v.SourceDatabaseName,
@@ -3069,15 +3067,12 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecRequestBody(v *controlplane.Da
 		return nil
 	}
 	res := &DatabaseSpecRequestBody{
-		DatabaseName:       v.DatabaseName,
-		PostgresVersion:    v.PostgresVersion,
-		SpockVersion:       v.SpockVersion,
-		Port:               v.Port,
-		DeletionProtection: v.DeletionProtection,
-		StorageClass:       v.StorageClass,
-		StorageSize:        v.StorageSize,
-		Cpus:               v.Cpus,
-		Memory:             v.Memory,
+		DatabaseName:    v.DatabaseName,
+		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
+		Port:            v.Port,
+		Cpus:            v.Cpus,
+		Memory:          v.Memory,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*DatabaseNodeSpecRequestBody, len(v.Nodes))
@@ -3091,14 +3086,6 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecRequestBody(v *controlplane.Da
 		res.DatabaseUsers = make([]*DatabaseUserSpecRequestBody, len(v.DatabaseUsers))
 		for i, val := range v.DatabaseUsers {
 			res.DatabaseUsers[i] = marshalControlplaneDatabaseUserSpecToDatabaseUserSpecRequestBody(val)
-		}
-	}
-	if v.Features != nil {
-		res.Features = make(map[string]string, len(v.Features))
-		for key, val := range v.Features {
-			tk := key
-			tv := val
-			res.Features[tk] = tv
 		}
 	}
 	if v.BackupConfig != nil {
@@ -3133,8 +3120,6 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecRequestBody(v *control
 		Name:            v.Name,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
-		StorageClass:    v.StorageClass,
-		StorageSize:     v.StorageSize,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
@@ -3177,15 +3162,7 @@ func marshalControlplaneBackupConfigSpecToBackupConfigSpecRequestBody(v *control
 	if v == nil {
 		return nil
 	}
-	res := &BackupConfigSpecRequestBody{
-		Provider: v.Provider,
-	}
-	{
-		var zero string
-		if res.Provider == zero {
-			res.Provider = "pgbackrest"
-		}
-	}
+	res := &BackupConfigSpecRequestBody{}
 	if v.Repositories != nil {
 		res.Repositories = make([]*BackupRepositorySpecRequestBody, len(v.Repositories))
 		for i, val := range v.Repositories {
@@ -3263,16 +3240,9 @@ func marshalControlplaneRestoreConfigSpecToRestoreConfigSpecRequestBody(v *contr
 		return nil
 	}
 	res := &RestoreConfigSpecRequestBody{
-		Provider:           v.Provider,
 		SourceDatabaseID:   v.SourceDatabaseID,
 		SourceNodeName:     v.SourceNodeName,
 		SourceDatabaseName: v.SourceDatabaseName,
-	}
-	{
-		var zero string
-		if res.Provider == zero {
-			res.Provider = "pgbackrest"
-		}
 	}
 	if v.Repository != nil {
 		res.Repository = marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecRequestBody(v.Repository)
@@ -3373,15 +3343,12 @@ func marshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecReq
 		return nil
 	}
 	res := &controlplane.DatabaseSpec{
-		DatabaseName:       v.DatabaseName,
-		PostgresVersion:    v.PostgresVersion,
-		SpockVersion:       v.SpockVersion,
-		Port:               v.Port,
-		DeletionProtection: v.DeletionProtection,
-		StorageClass:       v.StorageClass,
-		StorageSize:        v.StorageSize,
-		Cpus:               v.Cpus,
-		Memory:             v.Memory,
+		DatabaseName:    v.DatabaseName,
+		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
+		Port:            v.Port,
+		Cpus:            v.Cpus,
+		Memory:          v.Memory,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*controlplane.DatabaseNodeSpec, len(v.Nodes))
@@ -3395,14 +3362,6 @@ func marshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecReq
 		res.DatabaseUsers = make([]*controlplane.DatabaseUserSpec, len(v.DatabaseUsers))
 		for i, val := range v.DatabaseUsers {
 			res.DatabaseUsers[i] = marshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec(val)
-		}
-	}
-	if v.Features != nil {
-		res.Features = make(map[string]string, len(v.Features))
-		for key, val := range v.Features {
-			tk := key
-			tv := val
-			res.Features[tk] = tv
 		}
 	}
 	if v.BackupConfig != nil {
@@ -3437,8 +3396,6 @@ func marshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *Databas
 		Name:            v.Name,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
-		StorageClass:    v.StorageClass,
-		StorageSize:     v.StorageSize,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
@@ -3481,15 +3438,7 @@ func marshalBackupConfigSpecRequestBodyToControlplaneBackupConfigSpec(v *BackupC
 	if v == nil {
 		return nil
 	}
-	res := &controlplane.BackupConfigSpec{
-		Provider: v.Provider,
-	}
-	{
-		var zero string
-		if res.Provider == zero {
-			res.Provider = "pgbackrest"
-		}
-	}
+	res := &controlplane.BackupConfigSpec{}
 	if v.Repositories != nil {
 		res.Repositories = make([]*controlplane.BackupRepositorySpec, len(v.Repositories))
 		for i, val := range v.Repositories {
@@ -3567,16 +3516,9 @@ func marshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec(v *Resto
 		return nil
 	}
 	res := &controlplane.RestoreConfigSpec{
-		Provider:           v.Provider,
 		SourceDatabaseID:   v.SourceDatabaseID,
 		SourceNodeName:     v.SourceNodeName,
 		SourceDatabaseName: v.SourceDatabaseName,
-	}
-	{
-		var zero string
-		if res.Provider == zero {
-			res.Provider = "pgbackrest"
-		}
 	}
 	if v.Repository != nil {
 		res.Repository = marshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpec(v.Repository)
@@ -3826,15 +3768,12 @@ func unmarshalDatabaseSpecResponseBodyToControlplaneDatabaseSpec(v *DatabaseSpec
 		return nil
 	}
 	res := &controlplane.DatabaseSpec{
-		DatabaseName:       *v.DatabaseName,
-		PostgresVersion:    v.PostgresVersion,
-		SpockVersion:       v.SpockVersion,
-		Port:               v.Port,
-		DeletionProtection: v.DeletionProtection,
-		StorageClass:       v.StorageClass,
-		StorageSize:        v.StorageSize,
-		Cpus:               v.Cpus,
-		Memory:             v.Memory,
+		DatabaseName:    *v.DatabaseName,
+		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
+		Port:            v.Port,
+		Cpus:            v.Cpus,
+		Memory:          v.Memory,
 	}
 	res.Nodes = make([]*controlplane.DatabaseNodeSpec, len(v.Nodes))
 	for i, val := range v.Nodes {
@@ -3844,14 +3783,6 @@ func unmarshalDatabaseSpecResponseBodyToControlplaneDatabaseSpec(v *DatabaseSpec
 		res.DatabaseUsers = make([]*controlplane.DatabaseUserSpec, len(v.DatabaseUsers))
 		for i, val := range v.DatabaseUsers {
 			res.DatabaseUsers[i] = unmarshalDatabaseUserSpecResponseBodyToControlplaneDatabaseUserSpec(val)
-		}
-	}
-	if v.Features != nil {
-		res.Features = make(map[string]string, len(v.Features))
-		for key, val := range v.Features {
-			tk := key
-			tv := val
-			res.Features[tk] = tv
 		}
 	}
 	if v.BackupConfig != nil {
@@ -3886,8 +3817,6 @@ func unmarshalDatabaseNodeSpecResponseBodyToControlplaneDatabaseNodeSpec(v *Data
 		Name:            *v.Name,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
-		StorageClass:    v.StorageClass,
-		StorageSize:     v.StorageSize,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
@@ -3927,12 +3856,6 @@ func unmarshalBackupConfigSpecResponseBodyToControlplaneBackupConfigSpec(v *Back
 		return nil
 	}
 	res := &controlplane.BackupConfigSpec{}
-	if v.Provider != nil {
-		res.Provider = *v.Provider
-	}
-	if v.Provider == nil {
-		res.Provider = "pgbackrest"
-	}
 	res.Repositories = make([]*controlplane.BackupRepositorySpec, len(v.Repositories))
 	for i, val := range v.Repositories {
 		res.Repositories[i] = unmarshalBackupRepositorySpecResponseBodyToControlplaneBackupRepositorySpec(val)
@@ -4009,12 +3932,6 @@ func unmarshalRestoreConfigSpecResponseBodyToControlplaneRestoreConfigSpec(v *Re
 		SourceDatabaseID:   *v.SourceDatabaseID,
 		SourceNodeName:     *v.SourceNodeName,
 		SourceDatabaseName: *v.SourceDatabaseName,
-	}
-	if v.Provider != nil {
-		res.Provider = *v.Provider
-	}
-	if v.Provider == nil {
-		res.Provider = "pgbackrest"
 	}
 	res.Repository = unmarshalRestoreRepositorySpecResponseBodyToControlplaneRestoreRepositorySpec(v.Repository)
 	if v.RestoreOptions != nil {
@@ -4214,15 +4131,12 @@ func unmarshalDatabaseSpecResponseBodyToControlplaneviewsDatabaseSpecView(v *Dat
 		return nil
 	}
 	res := &controlplaneviews.DatabaseSpecView{
-		DatabaseName:       v.DatabaseName,
-		PostgresVersion:    v.PostgresVersion,
-		SpockVersion:       v.SpockVersion,
-		Port:               v.Port,
-		DeletionProtection: v.DeletionProtection,
-		StorageClass:       v.StorageClass,
-		StorageSize:        v.StorageSize,
-		Cpus:               v.Cpus,
-		Memory:             v.Memory,
+		DatabaseName:    v.DatabaseName,
+		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
+		Port:            v.Port,
+		Cpus:            v.Cpus,
+		Memory:          v.Memory,
 	}
 	res.Nodes = make([]*controlplaneviews.DatabaseNodeSpecView, len(v.Nodes))
 	for i, val := range v.Nodes {
@@ -4232,14 +4146,6 @@ func unmarshalDatabaseSpecResponseBodyToControlplaneviewsDatabaseSpecView(v *Dat
 		res.DatabaseUsers = make([]*controlplaneviews.DatabaseUserSpecView, len(v.DatabaseUsers))
 		for i, val := range v.DatabaseUsers {
 			res.DatabaseUsers[i] = unmarshalDatabaseUserSpecResponseBodyToControlplaneviewsDatabaseUserSpecView(val)
-		}
-	}
-	if v.Features != nil {
-		res.Features = make(map[string]string, len(v.Features))
-		for key, val := range v.Features {
-			tk := key
-			tv := val
-			res.Features[tk] = tv
 		}
 	}
 	if v.BackupConfig != nil {
@@ -4274,8 +4180,6 @@ func unmarshalDatabaseNodeSpecResponseBodyToControlplaneviewsDatabaseNodeSpecVie
 		Name:            v.Name,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
-		StorageClass:    v.StorageClass,
-		StorageSize:     v.StorageSize,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
@@ -4314,9 +4218,7 @@ func unmarshalBackupConfigSpecResponseBodyToControlplaneviewsBackupConfigSpecVie
 	if v == nil {
 		return nil
 	}
-	res := &controlplaneviews.BackupConfigSpecView{
-		Provider: v.Provider,
-	}
+	res := &controlplaneviews.BackupConfigSpecView{}
 	res.Repositories = make([]*controlplaneviews.BackupRepositorySpecView, len(v.Repositories))
 	for i, val := range v.Repositories {
 		res.Repositories[i] = unmarshalBackupRepositorySpecResponseBodyToControlplaneviewsBackupRepositorySpecView(val)
@@ -4390,7 +4292,6 @@ func unmarshalRestoreConfigSpecResponseBodyToControlplaneviewsRestoreConfigSpecV
 		return nil
 	}
 	res := &controlplaneviews.RestoreConfigSpecView{
-		Provider:           v.Provider,
 		SourceDatabaseID:   v.SourceDatabaseID,
 		SourceNodeName:     v.SourceNodeName,
 		SourceDatabaseName: v.SourceDatabaseName,
@@ -4492,15 +4393,12 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecRequestBodyRequestBody(v *cont
 		return nil
 	}
 	res := &DatabaseSpecRequestBodyRequestBody{
-		DatabaseName:       v.DatabaseName,
-		PostgresVersion:    v.PostgresVersion,
-		SpockVersion:       v.SpockVersion,
-		Port:               v.Port,
-		DeletionProtection: v.DeletionProtection,
-		StorageClass:       v.StorageClass,
-		StorageSize:        v.StorageSize,
-		Cpus:               v.Cpus,
-		Memory:             v.Memory,
+		DatabaseName:    v.DatabaseName,
+		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
+		Port:            v.Port,
+		Cpus:            v.Cpus,
+		Memory:          v.Memory,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*DatabaseNodeSpecRequestBodyRequestBody, len(v.Nodes))
@@ -4514,14 +4412,6 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecRequestBodyRequestBody(v *cont
 		res.DatabaseUsers = make([]*DatabaseUserSpecRequestBodyRequestBody, len(v.DatabaseUsers))
 		for i, val := range v.DatabaseUsers {
 			res.DatabaseUsers[i] = marshalControlplaneDatabaseUserSpecToDatabaseUserSpecRequestBodyRequestBody(val)
-		}
-	}
-	if v.Features != nil {
-		res.Features = make(map[string]string, len(v.Features))
-		for key, val := range v.Features {
-			tk := key
-			tv := val
-			res.Features[tk] = tv
 		}
 	}
 	if v.BackupConfig != nil {
@@ -4556,8 +4446,6 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecRequestBodyRequestBody
 		Name:            v.Name,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
-		StorageClass:    v.StorageClass,
-		StorageSize:     v.StorageSize,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
@@ -4600,15 +4488,7 @@ func marshalControlplaneBackupConfigSpecToBackupConfigSpecRequestBodyRequestBody
 	if v == nil {
 		return nil
 	}
-	res := &BackupConfigSpecRequestBodyRequestBody{
-		Provider: v.Provider,
-	}
-	{
-		var zero string
-		if res.Provider == zero {
-			res.Provider = "pgbackrest"
-		}
-	}
+	res := &BackupConfigSpecRequestBodyRequestBody{}
 	if v.Repositories != nil {
 		res.Repositories = make([]*BackupRepositorySpecRequestBodyRequestBody, len(v.Repositories))
 		for i, val := range v.Repositories {
@@ -4686,16 +4566,9 @@ func marshalControlplaneRestoreConfigSpecToRestoreConfigSpecRequestBodyRequestBo
 		return nil
 	}
 	res := &RestoreConfigSpecRequestBodyRequestBody{
-		Provider:           v.Provider,
 		SourceDatabaseID:   v.SourceDatabaseID,
 		SourceNodeName:     v.SourceNodeName,
 		SourceDatabaseName: v.SourceDatabaseName,
-	}
-	{
-		var zero string
-		if res.Provider == zero {
-			res.Provider = "pgbackrest"
-		}
 	}
 	if v.Repository != nil {
 		res.Repository = marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecRequestBodyRequestBody(v.Repository)
@@ -4796,15 +4669,12 @@ func marshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Data
 		return nil
 	}
 	res := &controlplane.DatabaseSpec{
-		DatabaseName:       v.DatabaseName,
-		PostgresVersion:    v.PostgresVersion,
-		SpockVersion:       v.SpockVersion,
-		Port:               v.Port,
-		DeletionProtection: v.DeletionProtection,
-		StorageClass:       v.StorageClass,
-		StorageSize:        v.StorageSize,
-		Cpus:               v.Cpus,
-		Memory:             v.Memory,
+		DatabaseName:    v.DatabaseName,
+		PostgresVersion: v.PostgresVersion,
+		SpockVersion:    v.SpockVersion,
+		Port:            v.Port,
+		Cpus:            v.Cpus,
+		Memory:          v.Memory,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*controlplane.DatabaseNodeSpec, len(v.Nodes))
@@ -4818,14 +4688,6 @@ func marshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Data
 		res.DatabaseUsers = make([]*controlplane.DatabaseUserSpec, len(v.DatabaseUsers))
 		for i, val := range v.DatabaseUsers {
 			res.DatabaseUsers[i] = marshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSpec(val)
-		}
-	}
-	if v.Features != nil {
-		res.Features = make(map[string]string, len(v.Features))
-		for key, val := range v.Features {
-			tk := key
-			tv := val
-			res.Features[tk] = tv
 		}
 	}
 	if v.BackupConfig != nil {
@@ -4860,8 +4722,6 @@ func marshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSpec
 		Name:            v.Name,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
-		StorageClass:    v.StorageClass,
-		StorageSize:     v.StorageSize,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
@@ -4904,15 +4764,7 @@ func marshalBackupConfigSpecRequestBodyRequestBodyToControlplaneBackupConfigSpec
 	if v == nil {
 		return nil
 	}
-	res := &controlplane.BackupConfigSpec{
-		Provider: v.Provider,
-	}
-	{
-		var zero string
-		if res.Provider == zero {
-			res.Provider = "pgbackrest"
-		}
-	}
+	res := &controlplane.BackupConfigSpec{}
 	if v.Repositories != nil {
 		res.Repositories = make([]*controlplane.BackupRepositorySpec, len(v.Repositories))
 		for i, val := range v.Repositories {
@@ -4990,16 +4842,9 @@ func marshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSp
 		return nil
 	}
 	res := &controlplane.RestoreConfigSpec{
-		Provider:           v.Provider,
 		SourceDatabaseID:   v.SourceDatabaseID,
 		SourceNodeName:     v.SourceNodeName,
 		SourceDatabaseName: v.SourceDatabaseName,
-	}
-	{
-		var zero string
-		if res.Provider == zero {
-			res.Provider = "pgbackrest"
-		}
 	}
 	if v.Repository != nil {
 		res.Repository = marshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRepositorySpec(v.Repository)

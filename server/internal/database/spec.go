@@ -23,18 +23,16 @@ type ExtraVolumesSpec struct {
 }
 
 type Node struct {
-	Name             string             `json:"name"`
-	HostIDs          []uuid.UUID        `json:"host_ids"`
-	PostgresVersion  string             `json:"postgres_version"`
-	Port             int                `json:"port"`
-	StorageClass     string             `json:"storage_class"`
-	StorageSizeBytes uint64             `json:"storage_size"`
-	CPUs             float64            `json:"cpus"`
-	MemoryBytes      uint64             `json:"memory"`
-	PostgreSQLConf   map[string]any     `json:"postgresql_conf"`
-	BackupConfig     *BackupConfig      `json:"backup_config"`
-	RestoreConfig    *RestoreConfig     `json:"restore_config"`
-	ExtraVolumes     []ExtraVolumesSpec `json:"extra_volumes,omitempty"`
+	Name            string             `json:"name"`
+	HostIDs         []uuid.UUID        `json:"host_ids"`
+	PostgresVersion string             `json:"postgres_version"`
+	Port            int                `json:"port"`
+	CPUs            float64            `json:"cpus"`
+	MemoryBytes     uint64             `json:"memory"`
+	PostgreSQLConf  map[string]any     `json:"postgresql_conf"`
+	BackupConfig    *BackupConfig      `json:"backup_config"`
+	RestoreConfig   *RestoreConfig     `json:"restore_config"`
+	ExtraVolumes    []ExtraVolumesSpec `json:"extra_volumes,omitempty"`
 }
 
 func (n *Node) Clone() *Node {
@@ -42,18 +40,16 @@ func (n *Node) Clone() *Node {
 		return nil
 	}
 	return &Node{
-		Name:             n.Name,
-		HostIDs:          slices.Clone(n.HostIDs),
-		PostgresVersion:  n.PostgresVersion,
-		Port:             n.Port,
-		StorageClass:     n.StorageClass,
-		StorageSizeBytes: n.StorageSizeBytes,
-		CPUs:             n.CPUs,
-		MemoryBytes:      n.MemoryBytes,
-		PostgreSQLConf:   maps.Clone(n.PostgreSQLConf),
-		BackupConfig:     n.BackupConfig.Clone(),
-		RestoreConfig:    n.RestoreConfig.Clone(),
-		ExtraVolumes:     slices.Clone(n.ExtraVolumes),
+		Name:            n.Name,
+		HostIDs:         slices.Clone(n.HostIDs),
+		PostgresVersion: n.PostgresVersion,
+		Port:            n.Port,
+		CPUs:            n.CPUs,
+		MemoryBytes:     n.MemoryBytes,
+		PostgreSQLConf:  maps.Clone(n.PostgreSQLConf),
+		BackupConfig:    n.BackupConfig.Clone(),
+		RestoreConfig:   n.RestoreConfig.Clone(),
+		ExtraVolumes:    slices.Clone(n.ExtraVolumes),
 	}
 }
 
@@ -83,13 +79,6 @@ type Extension struct {
 	Version string `json:"version"`
 }
 
-type BackupProvider string
-
-const (
-	BackupProviderPgBackRest BackupProvider = "pgbackrest"
-	BackupProviderPgDump     BackupProvider = "pg_dump"
-)
-
 type BackupScheduleType string
 
 const (
@@ -115,7 +104,6 @@ func (b *BackupSchedule) Clone() *BackupSchedule {
 }
 
 type BackupConfig struct {
-	Provider     BackupProvider           `json:"provider"`
 	Repositories []*pgbackrest.Repository `json:"repositories"`
 	Schedules    []*BackupSchedule        `json:"schedules"`
 }
@@ -134,14 +122,12 @@ func (b *BackupConfig) Clone() *BackupConfig {
 	}
 
 	return &BackupConfig{
-		Provider:     b.Provider,
 		Repositories: repos,
 		Schedules:    schedules,
 	}
 }
 
 type RestoreConfig struct {
-	Provider           BackupProvider         `json:"provider"`
 	SourceDatabaseID   uuid.UUID              `json:"source_database_id"`
 	SourceNodeName     string                 `json:"source_node_name"`
 	SourceDatabaseName string                 `json:"source_database_name"`
@@ -154,7 +140,6 @@ func (r *RestoreConfig) Clone() *RestoreConfig {
 		return nil
 	}
 	return &RestoreConfig{
-		Provider:           r.Provider,
 		SourceDatabaseID:   r.SourceDatabaseID,
 		SourceNodeName:     r.SourceNodeName,
 		SourceDatabaseName: r.SourceDatabaseName,
@@ -164,24 +149,20 @@ func (r *RestoreConfig) Clone() *RestoreConfig {
 }
 
 type Spec struct {
-	DatabaseID         uuid.UUID          `json:"database_id"`
-	TenantID           *uuid.UUID         `json:"tenant_id,omitempty"`
-	DatabaseName       string             `json:"database_name"`
-	PostgresVersion    string             `json:"postgres_version"`
-	SpockVersion       string             `json:"spock_version"`
-	Port               int                `json:"port"`
-	DeletionProtection bool               `json:"deletion_protection"`
-	StorageClass       string             `json:"storage_class"`
-	StorageSizeBytes   uint64             `json:"storage_size"`
-	CPUs               float64            `json:"cpus"`
-	MemoryBytes        uint64             `json:"memory"`
-	Nodes              []*Node            `json:"nodes"`
-	DatabaseUsers      []*User            `json:"database_users"`
-	Features           map[string]string  `json:"features"`
-	BackupConfig       *BackupConfig      `json:"backup_config"`
-	RestoreConfig      *RestoreConfig     `json:"restore_config"`
-	PostgreSQLConf     map[string]any     `json:"postgresql_conf"`
-	ExtraVolumes       []ExtraVolumesSpec `json:"extra_volumes,omitempty"`
+	DatabaseID      uuid.UUID          `json:"database_id"`
+	TenantID        *uuid.UUID         `json:"tenant_id,omitempty"`
+	DatabaseName    string             `json:"database_name"`
+	PostgresVersion string             `json:"postgres_version"`
+	SpockVersion    string             `json:"spock_version"`
+	Port            int                `json:"port"`
+	CPUs            float64            `json:"cpus"`
+	MemoryBytes     uint64             `json:"memory"`
+	Nodes           []*Node            `json:"nodes"`
+	DatabaseUsers   []*User            `json:"database_users"`
+	BackupConfig    *BackupConfig      `json:"backup_config"`
+	RestoreConfig   *RestoreConfig     `json:"restore_config"`
+	PostgreSQLConf  map[string]any     `json:"postgresql_conf"`
+	ExtraVolumes    []ExtraVolumesSpec `json:"extra_volumes,omitempty"`
 }
 
 func (s *Spec) Node(name string) (*Node, error) {
@@ -249,24 +230,20 @@ func (s *Spec) Clone() *Spec {
 	}
 
 	return &Spec{
-		DatabaseID:         s.DatabaseID,
-		TenantID:           utils.ClonePointer(s.TenantID),
-		DatabaseName:       s.DatabaseName,
-		PostgresVersion:    s.PostgresVersion,
-		SpockVersion:       s.SpockVersion,
-		Port:               s.Port,
-		DeletionProtection: s.DeletionProtection,
-		StorageClass:       s.StorageClass,
-		StorageSizeBytes:   s.StorageSizeBytes,
-		CPUs:               s.CPUs,
-		MemoryBytes:        s.MemoryBytes,
-		Features:           maps.Clone(s.Features),
-		PostgreSQLConf:     maps.Clone(s.PostgreSQLConf),
-		Nodes:              nodes,
-		DatabaseUsers:      users,
-		BackupConfig:       s.BackupConfig.Clone(),
-		RestoreConfig:      s.RestoreConfig.Clone(),
-		ExtraVolumes:       slices.Clone(s.ExtraVolumes),
+		DatabaseID:      s.DatabaseID,
+		TenantID:        utils.ClonePointer(s.TenantID),
+		DatabaseName:    s.DatabaseName,
+		PostgresVersion: s.PostgresVersion,
+		SpockVersion:    s.SpockVersion,
+		Port:            s.Port,
+		CPUs:            s.CPUs,
+		MemoryBytes:     s.MemoryBytes,
+		PostgreSQLConf:  maps.Clone(s.PostgreSQLConf),
+		Nodes:           nodes,
+		DatabaseUsers:   users,
+		BackupConfig:    s.BackupConfig.Clone(),
+		RestoreConfig:   s.RestoreConfig.Clone(),
+		ExtraVolumes:    slices.Clone(s.ExtraVolumes),
 	}
 }
 
@@ -277,27 +254,24 @@ func InstanceIDFor(hostID, databaseID uuid.UUID, nodeName string) uuid.UUID {
 }
 
 type InstanceSpec struct {
-	InstanceID       uuid.UUID           `json:"instance_id"`
-	TenantID         *uuid.UUID          `json:"tenant_id,omitempty"`
-	DatabaseID       uuid.UUID           `json:"database_id"`
-	HostID           uuid.UUID           `json:"host_id"`
-	DatabaseName     string              `json:"database_name"`
-	NodeName         string              `json:"node_name"`
-	NodeOrdinal      int                 `json:"node_ordinal"`
-	PgEdgeVersion    *host.PgEdgeVersion `json:"pg_edge_version"`
-	Port             int                 `json:"port"`
-	StorageClass     string              `json:"storage_class"`
-	StorageSizeBytes uint64              `json:"storage_size"`
-	CPUs             float64             `json:"cpus"`
-	MemoryBytes      uint64              `json:"memory"`
-	DatabaseUsers    []*User             `json:"database_users"`
-	Features         map[string]string   `json:"features"`
-	BackupConfig     *BackupConfig       `json:"backup_config"`
-	RestoreConfig    *RestoreConfig      `json:"restore_config"`
-	PostgreSQLConf   map[string]any      `json:"postgresql_conf"`
-	EnableBackups    bool                `json:"enable_backups"`
-	ClusterSize      int                 `json:"cluster_size"`
-	ExtraVolumes     []ExtraVolumesSpec  `json:"extra_volumes,omitempty"`
+	InstanceID     uuid.UUID           `json:"instance_id"`
+	TenantID       *uuid.UUID          `json:"tenant_id,omitempty"`
+	DatabaseID     uuid.UUID           `json:"database_id"`
+	HostID         uuid.UUID           `json:"host_id"`
+	DatabaseName   string              `json:"database_name"`
+	NodeName       string              `json:"node_name"`
+	NodeOrdinal    int                 `json:"node_ordinal"`
+	PgEdgeVersion  *host.PgEdgeVersion `json:"pg_edge_version"`
+	Port           int                 `json:"port"`
+	CPUs           float64             `json:"cpus"`
+	MemoryBytes    uint64              `json:"memory"`
+	DatabaseUsers  []*User             `json:"database_users"`
+	BackupConfig   *BackupConfig       `json:"backup_config"`
+	RestoreConfig  *RestoreConfig      `json:"restore_config"`
+	PostgreSQLConf map[string]any      `json:"postgresql_conf"`
+	EnableBackups  bool                `json:"enable_backups"`
+	ClusterSize    int                 `json:"cluster_size"`
+	ExtraVolumes   []ExtraVolumesSpec  `json:"extra_volumes,omitempty"`
 }
 
 func (i *InstanceSpec) Hostname() string {
@@ -306,10 +280,6 @@ func (i *InstanceSpec) Hostname() string {
 
 func (i *InstanceSpec) HostnameWithDomain() string {
 	return fmt.Sprintf("%s.%s-database", i.Hostname(), i.DatabaseID)
-}
-
-func (i *InstanceSpec) UsesPgBackRest() bool {
-	return i.BackupConfig != nil && i.BackupConfig.Provider == BackupProviderPgBackRest
 }
 
 type NodeInstances struct {
@@ -343,14 +313,6 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		if node.Port > 0 {
 			port = node.Port
 		}
-		storageClass := s.StorageClass
-		if node.StorageClass != "" {
-			storageClass = node.StorageClass
-		}
-		storageSizeBytes := s.StorageSizeBytes
-		if node.StorageSizeBytes > 0 {
-			storageSizeBytes = node.StorageSizeBytes
-		}
 		cpus := s.CPUs
 		if node.CPUs > 0 {
 			cpus = node.CPUs
@@ -378,24 +340,21 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		instances := make([]*InstanceSpec, len(node.HostIDs))
 		for hostIdx, hostID := range node.HostIDs {
 			instances[hostIdx] = &InstanceSpec{
-				InstanceID:       InstanceIDFor(hostID, s.DatabaseID, node.Name),
-				TenantID:         s.TenantID,
-				DatabaseID:       s.DatabaseID,
-				HostID:           hostID,
-				DatabaseName:     s.DatabaseName,
-				NodeName:         node.Name,
-				NodeOrdinal:      nodeOrdinal,
-				PgEdgeVersion:    nodeVersion,
-				Port:             port,
-				StorageClass:     storageClass,
-				StorageSizeBytes: storageSizeBytes,
-				CPUs:             cpus,
-				MemoryBytes:      memoryBytes,
-				DatabaseUsers:    s.DatabaseUsers,
-				Features:         s.Features,
-				BackupConfig:     backupConfig,
-				RestoreConfig:    restoreConfig,
-				PostgreSQLConf:   postgresqlConf,
+				InstanceID:     InstanceIDFor(hostID, s.DatabaseID, node.Name),
+				TenantID:       s.TenantID,
+				DatabaseID:     s.DatabaseID,
+				HostID:         hostID,
+				DatabaseName:   s.DatabaseName,
+				NodeName:       node.Name,
+				NodeOrdinal:    nodeOrdinal,
+				PgEdgeVersion:  nodeVersion,
+				Port:           port,
+				CPUs:           cpus,
+				MemoryBytes:    memoryBytes,
+				DatabaseUsers:  s.DatabaseUsers,
+				BackupConfig:   backupConfig,
+				RestoreConfig:  restoreConfig,
+				PostgreSQLConf: postgresqlConf,
 				// By default, we'll choose the last host in the list to run
 				// backups. We'll want to incorporate the current state of the
 				// cluster into this decision when we implement updates.

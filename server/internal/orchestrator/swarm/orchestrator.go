@@ -293,7 +293,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		service,
 	}
 
-	if spec.BackupConfig != nil && spec.BackupConfig.Provider == database.BackupProviderPgBackRest {
+	if spec.BackupConfig != nil {
 		orchestratorResources = append(orchestratorResources,
 			&PgBackRestConfig{
 				InstanceID:   spec.InstanceID,
@@ -311,7 +311,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 			},
 		)
 	}
-	if spec.RestoreConfig != nil && spec.RestoreConfig.Provider == database.BackupProviderPgBackRest {
+	if spec.RestoreConfig != nil {
 		orchestratorResources = append(orchestratorResources, &PgBackRestConfig{
 			InstanceID:   spec.InstanceID,
 			HostID:       spec.HostID,
