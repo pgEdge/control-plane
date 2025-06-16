@@ -287,6 +287,11 @@ func (s *PostInitHandlers) BackupDatabaseNode(ctx context.Context, req *api.Back
 	if err != nil {
 		return nil, apiErr(err)
 	}
+
+	if err := validateBackupOptions(req.Options); err != nil {
+		return nil, apiErr(err)
+	}
+
 	instances := make([]*workflows.InstanceHost, len(node.HostIDs))
 	for i, hostID := range node.HostIDs {
 		instances[i] = &workflows.InstanceHost{
