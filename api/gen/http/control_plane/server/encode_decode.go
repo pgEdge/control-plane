@@ -443,10 +443,15 @@ func DecodeGetHostRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp
 	return func(r *http.Request) (any, error) {
 		var (
 			hostID string
+			err    error
 
 			params = mux.Vars(r)
 		)
 		hostID = params["host_id"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("host_id", hostID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
 		payload := NewGetHostPayload(hostID)
 
 		return payload, nil
@@ -536,10 +541,15 @@ func DecodeRemoveHostRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 	return func(r *http.Request) (any, error) {
 		var (
 			hostID string
+			err    error
 
 			params = mux.Vars(r)
 		)
 		hostID = params["host_id"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("host_id", hostID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
 		payload := NewRemoveHostPayload(hostID)
 
 		return payload, nil
@@ -808,10 +818,15 @@ func DecodeGetDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 	return func(r *http.Request) (any, error) {
 		var (
 			databaseID string
+			err        error
 
 			params = mux.Vars(r)
 		)
 		databaseID = params["database_id"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("database_id", databaseID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
 		payload := NewGetDatabasePayload(databaseID)
 
 		return payload, nil
@@ -909,14 +924,13 @@ func DecodeUpdateDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 		err = decoder(r).Decode(&body)
 		if err != nil {
 			if err == io.EOF {
-				err = nil
-			} else {
-				var gerr *goa.ServiceError
-				if errors.As(err, &gerr) {
-					return nil, gerr
-				}
-				return nil, goa.DecodePayloadError(err.Error())
+				return nil, goa.MissingPayloadError()
 			}
+			var gerr *goa.ServiceError
+			if errors.As(err, &gerr) {
+				return nil, gerr
+			}
+			return nil, goa.DecodePayloadError(err.Error())
 		}
 		err = ValidateUpdateDatabaseRequestBody(&body)
 		if err != nil {
@@ -925,11 +939,12 @@ func DecodeUpdateDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 
 		var (
 			databaseID  string
-			forceUpdate *bool
+			forceUpdate bool
 
 			params = mux.Vars(r)
 		)
 		databaseID = params["database_id"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("database_id", databaseID, goa.FormatUUID))
 		{
 			forceUpdateRaw := r.URL.Query().Get("force_update")
 			if forceUpdateRaw != "" {
@@ -937,7 +952,7 @@ func DecodeUpdateDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 				if err2 != nil {
 					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("force_update", forceUpdateRaw, "boolean"))
 				}
-				forceUpdate = &v
+				forceUpdate = v
 			}
 		}
 		if err != nil {
@@ -1215,6 +1230,7 @@ func DecodeBackupDatabaseNodeRequest(mux goahttp.Muxer, decoder func(*http.Reque
 		databaseID = params["database_id"]
 		err = goa.MergeErrors(err, goa.ValidateFormat("database_id", databaseID, goa.FormatUUID))
 		nodeName = params["node_name"]
+		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "n[0-9]+"))
 		if err != nil {
 			return nil, err
 		}
@@ -1882,9 +1898,6 @@ func marshalControlplaneClusterPeerToClusterPeerResponseBody(v *controlplane.Clu
 // a value of type *ClusterCredentialsResponseBody from a value of type
 // *controlplane.ClusterCredentials.
 func marshalControlplaneClusterCredentialsToClusterCredentialsResponseBody(v *controlplane.ClusterCredentials) *ClusterCredentialsResponseBody {
-	if v == nil {
-		return nil
-	}
 	res := &ClusterCredentialsResponseBody{
 		CaCert:     v.CaCert,
 		ClientCert: v.ClientCert,
@@ -2154,9 +2167,6 @@ func marshalControlplaneviewsInstanceViewToInstanceResponseAbbreviated(v *contro
 // type *controlplane.DatabaseSpec from a value of type
 // *DatabaseSpecRequestBody.
 func unmarshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecRequestBody) *controlplane.DatabaseSpec {
-	if v == nil {
-		return nil
-	}
 	res := &controlplane.DatabaseSpec{
 		DatabaseName:    *v.DatabaseName,
 		PostgresVersion: v.PostgresVersion,
@@ -2415,9 +2425,6 @@ func unmarshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec(v *Datab
 // marshalControlplaneTaskToTaskResponseBody builds a value of type
 // *TaskResponseBody from a value of type *controlplane.Task.
 func marshalControlplaneTaskToTaskResponseBody(v *controlplane.Task) *TaskResponseBody {
-	if v == nil {
-		return nil
-	}
 	res := &TaskResponseBody{
 		ParentID:    v.ParentID,
 		DatabaseID:  v.DatabaseID,
@@ -2438,9 +2445,6 @@ func marshalControlplaneTaskToTaskResponseBody(v *controlplane.Task) *TaskRespon
 // marshalControlplaneDatabaseToDatabaseResponseBody builds a value of type
 // *DatabaseResponseBody from a value of type *controlplane.Database.
 func marshalControlplaneDatabaseToDatabaseResponseBody(v *controlplane.Database) *DatabaseResponseBody {
-	if v == nil {
-		return nil
-	}
 	res := &DatabaseResponseBody{
 		ID:        v.ID,
 		TenantID:  v.TenantID,
@@ -3218,9 +3222,6 @@ func marshalControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpecResponseBody(
 // a value of type *controlplane.DatabaseSpec from a value of type
 // *DatabaseSpecRequestBodyRequestBody.
 func unmarshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecRequestBodyRequestBody) *controlplane.DatabaseSpec {
-	if v == nil {
-		return nil
-	}
 	res := &controlplane.DatabaseSpec{
 		DatabaseName:    *v.DatabaseName,
 		PostgresVersion: v.PostgresVersion,

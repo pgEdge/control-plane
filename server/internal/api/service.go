@@ -195,7 +195,7 @@ func (s *Service) CreateDatabase(ctx context.Context, req *api.CreateDatabaseReq
 }
 
 func (s *Service) GetDatabase(ctx context.Context, req *api.GetDatabasePayload) (*api.Database, error) {
-	databaseID, err := parseUUIDPtr(req.DatabaseID)
+	databaseID, err := uuid.Parse(req.DatabaseID)
 	if err != nil {
 		return nil, ErrInvalidDatabaseID
 	}
@@ -209,7 +209,7 @@ func (s *Service) GetDatabase(ctx context.Context, req *api.GetDatabasePayload) 
 }
 
 func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePayload) (*api.UpdateDatabaseResponse, error) {
-	spec, err := apiToDatabaseSpec(req.DatabaseID, req.Request.TenantID, req.Request.Spec)
+	spec, err := apiToDatabaseSpec(&req.DatabaseID, req.Request.TenantID, req.Request.Spec)
 	if err != nil {
 		return nil, makeInvalidInputErr(err)
 	}
@@ -229,12 +229,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePay
 		return nil, apiErr(err)
 	}
 
-	var forceUpdate bool
-	if req.ForceUpdate != nil {
-		forceUpdate = *req.ForceUpdate
-	}
-
-	t, err := s.workflowSvc.UpdateDatabase(ctx, spec, forceUpdate)
+	t, err := s.workflowSvc.UpdateDatabase(ctx, spec, req.ForceUpdate)
 	if err != nil {
 		return nil, apiErr(err)
 	}

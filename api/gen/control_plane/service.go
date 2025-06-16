@@ -242,9 +242,9 @@ type ClusterStatus struct {
 
 type ComponentStatus struct {
 	// Indicates if the component is healthy.
-	Healthy *bool
+	Healthy bool
 	// Error message from any errors that occurred during the health check.
-	Error string
+	Error *string
 	// Additional details about the component.
 	Details map[string]any
 }
@@ -305,9 +305,11 @@ type DatabaseNodeSpec struct {
 	// port set in the DatabaseSpec.
 	Port *int
 	// The number of CPUs to allocate for the database on this node and to use for
-	// tuning Postgres. Defaults to the number of available CPUs on the host. Can
-	// include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will
-	// be enforced depends on the orchestrator.
+	// tuning Postgres. Can include the SI suffix 'm', e.g. '500m' for 500
+	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
+	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
+	// than are available on the host. Whether this limit will be enforced depends
+	// on the orchestrator.
 	Cpus *string
 	// The amount of memory in SI or IEC notation to allocate for the database on
 	// this node and to use for tuning Postgres. Defaults to the total available
@@ -400,7 +402,7 @@ type ExtraVolumesSpec struct {
 // get-database method.
 type GetDatabasePayload struct {
 	// ID of the database to get.
-	DatabaseID *string
+	DatabaseID string
 }
 
 // GetDatabaseTaskLogPayload is the payload type of the control-plane service
@@ -429,7 +431,7 @@ type GetDatabaseTaskPayload struct {
 // method.
 type GetHostPayload struct {
 	// ID of the host to get.
-	HostID *string
+	HostID string
 }
 
 // Host is the result type of the control-plane service get-host method.
@@ -438,16 +440,16 @@ type Host struct {
 	ID string
 	// The orchestrator used by this host.
 	Orchestrator string
-	// The cohort that this host belongs to/
+	// The cohort that this host belongs to.
 	Cohort *HostCohort
 	// The hostname of this host.
 	Hostname string
 	// The IPv4 address of this host.
 	Ipv4Address string
 	// The number of CPUs on this host.
-	Cpus int
+	Cpus *int
 	// The amount of memory available on this host.
-	Memory string
+	Memory *string
 	// Current status of the host.
 	Status *HostStatus
 	// The default PgEdge version for this host.
@@ -568,7 +570,7 @@ type PgEdgeVersion struct {
 // remove-host method.
 type RemoveHostPayload struct {
 	// ID of the host to remove.
-	HostID *string
+	HostID string
 }
 
 type RestoreConfigSpec struct {
@@ -710,9 +712,9 @@ type TaskLogEntry struct {
 // update-database method.
 type UpdateDatabasePayload struct {
 	// ID of the database to update.
-	DatabaseID *string
+	DatabaseID string
 	// Force update the database even if the spec is the same.
-	ForceUpdate *bool
+	ForceUpdate bool
 	Request     *UpdateDatabaseRequest
 }
 

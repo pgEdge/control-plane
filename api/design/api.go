@@ -148,8 +148,11 @@ var _ = g.Service("control-plane", func() {
 		g.Payload(func() {
 			g.Attribute("host_id", g.String, func() {
 				g.Description("ID of the host to get.")
+				g.Format(g.FormatUUID)
 				g.Example("de3b1388-1f0c-42f1-a86c-59ab72f255ec")
 			})
+
+			g.Required("host_id")
 		})
 		g.Result(Host)
 		g.Error("cluster_not_initialized")
@@ -169,8 +172,11 @@ var _ = g.Service("control-plane", func() {
 		g.Payload(func() {
 			g.Attribute("host_id", g.String, func() {
 				g.Description("ID of the host to remove.")
+				g.Format(g.FormatUUID)
 				g.Example("de3b1388-1f0c-42f1-a86c-59ab72f255ec")
 			})
+
+			g.Required("host_id")
 		})
 		g.Error("cluster_not_initialized")
 		g.Error("invalid_input")
@@ -222,8 +228,11 @@ var _ = g.Service("control-plane", func() {
 		g.Payload(func() {
 			g.Attribute("database_id", g.String, func() {
 				g.Description("ID of the database to get.")
+				g.Format(g.FormatUUID)
 				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
+
+			g.Required("database_id")
 		})
 		g.Result(Database, func() {
 			g.View("default")
@@ -245,13 +254,17 @@ var _ = g.Service("control-plane", func() {
 		g.Payload(func() {
 			g.Attribute("database_id", g.String, func() {
 				g.Description("ID of the database to update.")
+				g.Format(g.FormatUUID)
 				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 			g.Attribute("force_update", g.Boolean, func() {
 				g.Description("Force update the database even if the spec is the same.")
+				g.Default(false)
 				g.Example(true)
 			})
 			g.Attribute("request", UpdateDatabaseRequest)
+
+			g.Required("database_id", "request")
 		})
 		g.Result(UpdateDatabaseResponse)
 		g.Error("cluster_not_initialized")
@@ -306,6 +319,7 @@ var _ = g.Service("control-plane", func() {
 			})
 			g.Attribute("node_name", g.String, func() {
 				g.Description("Name of the node to back up.")
+				g.Pattern(nodeNamePattern)
 				g.Example("n1")
 			})
 			g.Attribute("options", BackupOptions)
@@ -487,5 +501,6 @@ var APIError = g.Type("APIError", func() {
 	g.Description("A Control Plane API error.")
 	g.ErrorName("name", g.String, "The name of the error.")
 	g.Attribute("message", g.String, "The error message.")
+
 	g.Required("name", "message")
 })
