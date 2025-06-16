@@ -4,6 +4,59 @@ import (
 	g "goa.design/goa/v3/dsl"
 )
 
+var InstanceConnectionInfo = g.Type("InstanceConnectionInfo", func() {
+	g.Description("Connection information for a pgEdge instance.")
+	g.Attribute("hostname", g.String, func() {
+		g.Description("The hostname of the host that's running this instance.")
+		g.Example("i-0123456789abcdef.ec2.internal")
+	})
+	g.Attribute("ipv4_address", g.String, func() {
+		g.Description("The IPv4 address of the host that's running this instance.")
+		g.Format(g.FormatIPv4)
+		g.Example("10.24.34.0")
+	})
+	g.Attribute("port", g.Int, func() {
+		g.Description("The host port that Postgres is listening on for this instance.")
+		g.Example(5432)
+	})
+})
+
+var InstancePostgresStatus = g.Type("InstancePostgresStatus", func() {
+	g.Description("Postgres status information for a pgEdge instance.")
+	g.Attribute("version", g.String, func() {
+		g.Description("The version of Postgres for this instance.")
+		g.Example("17.5")
+	})
+	g.Attribute("patroni_state", g.String, func() {
+		g.Enum(
+			"stopping",
+			"stopped",
+			"stop failed",
+			"crashed",
+			"running",
+			"starting",
+			"start failed",
+			"restarting",
+			"restart failed",
+			"initializing new cluster",
+			"initdb failed",
+			"running custom bootstrap script",
+			"custom bootstrap failed",
+			"creating replica",
+			"unknown",
+		)
+	})
+	g.Attribute("role", g.String, func() {
+		g.Enum("replica", "primary")
+	})
+	g.Attribute("pending_restart", g.Boolean, func() {
+		g.Description("True if this instance is pending to be restarted from a configuration change.")
+	})
+	g.Attribute("patroni_paused", g.Boolean, func() {
+		g.Description("True if Patroni has been paused for this instance.")
+	})
+})
+
 var InstanceSubscription = g.Type("InstanceSubscription", func() {
 	g.Description("Status information for a Spock subscription.")
 	g.Attribute("provider_node", g.String, func() {
@@ -21,6 +74,21 @@ var InstanceSubscription = g.Type("InstanceSubscription", func() {
 	})
 
 	g.Required("provider_node", "name", "status")
+})
+
+var InstanceSpockStatus = g.Type("InstanceSpockStatus", func() {
+	g.Description("Spock status information for a pgEdge instance.")
+	g.Attribute("read_only", g.String, func() {
+		g.Description("The current spock.readonly setting.")
+		g.Example("off")
+	})
+	g.Attribute("version", g.String, func() {
+		g.Description("The version of Spock for this instance.")
+		g.Example("4.10.0")
+	})
+	g.Attribute("subscriptions", g.ArrayOf(InstanceSubscription), func() {
+		g.Description("Status information for this instance's Spock subscriptions.")
+	})
 })
 
 var Instance = g.ResultType("Instance", func() {
@@ -63,61 +131,14 @@ var Instance = g.ResultType("Instance", func() {
 				"unknown",
 			)
 		})
-		g.Attribute("patroni_state", g.String, func() {
-			g.Enum(
-				"stopping",
-				"stopped",
-				"stop failed",
-				"crashed",
-				"running",
-				"starting",
-				"start failed",
-				"restarting",
-				"restart failed",
-				"initializing new cluster",
-				"initdb failed",
-				"running custom bootstrap script",
-				"custom bootstrap failed",
-				"creating replica",
-				"unknown",
-			)
+		g.Attribute("connection_info", InstanceConnectionInfo, func() {
+			g.Description("Connection information for the instance.")
 		})
-		g.Attribute("role", g.String, func() {
-			g.Enum("replica", "primary")
+		g.Attribute("postgres", InstancePostgresStatus, func() {
+			g.Description("Postgres status information for the instance.")
 		})
-		g.Attribute("read_only", g.String, func() {
-			g.Description("The current spock.readonly setting.")
-			g.Example("off")
-		})
-		g.Attribute("pending_restart", g.Boolean, func() {
-			g.Description("True if this instance is pending to be restarted from a configuration change.")
-		})
-		g.Attribute("patroni_paused", g.Boolean, func() {
-			g.Description("True if Patroni has been paused for this instance.")
-		})
-		g.Attribute("postgres_version", g.String, func() {
-			g.Description("The version of Postgres for this instance.")
-			g.Example("17.1")
-		})
-		g.Attribute("spock_version", g.String, func() {
-			g.Description("The version of Spock for this instance.")
-			g.Example("4.0.9")
-		})
-		g.Attribute("hostname", g.String, func() {
-			g.Description("The hostname of the host that's running this instance.")
-			g.Example("i-0123456789abcdef.ec2.internal")
-		})
-		g.Attribute("ipv4_address", g.String, func() {
-			g.Description("The IPv4 address of the host that's running this instance.")
-			g.Format(g.FormatIPv4)
-			g.Example("10.24.34.0")
-		})
-		g.Attribute("port", g.Int, func() {
-			g.Description("The host port that Postgres is listening on for this instance.")
-			g.Example(5432)
-		})
-		g.Attribute("subscriptions", g.ArrayOf(InstanceSubscription), func() {
-			g.Description("Status information for this instance's Spock subscriptions.")
+		g.Attribute("spock", InstanceSpockStatus, func() {
+			g.Description("Spock status information for the instance.")
 		})
 		g.Attribute("error", g.String, func() {
 			g.Description("An error message if the instance is in an error state.")
@@ -133,17 +154,9 @@ var Instance = g.ResultType("Instance", func() {
 		g.Attribute("updated_at")
 		g.Attribute("status_updated_at")
 		g.Attribute("state")
-		g.Attribute("patroni_state")
-		g.Attribute("role")
-		g.Attribute("read_only")
-		g.Attribute("pending_restart")
-		g.Attribute("patroni_paused")
-		g.Attribute("postgres_version")
-		g.Attribute("spock_version")
-		g.Attribute("hostname")
-		g.Attribute("ipv4_address")
-		g.Attribute("port")
-		g.Attribute("subscriptions")
+		g.Attribute("connection_info")
+		g.Attribute("postgres")
+		g.Attribute("spock")
 		g.Attribute("error")
 	})
 

@@ -2697,17 +2697,65 @@ func unmarshalInstanceResponseToControlplaneviewsInstanceView(v *InstanceRespons
 		UpdatedAt:       v.UpdatedAt,
 		StatusUpdatedAt: v.StatusUpdatedAt,
 		State:           v.State,
-		PatroniState:    v.PatroniState,
-		Role:            v.Role,
-		ReadOnly:        v.ReadOnly,
-		PendingRestart:  v.PendingRestart,
-		PatroniPaused:   v.PatroniPaused,
-		PostgresVersion: v.PostgresVersion,
-		SpockVersion:    v.SpockVersion,
-		Hostname:        v.Hostname,
-		Ipv4Address:     v.Ipv4Address,
-		Port:            v.Port,
 		Error:           v.Error,
+	}
+	if v.ConnectionInfo != nil {
+		res.ConnectionInfo = unmarshalInstanceConnectionInfoResponseToControlplaneviewsInstanceConnectionInfoView(v.ConnectionInfo)
+	}
+	if v.Postgres != nil {
+		res.Postgres = unmarshalInstancePostgresStatusResponseToControlplaneviewsInstancePostgresStatusView(v.Postgres)
+	}
+	if v.Spock != nil {
+		res.Spock = unmarshalInstanceSpockStatusResponseToControlplaneviewsInstanceSpockStatusView(v.Spock)
+	}
+
+	return res
+}
+
+// unmarshalInstanceConnectionInfoResponseToControlplaneviewsInstanceConnectionInfoView
+// builds a value of type *controlplaneviews.InstanceConnectionInfoView from a
+// value of type *InstanceConnectionInfoResponse.
+func unmarshalInstanceConnectionInfoResponseToControlplaneviewsInstanceConnectionInfoView(v *InstanceConnectionInfoResponse) *controlplaneviews.InstanceConnectionInfoView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.InstanceConnectionInfoView{
+		Hostname:    v.Hostname,
+		Ipv4Address: v.Ipv4Address,
+		Port:        v.Port,
+	}
+
+	return res
+}
+
+// unmarshalInstancePostgresStatusResponseToControlplaneviewsInstancePostgresStatusView
+// builds a value of type *controlplaneviews.InstancePostgresStatusView from a
+// value of type *InstancePostgresStatusResponse.
+func unmarshalInstancePostgresStatusResponseToControlplaneviewsInstancePostgresStatusView(v *InstancePostgresStatusResponse) *controlplaneviews.InstancePostgresStatusView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.InstancePostgresStatusView{
+		Version:        v.Version,
+		PatroniState:   v.PatroniState,
+		Role:           v.Role,
+		PendingRestart: v.PendingRestart,
+		PatroniPaused:  v.PatroniPaused,
+	}
+
+	return res
+}
+
+// unmarshalInstanceSpockStatusResponseToControlplaneviewsInstanceSpockStatusView
+// builds a value of type *controlplaneviews.InstanceSpockStatusView from a
+// value of type *InstanceSpockStatusResponse.
+func unmarshalInstanceSpockStatusResponseToControlplaneviewsInstanceSpockStatusView(v *InstanceSpockStatusResponse) *controlplaneviews.InstanceSpockStatusView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.InstanceSpockStatusView{
+		ReadOnly: v.ReadOnly,
+		Version:  v.Version,
 	}
 	if v.Subscriptions != nil {
 		res.Subscriptions = make([]*controlplaneviews.InstanceSubscriptionView, len(v.Subscriptions))
@@ -3684,17 +3732,65 @@ func unmarshalInstanceResponseBodyToControlplaneInstance(v *InstanceResponseBody
 		UpdatedAt:       *v.UpdatedAt,
 		StatusUpdatedAt: v.StatusUpdatedAt,
 		State:           *v.State,
-		PatroniState:    v.PatroniState,
-		Role:            v.Role,
-		ReadOnly:        v.ReadOnly,
-		PendingRestart:  v.PendingRestart,
-		PatroniPaused:   v.PatroniPaused,
-		PostgresVersion: v.PostgresVersion,
-		SpockVersion:    v.SpockVersion,
-		Hostname:        v.Hostname,
-		Ipv4Address:     v.Ipv4Address,
-		Port:            v.Port,
 		Error:           v.Error,
+	}
+	if v.ConnectionInfo != nil {
+		res.ConnectionInfo = unmarshalInstanceConnectionInfoResponseBodyToControlplaneInstanceConnectionInfo(v.ConnectionInfo)
+	}
+	if v.Postgres != nil {
+		res.Postgres = unmarshalInstancePostgresStatusResponseBodyToControlplaneInstancePostgresStatus(v.Postgres)
+	}
+	if v.Spock != nil {
+		res.Spock = unmarshalInstanceSpockStatusResponseBodyToControlplaneInstanceSpockStatus(v.Spock)
+	}
+
+	return res
+}
+
+// unmarshalInstanceConnectionInfoResponseBodyToControlplaneInstanceConnectionInfo
+// builds a value of type *controlplane.InstanceConnectionInfo from a value of
+// type *InstanceConnectionInfoResponseBody.
+func unmarshalInstanceConnectionInfoResponseBodyToControlplaneInstanceConnectionInfo(v *InstanceConnectionInfoResponseBody) *controlplane.InstanceConnectionInfo {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.InstanceConnectionInfo{
+		Hostname:    v.Hostname,
+		Ipv4Address: v.Ipv4Address,
+		Port:        v.Port,
+	}
+
+	return res
+}
+
+// unmarshalInstancePostgresStatusResponseBodyToControlplaneInstancePostgresStatus
+// builds a value of type *controlplane.InstancePostgresStatus from a value of
+// type *InstancePostgresStatusResponseBody.
+func unmarshalInstancePostgresStatusResponseBodyToControlplaneInstancePostgresStatus(v *InstancePostgresStatusResponseBody) *controlplane.InstancePostgresStatus {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.InstancePostgresStatus{
+		Version:        v.Version,
+		PatroniState:   v.PatroniState,
+		Role:           v.Role,
+		PendingRestart: v.PendingRestart,
+		PatroniPaused:  v.PatroniPaused,
+	}
+
+	return res
+}
+
+// unmarshalInstanceSpockStatusResponseBodyToControlplaneInstanceSpockStatus
+// builds a value of type *controlplane.InstanceSpockStatus from a value of
+// type *InstanceSpockStatusResponseBody.
+func unmarshalInstanceSpockStatusResponseBodyToControlplaneInstanceSpockStatus(v *InstanceSpockStatusResponseBody) *controlplane.InstanceSpockStatus {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.InstanceSpockStatus{
+		ReadOnly: v.ReadOnly,
+		Version:  v.Version,
 	}
 	if v.Subscriptions != nil {
 		res.Subscriptions = make([]*controlplane.InstanceSubscription, len(v.Subscriptions))
@@ -4024,17 +4120,65 @@ func unmarshalInstanceResponseBodyToControlplaneviewsInstanceView(v *InstanceRes
 		UpdatedAt:       v.UpdatedAt,
 		StatusUpdatedAt: v.StatusUpdatedAt,
 		State:           v.State,
-		PatroniState:    v.PatroniState,
-		Role:            v.Role,
-		ReadOnly:        v.ReadOnly,
-		PendingRestart:  v.PendingRestart,
-		PatroniPaused:   v.PatroniPaused,
-		PostgresVersion: v.PostgresVersion,
-		SpockVersion:    v.SpockVersion,
-		Hostname:        v.Hostname,
-		Ipv4Address:     v.Ipv4Address,
-		Port:            v.Port,
 		Error:           v.Error,
+	}
+	if v.ConnectionInfo != nil {
+		res.ConnectionInfo = unmarshalInstanceConnectionInfoResponseBodyToControlplaneviewsInstanceConnectionInfoView(v.ConnectionInfo)
+	}
+	if v.Postgres != nil {
+		res.Postgres = unmarshalInstancePostgresStatusResponseBodyToControlplaneviewsInstancePostgresStatusView(v.Postgres)
+	}
+	if v.Spock != nil {
+		res.Spock = unmarshalInstanceSpockStatusResponseBodyToControlplaneviewsInstanceSpockStatusView(v.Spock)
+	}
+
+	return res
+}
+
+// unmarshalInstanceConnectionInfoResponseBodyToControlplaneviewsInstanceConnectionInfoView
+// builds a value of type *controlplaneviews.InstanceConnectionInfoView from a
+// value of type *InstanceConnectionInfoResponseBody.
+func unmarshalInstanceConnectionInfoResponseBodyToControlplaneviewsInstanceConnectionInfoView(v *InstanceConnectionInfoResponseBody) *controlplaneviews.InstanceConnectionInfoView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.InstanceConnectionInfoView{
+		Hostname:    v.Hostname,
+		Ipv4Address: v.Ipv4Address,
+		Port:        v.Port,
+	}
+
+	return res
+}
+
+// unmarshalInstancePostgresStatusResponseBodyToControlplaneviewsInstancePostgresStatusView
+// builds a value of type *controlplaneviews.InstancePostgresStatusView from a
+// value of type *InstancePostgresStatusResponseBody.
+func unmarshalInstancePostgresStatusResponseBodyToControlplaneviewsInstancePostgresStatusView(v *InstancePostgresStatusResponseBody) *controlplaneviews.InstancePostgresStatusView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.InstancePostgresStatusView{
+		Version:        v.Version,
+		PatroniState:   v.PatroniState,
+		Role:           v.Role,
+		PendingRestart: v.PendingRestart,
+		PatroniPaused:  v.PatroniPaused,
+	}
+
+	return res
+}
+
+// unmarshalInstanceSpockStatusResponseBodyToControlplaneviewsInstanceSpockStatusView
+// builds a value of type *controlplaneviews.InstanceSpockStatusView from a
+// value of type *InstanceSpockStatusResponseBody.
+func unmarshalInstanceSpockStatusResponseBodyToControlplaneviewsInstanceSpockStatusView(v *InstanceSpockStatusResponseBody) *controlplaneviews.InstanceSpockStatusView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.InstanceSpockStatusView{
+		ReadOnly: v.ReadOnly,
+		Version:  v.Version,
 	}
 	if v.Subscriptions != nil {
 		res.Subscriptions = make([]*controlplaneviews.InstanceSubscriptionView, len(v.Subscriptions))

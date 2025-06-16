@@ -508,31 +508,49 @@ type Instance struct {
 	// The time that the instance status information was last updated.
 	StatusUpdatedAt *string
 	State           string
-	PatroniState    *string
-	Role            *string
-	// The current spock.readonly setting.
-	ReadOnly *string
-	// True if this instance is pending to be restarted from a configuration change.
-	PendingRestart *bool
-	// True if Patroni has been paused for this instance.
-	PatroniPaused *bool
-	// The version of Postgres for this instance.
-	PostgresVersion *string
-	// The version of Spock for this instance.
-	SpockVersion *string
+	// Connection information for the instance.
+	ConnectionInfo *InstanceConnectionInfo
+	// Postgres status information for the instance.
+	Postgres *InstancePostgresStatus
+	// Spock status information for the instance.
+	Spock *InstanceSpockStatus
+	// An error message if the instance is in an error state.
+	Error *string
+}
+
+type InstanceCollection []*Instance
+
+// Connection information for a pgEdge instance.
+type InstanceConnectionInfo struct {
 	// The hostname of the host that's running this instance.
 	Hostname *string
 	// The IPv4 address of the host that's running this instance.
 	Ipv4Address *string
 	// The host port that Postgres is listening on for this instance.
 	Port *int
-	// Status information for this instance's Spock subscriptions.
-	Subscriptions []*InstanceSubscription
-	// An error message if the instance is in an error state.
-	Error *string
 }
 
-type InstanceCollection []*Instance
+// Postgres status information for a pgEdge instance.
+type InstancePostgresStatus struct {
+	// The version of Postgres for this instance.
+	Version      *string
+	PatroniState *string
+	Role         *string
+	// True if this instance is pending to be restarted from a configuration change.
+	PendingRestart *bool
+	// True if Patroni has been paused for this instance.
+	PatroniPaused *bool
+}
+
+// Spock status information for a pgEdge instance.
+type InstanceSpockStatus struct {
+	// The current spock.readonly setting.
+	ReadOnly *string
+	// The version of Spock for this instance.
+	Version *string
+	// Status information for this instance's Spock subscriptions.
+	Subscriptions []*InstanceSubscription
+}
 
 // Status information for a Spock subscription.
 type InstanceSubscription struct {
@@ -1029,16 +1047,6 @@ func newInstanceCollectionViewAbbreviated(res InstanceCollection) controlplanevi
 func newInstance(vres *controlplaneviews.InstanceView) *Instance {
 	res := &Instance{
 		StatusUpdatedAt: vres.StatusUpdatedAt,
-		PatroniState:    vres.PatroniState,
-		Role:            vres.Role,
-		ReadOnly:        vres.ReadOnly,
-		PendingRestart:  vres.PendingRestart,
-		PatroniPaused:   vres.PatroniPaused,
-		PostgresVersion: vres.PostgresVersion,
-		SpockVersion:    vres.SpockVersion,
-		Hostname:        vres.Hostname,
-		Ipv4Address:     vres.Ipv4Address,
-		Port:            vres.Port,
 		Error:           vres.Error,
 	}
 	if vres.ID != nil {
@@ -1059,11 +1067,14 @@ func newInstance(vres *controlplaneviews.InstanceView) *Instance {
 	if vres.State != nil {
 		res.State = *vres.State
 	}
-	if vres.Subscriptions != nil {
-		res.Subscriptions = make([]*InstanceSubscription, len(vres.Subscriptions))
-		for i, val := range vres.Subscriptions {
-			res.Subscriptions[i] = transformControlplaneviewsInstanceSubscriptionViewToInstanceSubscription(val)
-		}
+	if vres.ConnectionInfo != nil {
+		res.ConnectionInfo = transformControlplaneviewsInstanceConnectionInfoViewToInstanceConnectionInfo(vres.ConnectionInfo)
+	}
+	if vres.Postgres != nil {
+		res.Postgres = transformControlplaneviewsInstancePostgresStatusViewToInstancePostgresStatus(vres.Postgres)
+	}
+	if vres.Spock != nil {
+		res.Spock = transformControlplaneviewsInstanceSpockStatusViewToInstanceSpockStatus(vres.Spock)
 	}
 	return res
 }
@@ -1098,23 +1109,16 @@ func newInstanceView(res *Instance) *controlplaneviews.InstanceView {
 		UpdatedAt:       &res.UpdatedAt,
 		StatusUpdatedAt: res.StatusUpdatedAt,
 		State:           &res.State,
-		PatroniState:    res.PatroniState,
-		Role:            res.Role,
-		ReadOnly:        res.ReadOnly,
-		PendingRestart:  res.PendingRestart,
-		PatroniPaused:   res.PatroniPaused,
-		PostgresVersion: res.PostgresVersion,
-		SpockVersion:    res.SpockVersion,
-		Hostname:        res.Hostname,
-		Ipv4Address:     res.Ipv4Address,
-		Port:            res.Port,
 		Error:           res.Error,
 	}
-	if res.Subscriptions != nil {
-		vres.Subscriptions = make([]*controlplaneviews.InstanceSubscriptionView, len(res.Subscriptions))
-		for i, val := range res.Subscriptions {
-			vres.Subscriptions[i] = transformInstanceSubscriptionToControlplaneviewsInstanceSubscriptionView(val)
-		}
+	if res.ConnectionInfo != nil {
+		vres.ConnectionInfo = transformInstanceConnectionInfoToControlplaneviewsInstanceConnectionInfoView(res.ConnectionInfo)
+	}
+	if res.Postgres != nil {
+		vres.Postgres = transformInstancePostgresStatusToControlplaneviewsInstancePostgresStatusView(res.Postgres)
+	}
+	if res.Spock != nil {
+		vres.Spock = transformInstanceSpockStatusToControlplaneviewsInstanceSpockStatusView(res.Spock)
 	}
 	return vres
 }
@@ -1722,6 +1726,61 @@ func transformDatabaseUserSpecToControlplaneviewsDatabaseUserSpecView(v *Databas
 	return res
 }
 
+// transformControlplaneviewsInstanceConnectionInfoViewToInstanceConnectionInfo
+// builds a value of type *InstanceConnectionInfo from a value of type
+// *controlplaneviews.InstanceConnectionInfoView.
+func transformControlplaneviewsInstanceConnectionInfoViewToInstanceConnectionInfo(v *controlplaneviews.InstanceConnectionInfoView) *InstanceConnectionInfo {
+	if v == nil {
+		return nil
+	}
+	res := &InstanceConnectionInfo{
+		Hostname:    v.Hostname,
+		Ipv4Address: v.Ipv4Address,
+		Port:        v.Port,
+	}
+
+	return res
+}
+
+// transformControlplaneviewsInstancePostgresStatusViewToInstancePostgresStatus
+// builds a value of type *InstancePostgresStatus from a value of type
+// *controlplaneviews.InstancePostgresStatusView.
+func transformControlplaneviewsInstancePostgresStatusViewToInstancePostgresStatus(v *controlplaneviews.InstancePostgresStatusView) *InstancePostgresStatus {
+	if v == nil {
+		return nil
+	}
+	res := &InstancePostgresStatus{
+		Version:        v.Version,
+		PatroniState:   v.PatroniState,
+		Role:           v.Role,
+		PendingRestart: v.PendingRestart,
+		PatroniPaused:  v.PatroniPaused,
+	}
+
+	return res
+}
+
+// transformControlplaneviewsInstanceSpockStatusViewToInstanceSpockStatus
+// builds a value of type *InstanceSpockStatus from a value of type
+// *controlplaneviews.InstanceSpockStatusView.
+func transformControlplaneviewsInstanceSpockStatusViewToInstanceSpockStatus(v *controlplaneviews.InstanceSpockStatusView) *InstanceSpockStatus {
+	if v == nil {
+		return nil
+	}
+	res := &InstanceSpockStatus{
+		ReadOnly: v.ReadOnly,
+		Version:  v.Version,
+	}
+	if v.Subscriptions != nil {
+		res.Subscriptions = make([]*InstanceSubscription, len(v.Subscriptions))
+		for i, val := range v.Subscriptions {
+			res.Subscriptions[i] = transformControlplaneviewsInstanceSubscriptionViewToInstanceSubscription(val)
+		}
+	}
+
+	return res
+}
+
 // transformControlplaneviewsInstanceSubscriptionViewToInstanceSubscription
 // builds a value of type *InstanceSubscription from a value of type
 // *controlplaneviews.InstanceSubscriptionView.
@@ -1733,6 +1792,61 @@ func transformControlplaneviewsInstanceSubscriptionViewToInstanceSubscription(v 
 		ProviderNode: *v.ProviderNode,
 		Name:         *v.Name,
 		Status:       *v.Status,
+	}
+
+	return res
+}
+
+// transformInstanceConnectionInfoToControlplaneviewsInstanceConnectionInfoView
+// builds a value of type *controlplaneviews.InstanceConnectionInfoView from a
+// value of type *InstanceConnectionInfo.
+func transformInstanceConnectionInfoToControlplaneviewsInstanceConnectionInfoView(v *InstanceConnectionInfo) *controlplaneviews.InstanceConnectionInfoView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.InstanceConnectionInfoView{
+		Hostname:    v.Hostname,
+		Ipv4Address: v.Ipv4Address,
+		Port:        v.Port,
+	}
+
+	return res
+}
+
+// transformInstancePostgresStatusToControlplaneviewsInstancePostgresStatusView
+// builds a value of type *controlplaneviews.InstancePostgresStatusView from a
+// value of type *InstancePostgresStatus.
+func transformInstancePostgresStatusToControlplaneviewsInstancePostgresStatusView(v *InstancePostgresStatus) *controlplaneviews.InstancePostgresStatusView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.InstancePostgresStatusView{
+		Version:        v.Version,
+		PatroniState:   v.PatroniState,
+		Role:           v.Role,
+		PendingRestart: v.PendingRestart,
+		PatroniPaused:  v.PatroniPaused,
+	}
+
+	return res
+}
+
+// transformInstanceSpockStatusToControlplaneviewsInstanceSpockStatusView
+// builds a value of type *controlplaneviews.InstanceSpockStatusView from a
+// value of type *InstanceSpockStatus.
+func transformInstanceSpockStatusToControlplaneviewsInstanceSpockStatusView(v *InstanceSpockStatus) *controlplaneviews.InstanceSpockStatusView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.InstanceSpockStatusView{
+		ReadOnly: v.ReadOnly,
+		Version:  v.Version,
+	}
+	if v.Subscriptions != nil {
+		res.Subscriptions = make([]*controlplaneviews.InstanceSubscriptionView, len(v.Subscriptions))
+		for i, val := range v.Subscriptions {
+			res.Subscriptions[i] = transformInstanceSubscriptionToControlplaneviewsInstanceSubscriptionView(val)
+		}
 	}
 
 	return res
