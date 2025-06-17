@@ -79,7 +79,9 @@ func (p *PgBackRestStanza) Refresh(ctx context.Context, rc *resource.Context) er
 		// the stanza will be in the output even if it doesn't exist.
 		return fmt.Errorf("stanza %q not found in pgbackrest info output", "db")
 	}
-	if stanza.Status.Code != 0 {
+	// This status code will be non-zero if the repository is empty, even if
+	// it's otherwise configured correctly.
+	if stanza.Status.Code != 0 && stanza.Status.Message != "no valid backups" {
 		return resource.ErrNotFound
 	}
 
