@@ -448,7 +448,12 @@ func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, 
 	return nil
 }
 
-func (o *Orchestrator) ValidateVolumes(ctx context.Context, spec *database.InstanceSpec) (*database.ValidationResult, error) {
+func (o *Orchestrator) ValidateInstanceSpec(ctx context.Context, spec *database.InstanceSpec) (*database.ValidationResult, error) {
+	// Short-circuit if there's nothing to validate
+	if len(spec.ExtraVolumes) < 1 && spec.Port == 0 {
+		return &database.ValidationResult{Valid: true}, nil
+	}
+
 	specVersion := spec.PgEdgeVersion
 	if specVersion == nil {
 		o.logger.Warn().Msg("PostgresVersion not provided, using default version")
@@ -468,8 +473,14 @@ func (o *Orchestrator) ValidateVolumes(ctx context.Context, spec *database.Insta
 	}
 
 	cmd := buildVolumeCheckCommand(mountTargets)
-	output, err := o.runVolumeValidationContainer(ctx, images.PgEdgeImage, cmd, mounts)
-	if msg := docker.ExtractBindErrorMsg(err); msg != "" {
+	output, err := o.runValidationContainer(ctx, images.PgEdgeImage, cmd, mounts, spec.Port)
+	if msg := docker.ExtractBindMountErrorMsg(err); msg != "" {
+		return &database.ValidationResult{
+			Valid: false,
+			Error: msg,
+		}, nil
+	}
+	if msg := docker.ExtractPortBindErrorMsg(err); msg != "" {
 		return &database.ValidationResult{
 			Valid: false,
 			Error: msg,
@@ -489,17 +500,9 @@ func (o *Orchestrator) ValidateVolumes(ctx context.Context, spec *database.Insta
 	return &database.ValidationResult{Valid: true}, nil
 }
 
-func (o *Orchestrator) runVolumeValidationContainer(ctx context.Context, image string, cmd []string, mounts []mount.Mount) (string, error) {
+func (o *Orchestrator) runValidationContainer(ctx context.Context, image string, cmd []string, mounts []mount.Mount, port int) (string, error) {
 	// Start container
-	containerID, err := o.docker.ContainerRun(ctx, docker.ContainerRunOptions{
-		Config: &container.Config{
-			Image:      image,
-			Entrypoint: cmd,
-		},
-		Host: &container.HostConfig{
-			Mounts: mounts,
-		},
-	})
+	containerID, err := o.docker.ContainerRun(ctx, validationContainerOpts(image, cmd, mounts, port))
 	if err != nil {
 		return "", fmt.Errorf("failed to start container: %w", err)
 	}
@@ -528,6 +531,36 @@ func (o *Orchestrator) runVolumeValidationContainer(ctx context.Context, image s
 	}
 
 	return strings.TrimSpace(buf.String()), nil
+}
+
+func validationContainerOpts(image string, cmd []string, mounts []mount.Mount, port int) docker.ContainerRunOptions {
+	opts := docker.ContainerRunOptions{
+		Config: &container.Config{
+			Image:      image,
+			Entrypoint: cmd,
+		},
+		Host: &container.HostConfig{
+			Mounts:       mounts,
+			PortBindings: nat.PortMap{},
+		},
+	}
+	if port > 0 {
+		exposedPort := fmt.Sprintf("%d/tcp", port)
+		portSet := nat.PortSet{
+			nat.Port(exposedPort): struct{}{},
+		}
+		portMap := nat.PortMap{
+			nat.Port(exposedPort): []nat.PortBinding{
+				{
+					HostIP:   "0.0.0.0",
+					HostPort: strconv.Itoa(port),
+				},
+			},
+		}
+		opts.Config.ExposedPorts = portSet
+		opts.Host.PortBindings = portMap
+	}
+	return opts
 }
 
 func buildVolumeCheckCommand(mountTargets []string) []string {

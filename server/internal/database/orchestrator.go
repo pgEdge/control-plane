@@ -88,5 +88,5 @@ type Orchestrator interface {
 	GenerateInstanceRestoreResources(spec *InstanceSpec, taskID uuid.UUID) (*InstanceResources, error)
 	GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*ConnectionInfo, error)
 	CreatePgBackRestBackup(ctx context.Context, w io.Writer, instanceID string, options *pgbackrest.BackupOptions) error
-	ValidateVolumes(ctx context.Context, spec *InstanceSpec) (*ValidationResult, error)
+	ValidateInstanceSpec(ctx context.Context, spec *InstanceSpec) (*ValidationResult, error)
 }

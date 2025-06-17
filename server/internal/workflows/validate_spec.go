@@ -23,24 +23,21 @@ type ValidateSpecOutput struct {
 func (w *Workflows) ValidateSpec(ctx workflow.Context, input *ValidateSpecInput) (*ValidateSpecOutput, error) {
 	databaseID := input.DatabaseID
 	logger := workflow.Logger(ctx).With("database_id", databaseID)
-	logger.Info("starting volume validation")
+	logger.Info("starting database spec validation")
 
 	nodeInstances, err := input.Spec.NodeInstances()
 	if err != nil {
 		logger.Error("failed to get node instances", "error", err)
 		return nil, fmt.Errorf("failed to get node instances: %w", err)
 	}
-	var instanceFutures []workflow.Future[*activities.ValidateVolumesOutput]
+	var instanceFutures []workflow.Future[*activities.ValidateInstanceSpecOutput]
 	for _, nodeInstance := range nodeInstances {
 		for _, instance := range nodeInstance.Instances {
-			if len(instance.ExtraVolumes) < 1 {
-				continue
-			}
-
-			instanceFuture := w.Activities.ExecuteValidateVolumes(ctx, instance.HostID, &activities.ValidateVolumesInput{
+			input := &activities.ValidateInstanceSpecInput{
 				DatabaseID: databaseID,
 				Spec:       instance,
-			})
+			}
+			instanceFuture := w.Activities.ExecuteValidateInstanceSpec(ctx, instance.HostID, input)
 			instanceFutures = append(instanceFutures, instanceFuture)
 		}
 	}
@@ -61,16 +58,16 @@ func (w *Workflows) ValidateSpec(ctx workflow.Context, input *ValidateSpecInput)
 			overallResult.Valid = false
 			overallResult.Errors = append(
 				overallResult.Errors,
-				fmt.Sprintf("invalid volumes for node %s, host %s: %s", output.NodeName, output.HostID, output.Error),
+				fmt.Sprintf("invalid spec for node %s, host %s: %s", output.NodeName, output.HostID, output.Error),
 			)
 		}
 	}
 
 	if err := errors.Join(allErrors...); err != nil {
-		logger.Error("failed to validate volumes", "error", err)
-		return nil, fmt.Errorf("failed to validate volumes: %w", err)
+		logger.Error("failed to validate instances", "error", err)
+		return nil, fmt.Errorf("failed to validate instances: %w", err)
 	}
 
-	logger.Info("volume validation succeeded")
+	logger.Info("instance validation succeeded")
 	return overallResult, nil
 }

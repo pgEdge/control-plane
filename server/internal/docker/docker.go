@@ -510,21 +510,44 @@ func ExtractNetworkInfo(info network.Inspect) (*NetworkInfo, error) {
 // it. This error message has been stable for 9 years, so it's likely safe
 // to rely on.
 // https://github.com/moby/moby/blob/cab4ac834e8bf36aa38a2ca49599773df6e6805a/volume/mounts/validate.go#L16
-const bindErrPrefix = `invalid mount config for type "bind":`
+const bindMountErrPrefix = `invalid mount config for type "bind":`
 
 // ExtractBindError extracts the bind error message from the given error if it
 // is a bind error. Otherwise, returns an empty string.
-func ExtractBindErrorMsg(err error) string {
+func ExtractBindMountErrorMsg(err error) string {
 	if err == nil {
 		return ""
 	}
 	msg := err.Error()
-	idx := strings.Index(msg, bindErrPrefix)
+	idx := strings.Index(msg, bindMountErrPrefix)
 	if idx < 0 {
 		return ""
 	}
 
-	return strings.TrimPrefix(msg[idx:], bindErrPrefix)
+	return strings.TrimPrefix(msg[idx:], bindMountErrPrefix)
+}
+
+// Another internal error message:
+// https://github.com/moby/moby/blob/cab4ac834e8bf36aa38a2ca49599773df6e6805a/libnetwork/drivers/bridge/port_mapping_linux.go#L622-L627
+// This one is less stable, so we'll do our best. In the worst case, we return a
+// 500 with a longer error message, which will still be helpful to the user.
+const portBindErrPrefix = `failed to bind`
+
+// ExtractPortBindError extracts the port bind error message from the given
+// error if it is a port bind error. Otherwise, returns an empty string.
+// ExtractBindError extracts the bind error message from the given error if it
+// is a bind error. Otherwise, returns an empty string.
+func ExtractPortBindErrorMsg(err error) string {
+	if err == nil {
+		return ""
+	}
+	msg := err.Error()
+	idx := strings.Index(msg, portBindErrPrefix)
+	if idx < 0 {
+		return ""
+	}
+
+	return msg[idx:]
 }
 
 // The docker errors are annoying to check further up in the stack since they
