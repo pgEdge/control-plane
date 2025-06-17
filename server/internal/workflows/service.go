@@ -251,18 +251,14 @@ func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) (*Valid
 
 	instance, err := s.client.CreateWorkflowInstance(ctx, opts, s.workflows.ValidateSpec, input)
 	if err != nil {
-		s.logger.Error().Err(err).Str("database_id", databaseID).Msg("failed to create volume validation workflow")
+		s.logger.Error().Err(err).Str("database_id", databaseID).Msg("failed to create spec validation workflow")
 		return nil, fmt.Errorf("failed to create workflow instance: %w", err)
 	}
 
 	output, err := client.GetWorkflowResult[*ValidateSpecOutput](ctx, s.client, instance, 5*time.Minute)
 	if err != nil {
-
-	}
-
-	if err != nil {
-		s.logger.Error().Err(err).Str("database_id", databaseID).Msg("volume validation workflow failed")
-		return nil, fmt.Errorf("volume validation workflow failed: %w", err)
+		s.logger.Error().Err(err).Str("database_id", databaseID).Msg("spec validation workflow failed")
+		return nil, fmt.Errorf("spec validation workflow failed: %w", err)
 	}
 
 	return output, nil

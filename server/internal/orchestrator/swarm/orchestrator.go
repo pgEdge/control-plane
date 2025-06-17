@@ -26,6 +26,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/docker"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
@@ -448,10 +449,40 @@ func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, 
 	return nil
 }
 
-func (o *Orchestrator) ValidateInstanceSpec(ctx context.Context, spec *database.InstanceSpec) (*database.ValidationResult, error) {
+func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, specs []*database.InstanceSpec) ([]*database.ValidationResult, error) {
+	results := make([]*database.ValidationResult, len(specs))
+
+	occupiedPorts := ds.NewSet[int]()
+	for i, instance := range specs {
+		result := &database.ValidationResult{
+			InstanceID: instance.InstanceID,
+			HostID:     instance.HostID,
+			NodeName:   instance.NodeName,
+			Valid:      true,
+		}
+		if instance.Port > 0 {
+			if occupiedPorts.Has(instance.Port) {
+				result.Valid = false
+				result.Errors = append(
+					result.Errors,
+					fmt.Sprintf("port %d allocated to multiple instances on this host", instance.Port),
+				)
+			}
+			occupiedPorts.Add(instance.Port)
+		}
+		if err := o.validateInstanceSpec(ctx, instance, result); err != nil {
+			return nil, err
+		}
+		results[i] = result
+	}
+
+	return results, nil
+}
+
+func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.InstanceSpec, result *database.ValidationResult) error {
 	// Short-circuit if there's nothing to validate
 	if len(spec.ExtraVolumes) < 1 && spec.Port == 0 {
-		return &database.ValidationResult{Valid: true}, nil
+		return nil
 	}
 
 	specVersion := spec.PgEdgeVersion
@@ -462,7 +493,7 @@ func (o *Orchestrator) ValidateInstanceSpec(ctx context.Context, spec *database.
 
 	images, err := GetImages(o.cfg, specVersion)
 	if err != nil {
-		return nil, fmt.Errorf("image fetch error: %w", err)
+		return fmt.Errorf("image fetch error: %w", err)
 	}
 
 	var mounts []mount.Mount
@@ -474,30 +505,23 @@ func (o *Orchestrator) ValidateInstanceSpec(ctx context.Context, spec *database.
 
 	cmd := buildVolumeCheckCommand(mountTargets)
 	output, err := o.runValidationContainer(ctx, images.PgEdgeImage, cmd, mounts, spec.Port)
-	if msg := docker.ExtractBindMountErrorMsg(err); msg != "" {
-		return &database.ValidationResult{
-			Valid: false,
-			Error: msg,
-		}, nil
-	}
-	if msg := docker.ExtractPortBindErrorMsg(err); msg != "" {
-		return &database.ValidationResult{
-			Valid: false,
-			Error: msg,
-		}, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	if len(output) > 0 {
-		return &database.ValidationResult{
-			Valid: false,
-			Error: output,
-		}, nil
+	bindMsg := docker.ExtractBindMountErrorMsg(err)
+	portMsg := docker.ExtractPortErrorMsg(err)
+	switch {
+	case bindMsg != "":
+		result.Valid = false
+		result.Errors = append(result.Errors, bindMsg)
+	case portMsg != "":
+		result.Valid = false
+		result.Errors = append(result.Errors, portMsg)
+	case err != nil:
+		return err
+	case len(output) > 0:
+		result.Valid = false
+		result.Errors = append(result.Errors, output)
 	}
 
-	return &database.ValidationResult{Valid: true}, nil
+	return nil
 }
 
 func (o *Orchestrator) runValidationContainer(ctx context.Context, image string, cmd []string, mounts []mount.Mount, port int) (string, error) {
@@ -563,6 +587,18 @@ func validationContainerOpts(image string, cmd []string, mounts []mount.Mount, p
 	return opts
 }
 
+const cmdTemplate = `
+for d in %s; do
+	if [ ! -d "$d" ]; then
+		echo "$d is not a directory"
+	fi
+done
+`
+
 func buildVolumeCheckCommand(mountTargets []string) []string {
-	return []string{"sh", "-c", fmt.Sprintf(`for d in %s; do if [ -d "$d" ]; then echo "$d is not a directory"; fi; done"`, strings.Join(mountTargets, " "))}
+	if len(mountTargets) < 1 {
+		return []string{"true"}
+	}
+
+	return []string{"sh", "-c", fmt.Sprintf(cmdTemplate, strings.Join(mountTargets, " "))}
 }

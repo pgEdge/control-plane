@@ -34,7 +34,7 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.RestoreSpec),
 		work.RegisterActivity(a.UpdateDbState),
 		work.RegisterActivity(a.UpdateTask),
-		work.RegisterActivity(a.ValidateInstanceSpec),
+		work.RegisterActivity(a.ValidateInstanceSpecs),
 	}
 	return errors.Join(errs...)
 }

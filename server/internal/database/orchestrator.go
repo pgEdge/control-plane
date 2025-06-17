@@ -20,8 +20,11 @@ type InstanceResources struct {
 }
 
 type ValidationResult struct {
-	Valid bool
-	Error string
+	InstanceID string   `json:"instance_id"`
+	HostID     string   `json:"host_id"`
+	NodeName   string   `json:"node_name"`
+	Valid      bool     `json:"valid"`
+	Errors     []string `json:"errors"`
 }
 
 func NewInstanceResources(instance *InstanceResource, resources []resource.Resource) (*InstanceResources, error) {
@@ -88,5 +91,5 @@ type Orchestrator interface {
 	GenerateInstanceRestoreResources(spec *InstanceSpec, taskID uuid.UUID) (*InstanceResources, error)
 	GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*ConnectionInfo, error)
 	CreatePgBackRestBackup(ctx context.Context, w io.Writer, instanceID string, options *pgbackrest.BackupOptions) error
-	ValidateInstanceSpec(ctx context.Context, spec *InstanceSpec) (*ValidationResult, error)
+	ValidateInstanceSpecs(ctx context.Context, specs []*InstanceSpec) ([]*ValidationResult, error)
 }
