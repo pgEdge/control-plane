@@ -51,7 +51,12 @@ func BuildGetJoinOptionsPayload(controlPlaneGetJoinOptionsBody string) (*control
 			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"host_id\": \"de3b1388-1f0c-42f1-a86c-59ab72f255ec\",\n      \"hostname\": \"ip-10-1-0-113.ec2.internal\",\n      \"ipv4_address\": \"10.1.0.113\",\n      \"token\": \"PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd\"\n   }'")
 		}
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.token", body.Token, "^PGEDGE-[\\w]{64}-[\\w]{32}$"))
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.host_id", body.HostID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(body.HostID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_id", body.HostID, utf8.RuneCountInString(body.HostID), 1, true))
+		}
+		if utf8.RuneCountInString(body.HostID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_id", body.HostID, utf8.RuneCountInString(body.HostID), 63, false))
+		}
 		if utf8.RuneCountInString(body.Hostname) < 3 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.hostname", body.Hostname, utf8.RuneCountInString(body.Hostname), 3, true))
 		}
@@ -80,7 +85,12 @@ func BuildGetHostPayload(controlPlaneGetHostHostID string) (*controlplane.GetHos
 	var hostID string
 	{
 		hostID = controlPlaneGetHostHostID
-		err = goa.MergeErrors(err, goa.ValidatePattern("host_id", hostID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(hostID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("host_id", hostID, utf8.RuneCountInString(hostID), 1, true))
+		}
+		if utf8.RuneCountInString(hostID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("host_id", hostID, utf8.RuneCountInString(hostID), 63, false))
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +108,12 @@ func BuildRemoveHostPayload(controlPlaneRemoveHostHostID string) (*controlplane.
 	var hostID string
 	{
 		hostID = controlPlaneRemoveHostHostID
-		err = goa.MergeErrors(err, goa.ValidatePattern("host_id", hostID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(hostID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("host_id", hostID, utf8.RuneCountInString(hostID), 1, true))
+		}
+		if utf8.RuneCountInString(hostID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("host_id", hostID, utf8.RuneCountInString(hostID), 63, false))
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -123,10 +138,24 @@ func BuildCreateDatabasePayload(controlPlaneCreateDatabaseBody string) (*control
 			err = goa.MergeErrors(err, goa.MissingFieldError("spec", "body"))
 		}
 		if body.ID != nil {
-			err = goa.MergeErrors(err, goa.ValidatePattern("body.id", *body.ID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+			if utf8.RuneCountInString(*body.ID) < 1 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
+			}
+		}
+		if body.ID != nil {
+			if utf8.RuneCountInString(*body.ID) > 63 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
+			}
 		}
 		if body.TenantID != nil {
-			err = goa.MergeErrors(err, goa.ValidatePattern("body.tenant_id", *body.TenantID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+			if utf8.RuneCountInString(*body.TenantID) < 1 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.tenant_id", *body.TenantID, utf8.RuneCountInString(*body.TenantID), 1, true))
+			}
+		}
+		if body.TenantID != nil {
+			if utf8.RuneCountInString(*body.TenantID) > 63 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.tenant_id", *body.TenantID, utf8.RuneCountInString(*body.TenantID), 63, false))
+			}
 		}
 		if body.Spec != nil {
 			if err2 := ValidateDatabaseSpecRequestBody(body.Spec); err2 != nil {
@@ -160,7 +189,12 @@ func BuildGetDatabasePayload(controlPlaneGetDatabaseDatabaseID string) (*control
 	var databaseID string
 	{
 		databaseID = controlPlaneGetDatabaseDatabaseID
-		err = goa.MergeErrors(err, goa.ValidatePattern("database_id", databaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -185,7 +219,14 @@ func BuildUpdateDatabasePayload(controlPlaneUpdateDatabaseBody string, controlPl
 			err = goa.MergeErrors(err, goa.MissingFieldError("spec", "body"))
 		}
 		if body.TenantID != nil {
-			err = goa.MergeErrors(err, goa.ValidatePattern("body.tenant_id", *body.TenantID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+			if utf8.RuneCountInString(*body.TenantID) < 1 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.tenant_id", *body.TenantID, utf8.RuneCountInString(*body.TenantID), 1, true))
+			}
+		}
+		if body.TenantID != nil {
+			if utf8.RuneCountInString(*body.TenantID) > 63 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.tenant_id", *body.TenantID, utf8.RuneCountInString(*body.TenantID), 63, false))
+			}
 		}
 		if body.Spec != nil {
 			if err2 := ValidateDatabaseSpecRequestBodyRequestBody(body.Spec); err2 != nil {
@@ -199,7 +240,12 @@ func BuildUpdateDatabasePayload(controlPlaneUpdateDatabaseBody string, controlPl
 	var databaseID string
 	{
 		databaseID = controlPlaneUpdateDatabaseDatabaseID
-		err = goa.MergeErrors(err, goa.ValidatePattern("database_id", databaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -237,7 +283,12 @@ func BuildDeleteDatabasePayload(controlPlaneDeleteDatabaseDatabaseID string) (*c
 	var databaseID string
 	{
 		databaseID = controlPlaneDeleteDatabaseDatabaseID
-		err = goa.MergeErrors(err, goa.ValidatePattern("database_id", databaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -274,7 +325,12 @@ func BuildBackupDatabaseNodePayload(controlPlaneBackupDatabaseNodeBody string, c
 	var databaseID string
 	{
 		databaseID = controlPlaneBackupDatabaseNodeDatabaseID
-		err = goa.MergeErrors(err, goa.ValidatePattern("database_id", databaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -322,7 +378,12 @@ func BuildListDatabaseTasksPayload(controlPlaneListDatabaseTasksDatabaseID strin
 	var databaseID string
 	{
 		databaseID = controlPlaneListDatabaseTasksDatabaseID
-		err = goa.MergeErrors(err, goa.ValidatePattern("database_id", databaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -377,7 +438,12 @@ func BuildGetDatabaseTaskPayload(controlPlaneGetDatabaseTaskDatabaseID string, c
 	var databaseID string
 	{
 		databaseID = controlPlaneGetDatabaseTaskDatabaseID
-		err = goa.MergeErrors(err, goa.ValidatePattern("database_id", databaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -404,7 +470,12 @@ func BuildGetDatabaseTaskLogPayload(controlPlaneGetDatabaseTaskLogDatabaseID str
 	var databaseID string
 	{
 		databaseID = controlPlaneGetDatabaseTaskLogDatabaseID
-		err = goa.MergeErrors(err, goa.ValidatePattern("database_id", databaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -476,7 +547,12 @@ func BuildRestoreDatabasePayload(controlPlaneRestoreDatabaseBody string, control
 	var databaseID string
 	{
 		databaseID = controlPlaneRestoreDatabaseDatabaseID
-		err = goa.MergeErrors(err, goa.ValidatePattern("database_id", databaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
 		if err != nil {
 			return nil, err
 		}

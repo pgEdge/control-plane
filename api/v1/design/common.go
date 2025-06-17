@@ -4,17 +4,15 @@ import (
 	g "goa.design/goa/v3/dsl"
 )
 
-// Allows IDs that are:
-// - 1-63 characters
-// - Contain only lower-cased letters and hyphens
-// - Starts with a letter or number
-// - Ends with a letter or number
-// The handlers must also validate that there are no consecutive hyphens.
-const idPattern = `^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$`
-
 var Identifier = g.Type("Identifier", g.String, func() {
 	g.Description("A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.")
-	g.Pattern(idPattern)
+	// Intentionally not using a pattern here for two reasons:
+	// - Go regex doesn't support lookahead, so we can't express the consecutive
+	//   hyphen rule.
+	// - The pattern is somewhat complex, so the error message is hard to
+	//   interpret when the value doesn't match.
+	g.MinLength(1)
+	g.MaxLength(63)
 	g.Example("production")
 	g.Example("my-app")
 	g.Example("76f9b8c0-4958-11f0-a489-3bb29577c696")

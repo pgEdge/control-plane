@@ -563,10 +563,24 @@ func ValidateDatabaseView(result *DatabaseView) (err error) {
 		err = goa.MergeErrors(err, goa.MissingFieldError("state", "result"))
 	}
 	if result.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("result.id", string(*result.ID), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(string(*result.ID)) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", string(*result.ID), utf8.RuneCountInString(string(*result.ID)), 1, true))
+		}
+	}
+	if result.ID != nil {
+		if utf8.RuneCountInString(string(*result.ID)) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", string(*result.ID), utf8.RuneCountInString(string(*result.ID)), 63, false))
+		}
 	}
 	if result.TenantID != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("result.tenant_id", string(*result.TenantID), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(string(*result.TenantID)) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.tenant_id", string(*result.TenantID), utf8.RuneCountInString(string(*result.TenantID)), 1, true))
+		}
+	}
+	if result.TenantID != nil {
+		if utf8.RuneCountInString(string(*result.TenantID)) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.tenant_id", string(*result.TenantID), utf8.RuneCountInString(string(*result.TenantID)), 63, false))
+		}
 	}
 	if result.CreatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.created_at", *result.CreatedAt, goa.FormatDateTime))
@@ -608,10 +622,24 @@ func ValidateDatabaseViewAbbreviated(result *DatabaseView) (err error) {
 		err = goa.MergeErrors(err, goa.MissingFieldError("state", "result"))
 	}
 	if result.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("result.id", string(*result.ID), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(string(*result.ID)) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", string(*result.ID), utf8.RuneCountInString(string(*result.ID)), 1, true))
+		}
+	}
+	if result.ID != nil {
+		if utf8.RuneCountInString(string(*result.ID)) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", string(*result.ID), utf8.RuneCountInString(string(*result.ID)), 63, false))
+		}
 	}
 	if result.TenantID != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("result.tenant_id", string(*result.TenantID), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(string(*result.TenantID)) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.tenant_id", string(*result.TenantID), utf8.RuneCountInString(string(*result.TenantID)), 1, true))
+		}
+	}
+	if result.TenantID != nil {
+		if utf8.RuneCountInString(string(*result.TenantID)) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.tenant_id", string(*result.TenantID), utf8.RuneCountInString(string(*result.TenantID)), 63, false))
+		}
 	}
 	if result.CreatedAt != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.created_at", *result.CreatedAt, goa.FormatDateTime))
@@ -634,7 +662,12 @@ func ValidateDatabaseViewAbbreviated(result *DatabaseView) (err error) {
 
 // ValidateIdentifierView runs the validations defined on IdentifierView.
 func ValidateIdentifierView(result IdentifierView) (err error) {
-	err = goa.MergeErrors(err, goa.ValidatePattern("result", string(result), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+	if utf8.RuneCountInString(string(result)) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result", string(result), utf8.RuneCountInString(string(result)), 1, true))
+	}
+	if utf8.RuneCountInString(string(result)) > 63 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result", string(result), utf8.RuneCountInString(string(result)), 63, false))
+	}
 	return
 }
 
@@ -903,7 +936,12 @@ func ValidateDatabaseNodeSpecView(result *DatabaseNodeSpecView) (err error) {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("result.host_ids", result.HostIds, len(result.HostIds), 1, true))
 	}
 	for _, e := range result.HostIds {
-		err = goa.MergeErrors(err, goa.ValidatePattern("result.host_ids[*]", string(e), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(string(e)) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.host_ids[*]", string(e), utf8.RuneCountInString(string(e)), 1, true))
+		}
+		if utf8.RuneCountInString(string(e)) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.host_ids[*]", string(e), utf8.RuneCountInString(string(e)), 63, false))
+		}
 	}
 	if result.PostgresVersion != nil {
 		if !(*result.PostgresVersion == "15" || *result.PostgresVersion == "16" || *result.PostgresVersion == "17") {
@@ -990,7 +1028,14 @@ func ValidateBackupRepositorySpecView(result *BackupRepositorySpecView) (err err
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "result"))
 	}
 	if result.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("result.id", string(*result.ID), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(string(*result.ID)) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", string(*result.ID), utf8.RuneCountInString(string(*result.ID)), 1, true))
+		}
+	}
+	if result.ID != nil {
+		if utf8.RuneCountInString(string(*result.ID)) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", string(*result.ID), utf8.RuneCountInString(string(*result.ID)), 63, false))
+		}
 	}
 	if result.Type != nil {
 		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure" || *result.Type == "posix" || *result.Type == "cifs") {
@@ -1174,7 +1219,14 @@ func ValidateRestoreConfigSpecView(result *RestoreConfigSpecView) (err error) {
 		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "result"))
 	}
 	if result.SourceDatabaseID != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("result.source_database_id", string(*result.SourceDatabaseID), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(string(*result.SourceDatabaseID)) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.source_database_id", string(*result.SourceDatabaseID), utf8.RuneCountInString(string(*result.SourceDatabaseID)), 1, true))
+		}
+	}
+	if result.SourceDatabaseID != nil {
+		if utf8.RuneCountInString(string(*result.SourceDatabaseID)) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.source_database_id", string(*result.SourceDatabaseID), utf8.RuneCountInString(string(*result.SourceDatabaseID)), 63, false))
+		}
 	}
 	if result.SourceNodeName != nil {
 		err = goa.MergeErrors(err, goa.ValidatePattern("result.source_node_name", *result.SourceNodeName, "n[0-9]+"))
@@ -1207,7 +1259,14 @@ func ValidateRestoreRepositorySpecView(result *RestoreRepositorySpecView) (err e
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "result"))
 	}
 	if result.ID != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("result.id", string(*result.ID), "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(string(*result.ID)) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", string(*result.ID), utf8.RuneCountInString(string(*result.ID)), 1, true))
+		}
+	}
+	if result.ID != nil {
+		if utf8.RuneCountInString(string(*result.ID)) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.id", string(*result.ID), utf8.RuneCountInString(string(*result.ID)), 63, false))
+		}
 	}
 	if result.Type != nil {
 		if !(*result.Type == "s3" || *result.Type == "gcs" || *result.Type == "azure" || *result.Type == "posix" || *result.Type == "cifs") {

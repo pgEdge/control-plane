@@ -1693,7 +1693,8 @@
               "type": "string",
               "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+              "minLength": 1,
+              "maxLength": 63
             },
             "examples": {
               "default": {
@@ -1804,7 +1805,8 @@
               "type": "string",
               "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+              "minLength": 1,
+              "maxLength": 63
             },
             "examples": {
               "default": {
@@ -2654,7 +2656,8 @@
               "type": "string",
               "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+              "minLength": 1,
+              "maxLength": 63
             },
             "examples": {
               "default": {
@@ -4001,7 +4004,8 @@
               "type": "string",
               "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+              "minLength": 1,
+              "maxLength": 63
             },
             "examples": {
               "default": {
@@ -4146,7 +4150,8 @@
               "type": "string",
               "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+              "minLength": 1,
+              "maxLength": 63
             },
             "examples": {
               "default": {
@@ -4993,7 +4998,8 @@
               "type": "string",
               "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+              "minLength": 1,
+              "maxLength": 63
             },
             "examples": {
               "default": {
@@ -5163,7 +5169,8 @@
               "type": "string",
               "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+              "minLength": 1,
+              "maxLength": 63
             },
             "examples": {
               "default": {
@@ -5313,7 +5320,8 @@
               "type": "string",
               "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+              "minLength": 1,
+              "maxLength": 63
             },
             "examples": {
               "default": {
@@ -5834,7 +5842,8 @@
               "type": "string",
               "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+              "minLength": 1,
+              "maxLength": 63
             },
             "examples": {
               "default": {
@@ -5923,7 +5932,8 @@
               "type": "string",
               "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+              "minLength": 1,
+              "maxLength": 63
             },
             "examples": {
               "default": {
@@ -6415,7 +6425,8 @@
             "type": "string",
             "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           },
           "retention_full": {
             "type": "integer",
@@ -6836,7 +6847,8 @@
             "type": "string",
             "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           },
           "status": {
             "$ref": "#/components/schemas/ClusterStatus"
@@ -6845,7 +6857,8 @@
             "type": "string",
             "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           }
         },
         "example": {
@@ -7082,7 +7095,8 @@
             "type": "string",
             "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           },
           "hostname": {
             "type": "string",
@@ -7243,7 +7257,8 @@
             "type": "string",
             "description": "Unique identifier for the database.",
             "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           },
           "instances": {
             "$ref": "#/components/schemas/InstanceResponseBodyCollection"
@@ -7268,7 +7283,8 @@
             "type": "string",
             "description": "Unique identifier for the database.",
             "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           },
           "updated_at": {
             "type": "string",
@@ -8033,7 +8049,8 @@
             "type": "string",
             "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           },
           "spec": {
             "$ref": "#/components/schemas/DatabaseSpec"
@@ -8042,7 +8059,8 @@
             "type": "string",
             "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           }
         },
         "example": {
@@ -9169,7 +9187,8 @@
             "type": "string",
             "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           },
           "instances": {
             "$ref": "#/components/schemas/InstanceCollection"
@@ -9194,7 +9213,8 @@
             "type": "string",
             "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           },
           "updated_at": {
             "type": "string",
@@ -9839,7 +9859,8 @@
               "type": "string",
               "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
               "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+              "minLength": 1,
+              "maxLength": 63
             },
             "description": "The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary and the others will be read replicas.",
             "example": [
@@ -10057,7 +10078,8 @@
             "type": "string",
             "description": "Unique identifier for the database.",
             "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           },
           "instances": {
             "$ref": "#/components/schemas/InstanceResponseAbbreviatedCollection"
@@ -10079,7 +10101,8 @@
             "type": "string",
             "description": "Unique identifier for the databases's owner.",
             "example": "8210ec10-2dca-406c-ac4a-0661d2189954",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           },
           "updated_at": {
             "type": "string",
@@ -11275,7 +11298,8 @@
             "type": "string",
             "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           },
           "ipv4_address": {
             "type": "string",
@@ -12340,7 +12364,8 @@
             "type": "string",
             "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           },
           "source_database_name": {
             "type": "string",
@@ -13231,7 +13256,8 @@
             "type": "string",
             "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           },
           "s3_bucket": {
             "type": "string",
@@ -13545,7 +13571,8 @@
             "type": "string",
             "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           }
         },
         "example": {
