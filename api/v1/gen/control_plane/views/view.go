@@ -222,9 +222,11 @@ type BackupRepositorySpecView struct {
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
 	S3Endpoint *string
 	// An optional AWS access key ID to use for this repository. If not provided,
-	// pgbackrest will use the default credential provider chain.
+	// pgbackrest will use the default credential provider chain. This field will
+	// be excluded from the response of all endpoints.
 	S3Key *string
-	// The corresponding secret for the AWS access key ID in s3_key.
+	// The corresponding secret for the AWS access key ID in s3_key. This field
+	// will be excluded from the response of all endpoints.
 	S3KeySecret *string
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string
@@ -232,7 +234,8 @@ type BackupRepositorySpecView struct {
 	// 'gcs'.
 	GcsEndpoint *string
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
-	// the service account attached to the instance profile.
+	// the service account attached to the instance profile. This field will be
+	// excluded from the response of all endpoints.
 	GcsKey *string
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string
@@ -242,8 +245,8 @@ type BackupRepositorySpecView struct {
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
 	AzureEndpoint *string
-	// An optional Azure storage account access key to use for this repository. If
-	// not provided, pgbackrest will use the VM's managed identity.
+	// The Azure storage account access key to use for this repository. This field
+	// will be excluded from the response of all endpoints.
 	AzureKey *string
 	// The count of full backups to retain or the time to retain full backups.
 	RetentionFull *int
@@ -339,7 +342,8 @@ type ExtraVolumesSpecView struct {
 type DatabaseUserSpecView struct {
 	// The username for this database user.
 	Username *string
-	// The password for this database user.
+	// The password for this database user. This field will be excluded from the
+	// response of all endpoints.
 	Password *string
 	// If true, this user will be granted database ownership.
 	DbOwner *bool
@@ -1350,9 +1354,6 @@ func ValidateExtraVolumesSpecView(result *ExtraVolumesSpecView) (err error) {
 func ValidateDatabaseUserSpecView(result *DatabaseUserSpecView) (err error) {
 	if result.Username == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("username", "result"))
-	}
-	if result.Password == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("password", "result"))
 	}
 	if result.Username != nil {
 		if utf8.RuneCountInString(*result.Username) < 1 {

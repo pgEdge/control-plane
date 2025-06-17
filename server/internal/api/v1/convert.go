@@ -89,9 +89,9 @@ func databaseNodesToAPI(nodes []*database.Node) []*api.DatabaseNodeSpec {
 func databaseUsersToAPI(users []*database.User) []*api.DatabaseUserSpec {
 	apiUsers := make([]*api.DatabaseUserSpec, len(users))
 	for i, user := range users {
+		// Password is intentionally excluded because it's a sensitive field.
 		apiUsers[i] = &api.DatabaseUserSpec{
 			Username:   user.Username,
-			Password:   user.Password, // TODO: Does this need to be censored?
 			DbOwner:    &user.DBOwner,
 			Attributes: user.Attributes,
 			Roles:      user.Roles,
@@ -110,21 +110,18 @@ func backupConfigToAPI(config *database.BackupConfig) *api.BackupConfigSpec {
 		if repo.ID != "" {
 			id = utils.PointerTo(api.Identifier(repo.ID))
 		}
+		// We intentionally exclude credential fields because they're sensitive.
 		repositories[i] = &api.BackupRepositorySpec{
 			ID:                id,
 			Type:              string(repo.Type),
 			S3Bucket:          utils.NillablePointerTo(repo.S3Bucket),
 			S3Region:          utils.NillablePointerTo(repo.S3Region),
 			S3Endpoint:        utils.NillablePointerTo(repo.S3Endpoint),
-			S3Key:             utils.NillablePointerTo(repo.S3Key),
-			S3KeySecret:       utils.NillablePointerTo(repo.S3KeySecret),
 			GcsBucket:         utils.NillablePointerTo(repo.GCSBucket),
 			GcsEndpoint:       utils.NillablePointerTo(repo.GCSEndpoint),
-			GcsKey:            utils.NillablePointerTo(repo.GCSKey),
 			AzureAccount:      utils.NillablePointerTo(repo.AzureAccount),
 			AzureContainer:    utils.NillablePointerTo(repo.AzureContainer),
 			AzureEndpoint:     utils.NillablePointerTo(repo.AzureEndpoint),
-			AzureKey:          utils.NillablePointerTo(repo.AzureKey),
 			RetentionFull:     utils.NillablePointerTo(repo.RetentionFull),
 			RetentionFullType: utils.NillablePointerTo(string(repo.RetentionFullType)),
 			BasePath:          utils.NillablePointerTo(repo.BasePath),
@@ -161,21 +158,18 @@ func restoreConfigToAPI(config *database.RestoreConfig) *api.RestoreConfigSpec {
 		if config.Repository.ID != "" {
 			id = utils.PointerTo(api.Identifier(config.Repository.ID))
 		}
+		// We intentionally exclude credential fields because they're sensitive.
 		out.Repository = &api.RestoreRepositorySpec{
 			ID:             id,
 			Type:           string(config.Repository.Type),
 			S3Bucket:       utils.NillablePointerTo(config.Repository.S3Bucket),
 			S3Region:       utils.NillablePointerTo(config.Repository.S3Region),
 			S3Endpoint:     utils.NillablePointerTo(config.Repository.S3Endpoint),
-			S3Key:          utils.NillablePointerTo(config.Repository.S3Key),
-			S3KeySecret:    utils.NillablePointerTo(config.Repository.S3KeySecret),
 			GcsBucket:      utils.NillablePointerTo(config.Repository.GCSBucket),
 			GcsEndpoint:    utils.NillablePointerTo(config.Repository.GCSEndpoint),
-			GcsKey:         utils.NillablePointerTo(config.Repository.GCSKey),
 			AzureAccount:   utils.NillablePointerTo(config.Repository.AzureAccount),
 			AzureContainer: utils.NillablePointerTo(config.Repository.AzureContainer),
 			AzureEndpoint:  utils.NillablePointerTo(config.Repository.AzureEndpoint),
-			AzureKey:       utils.NillablePointerTo(config.Repository.AzureKey),
 			BasePath:       utils.NillablePointerTo(config.Repository.BasePath),
 			CustomOptions:  config.Repository.CustomOptions,
 		}
@@ -493,7 +487,7 @@ func apiToDatabaseSpec(id, tID *api.Identifier, apiSpec *api.DatabaseSpec) (*dat
 	for i, apiUser := range apiSpec.DatabaseUsers {
 		users[i] = &database.User{
 			Username:   apiUser.Username,
-			Password:   apiUser.Password,
+			Password:   utils.FromPointer(apiUser.Password),
 			DBOwner:    utils.FromPointer(apiUser.DbOwner),
 			Attributes: apiUser.Attributes,
 			Roles:      apiUser.Roles,

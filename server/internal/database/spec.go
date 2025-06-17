@@ -53,6 +53,17 @@ func (n *Node) Clone() *Node {
 	}
 }
 
+// DefaultSensitiveFieldsFrom will default this node's sensitive fields to the
+// values from the given node.
+func (n *Node) DefaultSensitiveFieldsFrom(other *Node) {
+	if n.BackupConfig != nil && other.BackupConfig != nil {
+		n.BackupConfig.DefaultSensitiveFieldsFrom(other.BackupConfig)
+	}
+	if n.RestoreConfig != nil && other.RestoreConfig != nil {
+		n.RestoreConfig.DefaultSensitiveFieldsFrom(other.RestoreConfig)
+	}
+}
+
 type User struct {
 	Username   string   `json:"username"`
 	Password   string   `json:"password"`
@@ -71,6 +82,14 @@ func (u *User) Clone() *User {
 		DBOwner:    u.DBOwner,
 		Attributes: slices.Clone(u.Attributes),
 		Roles:      slices.Clone(u.Roles),
+	}
+}
+
+// DefaultSensitiveFieldsFrom will default this user's sensitive fields to the
+// values from the given user.
+func (u *User) DefaultSensitiveFieldsFrom(other *User) {
+	if u.Password == "" {
+		u.Password = other.Password
 	}
 }
 
@@ -112,18 +131,40 @@ func (b *BackupConfig) Clone() *BackupConfig {
 	if b == nil {
 		return nil
 	}
-	repos := make([]*pgbackrest.Repository, len(b.Repositories))
-	for i, repo := range b.Repositories {
-		repos[i] = repo.Clone()
+	var repos []*pgbackrest.Repository
+	if len(b.Repositories) > 0 {
+		repos = make([]*pgbackrest.Repository, len(b.Repositories))
+		for i, repo := range b.Repositories {
+			repos[i] = repo.Clone()
+		}
 	}
-	schedules := make([]*BackupSchedule, len(b.Schedules))
-	for i, schedule := range b.Schedules {
-		schedules[i] = schedule.Clone()
+	var schedules []*BackupSchedule
+	if len(b.Schedules) > 0 {
+		schedules = make([]*BackupSchedule, len(b.Schedules))
+		for i, schedule := range b.Schedules {
+			schedules[i] = schedule.Clone()
+		}
 	}
 
 	return &BackupConfig{
 		Repositories: repos,
 		Schedules:    schedules,
+	}
+}
+
+// DefaultSensitiveFieldsFrom will default this config's sensitive fields to the
+// values from the given config.
+func (b *BackupConfig) DefaultSensitiveFieldsFrom(other *BackupConfig) {
+	otherRepositoriesByID := make(map[string]*pgbackrest.Repository, len(other.Repositories))
+	for _, r := range other.Repositories {
+		otherRepositoriesByID[r.Identifier()] = r
+	}
+
+	for _, r := range b.Repositories {
+		otherRepo, ok := otherRepositoriesByID[r.Identifier()]
+		if ok {
+			r.DefaultSensitiveFieldsFrom(otherRepo)
+		}
 	}
 }
 
@@ -133,6 +174,14 @@ type RestoreConfig struct {
 	SourceDatabaseName string                 `json:"source_database_name"`
 	Repository         *pgbackrest.Repository `json:"repository"`
 	RestoreOptions     map[string]string      `json:"restore_options"`
+}
+
+// DefaultSensitiveFieldsFrom will default this config's sensitive fields to the
+// values from the given config.
+func (r *RestoreConfig) DefaultSensitiveFieldsFrom(other *RestoreConfig) {
+	if r.Repository != nil && other.Repository != nil {
+		r.Repository.DefaultSensitiveFieldsFrom(other.Repository)
+	}
 }
 
 func (r *RestoreConfig) Clone() *RestoreConfig {
@@ -244,6 +293,48 @@ func (s *Spec) Clone() *Spec {
 		BackupConfig:    s.BackupConfig.Clone(),
 		RestoreConfig:   s.RestoreConfig.Clone(),
 		ExtraVolumes:    slices.Clone(s.ExtraVolumes),
+	}
+}
+
+// DefaultSensitiveFieldsFrom will default this spec's sensitive fields to the
+// values from the given spec.
+func (s *Spec) DefaultSensitiveFieldsFrom(other *Spec) {
+	s.defaultSensitiveFieldFromNodes(other.Nodes)
+	s.defaultSensitiveFieldFromUsers(other.DatabaseUsers)
+
+	if s.BackupConfig != nil && other.BackupConfig != nil {
+		s.BackupConfig.DefaultSensitiveFieldsFrom(other.BackupConfig)
+	}
+	if s.RestoreConfig != nil && other.RestoreConfig != nil {
+		s.RestoreConfig.DefaultSensitiveFieldsFrom(other.RestoreConfig)
+	}
+}
+
+func (s Spec) defaultSensitiveFieldFromNodes(other []*Node) {
+	otherNodesByName := make(map[string]*Node)
+	for _, n := range other {
+		otherNodesByName[n.Name] = n
+	}
+
+	for _, n := range s.Nodes {
+		otherNode, ok := otherNodesByName[n.Name]
+		if ok {
+			n.DefaultSensitiveFieldsFrom(otherNode)
+		}
+	}
+}
+
+func (s Spec) defaultSensitiveFieldFromUsers(other []*User) {
+	otherUsersByName := make(map[string]*User)
+	for _, u := range other {
+		otherUsersByName[u.Username] = u
+	}
+
+	for _, u := range s.DatabaseUsers {
+		otherUser, ok := otherUsersByName[u.Username]
+		if ok {
+			u.DefaultSensitiveFieldsFrom(otherUser)
+		}
 	}
 }
 

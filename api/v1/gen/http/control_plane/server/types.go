@@ -1366,9 +1366,11 @@ type BackupRepositorySpecResponseBody struct {
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
 	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
 	// An optional AWS access key ID to use for this repository. If not provided,
-	// pgbackrest will use the default credential provider chain.
+	// pgbackrest will use the default credential provider chain. This field will
+	// be excluded from the response of all endpoints.
 	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
-	// The corresponding secret for the AWS access key ID in s3_key.
+	// The corresponding secret for the AWS access key ID in s3_key. This field
+	// will be excluded from the response of all endpoints.
 	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
@@ -1376,7 +1378,8 @@ type BackupRepositorySpecResponseBody struct {
 	// 'gcs'.
 	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
-	// the service account attached to the instance profile.
+	// the service account attached to the instance profile. This field will be
+	// excluded from the response of all endpoints.
 	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
@@ -1386,8 +1389,8 @@ type BackupRepositorySpecResponseBody struct {
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
-	// An optional Azure storage account access key to use for this repository. If
-	// not provided, pgbackrest will use the VM's managed identity.
+	// The Azure storage account access key to use for this repository. This field
+	// will be excluded from the response of all endpoints.
 	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
 	// The count of full backups to retain or the time to retain full backups.
 	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
@@ -1485,8 +1488,9 @@ type ExtraVolumesSpecResponseBody struct {
 type DatabaseUserSpecResponseBody struct {
 	// The username for this database user.
 	Username string `form:"username" json:"username" xml:"username"`
-	// The password for this database user.
-	Password string `form:"password" json:"password" xml:"password"`
+	// The password for this database user. This field will be excluded from the
+	// response of all endpoints.
+	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
 	// If true, this user will be granted database ownership.
 	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
 	// The attributes to assign to this database user.
@@ -1632,9 +1636,11 @@ type BackupRepositorySpecRequestBody struct {
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
 	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
 	// An optional AWS access key ID to use for this repository. If not provided,
-	// pgbackrest will use the default credential provider chain.
+	// pgbackrest will use the default credential provider chain. This field will
+	// be excluded from the response of all endpoints.
 	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
-	// The corresponding secret for the AWS access key ID in s3_key.
+	// The corresponding secret for the AWS access key ID in s3_key. This field
+	// will be excluded from the response of all endpoints.
 	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
@@ -1642,7 +1648,8 @@ type BackupRepositorySpecRequestBody struct {
 	// 'gcs'.
 	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
-	// the service account attached to the instance profile.
+	// the service account attached to the instance profile. This field will be
+	// excluded from the response of all endpoints.
 	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
@@ -1652,8 +1659,8 @@ type BackupRepositorySpecRequestBody struct {
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
-	// An optional Azure storage account access key to use for this repository. If
-	// not provided, pgbackrest will use the VM's managed identity.
+	// The Azure storage account access key to use for this repository. This field
+	// will be excluded from the response of all endpoints.
 	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
 	// The count of full backups to retain or the time to retain full backups.
 	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
@@ -1749,7 +1756,8 @@ type ExtraVolumesSpecRequestBody struct {
 type DatabaseUserSpecRequestBody struct {
 	// The username for this database user.
 	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
-	// The password for this database user.
+	// The password for this database user. This field will be excluded from the
+	// response of all endpoints.
 	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
 	// If true, this user will be granted database ownership.
 	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
@@ -1859,9 +1867,11 @@ type BackupRepositorySpecRequestBodyRequestBody struct {
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
 	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
 	// An optional AWS access key ID to use for this repository. If not provided,
-	// pgbackrest will use the default credential provider chain.
+	// pgbackrest will use the default credential provider chain. This field will
+	// be excluded from the response of all endpoints.
 	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
-	// The corresponding secret for the AWS access key ID in s3_key.
+	// The corresponding secret for the AWS access key ID in s3_key. This field
+	// will be excluded from the response of all endpoints.
 	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
@@ -1869,7 +1879,8 @@ type BackupRepositorySpecRequestBodyRequestBody struct {
 	// 'gcs'.
 	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
-	// the service account attached to the instance profile.
+	// the service account attached to the instance profile. This field will be
+	// excluded from the response of all endpoints.
 	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
@@ -1879,8 +1890,8 @@ type BackupRepositorySpecRequestBodyRequestBody struct {
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
-	// An optional Azure storage account access key to use for this repository. If
-	// not provided, pgbackrest will use the VM's managed identity.
+	// The Azure storage account access key to use for this repository. This field
+	// will be excluded from the response of all endpoints.
 	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
 	// The count of full backups to retain or the time to retain full backups.
 	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
@@ -1980,7 +1991,8 @@ type ExtraVolumesSpecRequestBodyRequestBody struct {
 type DatabaseUserSpecRequestBodyRequestBody struct {
 	// The username for this database user.
 	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
-	// The password for this database user.
+	// The password for this database user. This field will be excluded from the
+	// response of all endpoints.
 	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
 	// If true, this user will be granted database ownership.
 	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
@@ -3854,9 +3866,6 @@ func ValidateDatabaseUserSpecRequestBody(body *DatabaseUserSpecRequestBody) (err
 	if body.Username == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
 	}
-	if body.Password == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("password", "body"))
-	}
 	if body.Username != nil {
 		if utf8.RuneCountInString(*body.Username) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.username", *body.Username, utf8.RuneCountInString(*body.Username), 1, true))
@@ -4439,9 +4448,6 @@ func ValidateExtraVolumesSpecRequestBodyRequestBody(body *ExtraVolumesSpecReques
 func ValidateDatabaseUserSpecRequestBodyRequestBody(body *DatabaseUserSpecRequestBodyRequestBody) (err error) {
 	if body.Username == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
-	}
-	if body.Password == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("password", "body"))
 	}
 	if body.Username != nil {
 		if utf8.RuneCountInString(*body.Username) < 1 {

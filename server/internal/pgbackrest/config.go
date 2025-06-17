@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"slices"
 	"strconv"
+	"strings"
 
 	"gopkg.in/ini.v1"
 )
@@ -117,6 +118,65 @@ func (r *Repository) WithDefaults() *Repository {
 		out.RetentionFull = 7
 	}
 	return out
+}
+
+// DefaultSensitiveFieldsFrom will default this repository's sensitive fields to
+// the values from the given repository.
+func (r *Repository) DefaultSensitiveFieldsFrom(other *Repository) {
+	if other == nil {
+		return
+	}
+	if r.S3Key == "" {
+		r.S3Key = other.S3Key
+	}
+	if r.S3KeySecret == "" {
+		r.S3KeySecret = other.S3KeySecret
+	}
+	if r.GCSKey == "" {
+		r.GCSKey = other.GCSKey
+	}
+	if r.AzureKey == "" {
+		r.AzureKey = other.AzureKey
+	}
+}
+
+// Identifier computes a unique identifier for the repository.
+func (r *Repository) Identifier() string {
+	var fields []string
+	switch r.Type {
+	case RepositoryTypeAzure:
+		fields = []string{
+			string(r.Type),
+			r.ID,
+			r.AzureAccount,
+			r.AzureContainer,
+			r.AzureEndpoint,
+			r.BasePath,
+		}
+	case RepositoryTypeCifs, RepositoryTypePosix:
+		fields = []string{string(r.Type), r.ID, r.BasePath}
+	case RepositoryTypeGCS:
+		fields = []string{
+			string(r.Type),
+			r.ID,
+			r.GCSBucket,
+			r.GCSEndpoint,
+			r.BasePath,
+		}
+	case RepositoryTypeS3:
+		fields = []string{
+			string(r.Type),
+			r.ID,
+			r.S3Bucket,
+			r.S3Endpoint,
+			r.S3Region,
+			r.BasePath,
+		}
+	default:
+		fields = []string{string(r.Type), r.ID, r.BasePath}
+	}
+
+	return strings.Join(fields, ":")
 }
 
 type ConfigOptions struct {

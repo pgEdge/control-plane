@@ -2412,7 +2412,7 @@ func unmarshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec(v *Datab
 	}
 	res := &controlplane.DatabaseUserSpec{
 		Username: *v.Username,
-		Password: *v.Password,
+		Password: v.Password,
 		DbOwner:  v.DbOwner,
 	}
 	if v.Attributes != nil {
@@ -3223,7 +3223,7 @@ func marshalControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpecResponseBody(
 	}
 	res := &DatabaseUserSpecResponseBody{
 		Username: *v.Username,
-		Password: *v.Password,
+		Password: v.Password,
 		DbOwner:  v.DbOwner,
 	}
 	if v.Attributes != nil {
@@ -3488,7 +3488,7 @@ func unmarshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSp
 	}
 	res := &controlplane.DatabaseUserSpec{
 		Username: *v.Username,
-		Password: *v.Password,
+		Password: v.Password,
 		DbOwner:  v.DbOwner,
 	}
 	if v.Attributes != nil {
