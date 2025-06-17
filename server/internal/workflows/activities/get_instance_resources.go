@@ -23,7 +23,7 @@ func (a *Activities) ExecuteGetInstanceResources(
 	ctx workflow.Context,
 	input *GetInstanceResourcesInput,
 ) workflow.Future[*GetInstanceResourcesOutput] {
-	executor := input.Spec.HostID.String()
+	executor := input.Spec.HostID
 	options := workflow.ActivityOptions{
 		Queue: core.Queue(executor),
 		RetryOptions: workflow.RetryOptions{
@@ -35,8 +35,8 @@ func (a *Activities) ExecuteGetInstanceResources(
 
 func (a *Activities) GetInstanceResources(ctx context.Context, input *GetInstanceResourcesInput) (*GetInstanceResourcesOutput, error) {
 	logger := activity.Logger(ctx).With(
-		"database_id", input.Spec.DatabaseID.String(),
-		"instance_id", input.Spec.InstanceID.String(),
+		"database_id", input.Spec.DatabaseID,
+		"instance_id", input.Spec.InstanceID,
 	)
 	logger.Info("getting instance resources")
 

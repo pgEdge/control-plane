@@ -65,7 +65,7 @@ func (s *PreInitHandlers) JoinCluster(ctx context.Context, token *api.ClusterJoi
 	}
 
 	opts, err := cli.GetJoinOptions(ctx, &api.ClusterJoinRequest{
-		HostID:      s.cfg.HostID.String(),
+		HostID:      api.Identifier(s.cfg.HostID),
 		Hostname:    s.cfg.Hostname,
 		Ipv4Address: s.cfg.IPv4Address,
 		Token:       token.Token,

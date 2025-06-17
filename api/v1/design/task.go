@@ -11,7 +11,6 @@ var Task = g.Type("Task", func() {
 		g.Example("439eb515-e700-4740-b508-4a3f12ec4f83")
 	})
 	g.Attribute("database_id", g.String, func() {
-		g.Format(g.FormatUUID)
 		g.Description("The database ID of the task.")
 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 	})
@@ -20,12 +19,10 @@ var Task = g.Type("Task", func() {
 		g.Example("n1")
 	})
 	g.Attribute("instance_id", g.String, func() {
-		g.Format(g.FormatUUID)
 		g.Description("The ID of the instance that the task is operating on.")
 		g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 	})
 	g.Attribute("host_id", g.String, func() {
-		g.Format(g.FormatUUID)
 		g.Description("The ID of the host that the task is running on.")
 		g.Example("2e52dcde-86d8-4f71-b58e-8dc3a10c936a")
 	})
@@ -83,12 +80,10 @@ var TaskLogEntry = g.Type("TaskLogEntry", func() {
 
 var TaskLog = g.Type("TaskLog", func() {
 	g.Attribute("database_id", g.String, func() {
-		g.Format(g.FormatUUID)
 		g.Description("The database ID of the task log.")
 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 	})
 	g.Attribute("task_id", g.String, func() {
-		g.Format(g.FormatUUID)
 		g.Description("The unique ID of the task log.")
 		g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 	})
@@ -98,7 +93,6 @@ var TaskLog = g.Type("TaskLog", func() {
 		g.Example("pending")
 	})
 	g.Attribute("last_entry_id", g.String, func() {
-		g.Format(g.FormatUUID)
 		g.Description("The ID of the last entry in the task log.")
 		g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 	})

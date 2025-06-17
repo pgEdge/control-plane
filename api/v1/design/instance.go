@@ -96,12 +96,10 @@ var Instance = g.ResultType("Instance", func() {
 	g.Description("An instance of pgEdge Postgres running on a host.")
 	g.Attributes(func() {
 		g.Attribute("id", g.String, func() {
-			g.Format(g.FormatUUID)
 			g.Description("Unique identifier for the instance.")
 			g.Example("a67cbb36-c3c3-49c9-8aac-f4a0438a883d")
 		})
 		g.Attribute("host_id", g.String, func() {
-			g.Format(g.FormatUUID)
 			g.Description("The ID of the host this instance is running on.")
 			g.Example("de3b1388-1f0c-42f1-a86c-59ab72f255ec")
 		})

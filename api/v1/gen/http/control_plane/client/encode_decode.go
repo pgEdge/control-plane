@@ -609,7 +609,7 @@ func (c *Client) BuildGetHostRequest(ctx context.Context, v any) (*http.Request,
 		if !ok {
 			return nil, goahttp.ErrInvalidType("control-plane", "get-host", "*controlplane.GetHostPayload", v)
 		}
-		hostID = p.HostID
+		hostID = string(p.HostID)
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetHostControlPlanePath(hostID)}
 	req, err := http.NewRequest("GET", u.String(), nil)
@@ -736,7 +736,7 @@ func (c *Client) BuildRemoveHostRequest(ctx context.Context, v any) (*http.Reque
 		if !ok {
 			return nil, goahttp.ErrInvalidType("control-plane", "remove-host", "*controlplane.RemoveHostPayload", v)
 		}
-		hostID = p.HostID
+		hostID = string(p.HostID)
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: RemoveHostControlPlanePath(hostID)}
 	req, err := http.NewRequest("DELETE", u.String(), nil)
@@ -1094,7 +1094,7 @@ func (c *Client) BuildGetDatabaseRequest(ctx context.Context, v any) (*http.Requ
 		if !ok {
 			return nil, goahttp.ErrInvalidType("control-plane", "get-database", "*controlplane.GetDatabasePayload", v)
 		}
-		databaseID = p.DatabaseID
+		databaseID = string(p.DatabaseID)
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetDatabaseControlPlanePath(databaseID)}
 	req, err := http.NewRequest("GET", u.String(), nil)
@@ -1223,7 +1223,7 @@ func (c *Client) BuildUpdateDatabaseRequest(ctx context.Context, v any) (*http.R
 		if !ok {
 			return nil, goahttp.ErrInvalidType("control-plane", "update-database", "*controlplane.UpdateDatabasePayload", v)
 		}
-		databaseID = p.DatabaseID
+		databaseID = string(p.DatabaseID)
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateDatabaseControlPlanePath(databaseID)}
 	req, err := http.NewRequest("POST", u.String(), nil)
@@ -1406,7 +1406,7 @@ func (c *Client) BuildDeleteDatabaseRequest(ctx context.Context, v any) (*http.R
 		if !ok {
 			return nil, goahttp.ErrInvalidType("control-plane", "delete-database", "*controlplane.DeleteDatabasePayload", v)
 		}
-		databaseID = p.DatabaseID
+		databaseID = string(p.DatabaseID)
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: DeleteDatabaseControlPlanePath(databaseID)}
 	req, err := http.NewRequest("DELETE", u.String(), nil)
@@ -1572,7 +1572,7 @@ func (c *Client) BuildBackupDatabaseNodeRequest(ctx context.Context, v any) (*ht
 		if !ok {
 			return nil, goahttp.ErrInvalidType("control-plane", "backup-database-node", "*controlplane.BackupDatabaseNodePayload", v)
 		}
-		databaseID = p.DatabaseID
+		databaseID = string(p.DatabaseID)
 		nodeName = p.NodeName
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: BackupDatabaseNodeControlPlanePath(databaseID, nodeName)}
@@ -1754,7 +1754,7 @@ func (c *Client) BuildListDatabaseTasksRequest(ctx context.Context, v any) (*htt
 		if !ok {
 			return nil, goahttp.ErrInvalidType("control-plane", "list-database-tasks", "*controlplane.ListDatabaseTasksPayload", v)
 		}
-		databaseID = p.DatabaseID
+		databaseID = string(p.DatabaseID)
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ListDatabaseTasksControlPlanePath(databaseID)}
 	req, err := http.NewRequest("GET", u.String(), nil)
@@ -1911,7 +1911,7 @@ func (c *Client) BuildGetDatabaseTaskRequest(ctx context.Context, v any) (*http.
 		if !ok {
 			return nil, goahttp.ErrInvalidType("control-plane", "get-database-task", "*controlplane.GetDatabaseTaskPayload", v)
 		}
-		databaseID = p.DatabaseID
+		databaseID = string(p.DatabaseID)
 		taskID = p.TaskID
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetDatabaseTaskControlPlanePath(databaseID, taskID)}
@@ -2041,7 +2041,7 @@ func (c *Client) BuildGetDatabaseTaskLogRequest(ctx context.Context, v any) (*ht
 		if !ok {
 			return nil, goahttp.ErrInvalidType("control-plane", "get-database-task-log", "*controlplane.GetDatabaseTaskLogPayload", v)
 		}
-		databaseID = p.DatabaseID
+		databaseID = string(p.DatabaseID)
 		taskID = p.TaskID
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetDatabaseTaskLogControlPlanePath(databaseID, taskID)}
@@ -2189,7 +2189,7 @@ func (c *Client) BuildRestoreDatabaseRequest(ctx context.Context, v any) (*http.
 		if !ok {
 			return nil, goahttp.ErrInvalidType("control-plane", "restore-database", "*controlplane.RestoreDatabasePayload", v)
 		}
-		databaseID = p.DatabaseID
+		databaseID = string(p.DatabaseID)
 	}
 	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: RestoreDatabaseControlPlanePath(databaseID)}
 	req, err := http.NewRequest("POST", u.String(), nil)
@@ -2472,7 +2472,7 @@ func unmarshalClusterStatusResponseBodyToControlplaneClusterStatus(v *ClusterSta
 // *controlplane.Host from a value of type *HostResponseBody.
 func unmarshalHostResponseBodyToControlplaneHost(v *HostResponseBody) *controlplane.Host {
 	res := &controlplane.Host{
-		ID:           *v.ID,
+		ID:           controlplane.Identifier(*v.ID),
 		Orchestrator: *v.Orchestrator,
 		Hostname:     *v.Hostname,
 		Ipv4Address:  *v.Ipv4Address,
@@ -2571,7 +2571,7 @@ func unmarshalPgEdgeVersionResponseBodyToControlplanePgEdgeVersion(v *PgEdgeVers
 // *controlplane.Host from a value of type *HostResponse.
 func unmarshalHostResponseToControlplaneHost(v *HostResponse) *controlplane.Host {
 	res := &controlplane.Host{
-		ID:           *v.ID,
+		ID:           controlplane.Identifier(*v.ID),
 		Orchestrator: *v.Orchestrator,
 		Hostname:     *v.Hostname,
 		Ipv4Address:  *v.Ipv4Address,
@@ -2669,11 +2669,15 @@ func unmarshalPgEdgeVersionResponseToControlplanePgEdgeVersion(v *PgEdgeVersionR
 // type *controlplaneviews.DatabaseView from a value of type *DatabaseResponse.
 func unmarshalDatabaseResponseToControlplaneviewsDatabaseView(v *DatabaseResponse) *controlplaneviews.DatabaseView {
 	res := &controlplaneviews.DatabaseView{
-		ID:        v.ID,
-		TenantID:  v.TenantID,
 		CreatedAt: v.CreatedAt,
 		UpdatedAt: v.UpdatedAt,
 		State:     v.State,
+	}
+	id := controlplaneviews.IdentifierView(*v.ID)
+	res.ID = &id
+	if v.TenantID != nil {
+		tenantID := controlplaneviews.IdentifierView(*v.TenantID)
+		res.TenantID = &tenantID
 	}
 	if v.Instances != nil {
 		res.Instances = make([]*controlplaneviews.InstanceView, len(v.Instances))
@@ -2848,9 +2852,9 @@ func unmarshalDatabaseNodeSpecResponseToControlplaneviewsDatabaseNodeSpecView(v 
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
-	res.HostIds = make([]string, len(v.HostIds))
+	res.HostIds = make([]controlplaneviews.IdentifierView, len(v.HostIds))
 	for i, val := range v.HostIds {
-		res.HostIds[i] = val
+		res.HostIds[i] = controlplaneviews.IdentifierView(val)
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -2903,7 +2907,6 @@ func unmarshalBackupConfigSpecResponseToControlplaneviewsBackupConfigSpecView(v 
 // value of type *BackupRepositorySpecResponse.
 func unmarshalBackupRepositorySpecResponseToControlplaneviewsBackupRepositorySpecView(v *BackupRepositorySpecResponse) *controlplaneviews.BackupRepositorySpecView {
 	res := &controlplaneviews.BackupRepositorySpecView{
-		ID:                v.ID,
 		Type:              v.Type,
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
@@ -2920,6 +2923,10 @@ func unmarshalBackupRepositorySpecResponseToControlplaneviewsBackupRepositorySpe
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.ID != nil {
+		id := controlplaneviews.IdentifierView(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
@@ -2957,10 +2964,11 @@ func unmarshalRestoreConfigSpecResponseToControlplaneviewsRestoreConfigSpecView(
 		return nil
 	}
 	res := &controlplaneviews.RestoreConfigSpecView{
-		SourceDatabaseID:   v.SourceDatabaseID,
 		SourceNodeName:     v.SourceNodeName,
 		SourceDatabaseName: v.SourceDatabaseName,
 	}
+	sourceDatabaseID := controlplaneviews.IdentifierView(*v.SourceDatabaseID)
+	res.SourceDatabaseID = &sourceDatabaseID
 	res.Repository = unmarshalRestoreRepositorySpecResponseToControlplaneviewsRestoreRepositorySpecView(v.Repository)
 	if v.RestoreOptions != nil {
 		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
@@ -2979,7 +2987,6 @@ func unmarshalRestoreConfigSpecResponseToControlplaneviewsRestoreConfigSpecView(
 // value of type *RestoreRepositorySpecResponse.
 func unmarshalRestoreRepositorySpecResponseToControlplaneviewsRestoreRepositorySpecView(v *RestoreRepositorySpecResponse) *controlplaneviews.RestoreRepositorySpecView {
 	res := &controlplaneviews.RestoreRepositorySpecView{
-		ID:             v.ID,
 		Type:           v.Type,
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
@@ -2994,6 +3001,10 @@ func unmarshalRestoreRepositorySpecResponseToControlplaneviewsRestoreRepositoryS
 		AzureEndpoint:  v.AzureEndpoint,
 		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
+	}
+	if v.ID != nil {
+		id := controlplaneviews.IdentifierView(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
@@ -3114,7 +3125,7 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecRequestBody(v *control
 	if v.HostIds != nil {
 		res.HostIds = make([]string, len(v.HostIds))
 		for i, val := range v.HostIds {
-			res.HostIds[i] = val
+			res.HostIds[i] = string(val)
 		}
 	} else {
 		res.HostIds = []string{}
@@ -3174,7 +3185,6 @@ func marshalControlplaneBackupConfigSpecToBackupConfigSpecRequestBody(v *control
 // *controlplane.BackupRepositorySpec.
 func marshalControlplaneBackupRepositorySpecToBackupRepositorySpecRequestBody(v *controlplane.BackupRepositorySpec) *BackupRepositorySpecRequestBody {
 	res := &BackupRepositorySpecRequestBody{
-		ID:                v.ID,
 		Type:              v.Type,
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
@@ -3191,6 +3201,10 @@ func marshalControlplaneBackupRepositorySpecToBackupRepositorySpecRequestBody(v 
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.ID != nil {
+		id := string(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
@@ -3228,7 +3242,7 @@ func marshalControlplaneRestoreConfigSpecToRestoreConfigSpecRequestBody(v *contr
 		return nil
 	}
 	res := &RestoreConfigSpecRequestBody{
-		SourceDatabaseID:   v.SourceDatabaseID,
+		SourceDatabaseID:   string(v.SourceDatabaseID),
 		SourceNodeName:     v.SourceNodeName,
 		SourceDatabaseName: v.SourceDatabaseName,
 	}
@@ -3252,7 +3266,6 @@ func marshalControlplaneRestoreConfigSpecToRestoreConfigSpecRequestBody(v *contr
 // type *controlplane.RestoreRepositorySpec.
 func marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecRequestBody(v *controlplane.RestoreRepositorySpec) *RestoreRepositorySpecRequestBody {
 	res := &RestoreRepositorySpecRequestBody{
-		ID:             v.ID,
 		Type:           v.Type,
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
@@ -3267,6 +3280,10 @@ func marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecRequestBody(
 		AzureEndpoint:  v.AzureEndpoint,
 		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
+	}
+	if v.ID != nil {
+		id := string(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
@@ -3385,12 +3402,12 @@ func marshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *Databas
 		Memory:          v.Memory,
 	}
 	if v.HostIds != nil {
-		res.HostIds = make([]string, len(v.HostIds))
+		res.HostIds = make([]controlplane.Identifier, len(v.HostIds))
 		for i, val := range v.HostIds {
-			res.HostIds[i] = val
+			res.HostIds[i] = controlplane.Identifier(val)
 		}
 	} else {
-		res.HostIds = []string{}
+		res.HostIds = []controlplane.Identifier{}
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -3447,7 +3464,6 @@ func marshalBackupConfigSpecRequestBodyToControlplaneBackupConfigSpec(v *BackupC
 // type *BackupRepositorySpecRequestBody.
 func marshalBackupRepositorySpecRequestBodyToControlplaneBackupRepositorySpec(v *BackupRepositorySpecRequestBody) *controlplane.BackupRepositorySpec {
 	res := &controlplane.BackupRepositorySpec{
-		ID:                v.ID,
 		Type:              v.Type,
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
@@ -3464,6 +3480,10 @@ func marshalBackupRepositorySpecRequestBodyToControlplaneBackupRepositorySpec(v 
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.ID != nil {
+		id := controlplane.Identifier(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
@@ -3501,7 +3521,7 @@ func marshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec(v *Resto
 		return nil
 	}
 	res := &controlplane.RestoreConfigSpec{
-		SourceDatabaseID:   v.SourceDatabaseID,
+		SourceDatabaseID:   controlplane.Identifier(v.SourceDatabaseID),
 		SourceNodeName:     v.SourceNodeName,
 		SourceDatabaseName: v.SourceDatabaseName,
 	}
@@ -3525,7 +3545,6 @@ func marshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec(v *Resto
 // type *RestoreRepositorySpecRequestBody.
 func marshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpec(v *RestoreRepositorySpecRequestBody) *controlplane.RestoreRepositorySpec {
 	res := &controlplane.RestoreRepositorySpec{
-		ID:             v.ID,
 		Type:           v.Type,
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
@@ -3540,6 +3559,10 @@ func marshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpec(
 		AzureEndpoint:  v.AzureEndpoint,
 		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
+	}
+	if v.ID != nil {
+		id := controlplane.Identifier(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
@@ -3620,11 +3643,14 @@ func unmarshalTaskResponseBodyToControlplaneTask(v *TaskResponseBody) *controlpl
 // *controlplane.Database from a value of type *DatabaseResponseBody.
 func unmarshalDatabaseResponseBodyToControlplaneDatabase(v *DatabaseResponseBody) *controlplane.Database {
 	res := &controlplane.Database{
-		ID:        *v.ID,
-		TenantID:  v.TenantID,
+		ID:        controlplane.Identifier(*v.ID),
 		CreatedAt: *v.CreatedAt,
 		UpdatedAt: *v.UpdatedAt,
 		State:     *v.State,
+	}
+	if v.TenantID != nil {
+		tenantID := controlplane.Identifier(*v.TenantID)
+		res.TenantID = &tenantID
 	}
 	if v.Instances != nil {
 		res.Instances = make([]*controlplane.Instance, len(v.Instances))
@@ -3799,9 +3825,9 @@ func unmarshalDatabaseNodeSpecResponseBodyToControlplaneDatabaseNodeSpec(v *Data
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
-	res.HostIds = make([]string, len(v.HostIds))
+	res.HostIds = make([]controlplane.Identifier, len(v.HostIds))
 	for i, val := range v.HostIds {
-		res.HostIds[i] = val
+		res.HostIds[i] = controlplane.Identifier(val)
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -3854,7 +3880,6 @@ func unmarshalBackupConfigSpecResponseBodyToControlplaneBackupConfigSpec(v *Back
 // type *BackupRepositorySpecResponseBody.
 func unmarshalBackupRepositorySpecResponseBodyToControlplaneBackupRepositorySpec(v *BackupRepositorySpecResponseBody) *controlplane.BackupRepositorySpec {
 	res := &controlplane.BackupRepositorySpec{
-		ID:                v.ID,
 		Type:              *v.Type,
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
@@ -3871,6 +3896,10 @@ func unmarshalBackupRepositorySpecResponseBodyToControlplaneBackupRepositorySpec
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.ID != nil {
+		id := controlplane.Identifier(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
@@ -3908,7 +3937,7 @@ func unmarshalRestoreConfigSpecResponseBodyToControlplaneRestoreConfigSpec(v *Re
 		return nil
 	}
 	res := &controlplane.RestoreConfigSpec{
-		SourceDatabaseID:   *v.SourceDatabaseID,
+		SourceDatabaseID:   controlplane.Identifier(*v.SourceDatabaseID),
 		SourceNodeName:     *v.SourceNodeName,
 		SourceDatabaseName: *v.SourceDatabaseName,
 	}
@@ -3930,7 +3959,6 @@ func unmarshalRestoreConfigSpecResponseBodyToControlplaneRestoreConfigSpec(v *Re
 // type *RestoreRepositorySpecResponseBody.
 func unmarshalRestoreRepositorySpecResponseBodyToControlplaneRestoreRepositorySpec(v *RestoreRepositorySpecResponseBody) *controlplane.RestoreRepositorySpec {
 	res := &controlplane.RestoreRepositorySpec{
-		ID:             v.ID,
 		Type:           *v.Type,
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
@@ -3945,6 +3973,10 @@ func unmarshalRestoreRepositorySpecResponseBodyToControlplaneRestoreRepositorySp
 		AzureEndpoint:  v.AzureEndpoint,
 		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
+	}
+	if v.ID != nil {
+		id := controlplane.Identifier(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
@@ -4162,9 +4194,9 @@ func unmarshalDatabaseNodeSpecResponseBodyToControlplaneviewsDatabaseNodeSpecVie
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
-	res.HostIds = make([]string, len(v.HostIds))
+	res.HostIds = make([]controlplaneviews.IdentifierView, len(v.HostIds))
 	for i, val := range v.HostIds {
-		res.HostIds[i] = val
+		res.HostIds[i] = controlplaneviews.IdentifierView(val)
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -4217,7 +4249,6 @@ func unmarshalBackupConfigSpecResponseBodyToControlplaneviewsBackupConfigSpecVie
 // value of type *BackupRepositorySpecResponseBody.
 func unmarshalBackupRepositorySpecResponseBodyToControlplaneviewsBackupRepositorySpecView(v *BackupRepositorySpecResponseBody) *controlplaneviews.BackupRepositorySpecView {
 	res := &controlplaneviews.BackupRepositorySpecView{
-		ID:                v.ID,
 		Type:              v.Type,
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
@@ -4234,6 +4265,10 @@ func unmarshalBackupRepositorySpecResponseBodyToControlplaneviewsBackupRepositor
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.ID != nil {
+		id := controlplaneviews.IdentifierView(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
@@ -4271,10 +4306,11 @@ func unmarshalRestoreConfigSpecResponseBodyToControlplaneviewsRestoreConfigSpecV
 		return nil
 	}
 	res := &controlplaneviews.RestoreConfigSpecView{
-		SourceDatabaseID:   v.SourceDatabaseID,
 		SourceNodeName:     v.SourceNodeName,
 		SourceDatabaseName: v.SourceDatabaseName,
 	}
+	sourceDatabaseID := controlplaneviews.IdentifierView(*v.SourceDatabaseID)
+	res.SourceDatabaseID = &sourceDatabaseID
 	res.Repository = unmarshalRestoreRepositorySpecResponseBodyToControlplaneviewsRestoreRepositorySpecView(v.Repository)
 	if v.RestoreOptions != nil {
 		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
@@ -4293,7 +4329,6 @@ func unmarshalRestoreConfigSpecResponseBodyToControlplaneviewsRestoreConfigSpecV
 // value of type *RestoreRepositorySpecResponseBody.
 func unmarshalRestoreRepositorySpecResponseBodyToControlplaneviewsRestoreRepositorySpecView(v *RestoreRepositorySpecResponseBody) *controlplaneviews.RestoreRepositorySpecView {
 	res := &controlplaneviews.RestoreRepositorySpecView{
-		ID:             v.ID,
 		Type:           v.Type,
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
@@ -4308,6 +4343,10 @@ func unmarshalRestoreRepositorySpecResponseBodyToControlplaneviewsRestoreReposit
 		AzureEndpoint:  v.AzureEndpoint,
 		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
+	}
+	if v.ID != nil {
+		id := controlplaneviews.IdentifierView(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
@@ -4428,7 +4467,7 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecRequestBodyRequestBody
 	if v.HostIds != nil {
 		res.HostIds = make([]string, len(v.HostIds))
 		for i, val := range v.HostIds {
-			res.HostIds[i] = val
+			res.HostIds[i] = string(val)
 		}
 	} else {
 		res.HostIds = []string{}
@@ -4488,7 +4527,6 @@ func marshalControlplaneBackupConfigSpecToBackupConfigSpecRequestBodyRequestBody
 // value of type *controlplane.BackupRepositorySpec.
 func marshalControlplaneBackupRepositorySpecToBackupRepositorySpecRequestBodyRequestBody(v *controlplane.BackupRepositorySpec) *BackupRepositorySpecRequestBodyRequestBody {
 	res := &BackupRepositorySpecRequestBodyRequestBody{
-		ID:                v.ID,
 		Type:              v.Type,
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
@@ -4505,6 +4543,10 @@ func marshalControlplaneBackupRepositorySpecToBackupRepositorySpecRequestBodyReq
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.ID != nil {
+		id := string(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
@@ -4542,7 +4584,7 @@ func marshalControlplaneRestoreConfigSpecToRestoreConfigSpecRequestBodyRequestBo
 		return nil
 	}
 	res := &RestoreConfigSpecRequestBodyRequestBody{
-		SourceDatabaseID:   v.SourceDatabaseID,
+		SourceDatabaseID:   string(v.SourceDatabaseID),
 		SourceNodeName:     v.SourceNodeName,
 		SourceDatabaseName: v.SourceDatabaseName,
 	}
@@ -4566,7 +4608,6 @@ func marshalControlplaneRestoreConfigSpecToRestoreConfigSpecRequestBodyRequestBo
 // value of type *controlplane.RestoreRepositorySpec.
 func marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecRequestBodyRequestBody(v *controlplane.RestoreRepositorySpec) *RestoreRepositorySpecRequestBodyRequestBody {
 	res := &RestoreRepositorySpecRequestBodyRequestBody{
-		ID:             v.ID,
 		Type:           v.Type,
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
@@ -4581,6 +4622,10 @@ func marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecRequestBodyR
 		AzureEndpoint:  v.AzureEndpoint,
 		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
+	}
+	if v.ID != nil {
+		id := string(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
@@ -4699,12 +4744,12 @@ func marshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSpec
 		Memory:          v.Memory,
 	}
 	if v.HostIds != nil {
-		res.HostIds = make([]string, len(v.HostIds))
+		res.HostIds = make([]controlplane.Identifier, len(v.HostIds))
 		for i, val := range v.HostIds {
-			res.HostIds[i] = val
+			res.HostIds[i] = controlplane.Identifier(val)
 		}
 	} else {
-		res.HostIds = []string{}
+		res.HostIds = []controlplane.Identifier{}
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -4761,7 +4806,6 @@ func marshalBackupConfigSpecRequestBodyRequestBodyToControlplaneBackupConfigSpec
 // type *BackupRepositorySpecRequestBodyRequestBody.
 func marshalBackupRepositorySpecRequestBodyRequestBodyToControlplaneBackupRepositorySpec(v *BackupRepositorySpecRequestBodyRequestBody) *controlplane.BackupRepositorySpec {
 	res := &controlplane.BackupRepositorySpec{
-		ID:                v.ID,
 		Type:              v.Type,
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
@@ -4778,6 +4822,10 @@ func marshalBackupRepositorySpecRequestBodyRequestBodyToControlplaneBackupReposi
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.ID != nil {
+		id := controlplane.Identifier(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
@@ -4815,7 +4863,7 @@ func marshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSp
 		return nil
 	}
 	res := &controlplane.RestoreConfigSpec{
-		SourceDatabaseID:   v.SourceDatabaseID,
+		SourceDatabaseID:   controlplane.Identifier(v.SourceDatabaseID),
 		SourceNodeName:     v.SourceNodeName,
 		SourceDatabaseName: v.SourceDatabaseName,
 	}
@@ -4839,7 +4887,6 @@ func marshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSp
 // type *RestoreRepositorySpecRequestBodyRequestBody.
 func marshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRepositorySpec(v *RestoreRepositorySpecRequestBodyRequestBody) *controlplane.RestoreRepositorySpec {
 	res := &controlplane.RestoreRepositorySpec{
-		ID:             v.ID,
 		Type:           v.Type,
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
@@ -4854,6 +4901,10 @@ func marshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRepo
 		AzureEndpoint:  v.AzureEndpoint,
 		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
+	}
+	if v.ID != nil {
+		id := controlplane.Identifier(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))

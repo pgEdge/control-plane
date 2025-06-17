@@ -8,9 +8,29 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/uuid"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 	"github.com/rs/zerolog"
 )
+
+func validateRequiredID(name, value string) error {
+	if value == "" {
+		return fmt.Errorf("%s cannot be empty", name)
+	}
+	if err := utils.ValidateID(value); err != nil {
+		return fmt.Errorf("%s invalid. %w", name, err)
+	}
+	return nil
+}
+
+func validateOptionalID(name, value string) error {
+	if value == "" {
+		return nil
+	}
+	if err := utils.ValidateID(value); err != nil {
+		return fmt.Errorf("%s invalid. %w", name, err)
+	}
+	return nil
+}
 
 type Logging struct {
 	Level  string `koanf:"level"`
@@ -178,9 +198,9 @@ const (
 )
 
 type Config struct {
-	TenantID               uuid.UUID    `koanf:"tenant_id"`
-	ClusterID              uuid.UUID    `koanf:"cluster_id"`
-	HostID                 uuid.UUID    `koanf:"host_id"`
+	TenantID               string       `koanf:"tenant_id"`
+	ClusterID              string       `koanf:"cluster_id"`
+	HostID                 string       `koanf:"host_id"`
 	Orchestrator           Orchestrator `koanf:"orchestrator"`
 	DataDir                string       `koanf:"data_dir"`
 	StorageType            StorageType  `koanf:"storage_type"`
@@ -201,11 +221,14 @@ type Config struct {
 
 func (c Config) Validate() error {
 	var errs []error
-	if c.ClusterID == uuid.Nil {
-		errs = append(errs, errors.New("cluster_id cannot be empty"))
+	if err := validateRequiredID("cluster_id", c.ClusterID); err != nil {
+		errs = append(errs, err)
 	}
-	if c.HostID == uuid.Nil {
-		errs = append(errs, errors.New("host_id cannot be empty"))
+	if err := validateRequiredID("host_id", c.HostID); err != nil {
+		errs = append(errs, err)
+	}
+	if err := validateOptionalID("tenant_id", c.TenantID); err != nil {
+		errs = append(errs, err)
 	}
 	if c.IPv4Address == "" {
 		errs = append(errs, errors.New("ipv4_address cannot be empty"))

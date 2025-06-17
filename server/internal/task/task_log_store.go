@@ -12,7 +12,7 @@ import (
 
 type StoredTaskLogEntry struct {
 	storage.StoredValue
-	DatabaseID uuid.UUID      `json:"database_id"`
+	DatabaseID string         `json:"database_id"`
 	TaskID     uuid.UUID      `json:"task_id"`
 	EntryID    uuid.UUID      `json:"entry_id"`
 	Timestamp  time.Time      `json:"timestamp"`
@@ -36,16 +36,16 @@ func (s *TaskLogEntryStore) Prefix() string {
 	return path.Join("/", s.root, "task_log_messages")
 }
 
-func (s *TaskLogEntryStore) DatabasePrefix(databaseID uuid.UUID) string {
-	return path.Join(s.Prefix(), databaseID.String())
+func (s *TaskLogEntryStore) DatabasePrefix(databaseID string) string {
+	return path.Join(s.Prefix(), databaseID)
 }
 
-func (s *TaskLogEntryStore) TaskPrefix(databaseID, taskID uuid.UUID) string {
+func (s *TaskLogEntryStore) TaskPrefix(databaseID string, taskID uuid.UUID) string {
 	return path.Join(s.DatabasePrefix(databaseID), taskID.String())
 }
 
-func (s *TaskLogEntryStore) Key(databaseID, taskID, messageID uuid.UUID) string {
-	return path.Join(s.TaskPrefix(databaseID, taskID), messageID.String())
+func (s *TaskLogEntryStore) Key(databaseID string, taskID, entryID uuid.UUID) string {
+	return path.Join(s.TaskPrefix(databaseID, taskID), entryID.String())
 }
 
 type TaskLogOptions struct {
@@ -53,7 +53,7 @@ type TaskLogOptions struct {
 	AfterEntryID uuid.UUID
 }
 
-func (s *TaskLogEntryStore) GetAllByTaskID(databaseID, taskID uuid.UUID, options TaskLogOptions) storage.GetMultipleOp[*StoredTaskLogEntry] {
+func (s *TaskLogEntryStore) GetAllByTaskID(databaseID string, taskID uuid.UUID, options TaskLogOptions) storage.GetMultipleOp[*StoredTaskLogEntry] {
 	rangeStart := s.TaskPrefix(databaseID, taskID)
 	rangeEnd := clientv3.GetPrefixRangeEnd(rangeStart)
 
@@ -78,12 +78,12 @@ func (s *TaskLogEntryStore) Put(item *StoredTaskLogEntry) storage.PutOp[*StoredT
 	return storage.NewPutOp(s.client, key, item)
 }
 
-func (s *TaskLogEntryStore) DeleteByTaskID(databaseID, taskID uuid.UUID) storage.DeleteOp {
+func (s *TaskLogEntryStore) DeleteByTaskID(databaseID string, taskID uuid.UUID) storage.DeleteOp {
 	prefix := s.TaskPrefix(databaseID, taskID)
 	return storage.NewDeletePrefixOp(s.client, prefix)
 }
 
-func (s *TaskLogEntryStore) DeleteByDatabaseID(databaseID uuid.UUID) storage.DeleteOp {
+func (s *TaskLogEntryStore) DeleteByDatabaseID(databaseID string) storage.DeleteOp {
 	prefix := s.DatabasePrefix(databaseID)
 	return storage.NewDeletePrefixOp(s.client, prefix)
 }

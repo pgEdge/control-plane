@@ -6,13 +6,12 @@ import (
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
-	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
 type PlanRefreshInput struct {
-	DatabaseID uuid.UUID       `json:"database_id"`
+	DatabaseID string          `json:"database_id"`
 	State      *resource.State `json:"current"`
 }
 
@@ -25,7 +24,7 @@ func (a *Activities) ExecutePlanRefresh(
 	input *PlanRefreshInput,
 ) workflow.Future[*PlanRefreshOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(a.Config.HostID.String()),
+		Queue: core.Queue(a.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
@@ -34,7 +33,7 @@ func (a *Activities) ExecutePlanRefresh(
 }
 
 func (a *Activities) PlanRefresh(ctx context.Context, input *PlanRefreshInput) (*PlanRefreshOutput, error) {
-	logger := activity.Logger(ctx).With("database_id", input.DatabaseID.String())
+	logger := activity.Logger(ctx).With("database_id", input.DatabaseID)
 	logger.Info("generating refresh plan")
 
 	// This needs to be in an activity because it's non-deterministic and can

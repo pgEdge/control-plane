@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/pgEdge/control-plane/server/internal/postgres"
@@ -137,12 +136,12 @@ func GetPrimaryInstance(ctx context.Context, rc *resource.Context, nodeName stri
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node %q: %w", nodeName, err)
 	}
-	if node.PrimaryInstanceID == uuid.Nil {
+	if node.PrimaryInstanceID == "" {
 		return nil, resource.ErrNotFound
 	}
 	instance, err := resource.FromContext[*InstanceResource](rc, InstanceResourceIdentifier(node.PrimaryInstanceID))
 	if err != nil {
-		return nil, fmt.Errorf("failed to get primary instance %q: %w", node.PrimaryInstanceID.String(), err)
+		return nil, fmt.Errorf("failed to get primary instance %q: %w", node.PrimaryInstanceID, err)
 	}
 	return instance, nil
 }

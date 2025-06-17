@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 
@@ -24,7 +23,7 @@ type Service struct {
 	dbOrch  database.Orchestrator
 	store   *Store
 
-	instances map[uuid.UUID]*InstanceMonitor
+	instances map[string]*InstanceMonitor
 }
 
 func NewService(
@@ -42,7 +41,7 @@ func NewService(
 		certSvc:   certSvc,
 		dbOrch:    dbOrch,
 		store:     store,
-		instances: map[uuid.UUID]*InstanceMonitor{},
+		instances: map[string]*InstanceMonitor{},
 	}
 }
 
@@ -76,12 +75,12 @@ func (s *Service) Shutdown() error {
 		mon.Stop()
 	}
 
-	s.instances = map[uuid.UUID]*InstanceMonitor{}
+	s.instances = map[string]*InstanceMonitor{}
 
 	return nil
 }
 
-func (s *Service) CreateInstanceMonitor(ctx context.Context, databaseID, instanceID uuid.UUID, dbName string) error {
+func (s *Service) CreateInstanceMonitor(ctx context.Context, databaseID, instanceID, dbName string) error {
 	if s.HasInstanceMonitor(instanceID) {
 		err := s.DeleteInstanceMonitor(ctx, instanceID)
 		if err != nil {
@@ -104,7 +103,7 @@ func (s *Service) CreateInstanceMonitor(ctx context.Context, databaseID, instanc
 	return nil
 }
 
-func (s *Service) DeleteInstanceMonitor(ctx context.Context, instanceID uuid.UUID) error {
+func (s *Service) DeleteInstanceMonitor(ctx context.Context, instanceID string) error {
 	mon, ok := s.instances[instanceID]
 	if ok {
 		mon.Stop()
@@ -121,12 +120,12 @@ func (s *Service) DeleteInstanceMonitor(ctx context.Context, instanceID uuid.UUI
 	return nil
 }
 
-func (s *Service) HasInstanceMonitor(instanceID uuid.UUID) bool {
+func (s *Service) HasInstanceMonitor(instanceID string) bool {
 	_, ok := s.instances[instanceID]
 	return ok
 }
 
-func (s *Service) addInstanceMonitor(databaseID, instanceID uuid.UUID, dbName string) {
+func (s *Service) addInstanceMonitor(databaseID, instanceID, dbName string) {
 	mon := NewInstanceMonitor(
 		s.dbOrch,
 		s.dbSvc,

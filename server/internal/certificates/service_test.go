@@ -17,7 +17,7 @@ func TestService(t *testing.T) {
 		client := etcd.Client(t)
 		store := certificates.NewStore(client, uuid.NewString())
 		cfg := config.Config{
-			ClusterID: uuid.New(),
+			ClusterID: uuid.NewString(),
 		}
 		service := certificates.NewService(cfg, store)
 
@@ -25,7 +25,7 @@ func TestService(t *testing.T) {
 		assert.NoError(t, service.Start(ctx))
 
 		// Create a postgres user principal
-		instanceID := uuid.New()
+		instanceID := uuid.NewString()
 		principal, err := service.PostgresUser(ctx, instanceID, "postgres")
 		assert.NoError(t, err)
 		assert.NotNil(t, principal)

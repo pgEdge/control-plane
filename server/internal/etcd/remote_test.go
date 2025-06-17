@@ -74,7 +74,7 @@ func testCluster(t testing.TB) (*etcd.EmbeddedEtcd, *etcd.EmbeddedEtcd, *etcd.Em
 	// quorum. We need to keep this in mind when planning deployment shapes.
 	ctx := context.Background()
 	cfgA := config.Config{
-		HostID:      uuid.New(),
+		HostID:      uuid.NewString(),
 		DataDir:     storagetest.TempDir(t),
 		StorageType: config.StorageTypeEmbeddedEtcd,
 		IPv4Address: "127.0.0.1",
@@ -95,7 +95,7 @@ func testCluster(t testing.TB) (*etcd.EmbeddedEtcd, *etcd.EmbeddedEtcd, *etcd.Em
 	})
 
 	cfgB := config.Config{
-		HostID:      uuid.New(),
+		HostID:      uuid.NewString(),
 		DataDir:     storagetest.TempDir(t),
 		StorageType: config.StorageTypeEmbeddedEtcd,
 		IPv4Address: "127.0.0.1",
@@ -108,7 +108,7 @@ func testCluster(t testing.TB) (*etcd.EmbeddedEtcd, *etcd.EmbeddedEtcd, *etcd.Em
 	serverB := etcd.NewEmbeddedEtcd(cfgB, logger)
 
 	cfgC := config.Config{
-		HostID:      uuid.New(),
+		HostID:      uuid.NewString(),
 		DataDir:     storagetest.TempDir(t),
 		StorageType: config.StorageTypeEmbeddedEtcd,
 		IPv4Address: "127.0.0.1",

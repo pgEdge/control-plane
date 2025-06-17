@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/google/uuid"
 	"github.com/samber/do"
 	"github.com/spf13/afero"
 
@@ -31,17 +30,17 @@ var _ resource.Resource = (*PgBackRestConfig)(nil)
 
 const ResourceTypePgBackRestConfig resource.Type = "swarm.pgbackrest_config"
 
-func PgBackRestConfigIdentifier(instanceID uuid.UUID, configType PgBackRestConfigType) resource.Identifier {
+func PgBackRestConfigIdentifier(instanceID string, configType PgBackRestConfigType) resource.Identifier {
 	return resource.Identifier{
-		ID:   instanceID.String() + "-" + configType.String(),
+		ID:   instanceID + "-" + configType.String(),
 		Type: ResourceTypePgBackRestConfig,
 	}
 }
 
 type PgBackRestConfig struct {
-	InstanceID   uuid.UUID                `json:"instance_id"`
-	HostID       uuid.UUID                `json:"host_id"`
-	DatabaseID   uuid.UUID                `json:"database_id"`
+	InstanceID   string                   `json:"instance_id"`
+	HostID       string                   `json:"host_id"`
+	DatabaseID   string                   `json:"database_id"`
 	NodeName     string                   `json:"node_name"`
 	Repositories []*pgbackrest.Repository `json:"repositories"`
 	ParentID     string                   `json:"parent_id"`
@@ -61,7 +60,7 @@ func (c *PgBackRestConfig) DiffIgnore() []string {
 func (c *PgBackRestConfig) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeHost,
-		ID:   c.HostID.String(),
+		ID:   c.HostID,
 	}
 }
 

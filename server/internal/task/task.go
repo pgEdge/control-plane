@@ -48,10 +48,10 @@ var completedStatuses = ds.NewSet(
 
 type Task struct {
 	ParentID            uuid.UUID `json:"parent_id"`
-	DatabaseID          uuid.UUID `json:"database_id"`
+	DatabaseID          string    `json:"database_id"`
 	NodeName            string    `json:"node_name"`
-	InstanceID          uuid.UUID `json:"instance_id"`
-	HostID              uuid.UUID `json:"host_id"`
+	InstanceID          string    `json:"instance_id"`
+	HostID              string    `json:"host_id"`
 	TaskID              uuid.UUID `json:"task_id"`
 	CreatedAt           time.Time `json:"created_at"`
 	CompletedAt         time.Time `json:"completed_at"`
@@ -68,17 +68,17 @@ func (t *Task) IsComplete() bool {
 
 type Options struct {
 	ParentID            uuid.UUID `json:"parent_id"`
-	DatabaseID          uuid.UUID `json:"database_id"`
+	DatabaseID          string    `json:"database_id"`
 	NodeName            string    `json:"node_name"`
-	InstanceID          uuid.UUID `json:"instance_id"`
-	HostID              uuid.UUID `json:"host_id"`
+	InstanceID          string    `json:"instance_id"`
+	HostID              string    `json:"host_id"`
 	Type                Type      `json:"type"`
 	WorkflowInstanceID  string    `json:"workflow_id"`
 	WorkflowExecutionID string    `json:"workflow_execution_id"`
 }
 
 func (o Options) validate() error {
-	if o.DatabaseID == uuid.Nil {
+	if o.DatabaseID == "" {
 		return errors.New("database ID is required when creating a new task")
 	}
 	if o.Type == "" {
@@ -114,8 +114,8 @@ func NewTask(opts Options) (*Task, error) {
 
 type UpdateOptions struct {
 	NodeName            *string    `json:"node_name,omitempty"`
-	InstanceID          *uuid.UUID `json:"instance_id,omitempty"`
-	HostID              *uuid.UUID `json:"host_id,omitempty"`
+	InstanceID          *string    `json:"instance_id,omitempty"`
+	HostID              *string    `json:"host_id,omitempty"`
 	WorkflowInstanceID  *string    `json:"workflow_instance_id,omitempty"`
 	WorkflowExecutionID *string    `json:"workflow_execution_id,omitempty"`
 	CompletedAt         *time.Time `json:"completed_at,omitempty"`
@@ -187,7 +187,7 @@ func (t *Task) SetCompleted() {
 }
 
 type TaskLog struct {
-	DatabaseID  uuid.UUID  `json:"database_id"`
+	DatabaseID  string     `json:"database_id"`
 	TaskID      uuid.UUID  `json:"id"`
 	LastEntryID uuid.UUID  `json:"last_entry_id"`
 	Entries     []LogEntry `json:"entries"`

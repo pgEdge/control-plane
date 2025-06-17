@@ -23,7 +23,7 @@ type UpdateDatabaseOutput struct {
 }
 
 func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseInput) (*UpdateDatabaseOutput, error) {
-	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID.String())
+	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID)
 	logger.Info("updating database")
 
 	handleError := func(cause error) error {

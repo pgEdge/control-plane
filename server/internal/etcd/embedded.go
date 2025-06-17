@@ -14,7 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	"github.com/spf13/afero"
@@ -239,8 +238,8 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 		Logger:    lg,
 		Endpoints: []string{options.Peer.ClientURL},
 		TLS:       tlsConfig,
-		Username:  fmt.Sprintf("host-%s", e.cfg.HostID.String()),
-		Password:  e.cfg.HostID.String(),
+		Username:  fmt.Sprintf("host-%s", e.cfg.HostID),
+		Password:  e.cfg.HostID,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to initialize etcd peer client: %w", err)
@@ -291,7 +290,7 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 	}
 	e.etcd = etcd
 
-	if err := PromoteWhenReady(ctx, client, e.cfg.HostID.String()); err != nil {
+	if err := PromoteWhenReady(ctx, client, e.cfg.HostID); err != nil {
 		return fmt.Errorf("failed to promote this etcd server: %w", err)
 	}
 
@@ -344,7 +343,7 @@ func (e *EmbeddedEtcd) DataDir() string {
 
 func (e *EmbeddedEtcd) AsPeer() Peer {
 	return Peer{
-		Name:      e.cfg.HostID.String(),
+		Name:      e.cfg.HostID,
 		PeerURL:   fmt.Sprintf("https://%s:%d", e.cfg.IPv4Address, e.cfg.EmbeddedEtcd.PeerPort),
 		ClientURL: e.ClientEndpoint(),
 	}
@@ -429,8 +428,8 @@ func (e *EmbeddedEtcd) GetClient() (*clientv3.Client, error) {
 		Logger:             lg,
 		Endpoints:          e.etcd.Server.Cluster().ClientURLs(),
 		TLS:                tlsConfig,
-		Username:           fmt.Sprintf("host-%s", e.cfg.HostID.String()),
-		Password:           e.cfg.HostID.String(),
+		Username:           fmt.Sprintf("host-%s", e.cfg.HostID),
+		Password:           e.cfg.HostID,
 		MaxCallSendMsgSize: 10 * 1024 * 1024, // 10MB
 		MaxCallRecvMsgSize: 10 * 1024 * 1024, // 10MB
 	})
@@ -609,7 +608,7 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 
 	c := embed.NewConfig()
 	c.ZapLoggerBuilder = embed.NewZapLoggerBuilder(lg)
-	c.Name = cfg.HostID.String()
+	c.Name = cfg.HostID
 	c.Dir = filepath.Join(cfg.DataDir, "etcd")
 	// Recommended auto-compaction settings for Kubernetes. We don't expect
 	// nearly the amount of write traffic, but it's a good starting point to
@@ -654,7 +653,7 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 	// This will get overridden when joining an existing cluster
 	c.InitialCluster = fmt.Sprintf(
 		"%s=http://%s:%d",
-		cfg.HostID.String(),
+		cfg.HostID,
 		myIP,
 		peerPort,
 	)
@@ -675,7 +674,7 @@ func initializationConfig(cfg config.Config, logger zerolog.Logger) (*embed.Conf
 
 	c := embed.NewConfig()
 	c.ZapLoggerBuilder = embed.NewZapLoggerBuilder(lg)
-	c.Name = cfg.HostID.String()
+	c.Name = cfg.HostID
 	c.Dir = filepath.Join(cfg.DataDir, "etcd")
 
 	// Only bind/advertise localhost for initialization
@@ -739,7 +738,7 @@ func clientForEmbedded(cfg config.Config, logger zerolog.Logger, etcd *embed.Etc
 }
 
 type HostCredentialOptions struct {
-	HostID      uuid.UUID
+	HostID      string
 	Hostname    string
 	IPv4Address string
 }
@@ -758,12 +757,12 @@ func createEtcdHostCredentials(
 	certSvc *certificates.Service,
 	opts HostCredentialOptions,
 ) (*HostCredentials, error) {
-	username := fmt.Sprintf("host-%s", opts.HostID.String())
+	username := fmt.Sprintf("host-%s", opts.HostID)
 
 	// Create a user for the peer host
 	// TODO: patroni doesn't support CN auth, so we need a password. Replace this
 	// with something random
-	if _, err := client.UserAdd(ctx, username, opts.HostID.String()); err != nil {
+	if _, err := client.UserAdd(ctx, username, opts.HostID); err != nil {
 		return nil, fmt.Errorf("failed to create host user: %w", err)
 	}
 	if _, err := client.UserGrantRole(ctx, username, "root"); err != nil {
@@ -796,7 +795,7 @@ func createEtcdHostCredentials(
 }
 
 type InstanceUserOptions struct {
-	InstanceID uuid.UUID
+	InstanceID string
 	KeyPrefix  string
 	Password   string
 }
@@ -815,7 +814,7 @@ func CreateInstanceEtcdUser(
 	certSvc *certificates.Service,
 	opts InstanceUserOptions,
 ) (*InstanceUserCredentials, error) {
-	username := fmt.Sprintf("instance-%s", opts.InstanceID.String())
+	username := fmt.Sprintf("instance-%s", opts.InstanceID)
 	password := opts.Password
 	if password == "" {
 		pw, err := utils.RandomString(16)
@@ -919,9 +918,9 @@ func RemoveInstanceEtcdUser(
 	ctx context.Context,
 	client *clientv3.Client,
 	certSvc *certificates.Service,
-	instanceID uuid.UUID,
+	instanceID string,
 ) error {
-	username := fmt.Sprintf("instance-%s", instanceID.String())
+	username := fmt.Sprintf("instance-%s", instanceID)
 
 	if err := removeUserIfExists(ctx, client, username); err != nil {
 		return fmt.Errorf("failed to create instance user: %w", err)

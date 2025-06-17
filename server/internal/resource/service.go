@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
@@ -21,7 +20,7 @@ func NewService(store *Store) *Service {
 	}
 }
 
-func (s *Service) GetState(ctx context.Context, databaseID uuid.UUID) (*State, error) {
+func (s *Service) GetState(ctx context.Context, databaseID string) (*State, error) {
 	stored, err := s.store.GetByKey(databaseID).Exec(ctx)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrStateNotFound
@@ -31,7 +30,7 @@ func (s *Service) GetState(ctx context.Context, databaseID uuid.UUID) (*State, e
 	return stored.State, nil
 }
 
-func (s *Service) PersistState(ctx context.Context, databaseID uuid.UUID, state *State) error {
+func (s *Service) PersistState(ctx context.Context, databaseID string, state *State) error {
 	err := s.store.Put(&StoredState{
 		DatabaseID: databaseID,
 		State:      state,
@@ -42,7 +41,7 @@ func (s *Service) PersistState(ctx context.Context, databaseID uuid.UUID, state 
 	return nil
 }
 
-func (s *Service) DeleteState(ctx context.Context, databaseID uuid.UUID) error {
+func (s *Service) DeleteState(ctx context.Context, databaseID string) error {
 	_, err := s.store.DeleteByKey(databaseID).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to delete state: %w", err)

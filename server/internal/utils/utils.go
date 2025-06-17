@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 	"unicode"
@@ -121,4 +122,19 @@ func BuildOptionArgs(options map[string]string) []string {
 		res = append(res, prefix+k+"="+v)
 	}
 	return res
+}
+
+var idPattern = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$`)
+var ErrInvalidIdentifier = errors.New(`valid IDs must:
+- Be 1-63 characters long
+- Contain only lower-cased letters and hyphens
+- Start with a letter or number
+- End with a letter or number
+- Not contain two consecutive hyphens`)
+
+func ValidateID(value string) error {
+	if !idPattern.MatchString(value) || strings.Contains(value, "--") {
+		return ErrInvalidIdentifier
+	}
+	return nil
 }

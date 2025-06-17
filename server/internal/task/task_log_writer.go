@@ -10,12 +10,12 @@ import (
 )
 
 type TaskLogWriter struct {
-	DatabaseID uuid.UUID
+	DatabaseID string
 	TaskID     uuid.UUID
 	writer     *utils.LineWriter
 }
 
-func NewTaskLogWriter(ctx context.Context, service *Service, databaseID, taskID uuid.UUID) *TaskLogWriter {
+func NewTaskLogWriter(ctx context.Context, service *Service, databaseID string, taskID uuid.UUID) *TaskLogWriter {
 	return &TaskLogWriter{
 		DatabaseID: databaseID,
 		TaskID:     taskID,

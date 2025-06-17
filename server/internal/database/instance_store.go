@@ -4,7 +4,6 @@ import (
 	"path"
 	"time"
 
-	"github.com/google/uuid"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/storage"
@@ -12,9 +11,9 @@ import (
 
 type StoredInstance struct {
 	storage.StoredValue
-	InstanceID uuid.UUID     `json:"instance_id"`
-	DatabaseID uuid.UUID     `json:"database_id"`
-	HostID     uuid.UUID     `json:"host_id"`
+	InstanceID string        `json:"instance_id"`
+	DatabaseID string        `json:"database_id"`
+	HostID     string        `json:"host_id"`
 	NodeName   string        `json:"node_name"`
 	State      InstanceState `json:"state"`
 	CreatedAt  time.Time     `json:"created_at"`
@@ -23,9 +22,9 @@ type StoredInstance struct {
 }
 
 type InstanceUpdateOptions struct {
-	InstanceID uuid.UUID     `json:"instance_id"`
-	DatabaseID uuid.UUID     `json:"database_id"`
-	HostID     uuid.UUID     `json:"host_id"`
+	InstanceID string        `json:"instance_id"`
+	DatabaseID string        `json:"database_id"`
+	HostID     string        `json:"host_id"`
 	NodeName   string        `json:"node_name"`
 	State      InstanceState `json:"state"`
 	Error      string        `json:"error,omitempty"`
@@ -67,20 +66,20 @@ func (s *InstanceStore) Prefix() string {
 	return path.Join("/", s.root, "instances")
 }
 
-func (s *InstanceStore) DatabasePrefix(databaseID uuid.UUID) string {
-	return path.Join(s.Prefix(), databaseID.String())
+func (s *InstanceStore) DatabasePrefix(databaseID string) string {
+	return path.Join(s.Prefix(), databaseID)
 }
 
-func (s *InstanceStore) Key(databaseID, instanceID uuid.UUID) string {
-	return path.Join(s.DatabasePrefix(databaseID), instanceID.String())
+func (s *InstanceStore) Key(databaseID, instanceID string) string {
+	return path.Join(s.DatabasePrefix(databaseID), instanceID)
 }
 
-func (s *InstanceStore) GetByKey(databaseID, instanceID uuid.UUID) storage.GetOp[*StoredInstance] {
+func (s *InstanceStore) GetByKey(databaseID, instanceID string) storage.GetOp[*StoredInstance] {
 	key := s.Key(databaseID, instanceID)
 	return storage.NewGetOp[*StoredInstance](s.client, key)
 }
 
-func (s *InstanceStore) GetByDatabaseID(databaseID uuid.UUID) storage.GetMultipleOp[*StoredInstance] {
+func (s *InstanceStore) GetByDatabaseID(databaseID string) storage.GetMultipleOp[*StoredInstance] {
 	prefix := s.DatabasePrefix(databaseID)
 	return storage.NewGetPrefixOp[*StoredInstance](s.client, prefix)
 }
@@ -95,7 +94,7 @@ func (s *InstanceStore) Put(item *StoredInstance) storage.PutOp[*StoredInstance]
 	return storage.NewPutOp(s.client, key, item)
 }
 
-func (s *InstanceStore) DeleteByKey(databaseID, instanceID uuid.UUID) storage.DeleteOp {
+func (s *InstanceStore) DeleteByKey(databaseID, instanceID string) storage.DeleteOp {
 	key := s.Key(databaseID, instanceID)
 	return storage.NewDeleteKeyOp(s.client, key)
 }

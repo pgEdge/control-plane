@@ -12,8 +12,9 @@ const (
 	cpuPattern      = `^[0-9]+(\.[0-9]{1,3}|m)?$`
 )
 
-var HostIDs = g.ArrayOf(g.String, func() {
-	g.Format(g.FormatUUID)
+var HostIDs = g.ArrayOf(Identifier, func() {
+	g.Example("host-1")
+	g.Example("us-east-1")
 	g.Example("de3b1388-1f0c-42f1-a86c-59ab72f255ec")
 })
 
@@ -104,10 +105,9 @@ var DatabaseUserSpec = g.Type("DatabaseUserSpec", func() {
 })
 
 var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
-	g.Attribute("id", g.String, func() {
+	g.Attribute("id", Identifier, func() {
 		g.Description("The unique identifier of this repository.")
-		g.MinLength(1)
-		g.MaxLength(64)
+		g.Example("my-app-1")
 		g.Example("f6b84a99-5e91-4203-be1e-131fe82e5984")
 	})
 	g.Attribute("type", g.String, func() {
@@ -246,10 +246,9 @@ var BackupConfigSpec = g.Type("BackupConfigSpec", func() {
 })
 
 var RestoreRepositorySpec = g.Type("RestoreRepositorySpec", func() {
-	g.Attribute("id", g.String, func() {
+	g.Attribute("id", Identifier, func() {
 		g.Description("The unique identifier of this repository.")
-		g.MinLength(1)
-		g.MaxLength(64)
+		g.Example("my-app-1")
 		g.Example("f6b84a99-5e91-4203-be1e-131fe82e5984")
 	})
 	g.Attribute("type", g.String, func() {
@@ -342,10 +341,11 @@ var RestoreRepositorySpec = g.Type("RestoreRepositorySpec", func() {
 })
 
 var RestoreConfigSpec = g.Type("RestoreConfigSpec", func() {
-	g.Attribute("source_database_id", g.String, func() {
+	g.Attribute("source_database_id", Identifier, func() {
 		g.Description("The ID of the database to restore this database from.")
-		g.Format(g.FormatUUID)
-		g.Example("6c8e43ee-26ea-47b8-a8f8-89897e0137bd")
+		g.Example("production")
+		g.Example("my-app")
+		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 	})
 	g.Attribute("source_node_name", g.String, func() {
 		g.Description("The name of the node to restore this database from.")
@@ -450,14 +450,15 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 
 var Database = g.ResultType("Database", func() {
 	g.Attributes(func() {
-		g.Attribute("id", g.String, func() {
-			g.Format(g.FormatUUID)
+		g.Attribute("id", Identifier, func() {
 			g.Description("Unique identifier for the database.")
+			g.Example("production")
+			g.Example("my-app")
 			g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 		})
-		g.Attribute("tenant_id", g.String, func() {
-			g.Format(g.FormatUUID)
+		g.Attribute("tenant_id", Identifier, func() {
 			g.Description("Unique identifier for the databases's owner.")
+			g.Example("engineering")
 			g.Example("8210ec10-2dca-406c-ac4a-0661d2189954")
 		})
 		g.Attribute("created_at", g.String, func() {
@@ -516,14 +517,15 @@ var Database = g.ResultType("Database", func() {
 })
 
 var CreateDatabaseRequest = g.Type("CreateDatabaseRequest", func() {
-	g.Attribute("id", g.String, func() {
-		g.Format(g.FormatUUID)
+	g.Attribute("id", Identifier, func() {
 		g.Description("Unique identifier for the database.")
+		g.Example("production")
+		g.Example("my-app")
 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 	})
-	g.Attribute("tenant_id", g.String, func() {
-		g.Format(g.FormatUUID)
+	g.Attribute("tenant_id", Identifier, func() {
 		g.Description("Unique identifier for the databases's owner.")
+		g.Example("engineering")
 		g.Example("8210ec10-2dca-406c-ac4a-0661d2189954")
 	})
 	g.Attribute("spec", DatabaseSpec, func() {
@@ -545,9 +547,9 @@ var CreateDatabaseResponse = g.Type("CreateDatabaseResponse", func() {
 })
 
 var UpdateDatabaseRequest = g.Type("UpdateDatabaseRequest", func() {
-	g.Attribute("tenant_id", g.String, func() {
-		g.Format(g.FormatUUID)
+	g.Attribute("tenant_id", Identifier, func() {
 		g.Description("Unique identifier for the databases's owner.")
+		g.Example("engineering")
 		g.Example("8210ec10-2dca-406c-ac4a-0661d2189954")
 	})
 	g.Attribute("spec", DatabaseSpec, func() {

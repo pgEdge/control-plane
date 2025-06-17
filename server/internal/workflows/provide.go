@@ -87,7 +87,7 @@ func provideBackend(i *do.Injector) {
 		backendOpts := backend.ApplyOptions(
 			backend.WithLogger(logger),
 		)
-		return etcd.NewBackend(store, backendOpts, cfg.HostID.String()), nil
+		return etcd.NewBackend(store, backendOpts, cfg.HostID), nil
 	})
 }
 

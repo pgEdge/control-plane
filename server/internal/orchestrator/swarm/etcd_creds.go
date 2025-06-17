@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/google/uuid"
 	"github.com/samber/do"
 	"github.com/spf13/afero"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -22,26 +21,26 @@ var _ resource.Resource = (*EtcdCreds)(nil)
 
 const ResourceTypeEtcdCreds resource.Type = "swarm.etcd_creds"
 
-func EtcdCredsIdentifier(instanceID uuid.UUID) resource.Identifier {
+func EtcdCredsIdentifier(instanceID string) resource.Identifier {
 	return resource.Identifier{
-		ID:   instanceID.String(),
+		ID:   instanceID,
 		Type: ResourceTypeEtcdCreds,
 	}
 }
 
 type EtcdCreds struct {
-	InstanceID uuid.UUID `json:"instance_id"`
-	DatabaseID uuid.UUID `json:"database_id"`
-	HostID     uuid.UUID `json:"host_id"`
-	NodeName   string    `json:"node_name"`
-	ParentID   string    `json:"parent_id"`
-	OwnerUID   int       `json:"owner_uid"`
-	OwnerGID   int       `json:"owner_gid"`
-	Username   string    `json:"username"`
-	Password   string    `json:"password"`
-	CaCert     []byte    `json:"ca_cert"`
-	ClientCert []byte    `json:"server_cert"`
-	ClientKey  []byte    `json:"server_key"`
+	InstanceID string `json:"instance_id"`
+	DatabaseID string `json:"database_id"`
+	HostID     string `json:"host_id"`
+	NodeName   string `json:"node_name"`
+	ParentID   string `json:"parent_id"`
+	OwnerUID   int    `json:"owner_uid"`
+	OwnerGID   int    `json:"owner_gid"`
+	Username   string `json:"username"`
+	Password   string `json:"password"`
+	CaCert     []byte `json:"ca_cert"`
+	ClientCert []byte `json:"server_cert"`
+	ClientKey  []byte `json:"server_key"`
 }
 
 func (c *EtcdCreds) ResourceVersion() string {
@@ -61,7 +60,7 @@ func (c *EtcdCreds) DiffIgnore() []string {
 func (c *EtcdCreds) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeHost,
-		ID:   c.HostID.String(),
+		ID:   c.HostID,
 	}
 }
 

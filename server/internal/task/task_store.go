@@ -30,15 +30,15 @@ func (s *TaskStore) Prefix() string {
 	return path.Join("/", s.root, "tasks")
 }
 
-func (s *TaskStore) DatabasePrefix(databaseID uuid.UUID) string {
-	return path.Join(s.Prefix(), databaseID.String())
+func (s *TaskStore) DatabasePrefix(databaseID string) string {
+	return path.Join(s.Prefix(), databaseID)
 }
 
-func (s *TaskStore) Key(databaseID, taskID uuid.UUID) string {
+func (s *TaskStore) Key(databaseID string, taskID uuid.UUID) string {
 	return path.Join(s.DatabasePrefix(databaseID), taskID.String())
 }
 
-func (s *TaskStore) GetByKey(databaseID, taskID uuid.UUID) storage.GetOp[*StoredTask] {
+func (s *TaskStore) GetByKey(databaseID string, taskID uuid.UUID) storage.GetOp[*StoredTask] {
 	key := s.Key(databaseID, taskID)
 	return storage.NewGetOp[*StoredTask](s.client, key)
 }
@@ -60,7 +60,7 @@ type TaskListOptions struct {
 	SortOrder   SortOrder
 }
 
-func (s *TaskStore) GetAllByDatabaseID(databaseID uuid.UUID, options TaskListOptions) storage.GetMultipleOp[*StoredTask] {
+func (s *TaskStore) GetAllByDatabaseID(databaseID string, options TaskListOptions) storage.GetMultipleOp[*StoredTask] {
 	rangeStart := s.DatabasePrefix(databaseID)
 	rangeEnd := clientv3.GetPrefixRangeEnd(rangeStart)
 
@@ -96,12 +96,12 @@ func (s *TaskStore) Update(item *StoredTask) storage.PutOp[*StoredTask] {
 	return storage.NewUpdateOp(s.client, key, item)
 }
 
-func (s *TaskStore) Delete(databaseID, taskID uuid.UUID) storage.DeleteOp {
+func (s *TaskStore) Delete(databaseID string, taskID uuid.UUID) storage.DeleteOp {
 	key := s.Key(databaseID, taskID)
 	return storage.NewDeleteKeyOp(s.client, key)
 }
 
-func (s *TaskStore) DeleteByDatabaseID(databaseID uuid.UUID) storage.DeleteOp {
+func (s *TaskStore) DeleteByDatabaseID(databaseID string) storage.DeleteOp {
 	prefix := s.DatabasePrefix(databaseID)
 	return storage.NewDeletePrefixOp(s.client, prefix)
 }

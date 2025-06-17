@@ -3,7 +3,6 @@ package monitor
 import (
 	"path"
 
-	"github.com/google/uuid"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/storage"
@@ -11,11 +10,11 @@ import (
 
 type StoredInstanceMonitor struct {
 	storage.StoredValue
-	HostID           uuid.UUID `json:"host_id"`
-	DatabaseID       uuid.UUID `json:"database_id"`
-	InstanceID       uuid.UUID `json:"instance_id"`
-	DatabaseName     string    `json:"database_name"`
-	InstanceHostname string    `json:"instance_hostname"`
+	HostID           string `json:"host_id"`
+	DatabaseID       string `json:"database_id"`
+	InstanceID       string `json:"instance_id"`
+	DatabaseName     string `json:"database_name"`
+	InstanceHostname string `json:"instance_hostname"`
 }
 
 type InstanceMonitorStore struct {
@@ -34,30 +33,30 @@ func (s *InstanceMonitorStore) Prefix() string {
 	return path.Join("/", s.root, "instance_monitors")
 }
 
-func (s *InstanceMonitorStore) HostPrefix(hostID uuid.UUID) string {
-	return path.Join(s.Prefix(), hostID.String())
+func (s *InstanceMonitorStore) HostPrefix(hostID string) string {
+	return path.Join(s.Prefix(), hostID)
 }
 
-func (s *InstanceMonitorStore) Key(hostID, instanceID uuid.UUID) string {
-	return path.Join(s.HostPrefix(hostID), instanceID.String())
+func (s *InstanceMonitorStore) Key(hostID, instanceID string) string {
+	return path.Join(s.HostPrefix(hostID), instanceID)
 }
 
-func (s *InstanceMonitorStore) GetAllByHostID(hostID uuid.UUID) storage.GetMultipleOp[*StoredInstanceMonitor] {
+func (s *InstanceMonitorStore) GetAllByHostID(hostID string) storage.GetMultipleOp[*StoredInstanceMonitor] {
 	prefix := s.HostPrefix(hostID)
 	return storage.NewGetPrefixOp[*StoredInstanceMonitor](s.client, prefix)
 }
 
-func (s *InstanceMonitorStore) GetByKey(hostID, instanceID uuid.UUID) storage.GetOp[*StoredInstanceMonitor] {
+func (s *InstanceMonitorStore) GetByKey(hostID, instanceID string) storage.GetOp[*StoredInstanceMonitor] {
 	key := s.Key(hostID, instanceID)
 	return storage.NewGetOp[*StoredInstanceMonitor](s.client, key)
 }
 
-func (s *InstanceMonitorStore) DeleteByHostID(hostID uuid.UUID) storage.DeleteOp {
+func (s *InstanceMonitorStore) DeleteByHostID(hostID string) storage.DeleteOp {
 	prefix := s.HostPrefix(hostID)
 	return storage.NewDeletePrefixOp(s.client, prefix)
 }
 
-func (s *InstanceMonitorStore) DeleteByKey(hostID, instanceID uuid.UUID) storage.DeleteOp {
+func (s *InstanceMonitorStore) DeleteByKey(hostID, instanceID string) storage.DeleteOp {
 	key := s.Key(hostID, instanceID)
 	return storage.NewDeleteKeyOp(s.client, key)
 }

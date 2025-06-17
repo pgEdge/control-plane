@@ -1,6 +1,6 @@
 {
-  "cluster_id": "7c9e1642-7134-4919-a6fa-964f1002302e",
-  "host_id": "fa461a39-5867-4a72-9923-dd7ce91e1eab",
+  "cluster_id": "dev",
+  "host_id": "host-3",
   "data_dir": "/opt/pgedge/data",
   "docker_swarm": {
     "image_repository_host": "10.1.0.1:5000"

@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
@@ -19,7 +18,7 @@ func TestWriteConfig(t *testing.T) {
 		{
 			name: "s3 auto",
 			opts: pgbackrest.ConfigOptions{
-				DatabaseID: uuid.MustParse("706fd161-8df5-4ddd-b25a-f85d8b7bb033"),
+				DatabaseID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033",
 				NodeName:   "n1",
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
@@ -57,7 +56,7 @@ func TestWriteConfig(t *testing.T) {
 		{
 			name: "s3 shared",
 			opts: pgbackrest.ConfigOptions{
-				DatabaseID: uuid.MustParse("706fd161-8df5-4ddd-b25a-f85d8b7bb033"),
+				DatabaseID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033",
 				NodeName:   "n1",
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
@@ -101,7 +100,7 @@ func TestWriteConfig(t *testing.T) {
 		{
 			name: "s3 custom",
 			opts: pgbackrest.ConfigOptions{
-				DatabaseID: uuid.MustParse("706fd161-8df5-4ddd-b25a-f85d8b7bb033"),
+				DatabaseID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033",
 				NodeName:   "n1",
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
@@ -145,7 +144,7 @@ func TestWriteConfig(t *testing.T) {
 		{
 			name: "s3 multi",
 			opts: pgbackrest.ConfigOptions{
-				DatabaseID: uuid.MustParse("706fd161-8df5-4ddd-b25a-f85d8b7bb033"),
+				DatabaseID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033",
 				NodeName:   "n1",
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
@@ -200,7 +199,7 @@ func TestWriteConfig(t *testing.T) {
 		{
 			name: "gcs auto",
 			opts: pgbackrest.ConfigOptions{
-				DatabaseID: uuid.MustParse("706fd161-8df5-4ddd-b25a-f85d8b7bb033"),
+				DatabaseID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033",
 				NodeName:   "n1",
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
@@ -236,7 +235,7 @@ func TestWriteConfig(t *testing.T) {
 		{
 			name: "gcs shared",
 			opts: pgbackrest.ConfigOptions{
-				DatabaseID: uuid.MustParse("706fd161-8df5-4ddd-b25a-f85d8b7bb033"),
+				DatabaseID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033",
 				NodeName:   "n1",
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
@@ -274,7 +273,7 @@ func TestWriteConfig(t *testing.T) {
 		{
 			name: "azure auto",
 			opts: pgbackrest.ConfigOptions{
-				DatabaseID: uuid.MustParse("706fd161-8df5-4ddd-b25a-f85d8b7bb033"),
+				DatabaseID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033",
 				NodeName:   "n1",
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",
@@ -313,7 +312,7 @@ func TestWriteConfig(t *testing.T) {
 		{
 			name: "azure shared",
 			opts: pgbackrest.ConfigOptions{
-				DatabaseID: uuid.MustParse("706fd161-8df5-4ddd-b25a-f85d8b7bb033"),
+				DatabaseID: "706fd161-8df5-4ddd-b25a-f85d8b7bb033",
 				NodeName:   "n1",
 				PgDataPath: "/opt/pgedge/data",
 				HostUser:   "pgedge-db",

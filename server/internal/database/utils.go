@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
@@ -43,7 +42,7 @@ func WaitForPatroniRunning(ctx context.Context, patroniClient *patroni.Client, t
 	}
 }
 
-func GetPrimaryInstanceID(ctx context.Context, patroniClient *patroni.Client, timeout time.Duration) (uuid.UUID, error) {
+func GetPrimaryInstanceID(ctx context.Context, patroniClient *patroni.Client, timeout time.Duration) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -53,19 +52,15 @@ func GetPrimaryInstanceID(ctx context.Context, patroniClient *patroni.Client, ti
 	for {
 		select {
 		case <-ctx.Done():
-			return uuid.Nil, ctx.Err()
+			return "", ctx.Err()
 		case <-ticker.C:
 			status, err := patroniClient.GetClusterStatus(ctx)
 			if err != nil {
-				return uuid.Nil, fmt.Errorf("failed to get cluster status: %w", err)
+				return "", fmt.Errorf("failed to get cluster status: %w", err)
 			}
 			for _, m := range status.Members {
 				if m.IsLeader() && m.Name != nil {
-					id, err := uuid.Parse(*m.Name)
-					if err != nil {
-						return uuid.Nil, fmt.Errorf("failed to parse instance ID from member name %q: %w", *m.Name, err)
-					}
-					return id, nil
+					return *m.Name, nil
 				}
 			}
 		}

@@ -14,12 +14,12 @@ import (
 )
 
 type InstanceHost struct {
-	InstanceID uuid.UUID `json:"instance_id"`
-	HostID     uuid.UUID `json:"host_id"`
+	InstanceID string `json:"instance_id"`
+	HostID     string `json:"host_id"`
 }
 
 type CreatePgBackRestBackupInput struct {
-	DatabaseID        uuid.UUID                 `json:"database_id"`
+	DatabaseID        string                    `json:"database_id"`
 	TaskID            uuid.UUID                 `json:"task_id"`
 	NodeName          string                    `json:"node_name"`
 	BackupFromStandby bool                      `json:"backup_from_standby"`
@@ -31,7 +31,7 @@ type CreatePgBackRestBackupOutput struct{}
 
 func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePgBackRestBackupInput) (*CreatePgBackRestBackupOutput, error) {
 	logger := workflow.Logger(ctx).With(
-		"database_id", input.DatabaseID.String(),
+		"database_id", input.DatabaseID,
 		"task_id", input.TaskID.String(),
 		"backup_from_standby", input.BackupFromStandby,
 	)

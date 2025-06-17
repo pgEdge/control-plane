@@ -12,7 +12,7 @@ import (
 )
 
 type LogTaskEventInput struct {
-	DatabaseID uuid.UUID       `json:"database_id"`
+	DatabaseID string          `json:"database_id"`
 	TaskID     uuid.UUID       `json:"task_id"`
 	Entries    []task.LogEntry `json:"messages"`
 }
@@ -24,7 +24,7 @@ func (a *Activities) ExecuteLogTaskEvent(
 	input *LogTaskEventInput,
 ) workflow.Future[*LogTaskEventOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(a.Config.HostID.String()),
+		Queue: core.Queue(a.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
@@ -33,7 +33,7 @@ func (a *Activities) ExecuteLogTaskEvent(
 }
 
 func (a *Activities) LogTaskEvent(ctx context.Context, input *LogTaskEventInput) (*LogTaskEventOutput, error) {
-	logger := activity.Logger(ctx).With("database_id", input.DatabaseID.String())
+	logger := activity.Logger(ctx).With("database_id", input.DatabaseID)
 	logger.Info("updating database state")
 
 	for _, entry := range input.Entries {

@@ -31,14 +31,14 @@ func DatabaseServiceSpec(
 	options *HostOptions,
 ) (swarm.ServiceSpec, error) {
 	labels := map[string]string{
-		"pgedge.host.id":     instance.HostID.String(),
-		"pgedge.database.id": instance.DatabaseID.String(),
-		"pgedge.instance.id": instance.InstanceID.String(),
+		"pgedge.host.id":     instance.HostID,
+		"pgedge.database.id": instance.DatabaseID,
+		"pgedge.instance.id": instance.InstanceID,
 		"pgedge.node.name":   instance.NodeName,
 		"pgedge.component":   "postgres",
 	}
 	if instance.TenantID != nil {
-		labels["pgedge.tenant.id"] = instance.TenantID.String()
+		labels["pgedge.tenant.id"] = *instance.TenantID
 	}
 
 	mounts := []mount.Mount{

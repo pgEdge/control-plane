@@ -3,7 +3,6 @@ package host
 import (
 	"path"
 
-	"github.com/google/uuid"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
@@ -19,7 +18,7 @@ type StoredCohort struct {
 
 type StoredHost struct {
 	storage.StoredValue
-	ID                      uuid.UUID           `json:"id"`
+	ID                      string              `json:"id"`
 	Orchestrator            config.Orchestrator `json:"type"`
 	Cohort                  *StoredCohort       `json:"stored_cohort,omitempty"`
 	Hostname                string              `json:"hostname"`
@@ -46,16 +45,16 @@ func (s *HostStore) Prefix() string {
 	return path.Join("/", s.root, "hosts")
 }
 
-func (s *HostStore) Key(hostID uuid.UUID) string {
-	return path.Join(s.Prefix(), hostID.String())
+func (s *HostStore) Key(hostID string) string {
+	return path.Join(s.Prefix(), hostID)
 }
 
-func (s *HostStore) GetByKey(hostID uuid.UUID) storage.GetOp[*StoredHost] {
+func (s *HostStore) GetByKey(hostID string) storage.GetOp[*StoredHost] {
 	key := s.Key(hostID)
 	return storage.NewGetOp[*StoredHost](s.client, key)
 }
 
-func (s *HostStore) GetByKeys(hostIDs ...uuid.UUID) storage.GetMultipleOp[*StoredHost] {
+func (s *HostStore) GetByKeys(hostIDs ...string) storage.GetMultipleOp[*StoredHost] {
 	keys := make([]string, len(hostIDs))
 	for idx, hostID := range hostIDs {
 		keys[idx] = s.Key(hostID)
@@ -78,7 +77,7 @@ func (s *HostStore) Put(item *StoredHost) storage.PutOp[*StoredHost] {
 	return storage.NewPutOp(s.client, key, item)
 }
 
-func (s *HostStore) DeleteByKey(hostID uuid.UUID) storage.DeleteOp {
+func (s *HostStore) DeleteByKey(hostID string) storage.DeleteOp {
 	key := s.Key(hostID)
 	return storage.NewDeleteKeyOp(s.client, key)
 }

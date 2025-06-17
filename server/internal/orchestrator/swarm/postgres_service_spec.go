@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/docker/docker/api/types/swarm"
-	"github.com/google/uuid"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
@@ -19,9 +18,9 @@ var _ resource.Resource = (*PostgresServiceSpecResource)(nil)
 
 const ResourceTypePostgresServiceSpec resource.Type = "swarm.postgres_service_spec"
 
-func PostgresServiceSpecResourceIdentifier(instanceID uuid.UUID) resource.Identifier {
+func PostgresServiceSpecResourceIdentifier(instanceID string) resource.Identifier {
 	return resource.Identifier{
-		ID:   instanceID.String(),
+		ID:   instanceID,
 		Type: ResourceTypePostgresServiceSpec,
 	}
 }
@@ -55,7 +54,7 @@ func (s *PostgresServiceSpecResource) Identifier() resource.Identifier {
 func (s *PostgresServiceSpecResource) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeHost,
-		ID:   s.Instance.HostID.String(),
+		ID:   s.Instance.HostID,
 	}
 }
 

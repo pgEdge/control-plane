@@ -61,7 +61,7 @@ func (s *Service) CreateDatabase(ctx context.Context, spec *database.Spec) (*tas
 		TaskID: t.TaskID,
 		Spec:   spec,
 	}
-	err = s.createWorkflow(ctx, t, databaseID.String(), s.workflows.UpdateDatabase, input)
+	err = s.createWorkflow(ctx, t, databaseID, s.workflows.UpdateDatabase, input)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, spec *database.Spec, force
 		Spec:        spec,
 		ForceUpdate: forceUpdate,
 	}
-	err = s.createWorkflow(ctx, t, databaseID.String(), s.workflows.UpdateDatabase, input)
+	err = s.createWorkflow(ctx, t, databaseID, s.workflows.UpdateDatabase, input)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, spec *database.Spec, force
 	return t, nil
 }
 
-func (s *Service) DeleteDatabase(ctx context.Context, databaseID uuid.UUID) (*task.Task, error) {
+func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) (*task.Task, error) {
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
 		DatabaseID: databaseID,
 		Type:       task.TypeDelete,
@@ -103,7 +103,7 @@ func (s *Service) DeleteDatabase(ctx context.Context, databaseID uuid.UUID) (*ta
 		DatabaseID: databaseID,
 		TaskID:     t.TaskID,
 	}
-	err = s.createWorkflow(ctx, t, databaseID.String(), s.workflows.DeleteDatabase, input)
+	err = s.createWorkflow(ctx, t, databaseID, s.workflows.DeleteDatabase, input)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (s *Service) DeleteDatabase(ctx context.Context, databaseID uuid.UUID) (*ta
 
 func (s *Service) CreatePgBackRestBackup(
 	ctx context.Context,
-	databaseID uuid.UUID,
+	databaseID string,
 	nodeName string,
 	backupFromStandby bool,
 	instances []*InstanceHost,
@@ -134,7 +134,7 @@ func (s *Service) CreatePgBackRestBackup(
 		Instances:         instances,
 		BackupOptions:     backupOptions,
 	}
-	instanceID := databaseID.String() + "-" + nodeName
+	instanceID := databaseID + "-" + nodeName
 	err = s.createWorkflow(ctx, t, instanceID, s.workflows.CreatePgBackRestBackup, input)
 	if err != nil {
 		return nil, err
@@ -185,7 +185,7 @@ func (s *Service) PgBackRestRestore(
 		RestoreConfig: restoreConfig.Clone(),
 		NodeTaskIDs:   nodeTaskIDs,
 	}
-	err = s.createWorkflow(ctx, t, databaseID.String(), s.workflows.PgBackRestRestore, input)
+	err = s.createWorkflow(ctx, t, databaseID, s.workflows.PgBackRestRestore, input)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -195,7 +195,7 @@ func (s *Service) PgBackRestRestore(
 
 func (s *Service) createWorkflow(ctx context.Context, t *task.Task, instanceID string, wf workflow.Workflow, args ...any) error {
 	opts := client.WorkflowInstanceOptions{
-		Queue:      core.Queue(s.cfg.HostID.String()),
+		Queue:      core.Queue(s.cfg.HostID),
 		InstanceID: instanceID,
 	}
 	instance, err := s.client.CreateWorkflowInstance(ctx, opts, wf, args...)
@@ -220,7 +220,7 @@ func (s *Service) abortTasks(ctx context.Context, tasks ...*task.Task) {
 		err := s.taskSvc.DeleteTask(ctx, t.DatabaseID, t.TaskID)
 		if err != nil {
 			s.logger.Err(err).
-				Stringer("database_id", t.DatabaseID).
+				Str("database_id", t.DatabaseID).
 				Stringer("task_id", t.TaskID).
 				Msg("failed to delete aborted task")
 		}
@@ -244,8 +244,8 @@ func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) *Valida
 
 	databaseID := spec.DatabaseID
 	opts := client.WorkflowInstanceOptions{
-		Queue:      core.Queue(s.cfg.HostID.String()),
-		InstanceID: databaseID.String(),
+		Queue:      core.Queue(s.cfg.HostID),
+		InstanceID: databaseID,
 	}
 	input := &ValidateSpecInput{
 		DatabaseID: databaseID,
@@ -254,7 +254,7 @@ func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) *Valida
 
 	instance, err := s.client.CreateWorkflowInstance(ctx, opts, s.workflows.ValidateSpec, input)
 	if err != nil {
-		s.logger.Error().Err(err).Str("database_id", databaseID.String()).Msg("Failed to create volume validation workflow")
+		s.logger.Error().Err(err).Str("database_id", databaseID).Msg("Failed to create volume validation workflow")
 		return &ValidateSpecOutput{
 			Valid:  false,
 			Errors: []string{fmt.Sprintf("failed to create workflow instance: %v", err)},
@@ -263,7 +263,7 @@ func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) *Valida
 
 	output, err := client.GetWorkflowResult[*ValidateSpecOutput](ctx, s.client, instance, 5*time.Minute)
 	if err != nil {
-		s.logger.Error().Err(err).Str("database_id", databaseID.String()).Msg("Failed to get result from volume validation workflow")
+		s.logger.Error().Err(err).Str("database_id", databaseID).Msg("Failed to get result from volume validation workflow")
 
 		if output == nil {
 			return &ValidateSpecOutput{

@@ -4,7 +4,6 @@ import (
 	"path"
 	"time"
 
-	"github.com/google/uuid"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/common"
@@ -13,7 +12,7 @@ import (
 
 type StoredHostStatus struct {
 	storage.StoredValue
-	HostID     uuid.UUID                         `json:"host_id"`
+	HostID     string                            `json:"host_id"`
 	UpdatedAt  time.Time                         `json:"updated_at"`
 	State      HostState                         `json:"state"`
 	Components map[string]common.ComponentStatus `json:"components"`
@@ -35,16 +34,16 @@ func (s *HostStatusStore) Prefix() string {
 	return path.Join("/", s.root, "host_statuses")
 }
 
-func (s *HostStatusStore) Key(hostID uuid.UUID) string {
-	return path.Join(s.Prefix(), hostID.String())
+func (s *HostStatusStore) Key(hostID string) string {
+	return path.Join(s.Prefix(), hostID)
 }
 
-func (s *HostStatusStore) GetByKey(hostID uuid.UUID) storage.GetOp[*StoredHostStatus] {
+func (s *HostStatusStore) GetByKey(hostID string) storage.GetOp[*StoredHostStatus] {
 	key := s.Key(hostID)
 	return storage.NewGetOp[*StoredHostStatus](s.client, key)
 }
 
-func (s *HostStatusStore) GetByKeys(hostIDs ...uuid.UUID) storage.GetMultipleOp[*StoredHostStatus] {
+func (s *HostStatusStore) GetByKeys(hostIDs ...string) storage.GetMultipleOp[*StoredHostStatus] {
 	keys := make([]string, len(hostIDs))
 	for idx, hostID := range hostIDs {
 		keys[idx] = s.Key(hostID)
@@ -67,7 +66,7 @@ func (s *HostStatusStore) Put(item *StoredHostStatus) storage.PutOp[*StoredHostS
 	return storage.NewPutOp(s.client, key, item)
 }
 
-func (s *HostStatusStore) DeleteByKey(hostID uuid.UUID) storage.DeleteOp {
+func (s *HostStatusStore) DeleteByKey(hostID string) storage.DeleteOp {
 	key := s.Key(hostID)
 	return storage.NewDeleteKeyOp(s.client, key)
 }

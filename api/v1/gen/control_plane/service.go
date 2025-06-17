@@ -92,7 +92,7 @@ type BackupConfigSpec struct {
 // backup-database-node method.
 type BackupDatabaseNodePayload struct {
 	// ID of the database to back up.
-	DatabaseID string
+	DatabaseID Identifier
 	// Name of the node to back up.
 	NodeName string
 	Options  *BackupOptions
@@ -116,7 +116,7 @@ type BackupOptions struct {
 
 type BackupRepositorySpec struct {
 	// The unique identifier of this repository.
-	ID *string
+	ID *Identifier
 	// The type of this repository.
 	Type string
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
@@ -173,9 +173,9 @@ type BackupScheduleSpec struct {
 // Cluster is the result type of the control-plane service get-cluster method.
 type Cluster struct {
 	// Unique identifier for the cluster.
-	ID string
+	ID Identifier
 	// Unique identifier for the cluster's owner.
-	TenantID string
+	TenantID Identifier
 	// Current status of the cluster.
 	Status *ClusterStatus
 	// All of the hosts in the cluster.
@@ -210,7 +210,7 @@ type ClusterJoinRequest struct {
 	// Token to join the cluster.
 	Token string
 	// The unique identifier for the host that's joining the cluster.
-	HostID string
+	HostID Identifier
 	// The hostname of the host that's joining the cluster.
 	Hostname string
 	// The IPv4 address of the host that's joining the cluster.
@@ -227,7 +227,7 @@ type ClusterJoinToken struct {
 }
 
 type ClusterPeer struct {
-	// The name of the cluster member.
+	// The name of the Etcd cluster member.
 	Name string
 	// The Etcd peer endpoint for this cluster member.
 	PeerURL string
@@ -253,9 +253,9 @@ type ComponentStatus struct {
 // create-database method.
 type CreateDatabaseRequest struct {
 	// Unique identifier for the database.
-	ID *string
+	ID *Identifier
 	// Unique identifier for the databases's owner.
-	TenantID *string
+	TenantID *Identifier
 	// The specification for the database.
 	Spec *DatabaseSpec
 }
@@ -272,9 +272,9 @@ type CreateDatabaseResponse struct {
 // Database is the result type of the control-plane service get-database method.
 type Database struct {
 	// Unique identifier for the database.
-	ID string
+	ID Identifier
 	// Unique identifier for the databases's owner.
-	TenantID *string
+	TenantID *Identifier
 	// The time that the database was created.
 	CreatedAt string
 	// The time that the database was last updated.
@@ -297,7 +297,7 @@ type DatabaseNodeSpec struct {
 	// The IDs of the hosts that should run this node. When multiple hosts are
 	// specified, one host will chosen as a primary and the others will be read
 	// replicas.
-	HostIds []string
+	HostIds []Identifier
 	// The major version of Postgres for this node. Overrides the Postgres version
 	// set in the DatabaseSpec.
 	PostgresVersion *string
@@ -380,7 +380,7 @@ type DatabaseUserSpec struct {
 // delete-database method.
 type DeleteDatabasePayload struct {
 	// ID of the database to delete.
-	DatabaseID string
+	DatabaseID Identifier
 }
 
 // DeleteDatabaseResponse is the result type of the control-plane service
@@ -402,14 +402,14 @@ type ExtraVolumesSpec struct {
 // get-database method.
 type GetDatabasePayload struct {
 	// ID of the database to get.
-	DatabaseID string
+	DatabaseID Identifier
 }
 
 // GetDatabaseTaskLogPayload is the payload type of the control-plane service
 // get-database-task-log method.
 type GetDatabaseTaskLogPayload struct {
 	// ID of the database to get task log for.
-	DatabaseID string
+	DatabaseID Identifier
 	// ID of the task to get log for.
 	TaskID string
 	// ID of the entry to start from.
@@ -422,7 +422,7 @@ type GetDatabaseTaskLogPayload struct {
 // get-database-task method.
 type GetDatabaseTaskPayload struct {
 	// ID of the database the task belongs to.
-	DatabaseID string
+	DatabaseID Identifier
 	// ID of the task to get.
 	TaskID string
 }
@@ -431,13 +431,13 @@ type GetDatabaseTaskPayload struct {
 // method.
 type GetHostPayload struct {
 	// ID of the host to get.
-	HostID string
+	HostID Identifier
 }
 
 // Host is the result type of the control-plane service get-host method.
 type Host struct {
 	// Unique identifier for the host.
-	ID string
+	ID Identifier
 	// The orchestrator used by this host.
 	Orchestrator string
 	// The cohort that this host belongs to.
@@ -476,6 +476,11 @@ type HostStatus struct {
 	// The status of each component of the host.
 	Components map[string]*ComponentStatus
 }
+
+// A user-specified identifier. Must be 1-63 characters, contain only
+// lower-cased letters and hyphens, start and end with a letter or number, and
+// not contain consecutive hyphens.
+type Identifier string
 
 // An instance of pgEdge Postgres running on a host.
 type Instance struct {
@@ -550,7 +555,7 @@ type InstanceSubscription struct {
 // list-database-tasks method.
 type ListDatabaseTasksPayload struct {
 	// ID of the database to list tasks for.
-	DatabaseID string
+	DatabaseID Identifier
 	// ID of the task to start from.
 	AfterTaskID *string
 	// Maximum number of tasks to return.
@@ -570,12 +575,12 @@ type PgEdgeVersion struct {
 // remove-host method.
 type RemoveHostPayload struct {
 	// ID of the host to remove.
-	HostID string
+	HostID Identifier
 }
 
 type RestoreConfigSpec struct {
 	// The ID of the database to restore this database from.
-	SourceDatabaseID string
+	SourceDatabaseID Identifier
 	// The name of the node to restore this database from.
 	SourceNodeName string
 	// The name of the database in this repository. This database will be renamed
@@ -592,7 +597,7 @@ type RestoreConfigSpec struct {
 // restore-database method.
 type RestoreDatabasePayload struct {
 	// ID of the database to restore.
-	DatabaseID string
+	DatabaseID Identifier
 	Request    *RestoreDatabaseRequest
 }
 
@@ -616,7 +621,7 @@ type RestoreDatabaseResponse struct {
 
 type RestoreRepositorySpec struct {
 	// The unique identifier of this repository.
-	ID *string
+	ID *Identifier
 	// The type of this repository.
 	Type string
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
@@ -712,7 +717,7 @@ type TaskLogEntry struct {
 // update-database method.
 type UpdateDatabasePayload struct {
 	// ID of the database to update.
-	DatabaseID string
+	DatabaseID Identifier
 	// Force update the database even if the spec is the same.
 	ForceUpdate bool
 	Request     *UpdateDatabaseRequest
@@ -720,7 +725,7 @@ type UpdateDatabasePayload struct {
 
 type UpdateDatabaseRequest struct {
 	// Unique identifier for the databases's owner.
-	TenantID *string
+	TenantID *Identifier
 	// The specification for the database.
 	Spec *DatabaseSpec
 }
@@ -902,11 +907,13 @@ func newDatabaseCollectionViewAbbreviated(res DatabaseCollection) controlplanevi
 
 // newDatabase converts projected type Database to service type Database.
 func newDatabase(vres *controlplaneviews.DatabaseView) *Database {
-	res := &Database{
-		TenantID: vres.TenantID,
-	}
+	res := &Database{}
 	if vres.ID != nil {
-		res.ID = *vres.ID
+		res.ID = Identifier(*vres.ID)
+	}
+	if vres.TenantID != nil {
+		tenantID := Identifier(*vres.TenantID)
+		res.TenantID = &tenantID
 	}
 	if vres.CreatedAt != nil {
 		res.CreatedAt = *vres.CreatedAt
@@ -929,11 +936,13 @@ func newDatabase(vres *controlplaneviews.DatabaseView) *Database {
 // newDatabaseAbbreviated converts projected type Database to service type
 // Database.
 func newDatabaseAbbreviated(vres *controlplaneviews.DatabaseView) *Database {
-	res := &Database{
-		TenantID: vres.TenantID,
-	}
+	res := &Database{}
 	if vres.ID != nil {
-		res.ID = *vres.ID
+		res.ID = Identifier(*vres.ID)
+	}
+	if vres.TenantID != nil {
+		tenantID := Identifier(*vres.TenantID)
+		res.TenantID = &tenantID
 	}
 	if vres.CreatedAt != nil {
 		res.CreatedAt = *vres.CreatedAt
@@ -954,11 +963,15 @@ func newDatabaseAbbreviated(vres *controlplaneviews.DatabaseView) *Database {
 // using the "default" view.
 func newDatabaseView(res *Database) *controlplaneviews.DatabaseView {
 	vres := &controlplaneviews.DatabaseView{
-		ID:        &res.ID,
-		TenantID:  res.TenantID,
 		CreatedAt: &res.CreatedAt,
 		UpdatedAt: &res.UpdatedAt,
 		State:     &res.State,
+	}
+	id := controlplaneviews.IdentifierView(res.ID)
+	vres.ID = &id
+	if res.TenantID != nil {
+		tenantID := controlplaneviews.IdentifierView(*res.TenantID)
+		vres.TenantID = &tenantID
 	}
 	if res.Spec != nil {
 		vres.Spec = transformDatabaseSpecToControlplaneviewsDatabaseSpecView(res.Spec)
@@ -973,11 +986,15 @@ func newDatabaseView(res *Database) *controlplaneviews.DatabaseView {
 // DatabaseView using the "abbreviated" view.
 func newDatabaseViewAbbreviated(res *Database) *controlplaneviews.DatabaseView {
 	vres := &controlplaneviews.DatabaseView{
-		ID:        &res.ID,
-		TenantID:  res.TenantID,
 		CreatedAt: &res.CreatedAt,
 		UpdatedAt: &res.UpdatedAt,
 		State:     &res.State,
+	}
+	id := controlplaneviews.IdentifierView(res.ID)
+	vres.ID = &id
+	if res.TenantID != nil {
+		tenantID := controlplaneviews.IdentifierView(*res.TenantID)
+		vres.TenantID = &tenantID
 	}
 	if res.Instances != nil {
 		vres.Instances = newInstanceCollectionViewAbbreviated(res.Instances)
@@ -1181,12 +1198,12 @@ func transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec(v *control
 		Memory:          v.Memory,
 	}
 	if v.HostIds != nil {
-		res.HostIds = make([]string, len(v.HostIds))
+		res.HostIds = make([]Identifier, len(v.HostIds))
 		for i, val := range v.HostIds {
-			res.HostIds[i] = val
+			res.HostIds[i] = Identifier(val)
 		}
 	} else {
-		res.HostIds = []string{}
+		res.HostIds = []Identifier{}
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -1243,7 +1260,6 @@ func transformControlplaneviewsBackupConfigSpecViewToBackupConfigSpec(v *control
 // *controlplaneviews.BackupRepositorySpecView.
 func transformControlplaneviewsBackupRepositorySpecViewToBackupRepositorySpec(v *controlplaneviews.BackupRepositorySpecView) *BackupRepositorySpec {
 	res := &BackupRepositorySpec{
-		ID:                v.ID,
 		Type:              *v.Type,
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
@@ -1260,6 +1276,10 @@ func transformControlplaneviewsBackupRepositorySpecViewToBackupRepositorySpec(v 
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.ID != nil {
+		id := Identifier(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
@@ -1297,7 +1317,7 @@ func transformControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpec(v *contr
 		return nil
 	}
 	res := &RestoreConfigSpec{
-		SourceDatabaseID:   *v.SourceDatabaseID,
+		SourceDatabaseID:   Identifier(*v.SourceDatabaseID),
 		SourceNodeName:     *v.SourceNodeName,
 		SourceDatabaseName: *v.SourceDatabaseName,
 	}
@@ -1321,7 +1341,6 @@ func transformControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpec(v *contr
 // *controlplaneviews.RestoreRepositorySpecView.
 func transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec(v *controlplaneviews.RestoreRepositorySpecView) *RestoreRepositorySpec {
 	res := &RestoreRepositorySpec{
-		ID:             v.ID,
 		Type:           *v.Type,
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
@@ -1336,6 +1355,10 @@ func transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec(
 		AzureEndpoint:  v.AzureEndpoint,
 		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
+	}
+	if v.ID != nil {
+		id := Identifier(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
@@ -1456,12 +1479,12 @@ func transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView(v *Databas
 		Memory:          v.Memory,
 	}
 	if v.HostIds != nil {
-		res.HostIds = make([]string, len(v.HostIds))
+		res.HostIds = make([]controlplaneviews.IdentifierView, len(v.HostIds))
 		for i, val := range v.HostIds {
-			res.HostIds[i] = val
+			res.HostIds[i] = controlplaneviews.IdentifierView(val)
 		}
 	} else {
-		res.HostIds = []string{}
+		res.HostIds = []controlplaneviews.IdentifierView{}
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -1518,7 +1541,6 @@ func transformBackupConfigSpecToControlplaneviewsBackupConfigSpecView(v *BackupC
 // value of type *BackupRepositorySpec.
 func transformBackupRepositorySpecToControlplaneviewsBackupRepositorySpecView(v *BackupRepositorySpec) *controlplaneviews.BackupRepositorySpecView {
 	res := &controlplaneviews.BackupRepositorySpecView{
-		ID:                v.ID,
 		Type:              &v.Type,
 		S3Bucket:          v.S3Bucket,
 		S3Region:          v.S3Region,
@@ -1535,6 +1557,10 @@ func transformBackupRepositorySpecToControlplaneviewsBackupRepositorySpecView(v 
 		RetentionFull:     v.RetentionFull,
 		RetentionFullType: v.RetentionFullType,
 		BasePath:          v.BasePath,
+	}
+	if v.ID != nil {
+		id := controlplaneviews.IdentifierView(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
@@ -1572,10 +1598,11 @@ func transformRestoreConfigSpecToControlplaneviewsRestoreConfigSpecView(v *Resto
 		return nil
 	}
 	res := &controlplaneviews.RestoreConfigSpecView{
-		SourceDatabaseID:   &v.SourceDatabaseID,
 		SourceNodeName:     &v.SourceNodeName,
 		SourceDatabaseName: &v.SourceDatabaseName,
 	}
+	sourceDatabaseID := controlplaneviews.IdentifierView(v.SourceDatabaseID)
+	res.SourceDatabaseID = &sourceDatabaseID
 	if v.Repository != nil {
 		res.Repository = transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView(v.Repository)
 	}
@@ -1596,7 +1623,6 @@ func transformRestoreConfigSpecToControlplaneviewsRestoreConfigSpecView(v *Resto
 // value of type *RestoreRepositorySpec.
 func transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView(v *RestoreRepositorySpec) *controlplaneviews.RestoreRepositorySpecView {
 	res := &controlplaneviews.RestoreRepositorySpecView{
-		ID:             v.ID,
 		Type:           &v.Type,
 		S3Bucket:       v.S3Bucket,
 		S3Region:       v.S3Region,
@@ -1611,6 +1637,10 @@ func transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView(
 		AzureEndpoint:  v.AzureEndpoint,
 		AzureKey:       v.AzureKey,
 		BasePath:       v.BasePath,
+	}
+	if v.ID != nil {
+		id := controlplaneviews.IdentifierView(*v.ID)
+		res.ID = &id
 	}
 	if v.CustomOptions != nil {
 		res.CustomOptions = make(map[string]string, len(v.CustomOptions))

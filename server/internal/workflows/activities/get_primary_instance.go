@@ -8,7 +8,6 @@ import (
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
-	"github.com/google/uuid"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
@@ -16,21 +15,21 @@ import (
 )
 
 type GetPrimaryInstanceInput struct {
-	DatabaseID uuid.UUID `json:"database_id"`
-	InstanceID uuid.UUID `json:"instance_id"`
+	DatabaseID string `json:"database_id"`
+	InstanceID string `json:"instance_id"`
 }
 
 type GetPrimaryInstanceOutput struct {
-	PrimaryInstanceID uuid.UUID `json:"instance_id"`
+	PrimaryInstanceID string `json:"instance_id"`
 }
 
 func (a *Activities) ExecuteGetPrimaryInstance(
 	ctx workflow.Context,
-	hostID uuid.UUID,
+	hostID string,
 	input *GetPrimaryInstanceInput,
 ) workflow.Future[*GetPrimaryInstanceOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(a.Config.HostID.String()),
+		Queue: core.Queue(a.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
@@ -39,7 +38,7 @@ func (a *Activities) ExecuteGetPrimaryInstance(
 }
 
 func (a *Activities) GetPrimaryInstance(ctx context.Context, input *GetPrimaryInstanceInput) (*GetPrimaryInstanceOutput, error) {
-	logger := activity.Logger(ctx).With("instance_id", input.InstanceID.String())
+	logger := activity.Logger(ctx).With("instance_id", input.InstanceID)
 	logger.Info("determining primary instance")
 
 	orch, err := do.Invoke[database.Orchestrator](a.Injector)

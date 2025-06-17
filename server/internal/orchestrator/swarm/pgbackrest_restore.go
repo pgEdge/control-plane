@@ -24,17 +24,17 @@ var _ resource.Resource = (*PgBackRestRestore)(nil)
 
 const ResourceTypePgBackRestRestore resource.Type = "swarm.pgbackrest_restore"
 
-func PgBackRestRestoreResourceIdentifier(instanceID uuid.UUID) resource.Identifier {
+func PgBackRestRestoreResourceIdentifier(instanceID string) resource.Identifier {
 	return resource.Identifier{
-		ID:   instanceID.String(),
+		ID:   instanceID,
 		Type: ResourceTypePgBackRestRestore,
 	}
 }
 
 type PgBackRestRestore struct {
-	DatabaseID     uuid.UUID         `json:"database_id"`
-	HostID         uuid.UUID         `json:"host_id"`
-	InstanceID     uuid.UUID         `json:"instance_id"`
+	DatabaseID     string            `json:"database_id"`
+	HostID         string            `json:"host_id"`
+	InstanceID     string            `json:"instance_id"`
 	TaskID         uuid.UUID         `json:"task_id"`
 	NodeName       string            `json:"node_name"`
 	DataDirID      string            `json:"data_dir_id"`
@@ -52,7 +52,7 @@ func (p *PgBackRestRestore) DiffIgnore() []string {
 func (p *PgBackRestRestore) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeHost,
-		ID:   p.HostID.String(),
+		ID:   p.HostID,
 	}
 }
 
@@ -237,9 +237,9 @@ func (p *PgBackRestRestore) runRestoreContainer(
 		Config: &container.Config{
 			Image: containerSpec.Image,
 			Labels: map[string]string{
-				"pgedge.host.id":     p.HostID.String(),
-				"pgedge.database.id": p.DatabaseID.String(),
-				"pgedge.instance.id": p.InstanceID.String(),
+				"pgedge.host.id":     p.HostID,
+				"pgedge.database.id": p.DatabaseID,
+				"pgedge.instance.id": p.InstanceID,
 				"pgedge.component":   "pgbackrest-restore",
 			},
 			Hostname:   containerSpec.Hostname,

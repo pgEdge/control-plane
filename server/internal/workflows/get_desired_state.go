@@ -5,7 +5,6 @@ import (
 
 	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
-	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/monitor"
 	"github.com/pgEdge/control-plane/server/internal/resource"
@@ -25,7 +24,7 @@ func (w *Workflows) ExecuteGetDesiredState(
 	input *GetDesiredStateInput,
 ) workflow.Future[*GetDesiredStateOutput] {
 	options := workflow.SubWorkflowOptions{
-		Queue: core.Queue(w.Config.HostID.String()),
+		Queue: core.Queue(w.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
@@ -34,7 +33,7 @@ func (w *Workflows) ExecuteGetDesiredState(
 }
 
 func (w *Workflows) GetDesiredState(ctx workflow.Context, input *GetDesiredStateInput) (*GetDesiredStateOutput, error) {
-	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID.String())
+	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID)
 	logger.Info("getting desired state")
 
 	nodeInstances, err := input.Spec.NodeInstances()
@@ -46,7 +45,7 @@ func (w *Workflows) GetDesiredState(ctx workflow.Context, input *GetDesiredState
 
 	var instanceFutures []workflow.Future[*activities.GetInstanceResourcesOutput]
 	for i, nodeInstance := range nodeInstances {
-		var instanceIDs []uuid.UUID
+		var instanceIDs []string
 		for _, instance := range nodeInstance.Instances {
 			instanceIDs = append(instanceIDs, instance.InstanceID)
 			instanceFuture := w.Activities.ExecuteGetInstanceResources(ctx, &activities.GetInstanceResourcesInput{

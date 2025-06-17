@@ -8,7 +8,6 @@ import (
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
-	"github.com/google/uuid"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
@@ -16,8 +15,8 @@ import (
 )
 
 type InstanceHost struct {
-	InstanceID uuid.UUID `json:"instance_id"`
-	HostID     uuid.UUID `json:"host_id"`
+	InstanceID string `json:"instance_id"`
+	HostID     string `json:"host_id"`
 }
 
 type RestoreSpecInput struct {
@@ -37,7 +36,7 @@ func (a *Activities) ExecuteRestoreSpec(
 	input *RestoreSpecInput,
 ) workflow.Future[*RestoreSpecOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(a.Config.HostID.String()),
+		Queue: core.Queue(a.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
@@ -46,7 +45,7 @@ func (a *Activities) ExecuteRestoreSpec(
 }
 
 func (a *Activities) RestoreSpec(ctx context.Context, input *RestoreSpecInput) (*RestoreSpecOutput, error) {
-	logger := activity.Logger(ctx).With("database_id", input.Spec.DatabaseID.String())
+	logger := activity.Logger(ctx).With("database_id", input.Spec.DatabaseID)
 	logger.Info("computing restore spec")
 
 	registry, err := do.Invoke[*resource.Registry](a.Injector)
@@ -69,7 +68,7 @@ func (a *Activities) RestoreSpec(ctx context.Context, input *RestoreSpecInput) (
 		if err != nil {
 			return nil, fmt.Errorf("failed to get node %s from spec: %w", nodeName, err)
 		}
-		var instanceID, hostID uuid.UUID
+		var instanceID, hostID string
 		primary, err := database.GetPrimaryInstance(ctx, rc, nodeName)
 		if errors.Is(err, resource.ErrNotFound) {
 			// ErrNotFound is expected if we previously failed to restore the
@@ -89,7 +88,7 @@ func (a *Activities) RestoreSpec(ctx context.Context, input *RestoreSpecInput) (
 		}
 		// We're only going to restore the primary instance, then we'll recreate
 		// the replicas.
-		node.HostIDs = []uuid.UUID{hostID}
+		node.HostIDs = []string{hostID}
 		node.RestoreConfig = input.RestoreConfig
 		node.BackupConfig = nil
 		primaries[nodeName] = &InstanceHost{

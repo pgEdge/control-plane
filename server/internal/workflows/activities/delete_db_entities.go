@@ -8,7 +8,6 @@ import (
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
-	"github.com/google/uuid"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
@@ -16,7 +15,7 @@ import (
 )
 
 type DeleteDbEntitiesInput struct {
-	DatabaseID uuid.UUID `json:"database_id"`
+	DatabaseID string `json:"database_id"`
 }
 
 type DeleteDbEntitiesOutput struct{}
@@ -26,7 +25,7 @@ func (a *Activities) ExecuteDeleteDbEntities(
 	input *DeleteDbEntitiesInput,
 ) workflow.Future[*DeleteDbEntitiesOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(a.Config.HostID.String()),
+		Queue: core.Queue(a.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
@@ -35,7 +34,7 @@ func (a *Activities) ExecuteDeleteDbEntities(
 }
 
 func (a *Activities) DeleteDbEntities(ctx context.Context, input *DeleteDbEntitiesInput) (*DeleteDbEntitiesOutput, error) {
-	logger := activity.Logger(ctx).With("database_id", input.DatabaseID.String())
+	logger := activity.Logger(ctx).With("database_id", input.DatabaseID)
 	logger.Info("deleting database entities")
 
 	resourceSvc, err := do.Invoke[*resource.Service](a.Injector)

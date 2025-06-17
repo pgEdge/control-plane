@@ -3,8 +3,6 @@ package database
 import (
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 )
@@ -57,9 +55,9 @@ func patroniToInstanceState(state *patroni.State) InstanceState {
 }
 
 type Instance struct {
-	InstanceID uuid.UUID       `json:"instance_id"`
-	DatabaseID uuid.UUID       `json:"database_id"`
-	HostID     uuid.UUID       `json:"host_id"`
+	InstanceID string          `json:"instance_id"`
+	DatabaseID string          `json:"database_id"`
+	HostID     string          `json:"host_id"`
 	NodeName   string          `json:"node_name"`
 	State      InstanceState   `json:"state"`
 	Status     *InstanceStatus `json:"status"`
@@ -111,7 +109,7 @@ func storedToInstance(instance *StoredInstance, status *StoredInstanceStatus) *I
 }
 
 func storedToInstances(storedInstances []*StoredInstance, storedStatuses []*StoredInstanceStatus) []*Instance {
-	statusesByID := make(map[uuid.UUID]*StoredInstanceStatus, len(storedStatuses))
+	statusesByID := make(map[string]*StoredInstanceStatus, len(storedStatuses))
 	for _, s := range storedStatuses {
 		statusesByID[s.InstanceID] = s
 	}

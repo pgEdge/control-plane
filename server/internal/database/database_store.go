@@ -4,7 +4,6 @@ import (
 	"path"
 	"time"
 
-	"github.com/google/uuid"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/storage"
@@ -12,8 +11,8 @@ import (
 
 type StoredDatabase struct {
 	storage.StoredValue
-	DatabaseID uuid.UUID     `json:"database_id"`
-	TenantID   *uuid.UUID    `json:"tenant_id,omitempty"`
+	DatabaseID string        `json:"database_id"`
+	TenantID   *string       `json:"tenant_id,omitempty"`
 	CreatedAt  time.Time     `json:"created_at"`
 	UpdatedAt  time.Time     `json:"updated_at"`
 	State      DatabaseState `json:"state"`
@@ -35,21 +34,21 @@ func (s *DatabaseStore) Prefix() string {
 	return path.Join("/", s.root, "databases")
 }
 
-func (s *DatabaseStore) Key(databaseID uuid.UUID) string {
-	return path.Join(s.Prefix(), databaseID.String())
+func (s *DatabaseStore) Key(databaseID string) string {
+	return path.Join(s.Prefix(), databaseID)
 }
 
-func (s *DatabaseStore) ExistsByKey(databaseID uuid.UUID) storage.ExistsOp {
+func (s *DatabaseStore) ExistsByKey(databaseID string) storage.ExistsOp {
 	key := s.Key(databaseID)
 	return storage.NewExistsOp(s.client, key)
 }
 
-func (s *DatabaseStore) GetByKey(databaseID uuid.UUID) storage.GetOp[*StoredDatabase] {
+func (s *DatabaseStore) GetByKey(databaseID string) storage.GetOp[*StoredDatabase] {
 	key := s.Key(databaseID)
 	return storage.NewGetOp[*StoredDatabase](s.client, key)
 }
 
-func (s *DatabaseStore) GetByKeys(databaseIDs ...uuid.UUID) storage.GetMultipleOp[*StoredDatabase] {
+func (s *DatabaseStore) GetByKeys(databaseIDs ...string) storage.GetMultipleOp[*StoredDatabase] {
 	keys := make([]string, len(databaseIDs))
 	for idx, databaseID := range databaseIDs {
 		keys[idx] = s.Key(databaseID)

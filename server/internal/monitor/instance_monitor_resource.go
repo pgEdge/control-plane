@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/samber/do"
@@ -14,18 +13,18 @@ var _ resource.Resource = (*InstanceMonitorResource)(nil)
 
 const ResourceTypeInstanceMonitorResource resource.Type = "monitor.instance"
 
-func InstanceMonitorResourceIdentifier(instanceID uuid.UUID) resource.Identifier {
+func InstanceMonitorResourceIdentifier(instanceID string) resource.Identifier {
 	return resource.Identifier{
-		ID:   instanceID.String(),
+		ID:   instanceID,
 		Type: ResourceTypeInstanceMonitorResource,
 	}
 }
 
 type InstanceMonitorResource struct {
-	DatabaseID   uuid.UUID `json:"database_id"`
-	InstanceID   uuid.UUID `json:"instance_id"`
-	DatabaseName string    `json:"db_name"`
-	HostID       uuid.UUID `json:"host_id"`
+	DatabaseID   string `json:"database_id"`
+	InstanceID   string `json:"instance_id"`
+	DatabaseName string `json:"db_name"`
+	HostID       string `json:"host_id"`
 }
 
 func (m *InstanceMonitorResource) ResourceVersion() string {
@@ -39,7 +38,7 @@ func (m *InstanceMonitorResource) DiffIgnore() []string {
 func (m *InstanceMonitorResource) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeHost,
-		ID:   m.HostID.String(),
+		ID:   m.HostID,
 	}
 }
 

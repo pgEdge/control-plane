@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
@@ -49,7 +48,7 @@ func (s *Service) Start(ctx context.Context) error {
 	if !errors.Is(err, storage.ErrNotFound) {
 		return fmt.Errorf("failed to fetch CA: %w", err)
 	}
-	ca, err := CreateRootCA(s.cfg.ClusterID.String())
+	ca, err := CreateRootCA(s.cfg.ClusterID)
 	if err != nil {
 		return fmt.Errorf("failed to create CA: %w", err)
 	}
@@ -71,14 +70,14 @@ func (s *Service) CACert() []byte {
 	})
 }
 
-func (s *Service) PostgresUser(ctx context.Context, instanceID uuid.UUID, username string) (*Principal, error) {
-	id := fmt.Sprintf("instance:%s:postgres-user:%s", instanceID.String(), username)
+func (s *Service) PostgresUser(ctx context.Context, instanceID, username string) (*Principal, error) {
+	id := fmt.Sprintf("instance:%s:postgres-user:%s", instanceID, username)
 
 	return s.getPrincipal(ctx, id, userCertTemplate(username))
 }
 
-func (s *Service) PostgresUserTLS(ctx context.Context, instanceID uuid.UUID, hostname, username string) (*tls.Config, error) {
-	id := fmt.Sprintf("instance:%s:postgres-user-tls:%s", instanceID.String(), username)
+func (s *Service) PostgresUserTLS(ctx context.Context, instanceID, hostname, username string) (*tls.Config, error) {
+	id := fmt.Sprintf("instance:%s:postgres-user-tls:%s", instanceID, username)
 
 	principal, err := s.getPrincipal(ctx, id, userCertTemplate(username))
 	if err != nil {
@@ -100,32 +99,32 @@ func (s *Service) PostgresUserTLS(ctx context.Context, instanceID uuid.UUID, hos
 	}, nil
 }
 
-func (s *Service) InstanceEtcdUser(ctx context.Context, instanceID uuid.UUID) (*Principal, error) {
-	id := fmt.Sprintf("instance:%s:etcd-user", instanceID.String())
+func (s *Service) InstanceEtcdUser(ctx context.Context, instanceID string) (*Principal, error) {
+	id := fmt.Sprintf("instance:%s:etcd-user", instanceID)
 
 	return s.getPrincipal(ctx, id, &x509.CertificateRequest{})
 }
 
-func (s *Service) RemoveInstanceEtcdUser(ctx context.Context, instanceID uuid.UUID) error {
-	id := fmt.Sprintf("instance:%s:etcd-user", instanceID.String())
+func (s *Service) RemoveInstanceEtcdUser(ctx context.Context, instanceID string) error {
+	id := fmt.Sprintf("instance:%s:etcd-user", instanceID)
 
 	return s.removePrincipal(ctx, id)
 }
 
-func (s *Service) HostEtcdUser(ctx context.Context, hostID uuid.UUID) (*Principal, error) {
-	id := fmt.Sprintf("host:%s:etcd-user", hostID.String())
+func (s *Service) HostEtcdUser(ctx context.Context, hostID string) (*Principal, error) {
+	id := fmt.Sprintf("host:%s:etcd-user", hostID)
 
 	return s.getPrincipal(ctx, id, &x509.CertificateRequest{})
 }
 
-func (s *Service) PostgresServer(ctx context.Context, instanceID uuid.UUID, hostname string, dnsNames, ips []string) (*Principal, error) {
-	id := fmt.Sprintf("instance:%s:postgres-server", instanceID.String())
+func (s *Service) PostgresServer(ctx context.Context, instanceID, hostname string, dnsNames, ips []string) (*Principal, error) {
+	id := fmt.Sprintf("instance:%s:postgres-server", instanceID)
 
 	return s.getPrincipal(ctx, id, serverCertTemplate(hostname, dnsNames, ips))
 }
 
-func (s *Service) EtcdServer(ctx context.Context, hostID uuid.UUID, hostname string, dnsNames, ips []string) (*Principal, error) {
-	id := fmt.Sprintf("host:%s:etcd-server", hostID.String())
+func (s *Service) EtcdServer(ctx context.Context, hostID, hostname string, dnsNames, ips []string) (*Principal, error) {
+	id := fmt.Sprintf("host:%s:etcd-server", hostID)
 
 	return s.getPrincipal(ctx, id, serverCertTemplate(hostname, dnsNames, ips))
 }

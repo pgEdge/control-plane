@@ -16,8 +16,8 @@ import (
 )
 
 type CreatePgBackRestBackupInput struct {
-	DatabaseID    uuid.UUID                 `json:"database_id"`
-	InstanceID    uuid.UUID                 `json:"instance_id"`
+	DatabaseID    string                    `json:"database_id"`
+	InstanceID    string                    `json:"instance_id"`
 	TaskID        uuid.UUID                 `json:"task_id"`
 	BackupOptions *pgbackrest.BackupOptions `json:"backup_options"`
 }
@@ -26,11 +26,11 @@ type CreatePgBackRestBackupOutput struct{}
 
 func (a *Activities) ExecuteCreatePgBackRestBackup(
 	ctx workflow.Context,
-	hostID uuid.UUID,
+	hostID string,
 	input *CreatePgBackRestBackupInput,
 ) workflow.Future[*CreatePgBackRestBackupOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(hostID.String()),
+		Queue: core.Queue(hostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
@@ -39,7 +39,7 @@ func (a *Activities) ExecuteCreatePgBackRestBackup(
 }
 
 func (a *Activities) CreatePgBackRestBackup(ctx context.Context, input *CreatePgBackRestBackupInput) (*CreatePgBackRestBackupOutput, error) {
-	logger := activity.Logger(ctx).With("instance_id", input.InstanceID.String())
+	logger := activity.Logger(ctx).With("instance_id", input.InstanceID)
 	logger.Info("running pgbackrest backup")
 
 	orch, err := do.Invoke[database.Orchestrator](a.Injector)

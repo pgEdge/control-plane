@@ -75,9 +75,9 @@ func (s *PostInitHandlers) GetJoinOptions(ctx context.Context, req *api.ClusterJ
 		return nil, apiErr(err)
 	}
 
-	hostID, err := uuid.Parse(req.HostID)
+	hostID, err := hostIdentToString(req.HostID)
 	if err != nil {
-		return nil, ErrInvalidHostID
+		return nil, apiErr(err)
 	}
 
 	creds, err := s.etcd.AddPeerUser(ctx, etcd.HostCredentialOptions{
@@ -195,9 +195,9 @@ func (s *PostInitHandlers) CreateDatabase(ctx context.Context, req *api.CreateDa
 }
 
 func (s *PostInitHandlers) GetDatabase(ctx context.Context, req *api.GetDatabasePayload) (*api.Database, error) {
-	databaseID, err := uuid.Parse(req.DatabaseID)
+	databaseID, err := dbIdentToString(req.DatabaseID)
 	if err != nil {
-		return nil, ErrInvalidDatabaseID
+		return nil, err
 	}
 
 	db, err := s.dbSvc.GetDatabase(ctx, databaseID)
@@ -241,9 +241,9 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 }
 
 func (s *PostInitHandlers) DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePayload) (*api.DeleteDatabaseResponse, error) {
-	databaseID, err := uuid.Parse(req.DatabaseID)
+	databaseID, err := dbIdentToString(req.DatabaseID)
 	if err != nil {
-		return nil, ErrInvalidDatabaseID
+		return nil, err
 	}
 
 	db, err := s.dbSvc.GetDatabase(ctx, databaseID)
@@ -270,9 +270,9 @@ func (s *PostInitHandlers) DeleteDatabase(ctx context.Context, req *api.DeleteDa
 }
 
 func (s *PostInitHandlers) BackupDatabaseNode(ctx context.Context, req *api.BackupDatabaseNodePayload) (*api.BackupDatabaseNodeResponse, error) {
-	databaseID, err := uuid.Parse(req.DatabaseID)
+	databaseID, err := dbIdentToString(req.DatabaseID)
 	if err != nil {
-		return nil, ErrInvalidDatabaseID
+		return nil, err
 	}
 
 	db, err := s.dbSvc.GetDatabase(ctx, databaseID)
@@ -316,9 +316,9 @@ func (s *PostInitHandlers) BackupDatabaseNode(ctx context.Context, req *api.Back
 }
 
 func (s *PostInitHandlers) ListDatabaseTasks(ctx context.Context, req *api.ListDatabaseTasksPayload) ([]*api.Task, error) {
-	databaseID, err := uuid.Parse(req.DatabaseID)
+	databaseID, err := dbIdentToString(req.DatabaseID)
 	if err != nil {
-		return nil, ErrInvalidDatabaseID
+		return nil, err
 	}
 
 	options, err := taskListOptions(req)
@@ -335,9 +335,9 @@ func (s *PostInitHandlers) ListDatabaseTasks(ctx context.Context, req *api.ListD
 }
 
 func (s *PostInitHandlers) GetDatabaseTask(ctx context.Context, req *api.GetDatabaseTaskPayload) (*api.Task, error) {
-	databaseID, err := uuid.Parse(req.DatabaseID)
+	databaseID, err := dbIdentToString(req.DatabaseID)
 	if err != nil {
-		return nil, ErrInvalidDatabaseID
+		return nil, err
 	}
 	taskID, err := uuid.Parse(req.TaskID)
 	if err != nil {
@@ -353,9 +353,9 @@ func (s *PostInitHandlers) GetDatabaseTask(ctx context.Context, req *api.GetData
 }
 
 func (s *PostInitHandlers) GetDatabaseTaskLog(ctx context.Context, req *api.GetDatabaseTaskLogPayload) (*api.TaskLog, error) {
-	databaseID, err := uuid.Parse(req.DatabaseID)
+	databaseID, err := dbIdentToString(req.DatabaseID)
 	if err != nil {
-		return nil, ErrInvalidDatabaseID
+		return nil, err
 	}
 	taskID, err := uuid.Parse(req.TaskID)
 	if err != nil {
@@ -381,9 +381,9 @@ func (s *PostInitHandlers) GetDatabaseTaskLog(ctx context.Context, req *api.GetD
 }
 
 func (s *PostInitHandlers) RestoreDatabase(ctx context.Context, req *api.RestoreDatabasePayload) (res *api.RestoreDatabaseResponse, err error) {
-	databaseID, err := uuid.Parse(req.DatabaseID)
+	databaseID, err := dbIdentToString(req.DatabaseID)
 	if err != nil {
-		return nil, ErrInvalidDatabaseID
+		return nil, err
 	}
 	restoreConfig, err := apiToRestoreConfig(req.Request.RestoreConfig)
 	if err != nil {

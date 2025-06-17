@@ -17,7 +17,7 @@ func TestEmbeddedEtcd(t *testing.T) {
 	t.Run("standalone", func(t *testing.T) {
 		ctx := context.Background()
 		cfg := config.Config{
-			HostID:      uuid.New(),
+			HostID:      uuid.NewString(),
 			DataDir:     storagetest.TempDir(t),
 			StorageType: config.StorageTypeEmbeddedEtcd,
 			IPv4Address: "127.0.0.1",
@@ -78,7 +78,7 @@ func TestEmbeddedEtcd(t *testing.T) {
 	t.Run("cluster - leader and follower", func(t *testing.T) {
 		ctx := context.Background()
 		cfgA := config.Config{
-			HostID:      uuid.New(),
+			HostID:      uuid.NewString(),
 			DataDir:     storagetest.TempDir(t),
 			StorageType: config.StorageTypeEmbeddedEtcd,
 			IPv4Address: "127.0.0.1",
@@ -105,7 +105,7 @@ func TestEmbeddedEtcd(t *testing.T) {
 		assert.NoError(t, err)
 
 		cfgB := config.Config{
-			HostID:      uuid.New(),
+			HostID:      uuid.NewString(),
 			DataDir:     storagetest.TempDir(t),
 			StorageType: config.StorageTypeEmbeddedEtcd,
 			IPv4Address: "127.0.0.1",
@@ -190,7 +190,7 @@ func TestEmbeddedEtcd(t *testing.T) {
 
 		// Initialize the cluster
 		cfgA := config.Config{
-			HostID:      uuid.New(),
+			HostID:      uuid.NewString(),
 			DataDir:     storagetest.TempDir(t),
 			StorageType: config.StorageTypeEmbeddedEtcd,
 			IPv4Address: "127.0.0.1",
@@ -207,7 +207,7 @@ func TestEmbeddedEtcd(t *testing.T) {
 		})
 
 		cfgB := config.Config{
-			HostID:      uuid.New(),
+			HostID:      uuid.NewString(),
 			DataDir:     storagetest.TempDir(t),
 			StorageType: config.StorageTypeEmbeddedEtcd,
 			IPv4Address: "127.0.0.1",
@@ -220,7 +220,7 @@ func TestEmbeddedEtcd(t *testing.T) {
 		serverB := etcd.NewEmbeddedEtcd(cfgB, logger)
 
 		cfgC := config.Config{
-			HostID:      uuid.New(),
+			HostID:      uuid.NewString(),
 			DataDir:     storagetest.TempDir(t),
 			StorageType: config.StorageTypeEmbeddedEtcd,
 			IPv4Address: "127.0.0.1",

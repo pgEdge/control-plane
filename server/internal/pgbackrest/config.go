@@ -10,8 +10,6 @@ import (
 	"strconv"
 
 	"gopkg.in/ini.v1"
-
-	"github.com/google/uuid"
 )
 
 type RepositoryType string
@@ -122,7 +120,7 @@ func (r *Repository) WithDefaults() *Repository {
 }
 
 type ConfigOptions struct {
-	DatabaseID   uuid.UUID
+	DatabaseID   string
 	NodeName     string
 	PgDataPath   string
 	HostUser     string
@@ -267,6 +265,6 @@ func repoKey(idx int, key string) string {
 	return fmt.Sprintf("repo%d-%s", idx+1, key)
 }
 
-func repoPath(databaseID uuid.UUID, basePath, nodeName, repoID string) string {
-	return path.Join("/", basePath, "databases", databaseID.String(), repoID, nodeName)
+func repoPath(databaseID, basePath, nodeName, repoID string) string {
+	return path.Join("/", basePath, "databases", databaseID, repoID, nodeName)
 }

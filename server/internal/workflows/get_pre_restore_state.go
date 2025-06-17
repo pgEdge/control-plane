@@ -25,7 +25,7 @@ func (w *Workflows) ExecuteGetPreRestoreState(
 	input *GetPreRestoreStateInput,
 ) workflow.Future[*GetPreRestoreStateOutput] {
 	options := workflow.SubWorkflowOptions{
-		Queue: core.Queue(w.Config.HostID.String()),
+		Queue: core.Queue(w.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
@@ -34,7 +34,7 @@ func (w *Workflows) ExecuteGetPreRestoreState(
 }
 
 func (w *Workflows) GetPreRestoreState(ctx workflow.Context, input *GetPreRestoreStateInput) (*GetPreRestoreStateOutput, error) {
-	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID.String())
+	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID)
 	logger.Info("getting pre-restore state")
 
 	nodeInstances, err := input.Spec.NodeInstances()
@@ -45,7 +45,7 @@ func (w *Workflows) GetPreRestoreState(ctx workflow.Context, input *GetPreRestor
 	state := resource.NewState()
 
 	for i, nodeInstance := range nodeInstances {
-		var instanceIDs []uuid.UUID
+		var instanceIDs []string
 		_, toBeRestored := input.NodeTaskIDs[nodeInstance.NodeName]
 		for _, instance := range nodeInstance.Instances {
 			instanceIDs = append(instanceIDs, instance.InstanceID)
