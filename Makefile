@@ -99,6 +99,24 @@ goreleaser-build:
 changelog-entry:
 	$(changie) new
 
+.PHONY: version-tags
+version-tags:
+ifeq ($(TAG),)
+	$(error TAG must be set. )
+endif
+ifeq ($(CHANGELOG),)
+	git tag $(TAG)
+else
+	git tag -a -F $(CHANGELOG) $(TAG)
+endif
+	git push origin $(TAG)
+	@for module in $(shell go list -m | xargs basename); do \
+		module_tag="$${module}/$(TAG)"; \
+		echo "creating and pushing module tag $${module_tag}"; \
+		git tag $${module_tag}; \
+		git push origin $${module_tag}; \
+	done
+
 .PHONY: release
 release:
 ifeq ($(VERSION),)
@@ -110,13 +128,12 @@ endif
 	$(MAKE) -C api generate
 	git checkout -b release/$(VERSION)
 	git add api changes CHANGELOG.md
-	git -c core.pager='' diff --staged ':(exclude)api/gen/**.json'
+	git -c core.pager='' diff --staged
 	git -c core.pager='' diff --staged --compact-summary
 	@echo -n "Are you sure? [y/N] " && read ans && [ $${ans:-N} == y ]
 	git commit -m "build(release): bump version to $(VERSION)"
 	git push origin release/$(VERSION)
-	git tag $(VERSION)-rc.1
-	git push origin $(VERSION)-rc.1
+	@$(MAKE) version-tags TAG=$(VERSION)-rc.1
 	@echo "Go to https://github.com/pgEdge/control-plane/compare/release/$(VERSION)?expand=1 to open the release PR."
 
 .PHONY: major-release
