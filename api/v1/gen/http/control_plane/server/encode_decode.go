@@ -639,9 +639,9 @@ func EncodeRemoveHostError(encoder func(context.Context, http.ResponseWriter) go
 // control-plane list-databases endpoint.
 func EncodeListDatabasesResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res := v.(controlplaneviews.DatabaseCollection)
+		res := v.(*controlplaneviews.ListDatabasesResponse)
 		enc := encoder(ctx, w)
-		body := NewDatabaseResponseAbbreviatedCollection(res.Projected)
+		body := NewListDatabasesResponseBody(res.Projected)
 		w.WriteHeader(http.StatusOK)
 		return enc.Encode(body)
 	}
@@ -1369,7 +1369,7 @@ func EncodeBackupDatabaseNodeError(encoder func(context.Context, http.ResponseWr
 // the control-plane list-database-tasks endpoint.
 func EncodeListDatabaseTasksResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.([]*controlplane.Task)
+		res, _ := v.(*controlplane.ListDatabaseTasksResponse)
 		enc := encoder(ctx, w)
 		body := NewListDatabaseTasksResponseBody(res)
 		w.WriteHeader(http.StatusOK)
@@ -2176,11 +2176,14 @@ func marshalControlplanePgEdgeVersionToPgEdgeVersionResponse(v *controlplane.PgE
 	return res
 }
 
-// marshalControlplaneviewsDatabaseViewToDatabaseResponseAbbreviated builds a
-// value of type *DatabaseResponseAbbreviated from a value of type
+// marshalControlplaneviewsDatabaseViewToDatabaseResponseBodyAbbreviated builds
+// a value of type *DatabaseResponseBodyAbbreviated from a value of type
 // *controlplaneviews.DatabaseView.
-func marshalControlplaneviewsDatabaseViewToDatabaseResponseAbbreviated(v *controlplaneviews.DatabaseView) *DatabaseResponseAbbreviated {
-	res := &DatabaseResponseAbbreviated{
+func marshalControlplaneviewsDatabaseViewToDatabaseResponseBodyAbbreviated(v *controlplaneviews.DatabaseView) *DatabaseResponseBodyAbbreviated {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseResponseBodyAbbreviated{
 		ID:        string(*v.ID),
 		CreatedAt: *v.CreatedAt,
 		UpdatedAt: *v.UpdatedAt,
@@ -2191,23 +2194,23 @@ func marshalControlplaneviewsDatabaseViewToDatabaseResponseAbbreviated(v *contro
 		res.TenantID = &tenantID
 	}
 	if v.Instances != nil {
-		res.Instances = make([]*InstanceResponseAbbreviated, len(v.Instances))
+		res.Instances = make([]*InstanceResponseBodyAbbreviated, len(v.Instances))
 		for i, val := range v.Instances {
-			res.Instances[i] = marshalControlplaneviewsInstanceViewToInstanceResponseAbbreviated(val)
+			res.Instances[i] = marshalControlplaneviewsInstanceViewToInstanceResponseBodyAbbreviated(val)
 		}
 	}
 
 	return res
 }
 
-// marshalControlplaneviewsInstanceViewToInstanceResponseAbbreviated builds a
-// value of type *InstanceResponseAbbreviated from a value of type
+// marshalControlplaneviewsInstanceViewToInstanceResponseBodyAbbreviated builds
+// a value of type *InstanceResponseBodyAbbreviated from a value of type
 // *controlplaneviews.InstanceView.
-func marshalControlplaneviewsInstanceViewToInstanceResponseAbbreviated(v *controlplaneviews.InstanceView) *InstanceResponseAbbreviated {
+func marshalControlplaneviewsInstanceViewToInstanceResponseBodyAbbreviated(v *controlplaneviews.InstanceView) *InstanceResponseBodyAbbreviated {
 	if v == nil {
 		return nil
 	}
-	res := &InstanceResponseAbbreviated{
+	res := &InstanceResponseBodyAbbreviated{
 		ID:       *v.ID,
 		HostID:   *v.HostID,
 		NodeName: *v.NodeName,
@@ -3553,26 +3556,6 @@ func unmarshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSp
 		for i, val := range v.Roles {
 			res.Roles[i] = val
 		}
-	}
-
-	return res
-}
-
-// marshalControlplaneTaskToTaskResponse builds a value of type *TaskResponse
-// from a value of type *controlplane.Task.
-func marshalControlplaneTaskToTaskResponse(v *controlplane.Task) *TaskResponse {
-	res := &TaskResponse{
-		ParentID:    v.ParentID,
-		DatabaseID:  v.DatabaseID,
-		NodeName:    v.NodeName,
-		InstanceID:  v.InstanceID,
-		HostID:      v.HostID,
-		TaskID:      v.TaskID,
-		CreatedAt:   v.CreatedAt,
-		CompletedAt: v.CompletedAt,
-		Type:        v.Type,
-		Status:      v.Status,
-		Error:       v.Error,
 	}
 
 	return res

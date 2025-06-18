@@ -13,7 +13,13 @@ var Identifier = g.Type("Identifier", g.String, func() {
 	//   interpret when the value doesn't match.
 	g.MinLength(1)
 	g.MaxLength(63)
-	g.Example("production")
-	g.Example("my-app")
-	g.Example("76f9b8c0-4958-11f0-a489-3bb29577c696")
+	g.Example("Human-readable", func() {
+		g.Description("Identifiers can be human-readable for ease of use.")
+		g.Value("production")
+	})
+	g.Example("UUID", func() {
+		g.Description("UUIDs are valid Identifiers.")
+		g.Value("76f9b8c0-4958-11f0-a489-3bb29577c696")
+	})
+
 })

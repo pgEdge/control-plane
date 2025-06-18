@@ -13,11 +13,11 @@ import (
 	goa "goa.design/goa/v3/pkg"
 )
 
-// DatabaseCollection is the viewed result type that is projected based on a
+// ListDatabasesResponse is the viewed result type that is projected based on a
 // view.
-type DatabaseCollection struct {
+type ListDatabasesResponse struct {
 	// Type to project
-	Projected DatabaseCollectionView
+	Projected *ListDatabasesResponseView
 	// View to render
 	View string
 }
@@ -28,6 +28,12 @@ type Database struct {
 	Projected *DatabaseView
 	// View to render
 	View string
+}
+
+// ListDatabasesResponseView is a type that runs validations on a projected
+// type.
+type ListDatabasesResponseView struct {
+	Databases DatabaseCollectionView
 }
 
 // DatabaseCollectionView is a type that runs validations on a projected type.
@@ -100,9 +106,9 @@ type InstancePostgresStatusView struct {
 	Version      *string
 	PatroniState *string
 	Role         *string
-	// True if this instance is pending to be restarted from a configuration change.
+	// True if this instance has a pending restart from a configuration change.
 	PendingRestart *bool
-	// True if Patroni has been paused for this instance.
+	// True if Patroni is paused for this instance.
 	PatroniPaused *bool
 }
 
@@ -138,12 +144,12 @@ type DatabaseSpecView struct {
 	Port *int
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
-	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
-	// enforced depends on the orchestrator.
+	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
+	// depends on the orchestrator.
 	Cpus *string
 	// The amount of memory in SI or IEC notation to allocate for the database and
 	// to use for tuning Postgres. Defaults to the total available memory on the
-	// host. Whether this limit will be enforced depends on the orchestrator.
+	// host. Whether this limit is enforced depends on the orchestrator.
 	Memory *string
 	// The Spock nodes for this database.
 	Nodes []*DatabaseNodeSpecView
@@ -166,7 +172,7 @@ type DatabaseNodeSpecView struct {
 	// The name of the database node.
 	Name *string
 	// The IDs of the hosts that should run this node. When multiple hosts are
-	// specified, one host will chosen as a primary and the others will be read
+	// specified, one host will chosen as a primary, and the others will be read
 	// replicas.
 	HostIds []IdentifierView
 	// The major version of Postgres for this node. Overrides the Postgres version
@@ -176,15 +182,15 @@ type DatabaseNodeSpecView struct {
 	// port set in the DatabaseSpec.
 	Port *int
 	// The number of CPUs to allocate for the database on this node and to use for
-	// tuning Postgres. Can include the SI suffix 'm', e.g. '500m' for 500
+	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
 	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
 	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
-	// than are available on the host. Whether this limit will be enforced depends
-	// on the orchestrator.
+	// than are available on the host. Whether this limit is enforced depends on
+	// the orchestrator.
 	Cpus *string
 	// The amount of memory in SI or IEC notation to allocate for the database on
 	// this node and to use for tuning Postgres. Defaults to the total available
-	// memory on the host. Whether this limit will be enforced depends on the
+	// memory on the host. Whether this limit is enforced depends on the
 	// orchestrator.
 	Memory *string
 	// Additional postgresql.conf settings for this particular node. Will be merged
@@ -223,10 +229,12 @@ type BackupRepositorySpecView struct {
 	S3Endpoint *string
 	// An optional AWS access key ID to use for this repository. If not provided,
 	// pgbackrest will use the default credential provider chain. This field will
-	// be excluded from the response of all endpoints.
+	// be excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
 	S3Key *string
 	// The corresponding secret for the AWS access key ID in s3_key. This field
-	// will be excluded from the response of all endpoints.
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
 	S3KeySecret *string
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string
@@ -235,7 +243,8 @@ type BackupRepositorySpecView struct {
 	GcsEndpoint *string
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
 	// the service account attached to the instance profile. This field will be
-	// excluded from the response of all endpoints.
+	// excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
 	GcsKey *string
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string
@@ -246,7 +255,8 @@ type BackupRepositorySpecView struct {
 	// 'azure'.
 	AzureEndpoint *string
 	// The Azure storage account access key to use for this repository. This field
-	// will be excluded from the response of all endpoints.
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
 	AzureKey *string
 	// The count of full backups to retain or the time to retain full backups.
 	RetentionFull *int
@@ -275,8 +285,8 @@ type RestoreConfigSpecView struct {
 	SourceDatabaseID *IdentifierView
 	// The name of the node to restore this database from.
 	SourceNodeName *string
-	// The name of the database in this repository. This database will be renamed
-	// to the database_name in the DatabaseSpec.
+	// The name of the database in this repository. The database will be renamed to
+	// the database_name in the DatabaseSpec after it's restored.
 	SourceDatabaseName *string
 	// The repository to restore this database from.
 	Repository *RestoreRepositorySpecView
@@ -343,7 +353,8 @@ type DatabaseUserSpecView struct {
 	// The username for this database user.
 	Username *string
 	// The password for this database user. This field will be excluded from the
-	// response of all endpoints.
+	// response of all endpoints. It can also be omitted from update requests to
+	// keep the current value.
 	Password *string
 	// If true, this user will be granted database ownership.
 	DbOwner *bool
@@ -409,9 +420,15 @@ type RestoreDatabaseResponseView struct {
 }
 
 var (
-	// DatabaseCollectionMap is a map indexing the attribute names of
-	// DatabaseCollection by view name.
-	DatabaseCollectionMap = map[string][]string{
+	// ListDatabasesResponseMap is a map indexing the attribute names of
+	// ListDatabasesResponse by view name.
+	ListDatabasesResponseMap = map[string][]string{
+		"default": {
+			"databases",
+		},
+	}
+	// DatabaseMap is a map indexing the attribute names of Database by view name.
+	DatabaseMap = map[string][]string{
 		"default": {
 			"id",
 			"tenant_id",
@@ -430,8 +447,9 @@ var (
 			"instances",
 		},
 	}
-	// DatabaseMap is a map indexing the attribute names of Database by view name.
-	DatabaseMap = map[string][]string{
+	// DatabaseCollectionMap is a map indexing the attribute names of
+	// DatabaseCollection by view name.
+	DatabaseCollectionMap = map[string][]string{
 		"default": {
 			"id",
 			"tenant_id",
@@ -497,16 +515,14 @@ var (
 	}
 )
 
-// ValidateDatabaseCollection runs the validations defined on the viewed result
-// type DatabaseCollection.
-func ValidateDatabaseCollection(result DatabaseCollection) (err error) {
+// ValidateListDatabasesResponse runs the validations defined on the viewed
+// result type ListDatabasesResponse.
+func ValidateListDatabasesResponse(result *ListDatabasesResponse) (err error) {
 	switch result.View {
 	case "default", "":
-		err = ValidateDatabaseCollectionView(result.Projected)
-	case "abbreviated":
-		err = ValidateDatabaseCollectionViewAbbreviated(result.Projected)
+		err = ValidateListDatabasesResponseView(result.Projected)
 	default:
-		err = goa.InvalidEnumValueError("view", result.View, []any{"default", "abbreviated"})
+		err = goa.InvalidEnumValueError("view", result.View, []any{"default"})
 	}
 	return
 }
@@ -521,6 +537,18 @@ func ValidateDatabase(result *Database) (err error) {
 		err = ValidateDatabaseViewAbbreviated(result.Projected)
 	default:
 		err = goa.InvalidEnumValueError("view", result.View, []any{"default", "abbreviated"})
+	}
+	return
+}
+
+// ValidateListDatabasesResponseView runs the validations defined on
+// ListDatabasesResponseView using the "default" view.
+func ValidateListDatabasesResponseView(result *ListDatabasesResponseView) (err error) {
+
+	if result.Databases != nil {
+		if err2 := ValidateDatabaseCollectionViewAbbreviated(result.Databases); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
 	}
 	return
 }
@@ -966,9 +994,6 @@ func ValidateDatabaseNodeSpecView(result *DatabaseNodeSpecView) (err error) {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("result.memory", *result.Memory, utf8.RuneCountInString(*result.Memory), 16, false))
 		}
 	}
-	if len(result.PostgresqlConf) > 64 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("result.postgresql_conf", result.PostgresqlConf, len(result.PostgresqlConf), 64, false))
-	}
 	if result.BackupConfig != nil {
 		if err2 := ValidateBackupConfigSpecView(result.BackupConfig); err2 != nil {
 			err = goa.MergeErrors(err, err2)
@@ -1166,9 +1191,6 @@ func ValidateBackupRepositorySpecView(result *BackupRepositorySpecView) (err err
 		if utf8.RuneCountInString(*result.BasePath) > 256 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("result.base_path", *result.BasePath, utf8.RuneCountInString(*result.BasePath), 256, false))
 		}
-	}
-	if len(result.CustomOptions) > 32 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("result.custom_options", result.CustomOptions, len(result.CustomOptions), 32, false))
 	}
 	return
 }

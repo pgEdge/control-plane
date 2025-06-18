@@ -885,13 +885,13 @@ func DecodeListDatabasesResponse(decoder func(*http.Response) goahttp.Decoder, r
 			if err != nil {
 				return nil, goahttp.ErrDecodingError("control-plane", "list-databases", err)
 			}
-			p := NewListDatabasesDatabaseCollectionOK(body)
-			view := "abbreviated"
-			vres := controlplaneviews.DatabaseCollection{Projected: p, View: view}
-			if err = controlplaneviews.ValidateDatabaseCollection(vres); err != nil {
+			p := NewListDatabasesResponseViewOK(&body)
+			view := "default"
+			vres := &controlplaneviews.ListDatabasesResponse{Projected: p, View: view}
+			if err = controlplaneviews.ValidateListDatabasesResponse(vres); err != nil {
 				return nil, goahttp.ErrValidationError("control-plane", "list-databases", err)
 			}
-			res := controlplane.NewDatabaseCollection(vres)
+			res := controlplane.NewListDatabasesResponse(vres)
 			return res, nil
 		case http.StatusConflict:
 			var (
@@ -1824,17 +1824,11 @@ func DecodeListDatabaseTasksResponse(decoder func(*http.Response) goahttp.Decode
 			if err != nil {
 				return nil, goahttp.ErrDecodingError("control-plane", "list-database-tasks", err)
 			}
-			for _, e := range body {
-				if e != nil {
-					if err2 := ValidateTaskResponse(e); err2 != nil {
-						err = goa.MergeErrors(err, err2)
-					}
-				}
-			}
+			err = ValidateListDatabaseTasksResponseBody(&body)
 			if err != nil {
 				return nil, goahttp.ErrValidationError("control-plane", "list-database-tasks", err)
 			}
-			res := NewListDatabaseTasksTaskOK(body)
+			res := NewListDatabaseTasksResponseOK(&body)
 			return res, nil
 		case http.StatusConflict:
 			var (
@@ -2665,9 +2659,13 @@ func unmarshalPgEdgeVersionResponseToControlplanePgEdgeVersion(v *PgEdgeVersionR
 	return res
 }
 
-// unmarshalDatabaseResponseToControlplaneviewsDatabaseView builds a value of
-// type *controlplaneviews.DatabaseView from a value of type *DatabaseResponse.
-func unmarshalDatabaseResponseToControlplaneviewsDatabaseView(v *DatabaseResponse) *controlplaneviews.DatabaseView {
+// unmarshalDatabaseResponseBodyToControlplaneviewsDatabaseView builds a value
+// of type *controlplaneviews.DatabaseView from a value of type
+// *DatabaseResponseBody.
+func unmarshalDatabaseResponseBodyToControlplaneviewsDatabaseView(v *DatabaseResponseBody) *controlplaneviews.DatabaseView {
+	if v == nil {
+		return nil
+	}
 	res := &controlplaneviews.DatabaseView{
 		CreatedAt: v.CreatedAt,
 		UpdatedAt: v.UpdatedAt,
@@ -2682,19 +2680,20 @@ func unmarshalDatabaseResponseToControlplaneviewsDatabaseView(v *DatabaseRespons
 	if v.Instances != nil {
 		res.Instances = make([]*controlplaneviews.InstanceView, len(v.Instances))
 		for i, val := range v.Instances {
-			res.Instances[i] = unmarshalInstanceResponseToControlplaneviewsInstanceView(val)
+			res.Instances[i] = unmarshalInstanceResponseBodyToControlplaneviewsInstanceView(val)
 		}
 	}
 	if v.Spec != nil {
-		res.Spec = unmarshalDatabaseSpecResponseToControlplaneviewsDatabaseSpecView(v.Spec)
+		res.Spec = unmarshalDatabaseSpecResponseBodyToControlplaneviewsDatabaseSpecView(v.Spec)
 	}
 
 	return res
 }
 
-// unmarshalInstanceResponseToControlplaneviewsInstanceView builds a value of
-// type *controlplaneviews.InstanceView from a value of type *InstanceResponse.
-func unmarshalInstanceResponseToControlplaneviewsInstanceView(v *InstanceResponse) *controlplaneviews.InstanceView {
+// unmarshalInstanceResponseBodyToControlplaneviewsInstanceView builds a value
+// of type *controlplaneviews.InstanceView from a value of type
+// *InstanceResponseBody.
+func unmarshalInstanceResponseBodyToControlplaneviewsInstanceView(v *InstanceResponseBody) *controlplaneviews.InstanceView {
 	if v == nil {
 		return nil
 	}
@@ -2709,22 +2708,22 @@ func unmarshalInstanceResponseToControlplaneviewsInstanceView(v *InstanceRespons
 		Error:           v.Error,
 	}
 	if v.ConnectionInfo != nil {
-		res.ConnectionInfo = unmarshalInstanceConnectionInfoResponseToControlplaneviewsInstanceConnectionInfoView(v.ConnectionInfo)
+		res.ConnectionInfo = unmarshalInstanceConnectionInfoResponseBodyToControlplaneviewsInstanceConnectionInfoView(v.ConnectionInfo)
 	}
 	if v.Postgres != nil {
-		res.Postgres = unmarshalInstancePostgresStatusResponseToControlplaneviewsInstancePostgresStatusView(v.Postgres)
+		res.Postgres = unmarshalInstancePostgresStatusResponseBodyToControlplaneviewsInstancePostgresStatusView(v.Postgres)
 	}
 	if v.Spock != nil {
-		res.Spock = unmarshalInstanceSpockStatusResponseToControlplaneviewsInstanceSpockStatusView(v.Spock)
+		res.Spock = unmarshalInstanceSpockStatusResponseBodyToControlplaneviewsInstanceSpockStatusView(v.Spock)
 	}
 
 	return res
 }
 
-// unmarshalInstanceConnectionInfoResponseToControlplaneviewsInstanceConnectionInfoView
+// unmarshalInstanceConnectionInfoResponseBodyToControlplaneviewsInstanceConnectionInfoView
 // builds a value of type *controlplaneviews.InstanceConnectionInfoView from a
-// value of type *InstanceConnectionInfoResponse.
-func unmarshalInstanceConnectionInfoResponseToControlplaneviewsInstanceConnectionInfoView(v *InstanceConnectionInfoResponse) *controlplaneviews.InstanceConnectionInfoView {
+// value of type *InstanceConnectionInfoResponseBody.
+func unmarshalInstanceConnectionInfoResponseBodyToControlplaneviewsInstanceConnectionInfoView(v *InstanceConnectionInfoResponseBody) *controlplaneviews.InstanceConnectionInfoView {
 	if v == nil {
 		return nil
 	}
@@ -2737,10 +2736,10 @@ func unmarshalInstanceConnectionInfoResponseToControlplaneviewsInstanceConnectio
 	return res
 }
 
-// unmarshalInstancePostgresStatusResponseToControlplaneviewsInstancePostgresStatusView
+// unmarshalInstancePostgresStatusResponseBodyToControlplaneviewsInstancePostgresStatusView
 // builds a value of type *controlplaneviews.InstancePostgresStatusView from a
-// value of type *InstancePostgresStatusResponse.
-func unmarshalInstancePostgresStatusResponseToControlplaneviewsInstancePostgresStatusView(v *InstancePostgresStatusResponse) *controlplaneviews.InstancePostgresStatusView {
+// value of type *InstancePostgresStatusResponseBody.
+func unmarshalInstancePostgresStatusResponseBodyToControlplaneviewsInstancePostgresStatusView(v *InstancePostgresStatusResponseBody) *controlplaneviews.InstancePostgresStatusView {
 	if v == nil {
 		return nil
 	}
@@ -2755,10 +2754,10 @@ func unmarshalInstancePostgresStatusResponseToControlplaneviewsInstancePostgresS
 	return res
 }
 
-// unmarshalInstanceSpockStatusResponseToControlplaneviewsInstanceSpockStatusView
+// unmarshalInstanceSpockStatusResponseBodyToControlplaneviewsInstanceSpockStatusView
 // builds a value of type *controlplaneviews.InstanceSpockStatusView from a
-// value of type *InstanceSpockStatusResponse.
-func unmarshalInstanceSpockStatusResponseToControlplaneviewsInstanceSpockStatusView(v *InstanceSpockStatusResponse) *controlplaneviews.InstanceSpockStatusView {
+// value of type *InstanceSpockStatusResponseBody.
+func unmarshalInstanceSpockStatusResponseBodyToControlplaneviewsInstanceSpockStatusView(v *InstanceSpockStatusResponseBody) *controlplaneviews.InstanceSpockStatusView {
 	if v == nil {
 		return nil
 	}
@@ -2769,17 +2768,17 @@ func unmarshalInstanceSpockStatusResponseToControlplaneviewsInstanceSpockStatusV
 	if v.Subscriptions != nil {
 		res.Subscriptions = make([]*controlplaneviews.InstanceSubscriptionView, len(v.Subscriptions))
 		for i, val := range v.Subscriptions {
-			res.Subscriptions[i] = unmarshalInstanceSubscriptionResponseToControlplaneviewsInstanceSubscriptionView(val)
+			res.Subscriptions[i] = unmarshalInstanceSubscriptionResponseBodyToControlplaneviewsInstanceSubscriptionView(val)
 		}
 	}
 
 	return res
 }
 
-// unmarshalInstanceSubscriptionResponseToControlplaneviewsInstanceSubscriptionView
+// unmarshalInstanceSubscriptionResponseBodyToControlplaneviewsInstanceSubscriptionView
 // builds a value of type *controlplaneviews.InstanceSubscriptionView from a
-// value of type *InstanceSubscriptionResponse.
-func unmarshalInstanceSubscriptionResponseToControlplaneviewsInstanceSubscriptionView(v *InstanceSubscriptionResponse) *controlplaneviews.InstanceSubscriptionView {
+// value of type *InstanceSubscriptionResponseBody.
+func unmarshalInstanceSubscriptionResponseBodyToControlplaneviewsInstanceSubscriptionView(v *InstanceSubscriptionResponseBody) *controlplaneviews.InstanceSubscriptionView {
 	if v == nil {
 		return nil
 	}
@@ -2792,10 +2791,10 @@ func unmarshalInstanceSubscriptionResponseToControlplaneviewsInstanceSubscriptio
 	return res
 }
 
-// unmarshalDatabaseSpecResponseToControlplaneviewsDatabaseSpecView builds a
-// value of type *controlplaneviews.DatabaseSpecView from a value of type
-// *DatabaseSpecResponse.
-func unmarshalDatabaseSpecResponseToControlplaneviewsDatabaseSpecView(v *DatabaseSpecResponse) *controlplaneviews.DatabaseSpecView {
+// unmarshalDatabaseSpecResponseBodyToControlplaneviewsDatabaseSpecView builds
+// a value of type *controlplaneviews.DatabaseSpecView from a value of type
+// *DatabaseSpecResponseBody.
+func unmarshalDatabaseSpecResponseBodyToControlplaneviewsDatabaseSpecView(v *DatabaseSpecResponseBody) *controlplaneviews.DatabaseSpecView {
 	if v == nil {
 		return nil
 	}
@@ -2809,19 +2808,19 @@ func unmarshalDatabaseSpecResponseToControlplaneviewsDatabaseSpecView(v *Databas
 	}
 	res.Nodes = make([]*controlplaneviews.DatabaseNodeSpecView, len(v.Nodes))
 	for i, val := range v.Nodes {
-		res.Nodes[i] = unmarshalDatabaseNodeSpecResponseToControlplaneviewsDatabaseNodeSpecView(val)
+		res.Nodes[i] = unmarshalDatabaseNodeSpecResponseBodyToControlplaneviewsDatabaseNodeSpecView(val)
 	}
 	if v.DatabaseUsers != nil {
 		res.DatabaseUsers = make([]*controlplaneviews.DatabaseUserSpecView, len(v.DatabaseUsers))
 		for i, val := range v.DatabaseUsers {
-			res.DatabaseUsers[i] = unmarshalDatabaseUserSpecResponseToControlplaneviewsDatabaseUserSpecView(val)
+			res.DatabaseUsers[i] = unmarshalDatabaseUserSpecResponseBodyToControlplaneviewsDatabaseUserSpecView(val)
 		}
 	}
 	if v.BackupConfig != nil {
-		res.BackupConfig = unmarshalBackupConfigSpecResponseToControlplaneviewsBackupConfigSpecView(v.BackupConfig)
+		res.BackupConfig = unmarshalBackupConfigSpecResponseBodyToControlplaneviewsBackupConfigSpecView(v.BackupConfig)
 	}
 	if v.RestoreConfig != nil {
-		res.RestoreConfig = unmarshalRestoreConfigSpecResponseToControlplaneviewsRestoreConfigSpecView(v.RestoreConfig)
+		res.RestoreConfig = unmarshalRestoreConfigSpecResponseBodyToControlplaneviewsRestoreConfigSpecView(v.RestoreConfig)
 	}
 	if v.PostgresqlConf != nil {
 		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
@@ -2834,17 +2833,17 @@ func unmarshalDatabaseSpecResponseToControlplaneviewsDatabaseSpecView(v *Databas
 	if v.ExtraVolumes != nil {
 		res.ExtraVolumes = make([]*controlplaneviews.ExtraVolumesSpecView, len(v.ExtraVolumes))
 		for i, val := range v.ExtraVolumes {
-			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecResponseToControlplaneviewsExtraVolumesSpecView(val)
+			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecResponseBodyToControlplaneviewsExtraVolumesSpecView(val)
 		}
 	}
 
 	return res
 }
 
-// unmarshalDatabaseNodeSpecResponseToControlplaneviewsDatabaseNodeSpecView
+// unmarshalDatabaseNodeSpecResponseBodyToControlplaneviewsDatabaseNodeSpecView
 // builds a value of type *controlplaneviews.DatabaseNodeSpecView from a value
-// of type *DatabaseNodeSpecResponse.
-func unmarshalDatabaseNodeSpecResponseToControlplaneviewsDatabaseNodeSpecView(v *DatabaseNodeSpecResponse) *controlplaneviews.DatabaseNodeSpecView {
+// of type *DatabaseNodeSpecResponseBody.
+func unmarshalDatabaseNodeSpecResponseBodyToControlplaneviewsDatabaseNodeSpecView(v *DatabaseNodeSpecResponseBody) *controlplaneviews.DatabaseNodeSpecView {
 	res := &controlplaneviews.DatabaseNodeSpecView{
 		Name:            v.Name,
 		PostgresVersion: v.PostgresVersion,
@@ -2865,47 +2864,47 @@ func unmarshalDatabaseNodeSpecResponseToControlplaneviewsDatabaseNodeSpecView(v 
 		}
 	}
 	if v.BackupConfig != nil {
-		res.BackupConfig = unmarshalBackupConfigSpecResponseToControlplaneviewsBackupConfigSpecView(v.BackupConfig)
+		res.BackupConfig = unmarshalBackupConfigSpecResponseBodyToControlplaneviewsBackupConfigSpecView(v.BackupConfig)
 	}
 	if v.RestoreConfig != nil {
-		res.RestoreConfig = unmarshalRestoreConfigSpecResponseToControlplaneviewsRestoreConfigSpecView(v.RestoreConfig)
+		res.RestoreConfig = unmarshalRestoreConfigSpecResponseBodyToControlplaneviewsRestoreConfigSpecView(v.RestoreConfig)
 	}
 	if v.ExtraVolumes != nil {
 		res.ExtraVolumes = make([]*controlplaneviews.ExtraVolumesSpecView, len(v.ExtraVolumes))
 		for i, val := range v.ExtraVolumes {
-			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecResponseToControlplaneviewsExtraVolumesSpecView(val)
+			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecResponseBodyToControlplaneviewsExtraVolumesSpecView(val)
 		}
 	}
 
 	return res
 }
 
-// unmarshalBackupConfigSpecResponseToControlplaneviewsBackupConfigSpecView
+// unmarshalBackupConfigSpecResponseBodyToControlplaneviewsBackupConfigSpecView
 // builds a value of type *controlplaneviews.BackupConfigSpecView from a value
-// of type *BackupConfigSpecResponse.
-func unmarshalBackupConfigSpecResponseToControlplaneviewsBackupConfigSpecView(v *BackupConfigSpecResponse) *controlplaneviews.BackupConfigSpecView {
+// of type *BackupConfigSpecResponseBody.
+func unmarshalBackupConfigSpecResponseBodyToControlplaneviewsBackupConfigSpecView(v *BackupConfigSpecResponseBody) *controlplaneviews.BackupConfigSpecView {
 	if v == nil {
 		return nil
 	}
 	res := &controlplaneviews.BackupConfigSpecView{}
 	res.Repositories = make([]*controlplaneviews.BackupRepositorySpecView, len(v.Repositories))
 	for i, val := range v.Repositories {
-		res.Repositories[i] = unmarshalBackupRepositorySpecResponseToControlplaneviewsBackupRepositorySpecView(val)
+		res.Repositories[i] = unmarshalBackupRepositorySpecResponseBodyToControlplaneviewsBackupRepositorySpecView(val)
 	}
 	if v.Schedules != nil {
 		res.Schedules = make([]*controlplaneviews.BackupScheduleSpecView, len(v.Schedules))
 		for i, val := range v.Schedules {
-			res.Schedules[i] = unmarshalBackupScheduleSpecResponseToControlplaneviewsBackupScheduleSpecView(val)
+			res.Schedules[i] = unmarshalBackupScheduleSpecResponseBodyToControlplaneviewsBackupScheduleSpecView(val)
 		}
 	}
 
 	return res
 }
 
-// unmarshalBackupRepositorySpecResponseToControlplaneviewsBackupRepositorySpecView
+// unmarshalBackupRepositorySpecResponseBodyToControlplaneviewsBackupRepositorySpecView
 // builds a value of type *controlplaneviews.BackupRepositorySpecView from a
-// value of type *BackupRepositorySpecResponse.
-func unmarshalBackupRepositorySpecResponseToControlplaneviewsBackupRepositorySpecView(v *BackupRepositorySpecResponse) *controlplaneviews.BackupRepositorySpecView {
+// value of type *BackupRepositorySpecResponseBody.
+func unmarshalBackupRepositorySpecResponseBodyToControlplaneviewsBackupRepositorySpecView(v *BackupRepositorySpecResponseBody) *controlplaneviews.BackupRepositorySpecView {
 	res := &controlplaneviews.BackupRepositorySpecView{
 		Type:              v.Type,
 		S3Bucket:          v.S3Bucket,
@@ -2940,10 +2939,10 @@ func unmarshalBackupRepositorySpecResponseToControlplaneviewsBackupRepositorySpe
 	return res
 }
 
-// unmarshalBackupScheduleSpecResponseToControlplaneviewsBackupScheduleSpecView
+// unmarshalBackupScheduleSpecResponseBodyToControlplaneviewsBackupScheduleSpecView
 // builds a value of type *controlplaneviews.BackupScheduleSpecView from a
-// value of type *BackupScheduleSpecResponse.
-func unmarshalBackupScheduleSpecResponseToControlplaneviewsBackupScheduleSpecView(v *BackupScheduleSpecResponse) *controlplaneviews.BackupScheduleSpecView {
+// value of type *BackupScheduleSpecResponseBody.
+func unmarshalBackupScheduleSpecResponseBodyToControlplaneviewsBackupScheduleSpecView(v *BackupScheduleSpecResponseBody) *controlplaneviews.BackupScheduleSpecView {
 	if v == nil {
 		return nil
 	}
@@ -2956,10 +2955,10 @@ func unmarshalBackupScheduleSpecResponseToControlplaneviewsBackupScheduleSpecVie
 	return res
 }
 
-// unmarshalRestoreConfigSpecResponseToControlplaneviewsRestoreConfigSpecView
+// unmarshalRestoreConfigSpecResponseBodyToControlplaneviewsRestoreConfigSpecView
 // builds a value of type *controlplaneviews.RestoreConfigSpecView from a value
-// of type *RestoreConfigSpecResponse.
-func unmarshalRestoreConfigSpecResponseToControlplaneviewsRestoreConfigSpecView(v *RestoreConfigSpecResponse) *controlplaneviews.RestoreConfigSpecView {
+// of type *RestoreConfigSpecResponseBody.
+func unmarshalRestoreConfigSpecResponseBodyToControlplaneviewsRestoreConfigSpecView(v *RestoreConfigSpecResponseBody) *controlplaneviews.RestoreConfigSpecView {
 	if v == nil {
 		return nil
 	}
@@ -2969,7 +2968,7 @@ func unmarshalRestoreConfigSpecResponseToControlplaneviewsRestoreConfigSpecView(
 	}
 	sourceDatabaseID := controlplaneviews.IdentifierView(*v.SourceDatabaseID)
 	res.SourceDatabaseID = &sourceDatabaseID
-	res.Repository = unmarshalRestoreRepositorySpecResponseToControlplaneviewsRestoreRepositorySpecView(v.Repository)
+	res.Repository = unmarshalRestoreRepositorySpecResponseBodyToControlplaneviewsRestoreRepositorySpecView(v.Repository)
 	if v.RestoreOptions != nil {
 		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
 		for key, val := range v.RestoreOptions {
@@ -2982,10 +2981,10 @@ func unmarshalRestoreConfigSpecResponseToControlplaneviewsRestoreConfigSpecView(
 	return res
 }
 
-// unmarshalRestoreRepositorySpecResponseToControlplaneviewsRestoreRepositorySpecView
+// unmarshalRestoreRepositorySpecResponseBodyToControlplaneviewsRestoreRepositorySpecView
 // builds a value of type *controlplaneviews.RestoreRepositorySpecView from a
-// value of type *RestoreRepositorySpecResponse.
-func unmarshalRestoreRepositorySpecResponseToControlplaneviewsRestoreRepositorySpecView(v *RestoreRepositorySpecResponse) *controlplaneviews.RestoreRepositorySpecView {
+// value of type *RestoreRepositorySpecResponseBody.
+func unmarshalRestoreRepositorySpecResponseBodyToControlplaneviewsRestoreRepositorySpecView(v *RestoreRepositorySpecResponseBody) *controlplaneviews.RestoreRepositorySpecView {
 	res := &controlplaneviews.RestoreRepositorySpecView{
 		Type:           v.Type,
 		S3Bucket:       v.S3Bucket,
@@ -3018,10 +3017,10 @@ func unmarshalRestoreRepositorySpecResponseToControlplaneviewsRestoreRepositoryS
 	return res
 }
 
-// unmarshalExtraVolumesSpecResponseToControlplaneviewsExtraVolumesSpecView
+// unmarshalExtraVolumesSpecResponseBodyToControlplaneviewsExtraVolumesSpecView
 // builds a value of type *controlplaneviews.ExtraVolumesSpecView from a value
-// of type *ExtraVolumesSpecResponse.
-func unmarshalExtraVolumesSpecResponseToControlplaneviewsExtraVolumesSpecView(v *ExtraVolumesSpecResponse) *controlplaneviews.ExtraVolumesSpecView {
+// of type *ExtraVolumesSpecResponseBody.
+func unmarshalExtraVolumesSpecResponseBodyToControlplaneviewsExtraVolumesSpecView(v *ExtraVolumesSpecResponseBody) *controlplaneviews.ExtraVolumesSpecView {
 	if v == nil {
 		return nil
 	}
@@ -3033,10 +3032,10 @@ func unmarshalExtraVolumesSpecResponseToControlplaneviewsExtraVolumesSpecView(v 
 	return res
 }
 
-// unmarshalDatabaseUserSpecResponseToControlplaneviewsDatabaseUserSpecView
+// unmarshalDatabaseUserSpecResponseBodyToControlplaneviewsDatabaseUserSpecView
 // builds a value of type *controlplaneviews.DatabaseUserSpecView from a value
-// of type *DatabaseUserSpecResponse.
-func unmarshalDatabaseUserSpecResponseToControlplaneviewsDatabaseUserSpecView(v *DatabaseUserSpecResponse) *controlplaneviews.DatabaseUserSpecView {
+// of type *DatabaseUserSpecResponseBody.
+func unmarshalDatabaseUserSpecResponseBodyToControlplaneviewsDatabaseUserSpecView(v *DatabaseUserSpecResponseBody) *controlplaneviews.DatabaseUserSpecView {
 	if v == nil {
 		return nil
 	}
@@ -4033,376 +4032,6 @@ func unmarshalDatabaseUserSpecResponseBodyToControlplaneDatabaseUserSpec(v *Data
 	return res
 }
 
-// unmarshalInstanceResponseBodyToControlplaneviewsInstanceView builds a value
-// of type *controlplaneviews.InstanceView from a value of type
-// *InstanceResponseBody.
-func unmarshalInstanceResponseBodyToControlplaneviewsInstanceView(v *InstanceResponseBody) *controlplaneviews.InstanceView {
-	if v == nil {
-		return nil
-	}
-	res := &controlplaneviews.InstanceView{
-		ID:              v.ID,
-		HostID:          v.HostID,
-		NodeName:        v.NodeName,
-		CreatedAt:       v.CreatedAt,
-		UpdatedAt:       v.UpdatedAt,
-		StatusUpdatedAt: v.StatusUpdatedAt,
-		State:           v.State,
-		Error:           v.Error,
-	}
-	if v.ConnectionInfo != nil {
-		res.ConnectionInfo = unmarshalInstanceConnectionInfoResponseBodyToControlplaneviewsInstanceConnectionInfoView(v.ConnectionInfo)
-	}
-	if v.Postgres != nil {
-		res.Postgres = unmarshalInstancePostgresStatusResponseBodyToControlplaneviewsInstancePostgresStatusView(v.Postgres)
-	}
-	if v.Spock != nil {
-		res.Spock = unmarshalInstanceSpockStatusResponseBodyToControlplaneviewsInstanceSpockStatusView(v.Spock)
-	}
-
-	return res
-}
-
-// unmarshalInstanceConnectionInfoResponseBodyToControlplaneviewsInstanceConnectionInfoView
-// builds a value of type *controlplaneviews.InstanceConnectionInfoView from a
-// value of type *InstanceConnectionInfoResponseBody.
-func unmarshalInstanceConnectionInfoResponseBodyToControlplaneviewsInstanceConnectionInfoView(v *InstanceConnectionInfoResponseBody) *controlplaneviews.InstanceConnectionInfoView {
-	if v == nil {
-		return nil
-	}
-	res := &controlplaneviews.InstanceConnectionInfoView{
-		Hostname:    v.Hostname,
-		Ipv4Address: v.Ipv4Address,
-		Port:        v.Port,
-	}
-
-	return res
-}
-
-// unmarshalInstancePostgresStatusResponseBodyToControlplaneviewsInstancePostgresStatusView
-// builds a value of type *controlplaneviews.InstancePostgresStatusView from a
-// value of type *InstancePostgresStatusResponseBody.
-func unmarshalInstancePostgresStatusResponseBodyToControlplaneviewsInstancePostgresStatusView(v *InstancePostgresStatusResponseBody) *controlplaneviews.InstancePostgresStatusView {
-	if v == nil {
-		return nil
-	}
-	res := &controlplaneviews.InstancePostgresStatusView{
-		Version:        v.Version,
-		PatroniState:   v.PatroniState,
-		Role:           v.Role,
-		PendingRestart: v.PendingRestart,
-		PatroniPaused:  v.PatroniPaused,
-	}
-
-	return res
-}
-
-// unmarshalInstanceSpockStatusResponseBodyToControlplaneviewsInstanceSpockStatusView
-// builds a value of type *controlplaneviews.InstanceSpockStatusView from a
-// value of type *InstanceSpockStatusResponseBody.
-func unmarshalInstanceSpockStatusResponseBodyToControlplaneviewsInstanceSpockStatusView(v *InstanceSpockStatusResponseBody) *controlplaneviews.InstanceSpockStatusView {
-	if v == nil {
-		return nil
-	}
-	res := &controlplaneviews.InstanceSpockStatusView{
-		ReadOnly: v.ReadOnly,
-		Version:  v.Version,
-	}
-	if v.Subscriptions != nil {
-		res.Subscriptions = make([]*controlplaneviews.InstanceSubscriptionView, len(v.Subscriptions))
-		for i, val := range v.Subscriptions {
-			res.Subscriptions[i] = unmarshalInstanceSubscriptionResponseBodyToControlplaneviewsInstanceSubscriptionView(val)
-		}
-	}
-
-	return res
-}
-
-// unmarshalInstanceSubscriptionResponseBodyToControlplaneviewsInstanceSubscriptionView
-// builds a value of type *controlplaneviews.InstanceSubscriptionView from a
-// value of type *InstanceSubscriptionResponseBody.
-func unmarshalInstanceSubscriptionResponseBodyToControlplaneviewsInstanceSubscriptionView(v *InstanceSubscriptionResponseBody) *controlplaneviews.InstanceSubscriptionView {
-	if v == nil {
-		return nil
-	}
-	res := &controlplaneviews.InstanceSubscriptionView{
-		ProviderNode: v.ProviderNode,
-		Name:         v.Name,
-		Status:       v.Status,
-	}
-
-	return res
-}
-
-// unmarshalDatabaseSpecResponseBodyToControlplaneviewsDatabaseSpecView builds
-// a value of type *controlplaneviews.DatabaseSpecView from a value of type
-// *DatabaseSpecResponseBody.
-func unmarshalDatabaseSpecResponseBodyToControlplaneviewsDatabaseSpecView(v *DatabaseSpecResponseBody) *controlplaneviews.DatabaseSpecView {
-	if v == nil {
-		return nil
-	}
-	res := &controlplaneviews.DatabaseSpecView{
-		DatabaseName:    v.DatabaseName,
-		PostgresVersion: v.PostgresVersion,
-		SpockVersion:    v.SpockVersion,
-		Port:            v.Port,
-		Cpus:            v.Cpus,
-		Memory:          v.Memory,
-	}
-	res.Nodes = make([]*controlplaneviews.DatabaseNodeSpecView, len(v.Nodes))
-	for i, val := range v.Nodes {
-		res.Nodes[i] = unmarshalDatabaseNodeSpecResponseBodyToControlplaneviewsDatabaseNodeSpecView(val)
-	}
-	if v.DatabaseUsers != nil {
-		res.DatabaseUsers = make([]*controlplaneviews.DatabaseUserSpecView, len(v.DatabaseUsers))
-		for i, val := range v.DatabaseUsers {
-			res.DatabaseUsers[i] = unmarshalDatabaseUserSpecResponseBodyToControlplaneviewsDatabaseUserSpecView(val)
-		}
-	}
-	if v.BackupConfig != nil {
-		res.BackupConfig = unmarshalBackupConfigSpecResponseBodyToControlplaneviewsBackupConfigSpecView(v.BackupConfig)
-	}
-	if v.RestoreConfig != nil {
-		res.RestoreConfig = unmarshalRestoreConfigSpecResponseBodyToControlplaneviewsRestoreConfigSpecView(v.RestoreConfig)
-	}
-	if v.PostgresqlConf != nil {
-		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
-		for key, val := range v.PostgresqlConf {
-			tk := key
-			tv := val
-			res.PostgresqlConf[tk] = tv
-		}
-	}
-	if v.ExtraVolumes != nil {
-		res.ExtraVolumes = make([]*controlplaneviews.ExtraVolumesSpecView, len(v.ExtraVolumes))
-		for i, val := range v.ExtraVolumes {
-			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecResponseBodyToControlplaneviewsExtraVolumesSpecView(val)
-		}
-	}
-
-	return res
-}
-
-// unmarshalDatabaseNodeSpecResponseBodyToControlplaneviewsDatabaseNodeSpecView
-// builds a value of type *controlplaneviews.DatabaseNodeSpecView from a value
-// of type *DatabaseNodeSpecResponseBody.
-func unmarshalDatabaseNodeSpecResponseBodyToControlplaneviewsDatabaseNodeSpecView(v *DatabaseNodeSpecResponseBody) *controlplaneviews.DatabaseNodeSpecView {
-	res := &controlplaneviews.DatabaseNodeSpecView{
-		Name:            v.Name,
-		PostgresVersion: v.PostgresVersion,
-		Port:            v.Port,
-		Cpus:            v.Cpus,
-		Memory:          v.Memory,
-	}
-	res.HostIds = make([]controlplaneviews.IdentifierView, len(v.HostIds))
-	for i, val := range v.HostIds {
-		res.HostIds[i] = controlplaneviews.IdentifierView(val)
-	}
-	if v.PostgresqlConf != nil {
-		res.PostgresqlConf = make(map[string]any, len(v.PostgresqlConf))
-		for key, val := range v.PostgresqlConf {
-			tk := key
-			tv := val
-			res.PostgresqlConf[tk] = tv
-		}
-	}
-	if v.BackupConfig != nil {
-		res.BackupConfig = unmarshalBackupConfigSpecResponseBodyToControlplaneviewsBackupConfigSpecView(v.BackupConfig)
-	}
-	if v.RestoreConfig != nil {
-		res.RestoreConfig = unmarshalRestoreConfigSpecResponseBodyToControlplaneviewsRestoreConfigSpecView(v.RestoreConfig)
-	}
-	if v.ExtraVolumes != nil {
-		res.ExtraVolumes = make([]*controlplaneviews.ExtraVolumesSpecView, len(v.ExtraVolumes))
-		for i, val := range v.ExtraVolumes {
-			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecResponseBodyToControlplaneviewsExtraVolumesSpecView(val)
-		}
-	}
-
-	return res
-}
-
-// unmarshalBackupConfigSpecResponseBodyToControlplaneviewsBackupConfigSpecView
-// builds a value of type *controlplaneviews.BackupConfigSpecView from a value
-// of type *BackupConfigSpecResponseBody.
-func unmarshalBackupConfigSpecResponseBodyToControlplaneviewsBackupConfigSpecView(v *BackupConfigSpecResponseBody) *controlplaneviews.BackupConfigSpecView {
-	if v == nil {
-		return nil
-	}
-	res := &controlplaneviews.BackupConfigSpecView{}
-	res.Repositories = make([]*controlplaneviews.BackupRepositorySpecView, len(v.Repositories))
-	for i, val := range v.Repositories {
-		res.Repositories[i] = unmarshalBackupRepositorySpecResponseBodyToControlplaneviewsBackupRepositorySpecView(val)
-	}
-	if v.Schedules != nil {
-		res.Schedules = make([]*controlplaneviews.BackupScheduleSpecView, len(v.Schedules))
-		for i, val := range v.Schedules {
-			res.Schedules[i] = unmarshalBackupScheduleSpecResponseBodyToControlplaneviewsBackupScheduleSpecView(val)
-		}
-	}
-
-	return res
-}
-
-// unmarshalBackupRepositorySpecResponseBodyToControlplaneviewsBackupRepositorySpecView
-// builds a value of type *controlplaneviews.BackupRepositorySpecView from a
-// value of type *BackupRepositorySpecResponseBody.
-func unmarshalBackupRepositorySpecResponseBodyToControlplaneviewsBackupRepositorySpecView(v *BackupRepositorySpecResponseBody) *controlplaneviews.BackupRepositorySpecView {
-	res := &controlplaneviews.BackupRepositorySpecView{
-		Type:              v.Type,
-		S3Bucket:          v.S3Bucket,
-		S3Region:          v.S3Region,
-		S3Endpoint:        v.S3Endpoint,
-		S3Key:             v.S3Key,
-		S3KeySecret:       v.S3KeySecret,
-		GcsBucket:         v.GcsBucket,
-		GcsEndpoint:       v.GcsEndpoint,
-		GcsKey:            v.GcsKey,
-		AzureAccount:      v.AzureAccount,
-		AzureContainer:    v.AzureContainer,
-		AzureEndpoint:     v.AzureEndpoint,
-		AzureKey:          v.AzureKey,
-		RetentionFull:     v.RetentionFull,
-		RetentionFullType: v.RetentionFullType,
-		BasePath:          v.BasePath,
-	}
-	if v.ID != nil {
-		id := controlplaneviews.IdentifierView(*v.ID)
-		res.ID = &id
-	}
-	if v.CustomOptions != nil {
-		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
-		for key, val := range v.CustomOptions {
-			tk := key
-			tv := val
-			res.CustomOptions[tk] = tv
-		}
-	}
-
-	return res
-}
-
-// unmarshalBackupScheduleSpecResponseBodyToControlplaneviewsBackupScheduleSpecView
-// builds a value of type *controlplaneviews.BackupScheduleSpecView from a
-// value of type *BackupScheduleSpecResponseBody.
-func unmarshalBackupScheduleSpecResponseBodyToControlplaneviewsBackupScheduleSpecView(v *BackupScheduleSpecResponseBody) *controlplaneviews.BackupScheduleSpecView {
-	if v == nil {
-		return nil
-	}
-	res := &controlplaneviews.BackupScheduleSpecView{
-		ID:             v.ID,
-		Type:           v.Type,
-		CronExpression: v.CronExpression,
-	}
-
-	return res
-}
-
-// unmarshalRestoreConfigSpecResponseBodyToControlplaneviewsRestoreConfigSpecView
-// builds a value of type *controlplaneviews.RestoreConfigSpecView from a value
-// of type *RestoreConfigSpecResponseBody.
-func unmarshalRestoreConfigSpecResponseBodyToControlplaneviewsRestoreConfigSpecView(v *RestoreConfigSpecResponseBody) *controlplaneviews.RestoreConfigSpecView {
-	if v == nil {
-		return nil
-	}
-	res := &controlplaneviews.RestoreConfigSpecView{
-		SourceNodeName:     v.SourceNodeName,
-		SourceDatabaseName: v.SourceDatabaseName,
-	}
-	sourceDatabaseID := controlplaneviews.IdentifierView(*v.SourceDatabaseID)
-	res.SourceDatabaseID = &sourceDatabaseID
-	res.Repository = unmarshalRestoreRepositorySpecResponseBodyToControlplaneviewsRestoreRepositorySpecView(v.Repository)
-	if v.RestoreOptions != nil {
-		res.RestoreOptions = make(map[string]string, len(v.RestoreOptions))
-		for key, val := range v.RestoreOptions {
-			tk := key
-			tv := val
-			res.RestoreOptions[tk] = tv
-		}
-	}
-
-	return res
-}
-
-// unmarshalRestoreRepositorySpecResponseBodyToControlplaneviewsRestoreRepositorySpecView
-// builds a value of type *controlplaneviews.RestoreRepositorySpecView from a
-// value of type *RestoreRepositorySpecResponseBody.
-func unmarshalRestoreRepositorySpecResponseBodyToControlplaneviewsRestoreRepositorySpecView(v *RestoreRepositorySpecResponseBody) *controlplaneviews.RestoreRepositorySpecView {
-	res := &controlplaneviews.RestoreRepositorySpecView{
-		Type:           v.Type,
-		S3Bucket:       v.S3Bucket,
-		S3Region:       v.S3Region,
-		S3Endpoint:     v.S3Endpoint,
-		S3Key:          v.S3Key,
-		S3KeySecret:    v.S3KeySecret,
-		GcsBucket:      v.GcsBucket,
-		GcsEndpoint:    v.GcsEndpoint,
-		GcsKey:         v.GcsKey,
-		AzureAccount:   v.AzureAccount,
-		AzureContainer: v.AzureContainer,
-		AzureEndpoint:  v.AzureEndpoint,
-		AzureKey:       v.AzureKey,
-		BasePath:       v.BasePath,
-	}
-	if v.ID != nil {
-		id := controlplaneviews.IdentifierView(*v.ID)
-		res.ID = &id
-	}
-	if v.CustomOptions != nil {
-		res.CustomOptions = make(map[string]string, len(v.CustomOptions))
-		for key, val := range v.CustomOptions {
-			tk := key
-			tv := val
-			res.CustomOptions[tk] = tv
-		}
-	}
-
-	return res
-}
-
-// unmarshalExtraVolumesSpecResponseBodyToControlplaneviewsExtraVolumesSpecView
-// builds a value of type *controlplaneviews.ExtraVolumesSpecView from a value
-// of type *ExtraVolumesSpecResponseBody.
-func unmarshalExtraVolumesSpecResponseBodyToControlplaneviewsExtraVolumesSpecView(v *ExtraVolumesSpecResponseBody) *controlplaneviews.ExtraVolumesSpecView {
-	if v == nil {
-		return nil
-	}
-	res := &controlplaneviews.ExtraVolumesSpecView{
-		HostPath:        v.HostPath,
-		DestinationPath: v.DestinationPath,
-	}
-
-	return res
-}
-
-// unmarshalDatabaseUserSpecResponseBodyToControlplaneviewsDatabaseUserSpecView
-// builds a value of type *controlplaneviews.DatabaseUserSpecView from a value
-// of type *DatabaseUserSpecResponseBody.
-func unmarshalDatabaseUserSpecResponseBodyToControlplaneviewsDatabaseUserSpecView(v *DatabaseUserSpecResponseBody) *controlplaneviews.DatabaseUserSpecView {
-	if v == nil {
-		return nil
-	}
-	res := &controlplaneviews.DatabaseUserSpecView{
-		Username: v.Username,
-		Password: v.Password,
-		DbOwner:  v.DbOwner,
-	}
-	if v.Attributes != nil {
-		res.Attributes = make([]string, len(v.Attributes))
-		for i, val := range v.Attributes {
-			res.Attributes[i] = val
-		}
-	}
-	if v.Roles != nil {
-		res.Roles = make([]string, len(v.Roles))
-		for i, val := range v.Roles {
-			res.Roles[i] = val
-		}
-	}
-
-	return res
-}
-
 // marshalControlplaneDatabaseSpecToDatabaseSpecRequestBodyRequestBody builds a
 // value of type *DatabaseSpecRequestBodyRequestBody from a value of type
 // *controlplane.DatabaseSpec.
@@ -4956,26 +4585,6 @@ func marshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSpec
 		for i, val := range v.Roles {
 			res.Roles[i] = val
 		}
-	}
-
-	return res
-}
-
-// unmarshalTaskResponseToControlplaneTask builds a value of type
-// *controlplane.Task from a value of type *TaskResponse.
-func unmarshalTaskResponseToControlplaneTask(v *TaskResponse) *controlplane.Task {
-	res := &controlplane.Task{
-		ParentID:    v.ParentID,
-		DatabaseID:  *v.DatabaseID,
-		NodeName:    v.NodeName,
-		InstanceID:  v.InstanceID,
-		HostID:      v.HostID,
-		TaskID:      *v.TaskID,
-		CreatedAt:   *v.CreatedAt,
-		CompletedAt: v.CompletedAt,
-		Type:        *v.Type,
-		Status:      *v.Status,
-		Error:       v.Error,
 	}
 
 	return res

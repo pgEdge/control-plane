@@ -96,8 +96,8 @@ func ParseEndpoint(
 		controlPlaneGetDatabaseTaskTaskIDFlag     = controlPlaneGetDatabaseTaskFlags.String("task-id", "REQUIRED", "ID of the task to get.")
 
 		controlPlaneGetDatabaseTaskLogFlags            = flag.NewFlagSet("get-database-task-log", flag.ExitOnError)
-		controlPlaneGetDatabaseTaskLogDatabaseIDFlag   = controlPlaneGetDatabaseTaskLogFlags.String("database-id", "REQUIRED", "ID of the database to get task log for.")
-		controlPlaneGetDatabaseTaskLogTaskIDFlag       = controlPlaneGetDatabaseTaskLogFlags.String("task-id", "REQUIRED", "ID of the task to get log for.")
+		controlPlaneGetDatabaseTaskLogDatabaseIDFlag   = controlPlaneGetDatabaseTaskLogFlags.String("database-id", "REQUIRED", "ID of the database to get the task log for.")
+		controlPlaneGetDatabaseTaskLogTaskIDFlag       = controlPlaneGetDatabaseTaskLogFlags.String("task-id", "REQUIRED", "ID of the task to get the log for.")
 		controlPlaneGetDatabaseTaskLogAfterEntryIDFlag = controlPlaneGetDatabaseTaskLogFlags.String("after-entry-id", "", "")
 		controlPlaneGetDatabaseTaskLogLimitFlag        = controlPlaneGetDatabaseTaskLogFlags.String("limit", "", "")
 
@@ -330,7 +330,7 @@ COMMAND:
     list-database-tasks: Lists all tasks for a database.
     get-database-task: Returns information about a particular task.
     get-database-task-log: Returns the log of a particular task for a database.
-    restore-database: Perform an in-place restore one or more nodes using the given restore configuration.
+    restore-database: Perform an in-place restore of one or more nodes using the given restore configuration.
     get-version: Returns version information for this Control Plane server.
 
 Additional help:
@@ -379,7 +379,7 @@ Internal endpoint for other cluster members seeking to join this cluster.
 
 Example:
     %[1]s control-plane get-join-options --body '{
-      "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
+      "host_id": "host-1",
       "hostname": "ip-10-1-0-113.ec2.internal",
       "ipv4_address": "10.1.0.113",
       "token": "PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd"
@@ -414,7 +414,7 @@ Returns information about a particular host in the cluster.
     -host-id STRING: ID of the host to get.
 
 Example:
-    %[1]s control-plane get-host --host-id "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+    %[1]s control-plane get-host --host-id "host-1"
 `, os.Args[0])
 }
 
@@ -425,7 +425,7 @@ Removes a host from the cluster.
     -host-id STRING: ID of the host to remove.
 
 Example:
-    %[1]s control-plane remove-host --host-id "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+    %[1]s control-plane remove-host --host-id "host-1"
 `, os.Args[0])
 }
 
@@ -447,423 +447,45 @@ Creates a new database in the cluster.
 
 Example:
     %[1]s control-plane create-database --body '{
-      "id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
+      "id": "storefront",
       "spec": {
-         "backup_config": {
-            "repositories": [
-               {
-                  "azure_account": "pgedge-backups",
-                  "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "azure_endpoint": "blob.core.usgovcloudapi.net",
-                  "azure_key": "YXpLZXk=",
-                  "base_path": "/backups",
-                  "custom_options": {
-                     "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                     "storage-upload-chunk-size": "5MiB"
-                  },
-                  "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "gcs_endpoint": "localhost",
-                  "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                  "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                  "retention_full": 2,
-                  "retention_full_type": "count",
-                  "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                  "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                  "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                  "s3_region": "us-east-1",
-                  "type": "s3"
-               },
-               {
-                  "azure_account": "pgedge-backups",
-                  "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "azure_endpoint": "blob.core.usgovcloudapi.net",
-                  "azure_key": "YXpLZXk=",
-                  "base_path": "/backups",
-                  "custom_options": {
-                     "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                     "storage-upload-chunk-size": "5MiB"
-                  },
-                  "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "gcs_endpoint": "localhost",
-                  "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                  "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                  "retention_full": 2,
-                  "retention_full_type": "count",
-                  "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                  "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                  "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                  "s3_region": "us-east-1",
-                  "type": "s3"
-               }
-            ],
-            "schedules": [
-               {
-                  "cron_expression": "0 6 * * ?",
-                  "id": "daily-full-backup",
-                  "type": "full"
-               },
-               {
-                  "cron_expression": "0 6 * * ?",
-                  "id": "daily-full-backup",
-                  "type": "full"
-               },
-               {
-                  "cron_expression": "0 6 * * ?",
-                  "id": "daily-full-backup",
-                  "type": "full"
-               }
-            ]
-         },
-         "cpus": "500m",
-         "database_name": "northwind",
+         "database_name": "storefront",
          "database_users": [
             {
                "attributes": [
                   "LOGIN",
-                  "CREATEDB",
-                  "CREATEROLE"
+                  "SUPERUSER"
                ],
                "db_owner": true,
-               "password": "secret",
-               "roles": [
-                  "pgedge_superuser"
-               ],
-               "username": "admin"
-            },
-            {
-               "attributes": [
-                  "LOGIN",
-                  "CREATEDB",
-                  "CREATEROLE"
-               ],
-               "db_owner": true,
-               "password": "secret",
-               "roles": [
-                  "pgedge_superuser"
-               ],
-               "username": "admin"
-            },
-            {
-               "attributes": [
-                  "LOGIN",
-                  "CREATEDB",
-                  "CREATEROLE"
-               ],
-               "db_owner": true,
-               "password": "secret",
-               "roles": [
-                  "pgedge_superuser"
-               ],
+               "password": "password",
                "username": "admin"
             }
          ],
-         "extra_volumes": [
-            {
-               "destination_path": "/backups/container",
-               "host_path": "/Users/user/backups/host"
-            },
-            {
-               "destination_path": "/backups/container",
-               "host_path": "/Users/user/backups/host"
-            },
-            {
-               "destination_path": "/backups/container",
-               "host_path": "/Users/user/backups/host"
-            }
-         ],
-         "memory": "500M",
          "nodes": [
             {
-               "backup_config": {
-                  "repositories": [
-                     {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
-                        "type": "s3"
-                     },
-                     {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
-                        "type": "s3"
-                     }
-                  ],
-                  "schedules": [
-                     {
-                        "cron_expression": "0 6 * * ?",
-                        "id": "daily-full-backup",
-                        "type": "full"
-                     },
-                     {
-                        "cron_expression": "0 6 * * ?",
-                        "id": "daily-full-backup",
-                        "type": "full"
-                     },
-                     {
-                        "cron_expression": "0 6 * * ?",
-                        "id": "daily-full-backup",
-                        "type": "full"
-                     }
-                  ]
-               },
-               "cpus": "500m",
-               "extra_volumes": [
-                  {
-                     "destination_path": "/backups/container",
-                     "host_path": "/Users/user/backups/host"
-                  },
-                  {
-                     "destination_path": "/backups/container",
-                     "host_path": "/Users/user/backups/host"
-                  },
-                  {
-                     "destination_path": "/backups/container",
-                     "host_path": "/Users/user/backups/host"
-                  }
-               ],
                "host_ids": [
-                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  "us-east-1"
                ],
-               "memory": "500M",
-               "name": "n1",
-               "port": 5432,
-               "postgres_version": "17",
-               "postgresql_conf": {
-                  "max_connections": 1000
-               },
-               "restore_config": {
-                  "repository": {
-                     "azure_account": "pgedge-backups",
-                     "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "azure_endpoint": "blob.core.usgovcloudapi.net",
-                     "azure_key": "YXpLZXk=",
-                     "base_path": "/backups",
-                     "custom_options": {
-                        "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
-                     },
-                     "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "gcs_endpoint": "localhost",
-                     "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                     "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                     "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                     "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                     "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                     "s3_region": "us-east-1",
-                     "type": "s3"
-                  },
-                  "restore_options": {
-                     "set": "20250505-153628F",
-                     "target": "123456",
-                     "type": "xid"
-                  },
-                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-                  "source_database_name": "northwind",
-                  "source_node_name": "n1"
-               }
+               "name": "n1"
             },
             {
-               "backup_config": {
-                  "repositories": [
-                     {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
-                        "type": "s3"
-                     },
-                     {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
-                        "type": "s3"
-                     }
-                  ],
-                  "schedules": [
-                     {
-                        "cron_expression": "0 6 * * ?",
-                        "id": "daily-full-backup",
-                        "type": "full"
-                     },
-                     {
-                        "cron_expression": "0 6 * * ?",
-                        "id": "daily-full-backup",
-                        "type": "full"
-                     },
-                     {
-                        "cron_expression": "0 6 * * ?",
-                        "id": "daily-full-backup",
-                        "type": "full"
-                     }
-                  ]
-               },
-               "cpus": "500m",
-               "extra_volumes": [
-                  {
-                     "destination_path": "/backups/container",
-                     "host_path": "/Users/user/backups/host"
-                  },
-                  {
-                     "destination_path": "/backups/container",
-                     "host_path": "/Users/user/backups/host"
-                  },
-                  {
-                     "destination_path": "/backups/container",
-                     "host_path": "/Users/user/backups/host"
-                  }
-               ],
                "host_ids": [
-                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  "ap-south-1"
                ],
-               "memory": "500M",
-               "name": "n1",
-               "port": 5432,
-               "postgres_version": "17",
-               "postgresql_conf": {
-                  "max_connections": 1000
-               },
-               "restore_config": {
-                  "repository": {
-                     "azure_account": "pgedge-backups",
-                     "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "azure_endpoint": "blob.core.usgovcloudapi.net",
-                     "azure_key": "YXpLZXk=",
-                     "base_path": "/backups",
-                     "custom_options": {
-                        "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
-                     },
-                     "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "gcs_endpoint": "localhost",
-                     "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                     "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                     "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                     "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                     "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                     "s3_region": "us-east-1",
-                     "type": "s3"
-                  },
-                  "restore_options": {
-                     "set": "20250505-153628F",
-                     "target": "123456",
-                     "type": "xid"
-                  },
-                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-                  "source_database_name": "northwind",
-                  "source_node_name": "n1"
-               }
+               "name": "n2"
+            },
+            {
+               "host_ids": [
+                  "eu-central-1"
+               ],
+               "name": "n3"
             }
          ],
          "port": 5432,
-         "postgres_version": "17",
          "postgresql_conf": {
-            "max_connections": 1000
-         },
-         "restore_config": {
-            "repository": {
-               "azure_account": "pgedge-backups",
-               "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-               "azure_endpoint": "blob.core.usgovcloudapi.net",
-               "azure_key": "YXpLZXk=",
-               "base_path": "/backups",
-               "custom_options": {
-                  "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
-               },
-               "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-               "gcs_endpoint": "localhost",
-               "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-               "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-               "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-               "s3_endpoint": "s3.us-east-1.amazonaws.com",
-               "s3_key": "AKIAIOSFODNN7EXAMPLE",
-               "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-               "s3_region": "us-east-1",
-               "type": "s3"
-            },
-            "restore_options": {
-               "set": "20250505-153628F",
-               "target": "123456",
-               "type": "xid"
-            },
-            "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-            "source_database_name": "northwind",
-            "source_node_name": "n1"
-         },
-         "spock_version": "4"
-      },
-      "tenant_id": "8210ec10-2dca-406c-ac4a-0661d2189954"
+            "max_connections": 5000
+         }
+      }
    }'
 `, os.Args[0])
 }
@@ -875,7 +497,7 @@ Returns information about a particular database in the cluster.
     -database-id STRING: ID of the database to get.
 
 Example:
-    %[1]s control-plane get-database --database-id "02f1a7db-fca8-4521-b57a-2a375c1ced51"
+    %[1]s control-plane get-database --database-id "my-app"
 `, os.Args[0])
 }
 
@@ -890,639 +512,73 @@ Updates a database with the given specification.
 Example:
     %[1]s control-plane update-database --body '{
       "spec": {
-         "backup_config": {
-            "repositories": [
-               {
-                  "azure_account": "pgedge-backups",
-                  "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "azure_endpoint": "blob.core.usgovcloudapi.net",
-                  "azure_key": "YXpLZXk=",
-                  "base_path": "/backups",
-                  "custom_options": {
-                     "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                     "storage-upload-chunk-size": "5MiB"
-                  },
-                  "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "gcs_endpoint": "localhost",
-                  "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                  "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                  "retention_full": 2,
-                  "retention_full_type": "count",
-                  "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                  "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                  "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                  "s3_region": "us-east-1",
-                  "type": "s3"
-               },
-               {
-                  "azure_account": "pgedge-backups",
-                  "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "azure_endpoint": "blob.core.usgovcloudapi.net",
-                  "azure_key": "YXpLZXk=",
-                  "base_path": "/backups",
-                  "custom_options": {
-                     "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                     "storage-upload-chunk-size": "5MiB"
-                  },
-                  "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "gcs_endpoint": "localhost",
-                  "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                  "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                  "retention_full": 2,
-                  "retention_full_type": "count",
-                  "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                  "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                  "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                  "s3_region": "us-east-1",
-                  "type": "s3"
-               },
-               {
-                  "azure_account": "pgedge-backups",
-                  "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "azure_endpoint": "blob.core.usgovcloudapi.net",
-                  "azure_key": "YXpLZXk=",
-                  "base_path": "/backups",
-                  "custom_options": {
-                     "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                     "storage-upload-chunk-size": "5MiB"
-                  },
-                  "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "gcs_endpoint": "localhost",
-                  "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                  "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                  "retention_full": 2,
-                  "retention_full_type": "count",
-                  "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                  "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                  "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                  "s3_region": "us-east-1",
-                  "type": "s3"
-               }
-            ],
-            "schedules": [
-               {
-                  "cron_expression": "0 6 * * ?",
-                  "id": "daily-full-backup",
-                  "type": "full"
-               },
-               {
-                  "cron_expression": "0 6 * * ?",
-                  "id": "daily-full-backup",
-                  "type": "full"
-               },
-               {
-                  "cron_expression": "0 6 * * ?",
-                  "id": "daily-full-backup",
-                  "type": "full"
-               }
-            ]
-         },
-         "cpus": "500m",
-         "database_name": "northwind",
+         "database_name": "storefront",
          "database_users": [
             {
                "attributes": [
                   "LOGIN",
-                  "CREATEDB",
-                  "CREATEROLE"
+                  "SUPERUSER"
                ],
-               "db_owner": false,
-               "password": "secret",
-               "roles": [
-                  "pgedge_superuser"
-               ],
-               "username": "admin"
-            },
-            {
-               "attributes": [
-                  "LOGIN",
-                  "CREATEDB",
-                  "CREATEROLE"
-               ],
-               "db_owner": false,
-               "password": "secret",
-               "roles": [
-                  "pgedge_superuser"
-               ],
-               "username": "admin"
-            },
-            {
-               "attributes": [
-                  "LOGIN",
-                  "CREATEDB",
-                  "CREATEROLE"
-               ],
-               "db_owner": false,
-               "password": "secret",
-               "roles": [
-                  "pgedge_superuser"
-               ],
+               "db_owner": true,
                "username": "admin"
             }
          ],
-         "extra_volumes": [
-            {
-               "destination_path": "/backups/container",
-               "host_path": "/Users/user/backups/host"
-            },
-            {
-               "destination_path": "/backups/container",
-               "host_path": "/Users/user/backups/host"
-            },
-            {
-               "destination_path": "/backups/container",
-               "host_path": "/Users/user/backups/host"
-            }
-         ],
-         "memory": "500M",
          "nodes": [
             {
                "backup_config": {
                   "repositories": [
                      {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
+                        "s3_bucket": "storefront-db-backups-us-east-1",
                         "type": "s3"
-                     },
-                     {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
-                        "type": "s3"
-                     },
-                     {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
-                        "type": "s3"
-                     }
-                  ],
-                  "schedules": [
-                     {
-                        "cron_expression": "0 6 * * ?",
-                        "id": "daily-full-backup",
-                        "type": "full"
-                     },
-                     {
-                        "cron_expression": "0 6 * * ?",
-                        "id": "daily-full-backup",
-                        "type": "full"
-                     },
-                     {
-                        "cron_expression": "0 6 * * ?",
-                        "id": "daily-full-backup",
-                        "type": "full"
                      }
                   ]
                },
-               "cpus": "500m",
-               "extra_volumes": [
-                  {
-                     "destination_path": "/backups/container",
-                     "host_path": "/Users/user/backups/host"
-                  },
-                  {
-                     "destination_path": "/backups/container",
-                     "host_path": "/Users/user/backups/host"
-                  },
-                  {
-                     "destination_path": "/backups/container",
-                     "host_path": "/Users/user/backups/host"
-                  }
-               ],
                "host_ids": [
-                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  "us-east-1"
                ],
-               "memory": "500M",
-               "name": "n1",
-               "port": 5432,
-               "postgres_version": "17",
-               "postgresql_conf": {
-                  "max_connections": 1000
-               },
-               "restore_config": {
-                  "repository": {
-                     "azure_account": "pgedge-backups",
-                     "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "azure_endpoint": "blob.core.usgovcloudapi.net",
-                     "azure_key": "YXpLZXk=",
-                     "base_path": "/backups",
-                     "custom_options": {
-                        "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
-                     },
-                     "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "gcs_endpoint": "localhost",
-                     "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                     "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                     "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                     "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                     "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                     "s3_region": "us-east-1",
-                     "type": "s3"
-                  },
-                  "restore_options": {
-                     "set": "20250505-153628F",
-                     "target": "123456",
-                     "type": "xid"
-                  },
-                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-                  "source_database_name": "northwind",
-                  "source_node_name": "n1"
-               }
+               "name": "n1"
             },
             {
                "backup_config": {
                   "repositories": [
                      {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
+                        "s3_bucket": "storefront-db-backups-ap-south-1",
                         "type": "s3"
-                     },
-                     {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
-                        "type": "s3"
-                     },
-                     {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
-                        "type": "s3"
-                     }
-                  ],
-                  "schedules": [
-                     {
-                        "cron_expression": "0 6 * * ?",
-                        "id": "daily-full-backup",
-                        "type": "full"
-                     },
-                     {
-                        "cron_expression": "0 6 * * ?",
-                        "id": "daily-full-backup",
-                        "type": "full"
-                     },
-                     {
-                        "cron_expression": "0 6 * * ?",
-                        "id": "daily-full-backup",
-                        "type": "full"
                      }
                   ]
                },
-               "cpus": "500m",
-               "extra_volumes": [
-                  {
-                     "destination_path": "/backups/container",
-                     "host_path": "/Users/user/backups/host"
-                  },
-                  {
-                     "destination_path": "/backups/container",
-                     "host_path": "/Users/user/backups/host"
-                  },
-                  {
-                     "destination_path": "/backups/container",
-                     "host_path": "/Users/user/backups/host"
-                  }
-               ],
                "host_ids": [
-                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  "ap-south-1"
                ],
-               "memory": "500M",
-               "name": "n1",
-               "port": 5432,
-               "postgres_version": "17",
-               "postgresql_conf": {
-                  "max_connections": 1000
-               },
-               "restore_config": {
-                  "repository": {
-                     "azure_account": "pgedge-backups",
-                     "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "azure_endpoint": "blob.core.usgovcloudapi.net",
-                     "azure_key": "YXpLZXk=",
-                     "base_path": "/backups",
-                     "custom_options": {
-                        "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
-                     },
-                     "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "gcs_endpoint": "localhost",
-                     "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                     "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                     "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                     "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                     "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                     "s3_region": "us-east-1",
-                     "type": "s3"
-                  },
-                  "restore_options": {
-                     "set": "20250505-153628F",
-                     "target": "123456",
-                     "type": "xid"
-                  },
-                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-                  "source_database_name": "northwind",
-                  "source_node_name": "n1"
-               }
+               "name": "n2"
             },
             {
                "backup_config": {
                   "repositories": [
                      {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
+                        "s3_bucket": "storefront-db-backups-eu-central-1",
                         "type": "s3"
-                     },
-                     {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
-                        "type": "s3"
-                     },
-                     {
-                        "azure_account": "pgedge-backups",
-                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "azure_endpoint": "blob.core.usgovcloudapi.net",
-                        "azure_key": "YXpLZXk=",
-                        "base_path": "/backups",
-                        "custom_options": {
-                           "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                           "storage-upload-chunk-size": "5MiB"
-                        },
-                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "gcs_endpoint": "localhost",
-                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                        "retention_full": 2,
-                        "retention_full_type": "count",
-                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                        "s3_region": "us-east-1",
-                        "type": "s3"
-                     }
-                  ],
-                  "schedules": [
-                     {
-                        "cron_expression": "0 6 * * ?",
-                        "id": "daily-full-backup",
-                        "type": "full"
-                     },
-                     {
-                        "cron_expression": "0 6 * * ?",
-                        "id": "daily-full-backup",
-                        "type": "full"
-                     },
-                     {
-                        "cron_expression": "0 6 * * ?",
-                        "id": "daily-full-backup",
-                        "type": "full"
                      }
                   ]
                },
-               "cpus": "500m",
-               "extra_volumes": [
-                  {
-                     "destination_path": "/backups/container",
-                     "host_path": "/Users/user/backups/host"
-                  },
-                  {
-                     "destination_path": "/backups/container",
-                     "host_path": "/Users/user/backups/host"
-                  },
-                  {
-                     "destination_path": "/backups/container",
-                     "host_path": "/Users/user/backups/host"
-                  }
-               ],
                "host_ids": [
-                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  "eu-central-1"
                ],
-               "memory": "500M",
-               "name": "n1",
-               "port": 5432,
-               "postgres_version": "17",
-               "postgresql_conf": {
-                  "max_connections": 1000
-               },
+               "name": "n3",
                "restore_config": {
                   "repository": {
-                     "azure_account": "pgedge-backups",
-                     "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "azure_endpoint": "blob.core.usgovcloudapi.net",
-                     "azure_key": "YXpLZXk=",
-                     "base_path": "/backups",
-                     "custom_options": {
-                        "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
-                     },
-                     "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "gcs_endpoint": "localhost",
-                     "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                     "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                     "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                     "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                     "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                     "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                     "s3_region": "us-east-1",
+                     "s3_bucket": "storefront-db-backups-us-east-1",
                      "type": "s3"
                   },
-                  "restore_options": {
-                     "set": "20250505-153628F",
-                     "target": "123456",
-                     "type": "xid"
-                  },
-                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-                  "source_database_name": "northwind",
+                  "source_database_id": "storefront",
+                  "source_database_name": "storefront",
                   "source_node_name": "n1"
                }
             }
          ],
-         "port": 5432,
-         "postgres_version": "17",
-         "postgresql_conf": {
-            "max_connections": 1000
-         },
-         "restore_config": {
-            "repository": {
-               "azure_account": "pgedge-backups",
-               "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-               "azure_endpoint": "blob.core.usgovcloudapi.net",
-               "azure_key": "YXpLZXk=",
-               "base_path": "/backups",
-               "custom_options": {
-                  "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
-               },
-               "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-               "gcs_endpoint": "localhost",
-               "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-               "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-               "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-               "s3_endpoint": "s3.us-east-1.amazonaws.com",
-               "s3_key": "AKIAIOSFODNN7EXAMPLE",
-               "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-               "s3_region": "us-east-1",
-               "type": "s3"
-            },
-            "restore_options": {
-               "set": "20250505-153628F",
-               "target": "123456",
-               "type": "xid"
-            },
-            "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-            "source_database_name": "northwind",
-            "source_node_name": "n1"
-         },
-         "spock_version": "4"
-      },
-      "tenant_id": "8210ec10-2dca-406c-ac4a-0661d2189954"
-   }' --database-id "02f1a7db-fca8-4521-b57a-2a375c1ced51" --force-update true
+         "port": 5432
+      }
+   }' --database-id "my-app" --force-update true
 `, os.Args[0])
 }
 
@@ -1533,7 +589,7 @@ Deletes a database from the cluster.
     -database-id STRING: ID of the database to delete.
 
 Example:
-    %[1]s control-plane delete-database --database-id "02f1a7db-fca8-4521-b57a-2a375c1ced51"
+    %[1]s control-plane delete-database --database-id "my-app"
 `, os.Args[0])
 }
 
@@ -1548,13 +604,13 @@ Initiates a backup for a database node.
 Example:
     %[1]s control-plane backup-database-node --body '{
       "annotations": {
-         "key": "value"
+         "initiated-by": "backup-cron-job"
       },
       "backup_options": {
          "archive-check": "n"
       },
       "type": "full"
-   }' --database-id "02f1a7db-fca8-4521-b57a-2a375c1ced51" --node-name "n1"
+   }' --database-id "my-app" --node-name "n1"
 `, os.Args[0])
 }
 
@@ -1568,7 +624,7 @@ Lists all tasks for a database.
     -sort-order STRING: 
 
 Example:
-    %[1]s control-plane list-database-tasks --database-id "02f1a7db-fca8-4521-b57a-2a375c1ced51" --after-task-id "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348" --limit 100 --sort-order "ascend"
+    %[1]s control-plane list-database-tasks --database-id "my-app" --after-task-id "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348" --limit 100 --sort-order "ascend"
 `, os.Args[0])
 }
 
@@ -1580,7 +636,7 @@ Returns information about a particular task.
     -task-id STRING: ID of the task to get.
 
 Example:
-    %[1]s control-plane get-database-task --database-id "02f1a7db-fca8-4521-b57a-2a375c1ced51" --task-id "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348"
+    %[1]s control-plane get-database-task --database-id "my-app" --task-id "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348"
 `, os.Args[0])
 }
 
@@ -1588,20 +644,20 @@ func controlPlaneGetDatabaseTaskLogUsage() {
 	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane get-database-task-log -database-id STRING -task-id STRING -after-entry-id STRING -limit INT
 
 Returns the log of a particular task for a database.
-    -database-id STRING: ID of the database to get task log for.
-    -task-id STRING: ID of the task to get log for.
+    -database-id STRING: ID of the database to get the task log for.
+    -task-id STRING: ID of the task to get the log for.
     -after-entry-id STRING: 
     -limit INT: 
 
 Example:
-    %[1]s control-plane get-database-task-log --database-id "02f1a7db-fca8-4521-b57a-2a375c1ced51" --task-id "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348" --after-entry-id "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348" --limit 100
+    %[1]s control-plane get-database-task-log --database-id "my-app" --task-id "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348" --after-entry-id "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348" --limit 100
 `, os.Args[0])
 }
 
 func controlPlaneRestoreDatabaseUsage() {
 	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane restore-database -body JSON -database-id STRING
 
-Perform an in-place restore one or more nodes using the given restore configuration.
+Perform an in-place restore of one or more nodes using the given restore configuration.
     -body JSON: 
     -database-id STRING: ID of the database to restore.
 
@@ -1609,38 +665,17 @@ Example:
     %[1]s control-plane restore-database --body '{
       "restore_config": {
          "repository": {
-            "azure_account": "pgedge-backups",
-            "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-            "azure_endpoint": "blob.core.usgovcloudapi.net",
-            "azure_key": "YXpLZXk=",
             "base_path": "/backups",
-            "custom_options": {
-               "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
-            },
-            "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-            "gcs_endpoint": "localhost",
-            "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-            "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-            "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-            "s3_endpoint": "s3.us-east-1.amazonaws.com",
-            "s3_key": "AKIAIOSFODNN7EXAMPLE",
-            "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-            "s3_region": "us-east-1",
-            "type": "s3"
+            "type": "posix"
          },
-         "restore_options": {
-            "set": "20250505-153628F",
-            "target": "123456",
-            "type": "xid"
-         },
-         "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-         "source_database_name": "northwind",
+         "source_database_id": "storefront",
+         "source_database_name": "storefront",
          "source_node_name": "n1"
       },
       "target_nodes": [
          "n1"
       ]
-   }' --database-id "02f1a7db-fca8-4521-b57a-2a375c1ced51"
+   }' --database-id "my-app"
 `, os.Args[0])
 }
 

@@ -146,9 +146,11 @@ type GetHostResponseBody struct {
 	SupportedPgedgeVersions []*PgEdgeVersionResponseBody `form:"supported_pgedge_versions,omitempty" json:"supported_pgedge_versions,omitempty" xml:"supported_pgedge_versions,omitempty"`
 }
 
-// DatabaseResponseAbbreviatedCollection is the type of the "control-plane"
-// service "list-databases" endpoint HTTP response body.
-type DatabaseResponseAbbreviatedCollection []*DatabaseResponseAbbreviated
+// ListDatabasesResponseBody is the type of the "control-plane" service
+// "list-databases" endpoint HTTP response body.
+type ListDatabasesResponseBody struct {
+	Databases DatabaseResponseBodyAbbreviatedCollection `form:"databases,omitempty" json:"databases,omitempty" xml:"databases,omitempty"`
+}
 
 // CreateDatabaseResponseBody is the type of the "control-plane" service
 // "create-database" endpoint HTTP response body.
@@ -203,7 +205,9 @@ type BackupDatabaseNodeResponseBody struct {
 
 // ListDatabaseTasksResponseBody is the type of the "control-plane" service
 // "list-database-tasks" endpoint HTTP response body.
-type ListDatabaseTasksResponseBody []*TaskResponse
+type ListDatabaseTasksResponseBody struct {
+	Tasks []*TaskResponseBody `form:"tasks,omitempty" json:"tasks,omitempty" xml:"tasks,omitempty"`
+}
 
 // GetDatabaseTaskResponseBody is the type of the "control-plane" service
 // "get-database-task" endpoint HTTP response body.
@@ -1119,8 +1123,13 @@ type PgEdgeVersionResponse struct {
 	SpockVersion string `form:"spock_version" json:"spock_version" xml:"spock_version"`
 }
 
-// DatabaseResponseAbbreviated is used to define fields on response body types.
-type DatabaseResponseAbbreviated struct {
+// DatabaseResponseBodyAbbreviatedCollection is used to define fields on
+// response body types.
+type DatabaseResponseBodyAbbreviatedCollection []*DatabaseResponseBodyAbbreviated
+
+// DatabaseResponseBodyAbbreviated is used to define fields on response body
+// types.
+type DatabaseResponseBodyAbbreviated struct {
 	// Unique identifier for the database.
 	ID string `form:"id" json:"id" xml:"id"`
 	// Unique identifier for the databases's owner.
@@ -1132,15 +1141,16 @@ type DatabaseResponseAbbreviated struct {
 	// Current state of the database.
 	State string `form:"state" json:"state" xml:"state"`
 	// All of the instances in the database.
-	Instances InstanceResponseAbbreviatedCollection `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	Instances InstanceResponseBodyAbbreviatedCollection `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
 }
 
-// InstanceResponseAbbreviatedCollection is used to define fields on response
-// body types.
-type InstanceResponseAbbreviatedCollection []*InstanceResponseAbbreviated
+// InstanceResponseBodyAbbreviatedCollection is used to define fields on
+// response body types.
+type InstanceResponseBodyAbbreviatedCollection []*InstanceResponseBodyAbbreviated
 
-// InstanceResponseAbbreviated is used to define fields on response body types.
-type InstanceResponseAbbreviated struct {
+// InstanceResponseBodyAbbreviated is used to define fields on response body
+// types.
+type InstanceResponseBodyAbbreviated struct {
 	// Unique identifier for the instance.
 	ID string `form:"id" json:"id" xml:"id"`
 	// The ID of the host this instance is running on.
@@ -1241,9 +1251,9 @@ type InstancePostgresStatusResponseBody struct {
 	Version      *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
 	PatroniState *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
 	Role         *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
-	// True if this instance is pending to be restarted from a configuration change.
+	// True if this instance has a pending restart from a configuration change.
 	PendingRestart *bool `form:"pending_restart,omitempty" json:"pending_restart,omitempty" xml:"pending_restart,omitempty"`
-	// True if Patroni has been paused for this instance.
+	// True if Patroni is paused for this instance.
 	PatroniPaused *bool `form:"patroni_paused,omitempty" json:"patroni_paused,omitempty" xml:"patroni_paused,omitempty"`
 }
 
@@ -1281,12 +1291,12 @@ type DatabaseSpecResponseBody struct {
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
-	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
-	// enforced depends on the orchestrator.
+	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
+	// depends on the orchestrator.
 	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database and
 	// to use for tuning Postgres. Defaults to the total available memory on the
-	// host. Whether this limit will be enforced depends on the orchestrator.
+	// host. Whether this limit is enforced depends on the orchestrator.
 	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// The Spock nodes for this database.
 	Nodes []*DatabaseNodeSpecResponseBody `form:"nodes" json:"nodes" xml:"nodes"`
@@ -1309,7 +1319,7 @@ type DatabaseNodeSpecResponseBody struct {
 	// The name of the database node.
 	Name string `form:"name" json:"name" xml:"name"`
 	// The IDs of the hosts that should run this node. When multiple hosts are
-	// specified, one host will chosen as a primary and the others will be read
+	// specified, one host will chosen as a primary, and the others will be read
 	// replicas.
 	HostIds []string `form:"host_ids" json:"host_ids" xml:"host_ids"`
 	// The major version of Postgres for this node. Overrides the Postgres version
@@ -1319,15 +1329,15 @@ type DatabaseNodeSpecResponseBody struct {
 	// port set in the DatabaseSpec.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// The number of CPUs to allocate for the database on this node and to use for
-	// tuning Postgres. Can include the SI suffix 'm', e.g. '500m' for 500
+	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
 	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
 	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
-	// than are available on the host. Whether this limit will be enforced depends
-	// on the orchestrator.
+	// than are available on the host. Whether this limit is enforced depends on
+	// the orchestrator.
 	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database on
 	// this node and to use for tuning Postgres. Defaults to the total available
-	// memory on the host. Whether this limit will be enforced depends on the
+	// memory on the host. Whether this limit is enforced depends on the
 	// orchestrator.
 	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
@@ -1367,10 +1377,12 @@ type BackupRepositorySpecResponseBody struct {
 	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
 	// An optional AWS access key ID to use for this repository. If not provided,
 	// pgbackrest will use the default credential provider chain. This field will
-	// be excluded from the response of all endpoints.
+	// be excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
 	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
 	// The corresponding secret for the AWS access key ID in s3_key. This field
-	// will be excluded from the response of all endpoints.
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
 	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
@@ -1379,7 +1391,8 @@ type BackupRepositorySpecResponseBody struct {
 	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
 	// the service account attached to the instance profile. This field will be
-	// excluded from the response of all endpoints.
+	// excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
 	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
@@ -1390,7 +1403,8 @@ type BackupRepositorySpecResponseBody struct {
 	// 'azure'.
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
 	// The Azure storage account access key to use for this repository. This field
-	// will be excluded from the response of all endpoints.
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
 	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
 	// The count of full backups to retain or the time to retain full backups.
 	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
@@ -1421,8 +1435,8 @@ type RestoreConfigSpecResponseBody struct {
 	SourceDatabaseID string `form:"source_database_id" json:"source_database_id" xml:"source_database_id"`
 	// The name of the node to restore this database from.
 	SourceNodeName string `form:"source_node_name" json:"source_node_name" xml:"source_node_name"`
-	// The name of the database in this repository. This database will be renamed
-	// to the database_name in the DatabaseSpec.
+	// The name of the database in this repository. The database will be renamed to
+	// the database_name in the DatabaseSpec after it's restored.
 	SourceDatabaseName string `form:"source_database_name" json:"source_database_name" xml:"source_database_name"`
 	// The repository to restore this database from.
 	Repository *RestoreRepositorySpecResponseBody `form:"repository" json:"repository" xml:"repository"`
@@ -1489,7 +1503,8 @@ type DatabaseUserSpecResponseBody struct {
 	// The username for this database user.
 	Username string `form:"username" json:"username" xml:"username"`
 	// The password for this database user. This field will be excluded from the
-	// response of all endpoints.
+	// response of all endpoints. It can also be omitted from update requests to
+	// keep the current value.
 	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
 	// If true, this user will be granted database ownership.
 	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
@@ -1502,32 +1517,6 @@ type DatabaseUserSpecResponseBody struct {
 // InstanceResponseBodyCollection is used to define fields on response body
 // types.
 type InstanceResponseBodyCollection []*InstanceResponseBody
-
-// TaskResponse is used to define fields on response body types.
-type TaskResponse struct {
-	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
-	// The database ID of the task.
-	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
-	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
-	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-	// The unique ID of the task.
-	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
-	// The time when the task was created.
-	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
-	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
-	// The type of the task.
-	Type string `form:"type" json:"type" xml:"type"`
-	// The status of the task.
-	Status string `form:"status" json:"status" xml:"status"`
-	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
-}
 
 // TaskLogEntryResponseBody is used to define fields on response body types.
 type TaskLogEntryResponseBody struct {
@@ -1551,12 +1540,12 @@ type DatabaseSpecRequestBody struct {
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
-	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
-	// enforced depends on the orchestrator.
+	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
+	// depends on the orchestrator.
 	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database and
 	// to use for tuning Postgres. Defaults to the total available memory on the
-	// host. Whether this limit will be enforced depends on the orchestrator.
+	// host. Whether this limit is enforced depends on the orchestrator.
 	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// The Spock nodes for this database.
 	Nodes []*DatabaseNodeSpecRequestBody `form:"nodes,omitempty" json:"nodes,omitempty" xml:"nodes,omitempty"`
@@ -1579,7 +1568,7 @@ type DatabaseNodeSpecRequestBody struct {
 	// The name of the database node.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// The IDs of the hosts that should run this node. When multiple hosts are
-	// specified, one host will chosen as a primary and the others will be read
+	// specified, one host will chosen as a primary, and the others will be read
 	// replicas.
 	HostIds []string `form:"host_ids,omitempty" json:"host_ids,omitempty" xml:"host_ids,omitempty"`
 	// The major version of Postgres for this node. Overrides the Postgres version
@@ -1589,15 +1578,15 @@ type DatabaseNodeSpecRequestBody struct {
 	// port set in the DatabaseSpec.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// The number of CPUs to allocate for the database on this node and to use for
-	// tuning Postgres. Can include the SI suffix 'm', e.g. '500m' for 500
+	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
 	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
 	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
-	// than are available on the host. Whether this limit will be enforced depends
-	// on the orchestrator.
+	// than are available on the host. Whether this limit is enforced depends on
+	// the orchestrator.
 	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database on
 	// this node and to use for tuning Postgres. Defaults to the total available
-	// memory on the host. Whether this limit will be enforced depends on the
+	// memory on the host. Whether this limit is enforced depends on the
 	// orchestrator.
 	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
@@ -1637,10 +1626,12 @@ type BackupRepositorySpecRequestBody struct {
 	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
 	// An optional AWS access key ID to use for this repository. If not provided,
 	// pgbackrest will use the default credential provider chain. This field will
-	// be excluded from the response of all endpoints.
+	// be excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
 	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
 	// The corresponding secret for the AWS access key ID in s3_key. This field
-	// will be excluded from the response of all endpoints.
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
 	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
@@ -1649,7 +1640,8 @@ type BackupRepositorySpecRequestBody struct {
 	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
 	// the service account attached to the instance profile. This field will be
-	// excluded from the response of all endpoints.
+	// excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
 	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
@@ -1660,7 +1652,8 @@ type BackupRepositorySpecRequestBody struct {
 	// 'azure'.
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
 	// The Azure storage account access key to use for this repository. This field
-	// will be excluded from the response of all endpoints.
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
 	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
 	// The count of full backups to retain or the time to retain full backups.
 	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
@@ -1689,8 +1682,8 @@ type RestoreConfigSpecRequestBody struct {
 	SourceDatabaseID *string `form:"source_database_id,omitempty" json:"source_database_id,omitempty" xml:"source_database_id,omitempty"`
 	// The name of the node to restore this database from.
 	SourceNodeName *string `form:"source_node_name,omitempty" json:"source_node_name,omitempty" xml:"source_node_name,omitempty"`
-	// The name of the database in this repository. This database will be renamed
-	// to the database_name in the DatabaseSpec.
+	// The name of the database in this repository. The database will be renamed to
+	// the database_name in the DatabaseSpec after it's restored.
 	SourceDatabaseName *string `form:"source_database_name,omitempty" json:"source_database_name,omitempty" xml:"source_database_name,omitempty"`
 	// The repository to restore this database from.
 	Repository *RestoreRepositorySpecRequestBody `form:"repository,omitempty" json:"repository,omitempty" xml:"repository,omitempty"`
@@ -1757,7 +1750,8 @@ type DatabaseUserSpecRequestBody struct {
 	// The username for this database user.
 	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
 	// The password for this database user. This field will be excluded from the
-	// response of all endpoints.
+	// response of all endpoints. It can also be omitted from update requests to
+	// keep the current value.
 	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
 	// If true, this user will be granted database ownership.
 	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
@@ -1780,12 +1774,12 @@ type DatabaseSpecRequestBodyRequestBody struct {
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
-	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
-	// enforced depends on the orchestrator.
+	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
+	// depends on the orchestrator.
 	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database and
 	// to use for tuning Postgres. Defaults to the total available memory on the
-	// host. Whether this limit will be enforced depends on the orchestrator.
+	// host. Whether this limit is enforced depends on the orchestrator.
 	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// The Spock nodes for this database.
 	Nodes []*DatabaseNodeSpecRequestBodyRequestBody `form:"nodes,omitempty" json:"nodes,omitempty" xml:"nodes,omitempty"`
@@ -1809,7 +1803,7 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// The name of the database node.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// The IDs of the hosts that should run this node. When multiple hosts are
-	// specified, one host will chosen as a primary and the others will be read
+	// specified, one host will chosen as a primary, and the others will be read
 	// replicas.
 	HostIds []string `form:"host_ids,omitempty" json:"host_ids,omitempty" xml:"host_ids,omitempty"`
 	// The major version of Postgres for this node. Overrides the Postgres version
@@ -1819,15 +1813,15 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// port set in the DatabaseSpec.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// The number of CPUs to allocate for the database on this node and to use for
-	// tuning Postgres. Can include the SI suffix 'm', e.g. '500m' for 500
+	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
 	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
 	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
-	// than are available on the host. Whether this limit will be enforced depends
-	// on the orchestrator.
+	// than are available on the host. Whether this limit is enforced depends on
+	// the orchestrator.
 	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database on
 	// this node and to use for tuning Postgres. Defaults to the total available
-	// memory on the host. Whether this limit will be enforced depends on the
+	// memory on the host. Whether this limit is enforced depends on the
 	// orchestrator.
 	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
@@ -1868,10 +1862,12 @@ type BackupRepositorySpecRequestBodyRequestBody struct {
 	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
 	// An optional AWS access key ID to use for this repository. If not provided,
 	// pgbackrest will use the default credential provider chain. This field will
-	// be excluded from the response of all endpoints.
+	// be excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
 	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
 	// The corresponding secret for the AWS access key ID in s3_key. This field
-	// will be excluded from the response of all endpoints.
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
 	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
@@ -1880,7 +1876,8 @@ type BackupRepositorySpecRequestBodyRequestBody struct {
 	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
 	// the service account attached to the instance profile. This field will be
-	// excluded from the response of all endpoints.
+	// excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
 	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
@@ -1891,7 +1888,8 @@ type BackupRepositorySpecRequestBodyRequestBody struct {
 	// 'azure'.
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
 	// The Azure storage account access key to use for this repository. This field
-	// will be excluded from the response of all endpoints.
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
 	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
 	// The count of full backups to retain or the time to retain full backups.
 	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
@@ -1922,8 +1920,8 @@ type RestoreConfigSpecRequestBodyRequestBody struct {
 	SourceDatabaseID *string `form:"source_database_id,omitempty" json:"source_database_id,omitempty" xml:"source_database_id,omitempty"`
 	// The name of the node to restore this database from.
 	SourceNodeName *string `form:"source_node_name,omitempty" json:"source_node_name,omitempty" xml:"source_node_name,omitempty"`
-	// The name of the database in this repository. This database will be renamed
-	// to the database_name in the DatabaseSpec.
+	// The name of the database in this repository. The database will be renamed to
+	// the database_name in the DatabaseSpec after it's restored.
 	SourceDatabaseName *string `form:"source_database_name,omitempty" json:"source_database_name,omitempty" xml:"source_database_name,omitempty"`
 	// The repository to restore this database from.
 	Repository *RestoreRepositorySpecRequestBodyRequestBody `form:"repository,omitempty" json:"repository,omitempty" xml:"repository,omitempty"`
@@ -1992,7 +1990,8 @@ type DatabaseUserSpecRequestBodyRequestBody struct {
 	// The username for this database user.
 	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
 	// The password for this database user. This field will be excluded from the
-	// response of all endpoints.
+	// response of all endpoints. It can also be omitted from update requests to
+	// keep the current value.
 	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
 	// If true, this user will be granted database ownership.
 	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
@@ -2095,12 +2094,15 @@ func NewGetHostResponseBody(res *controlplane.Host) *GetHostResponseBody {
 	return body
 }
 
-// NewDatabaseResponseAbbreviatedCollection builds the HTTP response body from
-// the result of the "list-databases" endpoint of the "control-plane" service.
-func NewDatabaseResponseAbbreviatedCollection(res controlplaneviews.DatabaseCollectionView) DatabaseResponseAbbreviatedCollection {
-	body := make([]*DatabaseResponseAbbreviated, len(res))
-	for i, val := range res {
-		body[i] = marshalControlplaneviewsDatabaseViewToDatabaseResponseAbbreviated(val)
+// NewListDatabasesResponseBody builds the HTTP response body from the result
+// of the "list-databases" endpoint of the "control-plane" service.
+func NewListDatabasesResponseBody(res *controlplaneviews.ListDatabasesResponseView) *ListDatabasesResponseBody {
+	body := &ListDatabasesResponseBody{}
+	if res.Databases != nil {
+		body.Databases = make([]*DatabaseResponseBodyAbbreviated, len(res.Databases))
+		for i, val := range res.Databases {
+			body.Databases[i] = marshalControlplaneviewsDatabaseViewToDatabaseResponseBodyAbbreviated(val)
+		}
 	}
 	return body
 }
@@ -2178,10 +2180,13 @@ func NewBackupDatabaseNodeResponseBody(res *controlplane.BackupDatabaseNodeRespo
 
 // NewListDatabaseTasksResponseBody builds the HTTP response body from the
 // result of the "list-database-tasks" endpoint of the "control-plane" service.
-func NewListDatabaseTasksResponseBody(res []*controlplane.Task) ListDatabaseTasksResponseBody {
-	body := make([]*TaskResponse, len(res))
-	for i, val := range res {
-		body[i] = marshalControlplaneTaskToTaskResponse(val)
+func NewListDatabaseTasksResponseBody(res *controlplane.ListDatabaseTasksResponse) *ListDatabaseTasksResponseBody {
+	body := &ListDatabaseTasksResponseBody{}
+	if res.Tasks != nil {
+		body.Tasks = make([]*TaskResponseBody, len(res.Tasks))
+		for i, val := range res.Tasks {
+			body.Tasks[i] = marshalControlplaneTaskToTaskResponseBody(val)
+		}
 	}
 	return body
 }
@@ -3304,12 +3309,6 @@ func ValidateBackupDatabaseNodeRequestBody(body *BackupDatabaseNodeRequestBody) 
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"full", "diff", "incr"}))
 		}
 	}
-	if len(body.Annotations) > 32 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.annotations", body.Annotations, len(body.Annotations), 32, false))
-	}
-	if len(body.BackupOptions) > 32 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.backup_options", body.BackupOptions, len(body.BackupOptions), 32, false))
-	}
 	return
 }
 
@@ -3471,9 +3470,6 @@ func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err
 		if utf8.RuneCountInString(*body.Memory) > 16 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.memory", *body.Memory, utf8.RuneCountInString(*body.Memory), 16, false))
 		}
-	}
-	if len(body.PostgresqlConf) > 64 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.postgresql_conf", body.PostgresqlConf, len(body.PostgresqlConf), 64, false))
 	}
 	if body.BackupConfig != nil {
 		if err2 := ValidateBackupConfigSpecRequestBody(body.BackupConfig); err2 != nil {
@@ -3672,9 +3668,6 @@ func ValidateBackupRepositorySpecRequestBody(body *BackupRepositorySpecRequestBo
 		if utf8.RuneCountInString(*body.BasePath) > 256 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.base_path", *body.BasePath, utf8.RuneCountInString(*body.BasePath), 256, false))
 		}
-	}
-	if len(body.CustomOptions) > 32 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.custom_options", body.CustomOptions, len(body.CustomOptions), 32, false))
 	}
 	return
 }
@@ -4081,9 +4074,6 @@ func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecReques
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.memory", *body.Memory, utf8.RuneCountInString(*body.Memory), 16, false))
 		}
 	}
-	if len(body.PostgresqlConf) > 64 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.postgresql_conf", body.PostgresqlConf, len(body.PostgresqlConf), 64, false))
-	}
 	if body.BackupConfig != nil {
 		if err2 := ValidateBackupConfigSpecRequestBodyRequestBody(body.BackupConfig); err2 != nil {
 			err = goa.MergeErrors(err, err2)
@@ -4281,9 +4271,6 @@ func ValidateBackupRepositorySpecRequestBodyRequestBody(body *BackupRepositorySp
 		if utf8.RuneCountInString(*body.BasePath) > 256 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.base_path", *body.BasePath, utf8.RuneCountInString(*body.BasePath), 256, false))
 		}
-	}
-	if len(body.CustomOptions) > 32 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.custom_options", body.CustomOptions, len(body.CustomOptions), 32, false))
 	}
 	return
 }
