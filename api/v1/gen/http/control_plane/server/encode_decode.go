@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"unicode/utf8"
 
 	controlplane "github.com/pgEdge/control-plane/api/v1/gen/control_plane"
 	controlplaneviews "github.com/pgEdge/control-plane/api/v1/gen/control_plane/views"
@@ -448,7 +449,12 @@ func DecodeGetHostRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp
 			params = mux.Vars(r)
 		)
 		hostID = params["host_id"]
-		err = goa.MergeErrors(err, goa.ValidatePattern("host_id", hostID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(hostID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("host_id", hostID, utf8.RuneCountInString(hostID), 1, true))
+		}
+		if utf8.RuneCountInString(hostID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("host_id", hostID, utf8.RuneCountInString(hostID), 63, false))
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -546,7 +552,12 @@ func DecodeRemoveHostRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 			params = mux.Vars(r)
 		)
 		hostID = params["host_id"]
-		err = goa.MergeErrors(err, goa.ValidatePattern("host_id", hostID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(hostID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("host_id", hostID, utf8.RuneCountInString(hostID), 1, true))
+		}
+		if utf8.RuneCountInString(hostID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("host_id", hostID, utf8.RuneCountInString(hostID), 63, false))
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -823,7 +834,12 @@ func DecodeGetDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 			params = mux.Vars(r)
 		)
 		databaseID = params["database_id"]
-		err = goa.MergeErrors(err, goa.ValidatePattern("database_id", databaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -944,7 +960,12 @@ func DecodeUpdateDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 			params = mux.Vars(r)
 		)
 		databaseID = params["database_id"]
-		err = goa.MergeErrors(err, goa.ValidatePattern("database_id", databaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
 		{
 			forceUpdateRaw := r.URL.Query().Get("force_update")
 			if forceUpdateRaw != "" {
@@ -1081,7 +1102,12 @@ func DecodeDeleteDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 			params = mux.Vars(r)
 		)
 		databaseID = params["database_id"]
-		err = goa.MergeErrors(err, goa.ValidatePattern("database_id", databaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -1228,7 +1254,12 @@ func DecodeBackupDatabaseNodeRequest(mux goahttp.Muxer, decoder func(*http.Reque
 			params = mux.Vars(r)
 		)
 		databaseID = params["database_id"]
-		err = goa.MergeErrors(err, goa.ValidatePattern("database_id", databaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
 		nodeName = params["node_name"]
 		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "n[0-9]+"))
 		if err != nil {
@@ -1360,7 +1391,12 @@ func DecodeListDatabaseTasksRequest(mux goahttp.Muxer, decoder func(*http.Reques
 			params = mux.Vars(r)
 		)
 		databaseID = params["database_id"]
-		err = goa.MergeErrors(err, goa.ValidatePattern("database_id", databaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
 		qp := r.URL.Query()
 		afterTaskIDRaw := qp.Get("after_task_id")
 		if afterTaskIDRaw != "" {
@@ -1490,7 +1526,12 @@ func DecodeGetDatabaseTaskRequest(mux goahttp.Muxer, decoder func(*http.Request)
 			params = mux.Vars(r)
 		)
 		databaseID = params["database_id"]
-		err = goa.MergeErrors(err, goa.ValidatePattern("database_id", databaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
 		taskID = params["task_id"]
 		err = goa.MergeErrors(err, goa.ValidateFormat("task_id", taskID, goa.FormatUUID))
 		if err != nil {
@@ -1596,7 +1637,12 @@ func DecodeGetDatabaseTaskLogRequest(mux goahttp.Muxer, decoder func(*http.Reque
 			params = mux.Vars(r)
 		)
 		databaseID = params["database_id"]
-		err = goa.MergeErrors(err, goa.ValidatePattern("database_id", databaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
 		taskID = params["task_id"]
 		err = goa.MergeErrors(err, goa.ValidateFormat("task_id", taskID, goa.FormatUUID))
 		qp := r.URL.Query()
@@ -1737,7 +1783,12 @@ func DecodeRestoreDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request)
 			params = mux.Vars(r)
 		)
 		databaseID = params["database_id"]
-		err = goa.MergeErrors(err, goa.ValidatePattern("database_id", databaseID, "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"))
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
 		if err != nil {
 			return nil, err
 		}

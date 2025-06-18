@@ -234,12 +234,9 @@ func (s *Service) translateCreateErr(err error) error {
 	return fmt.Errorf("failed to create workflow instance: %w", err)
 }
 
-func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) *ValidateSpecOutput {
+func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) (*ValidateSpecOutput, error) {
 	if spec == nil {
-		return &ValidateSpecOutput{
-			Valid:  false,
-			Errors: []string{"spec is nil"},
-		}
+		return nil, errors.New("spec is nil")
 	}
 
 	databaseID := spec.DatabaseID
@@ -254,24 +251,15 @@ func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) *Valida
 
 	instance, err := s.client.CreateWorkflowInstance(ctx, opts, s.workflows.ValidateSpec, input)
 	if err != nil {
-		s.logger.Error().Err(err).Str("database_id", databaseID).Msg("Failed to create volume validation workflow")
-		return &ValidateSpecOutput{
-			Valid:  false,
-			Errors: []string{fmt.Sprintf("failed to create workflow instance: %v", err)},
-		}
+		s.logger.Error().Err(err).Str("database_id", databaseID).Msg("failed to create spec validation workflow")
+		return nil, fmt.Errorf("failed to create workflow instance: %w", err)
 	}
 
 	output, err := client.GetWorkflowResult[*ValidateSpecOutput](ctx, s.client, instance, 5*time.Minute)
 	if err != nil {
-		s.logger.Error().Err(err).Str("database_id", databaseID).Msg("Failed to get result from volume validation workflow")
-
-		if output == nil {
-			return &ValidateSpecOutput{
-				Valid:  false,
-				Errors: []string{fmt.Sprintf("failed to get workflow result: %v", err)},
-			}
-		}
+		s.logger.Error().Err(err).Str("database_id", databaseID).Msg("spec validation workflow failed")
+		return nil, fmt.Errorf("spec validation workflow failed: %w", err)
 	}
 
-	return output
+	return output, nil
 }

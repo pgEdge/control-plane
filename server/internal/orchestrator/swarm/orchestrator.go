@@ -26,6 +26,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/docker"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
@@ -448,7 +449,42 @@ func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, 
 	return nil
 }
 
-func (o *Orchestrator) ValidateVolumes(ctx context.Context, spec *database.InstanceSpec) (*database.ValidationResult, error) {
+func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, specs []*database.InstanceSpec) ([]*database.ValidationResult, error) {
+	results := make([]*database.ValidationResult, len(specs))
+
+	occupiedPorts := ds.NewSet[int]()
+	for i, instance := range specs {
+		result := &database.ValidationResult{
+			InstanceID: instance.InstanceID,
+			HostID:     instance.HostID,
+			NodeName:   instance.NodeName,
+			Valid:      true,
+		}
+		if instance.Port > 0 {
+			if occupiedPorts.Has(instance.Port) {
+				result.Valid = false
+				result.Errors = append(
+					result.Errors,
+					fmt.Sprintf("port %d allocated to multiple instances on this host", instance.Port),
+				)
+			}
+			occupiedPorts.Add(instance.Port)
+		}
+		if err := o.validateInstanceSpec(ctx, instance, result); err != nil {
+			return nil, err
+		}
+		results[i] = result
+	}
+
+	return results, nil
+}
+
+func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.InstanceSpec, result *database.ValidationResult) error {
+	// Short-circuit if there's nothing to validate
+	if len(spec.ExtraVolumes) < 1 && spec.Port == 0 {
+		return nil
+	}
+
 	specVersion := spec.PgEdgeVersion
 	if specVersion == nil {
 		o.logger.Warn().Msg("PostgresVersion not provided, using default version")
@@ -457,7 +493,7 @@ func (o *Orchestrator) ValidateVolumes(ctx context.Context, spec *database.Insta
 
 	images, err := GetImages(o.cfg, specVersion)
 	if err != nil {
-		return nil, fmt.Errorf("image fetch error: %w", err)
+		return fmt.Errorf("image fetch error: %w", err)
 	}
 
 	var mounts []mount.Mount
@@ -468,28 +504,29 @@ func (o *Orchestrator) ValidateVolumes(ctx context.Context, spec *database.Insta
 	}
 
 	cmd := buildVolumeCheckCommand(mountTargets)
-	output, err := o.runVolumeValidationContainer(ctx, images.PgEdgeImage, cmd, mounts)
-	if err != nil {
-		return nil, err
+	output, err := o.runValidationContainer(ctx, images.PgEdgeImage, cmd, mounts, spec.Port)
+	bindMsg := docker.ExtractBindMountErrorMsg(err)
+	portMsg := docker.ExtractPortErrorMsg(err)
+	switch {
+	case bindMsg != "":
+		result.Valid = false
+		result.Errors = append(result.Errors, bindMsg)
+	case portMsg != "":
+		result.Valid = false
+		result.Errors = append(result.Errors, portMsg)
+	case err != nil:
+		return err
+	case len(output) > 0:
+		result.Valid = false
+		result.Errors = append(result.Errors, output)
 	}
 
-	if strings.HasSuffix(output, "OK") {
-		return &database.ValidationResult{Success: true, Reason: "All volumes are valid"}, nil
-	}
-	return &database.ValidationResult{Success: false, Reason: output}, nil
+	return nil
 }
 
-func (o *Orchestrator) runVolumeValidationContainer(ctx context.Context, image string, cmd []string, mounts []mount.Mount) (string, error) {
+func (o *Orchestrator) runValidationContainer(ctx context.Context, image string, cmd []string, mounts []mount.Mount, port int) (string, error) {
 	// Start container
-	containerID, err := o.docker.ContainerRun(ctx, docker.ContainerRunOptions{
-		Config: &container.Config{
-			Image:      image,
-			Entrypoint: cmd,
-		},
-		Host: &container.HostConfig{
-			Mounts: mounts,
-		},
-	})
+	containerID, err := o.docker.ContainerRun(ctx, validationContainerOpts(image, cmd, mounts, port))
 	if err != nil {
 		return "", fmt.Errorf("failed to start container: %w", err)
 	}
@@ -520,6 +557,48 @@ func (o *Orchestrator) runVolumeValidationContainer(ctx context.Context, image s
 	return strings.TrimSpace(buf.String()), nil
 }
 
+func validationContainerOpts(image string, cmd []string, mounts []mount.Mount, port int) docker.ContainerRunOptions {
+	opts := docker.ContainerRunOptions{
+		Config: &container.Config{
+			Image:      image,
+			Entrypoint: cmd,
+		},
+		Host: &container.HostConfig{
+			Mounts:       mounts,
+			PortBindings: nat.PortMap{},
+		},
+	}
+	if port > 0 {
+		exposedPort := fmt.Sprintf("%d/tcp", port)
+		portSet := nat.PortSet{
+			nat.Port(exposedPort): struct{}{},
+		}
+		portMap := nat.PortMap{
+			nat.Port(exposedPort): []nat.PortBinding{
+				{
+					HostIP:   "0.0.0.0",
+					HostPort: strconv.Itoa(port),
+				},
+			},
+		}
+		opts.Config.ExposedPorts = portSet
+		opts.Host.PortBindings = portMap
+	}
+	return opts
+}
+
+const cmdTemplate = `
+for d in %s; do
+	if [ ! -d "$d" ]; then
+		echo "$d is not a directory"
+	fi
+done
+`
+
 func buildVolumeCheckCommand(mountTargets []string) []string {
-	return []string{"sh", "-c", fmt.Sprintf("for d in %s; do [ -d \"$d\" ] || { echo \"FAIL: $d not found\"; exit 1; }; done; echo OK", strings.Join(mountTargets, " "))}
+	if len(mountTargets) < 1 {
+		return []string{"true"}
+	}
+
+	return []string{"sh", "-c", fmt.Sprintf(cmdTemplate, strings.Join(mountTargets, " "))}
 }

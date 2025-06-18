@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/netip"
+	"regexp"
+	"strings"
 	"time"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
@@ -503,6 +505,66 @@ func ExtractNetworkInfo(info network.Inspect) (*NetworkInfo, error) {
 		Subnet:  subnet,
 		Gateway: gateway,
 	}, nil
+}
+
+// This is an unexported error type, so we have limited options to test for
+// it. This error message has been stable for 9 years, so it's likely safe
+// to rely on.
+// https://github.com/moby/moby/blob/cab4ac834e8bf36aa38a2ca49599773df6e6805a/volume/mounts/validate.go#L16
+const bindMountErrPrefix = `invalid mount config for type "bind":`
+
+// ExtractBindError extracts the bind error message from the given error if it
+// is a bind error. Otherwise, returns an empty string.
+func ExtractBindMountErrorMsg(err error) string {
+	if err == nil {
+		return ""
+	}
+	msg := err.Error()
+	idx := strings.Index(msg, bindMountErrPrefix)
+	if idx < 0 {
+		return ""
+	}
+
+	return strings.TrimPrefix(msg[idx:], bindMountErrPrefix)
+}
+
+// ExtractPortErrorMsg extracts the port bind error message from the given error
+// if it is a port bind or allocation error. Otherwise, returns an empty string.
+func ExtractPortErrorMsg(err error) string {
+	if err == nil {
+		return ""
+	}
+	if msg := extractPortBindErrorMsg(err); msg != "" {
+		return msg
+	}
+	if msg := extractPortAlreadyAllocatedErrorMsg(err); msg != "" {
+		return msg
+	}
+	return ""
+}
+
+// More internal error messages:
+// https://github.com/moby/moby/blob/cab4ac834e8bf36aa38a2ca49599773df6e6805a/libnetwork/drivers/bridge/port_mapping_linux.go#L622-L627
+// This one is less stable, so we'll do our best. In the worst case, we return a
+// 500 with a longer error message, which will still be helpful to the user.
+const portBindErrPrefix = `failed to bind`
+
+func extractPortBindErrorMsg(err error) string {
+	msg := err.Error()
+	idx := strings.Index(msg, portBindErrPrefix)
+	if idx < 0 {
+		return ""
+	}
+
+	return msg[idx:]
+}
+
+// https://github.com/moby/moby/blob/9b4f68d64cde951e5b985a0c589f16f1416d3968/libnetwork/portallocator/portallocator.go#L33
+// This message has been stable for 10 years.
+var portAlreadyAllocatedPattern = regexp.MustCompile(`Bind for .* failed: port is already allocated`)
+
+func extractPortAlreadyAllocatedErrorMsg(err error) string {
+	return portAlreadyAllocatedPattern.FindString(err.Error())
 }
 
 // The docker errors are annoying to check further up in the stack since they

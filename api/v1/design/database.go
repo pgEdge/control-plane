@@ -19,7 +19,6 @@ var HostIDs = g.ArrayOf(Identifier, func() {
 })
 
 var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
-	// TODO: Validation to enforce that node names are unique within a database.
 	g.Attribute("name", g.String, func() {
 		g.Description("The name of the database node.")
 		g.Pattern(nodeNamePattern)

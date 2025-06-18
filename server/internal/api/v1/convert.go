@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -319,13 +320,10 @@ func apiToDatabaseNodes(apiNodes []*api.DatabaseNodeSpec) ([]*database.Node, err
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse memory: %w", err)
 		}
+		// Host IDs have already been validated before this is called.
 		hostIDs := make([]string, len(apiNode.HostIds))
 		for i, h := range apiNode.HostIds {
-			hostID, err := hostIdentToString(h)
-			if err != nil {
-				return nil, fmt.Errorf("%w: %q", err, h)
-			}
-			hostIDs[i] = hostID
+			hostIDs[i] = string(h)
 		}
 		backupConfig, err := apiToBackupConfig(apiNode.BackupConfig)
 		if err != nil {
@@ -358,12 +356,10 @@ func apiToBackupConfig(apiConfig *api.BackupConfigSpec) (*database.BackupConfig,
 
 	repositories := make([]*pgbackrest.Repository, len(apiConfig.Repositories))
 	for i, apiRepo := range apiConfig.Repositories {
+		// ID has been validated before this point
 		var id string
 		if apiRepo.ID != nil {
 			id = string(*apiRepo.ID)
-			if err := utils.ValidateID(id); err != nil {
-				return nil, ErrInvalidRepositoryID
-			}
 		}
 		repositories[i] = &pgbackrest.Repository{
 			ID:                id,
@@ -404,12 +400,10 @@ func apiRestoreToRepository(apiRepository *api.RestoreRepositorySpec) (*pgbackre
 	if apiRepository == nil {
 		return nil, nil
 	}
+	// ID has been validated before this point
 	var id string
 	if apiRepository.ID != nil {
 		id = string(*apiRepository.ID)
-		if err := utils.ValidateID(id); err != nil {
-			return nil, ErrInvalidRepositoryID
-		}
 	}
 	return &pgbackrest.Repository{
 		ID:             id,
@@ -435,16 +429,18 @@ func apiToRestoreConfig(apiConfig *api.RestoreConfigSpec) (*database.RestoreConf
 	if apiConfig == nil {
 		return nil, nil
 	}
-	sourceDatabaseID, err := dbIdentToString(apiConfig.SourceDatabaseID)
+
+	err := errors.Join(validateRestoreConfig(apiConfig, nil)...)
 	if err != nil {
-		return nil, ErrInvalidSourceDatabaseID
+		return nil, err
 	}
+
 	repo, err := apiRestoreToRepository(apiConfig.Repository)
 	if err != nil {
 		return nil, err
 	}
 	return &database.RestoreConfig{
-		SourceDatabaseID:   sourceDatabaseID,
+		SourceDatabaseID:   string(apiConfig.SourceDatabaseID),
 		SourceNodeName:     apiConfig.SourceNodeName,
 		SourceDatabaseName: apiConfig.SourceDatabaseName,
 		RestoreOptions:     apiConfig.RestoreOptions,
@@ -456,7 +452,7 @@ func apiToDatabaseSpec(id, tID *api.Identifier, apiSpec *api.DatabaseSpec) (*dat
 	var databaseID string
 	var err error
 	if id != nil {
-		databaseID, err = dbIdentToString(*id)
+		databaseID, err = identToString(*id, []string{"id"})
 		if err != nil {
 			return nil, err
 		}
@@ -465,12 +461,16 @@ func apiToDatabaseSpec(id, tID *api.Identifier, apiSpec *api.DatabaseSpec) (*dat
 	}
 	var tenantID *string
 	if tID != nil {
-		t, err := tenantIdentToString(*tID)
+		t, err := identToString(*tID, []string{"tenant_id"})
 		if err != nil {
 			return nil, err
 		}
 		tenantID = &t
 	}
+	if err := validateDatabaseSpec(apiSpec); err != nil {
+		return nil, err
+	}
+
 	cpus, err := parseCPUs(apiSpec.Cpus)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse CPUs: %w", err)
@@ -712,21 +712,17 @@ func extraVolumesToAPI(vols []database.ExtraVolumesSpec) []*api.ExtraVolumesSpec
 }
 
 func dbIdentToString(id api.Identifier) (string, error) {
-	return identToString(id, ErrInvalidDatabaseID)
+	return identToString(id, []string{"database_id"})
 }
 
 func hostIdentToString(id api.Identifier) (string, error) {
-	return identToString(id, ErrInvalidHostID)
+	return identToString(id, []string{"host_id"})
 }
 
-func tenantIdentToString(id api.Identifier) (string, error) {
-	return identToString(id, ErrInvalidTenantID)
-}
-
-func identToString(id api.Identifier, invalidErr error) (string, error) {
+func identToString(id api.Identifier, path []string) (string, error) {
 	out := string(id)
-	if err := utils.ValidateID(out); err != nil {
-		return "", invalidErr
+	if err := validateIdentifier(out, path); err != nil {
+		return "", err
 	}
 	return out, nil
 }

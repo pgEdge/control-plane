@@ -1616,7 +1616,8 @@
           "type": "string",
           "description": "The unique identifier of this repository.",
           "example": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          "minLength": 1,
+          "maxLength": 63
         },
         "retention_full": {
           "type": "integer",
@@ -1943,7 +1944,8 @@
           "type": "string",
           "description": "Unique identifier for the cluster.",
           "example": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
-          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          "minLength": 1,
+          "maxLength": 63
         },
         "status": {
           "$ref": "#/definitions/ClusterStatus"
@@ -1952,7 +1954,8 @@
           "type": "string",
           "description": "Unique identifier for the cluster's owner.",
           "example": "8210ec10-2dca-406c-ac4a-0661d2189954",
-          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          "minLength": 1,
+          "maxLength": 63
         }
       },
       "example": {
@@ -3741,7 +3744,8 @@
           "type": "string",
           "description": "Unique identifier for the database.",
           "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          "minLength": 1,
+          "maxLength": 63
         },
         "instances": {
           "$ref": "#/definitions/InstanceResponseBodyCollection"
@@ -3766,7 +3770,8 @@
           "type": "string",
           "description": "Unique identifier for the database.",
           "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          "minLength": 1,
+          "maxLength": 63
         },
         "updated_at": {
           "type": "string",
@@ -4532,7 +4537,8 @@
           "type": "string",
           "description": "Unique identifier for the database.",
           "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          "minLength": 1,
+          "maxLength": 63
         },
         "spec": {
           "$ref": "#/definitions/DatabaseSpec"
@@ -4541,7 +4547,8 @@
           "type": "string",
           "description": "Unique identifier for the databases's owner.",
           "example": "8210ec10-2dca-406c-ac4a-0661d2189954",
-          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          "minLength": 1,
+          "maxLength": 63
         }
       },
       "example": {
@@ -5601,7 +5608,8 @@
           "type": "string",
           "description": "Unique identifier for the database.",
           "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          "minLength": 1,
+          "maxLength": 63
         },
         "instances": {
           "$ref": "#/definitions/InstanceResponseBodyCollection"
@@ -5626,7 +5634,8 @@
           "type": "string",
           "description": "Unique identifier for the databases's owner.",
           "example": "8210ec10-2dca-406c-ac4a-0661d2189954",
-          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          "minLength": 1,
+          "maxLength": 63
         },
         "updated_at": {
           "type": "string",
@@ -6424,7 +6433,8 @@
           "items": {
             "type": "string",
             "example": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+            "minLength": 1,
+            "maxLength": 63
           },
           "description": "The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary and the others will be read replicas.",
           "example": [
@@ -6622,7 +6632,8 @@
           "type": "string",
           "description": "Unique identifier for the database.",
           "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          "minLength": 1,
+          "maxLength": 63
         },
         "instances": {
           "$ref": "#/definitions/InstanceResponseAbbreviatedCollection"
@@ -6644,7 +6655,8 @@
           "type": "string",
           "description": "Unique identifier for the databases's owner.",
           "example": "8210ec10-2dca-406c-ac4a-0661d2189954",
-          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          "minLength": 1,
+          "maxLength": 63
         },
         "updated_at": {
           "type": "string",
@@ -7530,7 +7542,8 @@
           "type": "string",
           "description": "Unique identifier for the host.",
           "example": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          "minLength": 1,
+          "maxLength": 63
         },
         "ipv4_address": {
           "type": "string",
@@ -8384,7 +8397,8 @@
           "type": "string",
           "description": "The ID of the database to restore this database from.",
           "example": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          "minLength": 1,
+          "maxLength": 63
         },
         "source_database_name": {
           "type": "string",
@@ -9265,7 +9279,8 @@
           "type": "string",
           "description": "The unique identifier of this repository.",
           "example": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          "minLength": 1,
+          "maxLength": 63
         },
         "s3_bucket": {
           "type": "string",
@@ -9567,7 +9582,8 @@
           "type": "string",
           "description": "Unique identifier for the databases's owner.",
           "example": "8210ec10-2dca-406c-ac4a-0661d2189954",
-          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          "minLength": 1,
+          "maxLength": 63
         }
       },
       "example": {

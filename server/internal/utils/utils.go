@@ -127,12 +127,7 @@ func BuildOptionArgs(options map[string]string) []string {
 }
 
 var idPattern = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$`)
-var ErrInvalidIdentifier = errors.New(`valid IDs must:
-- Be 1-63 characters long
-- Contain only lower-cased letters and hyphens
-- Start with a letter or number
-- End with a letter or number
-- Not contain two consecutive hyphens`)
+var ErrInvalidIdentifier = errors.New(`valid IDs must be 1-63 characters long, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain two consecutive hyphens`)
 
 func ValidateID(value string) error {
 	if !idPattern.MatchString(value) || strings.Contains(value, "--") {
