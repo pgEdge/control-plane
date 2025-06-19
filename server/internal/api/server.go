@@ -10,7 +10,7 @@ import (
 	"github.com/samber/do"
 	goahttp "goa.design/goa/v3/http"
 
-	v1 "github.com/pgEdge/control-plane/server/internal/api/v1"
+	"github.com/pgEdge/control-plane/server/internal/api/apiv1"
 	"github.com/pgEdge/control-plane/server/internal/config"
 )
 
@@ -19,7 +19,7 @@ var _ do.Shutdownable = (*Server)(nil)
 type Server struct {
 	started bool
 	cfg     config.Config
-	v1Svc   *v1.Service
+	v1Svc   *apiv1.Service
 	http    *httpServer
 	mqtt    *mqttServer
 	errCh   chan error
@@ -28,7 +28,7 @@ type Server struct {
 func NewServer(
 	cfg config.Config,
 	logger zerolog.Logger,
-	v1Svc *v1.Service,
+	v1Svc *apiv1.Service,
 ) *Server {
 	mux := goahttp.NewMuxer()
 	mux.Handle("GET", "/", func(w http.ResponseWriter, r *http.Request) {

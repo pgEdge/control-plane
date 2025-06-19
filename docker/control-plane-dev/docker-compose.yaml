@@ -49,6 +49,6 @@ services:
     ports:
       - 8999:80
     volumes:
-      - ../../api/v1/gen/http:/usr/share/nginx/html/specs
+      - ../../api/apiv1/gen/http:/usr/share/nginx/html/specs
     environment:
       - SPEC_URL=specs/openapi3.yaml
