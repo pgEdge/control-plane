@@ -491,3 +491,31 @@ func (s *PostInitHandlers) ValidateSpec(ctx context.Context, spec *database.Spec
 
 	return nil
 }
+
+func (s *PostInitHandlers) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (*api.Task, error) {
+	if req == nil {
+		return nil, makeInvalidInputErr(errors.New("request cannot be nil"))
+	}
+
+	input := &workflows.RestartInstanceInput{
+		DatabaseID: string(req.DatabaseID),
+		InstanceID: string(req.InstanceID),
+	}
+
+	if req.RestartOptions != nil && req.RestartOptions.ScheduledAt != nil {
+		input.ScheduledAt = *req.RestartOptions.ScheduledAt
+	}
+
+	t, err := s.workflowSvc.RestartInstance(ctx, input)
+	if err != nil {
+		return nil, apiErr(fmt.Errorf("failed to start restart instance workflow: %w", err))
+	}
+
+	s.logger.Info().
+		Str("database_id", string(req.DatabaseID)).
+		Str("instance_id", string(req.InstanceID)).
+		Str("task_id", t.TaskID.String()).
+		Msg("restart instance workflow initiated")
+
+	return taskToAPI(t), nil
+}

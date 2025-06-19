@@ -55,6 +55,9 @@ type Service interface {
 	RestoreDatabase(context.Context, *RestoreDatabasePayload) (res *RestoreDatabaseResponse, err error)
 	// Returns version information for this Control Plane server.
 	GetVersion(context.Context) (res *VersionInfo, err error)
+	// Restarts a specific instance within a database. Supports immediate or
+	// scheduled restarts.
+	RestartInstance(context.Context, *RestartInstancePayload) (res *Task, err error)
 }
 
 // APIName is the name of the API as defined in the design.
@@ -71,7 +74,7 @@ const ServiceName = "control-plane"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [19]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "delete-database", "backup-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "restore-database", "get-version"}
+var MethodNames = [20]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "delete-database", "backup-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "restore-database", "get-version", "restart-instance"}
 
 // A Control Plane API error.
 type APIError struct {
@@ -597,6 +600,20 @@ type RemoveHostPayload struct {
 	HostID Identifier
 }
 
+// RestartInstancePayload is the payload type of the control-plane service
+// restart-instance method.
+type RestartInstancePayload struct {
+	// The ID of the database that owns the instance.
+	DatabaseID Identifier
+	// The ID of the instance to restart.
+	InstanceID Identifier
+	// Restart options (e.g., scheduling).
+	RestartOptions *struct {
+		// The time at which the restart is scheduled.
+		ScheduledAt *string
+	}
+}
+
 type RestoreConfigSpec struct {
 	// The ID of the database to restore this database from.
 	SourceDatabaseID Identifier
@@ -826,6 +843,11 @@ func MakeOperationAlreadyInProgress(err error) *goa.ServiceError {
 // MakeDatabaseNotModifiable builds a goa.ServiceError from an error.
 func MakeDatabaseNotModifiable(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "database_not_modifiable", false, false, false)
+}
+
+// MakeRestartFailed builds a goa.ServiceError from an error.
+func MakeRestartFailed(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "restart_failed", false, false, false)
 }
 
 // NewListDatabasesResponse initializes result type ListDatabasesResponse from

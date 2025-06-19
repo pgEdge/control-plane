@@ -34,10 +34,11 @@ type Client struct {
 	GetDatabaseTaskLogEndpoint goa.Endpoint
 	RestoreDatabaseEndpoint    goa.Endpoint
 	GetVersionEndpoint         goa.Endpoint
+	RestartInstanceEndpoint    goa.Endpoint
 }
 
 // NewClient initializes a "control-plane" service client given the endpoints.
-func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluster, listHosts, getHost, removeHost, listDatabases, createDatabase, getDatabase, updateDatabase, deleteDatabase, backupDatabaseNode, listDatabaseTasks, getDatabaseTask, getDatabaseTaskLog, restoreDatabase, getVersion goa.Endpoint) *Client {
+func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluster, listHosts, getHost, removeHost, listDatabases, createDatabase, getDatabase, updateDatabase, deleteDatabase, backupDatabaseNode, listDatabaseTasks, getDatabaseTask, getDatabaseTaskLog, restoreDatabase, getVersion, restartInstance goa.Endpoint) *Client {
 	return &Client{
 		InitClusterEndpoint:        initCluster,
 		JoinClusterEndpoint:        joinCluster,
@@ -58,6 +59,7 @@ func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluste
 		GetDatabaseTaskLogEndpoint: getDatabaseTaskLog,
 		RestoreDatabaseEndpoint:    restoreDatabase,
 		GetVersionEndpoint:         getVersion,
+		RestartInstanceEndpoint:    restartInstance,
 	}
 }
 
@@ -360,4 +362,22 @@ func (c *Client) GetVersion(ctx context.Context) (res *VersionInfo, err error) {
 		return
 	}
 	return ires.(*VersionInfo), nil
+}
+
+// RestartInstance calls the "restart-instance" endpoint of the "control-plane"
+// service.
+// RestartInstance may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError): The cluster must be initialized before instance operations.
+//   - "invalid_input" (type *goa.ServiceError): The input values are malformed or missing.
+//   - "not_found" (type *goa.ServiceError): The specified database or instance could not be found.
+//   - "restart_failed" (type *goa.ServiceError): Restart operation could not be completed.
+//   - "server_error" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) RestartInstance(ctx context.Context, p *RestartInstancePayload) (res *Task, err error) {
+	var ires any
+	ires, err = c.RestartInstanceEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*Task), nil
 }

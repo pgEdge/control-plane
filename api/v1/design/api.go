@@ -480,6 +480,53 @@ var _ = g.Service("control-plane", func() {
 			g.Meta("openapi:tag:System")
 		})
 	})
+	g.Method("restart-instance", func() {
+		g.Description("Restarts a specific instance within a database. Supports immediate or scheduled restarts.")
+		g.Meta("openapi:summary", "Restart a database instance")
+
+		g.Payload(func() {
+			g.Attribute("database_id", Identifier, func() {
+				g.Description("The ID of the database that owns the instance.")
+				g.Example("68f50878-44d2-4524-a823-e31bd478706d")
+			})
+			g.Attribute("instance_id", Identifier, func() {
+				g.Description("The ID of the instance to restart.")
+				g.Example("68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi")
+			})
+			g.Attribute("restart_options", func() {
+				g.Description("Restart options (e.g., scheduling).")
+				g.Attribute("scheduled_at", g.String, func() {
+					g.Format(g.FormatDateTime)
+					g.Description("The time at which the restart is scheduled.")
+					g.Example("2025-06-18T03:45:00Z")
+				})
+			})
+			g.Required("database_id", "instance_id")
+		})
+
+		g.Result(Task, func() {
+			g.Description("Returns a task representing the restart operation.")
+		})
+
+		g.Error("cluster_not_initialized", func() {
+			g.Description("The cluster must be initialized before instance operations.")
+		})
+		g.Error("invalid_input", func() {
+			g.Description("The input values are malformed or missing.")
+		})
+		g.Error("not_found", func() {
+			g.Description("The specified database or instance could not be found.")
+		})
+		g.Error("restart_failed", func() {
+			g.Description("Restart operation could not be completed.")
+		})
+
+		g.HTTP(func() {
+			g.POST("/v1/databases/{database_id}/instances/{instance_id}/restart")
+			g.Body("restart_options")
+			g.Meta("openapi:tag:Database")
+		})
+	})
 
 	// Serves the OpenAPI spec as a static file
 	g.Files("/v1/openapi.json", "./gen/http/openapi3.json", func() {

@@ -568,3 +568,58 @@ func BuildRestoreDatabasePayload(controlPlaneRestoreDatabaseBody string, control
 
 	return res, nil
 }
+
+// BuildRestartInstancePayload builds the payload for the control-plane
+// restart-instance endpoint from CLI flags.
+func BuildRestartInstancePayload(controlPlaneRestartInstanceBody string, controlPlaneRestartInstanceDatabaseID string, controlPlaneRestartInstanceInstanceID string) (*controlplane.RestartInstancePayload, error) {
+	var err error
+	var body struct {
+		// The time at which the restart is scheduled.
+		ScheduledAt *string `form:"scheduled_at" json:"scheduled_at" xml:"scheduled_at"`
+	}
+	{
+		err = json.Unmarshal([]byte(controlPlaneRestartInstanceBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"scheduled_at\": \"2025-06-18T03:45:00Z\"\n   }'")
+		}
+	}
+	var databaseID string
+	{
+		databaseID = controlPlaneRestartInstanceDatabaseID
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var instanceID string
+	{
+		instanceID = controlPlaneRestartInstanceInstanceID
+		if utf8.RuneCountInString(instanceID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 1, true))
+		}
+		if utf8.RuneCountInString(instanceID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 63, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	v := &struct {
+		// The time at which the restart is scheduled.
+		ScheduledAt *string
+	}{
+		ScheduledAt: body.ScheduledAt,
+	}
+	res := &controlplane.RestartInstancePayload{
+		RestartOptions: v,
+	}
+	res.DatabaseID = controlplane.Identifier(databaseID)
+	res.InstanceID = controlplane.Identifier(instanceID)
+
+	return res, nil
+}

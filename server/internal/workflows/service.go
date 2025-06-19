@@ -263,3 +263,21 @@ func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) (*Valid
 
 	return output, nil
 }
+
+func (s *Service) RestartInstance(ctx context.Context, input *RestartInstanceInput) (*task.Task, error) {
+	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		DatabaseID: input.DatabaseID,
+		InstanceID: input.InstanceID,
+		Type:       task.TypeRestartInstance,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new task: %w", err)
+	}
+	input.TaskID = t.TaskID
+	err = s.createWorkflow(ctx, t, input.InstanceID, s.workflows.RestartInstance, input)
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
