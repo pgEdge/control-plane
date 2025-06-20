@@ -1,6 +1,8 @@
 package workflows
 
 import (
+	"time"
+
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/task"
@@ -11,10 +13,12 @@ type RestartInstanceInput struct {
 	DatabaseID  string
 	InstanceID  string
 	TaskID      uuid.UUID
-	ScheduledAt string
+	ScheduledAt time.Time // Optional, if empty, restart immediately
 }
 
-func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstanceInput) (*activities.RestartInstanceOutput, error) {
+type RestartInstanceOutput struct{}
+
+func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstanceInput) (*RestartInstanceOutput, error) {
 	logger := workflow.Logger(ctx).With(
 		"database_id", input.DatabaseID,
 		"instance_id", input.InstanceID,
@@ -50,7 +54,7 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 		InstanceID: input.InstanceID,
 		TaskID:     input.TaskID,
 	}
-	output, err := w.Activities.ExecuteRestartInstance(ctx, &req).Get(ctx)
+	_, err := w.Activities.ExecuteRestartInstance(ctx, &req).Get(ctx)
 	if err != nil {
 		return nil, handleError(err)
 	}
@@ -64,6 +68,6 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 		return nil, handleError(err)
 	}
 
-	logger.Info("successfully restarted instance")
-	return output, nil
+	logger.Info("successfully requested a restart")
+	return &RestartInstanceOutput{}, nil
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -503,7 +504,11 @@ func (s *PostInitHandlers) RestartInstance(ctx context.Context, req *api.Restart
 	}
 
 	if req.RestartOptions != nil && req.RestartOptions.ScheduledAt != nil {
-		input.ScheduledAt = *req.RestartOptions.ScheduledAt
+		scheduleTime, err := time.Parse(time.RFC3339, *req.RestartOptions.ScheduledAt)
+		if err != nil {
+			return nil, fmt.Errorf("invalid scheduled_at value: %w", err)
+		}
+		input.ScheduledAt = scheduleTime
 	}
 
 	t, err := s.workflowSvc.RestartInstance(ctx, input)

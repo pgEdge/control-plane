@@ -77,6 +77,13 @@ type RestoreDatabaseRequestBody struct {
 	TargetNodes []string `form:"target_nodes,omitempty" json:"target_nodes,omitempty" xml:"target_nodes,omitempty"`
 }
 
+// RestartInstanceRequestBody is the type of the "control-plane" service
+// "restart-instance" endpoint HTTP request body.
+type RestartInstanceRequestBody struct {
+	// The time at which the restart is scheduled.
+	ScheduledAt *string `form:"scheduled_at,omitempty" json:"scheduled_at,omitempty" xml:"scheduled_at,omitempty"`
+}
+
 // InitClusterResponseBody is the type of the "control-plane" service
 // "init-cluster" endpoint HTTP response body.
 type InitClusterResponseBody struct {
@@ -3311,14 +3318,8 @@ func NewRestoreDatabasePayload(body *RestoreDatabaseRequestBody, databaseID stri
 
 // NewRestartInstancePayload builds a control-plane service restart-instance
 // endpoint payload.
-func NewRestartInstancePayload(body struct {
-	// The time at which the restart is scheduled.
-	ScheduledAt *string `form:"scheduled_at" json:"scheduled_at" xml:"scheduled_at"`
-}, databaseID string, instanceID string) *controlplane.RestartInstancePayload {
-	v := &struct {
-		// The time at which the restart is scheduled.
-		ScheduledAt *string
-	}{
+func NewRestartInstancePayload(body *RestartInstanceRequestBody, databaseID string, instanceID string) *controlplane.RestartInstancePayload {
+	v := &controlplane.RestartOptions{
 		ScheduledAt: body.ScheduledAt,
 	}
 	res := &controlplane.RestartInstancePayload{
@@ -3474,6 +3475,15 @@ func ValidateRestoreDatabaseRequestBody(body *RestoreDatabaseRequestBody) (err e
 	}
 	if len(body.TargetNodes) > 9 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.target_nodes", body.TargetNodes, len(body.TargetNodes), 9, false))
+	}
+	return
+}
+
+// ValidateRestartInstanceRequestBody runs the validations defined on
+// Restart-InstanceRequestBody
+func ValidateRestartInstanceRequestBody(body *RestartInstanceRequestBody) (err error) {
+	if body.ScheduledAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.scheduled_at", *body.ScheduledAt, goa.FormatDateTime))
 	}
 	return
 }

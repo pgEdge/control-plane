@@ -18,9 +18,10 @@ import (
 type RestartInstanceInput struct {
 	DatabaseID  string    `json:"database_id"`
 	InstanceID  string    `json:"instance_id"`
-	ScheduledAt string    `json:"scheduled_at,omitempty"` // Optional, if empty, restart immediately
+	ScheduledAt time.Time `json:"scheduled_at,omitempty"` // Optional, if empty, restart immediately
 	TaskID      uuid.UUID `json:"task_id"`
 }
+
 type RestartInstanceOutput struct{}
 
 func (a *Activities) ExecuteRestartInstance(
@@ -59,17 +60,10 @@ func (a *Activities) RestartInstance(ctx context.Context, input *RestartInstance
 
 	patroniClient := patroni.NewClient(connInfo.PatroniURL(), nil)
 
-	restartPending := true
 	restartReq := &patroni.Restart{}
-	if input.ScheduledAt != "" {
-		scheduleTime, err := time.Parse(time.RFC3339, input.ScheduledAt)
-		if err != nil {
-			return nil, fmt.Errorf("invalid time received : %w", err)
-		}
-
-		restartReq.Schedule = &scheduleTime
+	if !input.ScheduledAt.IsZero() {
+		restartReq.Schedule = &input.ScheduledAt
 	}
-	restartReq.RestartPending = &restartPending
 
 	err = patroniClient.ScheduleRestart(ctx, restartReq)
 	if err != nil {

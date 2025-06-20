@@ -493,21 +493,22 @@ var _ = g.Service("control-plane", func() {
 				g.Description("The ID of the instance to restart.")
 				g.Example("68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi")
 			})
-			g.Attribute("restart_options", func() {
-				g.Description("Restart options (e.g., scheduling).")
-				g.Attribute("scheduled_at", g.String, func() {
-					g.Format(g.FormatDateTime)
-					g.Description("The time at which the restart is scheduled.")
-					g.Example("2025-06-18T03:45:00Z")
-				})
-			})
+			g.Attribute("restart_options", RestartOptions)
+
 			g.Required("database_id", "instance_id")
 		})
 
 		g.Result(Task, func() {
 			g.Description("Returns a task representing the restart operation.")
+			g.Example(map[string]any{
+				"created_at":  "2025-06-18T16:52:05Z",
+				"database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
+				"instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
+				"status":      "pending",
+				"task_id":     "019783f4-75f4-71e7-85a3-c9b96b345d77",
+				"type":        "restart_instance",
+			})
 		})
-
 		g.Error("cluster_not_initialized", func() {
 			g.Description("The cluster must be initialized before instance operations.")
 		})

@@ -573,10 +573,7 @@ func BuildRestoreDatabasePayload(controlPlaneRestoreDatabaseBody string, control
 // restart-instance endpoint from CLI flags.
 func BuildRestartInstancePayload(controlPlaneRestartInstanceBody string, controlPlaneRestartInstanceDatabaseID string, controlPlaneRestartInstanceInstanceID string) (*controlplane.RestartInstancePayload, error) {
 	var err error
-	var body struct {
-		// The time at which the restart is scheduled.
-		ScheduledAt *string `form:"scheduled_at" json:"scheduled_at" xml:"scheduled_at"`
-	}
+	var body RestartInstanceRequestBody
 	{
 		err = json.Unmarshal([]byte(controlPlaneRestartInstanceBody), &body)
 		if err != nil {
@@ -609,10 +606,7 @@ func BuildRestartInstancePayload(controlPlaneRestartInstanceBody string, control
 			return nil, err
 		}
 	}
-	v := &struct {
-		// The time at which the restart is scheduled.
-		ScheduledAt *string
-	}{
+	v := &controlplane.RestartOptions{
 		ScheduledAt: body.ScheduledAt,
 	}
 	res := &controlplane.RestartInstancePayload{

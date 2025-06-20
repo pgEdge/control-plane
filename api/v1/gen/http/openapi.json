@@ -576,20 +576,11 @@
             "type": "string"
           },
           {
-            "name": "object",
+            "name": "Restart-InstanceRequestBody",
             "in": "body",
-            "description": "Restart options (e.g., scheduling).",
             "required": true,
             "schema": {
-              "type": "object",
-              "properties": {
-                "scheduled_at": {
-                  "type": "string",
-                  "description": "The time at which the restart is scheduled.",
-                  "example": "2025-06-18T03:45:00Z",
-                  "format": "date-time"
-                }
-              }
+              "$ref": "#/definitions/RestartOptions"
             }
           }
         ],
@@ -5051,6 +5042,22 @@
         "postgres_version",
         "spock_version"
       ]
+    },
+    "RestartOptions": {
+      "title": "RestartOptions",
+      "type": "object",
+      "properties": {
+        "scheduled_at": {
+          "type": "string",
+          "description": "The time at which the restart is scheduled.",
+          "example": "2025-06-18T03:45:00Z",
+          "format": "date-time"
+        }
+      },
+      "description": "Options for restarting a Postgres instance.",
+      "example": {
+        "scheduled_at": "2025-06-18T03:45:00Z"
+      }
     },
     "RestoreConfigSpec": {
       "title": "RestoreConfigSpec",

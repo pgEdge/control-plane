@@ -438,7 +438,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		}
 		// Create a merged PostgreSQL configuration with node-level overrides
 		postgresqlConf := maps.Clone(s.PostgreSQLConf)
-		maps.Copy(node.PostgreSQLConf, postgresqlConf)
+		maps.Copy(postgresqlConf, node.PostgreSQLConf)
 		extraVolumes := s.ExtraVolumes
 		if len(node.ExtraVolumes) > 0 {
 			extraVolumes = node.ExtraVolumes

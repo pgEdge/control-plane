@@ -1087,21 +1087,11 @@ paths:
             maxLength: 63
           example: 68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi
       requestBody:
-        description: Restart options (e.g., scheduling).
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                scheduled_at:
-                  type: string
-                  description: The time at which the restart is scheduled.
-                  example: "2025-06-18T03:45:00Z"
-                  format: date-time
-              description: Restart options (e.g., scheduling).
-              example:
-                scheduled_at: "2025-06-18T03:45:00Z"
+              $ref: '#/components/schemas/RestartOptions'
             example:
               scheduled_at: "2025-06-18T03:45:00Z"
       responses:
@@ -1111,13 +1101,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Task'
-              example:
-                completed_at: "2025-06-18T16:52:35Z"
-                created_at: "2025-06-18T16:52:05Z"
-                database_id: storefront
-                status: completed
-                task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
-                type: create
+              examples:
+                default:
+                  summary: default
+                  value:
+                    created_at: "2025-06-18T16:52:05Z"
+                    database_id: f2f1cae9-6f37-4609-aa98-d0991bff3493
+                    instance_id: f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi
+                    status: pending
+                    task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+                    type: restart_instance
         "400":
           description: 'invalid_input: Bad Request response.'
           content:
@@ -5505,6 +5498,17 @@ components:
       required:
         - postgres_version
         - spock_version
+    RestartOptions:
+      type: object
+      properties:
+        scheduled_at:
+          type: string
+          description: The time at which the restart is scheduled.
+          example: "2025-06-18T03:45:00Z"
+          format: date-time
+      description: Options for restarting a Postgres instance.
+      example:
+        scheduled_at: "2025-06-18T03:45:00Z"
     RestoreConfigSpec:
       type: object
       properties:
