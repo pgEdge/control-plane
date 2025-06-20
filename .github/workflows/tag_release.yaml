@@ -16,9 +16,13 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
       - name: Tag release
+        env:
+          branch_name: ${{ github.event.pull_request.head.ref }}
         run: |
-          branch_name=${{ github.event.pull_request.head.ref }}
           version=${branch_name#release/}
 
           # ensure release notes exist
@@ -26,5 +30,5 @@ jobs:
 
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-          git tag -a -F changes/${version}.md ${version}
-          git push origin ${version}
+
+          make version-tags TAG=${version} CHANGELOG=changes/${version}.md
