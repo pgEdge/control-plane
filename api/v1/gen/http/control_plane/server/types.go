@@ -77,6 +77,13 @@ type RestoreDatabaseRequestBody struct {
 	TargetNodes []string `form:"target_nodes,omitempty" json:"target_nodes,omitempty" xml:"target_nodes,omitempty"`
 }
 
+// RestartInstanceRequestBody is the type of the "control-plane" service
+// "restart-instance" endpoint HTTP request body.
+type RestartInstanceRequestBody struct {
+	// The time at which the restart is scheduled.
+	ScheduledAt *string `form:"scheduled_at,omitempty" json:"scheduled_at,omitempty" xml:"scheduled_at,omitempty"`
+}
+
 // InitClusterResponseBody is the type of the "control-plane" service
 // "init-cluster" endpoint HTTP response body.
 type InitClusterResponseBody struct {
@@ -273,6 +280,33 @@ type GetVersionResponseBody struct {
 	RevisionTime string `form:"revision_time" json:"revision_time" xml:"revision_time"`
 	// The CPU architecture of the API server.
 	Arch string `form:"arch" json:"arch" xml:"arch"`
+}
+
+// RestartInstanceResponseBody is the type of the "control-plane" service
+// "restart-instance" endpoint HTTP response body.
+type RestartInstanceResponseBody struct {
+	// The parent task ID of the task.
+	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	// The database ID of the task.
+	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// The unique ID of the task.
+	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+	// The time when the task was created.
+	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The status of the task.
+	Status string `form:"status" json:"status" xml:"status"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
 // InitClusterClusterAlreadyInitializedResponseBody is the type of the
@@ -960,6 +994,46 @@ type RestoreDatabaseServerErrorResponseBody struct {
 // GetVersionServerErrorResponseBody is the type of the "control-plane" service
 // "get-version" endpoint HTTP response body for the "server_error" error.
 type GetVersionServerErrorResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// RestartInstanceClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "restart-instance" endpoint HTTP response body for
+// the "cluster_not_initialized" error.
+type RestartInstanceClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// RestartInstanceInvalidInputResponseBody is the type of the "control-plane"
+// service "restart-instance" endpoint HTTP response body for the
+// "invalid_input" error.
+type RestartInstanceInvalidInputResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// RestartInstanceNotFoundResponseBody is the type of the "control-plane"
+// service "restart-instance" endpoint HTTP response body for the "not_found"
+// error.
+type RestartInstanceNotFoundResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// RestartInstanceServerErrorResponseBody is the type of the "control-plane"
+// service "restart-instance" endpoint HTTP response body for the
+// "server_error" error.
+type RestartInstanceServerErrorResponseBody struct {
 	// The name of the error.
 	Name string `form:"name" json:"name" xml:"name"`
 	// The error message.
@@ -2264,6 +2338,25 @@ func NewGetVersionResponseBody(res *controlplane.VersionInfo) *GetVersionRespons
 	return body
 }
 
+// NewRestartInstanceResponseBody builds the HTTP response body from the result
+// of the "restart-instance" endpoint of the "control-plane" service.
+func NewRestartInstanceResponseBody(res *controlplane.Task) *RestartInstanceResponseBody {
+	body := &RestartInstanceResponseBody{
+		ParentID:    res.ParentID,
+		DatabaseID:  res.DatabaseID,
+		NodeName:    res.NodeName,
+		InstanceID:  res.InstanceID,
+		HostID:      res.HostID,
+		TaskID:      res.TaskID,
+		CreatedAt:   res.CreatedAt,
+		CompletedAt: res.CompletedAt,
+		Type:        res.Type,
+		Status:      res.Status,
+		Error:       res.Error,
+	}
+	return body
+}
+
 // NewInitClusterClusterAlreadyInitializedResponseBody builds the HTTP response
 // body from the result of the "init-cluster" endpoint of the "control-plane"
 // service.
@@ -3003,6 +3096,48 @@ func NewGetVersionServerErrorResponseBody(res *controlplane.APIError) *GetVersio
 	return body
 }
 
+// NewRestartInstanceClusterNotInitializedResponseBody builds the HTTP response
+// body from the result of the "restart-instance" endpoint of the
+// "control-plane" service.
+func NewRestartInstanceClusterNotInitializedResponseBody(res *controlplane.APIError) *RestartInstanceClusterNotInitializedResponseBody {
+	body := &RestartInstanceClusterNotInitializedResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewRestartInstanceInvalidInputResponseBody builds the HTTP response body
+// from the result of the "restart-instance" endpoint of the "control-plane"
+// service.
+func NewRestartInstanceInvalidInputResponseBody(res *controlplane.APIError) *RestartInstanceInvalidInputResponseBody {
+	body := &RestartInstanceInvalidInputResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewRestartInstanceNotFoundResponseBody builds the HTTP response body from
+// the result of the "restart-instance" endpoint of the "control-plane" service.
+func NewRestartInstanceNotFoundResponseBody(res *controlplane.APIError) *RestartInstanceNotFoundResponseBody {
+	body := &RestartInstanceNotFoundResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewRestartInstanceServerErrorResponseBody builds the HTTP response body from
+// the result of the "restart-instance" endpoint of the "control-plane" service.
+func NewRestartInstanceServerErrorResponseBody(res *controlplane.APIError) *RestartInstanceServerErrorResponseBody {
+	body := &RestartInstanceServerErrorResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewJoinClusterClusterJoinToken builds a control-plane service join-cluster
 // endpoint payload.
 func NewJoinClusterClusterJoinToken(body *JoinClusterRequestBody) *controlplane.ClusterJoinToken {
@@ -3181,6 +3316,21 @@ func NewRestoreDatabasePayload(body *RestoreDatabaseRequestBody, databaseID stri
 	return res
 }
 
+// NewRestartInstancePayload builds a control-plane service restart-instance
+// endpoint payload.
+func NewRestartInstancePayload(body *RestartInstanceRequestBody, databaseID string, instanceID string) *controlplane.RestartInstancePayload {
+	v := &controlplane.RestartOptions{
+		ScheduledAt: body.ScheduledAt,
+	}
+	res := &controlplane.RestartInstancePayload{
+		RestartOptions: v,
+	}
+	res.DatabaseID = controlplane.Identifier(databaseID)
+	res.InstanceID = controlplane.Identifier(instanceID)
+
+	return res
+}
+
 // ValidateJoinClusterRequestBody runs the validations defined on
 // Join-ClusterRequestBody
 func ValidateJoinClusterRequestBody(body *JoinClusterRequestBody) (err error) {
@@ -3325,6 +3475,15 @@ func ValidateRestoreDatabaseRequestBody(body *RestoreDatabaseRequestBody) (err e
 	}
 	if len(body.TargetNodes) > 9 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.target_nodes", body.TargetNodes, len(body.TargetNodes), 9, false))
+	}
+	return
+}
+
+// ValidateRestartInstanceRequestBody runs the validations defined on
+// Restart-InstanceRequestBody
+func ValidateRestartInstanceRequestBody(body *RestartInstanceRequestBody) (err error) {
+	if body.ScheduledAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.scheduled_at", *body.ScheduledAt, goa.FormatDateTime))
 	}
 	return
 }

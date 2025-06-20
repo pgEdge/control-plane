@@ -93,6 +93,10 @@ type Client struct {
 	// endpoint.
 	GetVersionDoer goahttp.Doer
 
+	// RestartInstance Doer is the HTTP client used to make requests to the
+	// restart-instance endpoint.
+	RestartInstanceDoer goahttp.Doer
+
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
 	RestoreResponseBody bool
@@ -133,6 +137,7 @@ func NewClient(
 		GetDatabaseTaskLogDoer: doer,
 		RestoreDatabaseDoer:    doer,
 		GetVersionDoer:         doer,
+		RestartInstanceDoer:    doer,
 		RestoreResponseBody:    restoreBody,
 		scheme:                 scheme,
 		host:                   host,
@@ -537,6 +542,30 @@ func (c *Client) GetVersion() goa.Endpoint {
 		resp, err := c.GetVersionDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("control-plane", "get-version", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// RestartInstance returns an endpoint that makes HTTP requests to the
+// control-plane service restart-instance server.
+func (c *Client) RestartInstance() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeRestartInstanceRequest(c.encoder)
+		decodeResponse = DecodeRestartInstanceResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildRestartInstanceRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.RestartInstanceDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "restart-instance", err)
 		}
 		return decodeResponse(resp)
 	}

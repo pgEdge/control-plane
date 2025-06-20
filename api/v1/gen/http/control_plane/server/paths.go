@@ -105,3 +105,8 @@ func RestoreDatabaseControlPlanePath(databaseID string) string {
 func GetVersionControlPlanePath() string {
 	return "/v1/version"
 }
+
+// RestartInstanceControlPlanePath returns the URL path to the control-plane service restart-instance HTTP endpoint.
+func RestartInstanceControlPlanePath(databaseID string, instanceID string) string {
+	return fmt.Sprintf("/v1/databases/%v/instances/%v/restart", databaseID, instanceID)
+}

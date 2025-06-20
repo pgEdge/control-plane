@@ -552,6 +552,98 @@
         ]
       }
     },
+    "/v1/databases/{database_id}/instances/{instance_id}/restart": {
+      "post": {
+        "tags": [
+          "Database"
+        ],
+        "summary": "Restart a database instance",
+        "description": "Restarts a specific instance within a database. Supports immediate or scheduled restarts.",
+        "operationId": "control-plane#restart-instance",
+        "parameters": [
+          {
+            "name": "database_id",
+            "in": "path",
+            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "instance_id",
+            "in": "path",
+            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Restart-InstanceRequestBody",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RestartOptions"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK response.",
+            "schema": {
+              "$ref": "#/definitions/Task",
+              "required": [
+                "database_id",
+                "task_id",
+                "created_at",
+                "type",
+                "status"
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad Request response.",
+            "schema": {
+              "$ref": "#/definitions/APIError",
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          },
+          "404": {
+            "description": "Not Found response.",
+            "schema": {
+              "$ref": "#/definitions/APIError",
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          },
+          "409": {
+            "description": "Conflict response.",
+            "schema": {
+              "$ref": "#/definitions/APIError",
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          },
+          "500": {
+            "description": "Internal Server Error response.",
+            "schema": {
+              "$ref": "#/definitions/APIError",
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          }
+        },
+        "schemes": [
+          "http"
+        ]
+      }
+    },
     "/v1/databases/{database_id}/nodes/{node_name}/backups": {
       "post": {
         "tags": [
@@ -4950,6 +5042,22 @@
         "postgres_version",
         "spock_version"
       ]
+    },
+    "RestartOptions": {
+      "title": "RestartOptions",
+      "type": "object",
+      "properties": {
+        "scheduled_at": {
+          "type": "string",
+          "description": "The time at which the restart is scheduled.",
+          "example": "2025-06-18T03:45:00Z",
+          "format": "date-time"
+        }
+      },
+      "description": "Options for restarting a Postgres instance.",
+      "example": {
+        "scheduled_at": "2025-06-18T03:45:00Z"
+      }
     },
     "RestoreConfigSpec": {
       "title": "RestoreConfigSpec",

@@ -197,3 +197,7 @@ func (s *PreInitHandlers) GetDatabaseTaskLog(ctx context.Context, req *api.GetDa
 func (s *PreInitHandlers) RestoreDatabase(ctx context.Context, req *api.RestoreDatabasePayload) (res *api.RestoreDatabaseResponse, err error) {
 	return nil, ErrUninitialized
 }
+
+func (s *PreInitHandlers) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (res *api.Task, err error) {
+	return nil, ErrUninitialized
+}

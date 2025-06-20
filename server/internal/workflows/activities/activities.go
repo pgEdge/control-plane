@@ -31,6 +31,7 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.PersistState),
 		work.RegisterActivity(a.Plan),
 		work.RegisterActivity(a.PlanRefresh),
+		work.RegisterActivity(a.RestartInstance),
 		work.RegisterActivity(a.RestoreSpec),
 		work.RegisterActivity(a.UpdateDbState),
 		work.RegisterActivity(a.UpdateTask),

@@ -34,6 +34,7 @@ type Endpoints struct {
 	GetDatabaseTaskLog goa.Endpoint
 	RestoreDatabase    goa.Endpoint
 	GetVersion         goa.Endpoint
+	RestartInstance    goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "control-plane" service with endpoints.
@@ -58,6 +59,7 @@ func NewEndpoints(s Service) *Endpoints {
 		GetDatabaseTaskLog: NewGetDatabaseTaskLogEndpoint(s),
 		RestoreDatabase:    NewRestoreDatabaseEndpoint(s),
 		GetVersion:         NewGetVersionEndpoint(s),
+		RestartInstance:    NewRestartInstanceEndpoint(s),
 	}
 }
 
@@ -83,6 +85,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.GetDatabaseTaskLog = m(e.GetDatabaseTaskLog)
 	e.RestoreDatabase = m(e.RestoreDatabase)
 	e.GetVersion = m(e.GetVersion)
+	e.RestartInstance = m(e.RestartInstance)
 }
 
 // NewInitClusterEndpoint returns an endpoint function that calls the method
@@ -257,5 +260,14 @@ func NewRestoreDatabaseEndpoint(s Service) goa.Endpoint {
 func NewGetVersionEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		return s.GetVersion(ctx)
+	}
+}
+
+// NewRestartInstanceEndpoint returns an endpoint function that calls the
+// method "restart-instance" of service "control-plane".
+func NewRestartInstanceEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*RestartInstancePayload)
+		return s.RestartInstance(ctx, p)
 	}
 }

@@ -17,12 +17,13 @@ func (t Type) String() string {
 }
 
 const (
-	TypeCreate      Type = "create"
-	TypeUpdate      Type = "update"
-	TypeDelete      Type = "delete"
-	TypeNodeBackup  Type = "node_backup"
-	TypeRestore     Type = "restore"
-	TypeNodeRestore Type = "node_restore"
+	TypeCreate          Type = "create"
+	TypeUpdate          Type = "update"
+	TypeDelete          Type = "delete"
+	TypeNodeBackup      Type = "node_backup"
+	TypeRestore         Type = "restore"
+	TypeNodeRestore     Type = "node_restore"
+	TypeRestartInstance Type = "restart_instance"
 )
 
 type Status string
