@@ -132,7 +132,9 @@ var _ = g.Service("control-plane", func() {
 	g.Method("list-hosts", func() {
 		g.Description("Lists all hosts within the cluster.")
 		g.Meta("openapi:summary", "List hosts")
-		g.Result(g.ArrayOf(Host))
+		g.Result(g.ArrayOf(Host), func() {
+			g.Example(HostsExample)
+		})
 		g.Error("cluster_not_initialized")
 
 		g.HTTP(func() {
@@ -149,8 +151,6 @@ var _ = g.Service("control-plane", func() {
 			g.Attribute("host_id", Identifier, func() {
 				g.Description("ID of the host to get.")
 				g.Example("host-1")
-				g.Example("us-east-1")
-				g.Example("de3b1388-1f0c-42f1-a86c-59ab72f255ec")
 			})
 
 			g.Required("host_id")
@@ -174,8 +174,6 @@ var _ = g.Service("control-plane", func() {
 			g.Attribute("host_id", Identifier, func() {
 				g.Description("ID of the host to remove.")
 				g.Example("host-1")
-				g.Example("us-east-1")
-				g.Example("de3b1388-1f0c-42f1-a86c-59ab72f255ec")
 			})
 
 			g.Required("host_id")
@@ -194,9 +192,7 @@ var _ = g.Service("control-plane", func() {
 	g.Method("list-databases", func() {
 		g.Description("Lists all databases in the cluster.")
 		g.Meta("openapi:summary", "List databases")
-		g.Result(g.CollectionOf(Database), func() {
-			g.View("abbreviated")
-		})
+		g.Result(ListDatabasesResponse)
 		g.Error("cluster_not_initialized")
 
 		g.HTTP(func() {
@@ -230,9 +226,7 @@ var _ = g.Service("control-plane", func() {
 		g.Payload(func() {
 			g.Attribute("database_id", Identifier, func() {
 				g.Description("ID of the database to get.")
-				g.Example("production")
 				g.Example("my-app")
-				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 
 			g.Required("database_id")
@@ -257,9 +251,7 @@ var _ = g.Service("control-plane", func() {
 		g.Payload(func() {
 			g.Attribute("database_id", Identifier, func() {
 				g.Description("ID of the database to update.")
-				g.Example("production")
 				g.Example("my-app")
-				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 			g.Attribute("force_update", g.Boolean, func() {
 				g.Description("Force update the database even if the spec is the same.")
@@ -292,9 +284,7 @@ var _ = g.Service("control-plane", func() {
 		g.Payload(func() {
 			g.Attribute("database_id", Identifier, func() {
 				g.Description("ID of the database to delete.")
-				g.Example("production")
 				g.Example("my-app")
-				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 
 			g.Required("database_id")
@@ -319,9 +309,7 @@ var _ = g.Service("control-plane", func() {
 		g.Payload(func() {
 			g.Attribute("database_id", Identifier, func() {
 				g.Description("ID of the database to back up.")
-				g.Example("production")
 				g.Example("my-app")
-				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 			g.Attribute("node_name", g.String, func() {
 				g.Description("Name of the node to back up.")
@@ -353,9 +341,7 @@ var _ = g.Service("control-plane", func() {
 		g.Payload(func() {
 			g.Attribute("database_id", Identifier, func() {
 				g.Description("ID of the database to list tasks for.")
-				g.Example("production")
 				g.Example("my-app")
-				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 			g.Attribute("after_task_id", g.String, func() {
 				g.Description("ID of the task to start from.")
@@ -374,7 +360,7 @@ var _ = g.Service("control-plane", func() {
 
 			g.Required("database_id")
 		})
-		g.Result(g.ArrayOf(Task))
+		g.Result(ListDatabaseTasksResponse)
 		g.Error("cluster_not_initialized")
 		g.Error("invalid_input")
 		g.Error("not_found")
@@ -395,9 +381,7 @@ var _ = g.Service("control-plane", func() {
 		g.Payload(func() {
 			g.Attribute("database_id", Identifier, func() {
 				g.Description("ID of the database the task belongs to.")
-				g.Example("production")
 				g.Example("my-app")
-				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 			g.Attribute("task_id", g.String, func() {
 				g.Description("ID of the task to get.")
@@ -424,13 +408,11 @@ var _ = g.Service("control-plane", func() {
 		g.Meta("openapi:summary", "Get database task log")
 		g.Payload(func() {
 			g.Attribute("database_id", Identifier, func() {
-				g.Description("ID of the database to get task log for.")
-				g.Example("production")
+				g.Description("ID of the database to get the task log for.")
 				g.Example("my-app")
-				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 			g.Attribute("task_id", g.String, func() {
-				g.Description("ID of the task to get log for.")
+				g.Description("ID of the task to get the log for.")
 				g.Format(g.FormatUUID)
 				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 			})
@@ -461,14 +443,12 @@ var _ = g.Service("control-plane", func() {
 	})
 
 	g.Method("restore-database", func() {
-		g.Description("Perform an in-place restore one or more nodes using the given restore configuration.")
+		g.Description("Perform an in-place restore of one or more nodes using the given restore configuration.")
 		g.Meta("openapi:summary", "Restore database")
 		g.Payload(func() {
 			g.Attribute("database_id", Identifier, func() {
 				g.Description("ID of the database to restore.")
-				g.Example("production")
 				g.Example("my-app")
-				g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 			})
 			g.Attribute("request", RestoreDatabaseRequest)
 
@@ -509,8 +489,14 @@ var _ = g.Service("control-plane", func() {
 
 var APIError = g.Type("APIError", func() {
 	g.Description("A Control Plane API error.")
-	g.ErrorName("name", g.String, "The name of the error.")
-	g.Attribute("message", g.String, "The error message.")
+	g.ErrorName("name", g.String, func() {
+		g.Description("The name of the error.")
+		g.Example("error_name")
+	})
+	g.Attribute("message", g.String, func() {
+		g.Description("The error message.")
+		g.Example("A longer description of the error.")
+	})
 
 	g.Required("name", "message")
 })

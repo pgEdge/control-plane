@@ -11,7 +11,7 @@ var VersionInfo = g.Type("VersionInfo", func() {
 	})
 	g.Attribute("revision", g.String, func() {
 		g.Description("The VCS revision of the API server.")
-		g.Example("abc123")
+		g.Example("e89ae93b")
 	})
 	g.Attribute("revision_time", g.String, func() {
 		g.Format(g.FormatDateTime)

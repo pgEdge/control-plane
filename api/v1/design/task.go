@@ -56,6 +56,15 @@ var Task = g.Type("Task", func() {
 	})
 
 	g.Required("database_id", "task_id", "created_at", "type", "status")
+
+	g.Example(map[string]any{
+		"completed_at": "2025-06-18T16:52:35Z",
+		"created_at":   "2025-06-18T16:52:05Z",
+		"database_id":  "storefront",
+		"status":       "completed",
+		"task_id":      "019783f4-75f4-71e7-85a3-c9b96b345d77",
+		"type":         "create",
+	})
 })
 
 var TaskLogEntry = g.Type("TaskLogEntry", func() {
@@ -101,4 +110,173 @@ var TaskLog = g.Type("TaskLog", func() {
 	})
 
 	g.Required("database_id", "task_id", "task_status", "entries")
+
+	g.Example("node_backup task log", func() {
+		g.Description("The task log from a 'node_backup' task. These messages are produced by pgbackrest.")
+		g.Value(map[string]any{
+			"database_id": "storefront",
+			"entries": []map[string]any{
+				{
+					"message":   "P00   INFO: backup command begin 2.55.1: --config=/opt/pgedge/configs/pgbackrest.backup.conf --exec-id=198-b17fae6e --log-level-console=info --no-log-timestamp --pg1-path=/opt/pgedge/data/pgdata --pg1-user=pgedge --repo1-cipher-type=none --repo1-path=/backups/databases/storefront/n1 --repo1-retention-full=7 --repo1-retention-full-type=time --repo1-type=posix --stanza=db --start-fast --type=full",
+					"timestamp": "2025-06-18T17:54:34Z",
+				},
+				{
+					"message":   "P00   INFO: execute non-exclusive backup start: backup begins after the requested immediate checkpoint completes",
+					"timestamp": "2025-06-18T17:54:34Z",
+				},
+				{
+					"message":   "P00   INFO: backup start archive = 000000020000000000000004, lsn = 0/4000028",
+					"timestamp": "2025-06-18T17:54:34Z",
+				},
+				{
+					"message":   "P00   INFO: check archive for prior segment 000000020000000000000003",
+					"timestamp": "2025-06-18T17:54:34Z",
+				},
+				{
+					"message":   "P00   INFO: execute non-exclusive backup stop and wait for all WAL segments to archive",
+					"timestamp": "2025-06-18T17:54:36Z",
+				},
+				{
+					"message":   "P00   INFO: backup stop archive = 000000020000000000000004, lsn = 0/4000120",
+					"timestamp": "2025-06-18T17:54:36Z",
+				},
+				{
+					"message":   "P00   INFO: check archive for segment(s) 000000020000000000000004:000000020000000000000004",
+					"timestamp": "2025-06-18T17:54:36Z",
+				},
+				{
+					"message":   "P00   INFO: new backup label = 20250618-175434F",
+					"timestamp": "2025-06-18T17:54:36Z",
+				},
+				{
+					"message":   "P00   INFO: full backup size = 30.6MB, file total = 1342",
+					"timestamp": "2025-06-18T17:54:36Z",
+				},
+				{
+					"message":   "P00   INFO: backup command end: completed successfully",
+					"timestamp": "2025-06-18T17:54:36Z",
+				},
+				{
+					"message":   "P00   INFO: expire command begin 2.55.1: --config=/opt/pgedge/configs/pgbackrest.backup.conf --exec-id=198-b17fae6e --log-level-console=info --no-log-timestamp --repo1-cipher-type=none --repo1-path=/backups/databases/storefront/n1 --repo1-retention-full=7 --repo1-retention-full-type=time --repo1-type=posix --stanza=db",
+					"timestamp": "2025-06-18T17:54:36Z",
+				},
+				{
+					"message":   "P00   INFO: repo1: time-based archive retention not met - archive logs will not be expired",
+					"timestamp": "2025-06-18T17:54:36Z",
+				},
+				{
+					"message":   "P00   INFO: expire command end: completed successfully",
+					"timestamp": "2025-06-18T17:54:36Z",
+				},
+			},
+			"last_entry_id": "0197842d-b14d-7c69-86c1-c006a7c65318",
+			"task_id":       "0197842d-9082-7496-b787-77bd2e11809f",
+			"task_status":   "completed",
+		})
+	})
+
+	g.Example("update task log", func() {
+		g.Description("This is the task log of an update task. This example excludes many entries for brevity.")
+		g.Value(map[string]any{
+			"database_id": "storefront",
+			"entries": []map[string]any{
+				{
+					"message":   "refreshing current state",
+					"timestamp": "2025-06-18T17:53:19Z",
+				},
+				{
+					"fields": map[string]any{
+						"duration_ms": 8972,
+					},
+					"message":   "finished refreshing current state (took 8.972080116s)",
+					"timestamp": "2025-06-18T17:53:28Z",
+				},
+				{
+					"fields": map[string]any{
+						"host_id":       "host-1",
+						"resource_id":   "storefront-n1-689qacsi-backup",
+						"resource_type": "swarm.pgbackrest_config",
+					},
+					"message":   "creating resource swarm.pgbackrest_config::storefront-n1-689qacsi-backup",
+					"timestamp": "2025-06-18T17:53:29Z",
+				},
+				{
+					"fields": map[string]any{
+						"host_id":       "host-2",
+						"resource_id":   "storefront-n2-9ptayhma-backup",
+						"resource_type": "swarm.pgbackrest_config",
+					},
+					"message":   "creating resource swarm.pgbackrest_config::storefront-n2-9ptayhma-backup",
+					"timestamp": "2025-06-18T17:53:29Z",
+				},
+				{
+					"fields": map[string]any{
+						"duration_ms":   383,
+						"host_id":       "host-3",
+						"resource_id":   "n3",
+						"resource_type": "swarm.pgbackrest_stanza",
+						"success":       true,
+					},
+					"message":   "finished creating resource swarm.pgbackrest_stanza::n3 (took 383.568613ms)",
+					"timestamp": "2025-06-18T17:54:02Z",
+				},
+				{
+					"fields": map[string]any{
+						"duration_ms":   1181,
+						"host_id":       "host-1",
+						"resource_id":   "n1",
+						"resource_type": "swarm.pgbackrest_stanza",
+						"success":       true,
+					},
+					"message":   "finished creating resource swarm.pgbackrest_stanza::n1 (took 1.181454868s)",
+					"timestamp": "2025-06-18T17:54:03Z",
+				},
+			},
+			"last_entry_id": "0197842d-303b-7251-b814-6d12c98e7d25",
+			"task_id":       "0197842c-7c4f-7a8c-829e-7405c2a41c8c",
+			"task_status":   "completed",
+		})
+	})
+})
+
+var ListDatabaseTasksResponse = g.Type("ListDatabaseTasksResponse", func() {
+	g.Attribute("tasks", g.ArrayOf(Task))
+
+	g.Example(map[string]any{
+		"tasks": []map[string]any{
+			{
+				"completed_at": "2025-06-18T17:54:36Z",
+				"created_at":   "2025-06-18T17:54:28Z",
+				"database_id":  "storefront",
+				"instance_id":  "storefront-n1-689qacsi",
+				"status":       "completed",
+				"task_id":      "0197842d-9082-7496-b787-77bd2e11809f",
+				"type":         "node_backup",
+			},
+			{
+				"completed_at": "2025-06-18T17:54:04Z",
+				"created_at":   "2025-06-18T17:53:17Z",
+				"database_id":  "storefront",
+				"status":       "completed",
+				"task_id":      "0197842c-7c4f-7a8c-829e-7405c2a41c8c",
+				"type":         "update",
+			},
+			{
+				"completed_at": "2025-06-18T17:23:28Z",
+				"created_at":   "2025-06-18T17:23:14Z",
+				"database_id":  "storefront",
+				"status":       "completed",
+				"task_id":      "01978410-fb5d-7cd2-bbd2-66c0bf929dc0",
+				"type":         "update",
+			},
+			{
+				"completed_at": "2025-06-18T16:52:35Z",
+				"created_at":   "2025-06-18T16:52:05Z",
+				"database_id":  "storefront",
+				"status":       "completed",
+				"task_id":      "019783f4-75f4-71e7-85a3-c9b96b345d77",
+				"type":         "create",
+			},
+		},
+	})
 })

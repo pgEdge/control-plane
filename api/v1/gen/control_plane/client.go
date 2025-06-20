@@ -179,13 +179,13 @@ func (c *Client) RemoveHost(ctx context.Context, p *RemoveHostPayload) (err erro
 //   - "cluster_not_initialized" (type *goa.ServiceError)
 //   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
-func (c *Client) ListDatabases(ctx context.Context) (res DatabaseCollection, err error) {
+func (c *Client) ListDatabases(ctx context.Context) (res *ListDatabasesResponse, err error) {
 	var ires any
 	ires, err = c.ListDatabasesEndpoint(ctx, nil)
 	if err != nil {
 		return
 	}
-	return ires.(DatabaseCollection), nil
+	return ires.(*ListDatabasesResponse), nil
 }
 
 // CreateDatabase calls the "create-database" endpoint of the "control-plane"
@@ -287,13 +287,13 @@ func (c *Client) BackupDatabaseNode(ctx context.Context, p *BackupDatabaseNodePa
 //   - "not_found" (type *goa.ServiceError)
 //   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
-func (c *Client) ListDatabaseTasks(ctx context.Context, p *ListDatabaseTasksPayload) (res []*Task, err error) {
+func (c *Client) ListDatabaseTasks(ctx context.Context, p *ListDatabaseTasksPayload) (res *ListDatabaseTasksResponse, err error) {
 	var ires any
 	ires, err = c.ListDatabaseTasksEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.([]*Task), nil
+	return ires.(*ListDatabaseTasksResponse), nil
 }
 
 // GetDatabaseTask calls the "get-database-task" endpoint of the

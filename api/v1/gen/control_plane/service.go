@@ -33,7 +33,7 @@ type Service interface {
 	// Removes a host from the cluster.
 	RemoveHost(context.Context, *RemoveHostPayload) (err error)
 	// Lists all databases in the cluster.
-	ListDatabases(context.Context) (res DatabaseCollection, err error)
+	ListDatabases(context.Context) (res *ListDatabasesResponse, err error)
 	// Creates a new database in the cluster.
 	CreateDatabase(context.Context, *CreateDatabaseRequest) (res *CreateDatabaseResponse, err error)
 	// Returns information about a particular database in the cluster.
@@ -45,12 +45,12 @@ type Service interface {
 	// Initiates a backup for a database node.
 	BackupDatabaseNode(context.Context, *BackupDatabaseNodePayload) (res *BackupDatabaseNodeResponse, err error)
 	// Lists all tasks for a database.
-	ListDatabaseTasks(context.Context, *ListDatabaseTasksPayload) (res []*Task, err error)
+	ListDatabaseTasks(context.Context, *ListDatabaseTasksPayload) (res *ListDatabaseTasksResponse, err error)
 	// Returns information about a particular task.
 	GetDatabaseTask(context.Context, *GetDatabaseTaskPayload) (res *Task, err error)
 	// Returns the log of a particular task for a database.
 	GetDatabaseTaskLog(context.Context, *GetDatabaseTaskLogPayload) (res *TaskLog, err error)
-	// Perform an in-place restore one or more nodes using the given restore
+	// Perform an in-place restore of one or more nodes using the given restore
 	// configuration.
 	RestoreDatabase(context.Context, *RestoreDatabasePayload) (res *RestoreDatabaseResponse, err error)
 	// Returns version information for this Control Plane server.
@@ -128,10 +128,12 @@ type BackupRepositorySpec struct {
 	S3Endpoint *string
 	// An optional AWS access key ID to use for this repository. If not provided,
 	// pgbackrest will use the default credential provider chain. This field will
-	// be excluded from the response of all endpoints.
+	// be excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
 	S3Key *string
 	// The corresponding secret for the AWS access key ID in s3_key. This field
-	// will be excluded from the response of all endpoints.
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
 	S3KeySecret *string
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string
@@ -140,7 +142,8 @@ type BackupRepositorySpec struct {
 	GcsEndpoint *string
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
 	// the service account attached to the instance profile. This field will be
-	// excluded from the response of all endpoints.
+	// excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
 	GcsKey *string
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string
@@ -151,7 +154,8 @@ type BackupRepositorySpec struct {
 	// 'azure'.
 	AzureEndpoint *string
 	// The Azure storage account access key to use for this repository. This field
-	// will be excluded from the response of all endpoints.
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
 	AzureKey *string
 	// The count of full backups to retain or the time to retain full backups.
 	RetentionFull *int
@@ -290,15 +294,13 @@ type Database struct {
 	Spec *DatabaseSpec
 }
 
-// DatabaseCollection is the result type of the control-plane service
-// list-databases method.
 type DatabaseCollection []*Database
 
 type DatabaseNodeSpec struct {
 	// The name of the database node.
 	Name string
 	// The IDs of the hosts that should run this node. When multiple hosts are
-	// specified, one host will chosen as a primary and the others will be read
+	// specified, one host will chosen as a primary, and the others will be read
 	// replicas.
 	HostIds []Identifier
 	// The major version of Postgres for this node. Overrides the Postgres version
@@ -308,15 +310,15 @@ type DatabaseNodeSpec struct {
 	// port set in the DatabaseSpec.
 	Port *int
 	// The number of CPUs to allocate for the database on this node and to use for
-	// tuning Postgres. Can include the SI suffix 'm', e.g. '500m' for 500
+	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
 	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
 	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
-	// than are available on the host. Whether this limit will be enforced depends
-	// on the orchestrator.
+	// than are available on the host. Whether this limit is enforced depends on
+	// the orchestrator.
 	Cpus *string
 	// The amount of memory in SI or IEC notation to allocate for the database on
 	// this node and to use for tuning Postgres. Defaults to the total available
-	// memory on the host. Whether this limit will be enforced depends on the
+	// memory on the host. Whether this limit is enforced depends on the
 	// orchestrator.
 	Memory *string
 	// Additional postgresql.conf settings for this particular node. Will be merged
@@ -343,12 +345,12 @@ type DatabaseSpec struct {
 	Port *int
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
-	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
-	// enforced depends on the orchestrator.
+	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
+	// depends on the orchestrator.
 	Cpus *string
 	// The amount of memory in SI or IEC notation to allocate for the database and
 	// to use for tuning Postgres. Defaults to the total available memory on the
-	// host. Whether this limit will be enforced depends on the orchestrator.
+	// host. Whether this limit is enforced depends on the orchestrator.
 	Memory *string
 	// The Spock nodes for this database.
 	Nodes []*DatabaseNodeSpec
@@ -370,7 +372,8 @@ type DatabaseUserSpec struct {
 	// The username for this database user.
 	Username string
 	// The password for this database user. This field will be excluded from the
-	// response of all endpoints.
+	// response of all endpoints. It can also be omitted from update requests to
+	// keep the current value.
 	Password *string
 	// If true, this user will be granted database ownership.
 	DbOwner *bool
@@ -394,7 +397,7 @@ type DeleteDatabaseResponse struct {
 	Task *Task
 }
 
-// Defines an extra volumes mapping between host and container.
+// Extra volumes to mount from the host to the database container.
 type ExtraVolumesSpec struct {
 	// The host path for the volume.
 	HostPath string
@@ -412,9 +415,9 @@ type GetDatabasePayload struct {
 // GetDatabaseTaskLogPayload is the payload type of the control-plane service
 // get-database-task-log method.
 type GetDatabaseTaskLogPayload struct {
-	// ID of the database to get task log for.
+	// ID of the database to get the task log for.
 	DatabaseID Identifier
-	// ID of the task to get log for.
+	// ID of the task to get the log for.
 	TaskID string
 	// ID of the entry to start from.
 	AfterEntryID *string
@@ -529,9 +532,9 @@ type InstancePostgresStatus struct {
 	Version      *string
 	PatroniState *string
 	Role         *string
-	// True if this instance is pending to be restarted from a configuration change.
+	// True if this instance has a pending restart from a configuration change.
 	PendingRestart *bool
-	// True if Patroni has been paused for this instance.
+	// True if Patroni is paused for this instance.
 	PatroniPaused *bool
 }
 
@@ -568,6 +571,18 @@ type ListDatabaseTasksPayload struct {
 	SortOrder *string
 }
 
+// ListDatabaseTasksResponse is the result type of the control-plane service
+// list-database-tasks method.
+type ListDatabaseTasksResponse struct {
+	Tasks []*Task
+}
+
+// ListDatabasesResponse is the result type of the control-plane service
+// list-databases method.
+type ListDatabasesResponse struct {
+	Databases DatabaseCollection
+}
+
 type PgEdgeVersion struct {
 	// The Postgres major version.
 	PostgresVersion string
@@ -587,8 +602,8 @@ type RestoreConfigSpec struct {
 	SourceDatabaseID Identifier
 	// The name of the node to restore this database from.
 	SourceNodeName string
-	// The name of the database in this repository. This database will be renamed
-	// to the database_name in the DatabaseSpec.
+	// The name of the database in this repository. The database will be renamed to
+	// the database_name in the DatabaseSpec after it's restored.
 	SourceDatabaseName string
 	// The repository to restore this database from.
 	Repository *RestoreRepositorySpec
@@ -813,32 +828,18 @@ func MakeDatabaseNotModifiable(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "database_not_modifiable", false, false, false)
 }
 
-// NewDatabaseCollection initializes result type DatabaseCollection from viewed
-// result type DatabaseCollection.
-func NewDatabaseCollection(vres controlplaneviews.DatabaseCollection) DatabaseCollection {
-	var res DatabaseCollection
-	switch vres.View {
-	case "default", "":
-		res = newDatabaseCollection(vres.Projected)
-	case "abbreviated":
-		res = newDatabaseCollectionAbbreviated(vres.Projected)
-	}
-	return res
+// NewListDatabasesResponse initializes result type ListDatabasesResponse from
+// viewed result type ListDatabasesResponse.
+func NewListDatabasesResponse(vres *controlplaneviews.ListDatabasesResponse) *ListDatabasesResponse {
+	return newListDatabasesResponse(vres.Projected)
 }
 
-// NewViewedDatabaseCollection initializes viewed result type
-// DatabaseCollection from result type DatabaseCollection using the given view.
-func NewViewedDatabaseCollection(res DatabaseCollection, view string) controlplaneviews.DatabaseCollection {
-	var vres controlplaneviews.DatabaseCollection
-	switch view {
-	case "default", "":
-		p := newDatabaseCollectionView(res)
-		vres = controlplaneviews.DatabaseCollection{Projected: p, View: "default"}
-	case "abbreviated":
-		p := newDatabaseCollectionViewAbbreviated(res)
-		vres = controlplaneviews.DatabaseCollection{Projected: p, View: "abbreviated"}
-	}
-	return vres
+// NewViewedListDatabasesResponse initializes viewed result type
+// ListDatabasesResponse from result type ListDatabasesResponse using the given
+// view.
+func NewViewedListDatabasesResponse(res *ListDatabasesResponse, view string) *controlplaneviews.ListDatabasesResponse {
+	p := newListDatabasesResponseView(res)
+	return &controlplaneviews.ListDatabasesResponse{Projected: p, View: "default"}
 }
 
 // NewDatabase initializes result type Database from viewed result type
@@ -865,6 +866,26 @@ func NewViewedDatabase(res *Database, view string) *controlplaneviews.Database {
 	case "abbreviated":
 		p := newDatabaseViewAbbreviated(res)
 		vres = &controlplaneviews.Database{Projected: p, View: "abbreviated"}
+	}
+	return vres
+}
+
+// newListDatabasesResponse converts projected type ListDatabasesResponse to
+// service type ListDatabasesResponse.
+func newListDatabasesResponse(vres *controlplaneviews.ListDatabasesResponseView) *ListDatabasesResponse {
+	res := &ListDatabasesResponse{}
+	if vres.Databases != nil {
+		res.Databases = newDatabaseCollectionAbbreviated(vres.Databases)
+	}
+	return res
+}
+
+// newListDatabasesResponseView projects result type ListDatabasesResponse to
+// projected type ListDatabasesResponseView using the "default" view.
+func newListDatabasesResponseView(res *ListDatabasesResponse) *controlplaneviews.ListDatabasesResponseView {
+	vres := &controlplaneviews.ListDatabasesResponseView{}
+	if res.Databases != nil {
+		vres.Databases = newDatabaseCollectionViewAbbreviated(res.Databases)
 	}
 	return vres
 }

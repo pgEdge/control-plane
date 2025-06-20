@@ -137,7 +137,7 @@ func (s *PostInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPa
 }
 
 // ListDatabases fetches all databases from the database service and converts them to API format.
-func (s *PostInitHandlers) ListDatabases(ctx context.Context) (api.DatabaseCollection, error) {
+func (s *PostInitHandlers) ListDatabases(ctx context.Context) (*api.ListDatabasesResponse, error) {
 	// Fetch databases from the database service
 	databases, err := s.dbSvc.GetDatabases(ctx)
 	if err != nil {
@@ -146,7 +146,9 @@ func (s *PostInitHandlers) ListDatabases(ctx context.Context) (api.DatabaseColle
 
 	// Ensure we return an empty (non-nil) slice if no databases found
 	if len(databases) == 0 {
-		return api.DatabaseCollection{}, nil
+		return &api.ListDatabasesResponse{
+			Databases: []*api.Database{},
+		}, nil
 	}
 
 	// Preallocate the output slice with the length of the databases
@@ -159,7 +161,9 @@ func (s *PostInitHandlers) ListDatabases(ctx context.Context) (api.DatabaseColle
 		}
 	}
 
-	return apiDatabases, nil
+	return &api.ListDatabasesResponse{
+		Databases: apiDatabases,
+	}, nil
 }
 
 func (s *PostInitHandlers) CreateDatabase(ctx context.Context, req *api.CreateDatabaseRequest) (*api.CreateDatabaseResponse, error) {
@@ -320,7 +324,7 @@ func (s *PostInitHandlers) BackupDatabaseNode(ctx context.Context, req *api.Back
 	}, nil
 }
 
-func (s *PostInitHandlers) ListDatabaseTasks(ctx context.Context, req *api.ListDatabaseTasksPayload) ([]*api.Task, error) {
+func (s *PostInitHandlers) ListDatabaseTasks(ctx context.Context, req *api.ListDatabaseTasksPayload) (*api.ListDatabaseTasksResponse, error) {
 	databaseID, err := dbIdentToString(req.DatabaseID)
 	if err != nil {
 		return nil, err
@@ -336,7 +340,9 @@ func (s *PostInitHandlers) ListDatabaseTasks(ctx context.Context, req *api.ListD
 		return nil, apiErr(err)
 	}
 
-	return tasksToAPI(tasks), nil
+	return &api.ListDatabaseTasksResponse{
+		Tasks: tasksToAPI(tasks),
+	}, nil
 }
 
 func (s *PostInitHandlers) GetDatabaseTask(ctx context.Context, req *api.GetDatabaseTaskPayload) (*api.Task, error) {

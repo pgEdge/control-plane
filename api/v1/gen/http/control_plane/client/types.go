@@ -148,7 +148,9 @@ type GetHostResponseBody struct {
 
 // ListDatabasesResponseBody is the type of the "control-plane" service
 // "list-databases" endpoint HTTP response body.
-type ListDatabasesResponseBody []*DatabaseResponse
+type ListDatabasesResponseBody struct {
+	Databases DatabaseCollectionResponseBody `form:"databases,omitempty" json:"databases,omitempty" xml:"databases,omitempty"`
+}
 
 // CreateDatabaseResponseBody is the type of the "control-plane" service
 // "create-database" endpoint HTTP response body.
@@ -203,7 +205,9 @@ type BackupDatabaseNodeResponseBody struct {
 
 // ListDatabaseTasksResponseBody is the type of the "control-plane" service
 // "list-database-tasks" endpoint HTTP response body.
-type ListDatabaseTasksResponseBody []*TaskResponse
+type ListDatabaseTasksResponseBody struct {
+	Tasks []*TaskResponseBody `form:"tasks,omitempty" json:"tasks,omitempty" xml:"tasks,omitempty"`
+}
 
 // GetDatabaseTaskResponseBody is the type of the "control-plane" service
 // "get-database-task" endpoint HTTP response body.
@@ -1119,576 +1123,9 @@ type PgEdgeVersionResponse struct {
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
 }
 
-// DatabaseResponse is used to define fields on response body types.
-type DatabaseResponse struct {
-	// Unique identifier for the database.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Unique identifier for the databases's owner.
-	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
-	// The time that the database was created.
-	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
-	// The time that the database was last updated.
-	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-	// Current state of the database.
-	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
-	// All of the instances in the database.
-	Instances InstanceCollectionResponse `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
-	// The user-provided specification for the database.
-	Spec *DatabaseSpecResponse `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
-}
-
-// InstanceCollectionResponse is used to define fields on response body types.
-type InstanceCollectionResponse []*InstanceResponse
-
-// InstanceResponse is used to define fields on response body types.
-type InstanceResponse struct {
-	// Unique identifier for the instance.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// The ID of the host this instance is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-	// The Spock node name for this instance.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The time that the instance was created.
-	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
-	// The time that the instance was last modified.
-	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-	// The time that the instance status information was last updated.
-	StatusUpdatedAt *string `form:"status_updated_at,omitempty" json:"status_updated_at,omitempty" xml:"status_updated_at,omitempty"`
-	State           *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
-	// Connection information for the instance.
-	ConnectionInfo *InstanceConnectionInfoResponse `form:"connection_info,omitempty" json:"connection_info,omitempty" xml:"connection_info,omitempty"`
-	// Postgres status information for the instance.
-	Postgres *InstancePostgresStatusResponse `form:"postgres,omitempty" json:"postgres,omitempty" xml:"postgres,omitempty"`
-	// Spock status information for the instance.
-	Spock *InstanceSpockStatusResponse `form:"spock,omitempty" json:"spock,omitempty" xml:"spock,omitempty"`
-	// An error message if the instance is in an error state.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
-}
-
-// InstanceConnectionInfoResponse is used to define fields on response body
+// DatabaseCollectionResponseBody is used to define fields on response body
 // types.
-type InstanceConnectionInfoResponse struct {
-	// The hostname of the host that's running this instance.
-	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
-	// The IPv4 address of the host that's running this instance.
-	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
-	// The host port that Postgres is listening on for this instance.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
-}
-
-// InstancePostgresStatusResponse is used to define fields on response body
-// types.
-type InstancePostgresStatusResponse struct {
-	// The version of Postgres for this instance.
-	Version      *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
-	PatroniState *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
-	Role         *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
-	// True if this instance is pending to be restarted from a configuration change.
-	PendingRestart *bool `form:"pending_restart,omitempty" json:"pending_restart,omitempty" xml:"pending_restart,omitempty"`
-	// True if Patroni has been paused for this instance.
-	PatroniPaused *bool `form:"patroni_paused,omitempty" json:"patroni_paused,omitempty" xml:"patroni_paused,omitempty"`
-}
-
-// InstanceSpockStatusResponse is used to define fields on response body types.
-type InstanceSpockStatusResponse struct {
-	// The current spock.readonly setting.
-	ReadOnly *string `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
-	// The version of Spock for this instance.
-	Version *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
-	// Status information for this instance's Spock subscriptions.
-	Subscriptions []*InstanceSubscriptionResponse `form:"subscriptions,omitempty" json:"subscriptions,omitempty" xml:"subscriptions,omitempty"`
-}
-
-// InstanceSubscriptionResponse is used to define fields on response body types.
-type InstanceSubscriptionResponse struct {
-	// The Spock node name of the provider for this subscription.
-	ProviderNode *string `form:"provider_node,omitempty" json:"provider_node,omitempty" xml:"provider_node,omitempty"`
-	// The name of the subscription.
-	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// The current status of the subscription.
-	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-}
-
-// DatabaseSpecResponse is used to define fields on response body types.
-type DatabaseSpecResponse struct {
-	// The name of the Postgres database.
-	DatabaseName *string `form:"database_name,omitempty" json:"database_name,omitempty" xml:"database_name,omitempty"`
-	// The major version of the Postgres database.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
-	// The major version of the Spock extension.
-	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
-	// The port used by the Postgres database.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
-	// The number of CPUs to allocate for the database and to use for tuning
-	// Postgres. Defaults to the number of available CPUs on the host. Can include
-	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
-	// enforced depends on the orchestrator.
-	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
-	// The amount of memory in SI or IEC notation to allocate for the database and
-	// to use for tuning Postgres. Defaults to the total available memory on the
-	// host. Whether this limit will be enforced depends on the orchestrator.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
-	// The Spock nodes for this database.
-	Nodes []*DatabaseNodeSpecResponse `form:"nodes,omitempty" json:"nodes,omitempty" xml:"nodes,omitempty"`
-	// The users to create for this database.
-	DatabaseUsers []*DatabaseUserSpecResponse `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
-	// The backup configuration for this database.
-	BackupConfig *BackupConfigSpecResponse `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
-	// The restore configuration for this database.
-	RestoreConfig *RestoreConfigSpecResponse `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
-	// Additional postgresql.conf settings. Will be merged with the settings
-	// provided by control-plane.
-	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
-	// A list of extra volumes to mount. Each entry defines a host and container
-	// path.
-	ExtraVolumes []*ExtraVolumesSpecResponse `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
-}
-
-// DatabaseNodeSpecResponse is used to define fields on response body types.
-type DatabaseNodeSpecResponse struct {
-	// The name of the database node.
-	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
-	// The IDs of the hosts that should run this node. When multiple hosts are
-	// specified, one host will chosen as a primary and the others will be read
-	// replicas.
-	HostIds []string `form:"host_ids,omitempty" json:"host_ids,omitempty" xml:"host_ids,omitempty"`
-	// The major version of Postgres for this node. Overrides the Postgres version
-	// set in the DatabaseSpec.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
-	// The port used by the Postgres database for this node. Overrides the Postgres
-	// port set in the DatabaseSpec.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
-	// The number of CPUs to allocate for the database on this node and to use for
-	// tuning Postgres. Can include the SI suffix 'm', e.g. '500m' for 500
-	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
-	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
-	// than are available on the host. Whether this limit will be enforced depends
-	// on the orchestrator.
-	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
-	// The amount of memory in SI or IEC notation to allocate for the database on
-	// this node and to use for tuning Postgres. Defaults to the total available
-	// memory on the host. Whether this limit will be enforced depends on the
-	// orchestrator.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
-	// Additional postgresql.conf settings for this particular node. Will be merged
-	// with the settings provided by control-plane.
-	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
-	// The backup configuration for this node. Overrides the backup configuration
-	// set in the DatabaseSpec.
-	BackupConfig *BackupConfigSpecResponse `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
-	// The restore configuration for this node. Overrides the restore configuration
-	// set in the DatabaseSpec.
-	RestoreConfig *RestoreConfigSpecResponse `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
-	// Optional list of external volumes to mount for this node only.
-	ExtraVolumes []*ExtraVolumesSpecResponse `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
-}
-
-// BackupConfigSpecResponse is used to define fields on response body types.
-type BackupConfigSpecResponse struct {
-	// The repositories for this backup configuration.
-	Repositories []*BackupRepositorySpecResponse `form:"repositories,omitempty" json:"repositories,omitempty" xml:"repositories,omitempty"`
-	// The schedules for this backup configuration.
-	Schedules []*BackupScheduleSpecResponse `form:"schedules,omitempty" json:"schedules,omitempty" xml:"schedules,omitempty"`
-}
-
-// BackupRepositorySpecResponse is used to define fields on response body types.
-type BackupRepositorySpecResponse struct {
-	// The unique identifier of this repository.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// The type of this repository.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The S3 bucket name for this repository. Only applies when type = 's3'.
-	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
-	// The region of the S3 bucket for this repository. Only applies when type =
-	// 's3'.
-	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
-	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
-	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
-	// An optional AWS access key ID to use for this repository. If not provided,
-	// pgbackrest will use the default credential provider chain. This field will
-	// be excluded from the response of all endpoints.
-	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
-	// The corresponding secret for the AWS access key ID in s3_key. This field
-	// will be excluded from the response of all endpoints.
-	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
-	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
-	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
-	// The optional GCS endpoint for this repository. Only applies when type =
-	// 'gcs'.
-	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
-	// Optional base64-encoded private key data. If omitted, pgbackrest will use
-	// the service account attached to the instance profile. This field will be
-	// excluded from the response of all endpoints.
-	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
-	// The Azure account name for this repository. Only applies when type = 'azure'.
-	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
-	// The Azure container name for this repository. Only applies when type =
-	// 'azure'.
-	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
-	// The optional Azure endpoint for this repository. Only applies when type =
-	// 'azure'.
-	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
-	// The Azure storage account access key to use for this repository. This field
-	// will be excluded from the response of all endpoints.
-	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
-	// The count of full backups to retain or the time to retain full backups.
-	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
-	// The type of measure used for retention_full.
-	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
-	// The base path within the repository to store backups. Required for type =
-	// 'posix' and 'cifs'.
-	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
-	// Additional options to apply to this repository.
-	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
-}
-
-// BackupScheduleSpecResponse is used to define fields on response body types.
-type BackupScheduleSpecResponse struct {
-	// The unique identifier for this backup schedule.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// The type of backup to take on this schedule.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The cron expression for this schedule.
-	CronExpression *string `form:"cron_expression,omitempty" json:"cron_expression,omitempty" xml:"cron_expression,omitempty"`
-}
-
-// RestoreConfigSpecResponse is used to define fields on response body types.
-type RestoreConfigSpecResponse struct {
-	// The ID of the database to restore this database from.
-	SourceDatabaseID *string `form:"source_database_id,omitempty" json:"source_database_id,omitempty" xml:"source_database_id,omitempty"`
-	// The name of the node to restore this database from.
-	SourceNodeName *string `form:"source_node_name,omitempty" json:"source_node_name,omitempty" xml:"source_node_name,omitempty"`
-	// The name of the database in this repository. This database will be renamed
-	// to the database_name in the DatabaseSpec.
-	SourceDatabaseName *string `form:"source_database_name,omitempty" json:"source_database_name,omitempty" xml:"source_database_name,omitempty"`
-	// The repository to restore this database from.
-	Repository *RestoreRepositorySpecResponse `form:"repository,omitempty" json:"repository,omitempty" xml:"repository,omitempty"`
-	// Additional options to use when restoring this database. If omitted, the
-	// database will be restored to the latest point in the given repository.
-	RestoreOptions map[string]string `form:"restore_options,omitempty" json:"restore_options,omitempty" xml:"restore_options,omitempty"`
-}
-
-// RestoreRepositorySpecResponse is used to define fields on response body
-// types.
-type RestoreRepositorySpecResponse struct {
-	// The unique identifier of this repository.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// The type of this repository.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The S3 bucket name for this repository. Only applies when type = 's3'.
-	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
-	// The region of the S3 bucket for this repository. Only applies when type =
-	// 's3'.
-	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
-	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
-	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
-	// An optional AWS access key ID to use for this repository. If not provided,
-	// pgbackrest will use the default credential provider chain.
-	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
-	// The corresponding secret for the AWS access key ID in s3_key.
-	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
-	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
-	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
-	// The optional GCS endpoint for this repository. Only applies when type =
-	// 'gcs'.
-	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
-	// Optional base64-encoded private key data. If omitted, pgbackrest will use
-	// the service account attached to the instance profile.
-	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
-	// The Azure account name for this repository. Only applies when type = 'azure'.
-	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
-	// The Azure container name for this repository. Only applies when type =
-	// 'azure'.
-	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
-	// The optional Azure endpoint for this repository. Only applies when type =
-	// 'azure'.
-	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
-	// An optional Azure storage account access key to use for this repository. If
-	// not provided, pgbackrest will use the VM's managed identity.
-	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
-	// The base path within the repository to store backups. Required for type =
-	// 'posix' and 'cifs'.
-	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
-	// Additional options to apply to this repository.
-	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
-}
-
-// ExtraVolumesSpecResponse is used to define fields on response body types.
-type ExtraVolumesSpecResponse struct {
-	// The host path for the volume.
-	HostPath *string `form:"host_path,omitempty" json:"host_path,omitempty" xml:"host_path,omitempty"`
-	// The path inside the container where the volume will be mounted.
-	DestinationPath *string `form:"destination_path,omitempty" json:"destination_path,omitempty" xml:"destination_path,omitempty"`
-}
-
-// DatabaseUserSpecResponse is used to define fields on response body types.
-type DatabaseUserSpecResponse struct {
-	// The username for this database user.
-	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
-	// The password for this database user. This field will be excluded from the
-	// response of all endpoints.
-	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
-	// If true, this user will be granted database ownership.
-	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
-	// The attributes to assign to this database user.
-	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
-	// The roles to assign to this database user.
-	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
-}
-
-// DatabaseSpecRequestBody is used to define fields on request body types.
-type DatabaseSpecRequestBody struct {
-	// The name of the Postgres database.
-	DatabaseName string `form:"database_name" json:"database_name" xml:"database_name"`
-	// The major version of the Postgres database.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
-	// The major version of the Spock extension.
-	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
-	// The port used by the Postgres database.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
-	// The number of CPUs to allocate for the database and to use for tuning
-	// Postgres. Defaults to the number of available CPUs on the host. Can include
-	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
-	// enforced depends on the orchestrator.
-	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
-	// The amount of memory in SI or IEC notation to allocate for the database and
-	// to use for tuning Postgres. Defaults to the total available memory on the
-	// host. Whether this limit will be enforced depends on the orchestrator.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
-	// The Spock nodes for this database.
-	Nodes []*DatabaseNodeSpecRequestBody `form:"nodes" json:"nodes" xml:"nodes"`
-	// The users to create for this database.
-	DatabaseUsers []*DatabaseUserSpecRequestBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
-	// The backup configuration for this database.
-	BackupConfig *BackupConfigSpecRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
-	// The restore configuration for this database.
-	RestoreConfig *RestoreConfigSpecRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
-	// Additional postgresql.conf settings. Will be merged with the settings
-	// provided by control-plane.
-	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
-	// A list of extra volumes to mount. Each entry defines a host and container
-	// path.
-	ExtraVolumes []*ExtraVolumesSpecRequestBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
-}
-
-// DatabaseNodeSpecRequestBody is used to define fields on request body types.
-type DatabaseNodeSpecRequestBody struct {
-	// The name of the database node.
-	Name string `form:"name" json:"name" xml:"name"`
-	// The IDs of the hosts that should run this node. When multiple hosts are
-	// specified, one host will chosen as a primary and the others will be read
-	// replicas.
-	HostIds []string `form:"host_ids" json:"host_ids" xml:"host_ids"`
-	// The major version of Postgres for this node. Overrides the Postgres version
-	// set in the DatabaseSpec.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
-	// The port used by the Postgres database for this node. Overrides the Postgres
-	// port set in the DatabaseSpec.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
-	// The number of CPUs to allocate for the database on this node and to use for
-	// tuning Postgres. Can include the SI suffix 'm', e.g. '500m' for 500
-	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
-	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
-	// than are available on the host. Whether this limit will be enforced depends
-	// on the orchestrator.
-	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
-	// The amount of memory in SI or IEC notation to allocate for the database on
-	// this node and to use for tuning Postgres. Defaults to the total available
-	// memory on the host. Whether this limit will be enforced depends on the
-	// orchestrator.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
-	// Additional postgresql.conf settings for this particular node. Will be merged
-	// with the settings provided by control-plane.
-	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
-	// The backup configuration for this node. Overrides the backup configuration
-	// set in the DatabaseSpec.
-	BackupConfig *BackupConfigSpecRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
-	// The restore configuration for this node. Overrides the restore configuration
-	// set in the DatabaseSpec.
-	RestoreConfig *RestoreConfigSpecRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
-	// Optional list of external volumes to mount for this node only.
-	ExtraVolumes []*ExtraVolumesSpecRequestBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
-}
-
-// BackupConfigSpecRequestBody is used to define fields on request body types.
-type BackupConfigSpecRequestBody struct {
-	// The repositories for this backup configuration.
-	Repositories []*BackupRepositorySpecRequestBody `form:"repositories" json:"repositories" xml:"repositories"`
-	// The schedules for this backup configuration.
-	Schedules []*BackupScheduleSpecRequestBody `form:"schedules,omitempty" json:"schedules,omitempty" xml:"schedules,omitempty"`
-}
-
-// BackupRepositorySpecRequestBody is used to define fields on request body
-// types.
-type BackupRepositorySpecRequestBody struct {
-	// The unique identifier of this repository.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// The type of this repository.
-	Type string `form:"type" json:"type" xml:"type"`
-	// The S3 bucket name for this repository. Only applies when type = 's3'.
-	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
-	// The region of the S3 bucket for this repository. Only applies when type =
-	// 's3'.
-	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
-	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
-	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
-	// An optional AWS access key ID to use for this repository. If not provided,
-	// pgbackrest will use the default credential provider chain. This field will
-	// be excluded from the response of all endpoints.
-	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
-	// The corresponding secret for the AWS access key ID in s3_key. This field
-	// will be excluded from the response of all endpoints.
-	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
-	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
-	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
-	// The optional GCS endpoint for this repository. Only applies when type =
-	// 'gcs'.
-	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
-	// Optional base64-encoded private key data. If omitted, pgbackrest will use
-	// the service account attached to the instance profile. This field will be
-	// excluded from the response of all endpoints.
-	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
-	// The Azure account name for this repository. Only applies when type = 'azure'.
-	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
-	// The Azure container name for this repository. Only applies when type =
-	// 'azure'.
-	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
-	// The optional Azure endpoint for this repository. Only applies when type =
-	// 'azure'.
-	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
-	// The Azure storage account access key to use for this repository. This field
-	// will be excluded from the response of all endpoints.
-	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
-	// The count of full backups to retain or the time to retain full backups.
-	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
-	// The type of measure used for retention_full.
-	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
-	// The base path within the repository to store backups. Required for type =
-	// 'posix' and 'cifs'.
-	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
-	// Additional options to apply to this repository.
-	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
-}
-
-// BackupScheduleSpecRequestBody is used to define fields on request body types.
-type BackupScheduleSpecRequestBody struct {
-	// The unique identifier for this backup schedule.
-	ID string `form:"id" json:"id" xml:"id"`
-	// The type of backup to take on this schedule.
-	Type string `form:"type" json:"type" xml:"type"`
-	// The cron expression for this schedule.
-	CronExpression string `form:"cron_expression" json:"cron_expression" xml:"cron_expression"`
-}
-
-// RestoreConfigSpecRequestBody is used to define fields on request body types.
-type RestoreConfigSpecRequestBody struct {
-	// The ID of the database to restore this database from.
-	SourceDatabaseID string `form:"source_database_id" json:"source_database_id" xml:"source_database_id"`
-	// The name of the node to restore this database from.
-	SourceNodeName string `form:"source_node_name" json:"source_node_name" xml:"source_node_name"`
-	// The name of the database in this repository. This database will be renamed
-	// to the database_name in the DatabaseSpec.
-	SourceDatabaseName string `form:"source_database_name" json:"source_database_name" xml:"source_database_name"`
-	// The repository to restore this database from.
-	Repository *RestoreRepositorySpecRequestBody `form:"repository" json:"repository" xml:"repository"`
-	// Additional options to use when restoring this database. If omitted, the
-	// database will be restored to the latest point in the given repository.
-	RestoreOptions map[string]string `form:"restore_options,omitempty" json:"restore_options,omitempty" xml:"restore_options,omitempty"`
-}
-
-// RestoreRepositorySpecRequestBody is used to define fields on request body
-// types.
-type RestoreRepositorySpecRequestBody struct {
-	// The unique identifier of this repository.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// The type of this repository.
-	Type string `form:"type" json:"type" xml:"type"`
-	// The S3 bucket name for this repository. Only applies when type = 's3'.
-	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
-	// The region of the S3 bucket for this repository. Only applies when type =
-	// 's3'.
-	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
-	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
-	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
-	// An optional AWS access key ID to use for this repository. If not provided,
-	// pgbackrest will use the default credential provider chain.
-	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
-	// The corresponding secret for the AWS access key ID in s3_key.
-	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
-	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
-	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
-	// The optional GCS endpoint for this repository. Only applies when type =
-	// 'gcs'.
-	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
-	// Optional base64-encoded private key data. If omitted, pgbackrest will use
-	// the service account attached to the instance profile.
-	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
-	// The Azure account name for this repository. Only applies when type = 'azure'.
-	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
-	// The Azure container name for this repository. Only applies when type =
-	// 'azure'.
-	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
-	// The optional Azure endpoint for this repository. Only applies when type =
-	// 'azure'.
-	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
-	// An optional Azure storage account access key to use for this repository. If
-	// not provided, pgbackrest will use the VM's managed identity.
-	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
-	// The base path within the repository to store backups. Required for type =
-	// 'posix' and 'cifs'.
-	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
-	// Additional options to apply to this repository.
-	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
-}
-
-// ExtraVolumesSpecRequestBody is used to define fields on request body types.
-type ExtraVolumesSpecRequestBody struct {
-	// The host path for the volume.
-	HostPath string `form:"host_path" json:"host_path" xml:"host_path"`
-	// The path inside the container where the volume will be mounted.
-	DestinationPath string `form:"destination_path" json:"destination_path" xml:"destination_path"`
-}
-
-// DatabaseUserSpecRequestBody is used to define fields on request body types.
-type DatabaseUserSpecRequestBody struct {
-	// The username for this database user.
-	Username string `form:"username" json:"username" xml:"username"`
-	// The password for this database user. This field will be excluded from the
-	// response of all endpoints.
-	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
-	// If true, this user will be granted database ownership.
-	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
-	// The attributes to assign to this database user.
-	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
-	// The roles to assign to this database user.
-	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
-}
-
-// TaskResponseBody is used to define fields on response body types.
-type TaskResponseBody struct {
-	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
-	// The database ID of the task.
-	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
-	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
-	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-	// The unique ID of the task.
-	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
-	// The time when the task was created.
-	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
-	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
-	// The type of the task.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The status of the task.
-	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
-}
+type DatabaseCollectionResponseBody []*DatabaseResponseBody
 
 // DatabaseResponseBody is used to define fields on response body types.
 type DatabaseResponseBody struct {
@@ -1755,9 +1192,9 @@ type InstancePostgresStatusResponseBody struct {
 	Version      *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
 	PatroniState *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
 	Role         *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
-	// True if this instance is pending to be restarted from a configuration change.
+	// True if this instance has a pending restart from a configuration change.
 	PendingRestart *bool `form:"pending_restart,omitempty" json:"pending_restart,omitempty" xml:"pending_restart,omitempty"`
-	// True if Patroni has been paused for this instance.
+	// True if Patroni is paused for this instance.
 	PatroniPaused *bool `form:"patroni_paused,omitempty" json:"patroni_paused,omitempty" xml:"patroni_paused,omitempty"`
 }
 
@@ -1795,12 +1232,12 @@ type DatabaseSpecResponseBody struct {
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
-	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
-	// enforced depends on the orchestrator.
+	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
+	// depends on the orchestrator.
 	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database and
 	// to use for tuning Postgres. Defaults to the total available memory on the
-	// host. Whether this limit will be enforced depends on the orchestrator.
+	// host. Whether this limit is enforced depends on the orchestrator.
 	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// The Spock nodes for this database.
 	Nodes []*DatabaseNodeSpecResponseBody `form:"nodes,omitempty" json:"nodes,omitempty" xml:"nodes,omitempty"`
@@ -1823,7 +1260,7 @@ type DatabaseNodeSpecResponseBody struct {
 	// The name of the database node.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// The IDs of the hosts that should run this node. When multiple hosts are
-	// specified, one host will chosen as a primary and the others will be read
+	// specified, one host will chosen as a primary, and the others will be read
 	// replicas.
 	HostIds []string `form:"host_ids,omitempty" json:"host_ids,omitempty" xml:"host_ids,omitempty"`
 	// The major version of Postgres for this node. Overrides the Postgres version
@@ -1833,15 +1270,15 @@ type DatabaseNodeSpecResponseBody struct {
 	// port set in the DatabaseSpec.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// The number of CPUs to allocate for the database on this node and to use for
-	// tuning Postgres. Can include the SI suffix 'm', e.g. '500m' for 500
+	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
 	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
 	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
-	// than are available on the host. Whether this limit will be enforced depends
-	// on the orchestrator.
+	// than are available on the host. Whether this limit is enforced depends on
+	// the orchestrator.
 	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database on
 	// this node and to use for tuning Postgres. Defaults to the total available
-	// memory on the host. Whether this limit will be enforced depends on the
+	// memory on the host. Whether this limit is enforced depends on the
 	// orchestrator.
 	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
@@ -1881,10 +1318,12 @@ type BackupRepositorySpecResponseBody struct {
 	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
 	// An optional AWS access key ID to use for this repository. If not provided,
 	// pgbackrest will use the default credential provider chain. This field will
-	// be excluded from the response of all endpoints.
+	// be excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
 	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
 	// The corresponding secret for the AWS access key ID in s3_key. This field
-	// will be excluded from the response of all endpoints.
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
 	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
@@ -1893,7 +1332,8 @@ type BackupRepositorySpecResponseBody struct {
 	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
 	// the service account attached to the instance profile. This field will be
-	// excluded from the response of all endpoints.
+	// excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
 	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
@@ -1904,7 +1344,8 @@ type BackupRepositorySpecResponseBody struct {
 	// 'azure'.
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
 	// The Azure storage account access key to use for this repository. This field
-	// will be excluded from the response of all endpoints.
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
 	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
 	// The count of full backups to retain or the time to retain full backups.
 	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
@@ -1935,8 +1376,8 @@ type RestoreConfigSpecResponseBody struct {
 	SourceDatabaseID *string `form:"source_database_id,omitempty" json:"source_database_id,omitempty" xml:"source_database_id,omitempty"`
 	// The name of the node to restore this database from.
 	SourceNodeName *string `form:"source_node_name,omitempty" json:"source_node_name,omitempty" xml:"source_node_name,omitempty"`
-	// The name of the database in this repository. This database will be renamed
-	// to the database_name in the DatabaseSpec.
+	// The name of the database in this repository. The database will be renamed to
+	// the database_name in the DatabaseSpec after it's restored.
 	SourceDatabaseName *string `form:"source_database_name,omitempty" json:"source_database_name,omitempty" xml:"source_database_name,omitempty"`
 	// The repository to restore this database from.
 	Repository *RestoreRepositorySpecResponseBody `form:"repository,omitempty" json:"repository,omitempty" xml:"repository,omitempty"`
@@ -2003,7 +1444,8 @@ type DatabaseUserSpecResponseBody struct {
 	// The username for this database user.
 	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
 	// The password for this database user. This field will be excluded from the
-	// response of all endpoints.
+	// response of all endpoints. It can also be omitted from update requests to
+	// keep the current value.
 	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
 	// If true, this user will be granted database ownership.
 	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
@@ -2011,6 +1453,265 @@ type DatabaseUserSpecResponseBody struct {
 	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
 	// The roles to assign to this database user.
 	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
+}
+
+// DatabaseSpecRequestBody is used to define fields on request body types.
+type DatabaseSpecRequestBody struct {
+	// The name of the Postgres database.
+	DatabaseName string `form:"database_name" json:"database_name" xml:"database_name"`
+	// The major version of the Postgres database.
+	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
+	// The major version of the Spock extension.
+	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
+	// The port used by the Postgres database.
+	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	// The number of CPUs to allocate for the database and to use for tuning
+	// Postgres. Defaults to the number of available CPUs on the host. Can include
+	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
+	// depends on the orchestrator.
+	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory in SI or IEC notation to allocate for the database and
+	// to use for tuning Postgres. Defaults to the total available memory on the
+	// host. Whether this limit is enforced depends on the orchestrator.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	// The Spock nodes for this database.
+	Nodes []*DatabaseNodeSpecRequestBody `form:"nodes" json:"nodes" xml:"nodes"`
+	// The users to create for this database.
+	DatabaseUsers []*DatabaseUserSpecRequestBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
+	// The backup configuration for this database.
+	BackupConfig *BackupConfigSpecRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
+	// The restore configuration for this database.
+	RestoreConfig *RestoreConfigSpecRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
+	// Additional postgresql.conf settings. Will be merged with the settings
+	// provided by control-plane.
+	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
+	// A list of extra volumes to mount. Each entry defines a host and container
+	// path.
+	ExtraVolumes []*ExtraVolumesSpecRequestBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
+}
+
+// DatabaseNodeSpecRequestBody is used to define fields on request body types.
+type DatabaseNodeSpecRequestBody struct {
+	// The name of the database node.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The IDs of the hosts that should run this node. When multiple hosts are
+	// specified, one host will chosen as a primary, and the others will be read
+	// replicas.
+	HostIds []string `form:"host_ids" json:"host_ids" xml:"host_ids"`
+	// The major version of Postgres for this node. Overrides the Postgres version
+	// set in the DatabaseSpec.
+	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
+	// The port used by the Postgres database for this node. Overrides the Postgres
+	// port set in the DatabaseSpec.
+	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	// The number of CPUs to allocate for the database on this node and to use for
+	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
+	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
+	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
+	// than are available on the host. Whether this limit is enforced depends on
+	// the orchestrator.
+	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory in SI or IEC notation to allocate for the database on
+	// this node and to use for tuning Postgres. Defaults to the total available
+	// memory on the host. Whether this limit is enforced depends on the
+	// orchestrator.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	// Additional postgresql.conf settings for this particular node. Will be merged
+	// with the settings provided by control-plane.
+	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
+	// The backup configuration for this node. Overrides the backup configuration
+	// set in the DatabaseSpec.
+	BackupConfig *BackupConfigSpecRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
+	// The restore configuration for this node. Overrides the restore configuration
+	// set in the DatabaseSpec.
+	RestoreConfig *RestoreConfigSpecRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
+	// Optional list of external volumes to mount for this node only.
+	ExtraVolumes []*ExtraVolumesSpecRequestBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
+}
+
+// BackupConfigSpecRequestBody is used to define fields on request body types.
+type BackupConfigSpecRequestBody struct {
+	// The repositories for this backup configuration.
+	Repositories []*BackupRepositorySpecRequestBody `form:"repositories" json:"repositories" xml:"repositories"`
+	// The schedules for this backup configuration.
+	Schedules []*BackupScheduleSpecRequestBody `form:"schedules,omitempty" json:"schedules,omitempty" xml:"schedules,omitempty"`
+}
+
+// BackupRepositorySpecRequestBody is used to define fields on request body
+// types.
+type BackupRepositorySpecRequestBody struct {
+	// The unique identifier of this repository.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// The type of this repository.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The S3 bucket name for this repository. Only applies when type = 's3'.
+	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
+	// The region of the S3 bucket for this repository. Only applies when type =
+	// 's3'.
+	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
+	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
+	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	// An optional AWS access key ID to use for this repository. If not provided,
+	// pgbackrest will use the default credential provider chain. This field will
+	// be excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
+	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	// The corresponding secret for the AWS access key ID in s3_key. This field
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
+	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
+	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
+	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
+	// The optional GCS endpoint for this repository. Only applies when type =
+	// 'gcs'.
+	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	// Optional base64-encoded private key data. If omitted, pgbackrest will use
+	// the service account attached to the instance profile. This field will be
+	// excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
+	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
+	// The Azure account name for this repository. Only applies when type = 'azure'.
+	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
+	// The Azure container name for this repository. Only applies when type =
+	// 'azure'.
+	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
+	// The optional Azure endpoint for this repository. Only applies when type =
+	// 'azure'.
+	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	// The Azure storage account access key to use for this repository. This field
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
+	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
+	// The count of full backups to retain or the time to retain full backups.
+	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
+	// The type of measure used for retention_full.
+	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
+	// The base path within the repository to store backups. Required for type =
+	// 'posix' and 'cifs'.
+	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
+}
+
+// BackupScheduleSpecRequestBody is used to define fields on request body types.
+type BackupScheduleSpecRequestBody struct {
+	// The unique identifier for this backup schedule.
+	ID string `form:"id" json:"id" xml:"id"`
+	// The type of backup to take on this schedule.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The cron expression for this schedule.
+	CronExpression string `form:"cron_expression" json:"cron_expression" xml:"cron_expression"`
+}
+
+// RestoreConfigSpecRequestBody is used to define fields on request body types.
+type RestoreConfigSpecRequestBody struct {
+	// The ID of the database to restore this database from.
+	SourceDatabaseID string `form:"source_database_id" json:"source_database_id" xml:"source_database_id"`
+	// The name of the node to restore this database from.
+	SourceNodeName string `form:"source_node_name" json:"source_node_name" xml:"source_node_name"`
+	// The name of the database in this repository. The database will be renamed to
+	// the database_name in the DatabaseSpec after it's restored.
+	SourceDatabaseName string `form:"source_database_name" json:"source_database_name" xml:"source_database_name"`
+	// The repository to restore this database from.
+	Repository *RestoreRepositorySpecRequestBody `form:"repository" json:"repository" xml:"repository"`
+	// Additional options to use when restoring this database. If omitted, the
+	// database will be restored to the latest point in the given repository.
+	RestoreOptions map[string]string `form:"restore_options,omitempty" json:"restore_options,omitempty" xml:"restore_options,omitempty"`
+}
+
+// RestoreRepositorySpecRequestBody is used to define fields on request body
+// types.
+type RestoreRepositorySpecRequestBody struct {
+	// The unique identifier of this repository.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// The type of this repository.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The S3 bucket name for this repository. Only applies when type = 's3'.
+	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
+	// The region of the S3 bucket for this repository. Only applies when type =
+	// 's3'.
+	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
+	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
+	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	// An optional AWS access key ID to use for this repository. If not provided,
+	// pgbackrest will use the default credential provider chain.
+	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	// The corresponding secret for the AWS access key ID in s3_key.
+	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
+	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
+	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
+	// The optional GCS endpoint for this repository. Only applies when type =
+	// 'gcs'.
+	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	// Optional base64-encoded private key data. If omitted, pgbackrest will use
+	// the service account attached to the instance profile.
+	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
+	// The Azure account name for this repository. Only applies when type = 'azure'.
+	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
+	// The Azure container name for this repository. Only applies when type =
+	// 'azure'.
+	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
+	// The optional Azure endpoint for this repository. Only applies when type =
+	// 'azure'.
+	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	// An optional Azure storage account access key to use for this repository. If
+	// not provided, pgbackrest will use the VM's managed identity.
+	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
+	// The base path within the repository to store backups. Required for type =
+	// 'posix' and 'cifs'.
+	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
+}
+
+// ExtraVolumesSpecRequestBody is used to define fields on request body types.
+type ExtraVolumesSpecRequestBody struct {
+	// The host path for the volume.
+	HostPath string `form:"host_path" json:"host_path" xml:"host_path"`
+	// The path inside the container where the volume will be mounted.
+	DestinationPath string `form:"destination_path" json:"destination_path" xml:"destination_path"`
+}
+
+// DatabaseUserSpecRequestBody is used to define fields on request body types.
+type DatabaseUserSpecRequestBody struct {
+	// The username for this database user.
+	Username string `form:"username" json:"username" xml:"username"`
+	// The password for this database user. This field will be excluded from the
+	// response of all endpoints. It can also be omitted from update requests to
+	// keep the current value.
+	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
+	// If true, this user will be granted database ownership.
+	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
+	// The attributes to assign to this database user.
+	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
+	// The roles to assign to this database user.
+	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
+}
+
+// TaskResponseBody is used to define fields on response body types.
+type TaskResponseBody struct {
+	// The parent task ID of the task.
+	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	// The database ID of the task.
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// The unique ID of the task.
+	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
+	// The time when the task was created.
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// The status of the task.
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
 // InstanceResponseBodyCollection is used to define fields on response body
@@ -2030,12 +1731,12 @@ type DatabaseSpecRequestBodyRequestBody struct {
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
-	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit will be
-	// enforced depends on the orchestrator.
+	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
+	// depends on the orchestrator.
 	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database and
 	// to use for tuning Postgres. Defaults to the total available memory on the
-	// host. Whether this limit will be enforced depends on the orchestrator.
+	// host. Whether this limit is enforced depends on the orchestrator.
 	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// The Spock nodes for this database.
 	Nodes []*DatabaseNodeSpecRequestBodyRequestBody `form:"nodes" json:"nodes" xml:"nodes"`
@@ -2059,7 +1760,7 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// The name of the database node.
 	Name string `form:"name" json:"name" xml:"name"`
 	// The IDs of the hosts that should run this node. When multiple hosts are
-	// specified, one host will chosen as a primary and the others will be read
+	// specified, one host will chosen as a primary, and the others will be read
 	// replicas.
 	HostIds []string `form:"host_ids" json:"host_ids" xml:"host_ids"`
 	// The major version of Postgres for this node. Overrides the Postgres version
@@ -2069,15 +1770,15 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// port set in the DatabaseSpec.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// The number of CPUs to allocate for the database on this node and to use for
-	// tuning Postgres. Can include the SI suffix 'm', e.g. '500m' for 500
+	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
 	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
 	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
-	// than are available on the host. Whether this limit will be enforced depends
-	// on the orchestrator.
+	// than are available on the host. Whether this limit is enforced depends on
+	// the orchestrator.
 	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database on
 	// this node and to use for tuning Postgres. Defaults to the total available
-	// memory on the host. Whether this limit will be enforced depends on the
+	// memory on the host. Whether this limit is enforced depends on the
 	// orchestrator.
 	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
@@ -2118,10 +1819,12 @@ type BackupRepositorySpecRequestBodyRequestBody struct {
 	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
 	// An optional AWS access key ID to use for this repository. If not provided,
 	// pgbackrest will use the default credential provider chain. This field will
-	// be excluded from the response of all endpoints.
+	// be excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
 	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
 	// The corresponding secret for the AWS access key ID in s3_key. This field
-	// will be excluded from the response of all endpoints.
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
 	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
 	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
@@ -2130,7 +1833,8 @@ type BackupRepositorySpecRequestBodyRequestBody struct {
 	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
 	// the service account attached to the instance profile. This field will be
-	// excluded from the response of all endpoints.
+	// excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
 	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
 	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
@@ -2141,7 +1845,8 @@ type BackupRepositorySpecRequestBodyRequestBody struct {
 	// 'azure'.
 	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
 	// The Azure storage account access key to use for this repository. This field
-	// will be excluded from the response of all endpoints.
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
 	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
 	// The count of full backups to retain or the time to retain full backups.
 	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
@@ -2172,8 +1877,8 @@ type RestoreConfigSpecRequestBodyRequestBody struct {
 	SourceDatabaseID string `form:"source_database_id" json:"source_database_id" xml:"source_database_id"`
 	// The name of the node to restore this database from.
 	SourceNodeName string `form:"source_node_name" json:"source_node_name" xml:"source_node_name"`
-	// The name of the database in this repository. This database will be renamed
-	// to the database_name in the DatabaseSpec.
+	// The name of the database in this repository. The database will be renamed to
+	// the database_name in the DatabaseSpec after it's restored.
 	SourceDatabaseName string `form:"source_database_name" json:"source_database_name" xml:"source_database_name"`
 	// The repository to restore this database from.
 	Repository *RestoreRepositorySpecRequestBodyRequestBody `form:"repository" json:"repository" xml:"repository"`
@@ -2242,7 +1947,8 @@ type DatabaseUserSpecRequestBodyRequestBody struct {
 	// The username for this database user.
 	Username string `form:"username" json:"username" xml:"username"`
 	// The password for this database user. This field will be excluded from the
-	// response of all endpoints.
+	// response of all endpoints. It can also be omitted from update requests to
+	// keep the current value.
 	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
 	// If true, this user will be granted database ownership.
 	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
@@ -2250,32 +1956,6 @@ type DatabaseUserSpecRequestBodyRequestBody struct {
 	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
 	// The roles to assign to this database user.
 	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
-}
-
-// TaskResponse is used to define fields on response body types.
-type TaskResponse struct {
-	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
-	// The database ID of the task.
-	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
-	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
-	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-	// The unique ID of the task.
-	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
-	// The time when the task was created.
-	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
-	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
-	// The type of the task.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The status of the task.
-	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
 // TaskLogEntryResponseBody is used to define fields on response body types.
@@ -2713,12 +2393,15 @@ func NewRemoveHostServerError(body *RemoveHostServerErrorResponseBody) *controlp
 	return v
 }
 
-// NewListDatabasesDatabaseCollectionOK builds a "control-plane" service
+// NewListDatabasesResponseViewOK builds a "control-plane" service
 // "list-databases" endpoint result from a HTTP "OK" response.
-func NewListDatabasesDatabaseCollectionOK(body ListDatabasesResponseBody) controlplaneviews.DatabaseCollectionView {
-	v := make([]*controlplaneviews.DatabaseView, len(body))
-	for i, val := range body {
-		v[i] = unmarshalDatabaseResponseToControlplaneviewsDatabaseView(val)
+func NewListDatabasesResponseViewOK(body *ListDatabasesResponseBody) *controlplaneviews.ListDatabasesResponseView {
+	v := &controlplaneviews.ListDatabasesResponseView{}
+	if body.Databases != nil {
+		v.Databases = make([]*controlplaneviews.DatabaseView, len(body.Databases))
+		for i, val := range body.Databases {
+			v.Databases[i] = unmarshalDatabaseResponseBodyToControlplaneviewsDatabaseView(val)
+		}
 	}
 
 	return v
@@ -3108,12 +2791,15 @@ func NewBackupDatabaseNodeServerError(body *BackupDatabaseNodeServerErrorRespons
 	return v
 }
 
-// NewListDatabaseTasksTaskOK builds a "control-plane" service
+// NewListDatabaseTasksResponseOK builds a "control-plane" service
 // "list-database-tasks" endpoint result from a HTTP "OK" response.
-func NewListDatabaseTasksTaskOK(body []*TaskResponse) []*controlplane.Task {
-	v := make([]*controlplane.Task, len(body))
-	for i, val := range body {
-		v[i] = unmarshalTaskResponseToControlplaneTask(val)
+func NewListDatabaseTasksResponseOK(body *ListDatabaseTasksResponseBody) *controlplane.ListDatabaseTasksResponse {
+	v := &controlplane.ListDatabaseTasksResponse{}
+	if body.Tasks != nil {
+		v.Tasks = make([]*controlplane.Task, len(body.Tasks))
+		for i, val := range body.Tasks {
+			v.Tasks[i] = unmarshalTaskResponseBodyToControlplaneTask(val)
+		}
 	}
 
 	return v
@@ -3617,6 +3303,19 @@ func ValidateBackupDatabaseNodeResponseBody(body *BackupDatabaseNodeResponseBody
 	if body.Task != nil {
 		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
 			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateListDatabaseTasksResponseBody runs the validations defined on
+// List-Database-TasksResponseBody
+func ValidateListDatabaseTasksResponseBody(body *ListDatabaseTasksResponseBody) (err error) {
+	for _, e := range body.Tasks {
+		if e != nil {
+			if err2 := ValidateTaskResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	return
@@ -4881,1364 +4580,14 @@ func ValidatePgEdgeVersionResponse(body *PgEdgeVersionResponse) (err error) {
 	return
 }
 
-// ValidateDatabaseResponse runs the validations defined on DatabaseResponse
-func ValidateDatabaseResponse(body *DatabaseResponse) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
-	}
-	if body.UpdatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("updated_at", "body"))
-	}
-	if body.State == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
-		}
-	}
-	if body.TenantID != nil {
-		if utf8.RuneCountInString(*body.TenantID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.tenant_id", *body.TenantID, utf8.RuneCountInString(*body.TenantID), 1, true))
-		}
-	}
-	if body.TenantID != nil {
-		if utf8.RuneCountInString(*body.TenantID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.tenant_id", *body.TenantID, utf8.RuneCountInString(*body.TenantID), 63, false))
-		}
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.UpdatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
-	}
-	if body.State != nil {
-		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "available" || *body.State == "deleting" || *body.State == "degraded" || *body.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "available", "deleting", "degraded", "unknown"}))
-		}
-	}
-	if body.Instances != nil {
-		if err2 := ValidateInstanceCollectionResponse(body.Instances); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Spec != nil {
-		if err2 := ValidateDatabaseSpecResponse(body.Spec); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	return
-}
-
-// ValidateInstanceCollectionResponse runs the validations defined on
-// InstanceCollectionResponse
-func ValidateInstanceCollectionResponse(body InstanceCollectionResponse) (err error) {
+// ValidateDatabaseCollectionResponseBody runs the validations defined on
+// DatabaseCollectionResponseBody
+func ValidateDatabaseCollectionResponseBody(body DatabaseCollectionResponseBody) (err error) {
 	for _, e := range body {
 		if e != nil {
-			if err2 := ValidateInstanceResponse(e); err2 != nil {
+			if err2 := ValidateDatabaseResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
-		}
-	}
-	return
-}
-
-// ValidateInstanceResponse runs the validations defined on InstanceResponse
-func ValidateInstanceResponse(body *InstanceResponse) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
-	if body.HostID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "body"))
-	}
-	if body.NodeName == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("node_name", "body"))
-	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
-	}
-	if body.UpdatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("updated_at", "body"))
-	}
-	if body.State == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.UpdatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
-	}
-	if body.StatusUpdatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.status_updated_at", *body.StatusUpdatedAt, goa.FormatDateTime))
-	}
-	if body.State != nil {
-		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "backing_up" || *body.State == "available" || *body.State == "degraded" || *body.State == "failed" || *body.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "backing_up", "available", "degraded", "failed", "unknown"}))
-		}
-	}
-	if body.ConnectionInfo != nil {
-		if err2 := ValidateInstanceConnectionInfoResponse(body.ConnectionInfo); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Postgres != nil {
-		if err2 := ValidateInstancePostgresStatusResponse(body.Postgres); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Spock != nil {
-		if err2 := ValidateInstanceSpockStatusResponse(body.Spock); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	return
-}
-
-// ValidateInstanceConnectionInfoResponse runs the validations defined on
-// InstanceConnectionInfoResponse
-func ValidateInstanceConnectionInfoResponse(body *InstanceConnectionInfoResponse) (err error) {
-	if body.Ipv4Address != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
-	}
-	return
-}
-
-// ValidateInstancePostgresStatusResponse runs the validations defined on
-// InstancePostgresStatusResponse
-func ValidateInstancePostgresStatusResponse(body *InstancePostgresStatusResponse) (err error) {
-	if body.PatroniState != nil {
-		if !(*body.PatroniState == "stopping" || *body.PatroniState == "stopped" || *body.PatroniState == "stop failed" || *body.PatroniState == "crashed" || *body.PatroniState == "running" || *body.PatroniState == "starting" || *body.PatroniState == "start failed" || *body.PatroniState == "restarting" || *body.PatroniState == "restart failed" || *body.PatroniState == "initializing new cluster" || *body.PatroniState == "initdb failed" || *body.PatroniState == "running custom bootstrap script" || *body.PatroniState == "custom bootstrap failed" || *body.PatroniState == "creating replica" || *body.PatroniState == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.patroni_state", *body.PatroniState, []any{"stopping", "stopped", "stop failed", "crashed", "running", "starting", "start failed", "restarting", "restart failed", "initializing new cluster", "initdb failed", "running custom bootstrap script", "custom bootstrap failed", "creating replica", "unknown"}))
-		}
-	}
-	if body.Role != nil {
-		if !(*body.Role == "replica" || *body.Role == "primary") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.role", *body.Role, []any{"replica", "primary"}))
-		}
-	}
-	return
-}
-
-// ValidateInstanceSpockStatusResponse runs the validations defined on
-// InstanceSpockStatusResponse
-func ValidateInstanceSpockStatusResponse(body *InstanceSpockStatusResponse) (err error) {
-	for _, e := range body.Subscriptions {
-		if e != nil {
-			if err2 := ValidateInstanceSubscriptionResponse(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	return
-}
-
-// ValidateInstanceSubscriptionResponse runs the validations defined on
-// InstanceSubscriptionResponse
-func ValidateInstanceSubscriptionResponse(body *InstanceSubscriptionResponse) (err error) {
-	if body.ProviderNode == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("provider_node", "body"))
-	}
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ProviderNode != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.provider_node", *body.ProviderNode, "n[0-9]+"))
-	}
-	return
-}
-
-// ValidateDatabaseSpecResponse runs the validations defined on
-// DatabaseSpecResponse
-func ValidateDatabaseSpecResponse(body *DatabaseSpecResponse) (err error) {
-	if body.DatabaseName == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_name", "body"))
-	}
-	if body.Nodes == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("nodes", "body"))
-	}
-	if body.DatabaseName != nil {
-		if utf8.RuneCountInString(*body.DatabaseName) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.database_name", *body.DatabaseName, utf8.RuneCountInString(*body.DatabaseName), 1, true))
-		}
-	}
-	if body.DatabaseName != nil {
-		if utf8.RuneCountInString(*body.DatabaseName) > 31 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.database_name", *body.DatabaseName, utf8.RuneCountInString(*body.DatabaseName), 31, false))
-		}
-	}
-	if body.PostgresVersion != nil {
-		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"15", "16", "17"}))
-		}
-	}
-	if body.SpockVersion != nil {
-		if !(*body.SpockVersion == "4") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.spock_version", *body.SpockVersion, []any{"4"}))
-		}
-	}
-	if body.Port != nil {
-		if *body.Port < 1 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 1, true))
-		}
-	}
-	if body.Port != nil {
-		if *body.Port > 65535 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 65535, false))
-		}
-	}
-	if body.Cpus != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.cpus", *body.Cpus, "^[0-9]+(\\.[0-9]{1,3}|m)?$"))
-	}
-	if body.Memory != nil {
-		if utf8.RuneCountInString(*body.Memory) > 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.memory", *body.Memory, utf8.RuneCountInString(*body.Memory), 16, false))
-		}
-	}
-	if len(body.Nodes) < 1 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.nodes", body.Nodes, len(body.Nodes), 1, true))
-	}
-	if len(body.Nodes) > 9 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.nodes", body.Nodes, len(body.Nodes), 9, false))
-	}
-	for _, e := range body.Nodes {
-		if e != nil {
-			if err2 := ValidateDatabaseNodeSpecResponse(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	if len(body.DatabaseUsers) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.database_users", body.DatabaseUsers, len(body.DatabaseUsers), 16, false))
-	}
-	for _, e := range body.DatabaseUsers {
-		if e != nil {
-			if err2 := ValidateDatabaseUserSpecResponse(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	if body.BackupConfig != nil {
-		if err2 := ValidateBackupConfigSpecResponse(body.BackupConfig); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.RestoreConfig != nil {
-		if err2 := ValidateRestoreConfigSpecResponse(body.RestoreConfig); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if len(body.PostgresqlConf) > 64 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.postgresql_conf", body.PostgresqlConf, len(body.PostgresqlConf), 64, false))
-	}
-	if len(body.ExtraVolumes) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_volumes", body.ExtraVolumes, len(body.ExtraVolumes), 16, false))
-	}
-	for _, e := range body.ExtraVolumes {
-		if e != nil {
-			if err2 := ValidateExtraVolumesSpecResponse(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	return
-}
-
-// ValidateDatabaseNodeSpecResponse runs the validations defined on
-// DatabaseNodeSpecResponse
-func ValidateDatabaseNodeSpecResponse(body *DatabaseNodeSpecResponse) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.HostIds == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
-	}
-	if body.Name != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.name", *body.Name, "n[0-9]+"))
-	}
-	if len(body.HostIds) < 1 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
-	}
-	for _, e := range body.HostIds {
-		if utf8.RuneCountInString(e) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 1, true))
-		}
-		if utf8.RuneCountInString(e) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 63, false))
-		}
-	}
-	if body.PostgresVersion != nil {
-		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"15", "16", "17"}))
-		}
-	}
-	if body.Port != nil {
-		if *body.Port < 1 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 1, true))
-		}
-	}
-	if body.Port != nil {
-		if *body.Port > 65535 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 65535, false))
-		}
-	}
-	if body.Cpus != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.cpus", *body.Cpus, "^[0-9]+(\\.[0-9]{1,3}|m)?$"))
-	}
-	if body.Memory != nil {
-		if utf8.RuneCountInString(*body.Memory) > 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.memory", *body.Memory, utf8.RuneCountInString(*body.Memory), 16, false))
-		}
-	}
-	if len(body.PostgresqlConf) > 64 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.postgresql_conf", body.PostgresqlConf, len(body.PostgresqlConf), 64, false))
-	}
-	if body.BackupConfig != nil {
-		if err2 := ValidateBackupConfigSpecResponse(body.BackupConfig); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.RestoreConfig != nil {
-		if err2 := ValidateRestoreConfigSpecResponse(body.RestoreConfig); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if len(body.ExtraVolumes) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_volumes", body.ExtraVolumes, len(body.ExtraVolumes), 16, false))
-	}
-	for _, e := range body.ExtraVolumes {
-		if e != nil {
-			if err2 := ValidateExtraVolumesSpecResponse(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	return
-}
-
-// ValidateBackupConfigSpecResponse runs the validations defined on
-// BackupConfigSpecResponse
-func ValidateBackupConfigSpecResponse(body *BackupConfigSpecResponse) (err error) {
-	if body.Repositories == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("repositories", "body"))
-	}
-	if len(body.Repositories) < 1 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.repositories", body.Repositories, len(body.Repositories), 1, true))
-	}
-	for _, e := range body.Repositories {
-		if e != nil {
-			if err2 := ValidateBackupRepositorySpecResponse(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	if len(body.Schedules) > 32 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.schedules", body.Schedules, len(body.Schedules), 32, false))
-	}
-	for _, e := range body.Schedules {
-		if e != nil {
-			if err2 := ValidateBackupScheduleSpecResponse(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	return
-}
-
-// ValidateBackupRepositorySpecResponse runs the validations defined on
-// BackupRepositorySpecResponse
-func ValidateBackupRepositorySpecResponse(body *BackupRepositorySpecResponse) (err error) {
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
-		}
-	}
-	if body.Type != nil {
-		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure" || *body.Type == "posix" || *body.Type == "cifs") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"s3", "gcs", "azure", "posix", "cifs"}))
-		}
-	}
-	if body.S3Bucket != nil {
-		if utf8.RuneCountInString(*body.S3Bucket) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_bucket", *body.S3Bucket, utf8.RuneCountInString(*body.S3Bucket), 3, true))
-		}
-	}
-	if body.S3Bucket != nil {
-		if utf8.RuneCountInString(*body.S3Bucket) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_bucket", *body.S3Bucket, utf8.RuneCountInString(*body.S3Bucket), 63, false))
-		}
-	}
-	if body.S3Region != nil {
-		if utf8.RuneCountInString(*body.S3Region) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_region", *body.S3Region, utf8.RuneCountInString(*body.S3Region), 1, true))
-		}
-	}
-	if body.S3Region != nil {
-		if utf8.RuneCountInString(*body.S3Region) > 32 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_region", *body.S3Region, utf8.RuneCountInString(*body.S3Region), 32, false))
-		}
-	}
-	if body.S3Endpoint != nil {
-		if utf8.RuneCountInString(*body.S3Endpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 3, true))
-		}
-	}
-	if body.S3Endpoint != nil {
-		if utf8.RuneCountInString(*body.S3Endpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 128, false))
-		}
-	}
-	if body.S3Key != nil {
-		if utf8.RuneCountInString(*body.S3Key) < 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 16, true))
-		}
-	}
-	if body.S3Key != nil {
-		if utf8.RuneCountInString(*body.S3Key) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 128, false))
-		}
-	}
-	if body.S3KeySecret != nil {
-		if utf8.RuneCountInString(*body.S3KeySecret) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key_secret", *body.S3KeySecret, utf8.RuneCountInString(*body.S3KeySecret), 128, false))
-		}
-	}
-	if body.GcsBucket != nil {
-		if utf8.RuneCountInString(*body.GcsBucket) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_bucket", *body.GcsBucket, utf8.RuneCountInString(*body.GcsBucket), 3, true))
-		}
-	}
-	if body.GcsBucket != nil {
-		if utf8.RuneCountInString(*body.GcsBucket) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_bucket", *body.GcsBucket, utf8.RuneCountInString(*body.GcsBucket), 63, false))
-		}
-	}
-	if body.GcsEndpoint != nil {
-		if utf8.RuneCountInString(*body.GcsEndpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_endpoint", *body.GcsEndpoint, utf8.RuneCountInString(*body.GcsEndpoint), 3, true))
-		}
-	}
-	if body.GcsEndpoint != nil {
-		if utf8.RuneCountInString(*body.GcsEndpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_endpoint", *body.GcsEndpoint, utf8.RuneCountInString(*body.GcsEndpoint), 128, false))
-		}
-	}
-	if body.GcsKey != nil {
-		if utf8.RuneCountInString(*body.GcsKey) > 1024 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_key", *body.GcsKey, utf8.RuneCountInString(*body.GcsKey), 1024, false))
-		}
-	}
-	if body.AzureAccount != nil {
-		if utf8.RuneCountInString(*body.AzureAccount) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_account", *body.AzureAccount, utf8.RuneCountInString(*body.AzureAccount), 3, true))
-		}
-	}
-	if body.AzureAccount != nil {
-		if utf8.RuneCountInString(*body.AzureAccount) > 24 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_account", *body.AzureAccount, utf8.RuneCountInString(*body.AzureAccount), 24, false))
-		}
-	}
-	if body.AzureContainer != nil {
-		if utf8.RuneCountInString(*body.AzureContainer) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_container", *body.AzureContainer, utf8.RuneCountInString(*body.AzureContainer), 3, true))
-		}
-	}
-	if body.AzureContainer != nil {
-		if utf8.RuneCountInString(*body.AzureContainer) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_container", *body.AzureContainer, utf8.RuneCountInString(*body.AzureContainer), 63, false))
-		}
-	}
-	if body.AzureEndpoint != nil {
-		if utf8.RuneCountInString(*body.AzureEndpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_endpoint", *body.AzureEndpoint, utf8.RuneCountInString(*body.AzureEndpoint), 3, true))
-		}
-	}
-	if body.AzureEndpoint != nil {
-		if utf8.RuneCountInString(*body.AzureEndpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_endpoint", *body.AzureEndpoint, utf8.RuneCountInString(*body.AzureEndpoint), 128, false))
-		}
-	}
-	if body.AzureKey != nil {
-		if utf8.RuneCountInString(*body.AzureKey) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_key", *body.AzureKey, utf8.RuneCountInString(*body.AzureKey), 128, false))
-		}
-	}
-	if body.RetentionFull != nil {
-		if *body.RetentionFull < 1 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.retention_full", *body.RetentionFull, 1, true))
-		}
-	}
-	if body.RetentionFull != nil {
-		if *body.RetentionFull > 9.999999e+06 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.retention_full", *body.RetentionFull, 9.999999e+06, false))
-		}
-	}
-	if body.RetentionFullType != nil {
-		if !(*body.RetentionFullType == "time" || *body.RetentionFullType == "count") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.retention_full_type", *body.RetentionFullType, []any{"time", "count"}))
-		}
-	}
-	if body.BasePath != nil {
-		if utf8.RuneCountInString(*body.BasePath) > 256 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.base_path", *body.BasePath, utf8.RuneCountInString(*body.BasePath), 256, false))
-		}
-	}
-	if len(body.CustomOptions) > 32 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.custom_options", body.CustomOptions, len(body.CustomOptions), 32, false))
-	}
-	return
-}
-
-// ValidateBackupScheduleSpecResponse runs the validations defined on
-// BackupScheduleSpecResponse
-func ValidateBackupScheduleSpecResponse(body *BackupScheduleSpecResponse) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.CronExpression == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("cron_expression", "body"))
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 64 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 64, false))
-		}
-	}
-	if body.Type != nil {
-		if !(*body.Type == "full" || *body.Type == "incr") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"full", "incr"}))
-		}
-	}
-	if body.CronExpression != nil {
-		if utf8.RuneCountInString(*body.CronExpression) > 32 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.cron_expression", *body.CronExpression, utf8.RuneCountInString(*body.CronExpression), 32, false))
-		}
-	}
-	return
-}
-
-// ValidateRestoreConfigSpecResponse runs the validations defined on
-// RestoreConfigSpecResponse
-func ValidateRestoreConfigSpecResponse(body *RestoreConfigSpecResponse) (err error) {
-	if body.SourceDatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("source_database_id", "body"))
-	}
-	if body.SourceNodeName == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("source_node_name", "body"))
-	}
-	if body.SourceDatabaseName == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("source_database_name", "body"))
-	}
-	if body.Repository == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
-	}
-	if body.SourceDatabaseID != nil {
-		if utf8.RuneCountInString(*body.SourceDatabaseID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", *body.SourceDatabaseID, utf8.RuneCountInString(*body.SourceDatabaseID), 1, true))
-		}
-	}
-	if body.SourceDatabaseID != nil {
-		if utf8.RuneCountInString(*body.SourceDatabaseID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", *body.SourceDatabaseID, utf8.RuneCountInString(*body.SourceDatabaseID), 63, false))
-		}
-	}
-	if body.SourceNodeName != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", *body.SourceNodeName, "n[0-9]+"))
-	}
-	if body.SourceDatabaseName != nil {
-		if utf8.RuneCountInString(*body.SourceDatabaseName) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_name", *body.SourceDatabaseName, utf8.RuneCountInString(*body.SourceDatabaseName), 1, true))
-		}
-	}
-	if body.SourceDatabaseName != nil {
-		if utf8.RuneCountInString(*body.SourceDatabaseName) > 31 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_name", *body.SourceDatabaseName, utf8.RuneCountInString(*body.SourceDatabaseName), 31, false))
-		}
-	}
-	if body.Repository != nil {
-		if err2 := ValidateRestoreRepositorySpecResponse(body.Repository); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if len(body.RestoreOptions) > 32 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.restore_options", body.RestoreOptions, len(body.RestoreOptions), 32, false))
-	}
-	return
-}
-
-// ValidateRestoreRepositorySpecResponse runs the validations defined on
-// RestoreRepositorySpecResponse
-func ValidateRestoreRepositorySpecResponse(body *RestoreRepositorySpecResponse) (err error) {
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
-		}
-	}
-	if body.Type != nil {
-		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure" || *body.Type == "posix" || *body.Type == "cifs") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"s3", "gcs", "azure", "posix", "cifs"}))
-		}
-	}
-	if body.S3Bucket != nil {
-		if utf8.RuneCountInString(*body.S3Bucket) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_bucket", *body.S3Bucket, utf8.RuneCountInString(*body.S3Bucket), 3, true))
-		}
-	}
-	if body.S3Bucket != nil {
-		if utf8.RuneCountInString(*body.S3Bucket) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_bucket", *body.S3Bucket, utf8.RuneCountInString(*body.S3Bucket), 63, false))
-		}
-	}
-	if body.S3Region != nil {
-		if utf8.RuneCountInString(*body.S3Region) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_region", *body.S3Region, utf8.RuneCountInString(*body.S3Region), 1, true))
-		}
-	}
-	if body.S3Region != nil {
-		if utf8.RuneCountInString(*body.S3Region) > 32 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_region", *body.S3Region, utf8.RuneCountInString(*body.S3Region), 32, false))
-		}
-	}
-	if body.S3Endpoint != nil {
-		if utf8.RuneCountInString(*body.S3Endpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 3, true))
-		}
-	}
-	if body.S3Endpoint != nil {
-		if utf8.RuneCountInString(*body.S3Endpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 128, false))
-		}
-	}
-	if body.S3Key != nil {
-		if utf8.RuneCountInString(*body.S3Key) < 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 16, true))
-		}
-	}
-	if body.S3Key != nil {
-		if utf8.RuneCountInString(*body.S3Key) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 128, false))
-		}
-	}
-	if body.S3KeySecret != nil {
-		if utf8.RuneCountInString(*body.S3KeySecret) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key_secret", *body.S3KeySecret, utf8.RuneCountInString(*body.S3KeySecret), 128, false))
-		}
-	}
-	if body.GcsBucket != nil {
-		if utf8.RuneCountInString(*body.GcsBucket) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_bucket", *body.GcsBucket, utf8.RuneCountInString(*body.GcsBucket), 3, true))
-		}
-	}
-	if body.GcsBucket != nil {
-		if utf8.RuneCountInString(*body.GcsBucket) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_bucket", *body.GcsBucket, utf8.RuneCountInString(*body.GcsBucket), 63, false))
-		}
-	}
-	if body.GcsEndpoint != nil {
-		if utf8.RuneCountInString(*body.GcsEndpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_endpoint", *body.GcsEndpoint, utf8.RuneCountInString(*body.GcsEndpoint), 3, true))
-		}
-	}
-	if body.GcsEndpoint != nil {
-		if utf8.RuneCountInString(*body.GcsEndpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_endpoint", *body.GcsEndpoint, utf8.RuneCountInString(*body.GcsEndpoint), 128, false))
-		}
-	}
-	if body.GcsKey != nil {
-		if utf8.RuneCountInString(*body.GcsKey) > 1024 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_key", *body.GcsKey, utf8.RuneCountInString(*body.GcsKey), 1024, false))
-		}
-	}
-	if body.AzureAccount != nil {
-		if utf8.RuneCountInString(*body.AzureAccount) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_account", *body.AzureAccount, utf8.RuneCountInString(*body.AzureAccount), 3, true))
-		}
-	}
-	if body.AzureAccount != nil {
-		if utf8.RuneCountInString(*body.AzureAccount) > 24 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_account", *body.AzureAccount, utf8.RuneCountInString(*body.AzureAccount), 24, false))
-		}
-	}
-	if body.AzureContainer != nil {
-		if utf8.RuneCountInString(*body.AzureContainer) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_container", *body.AzureContainer, utf8.RuneCountInString(*body.AzureContainer), 3, true))
-		}
-	}
-	if body.AzureContainer != nil {
-		if utf8.RuneCountInString(*body.AzureContainer) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_container", *body.AzureContainer, utf8.RuneCountInString(*body.AzureContainer), 63, false))
-		}
-	}
-	if body.AzureEndpoint != nil {
-		if utf8.RuneCountInString(*body.AzureEndpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_endpoint", *body.AzureEndpoint, utf8.RuneCountInString(*body.AzureEndpoint), 3, true))
-		}
-	}
-	if body.AzureEndpoint != nil {
-		if utf8.RuneCountInString(*body.AzureEndpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_endpoint", *body.AzureEndpoint, utf8.RuneCountInString(*body.AzureEndpoint), 128, false))
-		}
-	}
-	if body.AzureKey != nil {
-		if utf8.RuneCountInString(*body.AzureKey) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_key", *body.AzureKey, utf8.RuneCountInString(*body.AzureKey), 128, false))
-		}
-	}
-	if body.BasePath != nil {
-		if utf8.RuneCountInString(*body.BasePath) > 256 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.base_path", *body.BasePath, utf8.RuneCountInString(*body.BasePath), 256, false))
-		}
-	}
-	return
-}
-
-// ValidateExtraVolumesSpecResponse runs the validations defined on
-// ExtraVolumesSpecResponse
-func ValidateExtraVolumesSpecResponse(body *ExtraVolumesSpecResponse) (err error) {
-	if body.HostPath == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("host_path", "body"))
-	}
-	if body.DestinationPath == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("destination_path", "body"))
-	}
-	if body.HostPath != nil {
-		if utf8.RuneCountInString(*body.HostPath) > 256 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_path", *body.HostPath, utf8.RuneCountInString(*body.HostPath), 256, false))
-		}
-	}
-	if body.DestinationPath != nil {
-		if utf8.RuneCountInString(*body.DestinationPath) > 256 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.destination_path", *body.DestinationPath, utf8.RuneCountInString(*body.DestinationPath), 256, false))
-		}
-	}
-	return
-}
-
-// ValidateDatabaseUserSpecResponse runs the validations defined on
-// DatabaseUserSpecResponse
-func ValidateDatabaseUserSpecResponse(body *DatabaseUserSpecResponse) (err error) {
-	if body.Username == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
-	}
-	if body.Username != nil {
-		if utf8.RuneCountInString(*body.Username) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.username", *body.Username, utf8.RuneCountInString(*body.Username), 1, true))
-		}
-	}
-	if body.Password != nil {
-		if utf8.RuneCountInString(*body.Password) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.password", *body.Password, utf8.RuneCountInString(*body.Password), 1, true))
-		}
-	}
-	if len(body.Attributes) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.attributes", body.Attributes, len(body.Attributes), 16, false))
-	}
-	if len(body.Roles) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.roles", body.Roles, len(body.Roles), 16, false))
-	}
-	return
-}
-
-// ValidateDatabaseSpecRequestBody runs the validations defined on
-// DatabaseSpecRequestBody
-func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) {
-	if body.Nodes == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("nodes", "body"))
-	}
-	if utf8.RuneCountInString(body.DatabaseName) < 1 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.database_name", body.DatabaseName, utf8.RuneCountInString(body.DatabaseName), 1, true))
-	}
-	if utf8.RuneCountInString(body.DatabaseName) > 31 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.database_name", body.DatabaseName, utf8.RuneCountInString(body.DatabaseName), 31, false))
-	}
-	if body.PostgresVersion != nil {
-		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"15", "16", "17"}))
-		}
-	}
-	if body.SpockVersion != nil {
-		if !(*body.SpockVersion == "4") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.spock_version", *body.SpockVersion, []any{"4"}))
-		}
-	}
-	if body.Port != nil {
-		if *body.Port < 1 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 1, true))
-		}
-	}
-	if body.Port != nil {
-		if *body.Port > 65535 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 65535, false))
-		}
-	}
-	if body.Cpus != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.cpus", *body.Cpus, "^[0-9]+(\\.[0-9]{1,3}|m)?$"))
-	}
-	if body.Memory != nil {
-		if utf8.RuneCountInString(*body.Memory) > 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.memory", *body.Memory, utf8.RuneCountInString(*body.Memory), 16, false))
-		}
-	}
-	if len(body.Nodes) < 1 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.nodes", body.Nodes, len(body.Nodes), 1, true))
-	}
-	if len(body.Nodes) > 9 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.nodes", body.Nodes, len(body.Nodes), 9, false))
-	}
-	for _, e := range body.Nodes {
-		if e != nil {
-			if err2 := ValidateDatabaseNodeSpecRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	if len(body.DatabaseUsers) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.database_users", body.DatabaseUsers, len(body.DatabaseUsers), 16, false))
-	}
-	for _, e := range body.DatabaseUsers {
-		if e != nil {
-			if err2 := ValidateDatabaseUserSpecRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	if body.BackupConfig != nil {
-		if err2 := ValidateBackupConfigSpecRequestBody(body.BackupConfig); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.RestoreConfig != nil {
-		if err2 := ValidateRestoreConfigSpecRequestBody(body.RestoreConfig); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if len(body.PostgresqlConf) > 64 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.postgresql_conf", body.PostgresqlConf, len(body.PostgresqlConf), 64, false))
-	}
-	if len(body.ExtraVolumes) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_volumes", body.ExtraVolumes, len(body.ExtraVolumes), 16, false))
-	}
-	for _, e := range body.ExtraVolumes {
-		if e != nil {
-			if err2 := ValidateExtraVolumesSpecRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	return
-}
-
-// ValidateDatabaseNodeSpecRequestBody runs the validations defined on
-// DatabaseNodeSpecRequestBody
-func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err error) {
-	if body.HostIds == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
-	}
-	err = goa.MergeErrors(err, goa.ValidatePattern("body.name", body.Name, "n[0-9]+"))
-	if len(body.HostIds) < 1 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
-	}
-	for _, e := range body.HostIds {
-		if utf8.RuneCountInString(e) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 1, true))
-		}
-		if utf8.RuneCountInString(e) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 63, false))
-		}
-	}
-	if body.PostgresVersion != nil {
-		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"15", "16", "17"}))
-		}
-	}
-	if body.Port != nil {
-		if *body.Port < 1 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 1, true))
-		}
-	}
-	if body.Port != nil {
-		if *body.Port > 65535 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 65535, false))
-		}
-	}
-	if body.Cpus != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.cpus", *body.Cpus, "^[0-9]+(\\.[0-9]{1,3}|m)?$"))
-	}
-	if body.Memory != nil {
-		if utf8.RuneCountInString(*body.Memory) > 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.memory", *body.Memory, utf8.RuneCountInString(*body.Memory), 16, false))
-		}
-	}
-	if len(body.PostgresqlConf) > 64 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.postgresql_conf", body.PostgresqlConf, len(body.PostgresqlConf), 64, false))
-	}
-	if body.BackupConfig != nil {
-		if err2 := ValidateBackupConfigSpecRequestBody(body.BackupConfig); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.RestoreConfig != nil {
-		if err2 := ValidateRestoreConfigSpecRequestBody(body.RestoreConfig); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if len(body.ExtraVolumes) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_volumes", body.ExtraVolumes, len(body.ExtraVolumes), 16, false))
-	}
-	for _, e := range body.ExtraVolumes {
-		if e != nil {
-			if err2 := ValidateExtraVolumesSpecRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	return
-}
-
-// ValidateBackupConfigSpecRequestBody runs the validations defined on
-// BackupConfigSpecRequestBody
-func ValidateBackupConfigSpecRequestBody(body *BackupConfigSpecRequestBody) (err error) {
-	if body.Repositories == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("repositories", "body"))
-	}
-	if len(body.Repositories) < 1 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.repositories", body.Repositories, len(body.Repositories), 1, true))
-	}
-	for _, e := range body.Repositories {
-		if e != nil {
-			if err2 := ValidateBackupRepositorySpecRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	if len(body.Schedules) > 32 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.schedules", body.Schedules, len(body.Schedules), 32, false))
-	}
-	for _, e := range body.Schedules {
-		if e != nil {
-			if err2 := ValidateBackupScheduleSpecRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	return
-}
-
-// ValidateBackupRepositorySpecRequestBody runs the validations defined on
-// BackupRepositorySpecRequestBody
-func ValidateBackupRepositorySpecRequestBody(body *BackupRepositorySpecRequestBody) (err error) {
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
-		}
-	}
-	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure" || body.Type == "posix" || body.Type == "cifs") {
-		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure", "posix", "cifs"}))
-	}
-	if body.S3Bucket != nil {
-		if utf8.RuneCountInString(*body.S3Bucket) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_bucket", *body.S3Bucket, utf8.RuneCountInString(*body.S3Bucket), 3, true))
-		}
-	}
-	if body.S3Bucket != nil {
-		if utf8.RuneCountInString(*body.S3Bucket) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_bucket", *body.S3Bucket, utf8.RuneCountInString(*body.S3Bucket), 63, false))
-		}
-	}
-	if body.S3Region != nil {
-		if utf8.RuneCountInString(*body.S3Region) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_region", *body.S3Region, utf8.RuneCountInString(*body.S3Region), 1, true))
-		}
-	}
-	if body.S3Region != nil {
-		if utf8.RuneCountInString(*body.S3Region) > 32 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_region", *body.S3Region, utf8.RuneCountInString(*body.S3Region), 32, false))
-		}
-	}
-	if body.S3Endpoint != nil {
-		if utf8.RuneCountInString(*body.S3Endpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 3, true))
-		}
-	}
-	if body.S3Endpoint != nil {
-		if utf8.RuneCountInString(*body.S3Endpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 128, false))
-		}
-	}
-	if body.S3Key != nil {
-		if utf8.RuneCountInString(*body.S3Key) < 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 16, true))
-		}
-	}
-	if body.S3Key != nil {
-		if utf8.RuneCountInString(*body.S3Key) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 128, false))
-		}
-	}
-	if body.S3KeySecret != nil {
-		if utf8.RuneCountInString(*body.S3KeySecret) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key_secret", *body.S3KeySecret, utf8.RuneCountInString(*body.S3KeySecret), 128, false))
-		}
-	}
-	if body.GcsBucket != nil {
-		if utf8.RuneCountInString(*body.GcsBucket) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_bucket", *body.GcsBucket, utf8.RuneCountInString(*body.GcsBucket), 3, true))
-		}
-	}
-	if body.GcsBucket != nil {
-		if utf8.RuneCountInString(*body.GcsBucket) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_bucket", *body.GcsBucket, utf8.RuneCountInString(*body.GcsBucket), 63, false))
-		}
-	}
-	if body.GcsEndpoint != nil {
-		if utf8.RuneCountInString(*body.GcsEndpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_endpoint", *body.GcsEndpoint, utf8.RuneCountInString(*body.GcsEndpoint), 3, true))
-		}
-	}
-	if body.GcsEndpoint != nil {
-		if utf8.RuneCountInString(*body.GcsEndpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_endpoint", *body.GcsEndpoint, utf8.RuneCountInString(*body.GcsEndpoint), 128, false))
-		}
-	}
-	if body.GcsKey != nil {
-		if utf8.RuneCountInString(*body.GcsKey) > 1024 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_key", *body.GcsKey, utf8.RuneCountInString(*body.GcsKey), 1024, false))
-		}
-	}
-	if body.AzureAccount != nil {
-		if utf8.RuneCountInString(*body.AzureAccount) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_account", *body.AzureAccount, utf8.RuneCountInString(*body.AzureAccount), 3, true))
-		}
-	}
-	if body.AzureAccount != nil {
-		if utf8.RuneCountInString(*body.AzureAccount) > 24 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_account", *body.AzureAccount, utf8.RuneCountInString(*body.AzureAccount), 24, false))
-		}
-	}
-	if body.AzureContainer != nil {
-		if utf8.RuneCountInString(*body.AzureContainer) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_container", *body.AzureContainer, utf8.RuneCountInString(*body.AzureContainer), 3, true))
-		}
-	}
-	if body.AzureContainer != nil {
-		if utf8.RuneCountInString(*body.AzureContainer) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_container", *body.AzureContainer, utf8.RuneCountInString(*body.AzureContainer), 63, false))
-		}
-	}
-	if body.AzureEndpoint != nil {
-		if utf8.RuneCountInString(*body.AzureEndpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_endpoint", *body.AzureEndpoint, utf8.RuneCountInString(*body.AzureEndpoint), 3, true))
-		}
-	}
-	if body.AzureEndpoint != nil {
-		if utf8.RuneCountInString(*body.AzureEndpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_endpoint", *body.AzureEndpoint, utf8.RuneCountInString(*body.AzureEndpoint), 128, false))
-		}
-	}
-	if body.AzureKey != nil {
-		if utf8.RuneCountInString(*body.AzureKey) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_key", *body.AzureKey, utf8.RuneCountInString(*body.AzureKey), 128, false))
-		}
-	}
-	if body.RetentionFull != nil {
-		if *body.RetentionFull < 1 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.retention_full", *body.RetentionFull, 1, true))
-		}
-	}
-	if body.RetentionFull != nil {
-		if *body.RetentionFull > 9.999999e+06 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.retention_full", *body.RetentionFull, 9.999999e+06, false))
-		}
-	}
-	if body.RetentionFullType != nil {
-		if !(*body.RetentionFullType == "time" || *body.RetentionFullType == "count") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.retention_full_type", *body.RetentionFullType, []any{"time", "count"}))
-		}
-	}
-	if body.BasePath != nil {
-		if utf8.RuneCountInString(*body.BasePath) > 256 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.base_path", *body.BasePath, utf8.RuneCountInString(*body.BasePath), 256, false))
-		}
-	}
-	if len(body.CustomOptions) > 32 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.custom_options", body.CustomOptions, len(body.CustomOptions), 32, false))
-	}
-	return
-}
-
-// ValidateBackupScheduleSpecRequestBody runs the validations defined on
-// BackupScheduleSpecRequestBody
-func ValidateBackupScheduleSpecRequestBody(body *BackupScheduleSpecRequestBody) (err error) {
-	if utf8.RuneCountInString(body.ID) > 64 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", body.ID, utf8.RuneCountInString(body.ID), 64, false))
-	}
-	if !(body.Type == "full" || body.Type == "incr") {
-		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"full", "incr"}))
-	}
-	if utf8.RuneCountInString(body.CronExpression) > 32 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.cron_expression", body.CronExpression, utf8.RuneCountInString(body.CronExpression), 32, false))
-	}
-	return
-}
-
-// ValidateRestoreConfigSpecRequestBody runs the validations defined on
-// RestoreConfigSpecRequestBody
-func ValidateRestoreConfigSpecRequestBody(body *RestoreConfigSpecRequestBody) (err error) {
-	if body.Repository == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
-	}
-	if utf8.RuneCountInString(body.SourceDatabaseID) < 1 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", body.SourceDatabaseID, utf8.RuneCountInString(body.SourceDatabaseID), 1, true))
-	}
-	if utf8.RuneCountInString(body.SourceDatabaseID) > 63 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", body.SourceDatabaseID, utf8.RuneCountInString(body.SourceDatabaseID), 63, false))
-	}
-	err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", body.SourceNodeName, "n[0-9]+"))
-	if utf8.RuneCountInString(body.SourceDatabaseName) < 1 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_name", body.SourceDatabaseName, utf8.RuneCountInString(body.SourceDatabaseName), 1, true))
-	}
-	if utf8.RuneCountInString(body.SourceDatabaseName) > 31 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_name", body.SourceDatabaseName, utf8.RuneCountInString(body.SourceDatabaseName), 31, false))
-	}
-	if body.Repository != nil {
-		if err2 := ValidateRestoreRepositorySpecRequestBody(body.Repository); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if len(body.RestoreOptions) > 32 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.restore_options", body.RestoreOptions, len(body.RestoreOptions), 32, false))
-	}
-	return
-}
-
-// ValidateRestoreRepositorySpecRequestBody runs the validations defined on
-// RestoreRepositorySpecRequestBody
-func ValidateRestoreRepositorySpecRequestBody(body *RestoreRepositorySpecRequestBody) (err error) {
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
-		}
-	}
-	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure" || body.Type == "posix" || body.Type == "cifs") {
-		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure", "posix", "cifs"}))
-	}
-	if body.S3Bucket != nil {
-		if utf8.RuneCountInString(*body.S3Bucket) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_bucket", *body.S3Bucket, utf8.RuneCountInString(*body.S3Bucket), 3, true))
-		}
-	}
-	if body.S3Bucket != nil {
-		if utf8.RuneCountInString(*body.S3Bucket) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_bucket", *body.S3Bucket, utf8.RuneCountInString(*body.S3Bucket), 63, false))
-		}
-	}
-	if body.S3Region != nil {
-		if utf8.RuneCountInString(*body.S3Region) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_region", *body.S3Region, utf8.RuneCountInString(*body.S3Region), 1, true))
-		}
-	}
-	if body.S3Region != nil {
-		if utf8.RuneCountInString(*body.S3Region) > 32 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_region", *body.S3Region, utf8.RuneCountInString(*body.S3Region), 32, false))
-		}
-	}
-	if body.S3Endpoint != nil {
-		if utf8.RuneCountInString(*body.S3Endpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 3, true))
-		}
-	}
-	if body.S3Endpoint != nil {
-		if utf8.RuneCountInString(*body.S3Endpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 128, false))
-		}
-	}
-	if body.S3Key != nil {
-		if utf8.RuneCountInString(*body.S3Key) < 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 16, true))
-		}
-	}
-	if body.S3Key != nil {
-		if utf8.RuneCountInString(*body.S3Key) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 128, false))
-		}
-	}
-	if body.S3KeySecret != nil {
-		if utf8.RuneCountInString(*body.S3KeySecret) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key_secret", *body.S3KeySecret, utf8.RuneCountInString(*body.S3KeySecret), 128, false))
-		}
-	}
-	if body.GcsBucket != nil {
-		if utf8.RuneCountInString(*body.GcsBucket) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_bucket", *body.GcsBucket, utf8.RuneCountInString(*body.GcsBucket), 3, true))
-		}
-	}
-	if body.GcsBucket != nil {
-		if utf8.RuneCountInString(*body.GcsBucket) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_bucket", *body.GcsBucket, utf8.RuneCountInString(*body.GcsBucket), 63, false))
-		}
-	}
-	if body.GcsEndpoint != nil {
-		if utf8.RuneCountInString(*body.GcsEndpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_endpoint", *body.GcsEndpoint, utf8.RuneCountInString(*body.GcsEndpoint), 3, true))
-		}
-	}
-	if body.GcsEndpoint != nil {
-		if utf8.RuneCountInString(*body.GcsEndpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_endpoint", *body.GcsEndpoint, utf8.RuneCountInString(*body.GcsEndpoint), 128, false))
-		}
-	}
-	if body.GcsKey != nil {
-		if utf8.RuneCountInString(*body.GcsKey) > 1024 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_key", *body.GcsKey, utf8.RuneCountInString(*body.GcsKey), 1024, false))
-		}
-	}
-	if body.AzureAccount != nil {
-		if utf8.RuneCountInString(*body.AzureAccount) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_account", *body.AzureAccount, utf8.RuneCountInString(*body.AzureAccount), 3, true))
-		}
-	}
-	if body.AzureAccount != nil {
-		if utf8.RuneCountInString(*body.AzureAccount) > 24 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_account", *body.AzureAccount, utf8.RuneCountInString(*body.AzureAccount), 24, false))
-		}
-	}
-	if body.AzureContainer != nil {
-		if utf8.RuneCountInString(*body.AzureContainer) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_container", *body.AzureContainer, utf8.RuneCountInString(*body.AzureContainer), 3, true))
-		}
-	}
-	if body.AzureContainer != nil {
-		if utf8.RuneCountInString(*body.AzureContainer) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_container", *body.AzureContainer, utf8.RuneCountInString(*body.AzureContainer), 63, false))
-		}
-	}
-	if body.AzureEndpoint != nil {
-		if utf8.RuneCountInString(*body.AzureEndpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_endpoint", *body.AzureEndpoint, utf8.RuneCountInString(*body.AzureEndpoint), 3, true))
-		}
-	}
-	if body.AzureEndpoint != nil {
-		if utf8.RuneCountInString(*body.AzureEndpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_endpoint", *body.AzureEndpoint, utf8.RuneCountInString(*body.AzureEndpoint), 128, false))
-		}
-	}
-	if body.AzureKey != nil {
-		if utf8.RuneCountInString(*body.AzureKey) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_key", *body.AzureKey, utf8.RuneCountInString(*body.AzureKey), 128, false))
-		}
-	}
-	if body.BasePath != nil {
-		if utf8.RuneCountInString(*body.BasePath) > 256 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.base_path", *body.BasePath, utf8.RuneCountInString(*body.BasePath), 256, false))
-		}
-	}
-	return
-}
-
-// ValidateExtraVolumesSpecRequestBody runs the validations defined on
-// ExtraVolumesSpecRequestBody
-func ValidateExtraVolumesSpecRequestBody(body *ExtraVolumesSpecRequestBody) (err error) {
-	if utf8.RuneCountInString(body.HostPath) > 256 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_path", body.HostPath, utf8.RuneCountInString(body.HostPath), 256, false))
-	}
-	if utf8.RuneCountInString(body.DestinationPath) > 256 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.destination_path", body.DestinationPath, utf8.RuneCountInString(body.DestinationPath), 256, false))
-	}
-	return
-}
-
-// ValidateDatabaseUserSpecRequestBody runs the validations defined on
-// DatabaseUserSpecRequestBody
-func ValidateDatabaseUserSpecRequestBody(body *DatabaseUserSpecRequestBody) (err error) {
-	if utf8.RuneCountInString(body.Username) < 1 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.username", body.Username, utf8.RuneCountInString(body.Username), 1, true))
-	}
-	if body.Password != nil {
-		if utf8.RuneCountInString(*body.Password) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.password", *body.Password, utf8.RuneCountInString(*body.Password), 1, true))
-		}
-	}
-	if len(body.Attributes) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.attributes", body.Attributes, len(body.Attributes), 16, false))
-	}
-	if len(body.Roles) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.roles", body.Roles, len(body.Roles), 16, false))
-	}
-	return
-}
-
-// ValidateTaskResponseBody runs the validations defined on TaskResponseBody
-func ValidateTaskResponseBody(body *TaskResponseBody) (err error) {
-	if body.DatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
-	}
-	if body.TaskID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
-	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
-	}
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ParentID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
-	}
-	if body.TaskID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.CompletedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
-	}
-	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
 		}
 	}
 	return
@@ -6567,9 +4916,6 @@ func ValidateDatabaseNodeSpecResponseBody(body *DatabaseNodeSpecResponseBody) (e
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.memory", *body.Memory, utf8.RuneCountInString(*body.Memory), 16, false))
 		}
 	}
-	if len(body.PostgresqlConf) > 64 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.postgresql_conf", body.PostgresqlConf, len(body.PostgresqlConf), 64, false))
-	}
 	if body.BackupConfig != nil {
 		if err2 := ValidateBackupConfigSpecResponseBody(body.BackupConfig); err2 != nil {
 			err = goa.MergeErrors(err, err2)
@@ -6767,9 +5113,6 @@ func ValidateBackupRepositorySpecResponseBody(body *BackupRepositorySpecResponse
 		if utf8.RuneCountInString(*body.BasePath) > 256 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.base_path", *body.BasePath, utf8.RuneCountInString(*body.BasePath), 256, false))
 		}
-	}
-	if len(body.CustomOptions) > 32 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.custom_options", body.CustomOptions, len(body.CustomOptions), 32, false))
 	}
 	return
 }
@@ -7034,6 +5377,575 @@ func ValidateDatabaseUserSpecResponseBody(body *DatabaseUserSpecResponseBody) (e
 	return
 }
 
+// ValidateDatabaseSpecRequestBody runs the validations defined on
+// DatabaseSpecRequestBody
+func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) {
+	if body.Nodes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("nodes", "body"))
+	}
+	if utf8.RuneCountInString(body.DatabaseName) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.database_name", body.DatabaseName, utf8.RuneCountInString(body.DatabaseName), 1, true))
+	}
+	if utf8.RuneCountInString(body.DatabaseName) > 31 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.database_name", body.DatabaseName, utf8.RuneCountInString(body.DatabaseName), 31, false))
+	}
+	if body.PostgresVersion != nil {
+		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"15", "16", "17"}))
+		}
+	}
+	if body.SpockVersion != nil {
+		if !(*body.SpockVersion == "4") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.spock_version", *body.SpockVersion, []any{"4"}))
+		}
+	}
+	if body.Port != nil {
+		if *body.Port < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 1, true))
+		}
+	}
+	if body.Port != nil {
+		if *body.Port > 65535 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 65535, false))
+		}
+	}
+	if body.Cpus != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.cpus", *body.Cpus, "^[0-9]+(\\.[0-9]{1,3}|m)?$"))
+	}
+	if body.Memory != nil {
+		if utf8.RuneCountInString(*body.Memory) > 16 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.memory", *body.Memory, utf8.RuneCountInString(*body.Memory), 16, false))
+		}
+	}
+	if len(body.Nodes) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.nodes", body.Nodes, len(body.Nodes), 1, true))
+	}
+	if len(body.Nodes) > 9 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.nodes", body.Nodes, len(body.Nodes), 9, false))
+	}
+	for _, e := range body.Nodes {
+		if e != nil {
+			if err2 := ValidateDatabaseNodeSpecRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if len(body.DatabaseUsers) > 16 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.database_users", body.DatabaseUsers, len(body.DatabaseUsers), 16, false))
+	}
+	for _, e := range body.DatabaseUsers {
+		if e != nil {
+			if err2 := ValidateDatabaseUserSpecRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if body.BackupConfig != nil {
+		if err2 := ValidateBackupConfigSpecRequestBody(body.BackupConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.RestoreConfig != nil {
+		if err2 := ValidateRestoreConfigSpecRequestBody(body.RestoreConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if len(body.PostgresqlConf) > 64 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.postgresql_conf", body.PostgresqlConf, len(body.PostgresqlConf), 64, false))
+	}
+	if len(body.ExtraVolumes) > 16 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_volumes", body.ExtraVolumes, len(body.ExtraVolumes), 16, false))
+	}
+	for _, e := range body.ExtraVolumes {
+		if e != nil {
+			if err2 := ValidateExtraVolumesSpecRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateDatabaseNodeSpecRequestBody runs the validations defined on
+// DatabaseNodeSpecRequestBody
+func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err error) {
+	if body.HostIds == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
+	}
+	err = goa.MergeErrors(err, goa.ValidatePattern("body.name", body.Name, "n[0-9]+"))
+	if len(body.HostIds) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
+	}
+	for _, e := range body.HostIds {
+		if utf8.RuneCountInString(e) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 1, true))
+		}
+		if utf8.RuneCountInString(e) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 63, false))
+		}
+	}
+	if body.PostgresVersion != nil {
+		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"15", "16", "17"}))
+		}
+	}
+	if body.Port != nil {
+		if *body.Port < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 1, true))
+		}
+	}
+	if body.Port != nil {
+		if *body.Port > 65535 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 65535, false))
+		}
+	}
+	if body.Cpus != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.cpus", *body.Cpus, "^[0-9]+(\\.[0-9]{1,3}|m)?$"))
+	}
+	if body.Memory != nil {
+		if utf8.RuneCountInString(*body.Memory) > 16 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.memory", *body.Memory, utf8.RuneCountInString(*body.Memory), 16, false))
+		}
+	}
+	if body.BackupConfig != nil {
+		if err2 := ValidateBackupConfigSpecRequestBody(body.BackupConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.RestoreConfig != nil {
+		if err2 := ValidateRestoreConfigSpecRequestBody(body.RestoreConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if len(body.ExtraVolumes) > 16 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_volumes", body.ExtraVolumes, len(body.ExtraVolumes), 16, false))
+	}
+	for _, e := range body.ExtraVolumes {
+		if e != nil {
+			if err2 := ValidateExtraVolumesSpecRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateBackupConfigSpecRequestBody runs the validations defined on
+// BackupConfigSpecRequestBody
+func ValidateBackupConfigSpecRequestBody(body *BackupConfigSpecRequestBody) (err error) {
+	if body.Repositories == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("repositories", "body"))
+	}
+	if len(body.Repositories) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.repositories", body.Repositories, len(body.Repositories), 1, true))
+	}
+	for _, e := range body.Repositories {
+		if e != nil {
+			if err2 := ValidateBackupRepositorySpecRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if len(body.Schedules) > 32 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.schedules", body.Schedules, len(body.Schedules), 32, false))
+	}
+	for _, e := range body.Schedules {
+		if e != nil {
+			if err2 := ValidateBackupScheduleSpecRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateBackupRepositorySpecRequestBody runs the validations defined on
+// BackupRepositorySpecRequestBody
+func ValidateBackupRepositorySpecRequestBody(body *BackupRepositorySpecRequestBody) (err error) {
+	if body.ID != nil {
+		if utf8.RuneCountInString(*body.ID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
+		}
+	}
+	if body.ID != nil {
+		if utf8.RuneCountInString(*body.ID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
+		}
+	}
+	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure" || body.Type == "posix" || body.Type == "cifs") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure", "posix", "cifs"}))
+	}
+	if body.S3Bucket != nil {
+		if utf8.RuneCountInString(*body.S3Bucket) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_bucket", *body.S3Bucket, utf8.RuneCountInString(*body.S3Bucket), 3, true))
+		}
+	}
+	if body.S3Bucket != nil {
+		if utf8.RuneCountInString(*body.S3Bucket) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_bucket", *body.S3Bucket, utf8.RuneCountInString(*body.S3Bucket), 63, false))
+		}
+	}
+	if body.S3Region != nil {
+		if utf8.RuneCountInString(*body.S3Region) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_region", *body.S3Region, utf8.RuneCountInString(*body.S3Region), 1, true))
+		}
+	}
+	if body.S3Region != nil {
+		if utf8.RuneCountInString(*body.S3Region) > 32 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_region", *body.S3Region, utf8.RuneCountInString(*body.S3Region), 32, false))
+		}
+	}
+	if body.S3Endpoint != nil {
+		if utf8.RuneCountInString(*body.S3Endpoint) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 3, true))
+		}
+	}
+	if body.S3Endpoint != nil {
+		if utf8.RuneCountInString(*body.S3Endpoint) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 128, false))
+		}
+	}
+	if body.S3Key != nil {
+		if utf8.RuneCountInString(*body.S3Key) < 16 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 16, true))
+		}
+	}
+	if body.S3Key != nil {
+		if utf8.RuneCountInString(*body.S3Key) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 128, false))
+		}
+	}
+	if body.S3KeySecret != nil {
+		if utf8.RuneCountInString(*body.S3KeySecret) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key_secret", *body.S3KeySecret, utf8.RuneCountInString(*body.S3KeySecret), 128, false))
+		}
+	}
+	if body.GcsBucket != nil {
+		if utf8.RuneCountInString(*body.GcsBucket) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_bucket", *body.GcsBucket, utf8.RuneCountInString(*body.GcsBucket), 3, true))
+		}
+	}
+	if body.GcsBucket != nil {
+		if utf8.RuneCountInString(*body.GcsBucket) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_bucket", *body.GcsBucket, utf8.RuneCountInString(*body.GcsBucket), 63, false))
+		}
+	}
+	if body.GcsEndpoint != nil {
+		if utf8.RuneCountInString(*body.GcsEndpoint) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_endpoint", *body.GcsEndpoint, utf8.RuneCountInString(*body.GcsEndpoint), 3, true))
+		}
+	}
+	if body.GcsEndpoint != nil {
+		if utf8.RuneCountInString(*body.GcsEndpoint) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_endpoint", *body.GcsEndpoint, utf8.RuneCountInString(*body.GcsEndpoint), 128, false))
+		}
+	}
+	if body.GcsKey != nil {
+		if utf8.RuneCountInString(*body.GcsKey) > 1024 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_key", *body.GcsKey, utf8.RuneCountInString(*body.GcsKey), 1024, false))
+		}
+	}
+	if body.AzureAccount != nil {
+		if utf8.RuneCountInString(*body.AzureAccount) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_account", *body.AzureAccount, utf8.RuneCountInString(*body.AzureAccount), 3, true))
+		}
+	}
+	if body.AzureAccount != nil {
+		if utf8.RuneCountInString(*body.AzureAccount) > 24 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_account", *body.AzureAccount, utf8.RuneCountInString(*body.AzureAccount), 24, false))
+		}
+	}
+	if body.AzureContainer != nil {
+		if utf8.RuneCountInString(*body.AzureContainer) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_container", *body.AzureContainer, utf8.RuneCountInString(*body.AzureContainer), 3, true))
+		}
+	}
+	if body.AzureContainer != nil {
+		if utf8.RuneCountInString(*body.AzureContainer) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_container", *body.AzureContainer, utf8.RuneCountInString(*body.AzureContainer), 63, false))
+		}
+	}
+	if body.AzureEndpoint != nil {
+		if utf8.RuneCountInString(*body.AzureEndpoint) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_endpoint", *body.AzureEndpoint, utf8.RuneCountInString(*body.AzureEndpoint), 3, true))
+		}
+	}
+	if body.AzureEndpoint != nil {
+		if utf8.RuneCountInString(*body.AzureEndpoint) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_endpoint", *body.AzureEndpoint, utf8.RuneCountInString(*body.AzureEndpoint), 128, false))
+		}
+	}
+	if body.AzureKey != nil {
+		if utf8.RuneCountInString(*body.AzureKey) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_key", *body.AzureKey, utf8.RuneCountInString(*body.AzureKey), 128, false))
+		}
+	}
+	if body.RetentionFull != nil {
+		if *body.RetentionFull < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.retention_full", *body.RetentionFull, 1, true))
+		}
+	}
+	if body.RetentionFull != nil {
+		if *body.RetentionFull > 9.999999e+06 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.retention_full", *body.RetentionFull, 9.999999e+06, false))
+		}
+	}
+	if body.RetentionFullType != nil {
+		if !(*body.RetentionFullType == "time" || *body.RetentionFullType == "count") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.retention_full_type", *body.RetentionFullType, []any{"time", "count"}))
+		}
+	}
+	if body.BasePath != nil {
+		if utf8.RuneCountInString(*body.BasePath) > 256 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.base_path", *body.BasePath, utf8.RuneCountInString(*body.BasePath), 256, false))
+		}
+	}
+	return
+}
+
+// ValidateBackupScheduleSpecRequestBody runs the validations defined on
+// BackupScheduleSpecRequestBody
+func ValidateBackupScheduleSpecRequestBody(body *BackupScheduleSpecRequestBody) (err error) {
+	if utf8.RuneCountInString(body.ID) > 64 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", body.ID, utf8.RuneCountInString(body.ID), 64, false))
+	}
+	if !(body.Type == "full" || body.Type == "incr") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"full", "incr"}))
+	}
+	if utf8.RuneCountInString(body.CronExpression) > 32 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.cron_expression", body.CronExpression, utf8.RuneCountInString(body.CronExpression), 32, false))
+	}
+	return
+}
+
+// ValidateRestoreConfigSpecRequestBody runs the validations defined on
+// RestoreConfigSpecRequestBody
+func ValidateRestoreConfigSpecRequestBody(body *RestoreConfigSpecRequestBody) (err error) {
+	if body.Repository == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
+	}
+	if utf8.RuneCountInString(body.SourceDatabaseID) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", body.SourceDatabaseID, utf8.RuneCountInString(body.SourceDatabaseID), 1, true))
+	}
+	if utf8.RuneCountInString(body.SourceDatabaseID) > 63 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", body.SourceDatabaseID, utf8.RuneCountInString(body.SourceDatabaseID), 63, false))
+	}
+	err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", body.SourceNodeName, "n[0-9]+"))
+	if utf8.RuneCountInString(body.SourceDatabaseName) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_name", body.SourceDatabaseName, utf8.RuneCountInString(body.SourceDatabaseName), 1, true))
+	}
+	if utf8.RuneCountInString(body.SourceDatabaseName) > 31 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_name", body.SourceDatabaseName, utf8.RuneCountInString(body.SourceDatabaseName), 31, false))
+	}
+	if body.Repository != nil {
+		if err2 := ValidateRestoreRepositorySpecRequestBody(body.Repository); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if len(body.RestoreOptions) > 32 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.restore_options", body.RestoreOptions, len(body.RestoreOptions), 32, false))
+	}
+	return
+}
+
+// ValidateRestoreRepositorySpecRequestBody runs the validations defined on
+// RestoreRepositorySpecRequestBody
+func ValidateRestoreRepositorySpecRequestBody(body *RestoreRepositorySpecRequestBody) (err error) {
+	if body.ID != nil {
+		if utf8.RuneCountInString(*body.ID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
+		}
+	}
+	if body.ID != nil {
+		if utf8.RuneCountInString(*body.ID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
+		}
+	}
+	if !(body.Type == "s3" || body.Type == "gcs" || body.Type == "azure" || body.Type == "posix" || body.Type == "cifs") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"s3", "gcs", "azure", "posix", "cifs"}))
+	}
+	if body.S3Bucket != nil {
+		if utf8.RuneCountInString(*body.S3Bucket) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_bucket", *body.S3Bucket, utf8.RuneCountInString(*body.S3Bucket), 3, true))
+		}
+	}
+	if body.S3Bucket != nil {
+		if utf8.RuneCountInString(*body.S3Bucket) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_bucket", *body.S3Bucket, utf8.RuneCountInString(*body.S3Bucket), 63, false))
+		}
+	}
+	if body.S3Region != nil {
+		if utf8.RuneCountInString(*body.S3Region) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_region", *body.S3Region, utf8.RuneCountInString(*body.S3Region), 1, true))
+		}
+	}
+	if body.S3Region != nil {
+		if utf8.RuneCountInString(*body.S3Region) > 32 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_region", *body.S3Region, utf8.RuneCountInString(*body.S3Region), 32, false))
+		}
+	}
+	if body.S3Endpoint != nil {
+		if utf8.RuneCountInString(*body.S3Endpoint) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 3, true))
+		}
+	}
+	if body.S3Endpoint != nil {
+		if utf8.RuneCountInString(*body.S3Endpoint) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 128, false))
+		}
+	}
+	if body.S3Key != nil {
+		if utf8.RuneCountInString(*body.S3Key) < 16 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 16, true))
+		}
+	}
+	if body.S3Key != nil {
+		if utf8.RuneCountInString(*body.S3Key) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 128, false))
+		}
+	}
+	if body.S3KeySecret != nil {
+		if utf8.RuneCountInString(*body.S3KeySecret) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key_secret", *body.S3KeySecret, utf8.RuneCountInString(*body.S3KeySecret), 128, false))
+		}
+	}
+	if body.GcsBucket != nil {
+		if utf8.RuneCountInString(*body.GcsBucket) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_bucket", *body.GcsBucket, utf8.RuneCountInString(*body.GcsBucket), 3, true))
+		}
+	}
+	if body.GcsBucket != nil {
+		if utf8.RuneCountInString(*body.GcsBucket) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_bucket", *body.GcsBucket, utf8.RuneCountInString(*body.GcsBucket), 63, false))
+		}
+	}
+	if body.GcsEndpoint != nil {
+		if utf8.RuneCountInString(*body.GcsEndpoint) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_endpoint", *body.GcsEndpoint, utf8.RuneCountInString(*body.GcsEndpoint), 3, true))
+		}
+	}
+	if body.GcsEndpoint != nil {
+		if utf8.RuneCountInString(*body.GcsEndpoint) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_endpoint", *body.GcsEndpoint, utf8.RuneCountInString(*body.GcsEndpoint), 128, false))
+		}
+	}
+	if body.GcsKey != nil {
+		if utf8.RuneCountInString(*body.GcsKey) > 1024 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_key", *body.GcsKey, utf8.RuneCountInString(*body.GcsKey), 1024, false))
+		}
+	}
+	if body.AzureAccount != nil {
+		if utf8.RuneCountInString(*body.AzureAccount) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_account", *body.AzureAccount, utf8.RuneCountInString(*body.AzureAccount), 3, true))
+		}
+	}
+	if body.AzureAccount != nil {
+		if utf8.RuneCountInString(*body.AzureAccount) > 24 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_account", *body.AzureAccount, utf8.RuneCountInString(*body.AzureAccount), 24, false))
+		}
+	}
+	if body.AzureContainer != nil {
+		if utf8.RuneCountInString(*body.AzureContainer) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_container", *body.AzureContainer, utf8.RuneCountInString(*body.AzureContainer), 3, true))
+		}
+	}
+	if body.AzureContainer != nil {
+		if utf8.RuneCountInString(*body.AzureContainer) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_container", *body.AzureContainer, utf8.RuneCountInString(*body.AzureContainer), 63, false))
+		}
+	}
+	if body.AzureEndpoint != nil {
+		if utf8.RuneCountInString(*body.AzureEndpoint) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_endpoint", *body.AzureEndpoint, utf8.RuneCountInString(*body.AzureEndpoint), 3, true))
+		}
+	}
+	if body.AzureEndpoint != nil {
+		if utf8.RuneCountInString(*body.AzureEndpoint) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_endpoint", *body.AzureEndpoint, utf8.RuneCountInString(*body.AzureEndpoint), 128, false))
+		}
+	}
+	if body.AzureKey != nil {
+		if utf8.RuneCountInString(*body.AzureKey) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_key", *body.AzureKey, utf8.RuneCountInString(*body.AzureKey), 128, false))
+		}
+	}
+	if body.BasePath != nil {
+		if utf8.RuneCountInString(*body.BasePath) > 256 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.base_path", *body.BasePath, utf8.RuneCountInString(*body.BasePath), 256, false))
+		}
+	}
+	return
+}
+
+// ValidateExtraVolumesSpecRequestBody runs the validations defined on
+// ExtraVolumesSpecRequestBody
+func ValidateExtraVolumesSpecRequestBody(body *ExtraVolumesSpecRequestBody) (err error) {
+	if utf8.RuneCountInString(body.HostPath) > 256 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_path", body.HostPath, utf8.RuneCountInString(body.HostPath), 256, false))
+	}
+	if utf8.RuneCountInString(body.DestinationPath) > 256 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.destination_path", body.DestinationPath, utf8.RuneCountInString(body.DestinationPath), 256, false))
+	}
+	return
+}
+
+// ValidateDatabaseUserSpecRequestBody runs the validations defined on
+// DatabaseUserSpecRequestBody
+func ValidateDatabaseUserSpecRequestBody(body *DatabaseUserSpecRequestBody) (err error) {
+	if utf8.RuneCountInString(body.Username) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.username", body.Username, utf8.RuneCountInString(body.Username), 1, true))
+	}
+	if body.Password != nil {
+		if utf8.RuneCountInString(*body.Password) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.password", *body.Password, utf8.RuneCountInString(*body.Password), 1, true))
+		}
+	}
+	if len(body.Attributes) > 16 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.attributes", body.Attributes, len(body.Attributes), 16, false))
+	}
+	if len(body.Roles) > 16 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.roles", body.Roles, len(body.Roles), 16, false))
+	}
+	return
+}
+
+// ValidateTaskResponseBody runs the validations defined on TaskResponseBody
+func ValidateTaskResponseBody(body *TaskResponseBody) (err error) {
+	if body.DatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	}
+	if body.TaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
+	}
+	if body.CreatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
+	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.ParentID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
+	}
+	if body.TaskID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
+	}
+	if body.CreatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
+	}
+	if body.CompletedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
+	}
+	if body.Status != nil {
+		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		}
+	}
+	return
+}
+
 // ValidateInstanceResponseBodyCollection runs the validations defined on
 // InstanceResponseBodyCollection
 func ValidateInstanceResponseBodyCollection(body InstanceResponseBodyCollection) (err error) {
@@ -7176,9 +6088,6 @@ func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecReques
 		if utf8.RuneCountInString(*body.Memory) > 16 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.memory", *body.Memory, utf8.RuneCountInString(*body.Memory), 16, false))
 		}
-	}
-	if len(body.PostgresqlConf) > 64 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.postgresql_conf", body.PostgresqlConf, len(body.PostgresqlConf), 64, false))
 	}
 	if body.BackupConfig != nil {
 		if err2 := ValidateBackupConfigSpecRequestBodyRequestBody(body.BackupConfig); err2 != nil {
@@ -7372,9 +6281,6 @@ func ValidateBackupRepositorySpecRequestBodyRequestBody(body *BackupRepositorySp
 		if utf8.RuneCountInString(*body.BasePath) > 256 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.base_path", *body.BasePath, utf8.RuneCountInString(*body.BasePath), 256, false))
 		}
-	}
-	if len(body.CustomOptions) > 32 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.custom_options", body.CustomOptions, len(body.CustomOptions), 32, false))
 	}
 	return
 }
@@ -7581,43 +6487,6 @@ func ValidateDatabaseUserSpecRequestBodyRequestBody(body *DatabaseUserSpecReques
 	}
 	if len(body.Roles) > 16 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.roles", body.Roles, len(body.Roles), 16, false))
-	}
-	return
-}
-
-// ValidateTaskResponse runs the validations defined on TaskResponse
-func ValidateTaskResponse(body *TaskResponse) (err error) {
-	if body.DatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
-	}
-	if body.TaskID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
-	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
-	}
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ParentID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
-	}
-	if body.TaskID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.CompletedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
-	}
-	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
-		}
 	}
 	return
 }

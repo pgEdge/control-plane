@@ -12,18 +12,36 @@ var BackupOptions = g.Type("BackupOptions", func() {
 	})
 	g.Attribute("annotations", g.MapOf(g.String, g.String), func() {
 		g.Description("Annotations for the backup.")
-		g.MaxLength(32)
 		g.Example(map[string]string{
 			"key": "value",
 		})
 	})
 	g.Attribute("backup_options", g.MapOf(g.String, g.String), func() {
 		g.Description("Options for the backup.")
-		g.MaxLength(32)
 		g.Example(map[string]string{
 			"archive-check": "n",
 		})
 	})
 
 	g.Required("type")
+
+	g.Example("Full backup", func() {
+		g.Description("Example of taking a full backup.")
+		g.Value(map[string]any{
+			"type": "full",
+		})
+	})
+
+	g.Example("Backup with annotations and options", func() {
+		g.Description("Example of taking backup with annotations and additional backup options.")
+		g.Value(map[string]any{
+			"type": "full",
+			"annotations": map[string]string{
+				"initiated-by": "backup-cron-job",
+			},
+			"backup_options": map[string]string{
+				"archive-check": "n",
+			},
+		})
+	})
 })

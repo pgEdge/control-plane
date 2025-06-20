@@ -161,7 +161,7 @@ func NewListDatabasesEndpoint(s Service) goa.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		vres := NewViewedDatabaseCollection(res, "abbreviated")
+		vres := NewViewedListDatabasesResponse(res, "default")
 		return vres, nil
 	}
 }

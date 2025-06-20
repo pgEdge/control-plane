@@ -13,7 +13,7 @@ var InstanceConnectionInfo = g.Type("InstanceConnectionInfo", func() {
 	g.Attribute("ipv4_address", g.String, func() {
 		g.Description("The IPv4 address of the host that's running this instance.")
 		g.Format(g.FormatIPv4)
-		g.Example("10.24.34.0")
+		g.Example("10.24.34.2")
 	})
 	g.Attribute("port", g.Int, func() {
 		g.Description("The host port that Postgres is listening on for this instance.")
@@ -50,10 +50,10 @@ var InstancePostgresStatus = g.Type("InstancePostgresStatus", func() {
 		g.Enum("replica", "primary")
 	})
 	g.Attribute("pending_restart", g.Boolean, func() {
-		g.Description("True if this instance is pending to be restarted from a configuration change.")
+		g.Description("True if this instance has a pending restart from a configuration change.")
 	})
 	g.Attribute("patroni_paused", g.Boolean, func() {
-		g.Description("True if Patroni has been paused for this instance.")
+		g.Description("True if Patroni is paused for this instance.")
 	})
 })
 

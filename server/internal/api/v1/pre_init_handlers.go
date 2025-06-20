@@ -158,7 +158,7 @@ func (s *PreInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPay
 	return ErrUninitialized
 }
 
-func (s *PreInitHandlers) ListDatabases(ctx context.Context) (api.DatabaseCollection, error) {
+func (s *PreInitHandlers) ListDatabases(ctx context.Context) (*api.ListDatabasesResponse, error) {
 	return nil, ErrUninitialized
 }
 
@@ -182,7 +182,7 @@ func (s *PreInitHandlers) BackupDatabaseNode(ctx context.Context, req *api.Backu
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitHandlers) ListDatabaseTasks(ctx context.Context, req *api.ListDatabaseTasksPayload) ([]*api.Task, error) {
+func (s *PreInitHandlers) ListDatabaseTasks(ctx context.Context, req *api.ListDatabaseTasksPayload) (*api.ListDatabaseTasksResponse, error) {
 	return nil, ErrUninitialized
 }
 
