@@ -23,6 +23,7 @@ import (
 	"go.etcd.io/etcd/client/pkg/v3/transport"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/server/v3/embed"
+	"go.etcd.io/etcd/server/v3/etcdserver"
 
 	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/common"
@@ -36,6 +37,9 @@ var _ common.HealthCheckable = (*EmbeddedEtcd)(nil)
 var _ do.Shutdownable = (*EmbeddedEtcd)(nil)
 
 var ErrInvalidJoinToken = errors.New("invalid join token")
+var ErrMemberNotFound = errors.New("member not found")
+var ErrCannotRemoveSelf = errors.New("cannot remove self from cluster")
+var ErrMinimumClusterSize = errors.New("cannot remove a member from a cluster with less than three nodes")
 
 type JoinOptions struct {
 	Peer        Peer
@@ -238,7 +242,7 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 		Logger:    lg,
 		Endpoints: []string{options.Peer.ClientURL},
 		TLS:       tlsConfig,
-		Username:  fmt.Sprintf("host-%s", e.cfg.HostID),
+		Username:  hostUsername(e.cfg.HostID),
 		Password:  e.cfg.HostID,
 	})
 	if err != nil {
@@ -428,7 +432,7 @@ func (e *EmbeddedEtcd) GetClient() (*clientv3.Client, error) {
 		Logger:             lg,
 		Endpoints:          e.etcd.Server.Cluster().ClientURLs(),
 		TLS:                tlsConfig,
-		Username:           fmt.Sprintf("host-%s", e.cfg.HostID),
+		Username:           hostUsername(e.cfg.HostID),
 		Password:           e.cfg.HostID,
 		MaxCallSendMsgSize: 10 * 1024 * 1024, // 10MB
 		MaxCallRecvMsgSize: 10 * 1024 * 1024, // 10MB
@@ -457,6 +461,49 @@ func (e *EmbeddedEtcd) AddInstanceUser(ctx context.Context, opts InstanceUserOpt
 	}
 
 	return CreateInstanceEtcdUser(ctx, client, e.certSvc, opts)
+}
+
+func (e *EmbeddedEtcd) RemovePeer(ctx context.Context, hostID string) error {
+	client, err := e.GetClient()
+	if err != nil {
+		return fmt.Errorf("failed to get etcd client: %w", err)
+	}
+	resp, err := client.MemberList(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get member list: %w", err)
+	}
+	if len(resp.Members) < 3 {
+		return ErrMinimumClusterSize
+	}
+	member, err := findMember(resp.Members, hostID)
+	if err != nil {
+		return fmt.Errorf("failed to get cluster member: %w", err)
+	}
+	status, err := client.Status(ctx, e.ClientEndpoint())
+	if err != nil {
+		return fmt.Errorf("failed to get endpoint status: %w", err)
+	}
+	if status.Header.MemberId == member.ID {
+		return ErrCannotRemoveSelf
+	}
+	err = e.memberRemove(ctx, client, member.ID)
+	if err != nil {
+		return err
+	}
+	err = removeUserIfExists(ctx, client, hostUsername(hostID))
+	if err != nil {
+		return fmt.Errorf("failed to remove host user: %w", err)
+	}
+
+	return nil
+}
+
+func (e *EmbeddedEtcd) memberRemove(ctx context.Context, client *clientv3.Client, memberID uint64) error {
+	_, err := client.MemberRemove(ctx, memberID)
+	if err != nil {
+		return fmt.Errorf("failed to remove cluster member: %w", err)
+	}
+	return nil
 }
 
 func (e *EmbeddedEtcd) writeCredentials(creds *HostCredentials) error {
@@ -548,6 +595,11 @@ func promoteWhenReadyHelper(ctx context.Context, client *clientv3.Client, learne
 	_, err := client.MemberPromote(ctx, learner.id)
 	if err == nil {
 		// Success!
+		// Etcd checks that cluster members have been connected for a minimum
+		// interval before considering them part of the quorum. This affects
+		// Etcd's internal health checks. We'll block for that interval so that
+		// clients can safely modify the cluster when this returns.
+		time.Sleep(etcdserver.HealthInterval)
 		return nil
 	}
 
@@ -583,21 +635,26 @@ func PromoteWhenReady(ctx context.Context, client *clientv3.Client, memberName s
 	if err != nil {
 		return fmt.Errorf("failed to get member list: %w", err)
 	}
-
-	for _, m := range resp.Members {
-		if m.Name != memberName {
-			continue
-		}
-		return promoteWhenReadyHelper(ctx, client, learnerProgress{
-			id:               m.ID,
-			name:             memberName,
-			member:           m,
-			raftAppliedIndex: 0,
-			lastProgress:     time.Now(),
-		})
+	member, err := findMember(resp.Members, memberName)
+	if err != nil {
+		return err
 	}
+	return promoteWhenReadyHelper(ctx, client, learnerProgress{
+		id:               member.ID,
+		name:             memberName,
+		member:           member,
+		raftAppliedIndex: 0,
+		lastProgress:     time.Now(),
+	})
+}
 
-	return fmt.Errorf("failed to find member %q in member list", memberName)
+func findMember(members []*etcdserverpb.Member, memberName string) (*etcdserverpb.Member, error) {
+	for _, m := range members {
+		if m.Name == memberName {
+			return m, nil
+		}
+	}
+	return nil, fmt.Errorf("%w: %s", ErrMemberNotFound, memberName)
 }
 
 func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error) {
@@ -751,22 +808,24 @@ type HostCredentials struct {
 	ServerKey  []byte
 }
 
+func hostUsername(hostID string) string {
+	return fmt.Sprintf("host-%s", hostID)
+}
+
 func createEtcdHostCredentials(
 	ctx context.Context,
 	client *clientv3.Client,
 	certSvc *certificates.Service,
 	opts HostCredentialOptions,
 ) (*HostCredentials, error) {
-	username := fmt.Sprintf("host-%s", opts.HostID)
+	username := hostUsername(opts.HostID)
 
 	// Create a user for the peer host
 	// TODO: patroni doesn't support CN auth, so we need a password. Replace this
 	// with something random
-	if _, err := client.UserAdd(ctx, username, opts.HostID); err != nil {
+	err := createUserIfNotExists(ctx, client, username, opts.HostID, "root")
+	if err != nil {
 		return nil, fmt.Errorf("failed to create host user: %w", err)
-	}
-	if _, err := client.UserGrantRole(ctx, username, "root"); err != nil {
-		return nil, fmt.Errorf("failed to grant root role to host user: %w", err)
 	}
 
 	// Create a cert for the peer user

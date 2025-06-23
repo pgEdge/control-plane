@@ -6,9 +6,11 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/server/v3/embed"
 	"go.uber.org/zap"
@@ -115,7 +117,12 @@ func NewEtcdTestServer(t testing.TB) *EtcdTestServer {
 	return nil
 }
 
-func GetFreePort(t testing.TB) int {
+// We want to prevent port conflicts between tests, so we allocate one port at
+// a time and keep track of which ports we've allocated.
+var allocatedPortMu sync.Mutex
+var allocatedPorts = ds.NewSet[int]()
+
+func getFreePortHelper(t testing.TB) int {
 	t.Helper()
 
 	a, err := net.ResolveTCPAddr("tcp", "localhost:0")
@@ -126,9 +133,26 @@ func GetFreePort(t testing.TB) int {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port
+
+	port := l.Addr().(*net.TCPAddr).Port
+
+	if allocatedPorts.Has(port) {
+		return getFreePortHelper(t)
+	}
+
+	allocatedPorts.Add(port)
+
+	return port
+}
+
+func GetFreePort(t testing.TB) int {
+	t.Helper()
+
+	allocatedPortMu.Lock()
+	defer allocatedPortMu.Unlock()
+
+	return getFreePortHelper(t)
 }
 
 func TempDir(t testing.TB) string {
