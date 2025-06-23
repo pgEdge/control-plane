@@ -294,7 +294,8 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 	}
 	e.etcd = etcd
 
-	if err := PromoteWhenReady(ctx, client, e.cfg.HostID); err != nil {
+	e.logger.Info().Msg("etcd started as learner")
+	if err := e.PromoteWhenReady(ctx, client, e.cfg.HostID); err != nil {
 		return fmt.Errorf("failed to promote this etcd server: %w", err)
 	}
 
@@ -591,14 +592,16 @@ type learnerProgress struct {
 	lastProgress     time.Time
 }
 
-func promoteWhenReadyHelper(ctx context.Context, client *clientv3.Client, learner learnerProgress) error {
+func (e *EmbeddedEtcd) promoteWhenReadyHelper(ctx context.Context, client *clientv3.Client, learner learnerProgress) error {
+	e.logger.Info().Msg("attempting to promote from learner to voting cluster member")
 	_, err := client.MemberPromote(ctx, learner.id)
 	if err == nil {
-		// Success!
 		// Etcd checks that cluster members have been connected for a minimum
 		// interval before considering them part of the quorum. This affects
 		// Etcd's internal health checks. We'll block for that interval so that
 		// clients can safely modify the cluster when this returns.
+		e.logger.Info().Msg("promotion successful")
+		e.logger.Info().Msg("waiting for cluster to be healthy")
 		time.Sleep(etcdserver.HealthInterval)
 		return nil
 	}
@@ -625,12 +628,17 @@ func promoteWhenReadyHelper(ctx context.Context, client *clientv3.Client, learne
 		return fmt.Errorf("removed learner member %q because it failed to make progress", learner.name)
 	}
 
+	e.logger.Info().
+		Time("last_progress", learner.lastProgress).
+		Uint64("raft_applied_index", learner.raftAppliedIndex).
+		Msg("waiting before attempting promotion again")
+
 	time.Sleep(1 * time.Second)
 
-	return promoteWhenReadyHelper(ctx, client, learner)
+	return e.promoteWhenReadyHelper(ctx, client, learner)
 }
 
-func PromoteWhenReady(ctx context.Context, client *clientv3.Client, memberName string) error {
+func (e *EmbeddedEtcd) PromoteWhenReady(ctx context.Context, client *clientv3.Client, memberName string) error {
 	resp, err := client.MemberList(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get member list: %w", err)
@@ -639,7 +647,7 @@ func PromoteWhenReady(ctx context.Context, client *clientv3.Client, memberName s
 	if err != nil {
 		return err
 	}
-	return promoteWhenReadyHelper(ctx, client, learnerProgress{
+	return e.promoteWhenReadyHelper(ctx, client, learnerProgress{
 		id:               member.ID,
 		name:             memberName,
 		member:           member,
