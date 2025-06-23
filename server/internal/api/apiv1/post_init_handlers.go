@@ -18,6 +18,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
+	"github.com/pgEdge/control-plane/server/internal/storage"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/version"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
@@ -134,7 +135,38 @@ func (s *PostInitHandlers) GetHost(ctx context.Context, req *api.GetHostPayload)
 }
 
 func (s *PostInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) error {
-	return ErrNotImplemented
+	hostID, err := hostIdentToString(req.HostID)
+	if err != nil {
+		return apiErr(err)
+	}
+	if hostID == s.cfg.HostID {
+		return makeInvalidInputErr(errors.New("a host cannot remove itself from the cluster"))
+	}
+	_, err = s.hostSvc.GetHost(ctx, hostID)
+	if errors.Is(err, storage.ErrNotFound) {
+		return ErrHostNotFound
+	} else if err != nil {
+		return apiErr(err)
+	}
+	count, err := s.dbSvc.InstanceCountForHost(ctx, hostID)
+	if err != nil {
+		return apiErr(err)
+	}
+	if count != 0 {
+		return makeInvalidInputErr(errors.New("cannot remove host with running instances"))
+	}
+	// TODO: When we add support for remote etcd, this will become conditional.
+	// We'll need to keep track of which hosts are part of the etcd cluster.
+	err = s.etcd.RemovePeer(ctx, hostID)
+	if err != nil {
+		return apiErr(err)
+	}
+	err = s.hostSvc.RemoveHost(ctx, hostID)
+	if err != nil {
+		return apiErr(err)
+	}
+
+	return nil
 }
 
 // ListDatabases fetches all databases from the database service and converts them to API format.

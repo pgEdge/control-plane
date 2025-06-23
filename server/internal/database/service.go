@@ -312,6 +312,22 @@ func (s *Service) GetAllInstances(ctx context.Context) ([]*Instance, error) {
 	return instances, nil
 }
 
+func (s *Service) InstanceCountForHost(ctx context.Context, hostID string) (int, error) {
+	storedInstances, err := s.store.Instance.
+		GetAll().
+		Exec(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get stored instances: %w", err)
+	}
+	var count int
+	for _, instance := range storedInstances {
+		if instance.HostID == hostID {
+			count++
+		}
+	}
+	return count, nil
+}
+
 func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 	var hostIDs []string
 	// First pass to build out hostID list
