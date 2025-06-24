@@ -64,10 +64,10 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 	g.Attribute("restore_config", RestoreConfigSpec, func() {
 		g.Description("The restore configuration for this node. Overrides the restore configuration set in the DatabaseSpec.")
 	})
-	g.Attribute("extra_volumes", g.ArrayOf(ExtraVolumesSpec), func() {
-		g.Description("Optional list of external volumes to mount for this node only.")
-		g.MaxLength(16)
+	g.Attribute("orchestrator_opts", OrchestratorOpts, func() {
+		g.Description("Orchestrator-specific configuration options.")
 	})
+
 	g.Required("name", "host_ids")
 })
 
@@ -437,9 +437,8 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 			"max_connections": 1000,
 		})
 	})
-	g.Attribute("extra_volumes", g.ArrayOf(ExtraVolumesSpec), func() {
-		g.Description("A list of extra volumes to mount. Each entry defines a host and container path.")
-		g.MaxLength(16)
+	g.Attribute("orchestrator_opts", OrchestratorOpts, func() {
+		g.Description("Orchestrator-specific configuration options.")
 	})
 
 	g.Required("database_name", "nodes")
@@ -576,10 +575,19 @@ var CreateDatabaseRequest = g.Type("CreateDatabaseRequest", func() {
 					{
 						"name":     "n1",
 						"host_ids": []string{"us-east-1"},
-						"extra_volumes": []map[string]any{
-							{
-								"host_path":        "/mnt/backups",
-								"destination_path": "/backups",
+						"orchestrator_opts": map[string]any{
+							"swarm": map[string]any{
+								"extra_volumes": []map[string]any{
+									{
+										"host_path":        "/mnt/backups",
+										"destination_path": "/backups",
+									},
+								},
+								"extra_networks": []map[string]any{
+									{
+										"id": "backup-network",
+									},
+								},
 							},
 						},
 						"backup_config": map[string]any{
@@ -1273,3 +1281,46 @@ var exampleDatabase = map[string]any{
 	"state":      "restoring",
 	"updated_at": "2025-06-18T17:58:59Z",
 }
+
+var ExtraNetworkSpec = g.Type("ExtraNetworkSpec", func() {
+	g.Description("Describes an additional Docker network to attach the container to.")
+	g.Attribute("id", g.String, func() {
+		g.Description("The name or ID of the network to connect to.")
+		g.Example("storefront")
+		g.Example("traefik-public")
+	})
+	g.Attribute("aliases", g.ArrayOf(g.String), func() {
+		g.Description("Optional network-scoped aliases for the container.")
+		g.MaxLength(8)
+		g.Example([]string{"pg-db", "db-alias"})
+	})
+	g.Attribute("driver_opts", g.MapOf(g.String, g.String), func() {
+		g.Description("Optional driver options for the network connection.")
+		g.Example(map[string]string{
+			"com.docker.network.endpoint.expose": "true",
+		})
+	})
+	g.Required("id")
+})
+
+var SwarmOpts = g.Type("SwarmOpts", func() {
+	g.Description("Docker Swarm-specific options.")
+
+	g.Attribute("extra_volumes", g.ArrayOf(ExtraVolumesSpec), func() {
+		g.Description("A list of extra volumes to mount. Each entry defines a host and container path.")
+		g.MaxLength(16)
+	})
+
+	g.Attribute("extra_networks", g.ArrayOf(ExtraNetworkSpec), func() {
+		g.Description("A list of additional Docker Swarm networks to attach containers in this database to.")
+		g.MaxLength(8)
+	})
+})
+
+var OrchestratorOpts = g.Type("OrchestratorOpts", func() {
+	g.Description("Options specific to the selected orchestrator.")
+
+	g.Attribute("swarm", SwarmOpts, func() {
+		g.Description("Swarm-specific configuration.")
+	})
+})

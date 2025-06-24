@@ -585,3 +585,33 @@ func BuildMount(source, target string, readOnly bool) mount.Mount {
 		ReadOnly: readOnly,
 	}
 }
+
+// https://github.com/docker/compose/issues/3012
+// https://forums.docker.com/t/getting-no-such-network-errors-starting-a-stack-in-a-swarm/41202
+// https://forums.docker.com/t/docker-network-not-found-by-docker-compose/117171
+// https://forums.docker.com/t/cant-attach-a-standalone-container-to-a-multi-host-overlay-network/117933/10
+
+func ExtractNetworkErrorMsg(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	msg := err.Error()
+
+	switch {
+	case strings.Contains(msg, "endpoint with name"):
+		return "Network endpoint conflict: " + msg
+	case strings.Contains(msg, "network-scoped alias"):
+		return "Invalid network-scoped alias: " + msg
+	case strings.Contains(msg, "not attachable"):
+		return "Swarm network is not attachable: " + msg
+	case strings.Contains(msg, "No such network"):
+		return "Network not found: " + msg
+	case strings.Contains(msg, "could not be found"):
+		return "Network configuration error: " + msg
+	case strings.Contains(msg, "could not attach"):
+		return "Container could not attach to the network: " + msg
+	default:
+		return ""
+	}
+}

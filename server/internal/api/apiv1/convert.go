@@ -72,16 +72,16 @@ func databaseNodesToAPI(nodes []*database.Node) []*api.DatabaseNodeSpec {
 			hostIDs[j] = api.Identifier(hostID)
 		}
 		apiNodes[i] = &api.DatabaseNodeSpec{
-			Name:            node.Name,
-			HostIds:         hostIDs,
-			PostgresVersion: utils.NillablePointerTo(node.PostgresVersion),
-			Port:            utils.NillablePointerTo(node.Port),
-			Cpus:            utils.NillablePointerTo(humanizeCPUs(node.CPUs)),
-			Memory:          utils.NillablePointerTo(humanizeBytes(node.MemoryBytes)),
-			PostgresqlConf:  node.PostgreSQLConf,
-			BackupConfig:    backupConfigToAPI(node.BackupConfig),
-			RestoreConfig:   restoreConfigToAPI(node.RestoreConfig),
-			ExtraVolumes:    extraVolumesToAPI(node.ExtraVolumes),
+			Name:             node.Name,
+			HostIds:          hostIDs,
+			PostgresVersion:  utils.NillablePointerTo(node.PostgresVersion),
+			Port:             utils.NillablePointerTo(node.Port),
+			Cpus:             utils.NillablePointerTo(humanizeCPUs(node.CPUs)),
+			Memory:           utils.NillablePointerTo(humanizeBytes(node.MemoryBytes)),
+			PostgresqlConf:   node.PostgreSQLConf,
+			BackupConfig:     backupConfigToAPI(node.BackupConfig),
+			RestoreConfig:    restoreConfigToAPI(node.RestoreConfig),
+			OrchestratorOpts: orchestratorOptsToAPI(node.OrchestratorOpts),
 		}
 	}
 	return apiNodes
@@ -180,18 +180,18 @@ func restoreConfigToAPI(config *database.RestoreConfig) *api.RestoreConfigSpec {
 
 func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 	return &api.DatabaseSpec{
-		DatabaseName:    d.DatabaseName,
-		PostgresVersion: utils.NillablePointerTo(d.PostgresVersion),
-		SpockVersion:    utils.NillablePointerTo(d.SpockVersion),
-		Port:            utils.NillablePointerTo(d.Port),
-		Cpus:            utils.NillablePointerTo(humanizeCPUs(d.CPUs)),
-		Memory:          utils.NillablePointerTo(humanizeBytes(d.MemoryBytes)),
-		Nodes:           databaseNodesToAPI(d.Nodes),
-		DatabaseUsers:   databaseUsersToAPI(d.DatabaseUsers),
-		BackupConfig:    backupConfigToAPI(d.BackupConfig),
-		RestoreConfig:   restoreConfigToAPI(d.RestoreConfig),
-		PostgresqlConf:  d.PostgreSQLConf,
-		ExtraVolumes:    extraVolumesToAPI(d.ExtraVolumes),
+		DatabaseName:     d.DatabaseName,
+		PostgresVersion:  utils.NillablePointerTo(d.PostgresVersion),
+		SpockVersion:     utils.NillablePointerTo(d.SpockVersion),
+		Port:             utils.NillablePointerTo(d.Port),
+		Cpus:             utils.NillablePointerTo(humanizeCPUs(d.CPUs)),
+		Memory:           utils.NillablePointerTo(humanizeBytes(d.MemoryBytes)),
+		Nodes:            databaseNodesToAPI(d.Nodes),
+		DatabaseUsers:    databaseUsersToAPI(d.DatabaseUsers),
+		BackupConfig:     backupConfigToAPI(d.BackupConfig),
+		RestoreConfig:    restoreConfigToAPI(d.RestoreConfig),
+		PostgresqlConf:   d.PostgreSQLConf,
+		OrchestratorOpts: orchestratorOptsToAPI(d.OrchestratorOpts),
 	}
 }
 
@@ -334,16 +334,16 @@ func apiToDatabaseNodes(apiNodes []*api.DatabaseNodeSpec) ([]*database.Node, err
 			return nil, fmt.Errorf("failed to parse restore config: %w", err)
 		}
 		nodes[i] = &database.Node{
-			Name:            apiNode.Name,
-			HostIDs:         hostIDs,
-			PostgresVersion: utils.FromPointer(apiNode.PostgresVersion),
-			Port:            utils.FromPointer(apiNode.Port),
-			CPUs:            cpus,
-			MemoryBytes:     memory,
-			PostgreSQLConf:  apiNode.PostgresqlConf,
-			BackupConfig:    backupConfig,
-			RestoreConfig:   restoreConfig,
-			ExtraVolumes:    extraVolumesToDatabase(apiNode.ExtraVolumes),
+			Name:             apiNode.Name,
+			HostIDs:          hostIDs,
+			PostgresVersion:  utils.FromPointer(apiNode.PostgresVersion),
+			Port:             utils.FromPointer(apiNode.Port),
+			CPUs:             cpus,
+			MemoryBytes:      memory,
+			PostgreSQLConf:   apiNode.PostgresqlConf,
+			BackupConfig:     backupConfig,
+			RestoreConfig:    restoreConfig,
+			OrchestratorOpts: orchestratorOptsToDatabase(apiNode.OrchestratorOpts),
 		}
 	}
 	return nodes, nil
@@ -501,21 +501,22 @@ func apiToDatabaseSpec(id, tID *api.Identifier, apiSpec *api.DatabaseSpec) (*dat
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse restore config: %w", err)
 	}
+
 	return &database.Spec{
-		DatabaseID:      databaseID,
-		TenantID:        tenantID,
-		DatabaseName:    apiSpec.DatabaseName,
-		PostgresVersion: utils.FromPointer(apiSpec.PostgresVersion),
-		SpockVersion:    utils.FromPointer(apiSpec.SpockVersion),
-		Port:            utils.FromPointer(apiSpec.Port),
-		CPUs:            cpus,
-		MemoryBytes:     memory,
-		Nodes:           nodes,
-		DatabaseUsers:   users,
-		BackupConfig:    backupConfig,
-		PostgreSQLConf:  apiSpec.PostgresqlConf,
-		RestoreConfig:   restoreConfig,
-		ExtraVolumes:    extraVolumesToDatabase(apiSpec.ExtraVolumes),
+		DatabaseID:       databaseID,
+		TenantID:         tenantID,
+		DatabaseName:     apiSpec.DatabaseName,
+		PostgresVersion:  utils.FromPointer(apiSpec.PostgresVersion),
+		SpockVersion:     utils.FromPointer(apiSpec.SpockVersion),
+		Port:             utils.FromPointer(apiSpec.Port),
+		CPUs:             cpus,
+		MemoryBytes:      memory,
+		Nodes:            nodes,
+		DatabaseUsers:    users,
+		BackupConfig:     backupConfig,
+		PostgreSQLConf:   apiSpec.PostgresqlConf,
+		RestoreConfig:    restoreConfig,
+		OrchestratorOpts: orchestratorOptsToDatabase(apiSpec.OrchestratorOpts),
 	}, nil
 }
 
@@ -725,4 +726,59 @@ func identToString(id api.Identifier, path []string) (string, error) {
 		return "", err
 	}
 	return out, nil
+}
+
+func orchestratorOptsToDatabase(opts *api.OrchestratorOpts) *database.OrchestratorOpts {
+	if opts == nil {
+		return nil
+	}
+	return &database.OrchestratorOpts{
+		Swarm: &database.SwarmOpts{
+			ExtraVolumes:  extraVolumesToDatabase(opts.Swarm.ExtraVolumes),
+			ExtraNetworks: extraNetworksToDatabase(opts.Swarm.ExtraNetworks),
+		},
+	}
+}
+
+func orchestratorOptsToAPI(opts *database.OrchestratorOpts) *api.OrchestratorOpts {
+	if opts == nil {
+		return nil
+	}
+	return &api.OrchestratorOpts{
+		Swarm: &api.SwarmOpts{
+			ExtraVolumes:  extraVolumesToAPI(opts.Swarm.ExtraVolumes),
+			ExtraNetworks: extraNetworksToAPI(opts.Swarm.ExtraNetworks),
+		},
+	}
+
+}
+
+func extraNetworksToDatabase(networks []*api.ExtraNetworkSpec) []database.ExtraNetworkSpec {
+	var result []database.ExtraNetworkSpec
+	for _, net := range networks {
+		if net == nil {
+			continue
+		}
+		result = append(result, database.ExtraNetworkSpec{
+			ID:         net.ID,
+			Aliases:    net.Aliases,
+			DriverOpts: net.DriverOpts,
+		})
+	}
+	return result
+}
+
+func extraNetworksToAPI(nets []database.ExtraNetworkSpec) []*api.ExtraNetworkSpec {
+	if len(nets) == 0 {
+		return nil
+	}
+	result := make([]*api.ExtraNetworkSpec, len(nets))
+	for i, net := range nets {
+		result[i] = &api.ExtraNetworkSpec{
+			ID:         net.ID,
+			Aliases:    net.Aliases,
+			DriverOpts: net.DriverOpts,
+		}
+	}
+	return result
 }
