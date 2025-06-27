@@ -6468,7 +6468,7 @@
             "description": "The port used by the Postgres database for this node. Overrides the Postgres port set in the DatabaseSpec.",
             "example": 5432,
             "format": "int64",
-            "minimum": 1,
+            "minimum": 0,
             "maximum": 65535
           },
           "postgres_version": {
@@ -6872,10 +6872,10 @@
           },
           "port": {
             "type": "integer",
-            "description": "The port used by the Postgres database.",
+            "description": "The port used by the Postgres database. If the port is 0, each instance will be assigned a random port. If the port is unspecified, the database will not be exposed on any port, dependent on orchestrator support for that feature.",
             "example": 5432,
             "format": "int64",
-            "minimum": 1,
+            "minimum": 0,
             "maximum": 65535
           },
           "postgres_version": {
