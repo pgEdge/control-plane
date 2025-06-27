@@ -30,6 +30,7 @@ type ExtraNetworkSpec struct {
 type SwarmOpts struct {
 	ExtraVolumes  []ExtraVolumesSpec `json:"extra_volumes,omitempty"`
 	ExtraNetworks []ExtraNetworkSpec `json:"extra_networks,omitempty"`
+	ExtraLabels   map[string]string  `json:"extra_labels,omitempty"` // optional, used for custom labels on the swarm service
 }
 type OrchestratorOpts struct {
 	Swarm *SwarmOpts `json:"docker,omitempty"`
@@ -238,6 +239,7 @@ func (d *SwarmOpts) Clone() *SwarmOpts {
 	return &SwarmOpts{
 		ExtraVolumes:  clonedVolumes,
 		ExtraNetworks: clonedNetworks,
+		ExtraLabels:   maps.Clone(d.ExtraLabels),
 	}
 }
 

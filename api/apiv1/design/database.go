@@ -1351,6 +1351,13 @@ var SwarmOpts = g.Type("SwarmOpts", func() {
 		g.Description("A list of additional Docker Swarm networks to attach containers in this database to.")
 		g.MaxLength(8)
 	})
+	g.Attribute("extra_labels", g.MapOf(g.String, g.String), func() {
+		g.Description("Arbitrary labels to apply to the Docker Swarm service")
+		g.Example(map[string]string{
+			"traefik.enable":                "true",
+			"traefik.tcp.routers.mydb.rule": "HostSNI(`mydb.example.com`)",
+		})
+	})
 })
 
 var OrchestratorOpts = g.Type("OrchestratorOpts", func() {

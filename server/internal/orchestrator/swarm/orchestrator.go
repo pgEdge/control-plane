@@ -490,6 +490,7 @@ func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.
 	if orchestratorOpts == nil || orchestratorOpts.Swarm == nil ||
 		(len(orchestratorOpts.Swarm.ExtraVolumes) == 0 &&
 			len(orchestratorOpts.Swarm.ExtraNetworks) == 0 &&
+			len(orchestratorOpts.Swarm.ExtraLabels) == 0 &&
 			spec.Port == 0) {
 		return nil
 	}
@@ -522,7 +523,13 @@ func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.
 	}
 
 	cmd := buildVolumeCheckCommand(mountTargets)
-	output, err := o.runValidationContainer(ctx, images.PgEdgeImage, cmd, mounts, spec.Port, endpointConfigs)
+	output, err := o.runValidationContainer(
+		ctx, images.PgEdgeImage,
+		cmd, mounts,
+		spec.Port,
+		endpointConfigs,
+		orchestratorOpts.Swarm.ExtraLabels,
+	)
 	bindMsg := docker.ExtractBindMountErrorMsg(err)
 	portMsg := docker.ExtractPortErrorMsg(err)
 	networkMsg := docker.ExtractNetworkErrorMsg(err)
@@ -546,10 +553,17 @@ func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.
 	return nil
 }
 
-func (o *Orchestrator) runValidationContainer(ctx context.Context, image string, cmd []string, mounts []mount.Mount, port int,
-	endpoints map[string]*network.EndpointSettings) (string, error) {
+func (o *Orchestrator) runValidationContainer(
+	ctx context.Context,
+	image string,
+	cmd []string,
+	mounts []mount.Mount,
+	port int,
+	endpoints map[string]*network.EndpointSettings,
+	labels map[string]string,
+) (string, error) {
 	// Start container
-	containerID, err := o.docker.ContainerRun(ctx, validationContainerOpts(image, cmd, mounts, port, endpoints))
+	containerID, err := o.docker.ContainerRun(ctx, validationContainerOpts(image, cmd, mounts, port, endpoints, labels))
 	if err != nil {
 		return "", fmt.Errorf("failed to start container: %w", err)
 	}
@@ -580,11 +594,19 @@ func (o *Orchestrator) runValidationContainer(ctx context.Context, image string,
 	return strings.TrimSpace(buf.String()), nil
 }
 
-func validationContainerOpts(image string, cmd []string, mounts []mount.Mount, port int, endpoints map[string]*network.EndpointSettings) docker.ContainerRunOptions {
+func validationContainerOpts(
+	image string,
+	cmd []string,
+	mounts []mount.Mount,
+	port int,
+	endpoints map[string]*network.EndpointSettings,
+	lables map[string]string,
+) docker.ContainerRunOptions {
 	opts := docker.ContainerRunOptions{
 		Config: &container.Config{
 			Image:      image,
 			Entrypoint: cmd,
+			Labels:     maps.Clone(lables),
 		},
 		Host: &container.HostConfig{
 			Mounts:       mounts,

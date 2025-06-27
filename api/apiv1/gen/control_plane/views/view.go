@@ -353,6 +353,8 @@ type SwarmOptsView struct {
 	// A list of additional Docker Swarm networks to attach containers in this
 	// database to.
 	ExtraNetworks []*ExtraNetworkSpecView
+	// Arbitrary labels to apply to the Docker Swarm service
+	ExtraLabels map[string]string
 }
 
 // ExtraVolumesSpecView is a type that runs validations on a projected type.
