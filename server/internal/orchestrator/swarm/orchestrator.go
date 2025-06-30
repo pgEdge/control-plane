@@ -528,7 +528,6 @@ func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.
 		cmd, mounts,
 		spec.Port,
 		endpointConfigs,
-		orchestratorOpts.Swarm.ExtraLabels,
 	)
 	bindMsg := docker.ExtractBindMountErrorMsg(err)
 	portMsg := docker.ExtractPortErrorMsg(err)
@@ -560,10 +559,9 @@ func (o *Orchestrator) runValidationContainer(
 	mounts []mount.Mount,
 	port int,
 	endpoints map[string]*network.EndpointSettings,
-	labels map[string]string,
 ) (string, error) {
 	// Start container
-	containerID, err := o.docker.ContainerRun(ctx, validationContainerOpts(image, cmd, mounts, port, endpoints, labels))
+	containerID, err := o.docker.ContainerRun(ctx, validationContainerOpts(image, cmd, mounts, port, endpoints))
 	if err != nil {
 		return "", fmt.Errorf("failed to start container: %w", err)
 	}
@@ -600,13 +598,11 @@ func validationContainerOpts(
 	mounts []mount.Mount,
 	port int,
 	endpoints map[string]*network.EndpointSettings,
-	lables map[string]string,
 ) docker.ContainerRunOptions {
 	opts := docker.ContainerRunOptions{
 		Config: &container.Config{
 			Image:      image,
 			Entrypoint: cmd,
-			Labels:     maps.Clone(lables),
 		},
 		Host: &container.HostConfig{
 			Mounts:       mounts,
