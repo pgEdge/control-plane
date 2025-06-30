@@ -11,7 +11,7 @@ services:
           target: /control-plane
     working_dir: ${WORKSPACE_DIR}
     environment:
-      - DEBUG=${DEBUG}
+      - DEBUG=${DEBUG:-0}
       - PGEDGE_HOST_ID=host-1
       - PGEDGE_DATA_DIR=${WORKSPACE_DIR}/docker/control-plane-dev/data/host-1
     cap_drop:

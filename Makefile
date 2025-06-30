@@ -23,6 +23,14 @@ test:
 		--format-hide-empty-pkg \
 		$(modules)
 
+.PHONY: test-etcd
+test-etcd-lifecycle:
+	$(gotestsum) \
+		--format-hide-empty-pkg \
+		-- \
+		-tags=etcd_lifecycle_test \
+		./server/internal/etcd/...
+
 .PHONY: test-workflows-backend
 test-workflows-backend:
 	$(gotestsum) \
@@ -37,7 +45,7 @@ test-ci:
 		--format-hide-empty-pkg \
 		--junitfile test-results.xml \
 		-- \
-		-tags=workflows_backend_test \
+		-tags=workflows_backend_test,etcd_lifecycle_test \
 		$(modules)
 
 .PHONY: lint

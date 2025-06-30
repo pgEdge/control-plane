@@ -203,3 +203,20 @@ func (s *Service) GetHost(ctx context.Context, hostID string) (*Host, error) {
 
 	return host, nil
 }
+
+func (s *Service) RemoveHost(ctx context.Context, hostID string) error {
+	_, err := s.store.Host.
+		DeleteByKey(hostID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to remove host: %w", err)
+	}
+	_, err = s.store.HostStatus.
+		DeleteByKey(hostID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to remove host status: %w", err)
+	}
+
+	return nil
+}

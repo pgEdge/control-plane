@@ -1,3 +1,5 @@
+//go:build etcd_lifecycle_test
+
 package etcd_test
 
 import (
@@ -303,5 +305,39 @@ func TestEmbeddedEtcd(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, int64(1), resp.Count)
 		assert.Equal(t, "bar", string(resp.Kvs[0].Value))
+
+		// Removing a non-existent peer should produce a not found error
+		err = serverA.RemovePeer(ctx, uuid.NewString())
+		assert.ErrorIs(t, err, etcd.ErrMemberNotFound)
+
+		// A cluster member cannot remove itself
+		err = serverA.RemovePeer(ctx, cfgA.HostID)
+		assert.ErrorIs(t, err, etcd.ErrCannotRemoveSelf)
+
+		// Remove server C
+		err = serverA.RemovePeer(ctx, cfgC.HostID)
+		assert.NoError(t, err)
+
+		// Validate that the cluster member is removed
+		members, err := clientA.MemberList(ctx)
+		assert.NoError(t, err)
+		assert.Len(t, members.Members, 2)
+		memberIDToName := make(map[uint64]string, len(members.Members))
+		for _, m := range members.Members {
+			assert.NotEqual(t, cfgC.HostID, m.Name)
+			memberIDToName[m.ID] = m.Name
+		}
+
+		// Validate that the host user is removed
+		users, err := clientA.UserList(ctx)
+		assert.NoError(t, err)
+		assert.Len(t, members.Members, 2)
+		for _, u := range users.Users {
+			assert.NotContains(t, u, cfgC.HostID)
+		}
+
+		// Attempting to remove another member should produce a minimum size err
+		err = serverA.RemovePeer(ctx, cfgB.HostID)
+		assert.ErrorIs(t, err, etcd.ErrMinimumClusterSize)
 	})
 }

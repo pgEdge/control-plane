@@ -25,17 +25,18 @@ const (
 )
 
 var (
-	ErrNotImplemented             = newAPIError(errServerError, "This endpoint not yet implemented.")
-	ErrAlreadyInitialized         = newAPIError(errClusterAlreadyInitialized, "This operation is invalid on an initialized cluster.")
-	ErrUninitialized              = newAPIError(errClusterNotInitialized, "This operation is invalid on an uninitialized cluster.")
-	ErrInvalidTaskID              = newAPIError(errInvalidInput, "The given task ID is invalid.")
-	ErrInvalidServerURL           = newAPIError(errInvalidInput, "The given server URL is invalid.")
-	ErrDatabaseNotModifiable      = newAPIError(errDatabaseNotModifiable, "The target database is not modifiable in its current state.")
-	ErrOperationAlreadyInProgress = newAPIError(errOperationAlreadyInProgress, "An operation is already in progress for the given entity.")
-	ErrDatabaseNotFound           = newAPIError(errNotFound, "No database found with the given ID.")
-	ErrTaskNotFound               = newAPIError(errNotFound, "No task found with the given ID.")
-	ErrInvalidJoinToken           = newAPIError(errInvalidJoinToken, "The given join token is invalid.")
-	ErrDatabaseAlreadyExists      = newAPIError(errDatabaseAlreadyExists, "A database already exists with the given ID.")
+	ErrNotImplemented             = newAPIError(errServerError, "this endpoint is not yet implemented")
+	ErrAlreadyInitialized         = newAPIError(errClusterAlreadyInitialized, "this operation is invalid on an initialized cluster")
+	ErrUninitialized              = newAPIError(errClusterNotInitialized, "this operation is invalid on an uninitialized cluster")
+	ErrInvalidTaskID              = newAPIError(errInvalidInput, "the given task ID is invalid")
+	ErrInvalidServerURL           = newAPIError(errInvalidInput, "the given server URL is invalid")
+	ErrDatabaseNotModifiable      = newAPIError(errDatabaseNotModifiable, "the target database is not modifiable in its current state")
+	ErrOperationAlreadyInProgress = newAPIError(errOperationAlreadyInProgress, "an operation is already in progress for the given entity")
+	ErrDatabaseNotFound           = newAPIError(errNotFound, "no database found with the given ID")
+	ErrTaskNotFound               = newAPIError(errNotFound, "no task found with the given ID")
+	ErrInvalidJoinToken           = newAPIError(errInvalidJoinToken, "the given join token is invalid")
+	ErrDatabaseAlreadyExists      = newAPIError(errDatabaseAlreadyExists, "a database already exists with the given ID")
+	ErrHostNotFound               = newAPIError(errNotFound, "no host found with the given ID")
 )
 
 func apiErr(err error) error {
@@ -65,6 +66,12 @@ func apiErr(err error) error {
 		return ErrDatabaseAlreadyExists
 	case errors.Is(err, database.ErrTenantIDCannotBeChanged):
 		return makeInvalidInputErr(err)
+	case errors.Is(err, etcd.ErrCannotRemoveSelf):
+		return makeInvalidInputErr(err)
+	case errors.Is(err, etcd.ErrMemberNotFound):
+		return makeNotFoundErr(err)
+	case errors.Is(err, etcd.ErrMinimumClusterSize):
+		return makeInvalidInputErr(err)
 	default:
 		return newAPIError(errServerError, err.Error())
 	}
@@ -72,6 +79,10 @@ func apiErr(err error) error {
 
 func makeInvalidInputErr(err error) error {
 	return newAPIError(errInvalidInput, err.Error())
+}
+
+func makeNotFoundErr(err error) error {
+	return newAPIError(errNotFound, err.Error())
 }
 
 func newAPIError(name, message string) *api.APIError {
