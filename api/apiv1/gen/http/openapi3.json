@@ -746,6 +746,56 @@
                     }
                   }
                 },
+                "With custom networks and volumes": {
+                  "summary": "With custom networks and volumes",
+                  "description": "A configuration that mounts a local volume and attaches the container to multiple Swarm networks.",
+                  "value": {
+                    "id": "inventory-db",
+                    "spec": {
+                      "database_name": "inventory",
+                      "database_users": [
+                        {
+                          "attributes": [
+                            "LOGIN"
+                          ],
+                          "db_owner": true,
+                          "password": "securepass",
+                          "username": "inv_admin"
+                        }
+                      ],
+                      "nodes": [
+                        {
+                          "host_ids": [
+                            "host-1"
+                          ],
+                          "name": "n1",
+                          "orchestrator_opts": {
+                            "swarm": {
+                              "extra_networks": [
+                                {
+                                  "id": "net-network"
+                                }
+                              ],
+                              "extra_volumes": [
+                                {
+                                  "destination_path": "/backups",
+                                  "host_path": "/mnt/backups"
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "host_ids": [
+                            "host-2"
+                          ],
+                          "name": "n2"
+                        }
+                      ],
+                      "port": 5432
+                    }
+                  }
+                },
                 "With local backups": {
                   "summary": "With local backups",
                   "description": "A configuration that includes backups to a locally-mounted NFS on n1.",
@@ -780,11 +830,6 @@
                           "name": "n1",
                           "orchestrator_opts": {
                             "swarm": {
-                              "extra_networks": [
-                                {
-                                  "id": "backup-network"
-                                }
-                              ],
                               "extra_volumes": [
                                 {
                                   "destination_path": "/backups",

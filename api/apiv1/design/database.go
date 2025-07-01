@@ -583,11 +583,6 @@ var CreateDatabaseRequest = g.Type("CreateDatabaseRequest", func() {
 										"destination_path": "/backups",
 									},
 								},
-								"extra_networks": []map[string]any{
-									{
-										"id": "backup-network",
-									},
-								},
 							},
 						},
 						"backup_config": map[string]any{
@@ -601,6 +596,47 @@ var CreateDatabaseRequest = g.Type("CreateDatabaseRequest", func() {
 					},
 					{"name": "n2", "host_ids": []string{"ap-south-1"}},
 					{"name": "n3", "host_ids": []string{"eu-central-1"}},
+				},
+			},
+		})
+	})
+
+	g.Example("With custom networks and volumes", func() {
+		g.Description("A configuration that mounts a local volume and attaches the container to multiple Swarm networks.")
+		g.Value(map[string]any{
+			"id": "inventory-db",
+			"spec": map[string]any{
+				"database_name": "inventory",
+				"port":          5432,
+				"database_users": []map[string]any{
+					{
+						"username":   "inv_admin",
+						"password":   "securepass",
+						"db_owner":   true,
+						"attributes": []string{"LOGIN"},
+					},
+				},
+				"nodes": []map[string]any{
+					{
+						"name":     "n1",
+						"host_ids": []string{"host-1"},
+						"orchestrator_opts": map[string]any{
+							"swarm": map[string]any{
+								"extra_volumes": []map[string]any{
+									{
+										"host_path":        "/mnt/backups",
+										"destination_path": "/backups",
+									},
+								},
+								"extra_networks": []map[string]any{
+									{
+										"id": "net-network",
+									},
+								},
+							},
+						},
+					},
+					{"name": "n2", "host_ids": []string{"host-2"}},
 				},
 			},
 		})
