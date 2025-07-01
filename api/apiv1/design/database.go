@@ -601,8 +601,8 @@ var CreateDatabaseRequest = g.Type("CreateDatabaseRequest", func() {
 		})
 	})
 
-	g.Example("With custom networks and volumes", func() {
-		g.Description("A configuration that mounts a local volume and attaches the container to multiple Swarm networks.")
+	g.Example("With custom networks, volumes, and labels", func() {
+		g.Description("A configuration that mounts a local volume, attaches the container to multiple Swarm networks and applies custom labels.")
 		g.Value(map[string]any{
 			"id": "inventory-db",
 			"spec": map[string]any{
@@ -632,6 +632,11 @@ var CreateDatabaseRequest = g.Type("CreateDatabaseRequest", func() {
 									{
 										"id": "net-network",
 									},
+								},
+								"extra_labels": map[string]string{
+									"traefik.enable":              "true",
+									"traefik.tcp.routers.db.rule": "HostSNI(`inventory.example.com`)",
+									"environment":                 "staging",
 								},
 							},
 						},

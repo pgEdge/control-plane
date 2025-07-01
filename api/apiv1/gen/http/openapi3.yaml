@@ -474,9 +474,9 @@ paths:
                                                 - eu-central-1
                                               name: n3
                                         port: 5432
-                            With custom networks and volumes:
-                                summary: With custom networks and volumes
-                                description: A configuration that mounts a local volume and attaches the container to multiple Swarm networks.
+                            With custom networks, volumes, and labels:
+                                summary: With custom networks, volumes, and labels
+                                description: A configuration that mounts a local volume, attaches the container to multiple Swarm networks and applies custom labels.
                                 value:
                                     id: inventory-db
                                     spec:
@@ -493,6 +493,10 @@ paths:
                                               name: n1
                                               orchestrator_opts:
                                                 swarm:
+                                                    extra_labels:
+                                                        environment: staging
+                                                        traefik.enable: "true"
+                                                        traefik.tcp.routers.db.rule: HostSNI(`inventory.example.com`)
                                                     extra_networks:
                                                         - id: net-network
                                                     extra_volumes:
