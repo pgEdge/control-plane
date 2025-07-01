@@ -50,8 +50,27 @@ func DatabaseServiceSpec(
 		docker.BuildMount(options.Paths.Data, "/opt/pgedge/data", false),
 	}
 
-	for _, vol := range instance.ExtraVolumes {
-		mounts = append(mounts, docker.BuildMount(vol.HostPath, vol.DestinationPath, false))
+	if instance.OrchestratorOpts != nil && instance.OrchestratorOpts.Swarm != nil {
+		for _, vol := range instance.OrchestratorOpts.Swarm.ExtraVolumes {
+			mounts = append(mounts, docker.BuildMount(vol.HostPath, vol.DestinationPath, false))
+		}
+	}
+
+	networks := []swarm.NetworkAttachmentConfig{
+		{
+			Target: "bridge", // always attached
+		},
+		{
+			Target: options.DatabaseNetworkID, // database-specific
+		},
+	}
+	if instance.OrchestratorOpts != nil && instance.OrchestratorOpts.Swarm != nil {
+		for _, net := range instance.OrchestratorOpts.Swarm.ExtraNetworks {
+			networks = append(networks, swarm.NetworkAttachmentConfig{
+				Target:  net.ID,
+				Aliases: net.Aliases,
+			})
+		}
 	}
 
 	return swarm.ServiceSpec{
@@ -73,14 +92,7 @@ func DatabaseServiceSpec(
 				},
 				Mounts: mounts,
 			},
-			Networks: []swarm.NetworkAttachmentConfig{
-				{
-					Target: "bridge",
-				},
-				{
-					Target: options.DatabaseNetworkID,
-				},
-			},
+			Networks: networks,
 			Placement: &swarm.Placement{
 				Constraints: []string{
 					"node.id==" + options.CohortMemberID,

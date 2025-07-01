@@ -21,18 +21,31 @@ type ExtraVolumesSpec struct {
 	HostPath        string `json:"host_path"`
 	DestinationPath string `json:"destination_path"`
 }
+type ExtraNetworkSpec struct {
+	ID         string            `json:"id"`                    // required
+	Aliases    []string          `json:"aliases,omitempty"`     // optional
+	DriverOpts map[string]string `json:"driver_opts,omitempty"` // optional
+}
+
+type SwarmOpts struct {
+	ExtraVolumes  []ExtraVolumesSpec `json:"extra_volumes,omitempty"`
+	ExtraNetworks []ExtraNetworkSpec `json:"extra_networks,omitempty"`
+}
+type OrchestratorOpts struct {
+	Swarm *SwarmOpts `json:"docker,omitempty"`
+}
 
 type Node struct {
-	Name            string             `json:"name"`
-	HostIDs         []string           `json:"host_ids"`
-	PostgresVersion string             `json:"postgres_version"`
-	Port            int                `json:"port"`
-	CPUs            float64            `json:"cpus"`
-	MemoryBytes     uint64             `json:"memory"`
-	PostgreSQLConf  map[string]any     `json:"postgresql_conf"`
-	BackupConfig    *BackupConfig      `json:"backup_config"`
-	RestoreConfig   *RestoreConfig     `json:"restore_config"`
-	ExtraVolumes    []ExtraVolumesSpec `json:"extra_volumes,omitempty"`
+	Name             string            `json:"name"`
+	HostIDs          []string          `json:"host_ids"`
+	PostgresVersion  string            `json:"postgres_version"`
+	Port             int               `json:"port"`
+	CPUs             float64           `json:"cpus"`
+	MemoryBytes      uint64            `json:"memory"`
+	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
+	BackupConfig     *BackupConfig     `json:"backup_config"`
+	RestoreConfig    *RestoreConfig    `json:"restore_config"`
+	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 }
 
 func (n *Node) Clone() *Node {
@@ -40,16 +53,16 @@ func (n *Node) Clone() *Node {
 		return nil
 	}
 	return &Node{
-		Name:            n.Name,
-		HostIDs:         slices.Clone(n.HostIDs),
-		PostgresVersion: n.PostgresVersion,
-		Port:            n.Port,
-		CPUs:            n.CPUs,
-		MemoryBytes:     n.MemoryBytes,
-		PostgreSQLConf:  maps.Clone(n.PostgreSQLConf),
-		BackupConfig:    n.BackupConfig.Clone(),
-		RestoreConfig:   n.RestoreConfig.Clone(),
-		ExtraVolumes:    slices.Clone(n.ExtraVolumes),
+		Name:             n.Name,
+		HostIDs:          slices.Clone(n.HostIDs),
+		PostgresVersion:  n.PostgresVersion,
+		Port:             n.Port,
+		CPUs:             n.CPUs,
+		MemoryBytes:      n.MemoryBytes,
+		PostgreSQLConf:   maps.Clone(n.PostgreSQLConf),
+		BackupConfig:     n.BackupConfig.Clone(),
+		RestoreConfig:    n.RestoreConfig.Clone(),
+		OrchestratorOpts: n.OrchestratorOpts.Clone(),
 	}
 }
 
@@ -197,21 +210,52 @@ func (r *RestoreConfig) Clone() *RestoreConfig {
 	}
 }
 
+func (o *OrchestratorOpts) Clone() *OrchestratorOpts {
+	if o == nil {
+		return nil
+	}
+	return &OrchestratorOpts{
+		Swarm: o.Swarm.Clone(),
+	}
+}
+
+func (d *SwarmOpts) Clone() *SwarmOpts {
+	if d == nil {
+		return nil
+	}
+	clonedVolumes := make([]ExtraVolumesSpec, len(d.ExtraVolumes))
+	copy(clonedVolumes, d.ExtraVolumes)
+
+	clonedNetworks := make([]ExtraNetworkSpec, len(d.ExtraNetworks))
+	for i, net := range d.ExtraNetworks {
+		clonedNetworks[i] = ExtraNetworkSpec{
+			ID:         net.ID,
+			Aliases:    slices.Clone(net.Aliases),
+			DriverOpts: maps.Clone(net.DriverOpts),
+		}
+	}
+
+	return &SwarmOpts{
+		ExtraVolumes:  clonedVolumes,
+		ExtraNetworks: clonedNetworks,
+	}
+}
+
 type Spec struct {
-	DatabaseID      string             `json:"database_id"`
-	TenantID        *string            `json:"tenant_id,omitempty"`
-	DatabaseName    string             `json:"database_name"`
-	PostgresVersion string             `json:"postgres_version"`
-	SpockVersion    string             `json:"spock_version"`
-	Port            int                `json:"port"`
-	CPUs            float64            `json:"cpus"`
-	MemoryBytes     uint64             `json:"memory"`
-	Nodes           []*Node            `json:"nodes"`
-	DatabaseUsers   []*User            `json:"database_users"`
-	BackupConfig    *BackupConfig      `json:"backup_config"`
-	RestoreConfig   *RestoreConfig     `json:"restore_config"`
-	PostgreSQLConf  map[string]any     `json:"postgresql_conf"`
-	ExtraVolumes    []ExtraVolumesSpec `json:"extra_volumes,omitempty"`
+	DatabaseID       string            `json:"database_id"`
+	TenantID         *string           `json:"tenant_id,omitempty"`
+	DatabaseName     string            `json:"database_name"`
+	PostgresVersion  string            `json:"postgres_version"`
+	SpockVersion     string            `json:"spock_version"`
+	Port             int               `json:"port"`
+	CPUs             float64           `json:"cpus"`
+	MemoryBytes      uint64            `json:"memory"`
+	Nodes            []*Node           `json:"nodes"`
+	DatabaseUsers    []*User           `json:"database_users"`
+	BackupConfig     *BackupConfig     `json:"backup_config"`
+	RestoreConfig    *RestoreConfig    `json:"restore_config"`
+	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
+	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 }
 
 func (s *Spec) Node(name string) (*Node, error) {
@@ -279,20 +323,20 @@ func (s *Spec) Clone() *Spec {
 	}
 
 	return &Spec{
-		DatabaseID:      s.DatabaseID,
-		TenantID:        utils.ClonePointer(s.TenantID),
-		DatabaseName:    s.DatabaseName,
-		PostgresVersion: s.PostgresVersion,
-		SpockVersion:    s.SpockVersion,
-		Port:            s.Port,
-		CPUs:            s.CPUs,
-		MemoryBytes:     s.MemoryBytes,
-		PostgreSQLConf:  maps.Clone(s.PostgreSQLConf),
-		Nodes:           nodes,
-		DatabaseUsers:   users,
-		BackupConfig:    s.BackupConfig.Clone(),
-		RestoreConfig:   s.RestoreConfig.Clone(),
-		ExtraVolumes:    slices.Clone(s.ExtraVolumes),
+		DatabaseID:       s.DatabaseID,
+		TenantID:         utils.ClonePointer(s.TenantID),
+		DatabaseName:     s.DatabaseName,
+		PostgresVersion:  s.PostgresVersion,
+		SpockVersion:     s.SpockVersion,
+		Port:             s.Port,
+		CPUs:             s.CPUs,
+		MemoryBytes:      s.MemoryBytes,
+		PostgreSQLConf:   maps.Clone(s.PostgreSQLConf),
+		Nodes:            nodes,
+		DatabaseUsers:    users,
+		BackupConfig:     s.BackupConfig.Clone(),
+		RestoreConfig:    s.RestoreConfig.Clone(),
+		OrchestratorOpts: s.OrchestratorOpts.Clone(),
 	}
 }
 
@@ -361,24 +405,24 @@ func InstanceIDFor(hostID, databaseID, nodeName string) string {
 }
 
 type InstanceSpec struct {
-	InstanceID     string              `json:"instance_id"`
-	TenantID       *string             `json:"tenant_id,omitempty"`
-	DatabaseID     string              `json:"database_id"`
-	HostID         string              `json:"host_id"`
-	DatabaseName   string              `json:"database_name"`
-	NodeName       string              `json:"node_name"`
-	NodeOrdinal    int                 `json:"node_ordinal"`
-	PgEdgeVersion  *host.PgEdgeVersion `json:"pg_edge_version"`
-	Port           int                 `json:"port"`
-	CPUs           float64             `json:"cpus"`
-	MemoryBytes    uint64              `json:"memory"`
-	DatabaseUsers  []*User             `json:"database_users"`
-	BackupConfig   *BackupConfig       `json:"backup_config"`
-	RestoreConfig  *RestoreConfig      `json:"restore_config"`
-	PostgreSQLConf map[string]any      `json:"postgresql_conf"`
-	EnableBackups  bool                `json:"enable_backups"`
-	ClusterSize    int                 `json:"cluster_size"`
-	ExtraVolumes   []ExtraVolumesSpec  `json:"extra_volumes,omitempty"`
+	InstanceID       string              `json:"instance_id"`
+	TenantID         *string             `json:"tenant_id,omitempty"`
+	DatabaseID       string              `json:"database_id"`
+	HostID           string              `json:"host_id"`
+	DatabaseName     string              `json:"database_name"`
+	NodeName         string              `json:"node_name"`
+	NodeOrdinal      int                 `json:"node_ordinal"`
+	PgEdgeVersion    *host.PgEdgeVersion `json:"pg_edge_version"`
+	Port             int                 `json:"port"`
+	CPUs             float64             `json:"cpus"`
+	MemoryBytes      uint64              `json:"memory"`
+	DatabaseUsers    []*User             `json:"database_users"`
+	BackupConfig     *BackupConfig       `json:"backup_config"`
+	RestoreConfig    *RestoreConfig      `json:"restore_config"`
+	PostgreSQLConf   map[string]any      `json:"postgresql_conf"`
+	EnableBackups    bool                `json:"enable_backups"`
+	ClusterSize      int                 `json:"cluster_size"`
+	OrchestratorOpts *OrchestratorOpts   `json:"orchestrator_opts,omitempty"`
 }
 
 func (i *InstanceSpec) Hostname() string {
@@ -439,9 +483,9 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		// Create a merged PostgreSQL configuration with node-level overrides
 		postgresqlConf := maps.Clone(s.PostgreSQLConf)
 		maps.Copy(postgresqlConf, node.PostgreSQLConf)
-		extraVolumes := s.ExtraVolumes
-		if len(node.ExtraVolumes) > 0 {
-			extraVolumes = node.ExtraVolumes
+		orchestratorOpts := s.OrchestratorOpts
+		if node.OrchestratorOpts != nil {
+			orchestratorOpts = node.OrchestratorOpts
 		}
 
 		instances := make([]*InstanceSpec, len(node.HostIDs))
@@ -465,9 +509,9 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				// By default, we'll choose the last host in the list to run
 				// backups. We'll want to incorporate the current state of the
 				// cluster into this decision when we implement updates.
-				EnableBackups: backupConfig != nil && hostIdx == len(node.HostIDs)-1,
-				ClusterSize:   clusterSize,
-				ExtraVolumes:  extraVolumes,
+				EnableBackups:    backupConfig != nil && hostIdx == len(node.HostIDs)-1,
+				ClusterSize:      clusterSize,
+				OrchestratorOpts: orchestratorOpts.Clone(),
 			}
 		}
 

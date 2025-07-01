@@ -162,9 +162,8 @@ type DatabaseSpecView struct {
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
 	PostgresqlConf map[string]any
-	// A list of extra volumes to mount. Each entry defines a host and container
-	// path.
-	ExtraVolumes []*ExtraVolumesSpecView
+	// Orchestrator-specific configuration options.
+	OrchestratorOpts *OrchestratorOptsView
 }
 
 // DatabaseNodeSpecView is a type that runs validations on a projected type.
@@ -202,8 +201,8 @@ type DatabaseNodeSpecView struct {
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
 	RestoreConfig *RestoreConfigSpecView
-	// Optional list of external volumes to mount for this node only.
-	ExtraVolumes []*ExtraVolumesSpecView
+	// Orchestrator-specific configuration options.
+	OrchestratorOpts *OrchestratorOptsView
 }
 
 // BackupConfigSpecView is a type that runs validations on a projected type.
@@ -340,12 +339,38 @@ type RestoreRepositorySpecView struct {
 	CustomOptions map[string]string
 }
 
+// OrchestratorOptsView is a type that runs validations on a projected type.
+type OrchestratorOptsView struct {
+	// Swarm-specific configuration.
+	Swarm *SwarmOptsView
+}
+
+// SwarmOptsView is a type that runs validations on a projected type.
+type SwarmOptsView struct {
+	// A list of extra volumes to mount. Each entry defines a host and container
+	// path.
+	ExtraVolumes []*ExtraVolumesSpecView
+	// A list of additional Docker Swarm networks to attach containers in this
+	// database to.
+	ExtraNetworks []*ExtraNetworkSpecView
+}
+
 // ExtraVolumesSpecView is a type that runs validations on a projected type.
 type ExtraVolumesSpecView struct {
 	// The host path for the volume.
 	HostPath *string
 	// The path inside the container where the volume will be mounted.
 	DestinationPath *string
+}
+
+// ExtraNetworkSpecView is a type that runs validations on a projected type.
+type ExtraNetworkSpecView struct {
+	// The name or ID of the network to connect to.
+	ID *string
+	// Optional network-scoped aliases for the container.
+	Aliases []string
+	// Optional driver options for the network connection.
+	DriverOpts map[string]string
 }
 
 // DatabaseUserSpecView is a type that runs validations on a projected type.
@@ -935,14 +960,9 @@ func ValidateDatabaseSpecView(result *DatabaseSpecView) (err error) {
 	if len(result.PostgresqlConf) > 64 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("result.postgresql_conf", result.PostgresqlConf, len(result.PostgresqlConf), 64, false))
 	}
-	if len(result.ExtraVolumes) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("result.extra_volumes", result.ExtraVolumes, len(result.ExtraVolumes), 16, false))
-	}
-	for _, e := range result.ExtraVolumes {
-		if e != nil {
-			if err2 := ValidateExtraVolumesSpecView(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if result.OrchestratorOpts != nil {
+		if err2 := ValidateOrchestratorOptsView(result.OrchestratorOpts); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -1004,14 +1024,9 @@ func ValidateDatabaseNodeSpecView(result *DatabaseNodeSpecView) (err error) {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if len(result.ExtraVolumes) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("result.extra_volumes", result.ExtraVolumes, len(result.ExtraVolumes), 16, false))
-	}
-	for _, e := range result.ExtraVolumes {
-		if e != nil {
-			if err2 := ValidateExtraVolumesSpecView(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if result.OrchestratorOpts != nil {
+		if err2 := ValidateOrchestratorOptsView(result.OrchestratorOpts); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -1408,6 +1423,42 @@ func ValidateRestoreRepositorySpecView(result *RestoreRepositorySpecView) (err e
 	return
 }
 
+// ValidateOrchestratorOptsView runs the validations defined on
+// OrchestratorOptsView.
+func ValidateOrchestratorOptsView(result *OrchestratorOptsView) (err error) {
+	if result.Swarm != nil {
+		if err2 := ValidateSwarmOptsView(result.Swarm); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateSwarmOptsView runs the validations defined on SwarmOptsView.
+func ValidateSwarmOptsView(result *SwarmOptsView) (err error) {
+	if len(result.ExtraVolumes) > 16 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.extra_volumes", result.ExtraVolumes, len(result.ExtraVolumes), 16, false))
+	}
+	for _, e := range result.ExtraVolumes {
+		if e != nil {
+			if err2 := ValidateExtraVolumesSpecView(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if len(result.ExtraNetworks) > 8 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.extra_networks", result.ExtraNetworks, len(result.ExtraNetworks), 8, false))
+	}
+	for _, e := range result.ExtraNetworks {
+		if e != nil {
+			if err2 := ValidateExtraNetworkSpecView(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
 // ValidateExtraVolumesSpecView runs the validations defined on
 // ExtraVolumesSpecView.
 func ValidateExtraVolumesSpecView(result *ExtraVolumesSpecView) (err error) {
@@ -1426,6 +1477,18 @@ func ValidateExtraVolumesSpecView(result *ExtraVolumesSpecView) (err error) {
 		if utf8.RuneCountInString(*result.DestinationPath) > 256 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("result.destination_path", *result.DestinationPath, utf8.RuneCountInString(*result.DestinationPath), 256, false))
 		}
+	}
+	return
+}
+
+// ValidateExtraNetworkSpecView runs the validations defined on
+// ExtraNetworkSpecView.
+func ValidateExtraNetworkSpecView(result *ExtraNetworkSpecView) (err error) {
+	if result.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "result"))
+	}
+	if len(result.Aliases) > 8 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.aliases", result.Aliases, len(result.Aliases), 8, false))
 	}
 	return
 }

@@ -1324,9 +1324,8 @@ type DatabaseSpecResponseBody struct {
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
-	// A list of extra volumes to mount. Each entry defines a host and container
-	// path.
-	ExtraVolumes []*ExtraVolumesSpecResponseBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
+	// Orchestrator-specific configuration options.
+	OrchestratorOpts *OrchestratorOptsResponseBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
 }
 
 // DatabaseNodeSpecResponseBody is used to define fields on response body types.
@@ -1364,8 +1363,8 @@ type DatabaseNodeSpecResponseBody struct {
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
 	RestoreConfig *RestoreConfigSpecResponseBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
-	// Optional list of external volumes to mount for this node only.
-	ExtraVolumes []*ExtraVolumesSpecResponseBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
+	// Orchestrator-specific configuration options.
+	OrchestratorOpts *OrchestratorOptsResponseBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
 }
 
 // BackupConfigSpecResponseBody is used to define fields on response body types.
@@ -1505,12 +1504,38 @@ type RestoreRepositorySpecResponseBody struct {
 	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
+// OrchestratorOptsResponseBody is used to define fields on response body types.
+type OrchestratorOptsResponseBody struct {
+	// Swarm-specific configuration.
+	Swarm *SwarmOptsResponseBody `form:"swarm,omitempty" json:"swarm,omitempty" xml:"swarm,omitempty"`
+}
+
+// SwarmOptsResponseBody is used to define fields on response body types.
+type SwarmOptsResponseBody struct {
+	// A list of extra volumes to mount. Each entry defines a host and container
+	// path.
+	ExtraVolumes []*ExtraVolumesSpecResponseBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
+	// A list of additional Docker Swarm networks to attach containers in this
+	// database to.
+	ExtraNetworks []*ExtraNetworkSpecResponseBody `form:"extra_networks,omitempty" json:"extra_networks,omitempty" xml:"extra_networks,omitempty"`
+}
+
 // ExtraVolumesSpecResponseBody is used to define fields on response body types.
 type ExtraVolumesSpecResponseBody struct {
 	// The host path for the volume.
 	HostPath *string `form:"host_path,omitempty" json:"host_path,omitempty" xml:"host_path,omitempty"`
 	// The path inside the container where the volume will be mounted.
 	DestinationPath *string `form:"destination_path,omitempty" json:"destination_path,omitempty" xml:"destination_path,omitempty"`
+}
+
+// ExtraNetworkSpecResponseBody is used to define fields on response body types.
+type ExtraNetworkSpecResponseBody struct {
+	// The name or ID of the network to connect to.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Optional network-scoped aliases for the container.
+	Aliases []string `form:"aliases,omitempty" json:"aliases,omitempty" xml:"aliases,omitempty"`
+	// Optional driver options for the network connection.
+	DriverOpts map[string]string `form:"driver_opts,omitempty" json:"driver_opts,omitempty" xml:"driver_opts,omitempty"`
 }
 
 // DatabaseUserSpecResponseBody is used to define fields on response body types.
@@ -1559,9 +1584,8 @@ type DatabaseSpecRequestBody struct {
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
-	// A list of extra volumes to mount. Each entry defines a host and container
-	// path.
-	ExtraVolumes []*ExtraVolumesSpecRequestBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
+	// Orchestrator-specific configuration options.
+	OrchestratorOpts *OrchestratorOptsRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
 }
 
 // DatabaseNodeSpecRequestBody is used to define fields on request body types.
@@ -1599,8 +1623,8 @@ type DatabaseNodeSpecRequestBody struct {
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
 	RestoreConfig *RestoreConfigSpecRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
-	// Optional list of external volumes to mount for this node only.
-	ExtraVolumes []*ExtraVolumesSpecRequestBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
+	// Orchestrator-specific configuration options.
+	OrchestratorOpts *OrchestratorOptsRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
 }
 
 // BackupConfigSpecRequestBody is used to define fields on request body types.
@@ -1738,12 +1762,38 @@ type RestoreRepositorySpecRequestBody struct {
 	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
+// OrchestratorOptsRequestBody is used to define fields on request body types.
+type OrchestratorOptsRequestBody struct {
+	// Swarm-specific configuration.
+	Swarm *SwarmOptsRequestBody `form:"swarm,omitempty" json:"swarm,omitempty" xml:"swarm,omitempty"`
+}
+
+// SwarmOptsRequestBody is used to define fields on request body types.
+type SwarmOptsRequestBody struct {
+	// A list of extra volumes to mount. Each entry defines a host and container
+	// path.
+	ExtraVolumes []*ExtraVolumesSpecRequestBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
+	// A list of additional Docker Swarm networks to attach containers in this
+	// database to.
+	ExtraNetworks []*ExtraNetworkSpecRequestBody `form:"extra_networks,omitempty" json:"extra_networks,omitempty" xml:"extra_networks,omitempty"`
+}
+
 // ExtraVolumesSpecRequestBody is used to define fields on request body types.
 type ExtraVolumesSpecRequestBody struct {
 	// The host path for the volume.
 	HostPath string `form:"host_path" json:"host_path" xml:"host_path"`
 	// The path inside the container where the volume will be mounted.
 	DestinationPath string `form:"destination_path" json:"destination_path" xml:"destination_path"`
+}
+
+// ExtraNetworkSpecRequestBody is used to define fields on request body types.
+type ExtraNetworkSpecRequestBody struct {
+	// The name or ID of the network to connect to.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Optional network-scoped aliases for the container.
+	Aliases []string `form:"aliases,omitempty" json:"aliases,omitempty" xml:"aliases,omitempty"`
+	// Optional driver options for the network connection.
+	DriverOpts map[string]string `form:"driver_opts,omitempty" json:"driver_opts,omitempty" xml:"driver_opts,omitempty"`
 }
 
 // DatabaseUserSpecRequestBody is used to define fields on request body types.
@@ -1823,9 +1873,8 @@ type DatabaseSpecRequestBodyRequestBody struct {
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
-	// A list of extra volumes to mount. Each entry defines a host and container
-	// path.
-	ExtraVolumes []*ExtraVolumesSpecRequestBodyRequestBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
+	// Orchestrator-specific configuration options.
+	OrchestratorOpts *OrchestratorOptsRequestBodyRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
 }
 
 // DatabaseNodeSpecRequestBodyRequestBody is used to define fields on request
@@ -1864,8 +1913,8 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
 	RestoreConfig *RestoreConfigSpecRequestBodyRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
-	// Optional list of external volumes to mount for this node only.
-	ExtraVolumes []*ExtraVolumesSpecRequestBodyRequestBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
+	// Orchestrator-specific configuration options.
+	OrchestratorOpts *OrchestratorOptsRequestBodyRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
 }
 
 // BackupConfigSpecRequestBodyRequestBody is used to define fields on request
@@ -2006,6 +2055,24 @@ type RestoreRepositorySpecRequestBodyRequestBody struct {
 	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
 }
 
+// OrchestratorOptsRequestBodyRequestBody is used to define fields on request
+// body types.
+type OrchestratorOptsRequestBodyRequestBody struct {
+	// Swarm-specific configuration.
+	Swarm *SwarmOptsRequestBodyRequestBody `form:"swarm,omitempty" json:"swarm,omitempty" xml:"swarm,omitempty"`
+}
+
+// SwarmOptsRequestBodyRequestBody is used to define fields on request body
+// types.
+type SwarmOptsRequestBodyRequestBody struct {
+	// A list of extra volumes to mount. Each entry defines a host and container
+	// path.
+	ExtraVolumes []*ExtraVolumesSpecRequestBodyRequestBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
+	// A list of additional Docker Swarm networks to attach containers in this
+	// database to.
+	ExtraNetworks []*ExtraNetworkSpecRequestBodyRequestBody `form:"extra_networks,omitempty" json:"extra_networks,omitempty" xml:"extra_networks,omitempty"`
+}
+
 // ExtraVolumesSpecRequestBodyRequestBody is used to define fields on request
 // body types.
 type ExtraVolumesSpecRequestBodyRequestBody struct {
@@ -2013,6 +2080,17 @@ type ExtraVolumesSpecRequestBodyRequestBody struct {
 	HostPath string `form:"host_path" json:"host_path" xml:"host_path"`
 	// The path inside the container where the volume will be mounted.
 	DestinationPath string `form:"destination_path" json:"destination_path" xml:"destination_path"`
+}
+
+// ExtraNetworkSpecRequestBodyRequestBody is used to define fields on request
+// body types.
+type ExtraNetworkSpecRequestBodyRequestBody struct {
+	// The name or ID of the network to connect to.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Optional network-scoped aliases for the container.
+	Aliases []string `form:"aliases,omitempty" json:"aliases,omitempty" xml:"aliases,omitempty"`
+	// Optional driver options for the network connection.
+	DriverOpts map[string]string `form:"driver_opts,omitempty" json:"driver_opts,omitempty" xml:"driver_opts,omitempty"`
 }
 
 // DatabaseUserSpecRequestBodyRequestBody is used to define fields on request
@@ -5090,14 +5168,9 @@ func ValidateDatabaseSpecResponseBody(body *DatabaseSpecResponseBody) (err error
 	if len(body.PostgresqlConf) > 64 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.postgresql_conf", body.PostgresqlConf, len(body.PostgresqlConf), 64, false))
 	}
-	if len(body.ExtraVolumes) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_volumes", body.ExtraVolumes, len(body.ExtraVolumes), 16, false))
-	}
-	for _, e := range body.ExtraVolumes {
-		if e != nil {
-			if err2 := ValidateExtraVolumesSpecResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if body.OrchestratorOpts != nil {
+		if err2 := ValidateOrchestratorOptsResponseBody(body.OrchestratorOpts); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -5159,14 +5232,9 @@ func ValidateDatabaseNodeSpecResponseBody(body *DatabaseNodeSpecResponseBody) (e
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if len(body.ExtraVolumes) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_volumes", body.ExtraVolumes, len(body.ExtraVolumes), 16, false))
-	}
-	for _, e := range body.ExtraVolumes {
-		if e != nil {
-			if err2 := ValidateExtraVolumesSpecResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if body.OrchestratorOpts != nil {
+		if err2 := ValidateOrchestratorOptsResponseBody(body.OrchestratorOpts); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -5563,6 +5631,43 @@ func ValidateRestoreRepositorySpecResponseBody(body *RestoreRepositorySpecRespon
 	return
 }
 
+// ValidateOrchestratorOptsResponseBody runs the validations defined on
+// OrchestratorOptsResponseBody
+func ValidateOrchestratorOptsResponseBody(body *OrchestratorOptsResponseBody) (err error) {
+	if body.Swarm != nil {
+		if err2 := ValidateSwarmOptsResponseBody(body.Swarm); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateSwarmOptsResponseBody runs the validations defined on
+// SwarmOptsResponseBody
+func ValidateSwarmOptsResponseBody(body *SwarmOptsResponseBody) (err error) {
+	if len(body.ExtraVolumes) > 16 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_volumes", body.ExtraVolumes, len(body.ExtraVolumes), 16, false))
+	}
+	for _, e := range body.ExtraVolumes {
+		if e != nil {
+			if err2 := ValidateExtraVolumesSpecResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if len(body.ExtraNetworks) > 8 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_networks", body.ExtraNetworks, len(body.ExtraNetworks), 8, false))
+	}
+	for _, e := range body.ExtraNetworks {
+		if e != nil {
+			if err2 := ValidateExtraNetworkSpecResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
 // ValidateExtraVolumesSpecResponseBody runs the validations defined on
 // ExtraVolumesSpecResponseBody
 func ValidateExtraVolumesSpecResponseBody(body *ExtraVolumesSpecResponseBody) (err error) {
@@ -5581,6 +5686,18 @@ func ValidateExtraVolumesSpecResponseBody(body *ExtraVolumesSpecResponseBody) (e
 		if utf8.RuneCountInString(*body.DestinationPath) > 256 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.destination_path", *body.DestinationPath, utf8.RuneCountInString(*body.DestinationPath), 256, false))
 		}
+	}
+	return
+}
+
+// ValidateExtraNetworkSpecResponseBody runs the validations defined on
+// ExtraNetworkSpecResponseBody
+func ValidateExtraNetworkSpecResponseBody(body *ExtraNetworkSpecResponseBody) (err error) {
+	if body.ID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
+	}
+	if len(body.Aliases) > 8 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.aliases", body.Aliases, len(body.Aliases), 8, false))
 	}
 	return
 }
@@ -5686,14 +5803,9 @@ func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) 
 	if len(body.PostgresqlConf) > 64 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.postgresql_conf", body.PostgresqlConf, len(body.PostgresqlConf), 64, false))
 	}
-	if len(body.ExtraVolumes) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_volumes", body.ExtraVolumes, len(body.ExtraVolumes), 16, false))
-	}
-	for _, e := range body.ExtraVolumes {
-		if e != nil {
-			if err2 := ValidateExtraVolumesSpecRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if body.OrchestratorOpts != nil {
+		if err2 := ValidateOrchestratorOptsRequestBody(body.OrchestratorOpts); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -5750,14 +5862,9 @@ func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if len(body.ExtraVolumes) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_volumes", body.ExtraVolumes, len(body.ExtraVolumes), 16, false))
-	}
-	for _, e := range body.ExtraVolumes {
-		if e != nil {
-			if err2 := ValidateExtraVolumesSpecRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if body.OrchestratorOpts != nil {
+		if err2 := ValidateOrchestratorOptsRequestBody(body.OrchestratorOpts); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -6110,6 +6217,43 @@ func ValidateRestoreRepositorySpecRequestBody(body *RestoreRepositorySpecRequest
 	return
 }
 
+// ValidateOrchestratorOptsRequestBody runs the validations defined on
+// OrchestratorOptsRequestBody
+func ValidateOrchestratorOptsRequestBody(body *OrchestratorOptsRequestBody) (err error) {
+	if body.Swarm != nil {
+		if err2 := ValidateSwarmOptsRequestBody(body.Swarm); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateSwarmOptsRequestBody runs the validations defined on
+// SwarmOptsRequestBody
+func ValidateSwarmOptsRequestBody(body *SwarmOptsRequestBody) (err error) {
+	if len(body.ExtraVolumes) > 16 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_volumes", body.ExtraVolumes, len(body.ExtraVolumes), 16, false))
+	}
+	for _, e := range body.ExtraVolumes {
+		if e != nil {
+			if err2 := ValidateExtraVolumesSpecRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if len(body.ExtraNetworks) > 8 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_networks", body.ExtraNetworks, len(body.ExtraNetworks), 8, false))
+	}
+	for _, e := range body.ExtraNetworks {
+		if e != nil {
+			if err2 := ValidateExtraNetworkSpecRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
 // ValidateExtraVolumesSpecRequestBody runs the validations defined on
 // ExtraVolumesSpecRequestBody
 func ValidateExtraVolumesSpecRequestBody(body *ExtraVolumesSpecRequestBody) (err error) {
@@ -6118,6 +6262,15 @@ func ValidateExtraVolumesSpecRequestBody(body *ExtraVolumesSpecRequestBody) (err
 	}
 	if utf8.RuneCountInString(body.DestinationPath) > 256 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.destination_path", body.DestinationPath, utf8.RuneCountInString(body.DestinationPath), 256, false))
+	}
+	return
+}
+
+// ValidateExtraNetworkSpecRequestBody runs the validations defined on
+// ExtraNetworkSpecRequestBody
+func ValidateExtraNetworkSpecRequestBody(body *ExtraNetworkSpecRequestBody) (err error) {
+	if len(body.Aliases) > 8 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.aliases", body.Aliases, len(body.Aliases), 8, false))
 	}
 	return
 }
@@ -6268,14 +6421,9 @@ func ValidateDatabaseSpecRequestBodyRequestBody(body *DatabaseSpecRequestBodyReq
 	if len(body.PostgresqlConf) > 64 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.postgresql_conf", body.PostgresqlConf, len(body.PostgresqlConf), 64, false))
 	}
-	if len(body.ExtraVolumes) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_volumes", body.ExtraVolumes, len(body.ExtraVolumes), 16, false))
-	}
-	for _, e := range body.ExtraVolumes {
-		if e != nil {
-			if err2 := ValidateExtraVolumesSpecRequestBodyRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if body.OrchestratorOpts != nil {
+		if err2 := ValidateOrchestratorOptsRequestBodyRequestBody(body.OrchestratorOpts); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -6332,14 +6480,9 @@ func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecReques
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if len(body.ExtraVolumes) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_volumes", body.ExtraVolumes, len(body.ExtraVolumes), 16, false))
-	}
-	for _, e := range body.ExtraVolumes {
-		if e != nil {
-			if err2 := ValidateExtraVolumesSpecRequestBodyRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
+	if body.OrchestratorOpts != nil {
+		if err2 := ValidateOrchestratorOptsRequestBodyRequestBody(body.OrchestratorOpts); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -6692,6 +6835,43 @@ func ValidateRestoreRepositorySpecRequestBodyRequestBody(body *RestoreRepository
 	return
 }
 
+// ValidateOrchestratorOptsRequestBodyRequestBody runs the validations defined
+// on OrchestratorOptsRequestBodyRequestBody
+func ValidateOrchestratorOptsRequestBodyRequestBody(body *OrchestratorOptsRequestBodyRequestBody) (err error) {
+	if body.Swarm != nil {
+		if err2 := ValidateSwarmOptsRequestBodyRequestBody(body.Swarm); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateSwarmOptsRequestBodyRequestBody runs the validations defined on
+// SwarmOptsRequestBodyRequestBody
+func ValidateSwarmOptsRequestBodyRequestBody(body *SwarmOptsRequestBodyRequestBody) (err error) {
+	if len(body.ExtraVolumes) > 16 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_volumes", body.ExtraVolumes, len(body.ExtraVolumes), 16, false))
+	}
+	for _, e := range body.ExtraVolumes {
+		if e != nil {
+			if err2 := ValidateExtraVolumesSpecRequestBodyRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if len(body.ExtraNetworks) > 8 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_networks", body.ExtraNetworks, len(body.ExtraNetworks), 8, false))
+	}
+	for _, e := range body.ExtraNetworks {
+		if e != nil {
+			if err2 := ValidateExtraNetworkSpecRequestBodyRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
 // ValidateExtraVolumesSpecRequestBodyRequestBody runs the validations defined
 // on ExtraVolumesSpecRequestBodyRequestBody
 func ValidateExtraVolumesSpecRequestBodyRequestBody(body *ExtraVolumesSpecRequestBodyRequestBody) (err error) {
@@ -6700,6 +6880,15 @@ func ValidateExtraVolumesSpecRequestBodyRequestBody(body *ExtraVolumesSpecReques
 	}
 	if utf8.RuneCountInString(body.DestinationPath) > 256 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.destination_path", body.DestinationPath, utf8.RuneCountInString(body.DestinationPath), 256, false))
+	}
+	return
+}
+
+// ValidateExtraNetworkSpecRequestBodyRequestBody runs the validations defined
+// on ExtraNetworkSpecRequestBodyRequestBody
+func ValidateExtraNetworkSpecRequestBodyRequestBody(body *ExtraNetworkSpecRequestBodyRequestBody) (err error) {
+	if len(body.Aliases) > 8 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.aliases", body.Aliases, len(body.Aliases), 8, false))
 	}
 	return
 }

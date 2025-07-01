@@ -2390,11 +2390,8 @@ func unmarshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecR
 			res.PostgresqlConf[tk] = tv
 		}
 	}
-	if v.ExtraVolumes != nil {
-		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
-		for i, val := range v.ExtraVolumes {
-			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecRequestBodyToControlplaneExtraVolumesSpec(val)
-		}
+	if v.OrchestratorOpts != nil {
+		res.OrchestratorOpts = unmarshalOrchestratorOptsRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
 	}
 
 	return res
@@ -2429,11 +2426,8 @@ func unmarshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *Datab
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = unmarshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec(v.RestoreConfig)
 	}
-	if v.ExtraVolumes != nil {
-		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
-		for i, val := range v.ExtraVolumes {
-			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecRequestBodyToControlplaneExtraVolumesSpec(val)
-		}
+	if v.OrchestratorOpts != nil {
+		res.OrchestratorOpts = unmarshalOrchestratorOptsRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
 	}
 
 	return res
@@ -2576,6 +2570,44 @@ func unmarshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpe
 	return res
 }
 
+// unmarshalOrchestratorOptsRequestBodyToControlplaneOrchestratorOpts builds a
+// value of type *controlplane.OrchestratorOpts from a value of type
+// *OrchestratorOptsRequestBody.
+func unmarshalOrchestratorOptsRequestBodyToControlplaneOrchestratorOpts(v *OrchestratorOptsRequestBody) *controlplane.OrchestratorOpts {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.OrchestratorOpts{}
+	if v.Swarm != nil {
+		res.Swarm = unmarshalSwarmOptsRequestBodyToControlplaneSwarmOpts(v.Swarm)
+	}
+
+	return res
+}
+
+// unmarshalSwarmOptsRequestBodyToControlplaneSwarmOpts builds a value of type
+// *controlplane.SwarmOpts from a value of type *SwarmOptsRequestBody.
+func unmarshalSwarmOptsRequestBodyToControlplaneSwarmOpts(v *SwarmOptsRequestBody) *controlplane.SwarmOpts {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.SwarmOpts{}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecRequestBodyToControlplaneExtraVolumesSpec(val)
+		}
+	}
+	if v.ExtraNetworks != nil {
+		res.ExtraNetworks = make([]*controlplane.ExtraNetworkSpec, len(v.ExtraNetworks))
+		for i, val := range v.ExtraNetworks {
+			res.ExtraNetworks[i] = unmarshalExtraNetworkSpecRequestBodyToControlplaneExtraNetworkSpec(val)
+		}
+	}
+
+	return res
+}
+
 // unmarshalExtraVolumesSpecRequestBodyToControlplaneExtraVolumesSpec builds a
 // value of type *controlplane.ExtraVolumesSpec from a value of type
 // *ExtraVolumesSpecRequestBody.
@@ -2586,6 +2618,34 @@ func unmarshalExtraVolumesSpecRequestBodyToControlplaneExtraVolumesSpec(v *Extra
 	res := &controlplane.ExtraVolumesSpec{
 		HostPath:        *v.HostPath,
 		DestinationPath: *v.DestinationPath,
+	}
+
+	return res
+}
+
+// unmarshalExtraNetworkSpecRequestBodyToControlplaneExtraNetworkSpec builds a
+// value of type *controlplane.ExtraNetworkSpec from a value of type
+// *ExtraNetworkSpecRequestBody.
+func unmarshalExtraNetworkSpecRequestBodyToControlplaneExtraNetworkSpec(v *ExtraNetworkSpecRequestBody) *controlplane.ExtraNetworkSpec {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.ExtraNetworkSpec{
+		ID: *v.ID,
+	}
+	if v.Aliases != nil {
+		res.Aliases = make([]string, len(v.Aliases))
+		for i, val := range v.Aliases {
+			res.Aliases[i] = val
+		}
+	}
+	if v.DriverOpts != nil {
+		res.DriverOpts = make(map[string]string, len(v.DriverOpts))
+		for key, val := range v.DriverOpts {
+			tk := key
+			tv := val
+			res.DriverOpts[tk] = tv
+		}
 	}
 
 	return res
@@ -2808,11 +2868,8 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody(v *controlplane.D
 			res.PostgresqlConf[tk] = tv
 		}
 	}
-	if v.ExtraVolumes != nil {
-		res.ExtraVolumes = make([]*ExtraVolumesSpecResponseBody, len(v.ExtraVolumes))
-		for i, val := range v.ExtraVolumes {
-			res.ExtraVolumes[i] = marshalControlplaneExtraVolumesSpecToExtraVolumesSpecResponseBody(val)
-		}
+	if v.OrchestratorOpts != nil {
+		res.OrchestratorOpts = marshalControlplaneOrchestratorOptsToOrchestratorOptsResponseBody(v.OrchestratorOpts)
 	}
 
 	return res
@@ -2851,11 +2908,8 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecResponseBody(v *contro
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = marshalControlplaneRestoreConfigSpecToRestoreConfigSpecResponseBody(v.RestoreConfig)
 	}
-	if v.ExtraVolumes != nil {
-		res.ExtraVolumes = make([]*ExtraVolumesSpecResponseBody, len(v.ExtraVolumes))
-		for i, val := range v.ExtraVolumes {
-			res.ExtraVolumes[i] = marshalControlplaneExtraVolumesSpecToExtraVolumesSpecResponseBody(val)
-		}
+	if v.OrchestratorOpts != nil {
+		res.OrchestratorOpts = marshalControlplaneOrchestratorOptsToOrchestratorOptsResponseBody(v.OrchestratorOpts)
 	}
 
 	return res
@@ -3004,6 +3058,44 @@ func marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecResponseBody
 	return res
 }
 
+// marshalControlplaneOrchestratorOptsToOrchestratorOptsResponseBody builds a
+// value of type *OrchestratorOptsResponseBody from a value of type
+// *controlplane.OrchestratorOpts.
+func marshalControlplaneOrchestratorOptsToOrchestratorOptsResponseBody(v *controlplane.OrchestratorOpts) *OrchestratorOptsResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &OrchestratorOptsResponseBody{}
+	if v.Swarm != nil {
+		res.Swarm = marshalControlplaneSwarmOptsToSwarmOptsResponseBody(v.Swarm)
+	}
+
+	return res
+}
+
+// marshalControlplaneSwarmOptsToSwarmOptsResponseBody builds a value of type
+// *SwarmOptsResponseBody from a value of type *controlplane.SwarmOpts.
+func marshalControlplaneSwarmOptsToSwarmOptsResponseBody(v *controlplane.SwarmOpts) *SwarmOptsResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &SwarmOptsResponseBody{}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*ExtraVolumesSpecResponseBody, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = marshalControlplaneExtraVolumesSpecToExtraVolumesSpecResponseBody(val)
+		}
+	}
+	if v.ExtraNetworks != nil {
+		res.ExtraNetworks = make([]*ExtraNetworkSpecResponseBody, len(v.ExtraNetworks))
+		for i, val := range v.ExtraNetworks {
+			res.ExtraNetworks[i] = marshalControlplaneExtraNetworkSpecToExtraNetworkSpecResponseBody(val)
+		}
+	}
+
+	return res
+}
+
 // marshalControlplaneExtraVolumesSpecToExtraVolumesSpecResponseBody builds a
 // value of type *ExtraVolumesSpecResponseBody from a value of type
 // *controlplane.ExtraVolumesSpec.
@@ -3014,6 +3106,34 @@ func marshalControlplaneExtraVolumesSpecToExtraVolumesSpecResponseBody(v *contro
 	res := &ExtraVolumesSpecResponseBody{
 		HostPath:        v.HostPath,
 		DestinationPath: v.DestinationPath,
+	}
+
+	return res
+}
+
+// marshalControlplaneExtraNetworkSpecToExtraNetworkSpecResponseBody builds a
+// value of type *ExtraNetworkSpecResponseBody from a value of type
+// *controlplane.ExtraNetworkSpec.
+func marshalControlplaneExtraNetworkSpecToExtraNetworkSpecResponseBody(v *controlplane.ExtraNetworkSpec) *ExtraNetworkSpecResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &ExtraNetworkSpecResponseBody{
+		ID: v.ID,
+	}
+	if v.Aliases != nil {
+		res.Aliases = make([]string, len(v.Aliases))
+		for i, val := range v.Aliases {
+			res.Aliases[i] = val
+		}
+	}
+	if v.DriverOpts != nil {
+		res.DriverOpts = make(map[string]string, len(v.DriverOpts))
+		for key, val := range v.DriverOpts {
+			tk := key
+			tv := val
+			res.DriverOpts[tk] = tv
+		}
 	}
 
 	return res
@@ -3191,11 +3311,8 @@ func marshalControlplaneviewsDatabaseSpecViewToDatabaseSpecResponseBody(v *contr
 			res.PostgresqlConf[tk] = tv
 		}
 	}
-	if v.ExtraVolumes != nil {
-		res.ExtraVolumes = make([]*ExtraVolumesSpecResponseBody, len(v.ExtraVolumes))
-		for i, val := range v.ExtraVolumes {
-			res.ExtraVolumes[i] = marshalControlplaneviewsExtraVolumesSpecViewToExtraVolumesSpecResponseBody(val)
-		}
+	if v.OrchestratorOpts != nil {
+		res.OrchestratorOpts = marshalControlplaneviewsOrchestratorOptsViewToOrchestratorOptsResponseBody(v.OrchestratorOpts)
 	}
 
 	return res
@@ -3234,11 +3351,8 @@ func marshalControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpecResponseBody(
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = marshalControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpecResponseBody(v.RestoreConfig)
 	}
-	if v.ExtraVolumes != nil {
-		res.ExtraVolumes = make([]*ExtraVolumesSpecResponseBody, len(v.ExtraVolumes))
-		for i, val := range v.ExtraVolumes {
-			res.ExtraVolumes[i] = marshalControlplaneviewsExtraVolumesSpecViewToExtraVolumesSpecResponseBody(val)
-		}
+	if v.OrchestratorOpts != nil {
+		res.OrchestratorOpts = marshalControlplaneviewsOrchestratorOptsViewToOrchestratorOptsResponseBody(v.OrchestratorOpts)
 	}
 
 	return res
@@ -3387,6 +3501,45 @@ func marshalControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpecRes
 	return res
 }
 
+// marshalControlplaneviewsOrchestratorOptsViewToOrchestratorOptsResponseBody
+// builds a value of type *OrchestratorOptsResponseBody from a value of type
+// *controlplaneviews.OrchestratorOptsView.
+func marshalControlplaneviewsOrchestratorOptsViewToOrchestratorOptsResponseBody(v *controlplaneviews.OrchestratorOptsView) *OrchestratorOptsResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &OrchestratorOptsResponseBody{}
+	if v.Swarm != nil {
+		res.Swarm = marshalControlplaneviewsSwarmOptsViewToSwarmOptsResponseBody(v.Swarm)
+	}
+
+	return res
+}
+
+// marshalControlplaneviewsSwarmOptsViewToSwarmOptsResponseBody builds a value
+// of type *SwarmOptsResponseBody from a value of type
+// *controlplaneviews.SwarmOptsView.
+func marshalControlplaneviewsSwarmOptsViewToSwarmOptsResponseBody(v *controlplaneviews.SwarmOptsView) *SwarmOptsResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &SwarmOptsResponseBody{}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*ExtraVolumesSpecResponseBody, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = marshalControlplaneviewsExtraVolumesSpecViewToExtraVolumesSpecResponseBody(val)
+		}
+	}
+	if v.ExtraNetworks != nil {
+		res.ExtraNetworks = make([]*ExtraNetworkSpecResponseBody, len(v.ExtraNetworks))
+		for i, val := range v.ExtraNetworks {
+			res.ExtraNetworks[i] = marshalControlplaneviewsExtraNetworkSpecViewToExtraNetworkSpecResponseBody(val)
+		}
+	}
+
+	return res
+}
+
 // marshalControlplaneviewsExtraVolumesSpecViewToExtraVolumesSpecResponseBody
 // builds a value of type *ExtraVolumesSpecResponseBody from a value of type
 // *controlplaneviews.ExtraVolumesSpecView.
@@ -3397,6 +3550,34 @@ func marshalControlplaneviewsExtraVolumesSpecViewToExtraVolumesSpecResponseBody(
 	res := &ExtraVolumesSpecResponseBody{
 		HostPath:        *v.HostPath,
 		DestinationPath: *v.DestinationPath,
+	}
+
+	return res
+}
+
+// marshalControlplaneviewsExtraNetworkSpecViewToExtraNetworkSpecResponseBody
+// builds a value of type *ExtraNetworkSpecResponseBody from a value of type
+// *controlplaneviews.ExtraNetworkSpecView.
+func marshalControlplaneviewsExtraNetworkSpecViewToExtraNetworkSpecResponseBody(v *controlplaneviews.ExtraNetworkSpecView) *ExtraNetworkSpecResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &ExtraNetworkSpecResponseBody{
+		ID: *v.ID,
+	}
+	if v.Aliases != nil {
+		res.Aliases = make([]string, len(v.Aliases))
+		for i, val := range v.Aliases {
+			res.Aliases[i] = val
+		}
+	}
+	if v.DriverOpts != nil {
+		res.DriverOpts = make(map[string]string, len(v.DriverOpts))
+		for key, val := range v.DriverOpts {
+			tk := key
+			tv := val
+			res.DriverOpts[tk] = tv
+		}
 	}
 
 	return res
@@ -3466,11 +3647,8 @@ func unmarshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Da
 			res.PostgresqlConf[tk] = tv
 		}
 	}
-	if v.ExtraVolumes != nil {
-		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
-		for i, val := range v.ExtraVolumes {
-			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecRequestBodyRequestBodyToControlplaneExtraVolumesSpec(val)
-		}
+	if v.OrchestratorOpts != nil {
+		res.OrchestratorOpts = unmarshalOrchestratorOptsRequestBodyRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
 	}
 
 	return res
@@ -3505,11 +3683,8 @@ func unmarshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSp
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = unmarshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSpec(v.RestoreConfig)
 	}
-	if v.ExtraVolumes != nil {
-		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
-		for i, val := range v.ExtraVolumes {
-			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecRequestBodyRequestBodyToControlplaneExtraVolumesSpec(val)
-		}
+	if v.OrchestratorOpts != nil {
+		res.OrchestratorOpts = unmarshalOrchestratorOptsRequestBodyRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
 	}
 
 	return res
@@ -3652,6 +3827,45 @@ func unmarshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRe
 	return res
 }
 
+// unmarshalOrchestratorOptsRequestBodyRequestBodyToControlplaneOrchestratorOpts
+// builds a value of type *controlplane.OrchestratorOpts from a value of type
+// *OrchestratorOptsRequestBodyRequestBody.
+func unmarshalOrchestratorOptsRequestBodyRequestBodyToControlplaneOrchestratorOpts(v *OrchestratorOptsRequestBodyRequestBody) *controlplane.OrchestratorOpts {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.OrchestratorOpts{}
+	if v.Swarm != nil {
+		res.Swarm = unmarshalSwarmOptsRequestBodyRequestBodyToControlplaneSwarmOpts(v.Swarm)
+	}
+
+	return res
+}
+
+// unmarshalSwarmOptsRequestBodyRequestBodyToControlplaneSwarmOpts builds a
+// value of type *controlplane.SwarmOpts from a value of type
+// *SwarmOptsRequestBodyRequestBody.
+func unmarshalSwarmOptsRequestBodyRequestBodyToControlplaneSwarmOpts(v *SwarmOptsRequestBodyRequestBody) *controlplane.SwarmOpts {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.SwarmOpts{}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*controlplane.ExtraVolumesSpec, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = unmarshalExtraVolumesSpecRequestBodyRequestBodyToControlplaneExtraVolumesSpec(val)
+		}
+	}
+	if v.ExtraNetworks != nil {
+		res.ExtraNetworks = make([]*controlplane.ExtraNetworkSpec, len(v.ExtraNetworks))
+		for i, val := range v.ExtraNetworks {
+			res.ExtraNetworks[i] = unmarshalExtraNetworkSpecRequestBodyRequestBodyToControlplaneExtraNetworkSpec(val)
+		}
+	}
+
+	return res
+}
+
 // unmarshalExtraVolumesSpecRequestBodyRequestBodyToControlplaneExtraVolumesSpec
 // builds a value of type *controlplane.ExtraVolumesSpec from a value of type
 // *ExtraVolumesSpecRequestBodyRequestBody.
@@ -3662,6 +3876,34 @@ func unmarshalExtraVolumesSpecRequestBodyRequestBodyToControlplaneExtraVolumesSp
 	res := &controlplane.ExtraVolumesSpec{
 		HostPath:        *v.HostPath,
 		DestinationPath: *v.DestinationPath,
+	}
+
+	return res
+}
+
+// unmarshalExtraNetworkSpecRequestBodyRequestBodyToControlplaneExtraNetworkSpec
+// builds a value of type *controlplane.ExtraNetworkSpec from a value of type
+// *ExtraNetworkSpecRequestBodyRequestBody.
+func unmarshalExtraNetworkSpecRequestBodyRequestBodyToControlplaneExtraNetworkSpec(v *ExtraNetworkSpecRequestBodyRequestBody) *controlplane.ExtraNetworkSpec {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.ExtraNetworkSpec{
+		ID: *v.ID,
+	}
+	if v.Aliases != nil {
+		res.Aliases = make([]string, len(v.Aliases))
+		for i, val := range v.Aliases {
+			res.Aliases[i] = val
+		}
+	}
+	if v.DriverOpts != nil {
+		res.DriverOpts = make(map[string]string, len(v.DriverOpts))
+		for key, val := range v.DriverOpts {
+			tk := key
+			tv := val
+			res.DriverOpts[tk] = tv
+		}
 	}
 
 	return res

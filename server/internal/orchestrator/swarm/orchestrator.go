@@ -36,6 +36,10 @@ import (
 
 var defaultVersion = host.MustPgEdgeVersion("17", "4")
 
+const (
+	OverlayDriver = "overlay"
+)
+
 // TODO: What should this look like?
 var allVersions = []*host.PgEdgeVersion{
 	defaultVersion,
@@ -175,7 +179,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 	databaseNetwork := &Network{
 		CohortID:  o.swarmID,
 		Scope:     "swarm",
-		Driver:    "overlay",
+		Driver:    OverlayDriver,
 		Name:      fmt.Sprintf("%s-database", spec.DatabaseID),
 		Allocator: o.dbNetworkAllocator,
 	}
@@ -480,8 +484,13 @@ func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, specs []*datab
 }
 
 func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.InstanceSpec, result *database.ValidationResult) error {
+	orchestratorOpts := spec.OrchestratorOpts
+
 	// Short-circuit if there's nothing to validate
-	if len(spec.ExtraVolumes) < 1 && spec.Port == 0 {
+	if orchestratorOpts == nil || orchestratorOpts.Swarm == nil ||
+		(len(orchestratorOpts.Swarm.ExtraVolumes) == 0 &&
+			len(orchestratorOpts.Swarm.ExtraNetworks) == 0 &&
+			spec.Port == 0) {
 		return nil
 	}
 
@@ -495,18 +504,28 @@ func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.
 	if err != nil {
 		return fmt.Errorf("image fetch error: %w", err)
 	}
+	var endpointConfigs map[string]*network.EndpointSettings
+	if len(orchestratorOpts.Swarm.ExtraNetworks) > 0 {
+		endpointConfigs, err = ensureNetworks(ctx, o.docker, orchestratorOpts.Swarm.ExtraNetworks)
+		if err != nil {
+			result.Valid = false
+			result.Errors = append(result.Errors, fmt.Sprintf("network validation failed: %v", err))
+			return nil
+		}
+	}
 
 	var mounts []mount.Mount
 	var mountTargets []string
-	for _, vol := range spec.ExtraVolumes {
+	for _, vol := range orchestratorOpts.Swarm.ExtraVolumes {
 		mounts = append(mounts, docker.BuildMount(vol.HostPath, vol.DestinationPath, false))
 		mountTargets = append(mountTargets, vol.DestinationPath)
 	}
 
 	cmd := buildVolumeCheckCommand(mountTargets)
-	output, err := o.runValidationContainer(ctx, images.PgEdgeImage, cmd, mounts, spec.Port)
+	output, err := o.runValidationContainer(ctx, images.PgEdgeImage, cmd, mounts, spec.Port, endpointConfigs)
 	bindMsg := docker.ExtractBindMountErrorMsg(err)
 	portMsg := docker.ExtractPortErrorMsg(err)
+	networkMsg := docker.ExtractNetworkErrorMsg(err)
 	switch {
 	case bindMsg != "":
 		result.Valid = false
@@ -514,6 +533,9 @@ func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.
 	case portMsg != "":
 		result.Valid = false
 		result.Errors = append(result.Errors, portMsg)
+	case networkMsg != "":
+		result.Valid = false
+		result.Errors = append(result.Errors, networkMsg)
 	case err != nil:
 		return err
 	case len(output) > 0:
@@ -524,9 +546,10 @@ func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.
 	return nil
 }
 
-func (o *Orchestrator) runValidationContainer(ctx context.Context, image string, cmd []string, mounts []mount.Mount, port int) (string, error) {
+func (o *Orchestrator) runValidationContainer(ctx context.Context, image string, cmd []string, mounts []mount.Mount, port int,
+	endpoints map[string]*network.EndpointSettings) (string, error) {
 	// Start container
-	containerID, err := o.docker.ContainerRun(ctx, validationContainerOpts(image, cmd, mounts, port))
+	containerID, err := o.docker.ContainerRun(ctx, validationContainerOpts(image, cmd, mounts, port, endpoints))
 	if err != nil {
 		return "", fmt.Errorf("failed to start container: %w", err)
 	}
@@ -557,7 +580,7 @@ func (o *Orchestrator) runValidationContainer(ctx context.Context, image string,
 	return strings.TrimSpace(buf.String()), nil
 }
 
-func validationContainerOpts(image string, cmd []string, mounts []mount.Mount, port int) docker.ContainerRunOptions {
+func validationContainerOpts(image string, cmd []string, mounts []mount.Mount, port int, endpoints map[string]*network.EndpointSettings) docker.ContainerRunOptions {
 	opts := docker.ContainerRunOptions{
 		Config: &container.Config{
 			Image:      image,
@@ -584,6 +607,12 @@ func validationContainerOpts(image string, cmd []string, mounts []mount.Mount, p
 		opts.Config.ExposedPorts = portSet
 		opts.Host.PortBindings = portMap
 	}
+	if len(endpoints) > 0 {
+		opts.Net = &network.NetworkingConfig{
+			EndpointsConfig: endpoints,
+		}
+	}
+
 	return opts
 }
 
@@ -601,4 +630,35 @@ func buildVolumeCheckCommand(mountTargets []string) []string {
 	}
 
 	return []string{"sh", "-c", fmt.Sprintf(cmdTemplate, strings.Join(mountTargets, " "))}
+}
+func ensureNetworks(
+	ctx context.Context,
+	docker *docker.Docker,
+	networks []database.ExtraNetworkSpec,
+) (map[string]*network.EndpointSettings, error) {
+
+	endpointConfigs := make(map[string]*network.EndpointSettings)
+
+	for _, net := range networks {
+		// Try to inspect the network
+		info, err := docker.NetworkInspect(ctx, net.ID, network.InspectOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to inspect network %q: %w", net.ID, err)
+		}
+
+		if info.Scope != "swarm" {
+			return nil, fmt.Errorf("network %q must have scope 'swarm', got '%s'", net.ID, info.Scope)
+		}
+
+		if !info.Attachable {
+			return nil, fmt.Errorf("network %q is not attachable; must be created with --attachable", net.ID)
+		}
+
+		// Register the endpoint config (excluding DriverOpts here, as they're not used at this stage)
+		endpointConfigs[net.ID] = &network.EndpointSettings{
+			Aliases: net.Aliases,
+		}
+	}
+
+	return endpointConfigs, nil
 }

@@ -86,10 +86,20 @@ func TestSpec(t *testing.T) {
 		PostgreSQLConf: map[string]any{
 			"max_connections": 1000,
 		},
-		ExtraVolumes: []database.ExtraVolumesSpec{
-			{
-				HostPath:        "/mnt/backups",
-				DestinationPath: "/backups",
+		OrchestratorOpts: &database.OrchestratorOpts{
+			Swarm: &database.SwarmOpts{
+				ExtraVolumes: []database.ExtraVolumesSpec{
+					{
+						HostPath:        "/mnt/backups",
+						DestinationPath: "/backups",
+					},
+				},
+				ExtraNetworks: []database.ExtraNetworkSpec{
+					{
+						ID:      "node-network-n1",
+						Aliases: []string{"n1-alias"},
+					},
+				},
 			},
 		},
 	}

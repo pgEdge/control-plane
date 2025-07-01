@@ -1105,7 +1105,7 @@ definitions:
                     key: value
                 additionalProperties:
                     type: string
-                    example: Placeat illo dolore totam accusamus alias ipsa.
+                    example: Et aut aut.
             backup_options:
                 type: object
                 description: Options for the backup.
@@ -1113,7 +1113,7 @@ definitions:
                     archive-check: "n"
                 additionalProperties:
                     type: string
-                    example: Ut et aut aut doloribus rem.
+                    example: Rem culpa.
             type:
                 type: string
                 description: The type of backup.
@@ -1567,7 +1567,7 @@ definitions:
             state:
                 type: string
                 description: Current state of the database.
-                example: unknown
+                example: available
                 enum:
                     - creating
                     - modifying
@@ -1942,19 +1942,6 @@ definitions:
                 description: The number of CPUs to allocate for the database on this node and to use for tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Cannot allocate units smaller than 1m. Defaults to the number of available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs than are available on the host. Whether this limit is enforced depends on the orchestrator.
                 example: 500m
                 pattern: ^[0-9]+(\.[0-9]{1,3}|m)?$
-            extra_volumes:
-                type: array
-                items:
-                    $ref: '#/definitions/ExtraVolumesSpec'
-                description: Optional list of external volumes to mount for this node only.
-                example:
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                maxItems: 16
             host_ids:
                 type: array
                 items:
@@ -1978,6 +1965,8 @@ definitions:
                 description: The name of the database node.
                 example: n1
                 pattern: n[0-9]+
+            orchestrator_opts:
+                $ref: '#/definitions/OrchestratorOpts'
             port:
                 type: integer
                 description: The port used by the Postgres database for this node. Overrides the Postgres port set in the DatabaseSpec.
@@ -2055,19 +2044,40 @@ definitions:
                       id: daily-full-backup
                       type: full
             cpus: 500m
-            extra_volumes:
-                - destination_path: /backups/container
-                  host_path: /Users/user/backups/host
-                - destination_path: /backups/container
-                  host_path: /Users/user/backups/host
-                - destination_path: /backups/container
-                  host_path: /Users/user/backups/host
             host_ids:
                 - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                 - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                 - de3b1388-1f0c-42f1-a86c-59ab72f255ec
             memory: 500M
             name: n1
+            orchestrator_opts:
+                swarm:
+                    extra_networks:
+                        - aliases:
+                            - pg-db
+                            - db-alias
+                          driver_opts:
+                            com.docker.network.endpoint.expose: "true"
+                          id: traefik-public
+                        - aliases:
+                            - pg-db
+                            - db-alias
+                          driver_opts:
+                            com.docker.network.endpoint.expose: "true"
+                          id: traefik-public
+                        - aliases:
+                            - pg-db
+                            - db-alias
+                          driver_opts:
+                            com.docker.network.endpoint.expose: "true"
+                          id: traefik-public
+                    extra_volumes:
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
             port: 5432
             postgres_version: "17"
             postgresql_conf:
@@ -2269,7 +2279,7 @@ definitions:
                         - LOGIN
                         - CREATEDB
                         - CREATEROLE
-                      db_owner: false
+                      db_owner: true
                       password: secret
                       roles:
                         - pgedge_superuser
@@ -2278,7 +2288,7 @@ definitions:
                         - LOGIN
                         - CREATEDB
                         - CREATEROLE
-                      db_owner: false
+                      db_owner: true
                       password: secret
                       roles:
                         - pgedge_superuser
@@ -2287,24 +2297,11 @@ definitions:
                         - LOGIN
                         - CREATEDB
                         - CREATEROLE
-                      db_owner: false
+                      db_owner: true
                       password: secret
                       roles:
                         - pgedge_superuser
                       username: admin
-                maxItems: 16
-            extra_volumes:
-                type: array
-                items:
-                    $ref: '#/definitions/ExtraVolumesSpec'
-                description: A list of extra volumes to mount. Each entry defines a host and container path.
-                example:
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
                 maxItems: 16
             memory:
                 type: string
@@ -2370,17 +2367,38 @@ definitions:
                               id: daily-full-backup
                               type: full
                       cpus: 500m
-                      extra_volumes:
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
                       host_ids:
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M
                       name: n1
+                      orchestrator_opts:
+                        swarm:
+                            extra_networks:
+                                - aliases:
+                                    - pg-db
+                                    - db-alias
+                                  driver_opts:
+                                    com.docker.network.endpoint.expose: "true"
+                                  id: traefik-public
+                                - aliases:
+                                    - pg-db
+                                    - db-alias
+                                  driver_opts:
+                                    com.docker.network.endpoint.expose: "true"
+                                  id: traefik-public
+                                - aliases:
+                                    - pg-db
+                                    - db-alias
+                                  driver_opts:
+                                    com.docker.network.endpoint.expose: "true"
+                                  id: traefik-public
+                            extra_volumes:
+                                - destination_path: /backups/container
+                                  host_path: /Users/user/backups/host
+                                - destination_path: /backups/container
+                                  host_path: /Users/user/backups/host
+                                - destination_path: /backups/container
+                                  host_path: /Users/user/backups/host
                       port: 5432
                       postgres_version: "17"
                       postgresql_conf:
@@ -2464,17 +2482,38 @@ definitions:
                               id: daily-full-backup
                               type: full
                       cpus: 500m
-                      extra_volumes:
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
                       host_ids:
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M
                       name: n1
+                      orchestrator_opts:
+                        swarm:
+                            extra_networks:
+                                - aliases:
+                                    - pg-db
+                                    - db-alias
+                                  driver_opts:
+                                    com.docker.network.endpoint.expose: "true"
+                                  id: traefik-public
+                                - aliases:
+                                    - pg-db
+                                    - db-alias
+                                  driver_opts:
+                                    com.docker.network.endpoint.expose: "true"
+                                  id: traefik-public
+                                - aliases:
+                                    - pg-db
+                                    - db-alias
+                                  driver_opts:
+                                    com.docker.network.endpoint.expose: "true"
+                                  id: traefik-public
+                            extra_volumes:
+                                - destination_path: /backups/container
+                                  host_path: /Users/user/backups/host
+                                - destination_path: /backups/container
+                                  host_path: /Users/user/backups/host
+                                - destination_path: /backups/container
+                                  host_path: /Users/user/backups/host
                       port: 5432
                       postgres_version: "17"
                       postgresql_conf:
@@ -2558,17 +2597,38 @@ definitions:
                               id: daily-full-backup
                               type: full
                       cpus: 500m
-                      extra_volumes:
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
-                        - destination_path: /backups/container
-                          host_path: /Users/user/backups/host
                       host_ids:
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M
                       name: n1
+                      orchestrator_opts:
+                        swarm:
+                            extra_networks:
+                                - aliases:
+                                    - pg-db
+                                    - db-alias
+                                  driver_opts:
+                                    com.docker.network.endpoint.expose: "true"
+                                  id: traefik-public
+                                - aliases:
+                                    - pg-db
+                                    - db-alias
+                                  driver_opts:
+                                    com.docker.network.endpoint.expose: "true"
+                                  id: traefik-public
+                                - aliases:
+                                    - pg-db
+                                    - db-alias
+                                  driver_opts:
+                                    com.docker.network.endpoint.expose: "true"
+                                  id: traefik-public
+                            extra_volumes:
+                                - destination_path: /backups/container
+                                  host_path: /Users/user/backups/host
+                                - destination_path: /backups/container
+                                  host_path: /Users/user/backups/host
+                                - destination_path: /backups/container
+                                  host_path: /Users/user/backups/host
                       port: 5432
                       postgres_version: "17"
                       postgresql_conf:
@@ -2601,6 +2661,8 @@ definitions:
                         source_node_name: n1
                 minItems: 1
                 maxItems: 9
+            orchestrator_opts:
+                $ref: '#/definitions/OrchestratorOpts'
             port:
                 type: integer
                 description: The port used by the Postgres database.
@@ -2691,7 +2753,7 @@ definitions:
                     - LOGIN
                     - CREATEDB
                     - CREATEROLE
-                  db_owner: false
+                  db_owner: true
                   password: secret
                   roles:
                     - pgedge_superuser
@@ -2700,7 +2762,7 @@ definitions:
                     - LOGIN
                     - CREATEDB
                     - CREATEROLE
-                  db_owner: false
+                  db_owner: true
                   password: secret
                   roles:
                     - pgedge_superuser
@@ -2709,18 +2771,11 @@ definitions:
                     - LOGIN
                     - CREATEDB
                     - CREATEROLE
-                  db_owner: false
+                  db_owner: true
                   password: secret
                   roles:
                     - pgedge_superuser
                   username: admin
-            extra_volumes:
-                - destination_path: /backups/container
-                  host_path: /Users/user/backups/host
-                - destination_path: /backups/container
-                  host_path: /Users/user/backups/host
-                - destination_path: /backups/container
-                  host_path: /Users/user/backups/host
             memory: 500M
             nodes:
                 - backup_config:
@@ -2776,17 +2831,38 @@ definitions:
                           id: daily-full-backup
                           type: full
                   cpus: 500m
-                  extra_volumes:
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
                   host_ids:
                     - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   memory: 500M
                   name: n1
+                  orchestrator_opts:
+                    swarm:
+                        extra_networks:
+                            - aliases:
+                                - pg-db
+                                - db-alias
+                              driver_opts:
+                                com.docker.network.endpoint.expose: "true"
+                              id: traefik-public
+                            - aliases:
+                                - pg-db
+                                - db-alias
+                              driver_opts:
+                                com.docker.network.endpoint.expose: "true"
+                              id: traefik-public
+                            - aliases:
+                                - pg-db
+                                - db-alias
+                              driver_opts:
+                                com.docker.network.endpoint.expose: "true"
+                              id: traefik-public
+                        extra_volumes:
+                            - destination_path: /backups/container
+                              host_path: /Users/user/backups/host
+                            - destination_path: /backups/container
+                              host_path: /Users/user/backups/host
+                            - destination_path: /backups/container
+                              host_path: /Users/user/backups/host
                   port: 5432
                   postgres_version: "17"
                   postgresql_conf:
@@ -2817,6 +2893,264 @@ definitions:
                     source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                     source_database_name: northwind
                     source_node_name: n1
+                - backup_config:
+                    repositories:
+                        - azure_account: pgedge-backups
+                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          azure_endpoint: blob.core.usgovcloudapi.net
+                          azure_key: YXpLZXk=
+                          base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
+                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          gcs_endpoint: localhost
+                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                          retention_full: 2
+                          retention_full_type: count
+                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          s3_endpoint: s3.us-east-1.amazonaws.com
+                          s3_key: AKIAIOSFODNN7EXAMPLE
+                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                          s3_region: us-east-1
+                          type: s3
+                        - azure_account: pgedge-backups
+                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          azure_endpoint: blob.core.usgovcloudapi.net
+                          azure_key: YXpLZXk=
+                          base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
+                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          gcs_endpoint: localhost
+                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                          retention_full: 2
+                          retention_full_type: count
+                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          s3_endpoint: s3.us-east-1.amazonaws.com
+                          s3_key: AKIAIOSFODNN7EXAMPLE
+                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                          s3_region: us-east-1
+                          type: s3
+                    schedules:
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                  cpus: 500m
+                  host_ids:
+                    - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  memory: 500M
+                  name: n1
+                  orchestrator_opts:
+                    swarm:
+                        extra_networks:
+                            - aliases:
+                                - pg-db
+                                - db-alias
+                              driver_opts:
+                                com.docker.network.endpoint.expose: "true"
+                              id: traefik-public
+                            - aliases:
+                                - pg-db
+                                - db-alias
+                              driver_opts:
+                                com.docker.network.endpoint.expose: "true"
+                              id: traefik-public
+                            - aliases:
+                                - pg-db
+                                - db-alias
+                              driver_opts:
+                                com.docker.network.endpoint.expose: "true"
+                              id: traefik-public
+                        extra_volumes:
+                            - destination_path: /backups/container
+                              host_path: /Users/user/backups/host
+                            - destination_path: /backups/container
+                              host_path: /Users/user/backups/host
+                            - destination_path: /backups/container
+                              host_path: /Users/user/backups/host
+                  port: 5432
+                  postgres_version: "17"
+                  postgresql_conf:
+                    max_connections: 1000
+                  restore_config:
+                    repository:
+                        azure_account: pgedge-backups
+                        azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                        azure_endpoint: blob.core.usgovcloudapi.net
+                        azure_key: YXpLZXk=
+                        base_path: /backups
+                        custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                        gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                        gcs_endpoint: localhost
+                        gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                        id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                        s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                        s3_endpoint: s3.us-east-1.amazonaws.com
+                        s3_key: AKIAIOSFODNN7EXAMPLE
+                        s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                        s3_region: us-east-1
+                        type: s3
+                    restore_options:
+                        set: 20250505-153628F
+                        target: "123456"
+                        type: xid
+                    source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+                    source_database_name: northwind
+                    source_node_name: n1
+                - backup_config:
+                    repositories:
+                        - azure_account: pgedge-backups
+                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          azure_endpoint: blob.core.usgovcloudapi.net
+                          azure_key: YXpLZXk=
+                          base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
+                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          gcs_endpoint: localhost
+                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                          retention_full: 2
+                          retention_full_type: count
+                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          s3_endpoint: s3.us-east-1.amazonaws.com
+                          s3_key: AKIAIOSFODNN7EXAMPLE
+                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                          s3_region: us-east-1
+                          type: s3
+                        - azure_account: pgedge-backups
+                          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          azure_endpoint: blob.core.usgovcloudapi.net
+                          azure_key: YXpLZXk=
+                          base_path: /backups
+                          custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                            storage-upload-chunk-size: 5MiB
+                          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          gcs_endpoint: localhost
+                          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                          id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                          retention_full: 2
+                          retention_full_type: count
+                          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                          s3_endpoint: s3.us-east-1.amazonaws.com
+                          s3_key: AKIAIOSFODNN7EXAMPLE
+                          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                          s3_region: us-east-1
+                          type: s3
+                    schedules:
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                        - cron_expression: 0 6 * * ?
+                          id: daily-full-backup
+                          type: full
+                  cpus: 500m
+                  host_ids:
+                    - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  memory: 500M
+                  name: n1
+                  orchestrator_opts:
+                    swarm:
+                        extra_networks:
+                            - aliases:
+                                - pg-db
+                                - db-alias
+                              driver_opts:
+                                com.docker.network.endpoint.expose: "true"
+                              id: traefik-public
+                            - aliases:
+                                - pg-db
+                                - db-alias
+                              driver_opts:
+                                com.docker.network.endpoint.expose: "true"
+                              id: traefik-public
+                            - aliases:
+                                - pg-db
+                                - db-alias
+                              driver_opts:
+                                com.docker.network.endpoint.expose: "true"
+                              id: traefik-public
+                        extra_volumes:
+                            - destination_path: /backups/container
+                              host_path: /Users/user/backups/host
+                            - destination_path: /backups/container
+                              host_path: /Users/user/backups/host
+                            - destination_path: /backups/container
+                              host_path: /Users/user/backups/host
+                  port: 5432
+                  postgres_version: "17"
+                  postgresql_conf:
+                    max_connections: 1000
+                  restore_config:
+                    repository:
+                        azure_account: pgedge-backups
+                        azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                        azure_endpoint: blob.core.usgovcloudapi.net
+                        azure_key: YXpLZXk=
+                        base_path: /backups
+                        custom_options:
+                            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                        gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                        gcs_endpoint: localhost
+                        gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                        id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                        s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                        s3_endpoint: s3.us-east-1.amazonaws.com
+                        s3_key: AKIAIOSFODNN7EXAMPLE
+                        s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                        s3_region: us-east-1
+                        type: s3
+                    restore_options:
+                        set: 20250505-153628F
+                        target: "123456"
+                        type: xid
+                    source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+                    source_database_name: northwind
+                    source_node_name: n1
+            orchestrator_opts:
+                swarm:
+                    extra_networks:
+                        - aliases:
+                            - pg-db
+                            - db-alias
+                          driver_opts:
+                            com.docker.network.endpoint.expose: "true"
+                          id: traefik-public
+                        - aliases:
+                            - pg-db
+                            - db-alias
+                          driver_opts:
+                            com.docker.network.endpoint.expose: "true"
+                          id: traefik-public
+                        - aliases:
+                            - pg-db
+                            - db-alias
+                          driver_opts:
+                            com.docker.network.endpoint.expose: "true"
+                          id: traefik-public
+                    extra_volumes:
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
+                        - destination_path: /backups/container
+                          host_path: /Users/user/backups/host
             port: 5432
             postgres_version: "17"
             postgresql_conf:
@@ -2859,7 +3193,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Aut omnis magnam aspernatur occaecati itaque dolores.
+                    example: At praesentium ut dolorem sapiente.
                 description: The attributes to assign to this database user.
                 example:
                     - LOGIN
@@ -2879,7 +3213,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Dolor autem eum.
+                    example: Illo dolore.
                 description: The roles to assign to this database user.
                 example:
                     - pgedge_superuser
@@ -2916,6 +3250,42 @@ definitions:
                 type: delete
         required:
             - task
+    ExtraNetworkSpec:
+        title: ExtraNetworkSpec
+        type: object
+        properties:
+            aliases:
+                type: array
+                items:
+                    type: string
+                    example: Sit voluptates maxime.
+                description: Optional network-scoped aliases for the container.
+                example:
+                    - pg-db
+                    - db-alias
+                maxItems: 8
+            driver_opts:
+                type: object
+                description: Optional driver options for the network connection.
+                example:
+                    com.docker.network.endpoint.expose: "true"
+                additionalProperties:
+                    type: string
+                    example: Aut omnis magnam aspernatur occaecati itaque dolores.
+            id:
+                type: string
+                description: The name or ID of the network to connect to.
+                example: traefik-public
+        description: Describes an additional Docker network to attach the container to.
+        example:
+            aliases:
+                - pg-db
+                - db-alias
+            driver_opts:
+                com.docker.network.endpoint.expose: "true"
+            id: traefik-public
+        required:
+            - id
     ExtraVolumesSpec:
         title: ExtraVolumesSpec
         type: object
@@ -3647,6 +4017,41 @@ definitions:
                       state: available
                   state: available
                   updated_at: "2025-06-12T15:10:05Z"
+    OrchestratorOpts:
+        title: OrchestratorOpts
+        type: object
+        properties:
+            swarm:
+                $ref: '#/definitions/SwarmOpts'
+        description: Options specific to the selected orchestrator.
+        example:
+            swarm:
+                extra_networks:
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                extra_volumes:
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
     PgEdgeVersion:
         title: PgEdgeVersion
         type: object
@@ -3752,7 +4157,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Eos et sunt.
+                    example: Et sunt culpa.
                 description: The nodes to restore. Defaults to all nodes if empty or unspecified.
                 example:
                     - n1
@@ -3781,12 +4186,6 @@ definitions:
                     $ref: '#/definitions/Task'
                 description: The tasks that will restore each database node.
                 example:
-                    - completed_at: "2025-06-18T16:52:35Z"
-                      created_at: "2025-06-18T16:52:05Z"
-                      database_id: storefront
-                      status: completed
-                      task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
-                      type: create
                     - completed_at: "2025-06-18T16:52:35Z"
                       created_at: "2025-06-18T16:52:05Z"
                       database_id: storefront
@@ -4064,6 +4463,76 @@ definitions:
             type: s3
         required:
             - type
+    SwarmOpts:
+        title: SwarmOpts
+        type: object
+        properties:
+            extra_networks:
+                type: array
+                items:
+                    $ref: '#/definitions/ExtraNetworkSpec'
+                description: A list of additional Docker Swarm networks to attach containers in this database to.
+                example:
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                maxItems: 8
+            extra_volumes:
+                type: array
+                items:
+                    $ref: '#/definitions/ExtraVolumesSpec'
+                description: A list of extra volumes to mount. Each entry defines a host and container path.
+                example:
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+                maxItems: 16
+        description: Docker Swarm-specific options.
+        example:
+            extra_networks:
+                - aliases:
+                    - pg-db
+                    - db-alias
+                  driver_opts:
+                    com.docker.network.endpoint.expose: "true"
+                  id: traefik-public
+                - aliases:
+                    - pg-db
+                    - db-alias
+                  driver_opts:
+                    com.docker.network.endpoint.expose: "true"
+                  id: traefik-public
+                - aliases:
+                    - pg-db
+                    - db-alias
+                  driver_opts:
+                    com.docker.network.endpoint.expose: "true"
+                  id: traefik-public
+            extra_volumes:
+                - destination_path: /backups/container
+                  host_path: /Users/user/backups/host
+                - destination_path: /backups/container
+                  host_path: /Users/user/backups/host
+                - destination_path: /backups/container
+                  host_path: /Users/user/backups/host
     Task:
         title: Task
         type: object

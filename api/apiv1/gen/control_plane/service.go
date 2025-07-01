@@ -333,8 +333,8 @@ type DatabaseNodeSpec struct {
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
 	RestoreConfig *RestoreConfigSpec
-	// Optional list of external volumes to mount for this node only.
-	ExtraVolumes []*ExtraVolumesSpec
+	// Orchestrator-specific configuration options.
+	OrchestratorOpts *OrchestratorOpts
 }
 
 type DatabaseSpec struct {
@@ -366,9 +366,8 @@ type DatabaseSpec struct {
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
 	PostgresqlConf map[string]any
-	// A list of extra volumes to mount. Each entry defines a host and container
-	// path.
-	ExtraVolumes []*ExtraVolumesSpec
+	// Orchestrator-specific configuration options.
+	OrchestratorOpts *OrchestratorOpts
 }
 
 type DatabaseUserSpec struct {
@@ -398,6 +397,16 @@ type DeleteDatabasePayload struct {
 type DeleteDatabaseResponse struct {
 	// The task that will delete this database.
 	Task *Task
+}
+
+// Describes an additional Docker network to attach the container to.
+type ExtraNetworkSpec struct {
+	// The name or ID of the network to connect to.
+	ID string
+	// Optional network-scoped aliases for the container.
+	Aliases []string
+	// Optional driver options for the network connection.
+	DriverOpts map[string]string
 }
 
 // Extra volumes to mount from the host to the database container.
@@ -586,6 +595,12 @@ type ListDatabasesResponse struct {
 	Databases DatabaseCollection
 }
 
+// Options specific to the selected orchestrator.
+type OrchestratorOpts struct {
+	// Swarm-specific configuration.
+	Swarm *SwarmOpts
+}
+
 type PgEdgeVersion struct {
 	// The Postgres major version.
 	PostgresVersion string
@@ -698,6 +713,16 @@ type RestoreRepositorySpec struct {
 	BasePath *string
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string
+}
+
+// Docker Swarm-specific options.
+type SwarmOpts struct {
+	// A list of extra volumes to mount. Each entry defines a host and container
+	// path.
+	ExtraVolumes []*ExtraVolumesSpec
+	// A list of additional Docker Swarm networks to attach containers in this
+	// database to.
+	ExtraNetworks []*ExtraNetworkSpec
 }
 
 // Task is the result type of the control-plane service get-database-task
@@ -1225,11 +1250,8 @@ func transformControlplaneviewsDatabaseSpecViewToDatabaseSpec(v *controlplanevie
 			res.PostgresqlConf[tk] = tv
 		}
 	}
-	if v.ExtraVolumes != nil {
-		res.ExtraVolumes = make([]*ExtraVolumesSpec, len(v.ExtraVolumes))
-		for i, val := range v.ExtraVolumes {
-			res.ExtraVolumes[i] = transformControlplaneviewsExtraVolumesSpecViewToExtraVolumesSpec(val)
-		}
+	if v.OrchestratorOpts != nil {
+		res.OrchestratorOpts = transformControlplaneviewsOrchestratorOptsViewToOrchestratorOpts(v.OrchestratorOpts)
 	}
 
 	return res
@@ -1268,11 +1290,8 @@ func transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec(v *control
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = transformControlplaneviewsRestoreConfigSpecViewToRestoreConfigSpec(v.RestoreConfig)
 	}
-	if v.ExtraVolumes != nil {
-		res.ExtraVolumes = make([]*ExtraVolumesSpec, len(v.ExtraVolumes))
-		for i, val := range v.ExtraVolumes {
-			res.ExtraVolumes[i] = transformControlplaneviewsExtraVolumesSpecViewToExtraVolumesSpec(val)
-		}
+	if v.OrchestratorOpts != nil {
+		res.OrchestratorOpts = transformControlplaneviewsOrchestratorOptsViewToOrchestratorOpts(v.OrchestratorOpts)
 	}
 
 	return res
@@ -1421,6 +1440,44 @@ func transformControlplaneviewsRestoreRepositorySpecViewToRestoreRepositorySpec(
 	return res
 }
 
+// transformControlplaneviewsOrchestratorOptsViewToOrchestratorOpts builds a
+// value of type *OrchestratorOpts from a value of type
+// *controlplaneviews.OrchestratorOptsView.
+func transformControlplaneviewsOrchestratorOptsViewToOrchestratorOpts(v *controlplaneviews.OrchestratorOptsView) *OrchestratorOpts {
+	if v == nil {
+		return nil
+	}
+	res := &OrchestratorOpts{}
+	if v.Swarm != nil {
+		res.Swarm = transformControlplaneviewsSwarmOptsViewToSwarmOpts(v.Swarm)
+	}
+
+	return res
+}
+
+// transformControlplaneviewsSwarmOptsViewToSwarmOpts builds a value of type
+// *SwarmOpts from a value of type *controlplaneviews.SwarmOptsView.
+func transformControlplaneviewsSwarmOptsViewToSwarmOpts(v *controlplaneviews.SwarmOptsView) *SwarmOpts {
+	if v == nil {
+		return nil
+	}
+	res := &SwarmOpts{}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*ExtraVolumesSpec, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = transformControlplaneviewsExtraVolumesSpecViewToExtraVolumesSpec(val)
+		}
+	}
+	if v.ExtraNetworks != nil {
+		res.ExtraNetworks = make([]*ExtraNetworkSpec, len(v.ExtraNetworks))
+		for i, val := range v.ExtraNetworks {
+			res.ExtraNetworks[i] = transformControlplaneviewsExtraNetworkSpecViewToExtraNetworkSpec(val)
+		}
+	}
+
+	return res
+}
+
 // transformControlplaneviewsExtraVolumesSpecViewToExtraVolumesSpec builds a
 // value of type *ExtraVolumesSpec from a value of type
 // *controlplaneviews.ExtraVolumesSpecView.
@@ -1431,6 +1488,34 @@ func transformControlplaneviewsExtraVolumesSpecViewToExtraVolumesSpec(v *control
 	res := &ExtraVolumesSpec{
 		HostPath:        *v.HostPath,
 		DestinationPath: *v.DestinationPath,
+	}
+
+	return res
+}
+
+// transformControlplaneviewsExtraNetworkSpecViewToExtraNetworkSpec builds a
+// value of type *ExtraNetworkSpec from a value of type
+// *controlplaneviews.ExtraNetworkSpecView.
+func transformControlplaneviewsExtraNetworkSpecViewToExtraNetworkSpec(v *controlplaneviews.ExtraNetworkSpecView) *ExtraNetworkSpec {
+	if v == nil {
+		return nil
+	}
+	res := &ExtraNetworkSpec{
+		ID: *v.ID,
+	}
+	if v.Aliases != nil {
+		res.Aliases = make([]string, len(v.Aliases))
+		for i, val := range v.Aliases {
+			res.Aliases[i] = val
+		}
+	}
+	if v.DriverOpts != nil {
+		res.DriverOpts = make(map[string]string, len(v.DriverOpts))
+		for key, val := range v.DriverOpts {
+			tk := key
+			tv := val
+			res.DriverOpts[tk] = tv
+		}
 	}
 
 	return res
@@ -1506,11 +1591,8 @@ func transformDatabaseSpecToControlplaneviewsDatabaseSpecView(v *DatabaseSpec) *
 			res.PostgresqlConf[tk] = tv
 		}
 	}
-	if v.ExtraVolumes != nil {
-		res.ExtraVolumes = make([]*controlplaneviews.ExtraVolumesSpecView, len(v.ExtraVolumes))
-		for i, val := range v.ExtraVolumes {
-			res.ExtraVolumes[i] = transformExtraVolumesSpecToControlplaneviewsExtraVolumesSpecView(val)
-		}
+	if v.OrchestratorOpts != nil {
+		res.OrchestratorOpts = transformOrchestratorOptsToControlplaneviewsOrchestratorOptsView(v.OrchestratorOpts)
 	}
 
 	return res
@@ -1549,11 +1631,8 @@ func transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView(v *Databas
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = transformRestoreConfigSpecToControlplaneviewsRestoreConfigSpecView(v.RestoreConfig)
 	}
-	if v.ExtraVolumes != nil {
-		res.ExtraVolumes = make([]*controlplaneviews.ExtraVolumesSpecView, len(v.ExtraVolumes))
-		for i, val := range v.ExtraVolumes {
-			res.ExtraVolumes[i] = transformExtraVolumesSpecToControlplaneviewsExtraVolumesSpecView(val)
-		}
+	if v.OrchestratorOpts != nil {
+		res.OrchestratorOpts = transformOrchestratorOptsToControlplaneviewsOrchestratorOptsView(v.OrchestratorOpts)
 	}
 
 	return res
@@ -1703,6 +1782,44 @@ func transformRestoreRepositorySpecToControlplaneviewsRestoreRepositorySpecView(
 	return res
 }
 
+// transformOrchestratorOptsToControlplaneviewsOrchestratorOptsView builds a
+// value of type *controlplaneviews.OrchestratorOptsView from a value of type
+// *OrchestratorOpts.
+func transformOrchestratorOptsToControlplaneviewsOrchestratorOptsView(v *OrchestratorOpts) *controlplaneviews.OrchestratorOptsView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.OrchestratorOptsView{}
+	if v.Swarm != nil {
+		res.Swarm = transformSwarmOptsToControlplaneviewsSwarmOptsView(v.Swarm)
+	}
+
+	return res
+}
+
+// transformSwarmOptsToControlplaneviewsSwarmOptsView builds a value of type
+// *controlplaneviews.SwarmOptsView from a value of type *SwarmOpts.
+func transformSwarmOptsToControlplaneviewsSwarmOptsView(v *SwarmOpts) *controlplaneviews.SwarmOptsView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.SwarmOptsView{}
+	if v.ExtraVolumes != nil {
+		res.ExtraVolumes = make([]*controlplaneviews.ExtraVolumesSpecView, len(v.ExtraVolumes))
+		for i, val := range v.ExtraVolumes {
+			res.ExtraVolumes[i] = transformExtraVolumesSpecToControlplaneviewsExtraVolumesSpecView(val)
+		}
+	}
+	if v.ExtraNetworks != nil {
+		res.ExtraNetworks = make([]*controlplaneviews.ExtraNetworkSpecView, len(v.ExtraNetworks))
+		for i, val := range v.ExtraNetworks {
+			res.ExtraNetworks[i] = transformExtraNetworkSpecToControlplaneviewsExtraNetworkSpecView(val)
+		}
+	}
+
+	return res
+}
+
 // transformExtraVolumesSpecToControlplaneviewsExtraVolumesSpecView builds a
 // value of type *controlplaneviews.ExtraVolumesSpecView from a value of type
 // *ExtraVolumesSpec.
@@ -1713,6 +1830,34 @@ func transformExtraVolumesSpecToControlplaneviewsExtraVolumesSpecView(v *ExtraVo
 	res := &controlplaneviews.ExtraVolumesSpecView{
 		HostPath:        &v.HostPath,
 		DestinationPath: &v.DestinationPath,
+	}
+
+	return res
+}
+
+// transformExtraNetworkSpecToControlplaneviewsExtraNetworkSpecView builds a
+// value of type *controlplaneviews.ExtraNetworkSpecView from a value of type
+// *ExtraNetworkSpec.
+func transformExtraNetworkSpecToControlplaneviewsExtraNetworkSpecView(v *ExtraNetworkSpec) *controlplaneviews.ExtraNetworkSpecView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.ExtraNetworkSpecView{
+		ID: &v.ID,
+	}
+	if v.Aliases != nil {
+		res.Aliases = make([]string, len(v.Aliases))
+		for i, val := range v.Aliases {
+			res.Aliases[i] = val
+		}
+	}
+	if v.DriverOpts != nil {
+		res.DriverOpts = make(map[string]string, len(v.DriverOpts))
+		for key, val := range v.DriverOpts {
+			tk := key
+			tv := val
+			res.DriverOpts[tk] = tv
+		}
 	}
 
 	return res
