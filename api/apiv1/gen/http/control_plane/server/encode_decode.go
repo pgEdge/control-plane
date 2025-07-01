@@ -2604,6 +2604,14 @@ func unmarshalSwarmOptsRequestBodyToControlplaneSwarmOpts(v *SwarmOptsRequestBod
 			res.ExtraNetworks[i] = unmarshalExtraNetworkSpecRequestBodyToControlplaneExtraNetworkSpec(val)
 		}
 	}
+	if v.ExtraLabels != nil {
+		res.ExtraLabels = make(map[string]string, len(v.ExtraLabels))
+		for key, val := range v.ExtraLabels {
+			tk := key
+			tv := val
+			res.ExtraLabels[tk] = tv
+		}
+	}
 
 	return res
 }
@@ -3092,6 +3100,14 @@ func marshalControlplaneSwarmOptsToSwarmOptsResponseBody(v *controlplane.SwarmOp
 			res.ExtraNetworks[i] = marshalControlplaneExtraNetworkSpecToExtraNetworkSpecResponseBody(val)
 		}
 	}
+	if v.ExtraLabels != nil {
+		res.ExtraLabels = make(map[string]string, len(v.ExtraLabels))
+		for key, val := range v.ExtraLabels {
+			tk := key
+			tv := val
+			res.ExtraLabels[tk] = tv
+		}
+	}
 
 	return res
 }
@@ -3536,6 +3552,14 @@ func marshalControlplaneviewsSwarmOptsViewToSwarmOptsResponseBody(v *controlplan
 			res.ExtraNetworks[i] = marshalControlplaneviewsExtraNetworkSpecViewToExtraNetworkSpecResponseBody(val)
 		}
 	}
+	if v.ExtraLabels != nil {
+		res.ExtraLabels = make(map[string]string, len(v.ExtraLabels))
+		for key, val := range v.ExtraLabels {
+			tk := key
+			tv := val
+			res.ExtraLabels[tk] = tv
+		}
+	}
 
 	return res
 }
@@ -3860,6 +3884,14 @@ func unmarshalSwarmOptsRequestBodyRequestBodyToControlplaneSwarmOpts(v *SwarmOpt
 		res.ExtraNetworks = make([]*controlplane.ExtraNetworkSpec, len(v.ExtraNetworks))
 		for i, val := range v.ExtraNetworks {
 			res.ExtraNetworks[i] = unmarshalExtraNetworkSpecRequestBodyRequestBodyToControlplaneExtraNetworkSpec(val)
+		}
+	}
+	if v.ExtraLabels != nil {
+		res.ExtraLabels = make(map[string]string, len(v.ExtraLabels))
+		for key, val := range v.ExtraLabels {
+			tk := key
+			tv := val
+			res.ExtraLabels[tk] = tv
 		}
 	}
 

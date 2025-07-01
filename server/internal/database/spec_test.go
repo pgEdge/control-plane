@@ -100,6 +100,9 @@ func TestSpec(t *testing.T) {
 						Aliases: []string{"n1-alias"},
 					},
 				},
+				ExtraLabels: map[string]string{
+					"pgedge.custom.label": "custom-value",
+				},
 			},
 		},
 	}

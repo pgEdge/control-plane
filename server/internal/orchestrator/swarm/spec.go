@@ -30,6 +30,10 @@ func DatabaseServiceSpec(
 	instance *database.InstanceSpec,
 	options *HostOptions,
 ) (swarm.ServiceSpec, error) {
+	var swarmOpts *database.SwarmOpts
+	if instance.OrchestratorOpts != nil {
+		swarmOpts = instance.OrchestratorOpts.Swarm
+	}
 	labels := map[string]string{
 		"pgedge.host.id":     instance.HostID,
 		"pgedge.database.id": instance.DatabaseID,
@@ -50,12 +54,6 @@ func DatabaseServiceSpec(
 		docker.BuildMount(options.Paths.Data, "/opt/pgedge/data", false),
 	}
 
-	if instance.OrchestratorOpts != nil && instance.OrchestratorOpts.Swarm != nil {
-		for _, vol := range instance.OrchestratorOpts.Swarm.ExtraVolumes {
-			mounts = append(mounts, docker.BuildMount(vol.HostPath, vol.DestinationPath, false))
-		}
-	}
-
 	networks := []swarm.NetworkAttachmentConfig{
 		{
 			Target: "bridge", // always attached
@@ -64,7 +62,15 @@ func DatabaseServiceSpec(
 			Target: options.DatabaseNetworkID, // database-specific
 		},
 	}
-	if instance.OrchestratorOpts != nil && instance.OrchestratorOpts.Swarm != nil {
+	if swarmOpts != nil {
+		for k, v := range swarmOpts.ExtraLabels {
+			labels[k] = v
+		}
+
+		for _, vol := range swarmOpts.ExtraVolumes {
+			mounts = append(mounts, docker.BuildMount(vol.HostPath, vol.DestinationPath, false))
+		}
+
 		for _, net := range instance.OrchestratorOpts.Swarm.ExtraNetworks {
 			networks = append(networks, swarm.NetworkAttachmentConfig{
 				Target:  net.ID,

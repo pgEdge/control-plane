@@ -723,6 +723,8 @@ type SwarmOpts struct {
 	// A list of additional Docker Swarm networks to attach containers in this
 	// database to.
 	ExtraNetworks []*ExtraNetworkSpec
+	// Arbitrary labels to apply to the Docker Swarm service
+	ExtraLabels map[string]string
 }
 
 // Task is the result type of the control-plane service get-database-task
@@ -1474,6 +1476,14 @@ func transformControlplaneviewsSwarmOptsViewToSwarmOpts(v *controlplaneviews.Swa
 			res.ExtraNetworks[i] = transformControlplaneviewsExtraNetworkSpecViewToExtraNetworkSpec(val)
 		}
 	}
+	if v.ExtraLabels != nil {
+		res.ExtraLabels = make(map[string]string, len(v.ExtraLabels))
+		for key, val := range v.ExtraLabels {
+			tk := key
+			tv := val
+			res.ExtraLabels[tk] = tv
+		}
+	}
 
 	return res
 }
@@ -1814,6 +1824,14 @@ func transformSwarmOptsToControlplaneviewsSwarmOptsView(v *SwarmOpts) *controlpl
 		res.ExtraNetworks = make([]*controlplaneviews.ExtraNetworkSpecView, len(v.ExtraNetworks))
 		for i, val := range v.ExtraNetworks {
 			res.ExtraNetworks[i] = transformExtraNetworkSpecToControlplaneviewsExtraNetworkSpecView(val)
+		}
+	}
+	if v.ExtraLabels != nil {
+		res.ExtraLabels = make(map[string]string, len(v.ExtraLabels))
+		for key, val := range v.ExtraLabels {
+			tk := key
+			tv := val
+			res.ExtraLabels[tk] = tv
 		}
 	}
 

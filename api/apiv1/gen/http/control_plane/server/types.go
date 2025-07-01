@@ -1577,6 +1577,8 @@ type SwarmOptsResponseBody struct {
 	// A list of additional Docker Swarm networks to attach containers in this
 	// database to.
 	ExtraNetworks []*ExtraNetworkSpecResponseBody `form:"extra_networks,omitempty" json:"extra_networks,omitempty" xml:"extra_networks,omitempty"`
+	// Arbitrary labels to apply to the Docker Swarm service
+	ExtraLabels map[string]string `form:"extra_labels,omitempty" json:"extra_labels,omitempty" xml:"extra_labels,omitempty"`
 }
 
 // ExtraVolumesSpecResponseBody is used to define fields on response body types.
@@ -1849,6 +1851,8 @@ type SwarmOptsRequestBody struct {
 	// A list of additional Docker Swarm networks to attach containers in this
 	// database to.
 	ExtraNetworks []*ExtraNetworkSpecRequestBody `form:"extra_networks,omitempty" json:"extra_networks,omitempty" xml:"extra_networks,omitempty"`
+	// Arbitrary labels to apply to the Docker Swarm service
+	ExtraLabels map[string]string `form:"extra_labels,omitempty" json:"extra_labels,omitempty" xml:"extra_labels,omitempty"`
 }
 
 // ExtraVolumesSpecRequestBody is used to define fields on request body types.
@@ -2114,6 +2118,8 @@ type SwarmOptsRequestBodyRequestBody struct {
 	// A list of additional Docker Swarm networks to attach containers in this
 	// database to.
 	ExtraNetworks []*ExtraNetworkSpecRequestBodyRequestBody `form:"extra_networks,omitempty" json:"extra_networks,omitempty" xml:"extra_networks,omitempty"`
+	// Arbitrary labels to apply to the Docker Swarm service
+	ExtraLabels map[string]string `form:"extra_labels,omitempty" json:"extra_labels,omitempty" xml:"extra_labels,omitempty"`
 }
 
 // ExtraVolumesSpecRequestBodyRequestBody is used to define fields on request

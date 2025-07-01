@@ -3,6 +3,7 @@ package apiv1
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -736,6 +737,7 @@ func orchestratorOptsToDatabase(opts *api.OrchestratorOpts) *database.Orchestrat
 		Swarm: &database.SwarmOpts{
 			ExtraVolumes:  extraVolumesToDatabase(opts.Swarm.ExtraVolumes),
 			ExtraNetworks: extraNetworksToDatabase(opts.Swarm.ExtraNetworks),
+			ExtraLabels:   maps.Clone(opts.Swarm.ExtraLabels),
 		},
 	}
 }
@@ -748,6 +750,7 @@ func orchestratorOptsToAPI(opts *database.OrchestratorOpts) *api.OrchestratorOpt
 		Swarm: &api.SwarmOpts{
 			ExtraVolumes:  extraVolumesToAPI(opts.Swarm.ExtraVolumes),
 			ExtraNetworks: extraNetworksToAPI(opts.Swarm.ExtraNetworks),
+			ExtraLabels:   maps.Clone(opts.Swarm.ExtraLabels),
 		},
 	}
 
