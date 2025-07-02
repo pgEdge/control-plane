@@ -35,7 +35,7 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 	})
 	g.Attribute("port", g.Int, func() {
 		g.Description("The port used by the Postgres database for this node. Overrides the Postgres port set in the DatabaseSpec.")
-		g.Minimum(1)
+		g.Minimum(0)
 		g.Maximum(65535)
 		g.Example(5432)
 	})
@@ -397,8 +397,8 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 		g.Example("4")
 	})
 	g.Attribute("port", g.Int, func() {
-		g.Description("The port used by the Postgres database.")
-		g.Minimum(1)
+		g.Description("The port used by the Postgres database. If the port is 0, each instance will be assigned a random port. If the port is unspecified, the database will not be exposed on any port, dependent on orchestrator support for that feature.")
+		g.Minimum(0)
 		g.Maximum(65535)
 		g.Example(5432)
 	})

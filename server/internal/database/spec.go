@@ -40,7 +40,7 @@ type Node struct {
 	Name             string            `json:"name"`
 	HostIDs          []string          `json:"host_ids"`
 	PostgresVersion  string            `json:"postgres_version"`
-	Port             int               `json:"port"`
+	Port             *int              `json:"port"`
 	CPUs             float64           `json:"cpus"`
 	MemoryBytes      uint64            `json:"memory"`
 	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
@@ -249,7 +249,7 @@ type Spec struct {
 	DatabaseName     string            `json:"database_name"`
 	PostgresVersion  string            `json:"postgres_version"`
 	SpockVersion     string            `json:"spock_version"`
-	Port             int               `json:"port"`
+	Port             *int              `json:"port"`
 	CPUs             float64           `json:"cpus"`
 	MemoryBytes      uint64            `json:"memory"`
 	Nodes            []*Node           `json:"nodes"`
@@ -415,7 +415,7 @@ type InstanceSpec struct {
 	NodeName         string              `json:"node_name"`
 	NodeOrdinal      int                 `json:"node_ordinal"`
 	PgEdgeVersion    *host.PgEdgeVersion `json:"pg_edge_version"`
-	Port             int                 `json:"port"`
+	Port             *int                `json:"port"`
 	CPUs             float64             `json:"cpus"`
 	MemoryBytes      uint64              `json:"memory"`
 	DatabaseUsers    []*User             `json:"database_users"`
@@ -463,7 +463,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 			}
 		}
 		port := s.Port
-		if node.Port > 0 {
+		if node.Port != nil {
 			port = node.Port
 		}
 		cpus := s.CPUs

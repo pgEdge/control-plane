@@ -79,6 +79,8 @@ func DatabaseServiceSpec(
 		}
 	}
 
+	ports := buildPostgresPortConfig(instance.Port)
+
 	return swarm.ServiceSpec{
 		TaskTemplate: swarm.TaskSpec{
 			ContainerSpec: &swarm.ContainerSpec{
@@ -112,29 +114,35 @@ func DatabaseServiceSpec(
 			},
 		},
 		EndpointSpec: &swarm.EndpointSpec{
-			Mode: swarm.ResolutionModeVIP,
-			Ports: []swarm.PortConfig{
-				{
-					// TODO: This could get complicated. In the DE use case, we
-					// don't want to expose the port directly, and instead go
-					// through traefik. In EE, there could be cases where we
-					// want both traefik and direct access. For example, if you
-					// wanted to make a heterogeneous cluster where some
-					// instances use systemd, you would need to expose a port
-					// regardless of whether you're using traefik.
-					// For now, since we're not running traefik yet, we'll just
-					// expose the port directly.
-					PublishMode:   swarm.PortConfigPublishModeHost,
-					TargetPort:    uint32(5432),
-					PublishedPort: uint32(instance.Port),
-					Name:          "postgres",
-					Protocol:      swarm.PortConfigProtocolTCP,
-				},
-			},
+			Mode:  swarm.ResolutionModeVIP,
+			Ports: ports,
 		},
 		Annotations: swarm.Annotations{
 			Name:   options.ServiceName,
 			Labels: labels,
 		},
 	}, nil
+}
+
+func buildPostgresPortConfig(port *int) []swarm.PortConfig {
+	if port == nil {
+		// Do not expose any port if not specified
+		return nil
+	}
+
+	config := swarm.PortConfig{
+		PublishMode: swarm.PortConfigPublishModeHost,
+		TargetPort:  5432,
+		Name:        "postgres",
+		Protocol:    swarm.PortConfigProtocolTCP,
+	}
+
+	if *port > 0 {
+		config.PublishedPort = uint32(*port)
+	} else if *port == 0 {
+		// Port 0 means random port assigned
+		config.PublishedPort = 0
+	}
+
+	return []swarm.PortConfig{config}
 }

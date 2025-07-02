@@ -76,7 +76,7 @@ func databaseNodesToAPI(nodes []*database.Node) []*api.DatabaseNodeSpec {
 			Name:             node.Name,
 			HostIds:          hostIDs,
 			PostgresVersion:  utils.NillablePointerTo(node.PostgresVersion),
-			Port:             utils.NillablePointerTo(node.Port),
+			Port:             node.Port,
 			Cpus:             utils.NillablePointerTo(humanizeCPUs(node.CPUs)),
 			Memory:           utils.NillablePointerTo(humanizeBytes(node.MemoryBytes)),
 			PostgresqlConf:   node.PostgreSQLConf,
@@ -184,7 +184,7 @@ func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 		DatabaseName:     d.DatabaseName,
 		PostgresVersion:  utils.NillablePointerTo(d.PostgresVersion),
 		SpockVersion:     utils.NillablePointerTo(d.SpockVersion),
-		Port:             utils.NillablePointerTo(d.Port),
+		Port:             d.Port,
 		Cpus:             utils.NillablePointerTo(humanizeCPUs(d.CPUs)),
 		Memory:           utils.NillablePointerTo(humanizeBytes(d.MemoryBytes)),
 		Nodes:            databaseNodesToAPI(d.Nodes),
@@ -235,7 +235,7 @@ func databaseToAPI(d *database.Database) *api.Database {
 }
 
 func instanceConnectionInfoToAPI(status *database.InstanceStatus) *api.InstanceConnectionInfo {
-	if status == nil {
+	if status == nil || status.Port == nil || *status.Port == 0 {
 		return nil
 	}
 	return &api.InstanceConnectionInfo{
@@ -338,7 +338,7 @@ func apiToDatabaseNodes(apiNodes []*api.DatabaseNodeSpec) ([]*database.Node, err
 			Name:             apiNode.Name,
 			HostIDs:          hostIDs,
 			PostgresVersion:  utils.FromPointer(apiNode.PostgresVersion),
-			Port:             utils.FromPointer(apiNode.Port),
+			Port:             apiNode.Port,
 			CPUs:             cpus,
 			MemoryBytes:      memory,
 			PostgreSQLConf:   apiNode.PostgresqlConf,
@@ -509,7 +509,7 @@ func apiToDatabaseSpec(id, tID *api.Identifier, apiSpec *api.DatabaseSpec) (*dat
 		DatabaseName:     apiSpec.DatabaseName,
 		PostgresVersion:  utils.FromPointer(apiSpec.PostgresVersion),
 		SpockVersion:     utils.FromPointer(apiSpec.SpockVersion),
-		Port:             utils.FromPointer(apiSpec.Port),
+		Port:             apiSpec.Port,
 		CPUs:             cpus,
 		MemoryBytes:      memory,
 		Nodes:            nodes,

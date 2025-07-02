@@ -464,15 +464,15 @@ func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, specs []*datab
 			NodeName:   instance.NodeName,
 			Valid:      true,
 		}
-		if instance.Port > 0 {
-			if occupiedPorts.Has(instance.Port) {
+		if instance.Port != nil {
+			if occupiedPorts.Has(*instance.Port) {
 				result.Valid = false
 				result.Errors = append(
 					result.Errors,
 					fmt.Sprintf("port %d allocated to multiple instances on this host", instance.Port),
 				)
 			}
-			occupiedPorts.Add(instance.Port)
+			occupiedPorts.Add(*instance.Port)
 		}
 		if err := o.validateInstanceSpec(ctx, instance, result); err != nil {
 			return nil, err
@@ -491,7 +491,7 @@ func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.
 		(len(orchestratorOpts.Swarm.ExtraVolumes) == 0 &&
 			len(orchestratorOpts.Swarm.ExtraNetworks) == 0 &&
 			len(orchestratorOpts.Swarm.ExtraLabels) == 0 &&
-			spec.Port == 0) {
+			spec.Port == nil) {
 		return nil
 	}
 
@@ -557,7 +557,7 @@ func (o *Orchestrator) runValidationContainer(
 	image string,
 	cmd []string,
 	mounts []mount.Mount,
-	port int,
+	port *int,
 	endpoints map[string]*network.EndpointSettings,
 ) (string, error) {
 	// Start container
@@ -596,7 +596,7 @@ func validationContainerOpts(
 	image string,
 	cmd []string,
 	mounts []mount.Mount,
-	port int,
+	port *int,
 	endpoints map[string]*network.EndpointSettings,
 ) docker.ContainerRunOptions {
 	opts := docker.ContainerRunOptions{
@@ -609,8 +609,8 @@ func validationContainerOpts(
 			PortBindings: nat.PortMap{},
 		},
 	}
-	if port > 0 {
-		exposedPort := fmt.Sprintf("%d/tcp", port)
+	if port != nil && *port > 0 {
+		exposedPort := fmt.Sprintf("%d/tcp", *port)
 		portSet := nat.PortSet{
 			nat.Port(exposedPort): struct{}{},
 		}
@@ -618,7 +618,7 @@ func validationContainerOpts(
 			nat.Port(exposedPort): []nat.PortBinding{
 				{
 					HostIP:   "0.0.0.0",
-					HostPort: strconv.Itoa(port),
+					HostPort: strconv.Itoa(*port),
 				},
 			},
 		}

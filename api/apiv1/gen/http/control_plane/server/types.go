@@ -1361,7 +1361,9 @@ type DatabaseSpecResponseBody struct {
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
 	// The major version of the Spock extension.
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
-	// The port used by the Postgres database.
+	// The port used by the Postgres database. If the port is 0, each instance will
+	// be assigned a random port. If the port is unspecified, the database will not
+	// be exposed on any port, dependent on orchestrator support for that feature.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
@@ -1637,7 +1639,9 @@ type DatabaseSpecRequestBody struct {
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
 	// The major version of the Spock extension.
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
-	// The port used by the Postgres database.
+	// The port used by the Postgres database. If the port is 0, each instance will
+	// be assigned a random port. If the port is unspecified, the database will not
+	// be exposed on any port, dependent on orchestrator support for that feature.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
@@ -1898,7 +1902,9 @@ type DatabaseSpecRequestBodyRequestBody struct {
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
 	// The major version of the Spock extension.
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
-	// The port used by the Postgres database.
+	// The port used by the Postgres database. If the port is 0, each instance will
+	// be assigned a random port. If the port is unspecified, the database will not
+	// be exposed on any port, dependent on orchestrator support for that feature.
 	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
@@ -3602,8 +3608,8 @@ func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) 
 		}
 	}
 	if body.Port != nil {
-		if *body.Port < 1 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 1, true))
+		if *body.Port < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 0, true))
 		}
 	}
 	if body.Port != nil {
@@ -3692,8 +3698,8 @@ func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err
 		}
 	}
 	if body.Port != nil {
-		if *body.Port < 1 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 1, true))
+		if *body.Port < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 0, true))
 		}
 	}
 	if body.Port != nil {
@@ -4244,8 +4250,8 @@ func ValidateDatabaseSpecRequestBodyRequestBody(body *DatabaseSpecRequestBodyReq
 		}
 	}
 	if body.Port != nil {
-		if *body.Port < 1 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 1, true))
+		if *body.Port < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 0, true))
 		}
 	}
 	if body.Port != nil {
@@ -4334,8 +4340,8 @@ func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecReques
 		}
 	}
 	if body.Port != nil {
-		if *body.Port < 1 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 1, true))
+		if *body.Port < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 0, true))
 		}
 	}
 	if body.Port != nil {

@@ -140,7 +140,9 @@ type DatabaseSpecView struct {
 	PostgresVersion *string
 	// The major version of the Spock extension.
 	SpockVersion *string
-	// The port used by the Postgres database.
+	// The port used by the Postgres database. If the port is 0, each instance will
+	// be assigned a random port. If the port is unspecified, the database will not
+	// be exposed on any port, dependent on orchestrator support for that feature.
 	Port *int
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
@@ -909,8 +911,8 @@ func ValidateDatabaseSpecView(result *DatabaseSpecView) (err error) {
 		}
 	}
 	if result.Port != nil {
-		if *result.Port < 1 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("result.port", *result.Port, 1, true))
+		if *result.Port < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("result.port", *result.Port, 0, true))
 		}
 	}
 	if result.Port != nil {
@@ -999,8 +1001,8 @@ func ValidateDatabaseNodeSpecView(result *DatabaseNodeSpecView) (err error) {
 		}
 	}
 	if result.Port != nil {
-		if *result.Port < 1 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("result.port", *result.Port, 1, true))
+		if *result.Port < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("result.port", *result.Port, 0, true))
 		}
 	}
 	if result.Port != nil {
