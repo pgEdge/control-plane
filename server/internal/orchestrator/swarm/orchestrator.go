@@ -32,6 +32,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/scheduler"
 )
 
 var defaultVersion = host.MustPgEdgeVersion("17", "4")
@@ -315,7 +316,24 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 				NodeName: spec.NodeName,
 			},
 		)
+		for _, schedule := range spec.BackupConfig.Schedules {
+			orchestratorResources = append(orchestratorResources, scheduler.NewScheduledJobResource(
+				schedule.ID,
+				schedule.CronExpression,
+				scheduler.WorkflowCreatePgBackRestBackup,
+				spec.HostID,
+				map[string]interface{}{
+					"database_id": spec.DatabaseID,
+					"host_id":     spec.HostID,
+					"instance_id": spec.InstanceID,
+					"node_name":   spec.NodeName,
+					"type":        pgbackrest.BackupType(schedule.Type).String(),
+				},
+				[]resource.Identifier{PgBackRestStanzaIdentifier(spec.NodeName)},
+			))
+		}
 	}
+
 	if spec.RestoreConfig != nil {
 		orchestratorResources = append(orchestratorResources, &PgBackRestConfig{
 			InstanceID:   spec.InstanceID,
