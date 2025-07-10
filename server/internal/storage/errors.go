@@ -28,3 +28,7 @@ var ErrWatchAlreadyInProgress = errors.New("watch already in progress")
 // ErrWatchUntilTimedOut indicates that the condition given to Watch.Until was
 // not met before the given timeout.
 var ErrWatchUntilTimedOut = errors.New("timed out waiting for watch condition")
+
+// ErrWatchClosed indicates that the server has forced the watch to close.
+// Callers should either restart or recreate the watch in that case.
+var ErrWatchClosed = errors.New("watch closed by server")

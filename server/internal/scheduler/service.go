@@ -2,7 +2,9 @@ package scheduler
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"path"
 	"sync"
 	"time"
 
@@ -161,15 +163,21 @@ func (s *Service) watchJobChanges(ctx context.Context) {
 				s.logger.Error().Err(err).Str("job_id", e.Value.ID).Msg("failed to register job from watch")
 			}
 		case storage.EventTypeDelete:
-			s.logger.Debug().Str("job_id", e.Value.ID).Msg("detected job deletion")
-			s.UnregisterJob(e.Value.ID)
-		default:
-			if e.Err != nil {
-				s.logger.Warn().
-					Err(e.Err).
-					Str("event_type", string(e.Type)).
-					Msg("unhandled event type in scheduled job watch")
+			jobID := path.Base(e.Key)
+			s.logger.Debug().Str("job_id", jobID).Msg("detected job deletion")
+			s.UnregisterJob(jobID)
+		case storage.EventTypeError:
+			s.logger.Error().
+				Err(e.Err).
+				Msg("encountered a watch error")
+			if errors.Is(e.Err, storage.ErrWatchClosed) {
+				defer s.watchJobChanges(ctx)
 			}
+		default:
+			s.logger.Warn().
+				Err(e.Err).
+				Str("event_type", string(e.Type)).
+				Msg("unhandled event type in scheduled job watch")
 		}
 	})
 	if err != nil {
