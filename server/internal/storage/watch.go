@@ -61,13 +61,14 @@ func (o *watchOp[V]) Watch(ctx context.Context, handle func(e *Event[V])) error 
 
 	go func() {
 		o.mu.Lock()
-		defer o.mu.Unlock()
 
 		for resp := range o.ch {
 			if err := resp.Err(); err != nil {
-				defer o.Close()
+				o.mu.Unlock()
+				o.Close()
 				handle(&Event[V]{
-					Err: err,
+					Type: EventTypeError,
+					Err:  fmt.Errorf("%w: %s", ErrWatchClosed, err),
 				})
 				return
 			}
@@ -76,6 +77,8 @@ func (o *watchOp[V]) Watch(ctx context.Context, handle func(e *Event[V])) error 
 				handle(convertEvent[V](event))
 			}
 		}
+
+		o.mu.Unlock()
 	}()
 
 	return nil
@@ -124,11 +127,16 @@ func (o *watchOp[V]) Close() {
 
 func convertEvent[V Value](in *clientv3.Event) *Event[V] {
 	key := string(in.Kv.Key)
-	val, err := decodeKV[V](in.Kv)
-	if err != nil {
-		return &Event[V]{
-			Err: err,
+	var val V
+	if len(in.Kv.Value) > 0 {
+		v, err := decodeKV[V](in.Kv)
+		if err != nil {
+			return &Event[V]{
+				Type: EventTypeError,
+				Err:  err,
+			}
 		}
+		val = v
 	}
 
 	var eventType EventType
@@ -137,7 +145,8 @@ func convertEvent[V Value](in *clientv3.Event) *Event[V] {
 		eventType = EventTypeDelete
 	case clientv3.EventTypePut:
 		eventType = EventTypePut
-
+	default:
+		eventType = EventTypeUnknown
 	}
 
 	return &Event[V]{
