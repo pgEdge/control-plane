@@ -15,6 +15,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/monitor"
+	"github.com/pgEdge/control-plane/server/internal/scheduler"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
 )
 
@@ -127,6 +128,14 @@ func (a *App) runInitialized(ctx context.Context) error {
 	}
 	if err := monitorSvc.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start monitor service: %w", err)
+	}
+
+	schedulerSvc, err := do.Invoke[*scheduler.Service](a.i)
+	if err != nil {
+		return fmt.Errorf("failed to initialize scheduler service: %w", err)
+	}
+	if err := schedulerSvc.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start scheduler service: %w", err)
 	}
 
 	worker, err := do.Invoke[*workflows.Worker](a.i)

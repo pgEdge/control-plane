@@ -21,6 +21,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/orchestrator"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator/swarm"
 	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/scheduler"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
@@ -71,6 +72,7 @@ func newRootCmd(i *do.Injector) *cobra.Command {
 			logging.Provide(i)
 			monitor.Provide(i)
 			resource.Provide(i)
+			scheduler.Provide(i)
 			workflows.Provide(i)
 			activities.Provide(i)
 			task.Provide(i)
@@ -85,6 +87,7 @@ func newRootCmd(i *do.Injector) *cobra.Command {
 			database.RegisterResourceTypes(registry)
 			filesystem.RegisterResourceTypes(registry)
 			monitor.RegisterResourceTypes(registry)
+			scheduler.RegisterResourceTypes(registry)
 			swarm.RegisterResourceTypes(registry)
 
 			if err := orchestrator.Provide(i); err != nil {
