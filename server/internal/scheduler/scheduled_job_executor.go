@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
 )
@@ -15,11 +16,13 @@ type WorkflowExecutor interface {
 
 type DefaultWorkflowExecutor struct {
 	workflowSvc *workflows.Service
+	dbSvc       *database.Service
 }
 
-func NewDefaultWorkflowExecutor(wf *workflows.Service) *DefaultWorkflowExecutor {
+func NewDefaultWorkflowExecutor(wf *workflows.Service, dbSvc *database.Service) *DefaultWorkflowExecutor {
 	return &DefaultWorkflowExecutor{
 		workflowSvc: wf,
+		dbSvc:       dbSvc,
 	}
 }
 
@@ -31,16 +34,31 @@ func (e *DefaultWorkflowExecutor) Execute(ctx context.Context, workflowName stri
 			return err
 		}
 
-		_, err := e.workflowSvc.CreatePgBackRestBackup(ctx,
+		db, err := e.dbSvc.GetDatabase(ctx, input.DatabaseID)
+		if err != nil {
+			return fmt.Errorf("failed to fetch database: %w", err)
+		}
+		if !database.DatabaseStateModifiable(db.State) {
+			return fmt.Errorf("database is not in a modifiable state: %s", db.State)
+		}
+
+		node, err := db.Spec.Node(input.NodeName)
+		if err != nil {
+			return fmt.Errorf("invalid node name '%s': %w", input.NodeName, err)
+		}
+
+		instances := []*workflows.InstanceHost{}
+		for _, hostID := range node.HostIDs {
+			instances = append(instances, &workflows.InstanceHost{
+				InstanceID: database.InstanceIDFor(hostID, input.DatabaseID, input.NodeName),
+				HostID:     hostID,
+			})
+		}
+		_, err = e.workflowSvc.CreatePgBackRestBackup(ctx,
 			input.DatabaseID,
 			input.NodeName,
 			false,
-			[]*workflows.InstanceHost{
-				{
-					InstanceID: input.InstanceID,
-					HostID:     input.HostID,
-				},
-			},
+			instances,
 			&pgbackrest.BackupOptions{
 				Type: pgbackrest.BackupType(input.Type),
 			},
@@ -66,9 +84,6 @@ func decodeArgs(args map[string]interface{}, out interface{}) error {
 // Schedule input struct matching scheduled job args
 type CreatePgBackRestBackupScheduleInput struct {
 	DatabaseID string `json:"database_id"`
-	InstanceID string `json:"instance_id"`
-	HostID     string `json:"host_id"`
 	NodeName   string `json:"node_name"`
 	Type       string `json:"type"`
-	TaskID     string `json:"task_id"`
 }

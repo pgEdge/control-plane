@@ -1,11 +1,8 @@
 package scheduler
 
 import (
-	"context"
 	"path"
-	"time"
 
-	"github.com/go-co-op/gocron"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
@@ -43,14 +40,6 @@ func (s *ScheduledJobStore) Delete(jobID string) storage.DeleteOp {
 	return storage.NewDeleteKeyOp(s.client, s.Key(jobID))
 }
 
-func (s *ScheduledJobStore) GetNextRun(jobID string) *time.Time {
-	resp, err := s.Get(jobID).Exec(context.Background())
-	if err != nil || resp == nil {
-		return nil
-	}
-
-	parser := gocron.NewScheduler(time.UTC)
-	_, nextRun := parser.Cron(resp.CronExpr).NextRun()
-
-	return &nextRun
+func (s *ScheduledJobStore) WatchJobs() storage.WatchOp[*StoredScheduledJob] {
+	return storage.NewWatchPrefixOp[*StoredScheduledJob](s.client, s.Prefix())
 }

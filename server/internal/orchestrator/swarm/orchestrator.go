@@ -318,14 +318,12 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		)
 		for _, schedule := range spec.BackupConfig.Schedules {
 			orchestratorResources = append(orchestratorResources, scheduler.NewScheduledJobResource(
-				schedule.ID,
+				fmt.Sprintf("%s-%s-%s", schedule.ID, spec.DatabaseID, spec.NodeName),
 				schedule.CronExpression,
 				scheduler.WorkflowCreatePgBackRestBackup,
-				spec.HostID,
+				o.cfg.ClusterID,
 				map[string]interface{}{
 					"database_id": spec.DatabaseID,
-					"host_id":     spec.HostID,
-					"instance_id": spec.InstanceID,
 					"node_name":   spec.NodeName,
 					"type":        pgbackrest.BackupType(schedule.Type).String(),
 				},

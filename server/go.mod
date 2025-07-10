@@ -9,6 +9,7 @@ require (
 	github.com/docker/docker v27.1.1+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/dustin/go-humanize v1.0.1
+	github.com/go-co-op/gocron-etcd-elector v0.0.0-20250623162740-a7f67b8d5782
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/knadh/koanf/parsers/json v0.1.0

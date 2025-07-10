@@ -10,9 +10,9 @@ import (
 
 const ResourceTypeScheduledJob resource.Type = "scheduler.job"
 
-func ScheduledJobResourceIdentifier(hostID string) resource.Identifier {
+func ScheduledJobResourceIdentifier(id string) resource.Identifier {
 	return resource.Identifier{
-		ID:   hostID,
+		ID:   id,
 		Type: ResourceTypeScheduledJob,
 	}
 }
@@ -23,11 +23,11 @@ type ScheduledJobResource struct {
 	Workflow  string                 `json:"workflow"`             // Name of the workflow to execute
 	Args      map[string]interface{} `json:"args"`                 // Arguments to the workflow
 	DependsOn []resource.Identifier  `json:"depends_on,omitempty"` // Optional resource dependencies
-	HostID    string                 `json:"host_id,omitempty"`    // Host to execute the job on
+	ClusterID string                 `json:"cluster_id,omitempty"` // Cluster to execute the job on
 }
 
 func NewScheduledJobResource(
-	id, cronExpr, workflow, hostID string,
+	id, cronExpr, workflow, clusterID string,
 	args map[string]interface{},
 	dependsOn []resource.Identifier,
 ) *ScheduledJobResource {
@@ -36,7 +36,7 @@ func NewScheduledJobResource(
 		CronExpr:  cronExpr,
 		Workflow:  workflow,
 		Args:      args,
-		HostID:    hostID,
+		ClusterID: clusterID,
 		DependsOn: dependsOn,
 	}
 }
@@ -50,13 +50,13 @@ func (r *ScheduledJobResource) DiffIgnore() []string {
 
 func (r *ScheduledJobResource) Executor() resource.Executor {
 	return resource.Executor{
-		Type: resource.ExecutorTypeHost,
-		ID:   r.HostID,
+		Type: resource.ExecutorTypeCluster,
+		ID:   r.ClusterID,
 	}
 }
 
 func (r *ScheduledJobResource) Identifier() resource.Identifier {
-	return ScheduledJobResourceIdentifier(r.HostID)
+	return ScheduledJobResourceIdentifier(r.ID)
 }
 func (r *ScheduledJobResource) Dependencies() []resource.Identifier {
 	return r.DependsOn
@@ -67,7 +67,7 @@ func (r *ScheduledJobResource) Refresh(ctx context.Context, rc *resource.Context
 		return err
 	}
 
-	if !service.ExitsJob(r.ID) {
+	if !service.JobExists(r.ID) {
 		return resource.ErrNotFound
 	}
 	return nil

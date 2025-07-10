@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
@@ -11,7 +12,7 @@ import (
 func Provide(i *do.Injector) {
 	provideStore(i)
 	provideService(i)
-	provideExecuter(i)
+	provideExecutor(i)
 }
 
 func provideStore(i *do.Injector) {
@@ -34,7 +35,7 @@ func provideService(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		executer, err := do.Invoke[WorkflowExecutor](i)
+		executor, err := do.Invoke[WorkflowExecutor](i)
 		if err != nil {
 			return nil, err
 		}
@@ -42,16 +43,24 @@ func provideService(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		return NewService(logger, store, executer), nil
+		client, err := do.Invoke[*clientv3.Client](i)
+		if err != nil {
+			return nil, err
+		}
+		return NewService(logger, store, executor, client), nil
 	})
 }
 
-func provideExecuter(i *do.Injector) {
+func provideExecutor(i *do.Injector) {
 	do.Provide(i, func(i *do.Injector) (WorkflowExecutor, error) {
 		workflowSvc, err := do.Invoke[*workflows.Service](i)
 		if err != nil {
 			return nil, err
 		}
-		return &DefaultWorkflowExecutor{workflowSvc: workflowSvc}, nil
+		dbSvc, err := do.Invoke[*database.Service](i)
+		if err != nil {
+			return nil, err
+		}
+		return NewDefaultWorkflowExecutor(workflowSvc, dbSvc), nil
 	})
 }
