@@ -72,7 +72,7 @@ ci: test-ci lint-ci
 
 .PHONY: start-local-registry
 start-local-registry:
-	docker run -d -p 5000:5000 --restart=always --name registry registry:2
+	docker service create --name registry --publish published=5000,target=5000 registry:2
 
 .PHONY: buildx-init
 buildx-init:
@@ -103,6 +103,12 @@ control-plane-images:
 .PHONY: goreleaser-build
 goreleaser-build:
 	goreleaser build --snapshot --clean
+	tar -C dist --strip-components=1 -c -z \
+		-f dist/control-plane_$(CONTROL_PLANE_VERSION:v%=%)_linux_amd64.tar.gz \
+		control-plane_linux_amd64_v1
+	tar -C dist --strip-components=1 -c -z \
+		-f dist/control-plane_$(CONTROL_PLANE_VERSION:v%=%)_linux_arm64.tar.gz \
+		control-plane_linux_arm64_v8.0
 
 ###########
 # release #
@@ -188,6 +194,10 @@ dev-watch: dev-build docker-swarm-mode
 
 docker/control-plane-dev/control-plane: $(module_src_files)
 	GOOS=linux go build -gcflags "all=-N -l" -o $@ $(shell pwd)/server
+
+.PHONY: api-docs
+api-docs:
+	WORKSPACE_DIR=$(shell pwd) DEBUG=0 docker compose -f ./docker/control-plane-dev/docker-compose.yaml up api-docs
 
 ######################
 # vm dev environment #

@@ -3,6 +3,7 @@
 - [Developing the pgEdge Control Plane](#developing-the-pgedge-control-plane)
   - [Running the Control Plane locally](#running-the-control-plane-locally)
   - [Pull requests](#pull-requests)
+  - [Building pre-release Control Plane images](#building-pre-release-control-plane-images)
   - [Release process](#release-process)
 
 ## Running the Control Plane locally
@@ -38,6 +39,28 @@ make changelog-entry
 And follow the interactive prompts. This adds your changelog entry to a new file
 under `changes/unreleased`. We'll automatically combine these files to produce
 the release changelog in the release process described below.
+
+## Building pre-release Control Plane images
+
+Make sure your local registry is running with:
+
+```sh
+make start-local-registry
+```
+
+Then create a pre-release build of the Control Plane server:
+
+```sh
+make goreleaser-build
+```
+
+Finally, build the Control Plane images and publish them to your local registry:
+
+```sh
+make control-plane-images
+```
+
+You can now pull these images from `127.0.0.1:5000/control-plane`.
 
 ## Release process
 

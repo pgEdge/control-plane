@@ -12,6 +12,7 @@ function "control_plane_tags" {
   params = [repo, version]
   result = [
       "${repo}:${version}",
+      "${repo}:latest",
     ]
 }
 
