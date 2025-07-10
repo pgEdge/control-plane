@@ -19,6 +19,7 @@ type Service struct {
 	executor  WorkflowExecutor
 	scheduler *gocron.Scheduler
 	runners   map[string]*gocron.Job
+	watchOp   storage.WatchOp[*StoredScheduledJob]
 	mu        sync.RWMutex
 }
 
@@ -34,7 +35,7 @@ func NewService(
 		logger.Fatal().Err(err).Msg("failed to initialize etcd elector")
 	}
 	go func() {
-		if err := el.Start(store.Prefix()); err != nil {
+		if err := el.Start(store.ElectorPrefix()); err != nil {
 			logger.Fatal().Err(err).Msg("failed to start etcd elector")
 		}
 	}()
@@ -50,15 +51,15 @@ func NewService(
 }
 
 func (s *Service) Start(ctx context.Context) error {
-	s.logger.Info().Msg("Starting scheduler service")
+	s.logger.Info().Msg("starting scheduler service")
 
 	jobs, err := s.store.GetAll().Exec(ctx)
 	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to retrieve scheduled jobs from store")
+		s.logger.Error().Err(err).Msg("failed to retrieve scheduled jobs from store")
 	}
 	for _, job := range jobs {
 		if err := s.registerJob(ctx, job); err != nil {
-			s.logger.Error().Err(err).Str("job_id", job.ID).Msg("Failed to register scheduled job")
+			s.logger.Error().Err(err).Str("job_id", job.ID).Msg("failed to register scheduled job")
 		}
 	}
 
@@ -69,8 +70,14 @@ func (s *Service) Start(ctx context.Context) error {
 }
 
 func (s *Service) Shutdown() error {
-	s.logger.Info().Msg("Shutting down scheduler service")
+	s.logger.Info().Msg("shutting down scheduler service")
 	s.scheduler.Stop()
+
+	if s.watchOp != nil {
+		s.logger.Info().Msg("closing scheduled job watch")
+		s.watchOp.Close()
+	}
+
 	return nil
 }
 
@@ -84,7 +91,7 @@ func (s *Service) registerJob(ctx context.Context, job *StoredScheduledJob) erro
 
 	runner, err := NewScheduledJobRunner(job, s.executor, s.logger, s.store)
 	if err != nil {
-		s.logger.Error().Err(err).Str("job_id", job.ID).Msg("Failed to create job runner")
+		s.logger.Error().Err(err).Str("job_id", job.ID).Msg("failed to create job runner")
 		return fmt.Errorf("invalid job '%s': %w", job.ID, err)
 	}
 
@@ -96,7 +103,7 @@ func (s *Service) registerJob(ctx context.Context, job *StoredScheduledJob) erro
 	}
 
 	s.runners[job.ID] = gocronJob
-	s.logger.Info().Str("job_id", job.ID).Msg("Registered scheduled job")
+	s.logger.Info().Str("job_id", job.ID).Msg("registered scheduled job")
 	return nil
 }
 
@@ -107,7 +114,7 @@ func (s *Service) UnregisterJob(jobID string) {
 	if job, ok := s.runners[jobID]; ok {
 		s.scheduler.RemoveByReference(job)
 		delete(s.runners, jobID)
-		s.logger.Info().Str("job_id", jobID).Msg("Unregistered scheduled job")
+		s.logger.Info().Str("job_id", jobID).Msg("unregistered scheduled job")
 	}
 }
 
@@ -143,26 +150,29 @@ func (s *Service) ListScheduledJobs() []string {
 	return ids
 }
 func (s *Service) watchJobChanges(ctx context.Context) {
-	s.logger.Info().Msg("Watching for scheduled job changes")
+	s.logger.Info().Msg("watching for scheduled job changes")
 
-	watchOp := s.store.WatchJobs()
-	err := watchOp.Watch(ctx, func(e *storage.Event[*StoredScheduledJob]) {
+	s.watchOp = s.store.WatchJobs()
+	err := s.watchOp.Watch(ctx, func(e *storage.Event[*StoredScheduledJob]) {
 		switch e.Type {
 		case storage.EventTypePut:
-			s.logger.Debug().Str("job_id", e.Value.ID).Msg("Detected job creation or update")
+			s.logger.Debug().Str("job_id", e.Value.ID).Msg("detected job creation or update")
 			if err := s.registerJob(ctx, e.Value); err != nil {
-				s.logger.Error().Err(err).Str("job_id", e.Value.ID).Msg("Failed to register job from watch")
+				s.logger.Error().Err(err).Str("job_id", e.Value.ID).Msg("failed to register job from watch")
 			}
 		case storage.EventTypeDelete:
-			s.logger.Debug().Str("job_id", e.Value.ID).Msg("Detected job deletion")
+			s.logger.Debug().Str("job_id", e.Value.ID).Msg("detected job deletion")
 			s.UnregisterJob(e.Value.ID)
 		default:
-			s.logger.Warn().
-				Str("event_type", string(e.Type)).
-				Msg("Unhandled event type in scheduled job watch")
+			if e.Err != nil {
+				s.logger.Warn().
+					Err(e.Err).
+					Str("event_type", string(e.Type)).
+					Msg("unhandled event type in scheduled job watch")
+			}
 		}
 	})
 	if err != nil {
-		s.logger.Error().Err(err).Msg("Job watch exited with error")
+		s.logger.Error().Err(err).Msg("job watch exited with error")
 	}
 }

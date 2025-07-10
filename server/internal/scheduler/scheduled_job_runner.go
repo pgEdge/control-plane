@@ -41,7 +41,7 @@ func (r *ScheduledJobRunner) Run(ctx context.Context) {
 	now := time.Now()
 
 	if err != nil {
-		r.failJob(err, "Scheduled job failed")
+		r.failJob(err, "scheduled job failed")
 	} else {
 		duration := now.Sub(start)
 		r.Logger.Info().
@@ -49,7 +49,7 @@ func (r *ScheduledJobRunner) Run(ctx context.Context) {
 			Str("workflow", r.Job.Workflow).
 			Dur("duration", duration).
 			Time("completed_at", now).
-			Msg("Scheduled job completed successfully")
+			Msg("scheduled job completed successfully")
 	}
 }
 

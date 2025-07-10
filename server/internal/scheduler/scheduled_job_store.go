@@ -23,6 +23,10 @@ func (s *ScheduledJobStore) Prefix() string {
 	return path.Join("/", s.root, ScheduledJobPrefix)
 }
 
+func (s *ScheduledJobStore) ElectorPrefix() string {
+	return path.Join("/", s.root, SchedulerLeaderPrefix)
+}
+
 func (s *ScheduledJobStore) Key(id string) string {
 	return path.Join(s.Prefix(), id)
 }

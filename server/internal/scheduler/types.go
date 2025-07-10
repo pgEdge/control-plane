@@ -5,7 +5,8 @@ import (
 )
 
 const (
-	ScheduledJobPrefix = "scheduled_jobs"
+	ScheduledJobPrefix    = "scheduled_jobs"
+	SchedulerLeaderPrefix = "scheduler-leader"
 
 	JobStatusPending   = "pending"
 	JobStatusRunning   = "running"
