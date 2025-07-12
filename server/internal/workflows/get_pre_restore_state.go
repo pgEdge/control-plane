@@ -88,10 +88,7 @@ func (w *Workflows) GetPreRestoreState(ctx workflow.Context, input *GetPreRestor
 			if i == j || peerToBeRestored {
 				continue
 			}
-			err = state.AddResource(&database.SubscriptionResource{
-				SubscriberNode: nodeInstance.NodeName,
-				ProviderNode:   peer.NodeName,
-			})
+			err = state.AddResource(database.NewSubscriptionResource(nodeInstance, peer))
 			if err != nil {
 				return nil, fmt.Errorf("failed to add subscription resource to state: %w", err)
 			}

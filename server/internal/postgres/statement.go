@@ -78,6 +78,7 @@ func (q Query[T]) Rows(ctx context.Context, conn Executor) ([]T, error) {
 type ConditionalStatement struct {
 	If   Query[bool]
 	Then IStatement
+	Else IStatement
 }
 
 func (s ConditionalStatement) Exec(ctx context.Context, conn Executor) error {
@@ -85,9 +86,12 @@ func (s ConditionalStatement) Exec(ctx context.Context, conn Executor) error {
 	if err != nil {
 		return err
 	}
-	if condition {
+	switch {
+	case condition:
 		return s.Then.Exec(ctx, conn)
-	} else {
+	case s.Else != nil:
+		return s.Else.Exec(ctx, conn)
+	default:
 		return nil
 	}
 }

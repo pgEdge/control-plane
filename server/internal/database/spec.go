@@ -440,6 +440,15 @@ type NodeInstances struct {
 	Instances []*InstanceSpec `json:"instances"`
 }
 
+func (n *NodeInstances) InstanceIDs() []string {
+	instanceIDs := make([]string, len(n.Instances))
+	for i, instance := range n.Instances {
+		instanceIDs[i] = instance.InstanceID
+	}
+	slices.Sort(instanceIDs)
+	return instanceIDs
+}
+
 func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 	specVersion, err := host.NewPgEdgeVersion(s.PostgresVersion, s.SpockVersion)
 	if err != nil {

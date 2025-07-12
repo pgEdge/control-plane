@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -99,6 +100,8 @@ func GetSubscriptionID(nodeName, peerName string) Query[uint32] {
 
 func CreateSubscription(nodeName, peerName string, peerDSN *DSN) ConditionalStatement {
 	sub := subName(nodeName, peerName)
+	dsn := peerDSN.String()
+	interfaceName := fmt.Sprintf("%s_%d", peerName, time.Now().Unix())
 	return ConditionalStatement{
 		If: Query[bool]{
 			SQL: "SELECT NOT EXISTS (SELECT 1 FROM spock.subscription WHERE sub_name = @sub_name);",
@@ -110,7 +113,40 @@ func CreateSubscription(nodeName, peerName string, peerDSN *DSN) ConditionalStat
 			SQL: "SELECT spock.sub_create(@sub_name, @peer_dsn);",
 			Args: pgx.NamedArgs{
 				"sub_name": sub,
-				"peer_dsn": peerDSN.String(),
+				"peer_dsn": dsn,
+			},
+		},
+		Else: ConditionalStatement{
+			If: Query[bool]{
+				SQL: "SELECT NOT EXISTS (SELECT 1 from spock.node_interface JOIN spock.subscription ON if_id = sub_origin_if WHERE sub_name = @sub_name AND if_dsn = @peer_dsn);",
+				Args: pgx.NamedArgs{
+					"sub_name": sub,
+					"peer_dsn": dsn,
+				},
+			},
+			Then: Statements{
+				Statement{
+					SQL: "SELECT spock.node_add_interface(@peer_name, @interface_name, @peer_dsn);",
+					Args: pgx.NamedArgs{
+						"peer_name":      peerName,
+						"interface_name": interfaceName,
+						"peer_dsn":       dsn,
+					},
+				},
+				Statement{
+					SQL: "SELECT spock.sub_alter_interface(@sub_name, @interface_name);",
+					Args: pgx.NamedArgs{
+						"sub_name":       sub,
+						"interface_name": interfaceName,
+					},
+				},
+				Statement{
+					SQL: "SELECT spock.node_drop_interface(@peer_name, if_name) FROM spock.node_interface JOIN spock.node ON if_nodeid = node_id WHERE node_name = @peer_name AND if_name != @interface_name;",
+					Args: pgx.NamedArgs{
+						"peer_name":      peerName,
+						"interface_name": interfaceName,
+					},
+				},
 			},
 		},
 	}
