@@ -217,6 +217,7 @@ type Config struct {
 	VectorEnabled          bool         `koanf:"vector_enabled"`
 	DockerSwarm            DockerSwarm  `koanf:"docker_swarm"`
 	DatabaseOwnerUID       int          `koanf:"database_owner_uid"`
+	ProfilingEnabled       bool         `koanf:"profiling_enabled"`
 }
 
 func (c Config) Validate() error {
