@@ -15,6 +15,7 @@ type DSN struct {
 	SSLKey          string
 	SSLRootCert     string
 	ApplicationName string
+	Extra           map[string]string
 }
 
 func (d *DSN) String() string {
@@ -47,6 +48,9 @@ func (d *DSN) String() string {
 		fields = append(fields, fmt.Sprintf("application_name=%s", d.ApplicationName))
 	} else {
 		fields = append(fields, "application_name=control-plane")
+	}
+	for key, value := range d.Extra {
+		fields = append(fields, fmt.Sprintf("%s=%s", key, value))
 	}
 	return strings.Join(fields, " ")
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 
@@ -78,23 +79,34 @@ func (s *SubscriptionResource) Create(ctx context.Context, rc *resource.Context)
 	if err != nil {
 		return fmt.Errorf("failed to get subscriber instance: %w", err)
 	}
-	provider, err := GetPrimaryInstance(ctx, rc, s.ProviderNode)
+	providers, err := GetAllInstances(ctx, rc, s.ProviderNode)
 	if err != nil {
-		return fmt.Errorf("failed to get provider instance: %w", err)
+		return fmt.Errorf("failed to get provider instances: %w", err)
 	}
+	if len(providers) < 1 {
+		return fmt.Errorf("no provider instance found for node %s", s.ProviderNode)
+	}
+	hosts := make([]string, len(providers))
+	for i, provider := range providers {
+		hosts[i] = provider.ConnectionInfo.PeerHost
+	}
+
 	conn, err := subscriber.Connection(ctx, rc, subscriber.Spec.DatabaseName)
 	if err != nil {
 		return fmt.Errorf("failed to connect to database %q: %w", subscriber.Spec.DatabaseName, err)
 	}
 
 	err = postgres.CreateSubscription(s.SubscriberNode, s.ProviderNode, &postgres.DSN{
-		Host:        provider.ConnectionInfo.PeerHost,
-		Port:        provider.ConnectionInfo.PeerPort,
-		DBName:      provider.Spec.DatabaseName,
+		Host:        strings.Join(hosts, ","),
+		Port:        providers[0].ConnectionInfo.PeerPort,
+		DBName:      providers[0].Spec.DatabaseName,
 		User:        "pgedge",
-		SSLCert:     provider.ConnectionInfo.PeerSSLCert,
-		SSLKey:      provider.ConnectionInfo.PeerSSLKey,
-		SSLRootCert: provider.ConnectionInfo.PeerSSLRootCert,
+		SSLCert:     providers[0].ConnectionInfo.PeerSSLCert,
+		SSLKey:      providers[0].ConnectionInfo.PeerSSLKey,
+		SSLRootCert: providers[0].ConnectionInfo.PeerSSLRootCert,
+		Extra: map[string]string{
+			"target_session_attrs": "primary",
+		},
 	}).Exec(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to create subscription %q: %w", s.SubscriberNode, err)
@@ -144,4 +156,20 @@ func GetPrimaryInstance(ctx context.Context, rc *resource.Context, nodeName stri
 		return nil, fmt.Errorf("failed to get primary instance %q: %w", node.PrimaryInstanceID, err)
 	}
 	return instance, nil
+}
+
+func GetAllInstances(ctx context.Context, rc *resource.Context, nodeName string) ([]*InstanceResource, error) {
+	node, err := resource.FromContext[*NodeResource](rc, NodeResourceIdentifier(nodeName))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get node %q: %w", nodeName, err)
+	}
+	instances := make([]*InstanceResource, len(node.InstanceIDs))
+	for i, instanceID := range node.InstanceIDs {
+		instance, err := resource.FromContext[*InstanceResource](rc, InstanceResourceIdentifier(instanceID))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get instance %q: %w", instanceID, err)
+		}
+		instances[i] = instance
+	}
+	return instances, nil
 }
