@@ -37,6 +37,8 @@ func NewService(
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to initialize etcd elector")
 	}
+	// Will show election logs when log level is debug
+	el.SetLogger(logger.Print)
 	go func() {
 		if err := el.Start(store.ElectorPrefix()); err != nil {
 			logger.Fatal().Err(err).Msg("failed to start etcd elector")
