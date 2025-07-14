@@ -819,6 +819,8 @@ github.com/fzipp/gocyclo v0.6.0/go.mod h1:rXPyn8fnlpa0R2csP/31uerbiVBugk5whMdlya
 github.com/getkin/kin-openapi v0.127.0 h1:Mghqi3Dhryf3F8vR370nN67pAERW+3a95vomb3MAREY=
 github.com/getkin/kin-openapi v0.127.0/go.mod h1:OZrfXzUfGrNbsKj+xmFBx6E5c6yH3At/tAKSc2UszXM=
 github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=
+github.com/go-co-op/gocron-etcd-elector v0.0.0-20250714123424-6c90074a7c3b h1:ZC/znS5fnvT44V3ecUlYxkFLkmyCEBGp11zelNS/H+A=
+github.com/go-co-op/gocron-etcd-elector v0.0.0-20250714123424-6c90074a7c3b/go.mod h1:84HeQlYtioatjugNcfmP5aNgiEYTJHZQQpAkSmQpQYU=
 github.com/go-critic/go-critic v0.9.0 h1:Pmys9qvU3pSML/3GEQ2Xd9RZ/ip+aXHKILuxczKGV/U=
 github.com/go-critic/go-critic v0.9.0/go.mod h1:5P8tdXL7m/6qnyG6oRAlYLORvoXH0WDypYgAEmagT40=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1 h1:QbL/5oDUmRBzO9/Z7Seo6zf912W/a6Sr4Eu0G/3Jho0=
@@ -951,6 +953,9 @@ github.com/intel/goresctrl v0.3.0 h1:K2D3GOzihV7xSBedGxONSlaw/un1LZgWsc9IfqipN4c
 github.com/intel/goresctrl v0.3.0/go.mod h1:fdz3mD85cmP9sHD8JUlrNWAxvwM86CrbmVXltEKd7zk=
 github.com/invopop/yaml v0.3.1 h1:f0+ZpmhfBSS4MhG+4HYseMdJhoeeopbSKbq5Rpeelso=
 github.com/invopop/yaml v0.3.1/go.mod h1:PMOp3nn4/12yEZUFfmOuNHJsZToEEOwoWsT+D81KkeA=
+github.com/jason-lynch/gocron-etcd-elector v0.0.0-20250623162740-a7f67b8d5782/go.mod h1:84HeQlYtioatjugNcfmP5aNgiEYTJHZQQpAkSmQpQYU=
+github.com/jason-lynch/gocron-etcd-elector v0.0.0-20250713175026-4dce80970598 h1:h3lmPjQsHyE+sv/hjnLCGeqmLJvgp/RtR2JMyqx8qds=
+github.com/jason-lynch/gocron-etcd-elector v0.0.0-20250713175026-4dce80970598/go.mod h1:84HeQlYtioatjugNcfmP5aNgiEYTJHZQQpAkSmQpQYU=
 github.com/jgautheron/goconst v1.5.1 h1:HxVbL1MhydKs8R8n/HE5NPvzfaYmQJA3o879lE4+WcM=
 github.com/jgautheron/goconst v1.5.1/go.mod h1:aAosetZ5zaeC/2EfMeRswtxUFBpe2Hr7HzkgX4fanO4=
 github.com/jingyugao/rowserrcheck v1.1.1 h1:zibz55j/MJtLsjP1OF4bSdgXxwL1b+Vn7Tjzq7gFzUs=

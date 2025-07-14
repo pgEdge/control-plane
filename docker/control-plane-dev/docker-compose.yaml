@@ -14,6 +14,7 @@ services:
       - DEBUG=${DEBUG:-0}
       - PGEDGE_HOST_ID=host-1
       - PGEDGE_DATA_DIR=${WORKSPACE_DIR}/docker/control-plane-dev/data/host-1
+      - PGEDGE_LOGGING__LEVEL=${LOG_LEVEL:-info}
     cap_drop:
       - ALL
     cap_add:
@@ -34,6 +35,7 @@ services:
       - PGEDGE_HTTP__PORT=3001
       - PGEDGE_EMBEDDED_ETCD__PEER_PORT=2480
       - PGEDGE_EMBEDDED_ETCD__CLIENT_PORT=2479
+      - PGEDGE_LOGGING__LEVEL=${LOG_LEVEL:-info}
   host-3:
     extends:
       service: host-1
@@ -44,6 +46,7 @@ services:
       - PGEDGE_HTTP__PORT=3002
       - PGEDGE_EMBEDDED_ETCD__PEER_PORT=2580
       - PGEDGE_EMBEDDED_ETCD__CLIENT_PORT=2579
+      - PGEDGE_LOGGING__LEVEL=${LOG_LEVEL:-info}
   api-docs:
     image: redocly/redoc
     ports:
