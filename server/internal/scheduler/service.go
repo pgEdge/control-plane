@@ -13,6 +13,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/storage"
 	"github.com/rs/zerolog"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/concurrency"
 )
 
 type Service struct {
@@ -32,7 +33,7 @@ func NewService(
 	executor WorkflowExecutor,
 	etcdClient *clientv3.Client,
 ) *Service {
-	el, err := elector.NewElectorWithClient(context.Background(), etcdClient)
+	el, err := elector.NewElectorWithClient(context.Background(), etcdClient, concurrency.WithTTL(30))
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to initialize etcd elector")
 	}
