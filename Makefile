@@ -2,6 +2,7 @@ include tools.mk
 
 # Overridable vars
 DEBUG ?= 0
+LOG_LEVEL ?= info
 CONTROL_PLANE_IMAGE_REPO ?= host.docker.internal:5000/control-plane
 CONTROL_PLANE_VERSION ?= $(shell git describe --tags --abbrev=0)
 PGEDGE_IMAGE_REPO ?= host.docker.internal:5000/pgedge
@@ -12,6 +13,10 @@ modules=$(shell go list -m -f '{{ .Dir }}' | awk -F '/' '{ print "./" $$NF "/...
 module_src_files=$(shell go list -m -f '{{ .Dir }}' | xargs find -f)
 buildx_builder=$(if $(CI),"control-plane-ci","control-plane")
 buildx_config=$(if $(CI),"./buildkit.ci.toml","./buildkit.toml")
+docker_compose_dev=WORKSPACE_DIR=$(shell pwd) \
+		DEBUG=$(DEBUG) \
+		LOG_LEVEL=$(LOG_LEVEL) \
+		docker compose -f ./docker/control-plane-dev/docker-compose.yaml
 
 ###########
 # testing #
@@ -178,8 +183,8 @@ docker-swarm-mode:
 
 .PHONY: dev-watch
 dev-watch: dev-build docker-swarm-mode
-	WORKSPACE_DIR=$(shell pwd) docker compose -f ./docker/control-plane-dev/docker-compose.yaml build
-	WORKSPACE_DIR=$(shell pwd) DEBUG=$(DEBUG) docker compose -f ./docker/control-plane-dev/docker-compose.yaml up --watch
+	$(docker_compose_dev) build
+	$(docker_compose_dev) up --watch
 
 docker/control-plane-dev/control-plane: $(module_src_files)
 	GOOS=linux go build -gcflags "all=-N -l" -o $@ $(shell pwd)/server
