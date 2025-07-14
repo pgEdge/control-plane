@@ -505,9 +505,7 @@ func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.
 	// Short-circuit if there's nothing to validate
 	if orchestratorOpts == nil || orchestratorOpts.Swarm == nil ||
 		(len(orchestratorOpts.Swarm.ExtraVolumes) == 0 &&
-			len(orchestratorOpts.Swarm.ExtraNetworks) == 0 &&
-			len(orchestratorOpts.Swarm.ExtraLabels) == 0 &&
-			spec.Port == nil) {
+			len(orchestratorOpts.Swarm.ExtraNetworks) == 0) {
 		return nil
 	}
 
@@ -625,22 +623,24 @@ func validationContainerOpts(
 			PortBindings: nat.PortMap{},
 		},
 	}
-	if port != nil && *port > 0 {
-		exposedPort := fmt.Sprintf("%d/tcp", *port)
-		portSet := nat.PortSet{
-			nat.Port(exposedPort): struct{}{},
-		}
-		portMap := nat.PortMap{
-			nat.Port(exposedPort): []nat.PortBinding{
-				{
-					HostIP:   "0.0.0.0",
-					HostPort: strconv.Itoa(*port),
-				},
-			},
-		}
-		opts.Config.ExposedPorts = portSet
-		opts.Host.PortBindings = portMap
-	}
+	// TODO (PLAT-170): this check prevents users from updating databases that
+	// have a port enabled. Commenting this out is a short-term fix.
+	// if port != nil && *port > 0 {
+	// 	exposedPort := fmt.Sprintf("%d/tcp", *port)
+	// 	portSet := nat.PortSet{
+	// 		nat.Port(exposedPort): struct{}{},
+	// 	}
+	// 	portMap := nat.PortMap{
+	// 		nat.Port(exposedPort): []nat.PortBinding{
+	// 			{
+	// 				HostIP:   "0.0.0.0",
+	// 				HostPort: strconv.Itoa(*port),
+	// 			},
+	// 		},
+	// 	}
+	// 	opts.Config.ExposedPorts = portSet
+	// 	opts.Host.PortBindings = portMap
+	// }
 	if len(endpoints) > 0 {
 		opts.Net = &network.NetworkingConfig{
 			EndpointsConfig: endpoints,
