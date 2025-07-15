@@ -98,11 +98,16 @@ func (s *SubscriptionResource) Create(ctx context.Context, rc *resource.Context)
 	if len(providers) < 1 {
 		return fmt.Errorf("no provider instance found for node %s", s.ProviderNode)
 	}
+	// Sorting instances so that our final DSN is deterministic
+	slices.SortStableFunc(providers, func(a, b *InstanceResource) int {
+		return strings.Compare(a.ConnectionInfo.PeerHost, b.ConnectionInfo.PeerHost)
+	})
 	hosts := make([]string, len(providers))
+	ports := make([]int, len(providers))
 	for i, provider := range providers {
 		hosts[i] = provider.ConnectionInfo.PeerHost
+		ports[i] = provider.ConnectionInfo.PeerPort
 	}
-	slices.Sort(hosts)
 
 	conn, err := subscriber.Connection(ctx, rc, subscriber.Spec.DatabaseName)
 	if err != nil {
@@ -111,8 +116,8 @@ func (s *SubscriptionResource) Create(ctx context.Context, rc *resource.Context)
 	defer conn.Close(ctx)
 
 	err = postgres.CreateSubscription(s.SubscriberNode, s.ProviderNode, &postgres.DSN{
-		Host:        strings.Join(hosts, ","),
-		Port:        providers[0].ConnectionInfo.PeerPort,
+		Hosts:       hosts,
+		Ports:       ports,
 		DBName:      providers[0].Spec.DatabaseName,
 		User:        "pgedge",
 		SSLCert:     providers[0].ConnectionInfo.PeerSSLCert,

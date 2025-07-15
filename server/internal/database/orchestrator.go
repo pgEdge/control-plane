@@ -67,8 +67,8 @@ func (c *ConnectionInfo) PatroniURL() *url.URL {
 
 func (c *ConnectionInfo) AdminDSN(dbName string) *postgres.DSN {
 	return &postgres.DSN{
-		Host:   c.AdminHost,
-		Port:   c.AdminPort,
+		Hosts:  []string{c.AdminHost},
+		Ports:  []int{c.AdminPort},
 		DBName: dbName,
 		User:   pgEdgeUser,
 	}
@@ -76,8 +76,8 @@ func (c *ConnectionInfo) AdminDSN(dbName string) *postgres.DSN {
 
 func (c *ConnectionInfo) PeerDSN(dbName string) *postgres.DSN {
 	return &postgres.DSN{
-		Host:        c.PeerHost,
-		Port:        c.PeerPort,
+		Hosts:       []string{c.PeerHost},
+		Ports:       []int{c.PeerPort},
 		DBName:      dbName,
 		User:        pgEdgeUser,
 		SSLCert:     c.PeerSSLCert,
