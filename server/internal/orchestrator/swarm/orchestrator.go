@@ -83,6 +83,11 @@ func NewOrchestrator(
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract bridge network info: %w", err)
 	}
+
+	if info.Swarm.Cluster == nil {
+		return nil, fmt.Errorf("docker is not in swarm mode")
+	}
+
 	dbNetworkPrefix, err := netip.ParsePrefix(cfg.DockerSwarm.DatabaseNetworksCIDR)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse database network CIDR: %w", err)
