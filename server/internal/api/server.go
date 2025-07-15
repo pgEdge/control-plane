@@ -37,6 +37,10 @@ func NewServer(
 		w.WriteHeader(204)
 	})
 
+	if cfg.ProfilingEnabled {
+		mountPprofHandlers(mux)
+	}
+
 	// Mount all the v1 handlers
 	v1Svc.Mount(mux)
 
