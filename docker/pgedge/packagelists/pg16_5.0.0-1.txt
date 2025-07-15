@@ -1,5 +1,5 @@
 postgresql16-server-16.9-2PGDG.rhel9
-spock_16-4.0.10-1PGDG.rhel9
+spock_16-5.0.0-1PGDG.rhel9
 snowflake_16-2.2-1PGDG.rhel9
 lolor_16-1.2-1PGDG.rhel9
 postgis35_16-3.5.2-1PGDG.rhel9

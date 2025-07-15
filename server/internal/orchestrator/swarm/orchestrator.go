@@ -156,11 +156,11 @@ func GetImages(cfg config.Config, version *host.PgEdgeVersion) (*Images, error) 
 	var tag string
 	switch version.PostgresVersion.Major() {
 	case 17:
-		tag = "pgedge:pg17_4.0.10-4"
+		tag = "pgedge:pg17_5.0.0-1"
 	case 16:
-		tag = "pgedge:pg16_4.0.10-4"
+		tag = "pgedge:pg16_5.0.0-1"
 	case 15:
-		tag = "pgedge:pg15_4.0.10-4"
+		tag = "pgedge:pg15_5.0.0-1"
 	default:
 		return nil, fmt.Errorf("unsupported postgres version: %q", version.PostgresVersion)
 	}

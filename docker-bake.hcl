@@ -60,7 +60,7 @@ target "pgedge" {
   context = "docker/pgedge"
   matrix = {
     pg_version = ["15", "16", "17"],
-    image_version = ["4.0.10-4"]
+    image_version = ["5.0.0-1"]
   }
   name = replace("pgedge-${pg_version}-${image_version}", ".", "_")
   tags = pgedge_tags(PGEDGE_IMAGE_REPO, pg_version, image_version)

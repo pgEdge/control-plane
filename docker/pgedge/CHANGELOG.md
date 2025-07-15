@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [5.0.0-1] - 2025-07-15
+
+#### All variants
+
+- Upgraded to Spock 5.0.0
+
 ## [4.0.10-4] - 2025-05-08
 
 ### Changed
