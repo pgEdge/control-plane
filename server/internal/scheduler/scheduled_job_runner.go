@@ -3,7 +3,6 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/rs/zerolog"
 )
@@ -34,39 +33,12 @@ func NewScheduledJobRunner(
 }
 
 func (r *ScheduledJobRunner) Run(ctx context.Context) {
-	start := time.Now()
-	r.logInfo("starting scheduled job", start)
-
 	err := r.Executor.Execute(ctx, r.Job.Workflow, r.Job.ArgsJSON)
-	now := time.Now()
-
 	if err != nil {
-		r.failJob(err, "scheduled job failed")
+		r.Logger.Error().Err(err).Str("job_id", r.Job.ID).Msg("failed to start scheduled job")
 	} else {
-		duration := now.Sub(start)
-		r.Logger.Info().
-			Str("job_id", r.Job.ID).
-			Str("workflow", r.Job.Workflow).
-			Dur("duration", duration).
-			Time("completed_at", now).
-			Msg("scheduled job completed successfully")
+		r.Logger.Info().Str("job_id", r.Job.ID).Msg("scheduled job started")
 	}
-}
-
-func (r *ScheduledJobRunner) failJob(err error, message string) {
-	r.Logger.Error().
-		Err(err).
-		Str("job_id", r.Job.ID).
-		Str("workflow", r.Job.Workflow).
-		Msg(message)
-}
-
-func (r *ScheduledJobRunner) logInfo(msg string, start time.Time) {
-	r.Logger.Info().
-		Str("job_id", r.Job.ID).
-		Str("workflow", r.Job.Workflow).
-		Time("started_at", start).
-		Msg(msg)
 }
 
 func validateScheduledJob(job *StoredScheduledJob) error {

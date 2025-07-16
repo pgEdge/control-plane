@@ -152,6 +152,9 @@ func (a *App) runInitialized(ctx context.Context) error {
 		return a.Shutdown(nil)
 	case err := <-a.api.Error():
 		return a.Shutdown(err)
+	case err := <-schedulerSvc.Error():
+		return a.Shutdown(err)
+
 	}
 }
 

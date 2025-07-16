@@ -17,13 +17,15 @@ import (
 )
 
 type Service struct {
-	logger    zerolog.Logger
-	store     *ScheduledJobStore
-	executor  WorkflowExecutor
-	scheduler *gocron.Scheduler
-	runners   map[string]*gocron.Job
-	watchOp   storage.WatchOp[*StoredScheduledJob]
-	mu        sync.RWMutex
+	logger     zerolog.Logger
+	store      *ScheduledJobStore
+	executor   WorkflowExecutor
+	etcdClient *clientv3.Client
+	scheduler  *gocron.Scheduler
+	runners    map[string]*gocron.Job
+	watchOp    storage.WatchOp[*StoredScheduledJob]
+	errCh      chan error
+	mu         sync.RWMutex
 }
 
 // NewService initializes a new scheduled job service with a scheduler and job store.
@@ -33,34 +35,36 @@ func NewService(
 	executor WorkflowExecutor,
 	etcdClient *clientv3.Client,
 ) *Service {
-	el, err := elector.NewElectorWithClient(context.Background(), etcdClient, concurrency.WithTTL(30))
-	if err != nil {
-		logger.Fatal().Err(err).Msg("failed to initialize etcd elector")
-	}
-	// Will show election logs when log level is debug
-	el.SetLogger(logger.Print)
-	go func() {
-		if err := el.Start(store.ElectorPrefix()); err != nil {
-			logger.Fatal().Err(err).Msg("failed to start etcd elector")
-		}
-	}()
-	scheduler := gocron.NewScheduler(time.UTC)
-	scheduler.WithDistributedElector(el)
 	return &Service{
-		logger:    logger,
-		store:     store,
-		executor:  executor,
-		scheduler: scheduler,
-		runners:   make(map[string]*gocron.Job),
+		logger:     logger,
+		store:      store,
+		executor:   executor,
+		etcdClient: etcdClient,
+		runners:    make(map[string]*gocron.Job),
+		errCh:      make(chan error, 1),
 	}
 }
 
 func (s *Service) Start(ctx context.Context) error {
 	s.logger.Info().Msg("starting scheduler service")
+	el, err := elector.NewElectorWithClient(ctx, s.etcdClient, concurrency.WithTTL(30))
+	if err != nil {
+		return fmt.Errorf("failed to create elector: %w", err)
+	}
+	// Will show election logs when log level is debug
+	el.SetLogger(s.logger.Print)
+	go func() {
+		if err := el.Start(s.store.ElectorPrefix()); err != nil {
+			s.errCh <- fmt.Errorf("failed to start etcd elector: %w", err)
+		}
+	}()
+	scheduler := gocron.NewScheduler(time.UTC)
+	scheduler.WithDistributedElector(el)
+	s.scheduler = scheduler
 
 	jobs, err := s.store.GetAll().Exec(ctx)
 	if err != nil {
-		s.logger.Error().Err(err).Msg("failed to retrieve scheduled jobs from store")
+		s.logger.Debug().Err(err).Msg("failed to retrieve scheduled jobs from store")
 	}
 	for _, job := range jobs {
 		if err := s.registerJob(ctx, job); err != nil {
@@ -155,7 +159,7 @@ func (s *Service) ListScheduledJobs() []string {
 	return ids
 }
 func (s *Service) watchJobChanges(ctx context.Context) {
-	s.logger.Info().Msg("watching for scheduled job changes")
+	s.logger.Debug().Msg("watching for scheduled job changes")
 
 	s.watchOp = s.store.WatchJobs()
 	err := s.watchOp.Watch(ctx, func(e *storage.Event[*StoredScheduledJob]) {
@@ -170,9 +174,7 @@ func (s *Service) watchJobChanges(ctx context.Context) {
 			s.logger.Debug().Str("job_id", jobID).Msg("detected job deletion")
 			s.UnregisterJob(jobID)
 		case storage.EventTypeError:
-			s.logger.Error().
-				Err(e.Err).
-				Msg("encountered a watch error")
+			s.logger.Debug().Err(e.Err).Msg("encountered a watch error")
 			if errors.Is(e.Err, storage.ErrWatchClosed) {
 				defer s.watchJobChanges(ctx)
 			}
@@ -184,6 +186,10 @@ func (s *Service) watchJobChanges(ctx context.Context) {
 		}
 	})
 	if err != nil {
-		s.logger.Error().Err(err).Msg("job watch exited with error")
+		s.logger.Debug().Err(err).Msg("job watch exited with error")
 	}
+}
+
+func (s *Service) Error() <-chan error {
+	return s.errCh
 }
