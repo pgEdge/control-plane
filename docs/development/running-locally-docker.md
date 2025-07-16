@@ -34,8 +34,9 @@ provide adequate [disk space, CPU, and RAM](https://docs.docker.com/desktop/sett
   - You can use `docker system df` to monitor available space and increase this
     as needed.
 
-This Docker Compose setup uses host networking, so you should also enable the
-[host networking setting](https://docs.docker.com/engine/network/drivers/host/#docker-desktop).
+> [!IMPORTANT]
+> Our Docker Compose configuration uses host networking, so you must also enable
+> [the host networking setting](https://docs.docker.com/engine/network/drivers/host/#docker-desktop).
 
 ### Restish
 
