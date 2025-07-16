@@ -108,7 +108,7 @@ func (d DockerSwarm) validate() []error {
 }
 
 var defaultDockerSwarm = DockerSwarm{
-	ImageRepositoryHost: "public.ecr.aws/pgedge",
+	ImageRepositoryHost: "ghcr.io/pgedge",
 	// This combination gives us 256 subnets with 16 addresses each.
 	BridgeNetworksCIDR:       "172.128.128.0/20",
 	BridgeNetworksSubnetBits: 28,

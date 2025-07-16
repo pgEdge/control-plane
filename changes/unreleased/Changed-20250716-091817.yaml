@@ -1,0 +1,3 @@
+kind: Changed
+body: Moved pgEdge and Control Plane images to ghcr.io
+time: 2025-07-16T09:18:17.433169-04:00

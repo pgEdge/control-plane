@@ -28,7 +28,7 @@ release:
     Get the Docker image for this release from:
 
     ```
-    public.ecr.aws/pgedge/control-plane:{{ .Tag }}
+    ghcr.io/pgedge/control-plane:{{ .Tag }}
     ```
   extra_files:
     - glob: LICENSE.md

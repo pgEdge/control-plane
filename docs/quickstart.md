@@ -66,7 +66,7 @@ docker run --detach \
     --volume /var/run/docker.sock:/var/run/docker.sock \
     --network host \
     --name host-1 \
-    public.ecr.aws/pgedge/control-plane \
+    ghcr.io/pgedge/control-plane \
     run
 ```
 
