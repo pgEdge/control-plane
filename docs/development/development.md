@@ -101,7 +101,7 @@ build will:
   -  An SBOM
   -  Checksums for the artifacts
   -  The release Changelog
-- Build and publish Docker images to `public.ecr.aws/pgedge/control-plane`
+- Build and publish Docker images to `ghcr.io/pgedge/control-plane`
 
 Since the tag includes a pre-release marker, `-rc.1`, the GitHub release will be
 marked as a pre-release. At this point, it's ready for quality assurance and

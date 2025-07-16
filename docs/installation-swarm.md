@@ -59,7 +59,7 @@ in.
 ```yaml
 services:
   us-east-1:
-      image: public.ecr.aws/pgedge/control-plane:v1.0.0
+      image: ghcr.io/pgedge/control-plane
       environment:
         - PGEDGE_CLUSTER_ID=production
         - PGEDGE_HOST_ID=us-east-1
@@ -72,7 +72,7 @@ services:
           constraints:
             - node.id=vzou89zyd4n3xz6p6jvoohqxx
   eu-central-1:
-      image: public.ecr.aws/pgedge/control-plane:v1.0.0
+      image: ghcr.io/pgedge/control-plane
       environment:
         - PGEDGE_CLUSTER_ID=production
         - PGEDGE_HOST_ID=eu-central-1
@@ -85,7 +85,7 @@ services:
           constraints:
             - node.id=5sa7m11ub62t1n22feuhg0mbp
     ap-south-1:
-      image: public.ecr.aws/pgedge/control-plane:v1.0.0
+      image: ghcr.io/pgedge/control-plane
       environment:
         - PGEDGE_CLUSTER_ID=production
         - PGEDGE_HOST_ID=ap-south-1
