@@ -2352,7 +2352,7 @@
           ],
           "port": 5432,
           "postgres_version": "17",
-          "spock_version": "4"
+          "spock_version": "5"
         },
         "state": "restoring",
         "updated_at": "2025-06-18T17:58:59Z"
@@ -2480,7 +2480,7 @@
             ],
             "port": 5432,
             "postgres_version": "17",
-            "spock_version": "4"
+            "spock_version": "5"
           },
           "state": "creating",
           "updated_at": "2025-06-18T16:52:05Z"
@@ -2693,7 +2693,7 @@
           ],
           "port": 5432,
           "postgres_version": "17",
-          "spock_version": "4"
+          "spock_version": "5"
         },
         "state": "restoring",
         "updated_at": "2025-06-18T17:58:59Z"
@@ -3433,9 +3433,9 @@
         "spock_version": {
           "type": "string",
           "description": "The major version of the Spock extension.",
-          "example": "4",
+          "example": "5",
           "enum": [
-            "4"
+            "5"
           ]
         }
       },
@@ -3806,7 +3806,7 @@
           "source_database_name": "northwind",
           "source_node_name": "n1"
         },
-        "spock_version": "4"
+        "spock_version": "5"
       },
       "required": [
         "database_name",
@@ -5360,7 +5360,7 @@
             ],
             "port": 5432,
             "postgres_version": "17",
-            "spock_version": "4"
+            "spock_version": "5"
           },
           "state": "restoring",
           "updated_at": "2025-06-18T17:58:59Z"
@@ -6179,7 +6179,7 @@
             ],
             "port": 5432,
             "postgres_version": "17",
-            "spock_version": "4"
+            "spock_version": "5"
           },
           "state": "restoring",
           "updated_at": "2025-06-18T17:58:59Z"

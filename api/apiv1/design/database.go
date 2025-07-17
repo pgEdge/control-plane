@@ -5,7 +5,7 @@ import (
 )
 
 var postgresVersions = []any{"15", "16", "17"}
-var spockVersions = []any{"4"}
+var spockVersions = []any{"5"}
 
 const (
 	nodeNamePattern = `n[0-9]+`
@@ -394,7 +394,7 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 	g.Attribute("spock_version", g.String, func() {
 		g.Description("The major version of the Spock extension.")
 		g.Enum(spockVersions...)
-		g.Example("4")
+		g.Example("5")
 	})
 	g.Attribute("port", g.Int, func() {
 		g.Description("The port used by the Postgres database. If the port is 0, each instance will be assigned a random port. If the port is unspecified, the database will not be exposed on any port, dependent on orchestrator support for that feature.")
@@ -834,7 +834,7 @@ var CreateDatabaseResponse = g.Type("CreateDatabaseResponse", func() {
 					{"name": "n3", "host_ids": []string{"eu-central-1"}},
 				},
 				"postgres_version": "17",
-				"spock_version":    "4",
+				"spock_version":    "5",
 			},
 			"state":      "creating",
 			"updated_at": "2025-06-18T16:52:05Z",
@@ -1317,7 +1317,7 @@ var exampleDatabase = map[string]any{
 			{"host_ids": []any{"eu-central-1"}, "name": "n3"},
 		},
 		"postgres_version": "17",
-		"spock_version":    "4",
+		"spock_version":    "5",
 	},
 	"state":      "restoring",
 	"updated_at": "2025-06-18T17:58:59Z",

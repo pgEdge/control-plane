@@ -906,8 +906,8 @@ func ValidateDatabaseSpecView(result *DatabaseSpecView) (err error) {
 		}
 	}
 	if result.SpockVersion != nil {
-		if !(*result.SpockVersion == "4") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.spock_version", *result.SpockVersion, []any{"4"}))
+		if !(*result.SpockVersion == "5") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.spock_version", *result.SpockVersion, []any{"5"}))
 		}
 	}
 	if result.Port != nil {
