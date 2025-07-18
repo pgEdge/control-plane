@@ -75,7 +75,10 @@ func (s *PostgresServiceSpecResource) Refresh(ctx context.Context, rc *resource.
 	if err != nil {
 		return err
 	}
-	service, err := client.ServiceInspect(ctx, s.Instance.Hostname())
+	service, err := client.ServiceInspectByLabels(ctx, map[string]string{
+		"pgedge.component":   "postgres",
+		"pgedge.instance.id": s.Instance.InstanceID,
+	})
 	if errors.Is(err, docker.ErrNotFound) {
 		return resource.ErrNotFound
 	}

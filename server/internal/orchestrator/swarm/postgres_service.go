@@ -63,13 +63,17 @@ func (s *PostgresService) Refresh(ctx context.Context, rc *resource.Context) err
 		return err
 	}
 
-	resp, err := client.ServiceInspect(ctx, s.ServiceName)
+	resp, err := client.ServiceInspectByLabels(ctx, map[string]string{
+		"pgedge.component":   "postgres",
+		"pgedge.instance.id": s.Instance.InstanceID,
+	})
 	if errors.Is(err, docker.ErrNotFound) {
 		return resource.ErrNotFound
 	} else if err != nil {
 		return fmt.Errorf("failed to inspect postgres service: %w", err)
 	}
 	s.ServiceID = resp.ID
+	s.ServiceName = resp.Spec.Name
 
 	return nil
 }
