@@ -495,6 +495,14 @@ func (e *EmbeddedEtcd) RemovePeer(ctx context.Context, hostID string) error {
 	if err != nil {
 		return fmt.Errorf("failed to remove host user: %w", err)
 	}
+	err = e.certSvc.RemoveHostEtcdUser(ctx, hostID)
+	if err != nil {
+		return fmt.Errorf("failed to remove host etcd user principal: %w", err)
+	}
+	err = e.certSvc.RemoveEtcdServer(ctx, hostID)
+	if err != nil {
+		return fmt.Errorf("failed to remove host etcd server principal: %w", err)
+	}
 
 	return nil
 }

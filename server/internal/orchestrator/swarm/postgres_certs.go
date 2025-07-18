@@ -206,6 +206,10 @@ func (c *PostgresCerts) Delete(ctx context.Context, rc *resource.Context) error 
 	if err != nil {
 		return err
 	}
+	certService, err := do.Invoke[*certificates.Service](rc.Injector)
+	if err != nil {
+		return err
+	}
 
 	parentFullPath, err := filesystem.DirResourceFullPath(rc, c.ParentID)
 	if err != nil {
@@ -215,6 +219,16 @@ func (c *PostgresCerts) Delete(ctx context.Context, rc *resource.Context) error 
 
 	if err := fs.RemoveAll(postgresDir); err != nil {
 		return fmt.Errorf("failed to remove certificates directory: %w", err)
+	}
+
+	if err := certService.RemovePostgresUser(ctx, c.InstanceID, "pgedge"); err != nil {
+		return fmt.Errorf("failed to remove pgedge postgres user principal: %w", err)
+	}
+	if err := certService.RemovePostgresUser(ctx, c.InstanceID, "patroni_replicator"); err != nil {
+		return fmt.Errorf("failed to remove patroni_replicator postgres user principal: %w", err)
+	}
+	if err := certService.RemovePostgresServer(ctx, c.InstanceID); err != nil {
+		return fmt.Errorf("failed to remove postgres server principal: %w", err)
 	}
 
 	return nil
