@@ -47,7 +47,7 @@ var PgEdgeVersion = g.Type("PgEdgeVersion", func() {
 	})
 	g.Attribute("spock_version", g.String, func() {
 		g.Description("The Spock major version.")
-		g.Example("4")
+		g.Example("5")
 	})
 
 	g.Required("postgres_version", "spock_version")
@@ -135,7 +135,7 @@ var HostsExample = []map[string]any{
 		"cpus": 16,
 		"default_pgedge_version": map[string]any{
 			"postgres_version": "17",
-			"spock_version":    "4",
+			"spock_version":    "5",
 		},
 		"hostname":     "i-0123456789abcdef.ec2.internal",
 		"id":           "us-east-1",
@@ -150,15 +150,15 @@ var HostsExample = []map[string]any{
 		"supported_pgedge_versions": []map[string]any{
 			{
 				"postgres_version": "17",
-				"spock_version":    "4",
+				"spock_version":    "5",
 			},
 			{
 				"postgres_version": "16",
-				"spock_version":    "4",
+				"spock_version":    "5",
 			},
 			{
 				"postgres_version": "15",
-				"spock_version":    "4",
+				"spock_version":    "5",
 			},
 		},
 	},
@@ -187,15 +187,15 @@ var HostsExample = []map[string]any{
 		"supported_pgedge_versions": []map[string]any{
 			{
 				"postgres_version": "17",
-				"spock_version":    "4",
+				"spock_version":    "5",
 			},
 			{
 				"postgres_version": "16",
-				"spock_version":    "4",
+				"spock_version":    "5",
 			},
 			{
 				"postgres_version": "15",
-				"spock_version":    "4",
+				"spock_version":    "5",
 			},
 		},
 	},
@@ -209,7 +209,7 @@ var HostsExample = []map[string]any{
 		"cpus": 16,
 		"default_pgedge_version": map[string]any{
 			"postgres_version": "17",
-			"spock_version":    "4",
+			"spock_version":    "5",
 		},
 		"hostname":     "i-494027b7b53f6a23.ec2.internal",
 		"id":           "eu-central-1",
@@ -224,15 +224,15 @@ var HostsExample = []map[string]any{
 		"supported_pgedge_versions": []map[string]any{
 			{
 				"postgres_version": "17",
-				"spock_version":    "4",
+				"spock_version":    "5",
 			},
 			{
 				"postgres_version": "16",
-				"spock_version":    "4",
+				"spock_version":    "5",
 			},
 			{
 				"postgres_version": "15",
-				"spock_version":    "4",
+				"spock_version":    "5",
 			},
 		},
 	},

@@ -13,7 +13,7 @@ func TestSpec(t *testing.T) {
 	port := 5432
 	base := &database.Spec{
 		PostgresVersion: "17",
-		SpockVersion:    "4",
+		SpockVersion:    "5",
 		Port:            &port,
 		CPUs:            0.5,
 		MemoryBytes:     1024 * 1024 * 1024,

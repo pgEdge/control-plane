@@ -3603,8 +3603,8 @@ func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) 
 		}
 	}
 	if body.SpockVersion != nil {
-		if !(*body.SpockVersion == "4") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.spock_version", *body.SpockVersion, []any{"4"}))
+		if !(*body.SpockVersion == "5") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.spock_version", *body.SpockVersion, []any{"5"}))
 		}
 	}
 	if body.Port != nil {
@@ -4245,8 +4245,8 @@ func ValidateDatabaseSpecRequestBodyRequestBody(body *DatabaseSpecRequestBodyReq
 		}
 	}
 	if body.SpockVersion != nil {
-		if !(*body.SpockVersion == "4") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.spock_version", *body.SpockVersion, []any{"4"}))
+		if !(*body.SpockVersion == "5") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.spock_version", *body.SpockVersion, []any{"5"}))
 		}
 	}
 	if body.Port != nil {
