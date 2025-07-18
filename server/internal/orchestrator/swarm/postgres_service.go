@@ -107,6 +107,25 @@ func (s *PostgresService) Create(ctx context.Context, rc *resource.Context) erro
 }
 
 func (s *PostgresService) Update(ctx context.Context, rc *resource.Context) error {
+	client, err := do.Invoke[*docker.Docker](rc.Injector)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.ServiceInspectByLabels(ctx, map[string]string{
+		"pgedge.component":   "postgres",
+		"pgedge.instance.id": s.Instance.InstanceID,
+	})
+	if err == nil && resp.Spec.Name != s.ServiceName {
+		// If the service name has changed, we need to remove the service with
+		// the old name so that it can be recreated with the new name.
+		if err := client.ServiceRemove(ctx, resp.Spec.Name); err != nil {
+			return fmt.Errorf("failed to remove postgres service for service name update: %w", err)
+		}
+	} else if !errors.Is(err, docker.ErrNotFound) {
+		return fmt.Errorf("failed to inspect postgres service: %w", err)
+	}
+
 	return s.Create(ctx, rc)
 }
 
