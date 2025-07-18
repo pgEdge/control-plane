@@ -11,8 +11,10 @@
   - [Installation and configuration](#installation-and-configuration)
   - [Initializing a Control Plane cluster](#initializing-a-control-plane-cluster)
   - [Creating a database](#creating-a-database)
+  - [Read replicas](#read-replicas)
   - [Updating a database](#updating-a-database)
   - [Connecting to a database](#connecting-to-a-database)
+    - [High-availability client connections](#high-availability-client-connections)
   - [Viewing database logs](#viewing-database-logs)
   - [Backup and restore](#backup-and-restore)
     - [Configuring pgBackRest for backups](#configuring-pgbackrest-for-backups)
@@ -272,6 +274,58 @@ curl -X POST http://host-3:3000/v1/databases \
 Refer to the [API specification](#openapi-specification) for details on all
 available settings.
 
+## Read replicas
+
+As mentioned in the [Concepts](#concepts) section, a node can consist of one or
+more instances, where one instance serves as a primary and the others act as
+read replicas. The Control Plane creates one instance for each host ID In the
+`host_ids` array for each node. So, to add read replicas for a node, specify
+which hosts to deploy them on via the `host_ids` array. This example "create
+database" request demonstrates a database with read replicas. Each host in this
+example cluster is named after the AWS region where it resides:
+
+```sh
+curl -X POST http://host-3:3000/v1/databases \
+    -H 'Content-Type:application/json' \
+    --data '{
+        "id": "example",
+        "spec": {
+            "database_name": "example",
+            "database_users": [
+                {
+                    "username": "admin",
+                    "password": "password",
+                    "db_owner": true,
+                    "attributes": ["SUPERUSER", "LOGIN"]
+                }
+            ],
+            "port": 5432,
+            "postgresql_conf": {
+                "max_connections": 5000
+            },
+            "nodes": [
+                { "name": "n1", "host_ids": ["us-east-1a", "us-east-1c"] },
+                { "name": "n2", "host_ids": ["eu-central-1a", "eu-central-1b"] },
+                { "name": "n3", "host_ids": ["ap-south-2a", "ap-south-2c"] }
+            ]
+        }
+    }'
+```
+
+The primary instance for each node is automatically chosen by
+[Patroni](https://patroni.readthedocs.io).  You can identify the primary
+instance for each node by submitting a `GET` request to the
+`/v1/databases/{database_id}` endpoint and inspecting the `role` and `node`
+fields of each instance in the `instances` field of the response:
+
+```sh
+curl http://us-east-1a:3000/v1/databases/example
+```
+
+See [High availability client
+connections](#high-availability-client-connections) below for ways to connect to
+the read replicas in a high-availability use case.
+
 ## Updating a database
 
 To update a database, submit a `POST` request to the
@@ -339,6 +393,63 @@ information for that specific instance.
 > If you have not exposed your database to outside connections, for example, by
 > omitting the `port` field in your database specification, the
 > `connection_info` field will be omitted in this API response.
+
+### High-availability client connections
+
+If your application requires high availability, we recommend using a client or
+driver that supports multiple hosts. The ability to set multiple hosts is a
+common feature supported by `libpq` (and any drivers or clients that use it), as
+well as many drivers that do not use `libpq`, such as the [JDBC driver for
+Java](https://jdbc.postgresql.org/), [`pgx` for
+Go](https://github.com/jackc/pgx), and [`postgres.js` for
+JavaScript](https://github.com/porsager/postgres). You can find a list of
+open-source drivers by language on [the PostgreSQL
+wiki](https://wiki.postgresql.org/wiki/List_of_drivers).
+
+To use this feature, include a comma-separated list of hosts in your connection
+string. For example:
+
+```
+host=host-1,host-2,host-3 port=5432,6432 user=admin password=password dbname=example
+```
+
+If the port for each database instance is the same, you can specify one port to
+use for all hosts, like in this `psql` example:
+
+```
+PGPASSWORD=password psql 'host=host-1,host-2,host-3 port=5432 user=admin dbname=example'
+```
+
+By default, the driver will attempt to connect to hosts in the order they're
+specified. Consider the latency between each host and your client when you order
+the hosts in the connection string. Depending on your use case, it's also good
+practice to set a maximum lifetime on your database connections. This way, your
+client can return to the lowest-latency host following a failover and recovery.
+The way that you set connection lifetime will differ between drivers and
+languages.
+
+If your database includes read replicas, you can include the
+`target_session_attrs` in your connection string to only consider primary
+instances or to only consider read replicas. Similar to multiple hosts, this
+feature is supported by `libpq` and many other open-source drivers and clients.
+
+This connection string uses the hosts from the [read replicas](#read-replicas)
+example above to connect to the closest primary instance only:
+
+```
+host=us-east-1a,us-east-1c,u-central-1a,eu-central-1b,ap-south-2a,ap-south-2c port=5432 user=admin password=password dbname=example target_session_attrs=read-write
+```
+
+This connection string only considers connections to the read replicas:
+
+```
+host=us-east-1a,us-east-1c,u-central-1a,eu-central-1b,ap-south-2a,ap-south-2c port=5432 user=admin password=password dbname=example target_session_attrs=read-only
+```
+
+See [the PostgreSQL
+documentation](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-PARAMKEYWORDS)
+for detailed descriptions of all connection parameters and their possible
+values.
 
 ## Viewing database logs
 

@@ -45,7 +45,7 @@ Control Plane instances to a three-node Docker Swarm cluster, where each
 in.
 
 > [!IMPORTANT]
-> We're using `network_mode: host` to attach each Control Plane
+> This configuration uses the `host` network to attach each Control Plane
 > container to the host's network interface. This automatically publishes all
 > ports used by the container, and it's required for the Control Plane to
 > function.
@@ -59,44 +59,57 @@ in.
 ```yaml
 services:
   us-east-1:
-      image: ghcr.io/pgedge/control-plane
-      environment:
-        - PGEDGE_CLUSTER_ID=production
-        - PGEDGE_HOST_ID=us-east-1
-        - PGEDGE_DATA_DIR=/data/pgedge/control-plane
-      volumes:
-        - /data/pgedge/control-plane:/data/pgedge/control-plane
-      network_mode: host
-      deploy:
-        placement:
-          constraints:
-            - node.id=vzou89zyd4n3xz6p6jvoohqxx
+    image: ghcr.io/pgedge/control-plane
+    command: run
+    environment:
+      - PGEDGE_CLUSTER_ID=production
+      - PGEDGE_HOST_ID=us-east-1
+      - PGEDGE_DATA_DIR=/data/pgedge/control-plane
+    volumes:
+      - /data/pgedge/control-plane:/data/pgedge/control-plane
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - host
+    deploy:
+      placement:
+        constraints:
+          - node.id==vzou89zyd4n3xz6p6jvoohqxx
   eu-central-1:
-      image: ghcr.io/pgedge/control-plane
-      environment:
-        - PGEDGE_CLUSTER_ID=production
-        - PGEDGE_HOST_ID=eu-central-1
-        - PGEDGE_DATA_DIR=/data/pgedge/control-plane
-      volumes:
-        - /data/pgedge/control-plane:/data/pgedge/control-plane
-      network_mode: host
-      deploy:
-        placement:
-          constraints:
-            - node.id=5sa7m11ub62t1n22feuhg0mbp
-    ap-south-1:
-      image: ghcr.io/pgedge/control-plane
-      environment:
-        - PGEDGE_CLUSTER_ID=production
-        - PGEDGE_HOST_ID=ap-south-1
-        - PGEDGE_DATA_DIR=/data/pgedge/control-plane
-      volumes:
-        - /data/pgedge/control-plane:/data/pgedge/control-plane
-      network_mode: host
-      deploy:
-        placement:
-          constraints:
-            - node.id=our0m7sn7gjops9klp7j1nvu7
+    image: ghcr.io/pgedge/control-plane
+    command: run
+    environment:
+      - PGEDGE_CLUSTER_ID=production
+      - PGEDGE_HOST_ID=eu-central-1
+      - PGEDGE_DATA_DIR=/data/pgedge/control-plane
+    volumes:
+      - /data/pgedge/control-plane:/data/pgedge/control-plane
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - host
+    deploy:
+      placement:
+        constraints:
+          - node.id==5sa7m11ub62t1n22feuhg0mbp
+  ap-south-1:
+    image: ghcr.io/pgedge/control-plane
+    command: run
+    environment:
+      - PGEDGE_CLUSTER_ID=production
+      - PGEDGE_HOST_ID=ap-south-1
+      - PGEDGE_DATA_DIR=/data/pgedge/control-plane
+    volumes:
+      - /data/pgedge/control-plane:/data/pgedge/control-plane
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - host
+    deploy:
+      placement:
+        constraints:
+          - node.id==our0m7sn7gjops9klp7j1nvu7
+networks:
+  host:
+    name: host
+    external: true
 ```
 
 ## Configuration

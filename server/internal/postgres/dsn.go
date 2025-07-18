@@ -2,12 +2,13 @@ package postgres
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
 type DSN struct {
-	Host            string
-	Port            int
+	Hosts           []string
+	Ports           []int
 	User            string
 	Password        string
 	DBName          string
@@ -15,15 +16,22 @@ type DSN struct {
 	SSLKey          string
 	SSLRootCert     string
 	ApplicationName string
+	Extra           map[string]string
 }
 
 func (d *DSN) String() string {
 	var fields []string
-	if d.Host != "" {
-		fields = append(fields, fmt.Sprintf("host=%s", d.Host))
+	if len(d.Hosts) > 0 {
+		host := strings.Join(d.Hosts, ",")
+		fields = append(fields, fmt.Sprintf("host=%s", host))
 	}
-	if d.Port != 0 {
-		fields = append(fields, fmt.Sprintf("port=%d", d.Port))
+	if len(d.Ports) > 0 {
+		ports := make([]string, len(d.Ports))
+		for i, port := range d.Ports {
+			ports[i] = strconv.Itoa(port)
+		}
+		port := strings.Join(ports, ",")
+		fields = append(fields, fmt.Sprintf("port=%s", port))
 	}
 	if d.User != "" {
 		fields = append(fields, fmt.Sprintf("user=%s", d.User))
@@ -47,6 +55,9 @@ func (d *DSN) String() string {
 		fields = append(fields, fmt.Sprintf("application_name=%s", d.ApplicationName))
 	} else {
 		fields = append(fields, "application_name=control-plane")
+	}
+	for key, value := range d.Extra {
+		fields = append(fields, fmt.Sprintf("%s=%s", key, value))
 	}
 	return strings.Join(fields, " ")
 }

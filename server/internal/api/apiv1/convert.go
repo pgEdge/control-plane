@@ -259,7 +259,7 @@ func instancePostgresStatusToAPI(status *database.InstanceStatus) *api.InstanceP
 }
 
 func instanceSpockStatusToAPI(status *database.InstanceStatus) *api.InstanceSpockStatus {
-	if status == nil {
+	if status == nil || !status.IsPrimary() {
 		return nil
 	}
 	subs := make([]*api.InstanceSubscription, len(status.Subscriptions))

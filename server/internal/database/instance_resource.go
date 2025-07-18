@@ -184,7 +184,11 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 	r.PrimaryInstanceID = primaryInstanceID
 
 	if r.Spec.InstanceID != r.PrimaryInstanceID {
-		// this is a no-op on non-primary instances
+		err = r.updateInstanceState(ctx, rc, &InstanceUpdateOptions{State: InstanceStateAvailable})
+		if err != nil {
+			return r.recordError(ctx, rc, err)
+		}
+		// no other initialization needed on non-primary instances
 		return nil
 	}
 

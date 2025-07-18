@@ -79,14 +79,16 @@ func (m *InstanceMonitor) checkStatus(ctx context.Context) error {
 	status.IPv4Address = utils.PointerTo(info.ClientIPv4Address)
 	status.Port = utils.PointerTo(info.ClientPort)
 
-	err = m.populateFromDbConn(ctx, info, tlsCfg, status)
+	err = m.populateFromPatroni(ctx, info, status)
 	if err != nil {
 		return m.updateInstanceErrStatus(ctx, status, err)
 	}
 
-	err = m.populateFromPatroni(ctx, info, status)
-	if err != nil {
-		return m.updateInstanceErrStatus(ctx, status, err)
+	if status.IsPrimary() {
+		err = m.populateFromDbConn(ctx, info, tlsCfg, status)
+		if err != nil {
+			return m.updateInstanceErrStatus(ctx, status, err)
+		}
 	}
 
 	return m.updateInstanceStatus(ctx, status)

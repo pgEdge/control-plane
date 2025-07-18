@@ -88,6 +88,10 @@ type InstanceStatus struct {
 	Error           *string               `json:"error,omitempty"`
 }
 
+func (s *InstanceStatus) IsPrimary() bool {
+	return s.Role != nil && *s.Role == patroni.InstanceRolePrimary
+}
+
 func storedToInstance(instance *StoredInstance, status *StoredInstanceStatus) *Instance {
 	if instance == nil {
 		return nil
