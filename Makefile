@@ -192,6 +192,10 @@ dev-watch: dev-build docker-swarm-mode
 	$(docker_compose_dev) build
 	$(docker_compose_dev) up --watch
 
+.PHONY: down
+dev-down:
+	$(docker_compose_dev) down
+
 docker/control-plane-dev/control-plane: $(module_src_files)
 	GOOS=linux go build -gcflags "all=-N -l" -o $@ $(shell pwd)/server
 
