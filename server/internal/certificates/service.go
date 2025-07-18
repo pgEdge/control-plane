@@ -136,10 +136,20 @@ func (s *Service) JoinToken() string {
 func (s *Service) getPrincipal(ctx context.Context, id string, template *x509.CertificateRequest) (*Principal, error) {
 	stored, err := s.store.Principal.GetByKey(id).Exec(ctx)
 	if err == nil {
-		// principal already exists
-		return StoredToPrincipal(stored)
-	}
-	if !errors.Is(err, storage.ErrNotFound) {
+		principal, err := StoredToPrincipal(stored)
+		if err != nil {
+			return nil, err
+		}
+		matches, err := certPEMMatchesTemplate(principal.CertPEM, template)
+		if err != nil {
+			return nil, err
+		}
+		if matches {
+			return principal, nil
+		}
+		// If the existing principal's cert doesn't match our template, we'll
+		// recreate the cert.
+	} else if !errors.Is(err, storage.ErrNotFound) {
 		return nil, fmt.Errorf("failed to fetch principal: %w", err)
 	}
 	// principal does not exist, create a new one
@@ -172,7 +182,7 @@ func (s *Service) getPrincipal(ctx context.Context, id string, template *x509.Ce
 		KeyPEM:  keyPEM,
 		CertPEM: certPEM,
 	}
-	if err := s.store.Principal.Create(PrincipalToStored(principal)).Exec(ctx); err != nil {
+	if err := s.store.Principal.Put(PrincipalToStored(principal)).Exec(ctx); err != nil {
 		return nil, fmt.Errorf("failed to store new principal: %w", err)
 	}
 	return principal, nil
