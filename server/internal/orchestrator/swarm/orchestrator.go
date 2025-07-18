@@ -35,7 +35,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/scheduler"
 )
 
-var defaultVersion = host.MustPgEdgeVersion("17", "4")
+var defaultVersion = host.MustPgEdgeVersion("17", "5")
 
 const (
 	OverlayDriver = "overlay"
@@ -44,8 +44,8 @@ const (
 // TODO: What should this look like?
 var allVersions = []*host.PgEdgeVersion{
 	defaultVersion,
-	host.MustPgEdgeVersion("16", "4"),
-	host.MustPgEdgeVersion("15", "4"),
+	host.MustPgEdgeVersion("16", "5"),
+	host.MustPgEdgeVersion("15", "5"),
 }
 
 type Orchestrator struct {
