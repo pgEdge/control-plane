@@ -1825,7 +1825,7 @@
               "cpus": 16,
               "default_pgedge_version": {
                 "postgres_version": "17",
-                "spock_version": "4"
+                "spock_version": "5"
               },
               "hostname": "i-0123456789abcdef.ec2.internal",
               "id": "us-east-1",
@@ -1840,15 +1840,15 @@
               "supported_pgedge_versions": [
                 {
                   "postgres_version": "17",
-                  "spock_version": "4"
+                  "spock_version": "5"
                 },
                 {
                   "postgres_version": "16",
-                  "spock_version": "4"
+                  "spock_version": "5"
                 },
                 {
                   "postgres_version": "15",
-                  "spock_version": "4"
+                  "spock_version": "5"
                 }
               ]
             },
@@ -1877,15 +1877,15 @@
               "supported_pgedge_versions": [
                 {
                   "postgres_version": "17",
-                  "spock_version": "4"
+                  "spock_version": "5"
                 },
                 {
                   "postgres_version": "16",
-                  "spock_version": "4"
+                  "spock_version": "5"
                 },
                 {
                   "postgres_version": "15",
-                  "spock_version": "4"
+                  "spock_version": "5"
                 }
               ]
             },
@@ -1899,7 +1899,7 @@
               "cpus": 16,
               "default_pgedge_version": {
                 "postgres_version": "17",
-                "spock_version": "4"
+                "spock_version": "5"
               },
               "hostname": "i-494027b7b53f6a23.ec2.internal",
               "id": "eu-central-1",
@@ -1914,15 +1914,15 @@
               "supported_pgedge_versions": [
                 {
                   "postgres_version": "17",
-                  "spock_version": "4"
+                  "spock_version": "5"
                 },
                 {
                   "postgres_version": "16",
-                  "spock_version": "4"
+                  "spock_version": "5"
                 },
                 {
                   "postgres_version": "15",
-                  "spock_version": "4"
+                  "spock_version": "5"
                 }
               ]
             }
@@ -1958,7 +1958,7 @@
             "cpus": 16,
             "default_pgedge_version": {
               "postgres_version": "17",
-              "spock_version": "4"
+              "spock_version": "5"
             },
             "hostname": "i-0123456789abcdef.ec2.internal",
             "id": "us-east-1",
@@ -1973,15 +1973,15 @@
             "supported_pgedge_versions": [
               {
                 "postgres_version": "17",
-                "spock_version": "4"
+                "spock_version": "5"
               },
               {
                 "postgres_version": "16",
-                "spock_version": "4"
+                "spock_version": "5"
               },
               {
                 "postgres_version": "15",
-                "spock_version": "4"
+                "spock_version": "5"
               }
             ]
           },
@@ -2010,15 +2010,15 @@
             "supported_pgedge_versions": [
               {
                 "postgres_version": "17",
-                "spock_version": "4"
+                "spock_version": "5"
               },
               {
                 "postgres_version": "16",
-                "spock_version": "4"
+                "spock_version": "5"
               },
               {
                 "postgres_version": "15",
-                "spock_version": "4"
+                "spock_version": "5"
               }
             ]
           },
@@ -2032,7 +2032,7 @@
             "cpus": 16,
             "default_pgedge_version": {
               "postgres_version": "17",
-              "spock_version": "4"
+              "spock_version": "5"
             },
             "hostname": "i-494027b7b53f6a23.ec2.internal",
             "id": "eu-central-1",
@@ -2047,15 +2047,15 @@
             "supported_pgedge_versions": [
               {
                 "postgres_version": "17",
-                "spock_version": "4"
+                "spock_version": "5"
               },
               {
                 "postgres_version": "16",
-                "spock_version": "4"
+                "spock_version": "5"
               },
               {
                 "postgres_version": "15",
-                "spock_version": "4"
+                "spock_version": "5"
               }
             ]
           }
@@ -4031,11 +4031,11 @@
           "example": [
             {
               "postgres_version": "16",
-              "spock_version": "4"
+              "spock_version": "5"
             },
             {
               "postgres_version": "16",
-              "spock_version": "4"
+              "spock_version": "5"
             }
           ]
         }
@@ -4050,7 +4050,7 @@
         "cpus": 4,
         "default_pgedge_version": {
           "postgres_version": "16",
-          "spock_version": "4"
+          "spock_version": "5"
         },
         "hostname": "i-0123456789abcdef.ec2.internal",
         "id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
@@ -4075,19 +4075,19 @@
         "supported_pgedge_versions": [
           {
             "postgres_version": "16",
-            "spock_version": "4"
+            "spock_version": "5"
           },
           {
             "postgres_version": "16",
-            "spock_version": "4"
+            "spock_version": "5"
           },
           {
             "postgres_version": "16",
-            "spock_version": "4"
+            "spock_version": "5"
           },
           {
             "postgres_version": "16",
-            "spock_version": "4"
+            "spock_version": "5"
           }
         ]
       },
@@ -5018,12 +5018,12 @@
         "spock_version": {
           "type": "string",
           "description": "The Spock major version.",
-          "example": "4"
+          "example": "5"
         }
       },
       "example": {
         "postgres_version": "16",
-        "spock_version": "4"
+        "spock_version": "5"
       },
       "required": [
         "postgres_version",

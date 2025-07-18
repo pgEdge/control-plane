@@ -30,7 +30,7 @@ paths:
                                       cpus: 16
                                       default_pgedge_version:
                                         postgres_version: "17"
-                                        spock_version: "4"
+                                        spock_version: "5"
                                       hostname: i-0123456789abcdef.ec2.internal
                                       id: us-east-1
                                       ipv4_address: 10.24.34.2
@@ -42,11 +42,11 @@ paths:
                                         updated_at: "2025-06-17T00:00:00Z"
                                       supported_pgedge_versions:
                                         - postgres_version: "17"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                         - postgres_version: "16"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                         - postgres_version: "15"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                     - cohort:
                                         cohort_id: zdjfu3tfxg1cihv3146ro3hy2
                                         control_available: true
@@ -67,11 +67,11 @@ paths:
                                         updated_at: "2025-06-17T00:00:00Z"
                                       supported_pgedge_versions:
                                         - postgres_version: "17"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                         - postgres_version: "16"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                         - postgres_version: "15"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                     - cohort:
                                         cohort_id: zdjfu3tfxg1cihv3146ro3hy2
                                         control_available: true
@@ -80,7 +80,7 @@ paths:
                                       cpus: 16
                                       default_pgedge_version:
                                         postgres_version: "17"
-                                        spock_version: "4"
+                                        spock_version: "5"
                                       hostname: i-494027b7b53f6a23.ec2.internal
                                       id: eu-central-1
                                       ipv4_address: 10.24.36.2
@@ -92,11 +92,11 @@ paths:
                                         updated_at: "2025-06-17T00:00:00Z"
                                       supported_pgedge_versions:
                                         - postgres_version: "17"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                         - postgres_version: "16"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                         - postgres_version: "15"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                 id: production
                                 status:
                                     state: error
@@ -1905,7 +1905,7 @@ paths:
                                       cpus: 16
                                       default_pgedge_version:
                                         postgres_version: "17"
-                                        spock_version: "4"
+                                        spock_version: "5"
                                       hostname: i-0123456789abcdef.ec2.internal
                                       id: us-east-1
                                       ipv4_address: 10.24.34.2
@@ -1917,11 +1917,11 @@ paths:
                                         updated_at: "2025-06-17T00:00:00Z"
                                       supported_pgedge_versions:
                                         - postgres_version: "17"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                         - postgres_version: "16"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                         - postgres_version: "15"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                     - cohort:
                                         cohort_id: zdjfu3tfxg1cihv3146ro3hy2
                                         control_available: true
@@ -1942,11 +1942,11 @@ paths:
                                         updated_at: "2025-06-17T00:00:00Z"
                                       supported_pgedge_versions:
                                         - postgres_version: "17"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                         - postgres_version: "16"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                         - postgres_version: "15"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                     - cohort:
                                         cohort_id: zdjfu3tfxg1cihv3146ro3hy2
                                         control_available: true
@@ -1955,7 +1955,7 @@ paths:
                                       cpus: 16
                                       default_pgedge_version:
                                         postgres_version: "17"
-                                        spock_version: "4"
+                                        spock_version: "5"
                                       hostname: i-494027b7b53f6a23.ec2.internal
                                       id: eu-central-1
                                       ipv4_address: 10.24.36.2
@@ -1967,11 +1967,11 @@ paths:
                                         updated_at: "2025-06-17T00:00:00Z"
                                       supported_pgedge_versions:
                                         - postgres_version: "17"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                         - postgres_version: "16"
-                                          spock_version: "4"
+                                          spock_version: "5"
                                         - postgres_version: "15"
-                                          spock_version: "4"
+                                          spock_version: "5"
                             example:
                                 - cohort:
                                     cohort_id: zdjfu3tfxg1cihv3146ro3hy2
@@ -1981,7 +1981,7 @@ paths:
                                   cpus: 16
                                   default_pgedge_version:
                                     postgres_version: "17"
-                                    spock_version: "4"
+                                    spock_version: "5"
                                   hostname: i-0123456789abcdef.ec2.internal
                                   id: us-east-1
                                   ipv4_address: 10.24.34.2
@@ -1993,11 +1993,11 @@ paths:
                                     updated_at: "2025-06-17T00:00:00Z"
                                   supported_pgedge_versions:
                                     - postgres_version: "17"
-                                      spock_version: "4"
+                                      spock_version: "5"
                                     - postgres_version: "16"
-                                      spock_version: "4"
+                                      spock_version: "5"
                                     - postgres_version: "15"
-                                      spock_version: "4"
+                                      spock_version: "5"
                                 - cohort:
                                     cohort_id: zdjfu3tfxg1cihv3146ro3hy2
                                     control_available: true
@@ -2018,11 +2018,11 @@ paths:
                                     updated_at: "2025-06-17T00:00:00Z"
                                   supported_pgedge_versions:
                                     - postgres_version: "17"
-                                      spock_version: "4"
+                                      spock_version: "5"
                                     - postgres_version: "16"
-                                      spock_version: "4"
+                                      spock_version: "5"
                                     - postgres_version: "15"
-                                      spock_version: "4"
+                                      spock_version: "5"
                                 - cohort:
                                     cohort_id: zdjfu3tfxg1cihv3146ro3hy2
                                     control_available: true
@@ -2031,7 +2031,7 @@ paths:
                                   cpus: 16
                                   default_pgedge_version:
                                     postgres_version: "17"
-                                    spock_version: "4"
+                                    spock_version: "5"
                                   hostname: i-494027b7b53f6a23.ec2.internal
                                   id: eu-central-1
                                   ipv4_address: 10.24.36.2
@@ -2043,11 +2043,11 @@ paths:
                                     updated_at: "2025-06-17T00:00:00Z"
                                   supported_pgedge_versions:
                                     - postgres_version: "17"
-                                      spock_version: "4"
+                                      spock_version: "5"
                                     - postgres_version: "16"
-                                      spock_version: "4"
+                                      spock_version: "5"
                                     - postgres_version: "15"
-                                      spock_version: "4"
+                                      spock_version: "5"
                 "409":
                     description: 'cluster_not_initialized: Conflict response.'
                     content:
@@ -2158,7 +2158,7 @@ paths:
                                 cpus: 4
                                 default_pgedge_version:
                                     postgres_version: "16"
-                                    spock_version: "4"
+                                    spock_version: "5"
                                 hostname: i-0123456789abcdef.ec2.internal
                                 id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                                 ipv4_address: 10.24.34.2
@@ -2176,11 +2176,11 @@ paths:
                                     updated_at: "2021-07-01T12:34:56Z"
                                 supported_pgedge_versions:
                                     - postgres_version: "16"
-                                      spock_version: "4"
+                                      spock_version: "5"
                                     - postgres_version: "16"
-                                      spock_version: "4"
+                                      spock_version: "5"
                                     - postgres_version: "16"
-                                      spock_version: "4"
+                                      spock_version: "5"
                 "400":
                     description: 'invalid_input: Bad Request response.'
                     content:
@@ -2638,7 +2638,7 @@ components:
                           cpus: 16
                           default_pgedge_version:
                             postgres_version: "17"
-                            spock_version: "4"
+                            spock_version: "5"
                           hostname: i-0123456789abcdef.ec2.internal
                           id: us-east-1
                           ipv4_address: 10.24.34.2
@@ -2650,11 +2650,11 @@ components:
                             updated_at: "2025-06-17T00:00:00Z"
                           supported_pgedge_versions:
                             - postgres_version: "17"
-                              spock_version: "4"
+                              spock_version: "5"
                             - postgres_version: "16"
-                              spock_version: "4"
+                              spock_version: "5"
                             - postgres_version: "15"
-                              spock_version: "4"
+                              spock_version: "5"
                         - cohort:
                             cohort_id: zdjfu3tfxg1cihv3146ro3hy2
                             control_available: true
@@ -2675,11 +2675,11 @@ components:
                             updated_at: "2025-06-17T00:00:00Z"
                           supported_pgedge_versions:
                             - postgres_version: "17"
-                              spock_version: "4"
+                              spock_version: "5"
                             - postgres_version: "16"
-                              spock_version: "4"
+                              spock_version: "5"
                             - postgres_version: "15"
-                              spock_version: "4"
+                              spock_version: "5"
                         - cohort:
                             cohort_id: zdjfu3tfxg1cihv3146ro3hy2
                             control_available: true
@@ -2688,7 +2688,7 @@ components:
                           cpus: 16
                           default_pgedge_version:
                             postgres_version: "17"
-                            spock_version: "4"
+                            spock_version: "5"
                           hostname: i-494027b7b53f6a23.ec2.internal
                           id: eu-central-1
                           ipv4_address: 10.24.36.2
@@ -2700,11 +2700,11 @@ components:
                             updated_at: "2025-06-17T00:00:00Z"
                           supported_pgedge_versions:
                             - postgres_version: "17"
-                              spock_version: "4"
+                              spock_version: "5"
                             - postgres_version: "16"
-                              spock_version: "4"
+                              spock_version: "5"
                             - postgres_version: "15"
-                              spock_version: "4"
+                              spock_version: "5"
                 id:
                     type: string
                     description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
@@ -2729,7 +2729,7 @@ components:
                       cpus: 16
                       default_pgedge_version:
                         postgres_version: "17"
-                        spock_version: "4"
+                        spock_version: "5"
                       hostname: i-0123456789abcdef.ec2.internal
                       id: us-east-1
                       ipv4_address: 10.24.34.2
@@ -2741,11 +2741,11 @@ components:
                         updated_at: "2025-06-17T00:00:00Z"
                       supported_pgedge_versions:
                         - postgres_version: "17"
-                          spock_version: "4"
+                          spock_version: "5"
                         - postgres_version: "16"
-                          spock_version: "4"
+                          spock_version: "5"
                         - postgres_version: "15"
-                          spock_version: "4"
+                          spock_version: "5"
                     - cohort:
                         cohort_id: zdjfu3tfxg1cihv3146ro3hy2
                         control_available: true
@@ -2766,11 +2766,11 @@ components:
                         updated_at: "2025-06-17T00:00:00Z"
                       supported_pgedge_versions:
                         - postgres_version: "17"
-                          spock_version: "4"
+                          spock_version: "5"
                         - postgres_version: "16"
-                          spock_version: "4"
+                          spock_version: "5"
                         - postgres_version: "15"
-                          spock_version: "4"
+                          spock_version: "5"
                     - cohort:
                         cohort_id: zdjfu3tfxg1cihv3146ro3hy2
                         control_available: true
@@ -2779,7 +2779,7 @@ components:
                       cpus: 16
                       default_pgedge_version:
                         postgres_version: "17"
-                        spock_version: "4"
+                        spock_version: "5"
                       hostname: i-494027b7b53f6a23.ec2.internal
                       id: eu-central-1
                       ipv4_address: 10.24.36.2
@@ -2791,11 +2791,11 @@ components:
                         updated_at: "2025-06-17T00:00:00Z"
                       supported_pgedge_versions:
                         - postgres_version: "17"
-                          spock_version: "4"
+                          spock_version: "5"
                         - postgres_version: "16"
-                          spock_version: "4"
+                          spock_version: "5"
                         - postgres_version: "15"
-                          spock_version: "4"
+                          spock_version: "5"
                 id: production
                 status:
                     state: available
@@ -5353,11 +5353,11 @@ components:
                     description: The PgEdge versions supported by this host.
                     example:
                         - postgres_version: "16"
-                          spock_version: "4"
+                          spock_version: "5"
                         - postgres_version: "16"
-                          spock_version: "4"
+                          spock_version: "5"
                         - postgres_version: "16"
-                          spock_version: "4"
+                          spock_version: "5"
             example:
                 cohort:
                     cohort_id: pps1n11hqijn9rbee4cjil453
@@ -5367,7 +5367,7 @@ components:
                 cpus: 4
                 default_pgedge_version:
                     postgres_version: "16"
-                    spock_version: "4"
+                    spock_version: "5"
                 hostname: i-0123456789abcdef.ec2.internal
                 id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                 ipv4_address: 10.24.34.2
@@ -5391,13 +5391,13 @@ components:
                     updated_at: "2021-07-01T12:34:56Z"
                 supported_pgedge_versions:
                     - postgres_version: "16"
-                      spock_version: "4"
+                      spock_version: "5"
                     - postgres_version: "16"
-                      spock_version: "4"
+                      spock_version: "5"
                     - postgres_version: "16"
-                      spock_version: "4"
+                      spock_version: "5"
                     - postgres_version: "16"
-                      spock_version: "4"
+                      spock_version: "5"
             required:
                 - id
                 - orchestrator
@@ -6163,10 +6163,10 @@ components:
                 spock_version:
                     type: string
                     description: The Spock major version.
-                    example: "4"
+                    example: "5"
             example:
                 postgres_version: "16"
-                spock_version: "4"
+                spock_version: "5"
             required:
                 - postgres_version
                 - spock_version
