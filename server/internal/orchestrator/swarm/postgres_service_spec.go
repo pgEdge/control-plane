@@ -30,6 +30,7 @@ type PostgresServiceSpecResource struct {
 	CohortMemberID      string                 `json:"cohort_member_id"`
 	Images              *Images                `json:"images"`
 	ServiceName         string                 `json:"service_name"`
+	InstanceHostname    string                 `json:"instance_hostname"`
 	Spec                swarm.ServiceSpec      `json:"spec"`
 	DatabaseNetworkName string                 `json:"database_network_name"`
 	DataDirID           string                 `json:"data_dir_id"`
@@ -107,6 +108,7 @@ func (s *PostgresServiceSpecResource) Create(ctx context.Context, rc *resource.C
 
 	spec, err := DatabaseServiceSpec(s.Instance, &HostOptions{
 		ServiceName:       s.ServiceName,
+		InstanceHostname:  s.InstanceHostname,
 		DatabaseNetworkID: network.NetworkID,
 		Images:            s.Images,
 		CohortMemberID:    s.CohortMemberID,

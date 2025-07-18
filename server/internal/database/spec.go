@@ -427,14 +427,6 @@ type InstanceSpec struct {
 	OrchestratorOpts *OrchestratorOpts   `json:"orchestrator_opts,omitempty"`
 }
 
-func (i *InstanceSpec) Hostname() string {
-	return fmt.Sprintf("postgres-%s-%s", i.NodeName, i.InstanceID)
-}
-
-func (i *InstanceSpec) HostnameWithDomain() string {
-	return fmt.Sprintf("%s.%s-database", i.Hostname(), i.DatabaseID)
-}
-
 type NodeInstances struct {
 	NodeName  string          `json:"node_name"`
 	Instances []*InstanceSpec `json:"instances"`
