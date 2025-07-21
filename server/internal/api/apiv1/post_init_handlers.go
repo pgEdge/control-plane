@@ -234,8 +234,13 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 		return nil, apiErr(err)
 	}
 
+	prevState := db.State
 	t, err := s.workflowSvc.UpdateDatabase(ctx, spec, req.ForceUpdate)
 	if err != nil {
+		restorationErr := s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, db.State, prevState)
+		if restorationErr != nil {
+			s.logger.Err(restorationErr).Msg("failed to roll back database state change")
+		}
 		return nil, apiErr(err)
 	}
 
@@ -255,17 +260,23 @@ func (s *PostInitHandlers) DeleteDatabase(ctx context.Context, req *api.DeleteDa
 	if err != nil {
 		return nil, apiErr(err)
 	}
-	if !database.DatabaseStateModifiable(db.State) {
+	if !req.Force && !database.DatabaseStateModifiable(db.State) {
 		return nil, ErrDatabaseNotModifiable
 	}
 
-	err = s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, db.State, database.DatabaseStateDeleting)
+	prevState := db.State
+	err = s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, prevState, database.DatabaseStateDeleting)
 	if err != nil {
 		return nil, apiErr(err)
 	}
 
 	t, err := s.workflowSvc.DeleteDatabase(ctx, databaseID)
+
 	if err != nil {
+		restorationErr := s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, database.DatabaseStateDeleting, prevState)
+		if restorationErr != nil {
+			s.logger.Err(restorationErr).Msg("failed to roll back database state change")
+		}
 		return nil, apiErr(err)
 	}
 
@@ -284,7 +295,8 @@ func (s *PostInitHandlers) BackupDatabaseNode(ctx context.Context, req *api.Back
 	if err != nil {
 		return nil, apiErr(err)
 	}
-	if !database.DatabaseStateModifiable(db.State) {
+
+	if !req.Force && !database.DatabaseStateModifiable(db.State) {
 		return nil, ErrDatabaseNotModifiable
 	}
 
@@ -304,7 +316,7 @@ func (s *PostInitHandlers) BackupDatabaseNode(ctx context.Context, req *api.Back
 			HostID:     hostID,
 		}
 	}
-
+	prevState := db.State
 	t, err := s.workflowSvc.CreatePgBackRestBackup(ctx,
 		db.DatabaseID,
 		node.Name,
@@ -317,6 +329,10 @@ func (s *PostInitHandlers) BackupDatabaseNode(ctx context.Context, req *api.Back
 		},
 	)
 	if err != nil {
+		restorationErr := s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, database.DatabaseStateBackingUp, prevState)
+		if restorationErr != nil {
+			s.logger.Err(restorationErr).Msg("failed to roll back database state change")
+		}
 		return nil, apiErr(err)
 	}
 
@@ -406,7 +422,7 @@ func (s *PostInitHandlers) RestoreDatabase(ctx context.Context, req *api.Restore
 	if err != nil {
 		return nil, apiErr(err)
 	}
-	if !database.DatabaseStateModifiable(db.State) {
+	if !req.Force && !database.DatabaseStateModifiable(db.State) {
 		return nil, ErrDatabaseNotModifiable
 	}
 
