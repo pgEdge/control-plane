@@ -19,8 +19,9 @@ import (
 var _ api.Service = (*PreInitHandlers)(nil)
 
 type PreInitHandlers struct {
-	cfg  config.Config
-	etcd *etcd.EmbeddedEtcd
+	cfg             config.Config
+	etcd            *etcd.EmbeddedEtcd
+	handlersReadyCh <-chan struct{}
 }
 
 func NewPreInitHandlers(cfg config.Config, etcdServer *etcd.EmbeddedEtcd) *PreInitHandlers {
@@ -30,10 +31,21 @@ func NewPreInitHandlers(cfg config.Config, etcdServer *etcd.EmbeddedEtcd) *PreIn
 	}
 }
 
+func (s *PreInitHandlers) waitForHandlersReady() {
+	if s.handlersReadyCh != nil {
+		// Block until the handlers are swapped. That way, clients know the
+		// server is ready as soon as we return.
+		<-s.handlersReadyCh
+	}
+}
+
 func (s *PreInitHandlers) InitCluster(ctx context.Context) (*api.ClusterJoinToken, error) {
 	if err := s.etcd.Start(ctx); err != nil {
 		return nil, apiErr(err)
 	}
+
+	s.waitForHandlersReady()
+
 	token, err := s.etcd.JoinToken()
 	if err != nil {
 		return nil, apiErr(err)
@@ -112,6 +124,8 @@ func (s *PreInitHandlers) JoinCluster(ctx context.Context, token *api.ClusterJoi
 	if err != nil {
 		return apiErr(fmt.Errorf("failed to join existing cluster: %w", err))
 	}
+
+	s.waitForHandlersReady()
 
 	return nil
 }

@@ -13,14 +13,16 @@ import (
 )
 
 type Service struct {
-	injector *do.Injector
-	handlers *dynamicHandlers
+	injector        *do.Injector
+	handlers        *dynamicHandlers
+	handlersReadyCh chan struct{}
 }
 
 func NewService(i *do.Injector) *Service {
 	return &Service{
-		injector: i,
-		handlers: &dynamicHandlers{},
+		injector:        i,
+		handlers:        &dynamicHandlers{},
+		handlersReadyCh: make(chan struct{}, 1),
 	}
 }
 
@@ -38,6 +40,8 @@ func (s *Service) UsePreInitHandlers() error {
 	if err != nil {
 		return fmt.Errorf("failed to get pre-init handlers: %w", err)
 	}
+	preInitHandlers.handlersReadyCh = s.handlersReadyCh
+
 	s.handlers.updateImpl(preInitHandlers)
 
 	return nil
@@ -49,6 +53,8 @@ func (s *Service) UsePostInitHandlers() error {
 		return fmt.Errorf("failed to get post-init handlers: %w", err)
 	}
 	s.handlers.updateImpl(postInitHandlers)
+
+	s.handlersReadyCh <- struct{}{}
 
 	return nil
 }
