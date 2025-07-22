@@ -10,9 +10,12 @@ variable "CONTROL_PLANE_VERSION" {}
 
 function "control_plane_tags" {
   params = [repo, version]
-  result = [
+  // Exclude the 'latest' tag if this is a prerelease
+  result = length(regexall("v\\d+\\.\\d+\\.\\d+$", version)) > 0 ? [
       "${repo}:${version}",
       "${repo}:latest",
+    ] : [
+      "${repo}:${version}"
     ]
 }
 
