@@ -1,4 +1,4 @@
-FROM scratch
+FROM gcr.io/distroless/static-debian12
 
 ARG TARGETOS
 ARG TARGETARCH
