@@ -1,3 +1,0 @@
-kind: Added
-body: Introduced restart-instance API to allow users to manually trigger a restart of a specific Postgres instance.
-time: 2025-06-20T13:48:36.657897+05:30

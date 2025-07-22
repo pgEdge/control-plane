@@ -143,7 +143,7 @@ ifeq ($(VERSION),)
 endif
 	$(changie) batch $(VERSION)
 	$(changie) merge
-	$(changie) latest > api/design/version.txt
+	$(changie) latest > api/version.txt
 	$(MAKE) -C api generate
 	git checkout -b release/$(VERSION)
 	git add api changes CHANGELOG.md

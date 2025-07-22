@@ -1,3 +1,0 @@
-kind: Added
-body: Enabled volume validation during database creation and update to verify that specified extra_volumes paths exist and are accessible.
-time: 2025-06-06T18:08:46.195576+05:30

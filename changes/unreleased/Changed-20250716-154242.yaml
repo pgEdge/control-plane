@@ -1,3 +1,0 @@
-kind: Changed
-body: '`control-plane` base image from `scratch` to `gcr.io/distroless/static-debian12` for CA certificates'
-time: 2025-07-16T15:42:42.728168-04:00

@@ -1,3 +1,0 @@
-kind: Changed
-body: Allow human-readable IDs in all user-specified ID fields, including `cluster_id`, `host_id`, `database_id` and backup repository IDs.
-time: 2025-06-16T07:29:58.918235-04:00

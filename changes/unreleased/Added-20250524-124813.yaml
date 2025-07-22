@@ -1,3 +1,0 @@
-kind: Added
-body: '`parent_id`, `node_name`, `host_id`, and `instance_id` fields to task API entities.'
-time: 2025-05-24T12:48:13.850831-04:00
