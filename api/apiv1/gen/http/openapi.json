@@ -759,19 +759,19 @@
         "operationId": "control-plane#restore-database",
         "parameters": [
           {
-            "name": "database_id",
-            "in": "path",
-            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
-            "required": true,
-            "type": "string"
-          },
-          {
             "name": "force",
             "in": "query",
             "description": "Force restoration of a database even in an unmodifiable state",
             "required": false,
             "type": "boolean",
             "default": false
+          },
+          {
+            "name": "database_id",
+            "in": "path",
+            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "required": true,
+            "type": "string"
           },
           {
             "name": "Restore-DatabaseRequestBody",

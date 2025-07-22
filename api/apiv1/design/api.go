@@ -483,7 +483,6 @@ var _ = g.Service("control-plane", func() {
 		g.HTTP(func() {
 			g.POST("/v1/databases/{database_id}/restore")
 			g.Body("request")
-			g.Param("database_id")
 			g.Param("force")
 
 			g.Meta("openapi:tag:Database")
