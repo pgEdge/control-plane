@@ -31,7 +31,6 @@
 - Delay when resuming workflows after a restart.
 - Database operation errors when instance IPs change after restarting.
 - Method to determine default IPv4 address to always return IPv4.
-### Security
-- Updated `pgedge` images to 4.0.10-4## v0.1.0 - 2025-05-28
+## v0.1.0 - 2025-05-28
 ### Added
 - Release process to publish Docker images for the Control Plane server.
