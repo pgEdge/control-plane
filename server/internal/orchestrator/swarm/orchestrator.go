@@ -177,7 +177,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		return nil, fmt.Errorf("failed to get images: %w", err)
 	}
 
-	instanceHostname := fmt.Sprintf("postgres-%s-%s", spec.NodeName, spec.InstanceID)
+	instanceHostname := fmt.Sprintf("postgres-%s", spec.InstanceID)
 
 	// If there's more than one instance from the same swarm cluster, each
 	// instance will output this same network. They'll get deduplicated when we
@@ -264,12 +264,12 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		InstanceHostname:    instanceHostname,
 	}
 
-	serviceName := fmt.Sprintf("postgres-%s-%s", spec.NodeName, spec.InstanceID)
 	serviceSpec := &PostgresServiceSpecResource{
 		Instance:            spec,
 		CohortMemberID:      o.swarmNodeID,
 		Images:              images,
-		ServiceName:         serviceName,
+		ServiceName:         instanceHostname,
+		InstanceHostname:    instanceHostname,
 		DatabaseNetworkName: databaseNetwork.Name,
 		DataDirID:           dataDir.ID,
 		ConfigsDirID:        configsDir.ID,
@@ -278,7 +278,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 	service := &PostgresService{
 		Instance:    spec,
 		CohortID:    o.swarmID,
-		ServiceName: serviceName,
+		ServiceName: instanceHostname,
 	}
 
 	instance := &database.InstanceResource{

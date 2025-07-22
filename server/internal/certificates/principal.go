@@ -52,14 +52,9 @@ func (s *PrincipalStore) GetByKey(certificateID string) storage.GetOp[*StoredPri
 	return storage.NewGetOp[*StoredPrincipal](s.client, key)
 }
 
-func (s *PrincipalStore) Create(item *StoredPrincipal) storage.PutOp[*StoredPrincipal] {
+func (s *PrincipalStore) Put(item *StoredPrincipal) storage.PutOp[*StoredPrincipal] {
 	key := s.Key(item.ID)
-	return storage.NewCreateOp(s.client, key, item)
-}
-
-func (s *PrincipalStore) Update(item *StoredPrincipal) storage.PutOp[*StoredPrincipal] {
-	key := s.Key(item.ID)
-	return storage.NewUpdateOp(s.client, key, item)
+	return storage.NewPutOp(s.client, key, item)
 }
 
 func (s *PrincipalStore) DeleteByKey(certificateID string) storage.DeleteOp {

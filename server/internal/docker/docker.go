@@ -207,6 +207,23 @@ func (d *Docker) ServiceInspect(ctx context.Context, serviceID string) (swarm.Se
 	return service, nil
 }
 
+func (d *Docker) ServiceInspectByLabels(ctx context.Context, labels map[string]string) (swarm.Service, error) {
+	var f []filters.KeyValuePair
+	for key, value := range labels {
+		f = append(f, filters.Arg("label", key+"="+value))
+	}
+	matches, err := d.ServiceList(ctx, types.ServiceListOptions{
+		Filters: filters.NewArgs(f...),
+	})
+	if err != nil {
+		return swarm.Service{}, fmt.Errorf("failed to find matching services: %w", err)
+	}
+	if len(matches) == 0 {
+		return swarm.Service{}, fmt.Errorf("%w: no matching services found", ErrNotFound)
+	}
+	return matches[0], nil
+}
+
 type ServiceDeployOptions struct {
 	Spec        swarm.ServiceSpec
 	Wait        bool

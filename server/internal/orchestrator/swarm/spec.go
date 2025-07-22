@@ -18,8 +18,8 @@ type Paths struct {
 }
 
 type HostOptions struct {
-	// BridgeNetworkID   string
 	ServiceName       string
+	InstanceHostname  string
 	DatabaseNetworkID string
 	Paths             Paths
 	Images            *Images
@@ -87,7 +87,7 @@ func DatabaseServiceSpec(
 				Image:    options.Images.PgEdgeImage,
 				Labels:   labels,
 				Args:     []string{"/opt/pgedge/configs/patroni.yaml"},
-				Hostname: instance.Hostname(),
+				Hostname: options.InstanceHostname,
 				Env: []string{
 					"PATRONICTL_CONFIG_FILE=/opt/pgedge/configs/patroni.yaml",
 				},

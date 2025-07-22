@@ -70,14 +70,18 @@ func (s *Service) CACert() []byte {
 	})
 }
 
+func postgresUserID(instanceID, username string) string {
+	return fmt.Sprintf("instance:%s:postgres-user:%s", instanceID, username)
+}
+
 func (s *Service) PostgresUser(ctx context.Context, instanceID, username string) (*Principal, error) {
-	id := fmt.Sprintf("instance:%s:postgres-user:%s", instanceID, username)
+	id := postgresUserID(instanceID, username)
 
 	return s.getPrincipal(ctx, id, userCertTemplate(username))
 }
 
 func (s *Service) PostgresUserTLS(ctx context.Context, instanceID, hostname, username string) (*tls.Config, error) {
-	id := fmt.Sprintf("instance:%s:postgres-user-tls:%s", instanceID, username)
+	id := postgresUserID(instanceID, username)
 
 	principal, err := s.getPrincipal(ctx, id, userCertTemplate(username))
 	if err != nil {
@@ -99,34 +103,74 @@ func (s *Service) PostgresUserTLS(ctx context.Context, instanceID, hostname, use
 	}, nil
 }
 
+func (s *Service) RemovePostgresUser(ctx context.Context, instanceID, username string) error {
+	id := postgresUserID(instanceID, username)
+
+	return s.removePrincipal(ctx, id)
+}
+
+func instanceEtcdUserID(instanceID string) string {
+	return fmt.Sprintf("instance:%s:etcd-user", instanceID)
+}
+
 func (s *Service) InstanceEtcdUser(ctx context.Context, instanceID string) (*Principal, error) {
-	id := fmt.Sprintf("instance:%s:etcd-user", instanceID)
+	id := instanceEtcdUserID(instanceID)
 
 	return s.getPrincipal(ctx, id, &x509.CertificateRequest{})
 }
 
 func (s *Service) RemoveInstanceEtcdUser(ctx context.Context, instanceID string) error {
-	id := fmt.Sprintf("instance:%s:etcd-user", instanceID)
+	id := instanceEtcdUserID(instanceID)
 
 	return s.removePrincipal(ctx, id)
 }
 
+func hostEtcdUserID(hostID string) string {
+	return fmt.Sprintf("host:%s:etcd-user", hostID)
+}
+
 func (s *Service) HostEtcdUser(ctx context.Context, hostID string) (*Principal, error) {
-	id := fmt.Sprintf("host:%s:etcd-user", hostID)
+	id := hostEtcdUserID(hostID)
 
 	return s.getPrincipal(ctx, id, &x509.CertificateRequest{})
 }
 
+func (s *Service) RemoveHostEtcdUser(ctx context.Context, hostID string) error {
+	id := hostEtcdUserID(hostID)
+
+	return s.removePrincipal(ctx, id)
+}
+
+func postgresServerID(instanceID string) string {
+	return fmt.Sprintf("instance:%s:postgres-server", instanceID)
+}
+
 func (s *Service) PostgresServer(ctx context.Context, instanceID, hostname string, dnsNames, ips []string) (*Principal, error) {
-	id := fmt.Sprintf("instance:%s:postgres-server", instanceID)
+	id := postgresServerID(instanceID)
 
 	return s.getPrincipal(ctx, id, serverCertTemplate(hostname, dnsNames, ips))
 }
 
+func (s *Service) RemovePostgresServer(ctx context.Context, instanceID string) error {
+	id := postgresServerID(instanceID)
+
+	return s.removePrincipal(ctx, id)
+}
+
+func etcdServerID(hostID string) string {
+	return fmt.Sprintf("host:%s:etcd-server", hostID)
+}
+
 func (s *Service) EtcdServer(ctx context.Context, hostID, hostname string, dnsNames, ips []string) (*Principal, error) {
-	id := fmt.Sprintf("host:%s:etcd-server", hostID)
+	id := etcdServerID(hostID)
 
 	return s.getPrincipal(ctx, id, serverCertTemplate(hostname, dnsNames, ips))
+}
+
+func (s *Service) RemoveEtcdServer(ctx context.Context, hostID string) error {
+	id := etcdServerID(hostID)
+
+	return s.removePrincipal(ctx, id)
 }
 
 func (s *Service) JoinToken() string {
@@ -136,10 +180,20 @@ func (s *Service) JoinToken() string {
 func (s *Service) getPrincipal(ctx context.Context, id string, template *x509.CertificateRequest) (*Principal, error) {
 	stored, err := s.store.Principal.GetByKey(id).Exec(ctx)
 	if err == nil {
-		// principal already exists
-		return StoredToPrincipal(stored)
-	}
-	if !errors.Is(err, storage.ErrNotFound) {
+		principal, err := StoredToPrincipal(stored)
+		if err != nil {
+			return nil, err
+		}
+		matches, err := certPEMMatchesTemplate(principal.CertPEM, template)
+		if err != nil {
+			return nil, err
+		}
+		if matches {
+			return principal, nil
+		}
+		// If the existing principal's cert doesn't match our template, we'll
+		// recreate the cert.
+	} else if !errors.Is(err, storage.ErrNotFound) {
 		return nil, fmt.Errorf("failed to fetch principal: %w", err)
 	}
 	// principal does not exist, create a new one
@@ -172,7 +226,7 @@ func (s *Service) getPrincipal(ctx context.Context, id string, template *x509.Ce
 		KeyPEM:  keyPEM,
 		CertPEM: certPEM,
 	}
-	if err := s.store.Principal.Create(PrincipalToStored(principal)).Exec(ctx); err != nil {
+	if err := s.store.Principal.Put(PrincipalToStored(principal)).Exec(ctx); err != nil {
 		return nil, fmt.Errorf("failed to store new principal: %w", err)
 	}
 	return principal, nil
