@@ -13,6 +13,13 @@ builds:
     ldflags:
       - -s -w
 
+archives:
+  - files:
+    - CHANGELOG*
+    - LICENSE*
+    - README*
+    - docs/*.md
+
 sboms:
   - artifacts: archive
     documents:
