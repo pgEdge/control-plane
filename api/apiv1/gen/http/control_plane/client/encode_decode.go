@@ -1420,6 +1420,21 @@ func (c *Client) BuildDeleteDatabaseRequest(ctx context.Context, v any) (*http.R
 	return req, nil
 }
 
+// EncodeDeleteDatabaseRequest returns an encoder for requests sent to the
+// control-plane delete-database server.
+func EncodeDeleteDatabaseRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.DeleteDatabasePayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "delete-database", "*controlplane.DeleteDatabasePayload", v)
+		}
+		values := req.URL.Query()
+		values.Add("force", fmt.Sprintf("%v", p.Force))
+		req.URL.RawQuery = values.Encode()
+		return nil
+	}
+}
+
 // DecodeDeleteDatabaseResponse returns a decoder for responses returned by the
 // control-plane delete-database endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
@@ -1595,6 +1610,9 @@ func EncodeBackupDatabaseNodeRequest(encoder func(*http.Request) goahttp.Encoder
 		if !ok {
 			return goahttp.ErrInvalidType("control-plane", "backup-database-node", "*controlplane.BackupDatabaseNodePayload", v)
 		}
+		values := req.URL.Query()
+		values.Add("force", fmt.Sprintf("%v", p.Force))
+		req.URL.RawQuery = values.Encode()
 		body := NewBackupDatabaseNodeRequestBody(p)
 		if err := encoder(req).Encode(&body); err != nil {
 			return goahttp.ErrEncodingError("control-plane", "backup-database-node", err)
@@ -2205,6 +2223,9 @@ func EncodeRestoreDatabaseRequest(encoder func(*http.Request) goahttp.Encoder) f
 		if !ok {
 			return goahttp.ErrInvalidType("control-plane", "restore-database", "*controlplane.RestoreDatabasePayload", v)
 		}
+		values := req.URL.Query()
+		values.Add("force", fmt.Sprintf("%v", p.Force))
+		req.URL.RawQuery = values.Encode()
 		body := NewRestoreDatabaseRequestBody(p)
 		if err := encoder(req).Encode(&body); err != nil {
 			return goahttp.ErrEncodingError("control-plane", "restore-database", err)

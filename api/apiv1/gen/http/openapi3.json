@@ -923,6 +923,19 @@
         "operationId": "delete-database",
         "parameters": [
           {
+            "name": "force",
+            "in": "query",
+            "description": "Force deletion of a database even in an unmodifiable state",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "boolean",
+              "description": "Force deletion of a database even in an unmodifiable state",
+              "default": false,
+              "example": true
+            },
+            "example": true
+          },
+          {
             "name": "database_id",
             "in": "path",
             "description": "ID of the database to delete.",
@@ -1788,6 +1801,19 @@
         "operationId": "backup-database-node",
         "parameters": [
           {
+            "name": "force",
+            "in": "query",
+            "description": "Forcibly attempt backup even in unmodifiable state",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "boolean",
+              "description": "Forcibly attempt backup even in unmodifiable state",
+              "default": false,
+              "example": true
+            },
+            "example": true
+          },
+          {
             "name": "database_id",
             "in": "path",
             "description": "ID of the database to back up.",
@@ -1948,6 +1974,19 @@
               "maxLength": 63
             },
             "example": "my-app"
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "description": "Force restoration of a database even in an unmodifiable state",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "boolean",
+              "description": "Force restoration of a database even in an unmodifiable state",
+              "default": false,
+              "example": true
+            },
+            "example": true
           }
         ],
         "requestBody": {
