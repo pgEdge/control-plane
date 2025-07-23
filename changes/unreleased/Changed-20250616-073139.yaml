@@ -1,3 +1,0 @@
-kind: Changed
-body: Censor sensitive fields, such as user passwords or cloud credentials, in all API responses. Likewise, these fields can be omitted from update requests if they're not being modified.
-time: 2025-06-16T07:31:39.103071-04:00

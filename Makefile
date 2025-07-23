@@ -4,7 +4,7 @@ include tools.mk
 DEBUG ?= 0
 LOG_LEVEL ?= info
 CONTROL_PLANE_IMAGE_REPO ?= host.docker.internal:5000/control-plane
-CONTROL_PLANE_VERSION ?= $(shell git describe --tags --abbrev=0)
+CONTROL_PLANE_VERSION ?= $(shell git describe --tags --abbrev=0 --match 'v*')
 PGEDGE_IMAGE_REPO ?= host.docker.internal:5000/pgedge
 PACKAGE_REPO_BASE_URL ?= http://pgedge-529820047909-yum.s3-website.us-east-2.amazonaws.com
 PACKAGE_RELEASE_CHANNEL ?= dev
@@ -102,6 +102,7 @@ control-plane-images:
 
 .PHONY: goreleaser-build
 goreleaser-build:
+	GORELEASER_CURRENT_TAG=$(CONTROL_PLANE_VERSION) \
 	goreleaser build --snapshot --clean
 	tar -C dist --strip-components=1 -c -z \
 		-f dist/control-plane_$(CONTROL_PLANE_VERSION:v%=%)_linux_amd64.tar.gz \
@@ -109,6 +110,10 @@ goreleaser-build:
 	tar -C dist --strip-components=1 -c -z \
 		-f dist/control-plane_$(CONTROL_PLANE_VERSION:v%=%)_linux_arm64.tar.gz \
 		control-plane_linux_arm64_v8.0
+
+goreleaser-test-publish:
+	GORELEASER_CURRENT_TAG=$(CONTROL_PLANE_VERSION) \
+	goreleaser release --skip=publish --snapshot --clean
 
 ###########
 # release #
@@ -143,7 +148,7 @@ ifeq ($(VERSION),)
 endif
 	$(changie) batch $(VERSION)
 	$(changie) merge
-	$(changie) latest > api/design/version.txt
+	$(changie) latest > api/version.txt
 	$(MAKE) -C api generate
 	git checkout -b release/$(VERSION)
 	git add api changes CHANGELOG.md
