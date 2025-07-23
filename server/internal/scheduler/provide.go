@@ -1,6 +1,8 @@
 package scheduler
 
 import (
+	"time"
+
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
@@ -10,12 +12,46 @@ import (
 )
 
 func Provide(i *do.Injector) {
-	provideStore(i)
+	provideLeaderStore(i)
+	provideElector(i)
+	provideScheduledJobStore(i)
 	provideService(i)
 	provideExecutor(i)
 }
 
-func provideStore(i *do.Injector) {
+func provideLeaderStore(i *do.Injector) {
+	do.Provide(i, func(i *do.Injector) (*LeaderStore, error) {
+		client, err := do.Invoke[*clientv3.Client](i)
+		if err != nil {
+			return nil, err
+		}
+		cfg, err := do.Invoke[config.Config](i)
+		if err != nil {
+			return nil, err
+		}
+		return NewLeaderStore(client, cfg.EtcdKeyRoot), nil
+	})
+}
+
+func provideElector(i *do.Injector) {
+	do.Provide(i, func(i *do.Injector) (*Elector, error) {
+		store, err := do.Invoke[*LeaderStore](i)
+		if err != nil {
+			return nil, err
+		}
+		cfg, err := do.Invoke[config.Config](i)
+		if err != nil {
+			return nil, err
+		}
+		logger, err := do.Invoke[zerolog.Logger](i)
+		if err != nil {
+			return nil, err
+		}
+		return NewElector(cfg.HostID, store, logger, 30*time.Second), nil
+	})
+}
+
+func provideScheduledJobStore(i *do.Injector) {
 	do.Provide(i, func(i *do.Injector) (*ScheduledJobStore, error) {
 		client, err := do.Invoke[*clientv3.Client](i)
 		if err != nil {
@@ -47,7 +83,11 @@ func provideService(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		return NewService(logger, store, executor, client), nil
+		elector, err := do.Invoke[*Elector](i)
+		if err != nil {
+			return nil, err
+		}
+		return NewService(logger, store, executor, client, elector), nil
 	})
 }
 
