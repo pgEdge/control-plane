@@ -99,6 +99,8 @@ type BackupDatabaseNodePayload struct {
 	// Name of the node to back up.
 	NodeName string
 	Options  *BackupOptions
+	// Forcibly attempt backup even in unmodifiable state
+	Force bool
 }
 
 // BackupDatabaseNodeResponse is the result type of the control-plane service
@@ -392,6 +394,8 @@ type DatabaseUserSpec struct {
 type DeleteDatabasePayload struct {
 	// ID of the database to delete.
 	DatabaseID Identifier
+	// Force deletion of a database even in an unmodifiable state
+	Force bool
 }
 
 // DeleteDatabaseResponse is the result type of the control-plane service
@@ -654,6 +658,8 @@ type RestoreDatabasePayload struct {
 	// ID of the database to restore.
 	DatabaseID Identifier
 	Request    *RestoreDatabaseRequest
+	// Force restoration of a database even in an unmodifiable state
+	Force bool
 }
 
 type RestoreDatabaseRequest struct {

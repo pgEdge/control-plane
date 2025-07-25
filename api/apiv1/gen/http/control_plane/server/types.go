@@ -3315,16 +3315,17 @@ func NewUpdateDatabasePayload(body *UpdateDatabaseRequestBody, databaseID string
 
 // NewDeleteDatabasePayload builds a control-plane service delete-database
 // endpoint payload.
-func NewDeleteDatabasePayload(databaseID string) *controlplane.DeleteDatabasePayload {
+func NewDeleteDatabasePayload(databaseID string, force bool) *controlplane.DeleteDatabasePayload {
 	v := &controlplane.DeleteDatabasePayload{}
 	v.DatabaseID = controlplane.Identifier(databaseID)
+	v.Force = force
 
 	return v
 }
 
 // NewBackupDatabaseNodePayload builds a control-plane service
 // backup-database-node endpoint payload.
-func NewBackupDatabaseNodePayload(body *BackupDatabaseNodeRequestBody, databaseID string, nodeName string) *controlplane.BackupDatabaseNodePayload {
+func NewBackupDatabaseNodePayload(body *BackupDatabaseNodeRequestBody, databaseID string, nodeName string, force bool) *controlplane.BackupDatabaseNodePayload {
 	v := &controlplane.BackupOptions{
 		Type: *body.Type,
 	}
@@ -3349,6 +3350,7 @@ func NewBackupDatabaseNodePayload(body *BackupDatabaseNodeRequestBody, databaseI
 	}
 	res.DatabaseID = controlplane.Identifier(databaseID)
 	res.NodeName = nodeName
+	res.Force = force
 
 	return res
 }
@@ -3389,7 +3391,7 @@ func NewGetDatabaseTaskLogPayload(databaseID string, taskID string, afterEntryID
 
 // NewRestoreDatabasePayload builds a control-plane service restore-database
 // endpoint payload.
-func NewRestoreDatabasePayload(body *RestoreDatabaseRequestBody, databaseID string) *controlplane.RestoreDatabasePayload {
+func NewRestoreDatabasePayload(body *RestoreDatabaseRequestBody, databaseID string, force bool) *controlplane.RestoreDatabasePayload {
 	v := &controlplane.RestoreDatabaseRequest{}
 	v.RestoreConfig = unmarshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSpec(body.RestoreConfig)
 	if body.TargetNodes != nil {
@@ -3402,6 +3404,7 @@ func NewRestoreDatabasePayload(body *RestoreDatabaseRequestBody, databaseID stri
 		Request: v,
 	}
 	res.DatabaseID = controlplane.Identifier(databaseID)
+	res.Force = force
 
 	return res
 }

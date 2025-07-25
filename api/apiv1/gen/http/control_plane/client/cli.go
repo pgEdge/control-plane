@@ -278,7 +278,7 @@ func BuildUpdateDatabasePayload(controlPlaneUpdateDatabaseBody string, controlPl
 
 // BuildDeleteDatabasePayload builds the payload for the control-plane
 // delete-database endpoint from CLI flags.
-func BuildDeleteDatabasePayload(controlPlaneDeleteDatabaseDatabaseID string) (*controlplane.DeleteDatabasePayload, error) {
+func BuildDeleteDatabasePayload(controlPlaneDeleteDatabaseDatabaseID string, controlPlaneDeleteDatabaseForce string) (*controlplane.DeleteDatabasePayload, error) {
 	var err error
 	var databaseID string
 	{
@@ -293,15 +293,25 @@ func BuildDeleteDatabasePayload(controlPlaneDeleteDatabaseDatabaseID string) (*c
 			return nil, err
 		}
 	}
+	var force bool
+	{
+		if controlPlaneDeleteDatabaseForce != "" {
+			force, err = strconv.ParseBool(controlPlaneDeleteDatabaseForce)
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for force, must be BOOL")
+			}
+		}
+	}
 	v := &controlplane.DeleteDatabasePayload{}
 	v.DatabaseID = controlplane.Identifier(databaseID)
+	v.Force = force
 
 	return v, nil
 }
 
 // BuildBackupDatabaseNodePayload builds the payload for the control-plane
 // backup-database-node endpoint from CLI flags.
-func BuildBackupDatabaseNodePayload(controlPlaneBackupDatabaseNodeBody string, controlPlaneBackupDatabaseNodeDatabaseID string, controlPlaneBackupDatabaseNodeNodeName string) (*controlplane.BackupDatabaseNodePayload, error) {
+func BuildBackupDatabaseNodePayload(controlPlaneBackupDatabaseNodeBody string, controlPlaneBackupDatabaseNodeDatabaseID string, controlPlaneBackupDatabaseNodeNodeName string, controlPlaneBackupDatabaseNodeForce string) (*controlplane.BackupDatabaseNodePayload, error) {
 	var err error
 	var body BackupDatabaseNodeRequestBody
 	{
@@ -337,6 +347,15 @@ func BuildBackupDatabaseNodePayload(controlPlaneBackupDatabaseNodeBody string, c
 			return nil, err
 		}
 	}
+	var force bool
+	{
+		if controlPlaneBackupDatabaseNodeForce != "" {
+			force, err = strconv.ParseBool(controlPlaneBackupDatabaseNodeForce)
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for force, must be BOOL")
+			}
+		}
+	}
 	v := &controlplane.BackupOptions{
 		Type: body.Type,
 	}
@@ -361,6 +380,7 @@ func BuildBackupDatabaseNodePayload(controlPlaneBackupDatabaseNodeBody string, c
 	}
 	res.DatabaseID = controlplane.Identifier(databaseID)
 	res.NodeName = nodeName
+	res.Force = force
 
 	return res, nil
 }
@@ -515,7 +535,7 @@ func BuildGetDatabaseTaskLogPayload(controlPlaneGetDatabaseTaskLogDatabaseID str
 
 // BuildRestoreDatabasePayload builds the payload for the control-plane
 // restore-database endpoint from CLI flags.
-func BuildRestoreDatabasePayload(controlPlaneRestoreDatabaseBody string, controlPlaneRestoreDatabaseDatabaseID string) (*controlplane.RestoreDatabasePayload, error) {
+func BuildRestoreDatabasePayload(controlPlaneRestoreDatabaseBody string, controlPlaneRestoreDatabaseDatabaseID string, controlPlaneRestoreDatabaseForce string) (*controlplane.RestoreDatabasePayload, error) {
 	var err error
 	var body RestoreDatabaseRequestBody
 	{
@@ -551,6 +571,15 @@ func BuildRestoreDatabasePayload(controlPlaneRestoreDatabaseBody string, control
 			return nil, err
 		}
 	}
+	var force bool
+	{
+		if controlPlaneRestoreDatabaseForce != "" {
+			force, err = strconv.ParseBool(controlPlaneRestoreDatabaseForce)
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for force, must be BOOL")
+			}
+		}
+	}
 	v := &controlplane.RestoreDatabaseRequest{}
 	if body.RestoreConfig != nil {
 		v.RestoreConfig = marshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSpec(body.RestoreConfig)
@@ -565,6 +594,7 @@ func BuildRestoreDatabasePayload(controlPlaneRestoreDatabaseBody string, control
 		Request: v,
 	}
 	res.DatabaseID = controlplane.Identifier(databaseID)
+	res.Force = force
 
 	return res, nil
 }

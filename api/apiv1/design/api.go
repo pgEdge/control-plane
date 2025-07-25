@@ -286,6 +286,11 @@ var _ = g.Service("control-plane", func() {
 				g.Description("ID of the database to delete.")
 				g.Example("my-app")
 			})
+			g.Attribute("force", g.Boolean, func() {
+				g.Description("Force deletion of a database even in an unmodifiable state")
+				g.Default(false)
+				g.Example(true)
+			})
 
 			g.Required("database_id")
 		})
@@ -298,6 +303,7 @@ var _ = g.Service("control-plane", func() {
 
 		g.HTTP(func() {
 			g.DELETE("/v1/databases/{database_id}")
+			g.Param("force")
 
 			g.Meta("openapi:tag:Database")
 		})
@@ -318,6 +324,12 @@ var _ = g.Service("control-plane", func() {
 			})
 			g.Attribute("options", BackupOptions)
 
+			g.Attribute("force", g.Boolean, func() {
+				g.Description("Forcibly attempt backup even in unmodifiable state")
+				g.Default(false)
+				g.Example(true)
+			})
+
 			g.Required("database_id", "node_name", "options")
 		})
 		g.Result(BackupDatabaseNodeResponse)
@@ -330,6 +342,7 @@ var _ = g.Service("control-plane", func() {
 		g.HTTP(func() {
 			g.POST("/v1/databases/{database_id}/nodes/{node_name}/backups")
 			g.Body("options")
+			g.Param("force")
 
 			g.Meta("openapi:tag:Database")
 		})
@@ -452,6 +465,12 @@ var _ = g.Service("control-plane", func() {
 			})
 			g.Attribute("request", RestoreDatabaseRequest)
 
+			g.Attribute("force", g.Boolean, func() {
+				g.Description("Force restoration of a database even in an unmodifiable state")
+				g.Default(false)
+				g.Example(true)
+			})
+
 			g.Required("database_id", "request")
 		})
 		g.Result(RestoreDatabaseResponse)
@@ -464,6 +483,7 @@ var _ = g.Service("control-plane", func() {
 		g.HTTP(func() {
 			g.POST("/v1/databases/{database_id}/restore")
 			g.Body("request")
+			g.Param("force")
 
 			g.Meta("openapi:tag:Database")
 		})

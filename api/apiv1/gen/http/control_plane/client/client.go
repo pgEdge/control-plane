@@ -398,10 +398,15 @@ func (c *Client) UpdateDatabase() goa.Endpoint {
 // control-plane service delete-database server.
 func (c *Client) DeleteDatabase() goa.Endpoint {
 	var (
+		encodeRequest  = EncodeDeleteDatabaseRequest(c.encoder)
 		decodeResponse = DecodeDeleteDatabaseResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
 		req, err := c.BuildDeleteDatabaseRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
 		if err != nil {
 			return nil, err
 		}

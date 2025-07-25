@@ -79,11 +79,13 @@ func ParseEndpoint(
 
 		controlPlaneDeleteDatabaseFlags          = flag.NewFlagSet("delete-database", flag.ExitOnError)
 		controlPlaneDeleteDatabaseDatabaseIDFlag = controlPlaneDeleteDatabaseFlags.String("database-id", "REQUIRED", "ID of the database to delete.")
+		controlPlaneDeleteDatabaseForceFlag      = controlPlaneDeleteDatabaseFlags.String("force", "", "")
 
 		controlPlaneBackupDatabaseNodeFlags          = flag.NewFlagSet("backup-database-node", flag.ExitOnError)
 		controlPlaneBackupDatabaseNodeBodyFlag       = controlPlaneBackupDatabaseNodeFlags.String("body", "REQUIRED", "")
 		controlPlaneBackupDatabaseNodeDatabaseIDFlag = controlPlaneBackupDatabaseNodeFlags.String("database-id", "REQUIRED", "ID of the database to back up.")
 		controlPlaneBackupDatabaseNodeNodeNameFlag   = controlPlaneBackupDatabaseNodeFlags.String("node-name", "REQUIRED", "Name of the node to back up.")
+		controlPlaneBackupDatabaseNodeForceFlag      = controlPlaneBackupDatabaseNodeFlags.String("force", "", "")
 
 		controlPlaneListDatabaseTasksFlags           = flag.NewFlagSet("list-database-tasks", flag.ExitOnError)
 		controlPlaneListDatabaseTasksDatabaseIDFlag  = controlPlaneListDatabaseTasksFlags.String("database-id", "REQUIRED", "ID of the database to list tasks for.")
@@ -104,6 +106,7 @@ func ParseEndpoint(
 		controlPlaneRestoreDatabaseFlags          = flag.NewFlagSet("restore-database", flag.ExitOnError)
 		controlPlaneRestoreDatabaseBodyFlag       = controlPlaneRestoreDatabaseFlags.String("body", "REQUIRED", "")
 		controlPlaneRestoreDatabaseDatabaseIDFlag = controlPlaneRestoreDatabaseFlags.String("database-id", "REQUIRED", "ID of the database to restore.")
+		controlPlaneRestoreDatabaseForceFlag      = controlPlaneRestoreDatabaseFlags.String("force", "", "")
 
 		controlPlaneGetVersionFlags = flag.NewFlagSet("get-version", flag.ExitOnError)
 
@@ -286,10 +289,10 @@ func ParseEndpoint(
 				data, err = controlplanec.BuildUpdateDatabasePayload(*controlPlaneUpdateDatabaseBodyFlag, *controlPlaneUpdateDatabaseDatabaseIDFlag, *controlPlaneUpdateDatabaseForceUpdateFlag)
 			case "delete-database":
 				endpoint = c.DeleteDatabase()
-				data, err = controlplanec.BuildDeleteDatabasePayload(*controlPlaneDeleteDatabaseDatabaseIDFlag)
+				data, err = controlplanec.BuildDeleteDatabasePayload(*controlPlaneDeleteDatabaseDatabaseIDFlag, *controlPlaneDeleteDatabaseForceFlag)
 			case "backup-database-node":
 				endpoint = c.BackupDatabaseNode()
-				data, err = controlplanec.BuildBackupDatabaseNodePayload(*controlPlaneBackupDatabaseNodeBodyFlag, *controlPlaneBackupDatabaseNodeDatabaseIDFlag, *controlPlaneBackupDatabaseNodeNodeNameFlag)
+				data, err = controlplanec.BuildBackupDatabaseNodePayload(*controlPlaneBackupDatabaseNodeBodyFlag, *controlPlaneBackupDatabaseNodeDatabaseIDFlag, *controlPlaneBackupDatabaseNodeNodeNameFlag, *controlPlaneBackupDatabaseNodeForceFlag)
 			case "list-database-tasks":
 				endpoint = c.ListDatabaseTasks()
 				data, err = controlplanec.BuildListDatabaseTasksPayload(*controlPlaneListDatabaseTasksDatabaseIDFlag, *controlPlaneListDatabaseTasksAfterTaskIDFlag, *controlPlaneListDatabaseTasksLimitFlag, *controlPlaneListDatabaseTasksSortOrderFlag)
@@ -301,7 +304,7 @@ func ParseEndpoint(
 				data, err = controlplanec.BuildGetDatabaseTaskLogPayload(*controlPlaneGetDatabaseTaskLogDatabaseIDFlag, *controlPlaneGetDatabaseTaskLogTaskIDFlag, *controlPlaneGetDatabaseTaskLogAfterEntryIDFlag, *controlPlaneGetDatabaseTaskLogLimitFlag)
 			case "restore-database":
 				endpoint = c.RestoreDatabase()
-				data, err = controlplanec.BuildRestoreDatabasePayload(*controlPlaneRestoreDatabaseBodyFlag, *controlPlaneRestoreDatabaseDatabaseIDFlag)
+				data, err = controlplanec.BuildRestoreDatabasePayload(*controlPlaneRestoreDatabaseBodyFlag, *controlPlaneRestoreDatabaseDatabaseIDFlag, *controlPlaneRestoreDatabaseForceFlag)
 			case "get-version":
 				endpoint = c.GetVersion()
 			case "restart-instance":
@@ -596,23 +599,25 @@ Example:
 }
 
 func controlPlaneDeleteDatabaseUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane delete-database -database-id STRING
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane delete-database -database-id STRING -force BOOL
 
 Deletes a database from the cluster.
     -database-id STRING: ID of the database to delete.
+    -force BOOL: 
 
 Example:
-    %[1]s control-plane delete-database --database-id "my-app"
+    %[1]s control-plane delete-database --database-id "my-app" --force true
 `, os.Args[0])
 }
 
 func controlPlaneBackupDatabaseNodeUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane backup-database-node -body JSON -database-id STRING -node-name STRING
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane backup-database-node -body JSON -database-id STRING -node-name STRING -force BOOL
 
 Initiates a backup for a database node.
     -body JSON: 
     -database-id STRING: ID of the database to back up.
     -node-name STRING: Name of the node to back up.
+    -force BOOL: 
 
 Example:
     %[1]s control-plane backup-database-node --body '{
@@ -623,7 +628,7 @@ Example:
          "archive-check": "n"
       },
       "type": "full"
-   }' --database-id "my-app" --node-name "n1"
+   }' --database-id "my-app" --node-name "n1" --force true
 `, os.Args[0])
 }
 
@@ -668,11 +673,12 @@ Example:
 }
 
 func controlPlaneRestoreDatabaseUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane restore-database -body JSON -database-id STRING
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane restore-database -body JSON -database-id STRING -force BOOL
 
 Perform an in-place restore of one or more nodes using the given restore configuration.
     -body JSON: 
     -database-id STRING: ID of the database to restore.
+    -force BOOL: 
 
 Example:
     %[1]s control-plane restore-database --body '{
@@ -688,7 +694,7 @@ Example:
       "target_nodes": [
          "n1"
       ]
-   }' --database-id "my-app"
+   }' --database-id "my-app" --force true
 `, os.Args[0])
 }
 

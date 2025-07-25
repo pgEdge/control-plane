@@ -1097,6 +1097,7 @@ func DecodeDeleteDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 	return func(r *http.Request) (any, error) {
 		var (
 			databaseID string
+			force      bool
 			err        error
 
 			params = mux.Vars(r)
@@ -1108,10 +1109,20 @@ func DecodeDeleteDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 		if utf8.RuneCountInString(databaseID) > 63 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
 		}
+		{
+			forceRaw := r.URL.Query().Get("force")
+			if forceRaw != "" {
+				v, err2 := strconv.ParseBool(forceRaw)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("force", forceRaw, "boolean"))
+				}
+				force = v
+			}
+		}
 		if err != nil {
 			return nil, err
 		}
-		payload := NewDeleteDatabasePayload(databaseID)
+		payload := NewDeleteDatabasePayload(databaseID, force)
 
 		return payload, nil
 	}
@@ -1250,6 +1261,7 @@ func DecodeBackupDatabaseNodeRequest(mux goahttp.Muxer, decoder func(*http.Reque
 		var (
 			databaseID string
 			nodeName   string
+			force      bool
 
 			params = mux.Vars(r)
 		)
@@ -1262,10 +1274,20 @@ func DecodeBackupDatabaseNodeRequest(mux goahttp.Muxer, decoder func(*http.Reque
 		}
 		nodeName = params["node_name"]
 		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "n[0-9]+"))
+		{
+			forceRaw := r.URL.Query().Get("force")
+			if forceRaw != "" {
+				v, err2 := strconv.ParseBool(forceRaw)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("force", forceRaw, "boolean"))
+				}
+				force = v
+			}
+		}
 		if err != nil {
 			return nil, err
 		}
-		payload := NewBackupDatabaseNodePayload(&body, databaseID, nodeName)
+		payload := NewBackupDatabaseNodePayload(&body, databaseID, nodeName, force)
 
 		return payload, nil
 	}
@@ -1779,6 +1801,7 @@ func DecodeRestoreDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request)
 
 		var (
 			databaseID string
+			force      bool
 
 			params = mux.Vars(r)
 		)
@@ -1789,10 +1812,20 @@ func DecodeRestoreDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request)
 		if utf8.RuneCountInString(databaseID) > 63 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
 		}
+		{
+			forceRaw := r.URL.Query().Get("force")
+			if forceRaw != "" {
+				v, err2 := strconv.ParseBool(forceRaw)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("force", forceRaw, "boolean"))
+				}
+				force = v
+			}
+		}
 		if err != nil {
 			return nil, err
 		}
-		payload := NewRestoreDatabasePayload(&body, databaseID)
+		payload := NewRestoreDatabasePayload(&body, databaseID, force)
 
 		return payload, nil
 	}

@@ -489,6 +489,14 @@
         "operationId": "control-plane#delete-database",
         "parameters": [
           {
+            "name": "force",
+            "in": "query",
+            "description": "Force deletion of a database even in an unmodifiable state",
+            "required": false,
+            "type": "boolean",
+            "default": false
+          },
+          {
             "name": "database_id",
             "in": "path",
             "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
@@ -654,6 +662,14 @@
         "operationId": "control-plane#backup-database-node",
         "parameters": [
           {
+            "name": "force",
+            "in": "query",
+            "description": "Forcibly attempt backup even in unmodifiable state",
+            "required": false,
+            "type": "boolean",
+            "default": false
+          },
+          {
             "name": "database_id",
             "in": "path",
             "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
@@ -742,6 +758,14 @@
         "description": "Perform an in-place restore of one or more nodes using the given restore configuration.",
         "operationId": "control-plane#restore-database",
         "parameters": [
+          {
+            "name": "force",
+            "in": "query",
+            "description": "Force restoration of a database even in an unmodifiable state",
+            "required": false,
+            "type": "boolean",
+            "default": false
+          },
           {
             "name": "database_id",
             "in": "path",

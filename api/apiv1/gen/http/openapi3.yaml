@@ -615,6 +615,16 @@ paths:
             description: Deletes a database from the cluster.
             operationId: delete-database
             parameters:
+                - name: force
+                  in: query
+                  description: Force deletion of a database even in an unmodifiable state
+                  allowEmptyValue: true
+                  schema:
+                    type: boolean
+                    description: Force deletion of a database even in an unmodifiable state
+                    default: false
+                    example: true
+                  example: true
                 - name: database_id
                   in: path
                   description: ID of the database to delete.
@@ -1189,6 +1199,16 @@ paths:
             description: Initiates a backup for a database node.
             operationId: backup-database-node
             parameters:
+                - name: force
+                  in: query
+                  description: Forcibly attempt backup even in unmodifiable state
+                  allowEmptyValue: true
+                  schema:
+                    type: boolean
+                    description: Forcibly attempt backup even in unmodifiable state
+                    default: false
+                    example: true
+                  example: true
                 - name: database_id
                   in: path
                   description: ID of the database to back up.
@@ -1289,6 +1309,16 @@ paths:
             description: Perform an in-place restore of one or more nodes using the given restore configuration.
             operationId: restore-database
             parameters:
+                - name: force
+                  in: query
+                  description: Force restoration of a database even in an unmodifiable state
+                  allowEmptyValue: true
+                  schema:
+                    type: boolean
+                    description: Force restoration of a database even in an unmodifiable state
+                    default: false
+                    example: true
+                  example: true
                 - name: database_id
                   in: path
                   description: ID of the database to restore.
