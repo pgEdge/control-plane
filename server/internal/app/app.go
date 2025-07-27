@@ -7,6 +7,7 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
+	"google.golang.org/grpc/grpclog"
 
 	"github.com/pgEdge/control-plane/server/internal/api"
 	"github.com/pgEdge/control-plane/server/internal/certificates"
@@ -52,6 +53,13 @@ func NewApp(i *do.Injector) (*App, error) {
 }
 
 func (a *App) Run(ctx context.Context) error {
+	// grpclog needs to be configured before grpc.Dial is called
+	grpcLogger, err := do.Invoke[grpclog.LoggerV2](a.i)
+	if err != nil {
+		return fmt.Errorf("failed to initialize grpc logger: %w", err)
+	}
+	grpclog.SetLoggerV2(grpcLogger)
+
 	embeddedEtcd, err := do.Invoke[*etcd.EmbeddedEtcd](a.i)
 	if err != nil {
 		return fmt.Errorf("failed to initialize etcd: %w", err)
