@@ -205,6 +205,8 @@ type DatabaseNodeSpecView struct {
 	RestoreConfig *RestoreConfigSpecView
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsView
+	// Whether Zodan is enabled for this node.
+	ZodanEnabled *bool
 }
 
 // BackupConfigSpecView is a type that runs validations on a projected type.

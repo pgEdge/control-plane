@@ -67,6 +67,10 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 	g.Attribute("orchestrator_opts", OrchestratorOpts, func() {
 		g.Description("Orchestrator-specific configuration options.")
 	})
+	g.Attribute("zodan_enabled", g.Boolean, func() {
+		g.Description("Whether Zodan is enabled for this node.")
+		g.Example(true)
+	})
 
 	g.Required("name", "host_ids")
 })

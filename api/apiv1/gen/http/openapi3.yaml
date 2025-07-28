@@ -3476,6 +3476,7 @@ components:
                             source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                             source_database_name: northwind
                             source_node_name: n1
+                          zodan_enabled: true
                     orchestrator_opts:
                         swarm:
                             extra_labels:
@@ -3773,6 +3774,7 @@ components:
                             source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                             source_database_name: northwind
                             source_node_name: n1
+                          zodan_enabled: true
                     orchestrator_opts:
                         swarm:
                             extra_labels:
@@ -4060,6 +4062,7 @@ components:
                             source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                             source_database_name: northwind
                             source_node_name: n1
+                          zodan_enabled: true
                     orchestrator_opts:
                         swarm:
                             extra_labels:
@@ -4347,6 +4350,7 @@ components:
                             source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                             source_database_name: northwind
                             source_node_name: n1
+                          zodan_enabled: true
                     orchestrator_opts:
                         swarm:
                             extra_labels:
@@ -4470,6 +4474,10 @@ components:
                     additionalProperties: true
                 restore_config:
                     $ref: '#/components/schemas/RestoreConfigSpec'
+                zodan_enabled:
+                    type: boolean
+                    description: Whether Zodan is enabled for this node.
+                    example: true
             example:
                 backup_config:
                     repositories:
@@ -4571,6 +4579,7 @@ components:
                     source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                     source_database_name: northwind
                     source_node_name: n1
+                zodan_enabled: true
             required:
                 - name
                 - host_ids
@@ -4733,6 +4742,7 @@ components:
                             source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                             source_database_name: northwind
                             source_node_name: n1
+                          zodan_enabled: true
                     minItems: 1
                     maxItems: 9
                 orchestrator_opts:
@@ -4930,6 +4940,7 @@ components:
                         source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                         source_database_name: northwind
                         source_node_name: n1
+                      zodan_enabled: true
                     - backup_config:
                         repositories:
                             - azure_account: pgedge-backups
@@ -5028,6 +5039,7 @@ components:
                         source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                         source_database_name: northwind
                         source_node_name: n1
+                      zodan_enabled: true
                     - backup_config:
                         repositories:
                             - azure_account: pgedge-backups
@@ -5126,6 +5138,7 @@ components:
                         source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                         source_database_name: northwind
                         source_node_name: n1
+                      zodan_enabled: true
                 orchestrator_opts:
                     swarm:
                         extra_labels:

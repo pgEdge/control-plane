@@ -47,6 +47,7 @@ type Node struct {
 	BackupConfig     *BackupConfig     `json:"backup_config"`
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
+	ZodanEnabled     bool              `json:"zodan_enabled,omitempty"` // whether Zodan is enabled for this node
 }
 
 func (n *Node) Clone() *Node {
@@ -64,6 +65,7 @@ func (n *Node) Clone() *Node {
 		BackupConfig:     n.BackupConfig.Clone(),
 		RestoreConfig:    n.RestoreConfig.Clone(),
 		OrchestratorOpts: n.OrchestratorOpts.Clone(),
+		ZodanEnabled:     n.ZodanEnabled,
 	}
 }
 
@@ -425,6 +427,7 @@ type InstanceSpec struct {
 	EnableBackups    bool                `json:"enable_backups"`
 	ClusterSize      int                 `json:"cluster_size"`
 	OrchestratorOpts *OrchestratorOpts   `json:"orchestrator_opts,omitempty"`
+	ZodanEnabled     bool                `json:"zodan_enabled,omitempty"`
 }
 
 type NodeInstances struct {
@@ -515,6 +518,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				EnableBackups:    backupConfig != nil && hostIdx == len(node.HostIDs)-1,
 				ClusterSize:      clusterSize,
 				OrchestratorOpts: orchestratorOpts.Clone(),
+				ZodanEnabled:     node.ZodanEnabled,
 			}
 		}
 
@@ -526,6 +530,14 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 	return nodes, nil
 }
 
+func (s *Spec) HasZodanTargetNode() bool {
+	for _, node := range s.Nodes {
+		if node.ZodanEnabled {
+			return true
+		}
+	}
+	return false
+}
 func extractOrdinal(name string) (int, error) {
 	if len(name) < 2 {
 		return 0, fmt.Errorf("invalid name: %s", name)

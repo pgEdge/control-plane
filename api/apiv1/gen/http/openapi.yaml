@@ -1990,6 +1990,10 @@ definitions:
                 additionalProperties: true
             restore_config:
                 $ref: '#/definitions/RestoreConfigSpec'
+            zodan_enabled:
+                type: boolean
+                description: Whether Zodan is enabled for this node.
+                example: true
         example:
             backup_config:
                 repositories:
@@ -2111,6 +2115,7 @@ definitions:
                 source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                 source_database_name: northwind
                 source_node_name: n1
+            zodan_enabled: true
         required:
             - name
             - host_ids
@@ -2435,6 +2440,7 @@ definitions:
                         source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                         source_database_name: northwind
                         source_node_name: n1
+                      zodan_enabled: true
                 minItems: 1
                 maxItems: 9
             orchestrator_opts:
@@ -2672,6 +2678,7 @@ definitions:
                     source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
                     source_database_name: northwind
                     source_node_name: n1
+                  zodan_enabled: true
             orchestrator_opts:
                 swarm:
                     extra_labels:

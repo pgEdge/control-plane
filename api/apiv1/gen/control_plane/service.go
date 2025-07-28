@@ -335,6 +335,8 @@ type DatabaseNodeSpec struct {
 	RestoreConfig *RestoreConfigSpec
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOpts
+	// Whether Zodan is enabled for this node.
+	ZodanEnabled *bool
 }
 
 type DatabaseSpec struct {
@@ -1271,6 +1273,7 @@ func transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec(v *control
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		ZodanEnabled:    v.ZodanEnabled,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]Identifier, len(v.HostIds))
@@ -1620,6 +1623,7 @@ func transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView(v *Databas
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		ZodanEnabled:    v.ZodanEnabled,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]controlplaneviews.IdentifierView, len(v.HostIds))

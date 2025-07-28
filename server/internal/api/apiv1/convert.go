@@ -83,6 +83,7 @@ func databaseNodesToAPI(nodes []*database.Node) []*api.DatabaseNodeSpec {
 			BackupConfig:     backupConfigToAPI(node.BackupConfig),
 			RestoreConfig:    restoreConfigToAPI(node.RestoreConfig),
 			OrchestratorOpts: orchestratorOptsToAPI(node.OrchestratorOpts),
+			ZodanEnabled:     utils.NillablePointerTo(node.ZodanEnabled),
 		}
 	}
 	return apiNodes
@@ -345,6 +346,7 @@ func apiToDatabaseNodes(apiNodes []*api.DatabaseNodeSpec) ([]*database.Node, err
 			BackupConfig:     backupConfig,
 			RestoreConfig:    restoreConfig,
 			OrchestratorOpts: orchestratorOptsToDatabase(apiNode.OrchestratorOpts),
+			ZodanEnabled:     utils.FromPointer(apiNode.ZodanEnabled),
 		}
 	}
 	return nodes, nil

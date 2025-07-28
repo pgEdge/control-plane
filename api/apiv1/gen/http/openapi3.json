@@ -5083,7 +5083,8 @@
                   "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
-                }
+                },
+                "zodan_enabled": true
               }
             ],
             "orchestrator_opts": {
@@ -5504,7 +5505,8 @@
                     "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                     "source_database_name": "northwind",
                     "source_node_name": "n1"
-                  }
+                  },
+                  "zodan_enabled": true
                 }
               ],
               "orchestrator_opts": {
@@ -5912,7 +5914,8 @@
                     "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                     "source_database_name": "northwind",
                     "source_node_name": "n1"
-                  }
+                  },
+                  "zodan_enabled": true
                 }
               ],
               "orchestrator_opts": {
@@ -6320,7 +6323,8 @@
                     "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                     "source_database_name": "northwind",
                     "source_node_name": "n1"
-                  }
+                  },
+                  "zodan_enabled": true
                 }
               ],
               "orchestrator_opts": {
@@ -6491,6 +6495,11 @@
           },
           "restore_config": {
             "$ref": "#/components/schemas/RestoreConfigSpec"
+          },
+          "zodan_enabled": {
+            "type": "boolean",
+            "description": "Whether Zodan is enabled for this node.",
+            "example": true
           }
         },
         "example": {
@@ -6634,7 +6643,8 @@
             "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
             "source_database_name": "northwind",
             "source_node_name": "n1"
-          }
+          },
+          "zodan_enabled": true
         },
         "required": [
           "name",
@@ -6861,7 +6871,8 @@
                   "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                   "source_database_name": "northwind",
                   "source_node_name": "n1"
-                }
+                },
+                "zodan_enabled": true
               }
             ],
             "minItems": 1,
@@ -7138,7 +7149,8 @@
                 "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
-              }
+              },
+              "zodan_enabled": true
             },
             {
               "backup_config": {
@@ -7279,7 +7291,8 @@
                 "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
-              }
+              },
+              "zodan_enabled": true
             },
             {
               "backup_config": {
@@ -7420,7 +7433,8 @@
                 "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
-              }
+              },
+              "zodan_enabled": true
             }
           ],
           "orchestrator_opts": {

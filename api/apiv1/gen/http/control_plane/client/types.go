@@ -1367,6 +1367,8 @@ type DatabaseNodeSpecResponseBody struct {
 	RestoreConfig *RestoreConfigSpecResponseBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsResponseBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+	// Whether Zodan is enabled for this node.
+	ZodanEnabled *bool `form:"zodan_enabled,omitempty" json:"zodan_enabled,omitempty" xml:"zodan_enabled,omitempty"`
 }
 
 // BackupConfigSpecResponseBody is used to define fields on response body types.
@@ -1631,6 +1633,8 @@ type DatabaseNodeSpecRequestBody struct {
 	RestoreConfig *RestoreConfigSpecRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+	// Whether Zodan is enabled for this node.
+	ZodanEnabled *bool `form:"zodan_enabled,omitempty" json:"zodan_enabled,omitempty" xml:"zodan_enabled,omitempty"`
 }
 
 // BackupConfigSpecRequestBody is used to define fields on request body types.
@@ -1925,6 +1929,8 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	RestoreConfig *RestoreConfigSpecRequestBodyRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsRequestBodyRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+	// Whether Zodan is enabled for this node.
+	ZodanEnabled *bool `form:"zodan_enabled,omitempty" json:"zodan_enabled,omitempty" xml:"zodan_enabled,omitempty"`
 }
 
 // BackupConfigSpecRequestBodyRequestBody is used to define fields on request
