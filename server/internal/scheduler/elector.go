@@ -43,7 +43,7 @@ func NewElector(
 		store:  store,
 		logger: logger.With().Str("component", "scheduler_elector").Logger(),
 		ttl:    ttl,
-		done:   make(chan struct{}, 1),
+		done:   make(chan struct{}),
 		errCh:  make(chan error, 1),
 	}
 }
@@ -96,7 +96,7 @@ func (e *Elector) Shutdown() error {
 		e.watchOp.Close()
 	}
 
-	e.done <- struct{}{}
+	close(e.done)
 
 	return nil
 }
