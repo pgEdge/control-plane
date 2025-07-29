@@ -6,21 +6,8 @@ import (
 	"github.com/rs/zerolog"
 	"go.mau.fi/zerozap"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapgrpc"
 )
-
-// func RegisterLogger(i *do.Injector) {
-// 	do.Provide(i, func(i *do.Injector) (*zap.Logger, error) {
-// 		mgr, err := do.Invoke[*config.Manager](i)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		base, err := do.Invoke[zerolog.Logger](i)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		return NewLogger(mgr.Config().EmbeddedEtcd, base)
-// 	})
-// }
 
 func newZapLogger(base zerolog.Logger, logLevel, component string) (*zap.Logger, error) {
 	level, err := zerolog.ParseLevel(logLevel)
@@ -34,4 +21,13 @@ func newZapLogger(base zerolog.Logger, logLevel, component string) (*zap.Logger,
 		CallerWithSkipFrameCount(5). // Found via trial and error
 		Logger())
 	return zap.New(core), nil
+}
+
+func newGrpcLogger(base zerolog.Logger) *zapgrpc.Logger {
+	core := zerozap.New(base.
+		Level(zerolog.FatalLevel).
+		With().
+		Str("component", "grpc_logger").
+		Logger())
+	return zapgrpc.NewLogger(zap.New(core))
 }
