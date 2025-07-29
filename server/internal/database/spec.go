@@ -485,7 +485,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		}
 		postgresqlConf := maps.Clone(s.PostgreSQLConf)
 		if node.PostgreSQLConf != nil {
-			maps.Copy(postgresqlConf, node.PostgreSQLConf)
+			postgresqlConf = maps.Clone(node.PostgreSQLConf)
 		}
 		orchestratorOpts := s.OrchestratorOpts
 		if node.OrchestratorOpts != nil {
