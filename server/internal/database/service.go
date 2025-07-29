@@ -9,6 +9,8 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/patroni"
+	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
@@ -383,11 +385,92 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 }
 
 func (s *Service) TriggerSyncEvent(ctx context.Context, spec *Spec) (string, error) {
+	instances, err := s.GetInstances(ctx, spec.DatabaseID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get instances: %w", err)
+	}
 
-	return "", nil
+	var primary *Instance
+	for _, inst := range instances {
+		if inst.State == InstanceStateAvailable && *inst.Status.Role == patroni.InstanceRolePrimary {
+			primary = inst
+			break
+		}
+	}
+	if primary == nil {
+		return "", fmt.Errorf("no primary instance found for database %s", spec.DatabaseID)
+	}
+
+	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, primary.DatabaseID, primary.InstanceID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get connection info: %w", err)
+	}
+
+	// certs, err := do.Invoke[*certificates.Service](rc.Injector)
+	// if err != nil {
+	// 	return "", err
+	// }
+
+	// tlsCfg, err := certs.PostgresUserTLS(ctx, primary.InstanceID, connInfo.AdminHost, "pgedge")
+	// if err != nil {
+	// 	return "", fmt.Errorf("failed to get TLS config: %w", err)
+	// }
+
+	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
+		DSN: connInfo.AdminDSN(spec.DatabaseName),
+		TLS: nil,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to connect to primary instance: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	lsn, err := postgres.SyncEvent().Row(ctx, conn)
+	if err != nil {
+		return "", fmt.Errorf("failed to trigger spock.sync_event: %w", err)
+	}
+
+	return lsn, nil
 }
 
 func (s *Service) WaitForSyncEvent(ctx context.Context, spec *Spec, origin string, lsn string, timeoutMS int) error {
+	instances, err := s.GetInstances(ctx, spec.DatabaseID)
+	if err != nil {
+		return fmt.Errorf("failed to get instances: %w", err)
+	}
+
+	var primary *Instance
+	for _, inst := range instances {
+		if inst.State == InstanceStateAvailable && *inst.Status.Role == patroni.InstanceRolePrimary {
+			primary = inst
+			break
+		}
+	}
+	if primary == nil {
+		return fmt.Errorf("no primary instance found for database %s", spec.DatabaseID)
+	}
+
+	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, primary.DatabaseID, primary.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get connection info: %w", err)
+	}
+
+	// certs, err := do.Invoke[*certificates.Service](s.Injector)
+	// tlsCfg, err := certs.PostgresUserTLS(ctx, primary.InstanceID, connInfo.AdminHost, "pgedge")
+
+	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
+		DSN: connInfo.AdminDSN(spec.DatabaseName),
+		TLS: nil,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to primary instance: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	stmt := postgres.WaitForSyncEvent(origin, lsn, timeoutMS)
+	if err := stmt.Exec(ctx, conn); err != nil {
+		return fmt.Errorf("failed to execute spock.wait_for_sync_event: %w", err)
+	}
 
 	return nil
 }
