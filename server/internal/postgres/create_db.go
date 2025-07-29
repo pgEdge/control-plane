@@ -192,3 +192,20 @@ func DropSpockAndCleanupSlots(dbName string) Statements {
 func subName(nodeName, peerName string) string {
 	return fmt.Sprintf("sub_%s%s", nodeName, peerName)
 }
+
+func SyncEvent() Query[string] {
+	return Query[string]{
+		SQL: "SELECT spock.sync_event();",
+	}
+}
+
+func WaitForSyncEvent(originNode, lsn string, timeoutMs int) Statement {
+	return Statement{
+		SQL: "CALL spock.wait_for_sync_event(true, @origin_node, @lsn, @timeout);",
+		Args: pgx.NamedArgs{
+			"origin_node": originNode,
+			"lsn":         lsn,
+			"timeout":     timeoutMs,
+		},
+	}
+}

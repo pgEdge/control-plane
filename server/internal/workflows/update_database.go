@@ -58,6 +58,17 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 	if err := w.updateTask(ctx, logger, updateTaskInput); err != nil {
 		return nil, handleError(err)
 	}
+	if input.Spec.HasZodanTargetNode() && input.Spec.RestoreConfig == nil {
+		logger.Info("zodan enabled: routing to zodan add node workflow")
+		zodanOutput, err := w.ZodanAddNode(ctx, &ZodanAddNodeInput{
+			TaskID: input.TaskID,
+			Spec:   input.Spec,
+		})
+		if err != nil {
+			return nil, handleError(err)
+		}
+		return &UpdateDatabaseOutput{Updated: zodanOutput.Updated}, nil
+	}
 
 	refreshCurrentInput := &RefreshCurrentStateInput{
 		DatabaseID: input.Spec.DatabaseID,

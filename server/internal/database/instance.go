@@ -10,13 +10,14 @@ import (
 type InstanceState string
 
 const (
-	InstanceStateCreating  InstanceState = "creating"
-	InstanceStateModifying InstanceState = "modifying"
-	InstanceStateBackingUp InstanceState = "backing_up"
-	InstanceStateAvailable InstanceState = "available"
-	InstanceStateDegraded  InstanceState = "degraded"
-	InstanceStateFailed    InstanceState = "failed"
-	InstanceStateUnknown   InstanceState = "unknown"
+	InstanceStateCreating     InstanceState = "creating"
+	InstanceStateModifying    InstanceState = "modifying"
+	InstanceStateBackingUp    InstanceState = "backing_up"
+	InstanceStateAvailable    InstanceState = "available"
+	InstanceStateDegraded     InstanceState = "degraded"
+	InstanceStateFailed       InstanceState = "failed"
+	InstanceStateZodanSyncing InstanceState = "zodan_syncing"
+	InstanceStateUnknown      InstanceState = "unknown"
 )
 
 var modifyingStates = ds.NewSet(

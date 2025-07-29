@@ -28,6 +28,8 @@ type SubscriptionResource struct {
 	SubscriberNode    string   `json:"subscriber_node"`
 	ProviderNode      string   `json:"provider_node"`
 	ProviderInstances []string `json:"provider_instances"`
+	Zodan             bool     `json:"zodan,omitempty"`
+	Spec              *Spec    `json:"spec,omitempty"`
 }
 
 func NewSubscriptionResource(subscriber *NodeInstances, provider *NodeInstances) *SubscriptionResource {

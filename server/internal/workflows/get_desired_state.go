@@ -70,13 +70,41 @@ func (w *Workflows) GetDesiredState(ctx workflow.Context, input *GetDesiredState
 		if err != nil {
 			return nil, fmt.Errorf("failed to add node resource to state: %w", err)
 		}
+
+		isZodan := false
+		for _, inst := range nodeInstance.Instances {
+			if inst.ZodanEnabled {
+				isZodan = true
+				break
+			}
+		}
+
 		for j, peer := range nodeInstances {
 			if i == j {
 				continue
 			}
-			err = state.AddResource(database.NewSubscriptionResource(nodeInstance, peer))
-			if err != nil {
-				return nil, fmt.Errorf("failed to add subscription resource to state: %w", err)
+
+			if isZodan {
+				var providerInstanceIDs []string
+				for _, pInst := range peer.Instances {
+					providerInstanceIDs = append(providerInstanceIDs, pInst.InstanceID)
+				}
+				sub := &database.SubscriptionResource{
+					Spec:              input.Spec,
+					SubscriberNode:    nodeInstance.NodeName,
+					ProviderNode:      peer.NodeName,
+					ProviderInstances: providerInstanceIDs,
+					Zodan:             true,
+				}
+				err = state.AddResource(sub)
+				if err != nil {
+					return nil, fmt.Errorf("failed to add zodan subscription resource: %w", err)
+				}
+			} else {
+				err = state.AddResource(database.NewSubscriptionResource(nodeInstance, peer))
+				if err != nil {
+					return nil, fmt.Errorf("failed to add subscription resource to state: %w", err)
+				}
 			}
 		}
 	}
@@ -96,8 +124,6 @@ func (w *Workflows) GetDesiredState(ctx workflow.Context, input *GetDesiredState
 	}
 
 	logger.Info("successfully got desired state")
-
-	// TODO: Do we need to merge with current state here?
 
 	return &GetDesiredStateOutput{
 		State: state,

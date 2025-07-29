@@ -382,6 +382,16 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 	return nil
 }
 
+func (s *Service) TriggerSyncEvent(ctx context.Context, spec *Spec) (string, error) {
+
+	return "", nil
+}
+
+func (s *Service) WaitForSyncEvent(ctx context.Context, spec *Spec, origin string, lsn string, timeoutMS int) error {
+
+	return nil
+}
+
 func tenantIDsMatch(a, b *string) bool {
 	switch {
 	case a == nil && b == nil:
