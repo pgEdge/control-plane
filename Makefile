@@ -10,7 +10,7 @@ PACKAGE_REPO_BASE_URL ?= http://pgedge-529820047909-yum.s3-website.us-east-2.ama
 PACKAGE_RELEASE_CHANNEL ?= dev
 
 modules=$(shell go list -m -f '{{ .Dir }}' | awk -F '/' '{ print "./" $$NF "/..."  }')
-module_src_files=$(shell go list -m -f '{{ .Dir }}' | xargs find -f)
+module_src_files=$(shell go list -m -f '{{ .Dir }}' | xargs -I '{}' find '{}' -type f)
 buildx_builder=$(if $(CI),"control-plane-ci","control-plane")
 buildx_config=$(if $(CI),"./buildkit.ci.toml","./buildkit.toml")
 docker_compose_dev=WORKSPACE_DIR=$(shell pwd) \
@@ -134,7 +134,7 @@ else
 	git tag -a -F $(CHANGELOG) $(TAG)
 endif
 	git push origin $(TAG)
-	@for module in $(shell go list -m | xargs basename); do \
+	@for module in $(shell go list -m | xargs -L1 basename); do \
 		module_tag="$${module}/$(TAG)"; \
 		echo "creating and pushing module tag $${module_tag}"; \
 		git tag $${module_tag}; \
