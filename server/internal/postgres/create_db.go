@@ -209,3 +209,34 @@ func WaitForSyncEvent(originNode, lsn string, timeoutMs int) Statement {
 		},
 	}
 }
+
+func CreateDisabledSubscription(subscriberNode, providerNode string, providerDSN *DSN) Statement {
+	return Statement{
+		SQL: `
+			SELECT spock.sub_create(
+				sub_name := @sub_name,
+				provider_dsn := @provider_dsn,
+				synchronize_structure := false,
+				synchronize_data := false,
+				forward_origins := ARRAY[]::text[],
+				enabled := false
+			);
+		`,
+		Args: pgx.NamedArgs{
+			"sub_name":     subName(subscriberNode, providerNode),
+			"provider_dsn": providerDSN.String(),
+		},
+	}
+}
+
+func CreateReplicationSlot(databaseName, providerNode, subscriberNode string) Statement {
+	subName := subName(providerNode, subscriberNode)
+	slotName := fmt.Sprintf("spk_%s_%s_%s", databaseName, providerNode, subName)
+
+	return Statement{
+		SQL: "SELECT pg_create_logical_replication_slot(@slot_name, 'spock_output');",
+		Args: pgx.NamedArgs{
+			"slot_name": slotName,
+		},
+	}
+}

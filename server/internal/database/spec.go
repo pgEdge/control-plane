@@ -534,13 +534,13 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 	return nodes, nil
 }
 
-func (s *Spec) HasZodanTargetNode() bool {
+func (s *Spec) HasZodanTargetNode() *Node {
 	for _, node := range s.Nodes {
 		if node.ZodanEnabled {
-			return true
+			return node
 		}
 	}
-	return false
+	return nil
 }
 func extractOrdinal(name string) (int, error) {
 	if len(name) < 2 {

@@ -423,12 +423,12 @@ func (s *Service) TriggerSyncEvent(ctx context.Context, spec *Spec, originInstan
 	return lsn, nil
 }
 
-func (s *Service) WaitForSyncEvent(ctx context.Context, spec *Spec, originInstanceID string, lsn string, timeoutMS int) error {
+func (s *Service) WaitForSyncEvent(ctx context.Context, spec *Spec, zodanInstanceID string, originNodeName string, lsn string, timeoutMS int) error {
 	instance, err := s.store.Instance.
-		GetByKey(spec.DatabaseID, originInstanceID).
+		GetByKey(spec.DatabaseID, zodanInstanceID).
 		Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get origin instance %s: %w", originInstanceID, err)
+		return fmt.Errorf("failed to get target instance %s: %w", zodanInstanceID, err)
 	}
 
 	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, instance.DatabaseID, instance.InstanceID)
@@ -445,10 +445,95 @@ func (s *Service) WaitForSyncEvent(ctx context.Context, spec *Spec, originInstan
 	}
 	defer conn.Close(ctx)
 
-	// Call wait_for_sync_event using origin instance ID
-	stmt := postgres.WaitForSyncEvent(originInstanceID, lsn, timeoutMS)
+	// We're waiting *on* the Zodan node *for* the origin node's LSN to replicate
+	stmt := postgres.WaitForSyncEvent(originNodeName, lsn, timeoutMS)
 	if err := stmt.Exec(ctx, conn); err != nil {
 		return fmt.Errorf("failed to execute spock.wait_for_sync_event: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) CreateDisabledSubscription(
+	ctx context.Context,
+	spec *Spec,
+	subscriberInstanceID string, // e.g., n4
+	providerInstanceID string, // e.g., n2
+) error {
+	// Fetch subscriber (Zodan) instance
+	subscriberInstance, err := s.store.Instance.
+		GetByKey(spec.DatabaseID, subscriberInstanceID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get subscriber instance (%s): %w", subscriberInstanceID, err)
+	}
+
+	// Fetch provider (peer) instance
+	providerInstance, err := s.store.Instance.
+		GetByKey(spec.DatabaseID, providerInstanceID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get provider instance (%s): %w", providerInstanceID, err)
+	}
+
+	// Get DSN of the provider instance (we connect TO this)
+	providerConnInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, providerInstance.DatabaseID, providerInstance.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get connection info for provider instance (%s): %w", providerInstanceID, err)
+	}
+	providerDSN := providerConnInfo.PeerDSN(spec.DatabaseName)
+
+	// Get connection to the subscriber (Zodan) instance
+	subscriberConnInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, subscriberInstance.DatabaseID, subscriberInstance.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get connection info for subscriber instance (%s): %w", subscriberInstanceID, err)
+	}
+
+	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
+		DSN: subscriberConnInfo.AdminDSN(spec.DatabaseName),
+		TLS: nil,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to subscriber instance (%s): %w", subscriberInstanceID, err)
+	}
+	defer conn.Close(ctx)
+
+	// Construct and execute the disabled subscription creation
+	subStmt := postgres.CreateDisabledSubscription(
+		subscriberInstance.NodeName,
+		providerInstance.NodeName,
+		providerDSN,
+	)
+	if err := subStmt.Exec(ctx, conn); err != nil {
+		return fmt.Errorf("failed to execute CreateDisabledSubscription: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) CreateReplicationSlot(ctx context.Context, spec *Spec, providerInstanceID, subscriberInstanceID string) error {
+	provider, err := s.store.Instance.GetByKey(spec.DatabaseID, providerInstanceID).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get provider instance: %w", err)
+	}
+
+	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, provider.DatabaseID, provider.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get connection info: %w", err)
+	}
+
+	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
+		DSN: connInfo.AdminDSN(spec.DatabaseName),
+		TLS: nil,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to instance: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	stmt := postgres.CreateReplicationSlot(spec.DatabaseName, provider.NodeName, subscriberInstanceID)
+	if err := stmt.Exec(ctx, conn); err != nil {
+		return fmt.Errorf("failed to create replication slot: %w", err)
 	}
 
 	return nil

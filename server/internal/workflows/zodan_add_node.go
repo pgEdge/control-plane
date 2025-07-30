@@ -12,8 +12,9 @@ import (
 )
 
 type ZodanAddNodeInput struct {
-	TaskID uuid.UUID      `json:"task_id"`
-	Spec   *database.Spec `json:"spec"`
+	TaskID     uuid.UUID      `json:"task_id"`
+	Spec       *database.Spec `json:"spec"`
+	SourceNode string         `json:"source_node"`
 }
 
 type ZodanAddNodeOutput struct {
@@ -42,6 +43,7 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 	if err := w.updateTask(ctx, logger, updateTaskInput); err != nil {
 		return nil, handleError(err)
 	}
+
 	refreshCurrentInput := &RefreshCurrentStateInput{
 		DatabaseID: input.Spec.DatabaseID,
 		TaskID:     input.TaskID,
@@ -61,43 +63,71 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 	}
 	desired := desiredOutput.State
 
-	var zodanInstance *database.InstanceSpec
-	var waitSyncInputs []*activities.WaitForSyncEventInput
+	var (
+		zodanInstance  *database.InstanceSpec
+		waitSyncInputs []*activities.WaitForSyncEventInput
+		zodanNodeInfo  = input.Spec.HasZodanTargetNode()
+	)
+
 	nodeInstances, err := input.Spec.NodeInstances()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node instances: %w", err)
 	}
-	for _, nodeInstance := range nodeInstances {
-		for _, instance := range nodeInstance.Instances {
-			if instance.ZodanEnabled {
-				zodanInstance = instance
-				continue
-			}
-			syncEventInput := &activities.TriggerSyncEventInput{
-				Spec:       input.Spec,
-				InstanceID: instance.InstanceID,
-			}
-			output, err := w.Activities.ExecuteTriggerSyncEvent(ctx, instance.HostID, syncEventInput).Get(ctx)
-			if err != nil {
-				return nil, handleError(fmt.Errorf("failed to trigger sync event on host %s: %w", instance.HostID, err))
-			}
-			waitSyncInputs = append(waitSyncInputs, &activities.WaitForSyncEventInput{
-				Spec:       input.Spec,
-				OriginName: instance.NodeName,
-				LSN:        output.LSN,
-			})
-		}
-	}
 
+	zodanInstance, peerInstances := segregateZodanAndPeers(nodeInstances, zodanNodeInfo)
 	if zodanInstance == nil {
 		return nil, fmt.Errorf("no zodan-enabled instance found")
 	}
+	for _, instance := range peerInstances {
+		// 1. Create disabled subscription on Zodan node for this peer
+
+		subInput := &activities.CreateDisabledSubscriptionInput{
+			TaskID:               input.TaskID,
+			Spec:                 input.Spec,
+			SubscriberInstanceID: zodanInstance.InstanceID,
+			ProviderInstanceID:   instance.InstanceID,
+		}
+		_, err := w.Activities.ExecuteCreateDisabledSubscription(ctx, zodanInstance.HostID, subInput).Get(ctx)
+		if err != nil {
+			return nil, handleError(fmt.Errorf("failed to create disabled subscription to %s: %w", instance.NodeName, err))
+		}
+
+		// 2. Create replication slot on peer
+		slotInput := &activities.CreateReplicationSlotInput{
+			Spec:                 input.Spec,
+			ProviderInstanceID:   instance.InstanceID,
+			SubscriberInstanceID: zodanInstance.InstanceID,
+		}
+		if _, err := w.Activities.ExecuteCreateReplicationSlot(ctx, instance.HostID, slotInput).Get(ctx); err != nil {
+			return nil, handleError(fmt.Errorf("failed to create replication slot on %s: %w", instance.NodeName, err))
+		}
+
+		// 3. Trigger sync event from peer
+		triggerInput := &activities.TriggerSyncEventInput{
+			Spec:       input.Spec,
+			InstanceID: instance.InstanceID,
+		}
+		triggerOutput, err := w.Activities.ExecuteTriggerSyncEvent(ctx, instance.HostID, triggerInput).Get(ctx)
+		if err != nil {
+			return nil, handleError(fmt.Errorf("failed to trigger sync event on host %s: %w", instance.HostID, err))
+		}
+
+		// 4. Append for wait step on Zodan
+		waitSyncInputs = append(waitSyncInputs, &activities.WaitForSyncEventInput{
+			Spec:            input.Spec,
+			OriginName:      instance.NodeName,
+			LSN:             triggerOutput.LSN,
+			ZodanInstanceID: zodanInstance.InstanceID,
+		})
+	}
+
 	_ = w.Activities.ExecuteUpdateInstance(ctx, &activities.UpdateInstanceInput{
 		DatabaseID: input.Spec.DatabaseID,
 		InstanceID: zodanInstance.InstanceID,
 		State:      string(database.InstanceStateZodanSyncing),
 	})
 
+	// Now wait for each sync from the zodan instance
 	for _, waitInput := range waitSyncInputs {
 		_, err := w.Activities.ExecuteWaitForSyncEvent(ctx, zodanInstance.HostID, waitInput).Get(ctx)
 		if err != nil {
@@ -144,4 +174,23 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 	return &ZodanAddNodeOutput{
 		Updated: reconcileOutput.Updated,
 	}, nil
+}
+
+func segregateZodanAndPeers(
+	nodeInstances []*database.NodeInstances,
+	zodanNodeInfo *database.Node,
+) (zodan *database.InstanceSpec, peers []*database.InstanceSpec) {
+	for _, nodeInstance := range nodeInstances {
+		for _, inst := range nodeInstance.Instances {
+			switch {
+			case inst.NodeName == zodanNodeInfo.Name:
+				zodan = inst
+			case inst.NodeName == zodanNodeInfo.ZodanSource:
+				continue // skip source
+			default:
+				peers = append(peers, inst)
+			}
+		}
+	}
+	return
 }
