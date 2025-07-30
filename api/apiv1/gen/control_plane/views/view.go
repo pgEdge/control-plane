@@ -207,6 +207,10 @@ type DatabaseNodeSpecView struct {
 	OrchestratorOpts *OrchestratorOptsView
 	// Whether Zodan is enabled for this node.
 	ZodanEnabled *bool
+	// The name of the source node to use for Zodan sync. This is typically the
+	// node (like 'n1') from which the data will be copied to initialize this Zodan
+	// node.
+	ZodanSource *string
 }
 
 // BackupConfigSpecView is a type that runs validations on a projected type.

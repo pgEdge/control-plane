@@ -1369,6 +1369,10 @@ type DatabaseNodeSpecResponseBody struct {
 	OrchestratorOpts *OrchestratorOptsResponseBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
 	// Whether Zodan is enabled for this node.
 	ZodanEnabled *bool `form:"zodan_enabled,omitempty" json:"zodan_enabled,omitempty" xml:"zodan_enabled,omitempty"`
+	// The name of the source node to use for Zodan sync. This is typically the
+	// node (like 'n1') from which the data will be copied to initialize this Zodan
+	// node.
+	ZodanSource *string `form:"zodan_source,omitempty" json:"zodan_source,omitempty" xml:"zodan_source,omitempty"`
 }
 
 // BackupConfigSpecResponseBody is used to define fields on response body types.
@@ -1635,6 +1639,10 @@ type DatabaseNodeSpecRequestBody struct {
 	OrchestratorOpts *OrchestratorOptsRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
 	// Whether Zodan is enabled for this node.
 	ZodanEnabled *bool `form:"zodan_enabled,omitempty" json:"zodan_enabled,omitempty" xml:"zodan_enabled,omitempty"`
+	// The name of the source node to use for Zodan sync. This is typically the
+	// node (like 'n1') from which the data will be copied to initialize this Zodan
+	// node.
+	ZodanSource *string `form:"zodan_source,omitempty" json:"zodan_source,omitempty" xml:"zodan_source,omitempty"`
 }
 
 // BackupConfigSpecRequestBody is used to define fields on request body types.
@@ -1931,6 +1939,10 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	OrchestratorOpts *OrchestratorOptsRequestBodyRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
 	// Whether Zodan is enabled for this node.
 	ZodanEnabled *bool `form:"zodan_enabled,omitempty" json:"zodan_enabled,omitempty" xml:"zodan_enabled,omitempty"`
+	// The name of the source node to use for Zodan sync. This is typically the
+	// node (like 'n1') from which the data will be copied to initialize this Zodan
+	// node.
+	ZodanSource *string `form:"zodan_source,omitempty" json:"zodan_source,omitempty" xml:"zodan_source,omitempty"`
 }
 
 // BackupConfigSpecRequestBodyRequestBody is used to define fields on request

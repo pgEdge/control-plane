@@ -47,7 +47,8 @@ type Node struct {
 	BackupConfig     *BackupConfig     `json:"backup_config"`
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
-	ZodanEnabled     bool              `json:"zodan_enabled,omitempty"` // whether Zodan is enabled for this node
+	ZodanEnabled     bool              `json:"zodan_enabled,omitempty"`
+	ZodanSource      string            `json:"zodan_source,omitempty"`
 }
 
 func (n *Node) Clone() *Node {
@@ -66,6 +67,7 @@ func (n *Node) Clone() *Node {
 		RestoreConfig:    n.RestoreConfig.Clone(),
 		OrchestratorOpts: n.OrchestratorOpts.Clone(),
 		ZodanEnabled:     n.ZodanEnabled,
+		ZodanSource:      n.ZodanSource,
 	}
 }
 
@@ -428,6 +430,7 @@ type InstanceSpec struct {
 	ClusterSize      int                 `json:"cluster_size"`
 	OrchestratorOpts *OrchestratorOpts   `json:"orchestrator_opts,omitempty"`
 	ZodanEnabled     bool                `json:"zodan_enabled,omitempty"`
+	ZodanSource      string              `json:"zodan_source,omitempty"`
 }
 
 type NodeInstances struct {
@@ -519,6 +522,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				ClusterSize:      clusterSize,
 				OrchestratorOpts: orchestratorOpts.Clone(),
 				ZodanEnabled:     node.ZodanEnabled,
+				ZodanSource:      node.ZodanSource,
 			}
 		}
 

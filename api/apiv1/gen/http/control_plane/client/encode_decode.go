@@ -2993,6 +2993,7 @@ func unmarshalDatabaseNodeSpecResponseBodyToControlplaneviewsDatabaseNodeSpecVie
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 		ZodanEnabled:    v.ZodanEnabled,
+		ZodanSource:     v.ZodanSource,
 	}
 	res.HostIds = make([]controlplaneviews.IdentifierView, len(v.HostIds))
 	for i, val := range v.HostIds {
@@ -3333,6 +3334,7 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecRequestBody(v *control
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 		ZodanEnabled:    v.ZodanEnabled,
+		ZodanSource:     v.ZodanSource,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]string, len(v.HostIds))
@@ -3681,6 +3683,7 @@ func marshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *Databas
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 		ZodanEnabled:    v.ZodanEnabled,
+		ZodanSource:     v.ZodanSource,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]controlplane.Identifier, len(v.HostIds))
@@ -4174,6 +4177,7 @@ func unmarshalDatabaseNodeSpecResponseBodyToControlplaneDatabaseNodeSpec(v *Data
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 		ZodanEnabled:    v.ZodanEnabled,
+		ZodanSource:     v.ZodanSource,
 	}
 	res.HostIds = make([]controlplane.Identifier, len(v.HostIds))
 	for i, val := range v.HostIds {
@@ -4512,6 +4516,7 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecRequestBodyRequestBody
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 		ZodanEnabled:    v.ZodanEnabled,
+		ZodanSource:     v.ZodanSource,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]string, len(v.HostIds))
@@ -4861,6 +4866,7 @@ func marshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSpec
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 		ZodanEnabled:    v.ZodanEnabled,
+		ZodanSource:     v.ZodanSource,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]controlplane.Identifier, len(v.HostIds))

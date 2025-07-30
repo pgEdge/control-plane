@@ -337,6 +337,10 @@ type DatabaseNodeSpec struct {
 	OrchestratorOpts *OrchestratorOpts
 	// Whether Zodan is enabled for this node.
 	ZodanEnabled *bool
+	// The name of the source node to use for Zodan sync. This is typically the
+	// node (like 'n1') from which the data will be copied to initialize this Zodan
+	// node.
+	ZodanSource *string
 }
 
 type DatabaseSpec struct {
@@ -1274,6 +1278,7 @@ func transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec(v *control
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 		ZodanEnabled:    v.ZodanEnabled,
+		ZodanSource:     v.ZodanSource,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]Identifier, len(v.HostIds))
@@ -1624,6 +1629,7 @@ func transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView(v *Databas
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 		ZodanEnabled:    v.ZodanEnabled,
+		ZodanSource:     v.ZodanSource,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]controlplaneviews.IdentifierView, len(v.HostIds))

@@ -3477,6 +3477,7 @@ components:
                             source_database_name: northwind
                             source_node_name: n1
                           zodan_enabled: true
+                          zodan_source: n1
                     orchestrator_opts:
                         swarm:
                             extra_labels:
@@ -3775,6 +3776,7 @@ components:
                             source_database_name: northwind
                             source_node_name: n1
                           zodan_enabled: true
+                          zodan_source: n1
                     orchestrator_opts:
                         swarm:
                             extra_labels:
@@ -4063,6 +4065,7 @@ components:
                             source_database_name: northwind
                             source_node_name: n1
                           zodan_enabled: true
+                          zodan_source: n1
                     orchestrator_opts:
                         swarm:
                             extra_labels:
@@ -4351,6 +4354,7 @@ components:
                             source_database_name: northwind
                             source_node_name: n1
                           zodan_enabled: true
+                          zodan_source: n1
                     orchestrator_opts:
                         swarm:
                             extra_labels:
@@ -4478,6 +4482,10 @@ components:
                     type: boolean
                     description: Whether Zodan is enabled for this node.
                     example: true
+                zodan_source:
+                    type: string
+                    description: The name of the source node to use for Zodan sync. This is typically the node (like 'n1') from which the data will be copied to initialize this Zodan node.
+                    example: n1
             example:
                 backup_config:
                     repositories:
@@ -4580,6 +4588,7 @@ components:
                     source_database_name: northwind
                     source_node_name: n1
                 zodan_enabled: true
+                zodan_source: n1
             required:
                 - name
                 - host_ids
@@ -4743,6 +4752,7 @@ components:
                             source_database_name: northwind
                             source_node_name: n1
                           zodan_enabled: true
+                          zodan_source: n1
                     minItems: 1
                     maxItems: 9
                 orchestrator_opts:
@@ -4941,6 +4951,7 @@ components:
                         source_database_name: northwind
                         source_node_name: n1
                       zodan_enabled: true
+                      zodan_source: n1
                     - backup_config:
                         repositories:
                             - azure_account: pgedge-backups
@@ -5040,6 +5051,7 @@ components:
                         source_database_name: northwind
                         source_node_name: n1
                       zodan_enabled: true
+                      zodan_source: n1
                     - backup_config:
                         repositories:
                             - azure_account: pgedge-backups
@@ -5139,6 +5151,7 @@ components:
                         source_database_name: northwind
                         source_node_name: n1
                       zodan_enabled: true
+                      zodan_source: n1
                 orchestrator_opts:
                     swarm:
                         extra_labels:

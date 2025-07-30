@@ -71,7 +71,10 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 		g.Description("Whether Zodan is enabled for this node.")
 		g.Example(true)
 	})
-
+	g.Attribute("zodan_source", g.String, func() {
+		g.Description("The name of the source node to use for Zodan sync. This is typically the node (like 'n1') from which the data will be copied to initialize this Zodan node.")
+		g.Example("n1")
+	})
 	g.Required("name", "host_ids")
 })
 
