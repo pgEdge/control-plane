@@ -61,9 +61,8 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 	}
 	desired := desiredOutput.State
 
-	var zodanHostID string
-	var zodanInstanceID string
-	var peerHostIDs []string
+	var zodanInstance *database.InstanceSpec
+	var waitSyncInputs []*activities.WaitForSyncEventInput
 	nodeInstances, err := input.Spec.NodeInstances()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node instances: %w", err)
@@ -71,33 +70,39 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 	for _, nodeInstance := range nodeInstances {
 		for _, instance := range nodeInstance.Instances {
 			if instance.ZodanEnabled {
-				zodanHostID = instance.HostID
-				zodanInstanceID = instance.InstanceID
-			} else {
-				peerHostIDs = append(peerHostIDs, instance.HostID)
+				zodanInstance = instance
+				continue
 			}
+			syncEventInput := &activities.TriggerSyncEventInput{
+				Spec:       input.Spec,
+				InstanceID: instance.InstanceID,
+			}
+			output, err := w.Activities.ExecuteTriggerSyncEvent(ctx, instance.HostID, syncEventInput).Get(ctx)
+			if err != nil {
+				return nil, handleError(fmt.Errorf("failed to trigger sync event on host %s: %w", instance.HostID, err))
+			}
+			waitSyncInputs = append(waitSyncInputs, &activities.WaitForSyncEventInput{
+				Spec:       input.Spec,
+				OriginName: instance.NodeName,
+				LSN:        output.LSN,
+			})
 		}
 	}
 
+	if zodanInstance == nil {
+		return nil, fmt.Errorf("no zodan-enabled instance found")
+	}
 	_ = w.Activities.ExecuteUpdateInstance(ctx, &activities.UpdateInstanceInput{
 		DatabaseID: input.Spec.DatabaseID,
-		InstanceID: zodanInstanceID,
+		InstanceID: zodanInstance.InstanceID,
 		State:      string(database.InstanceStateZodanSyncing),
 	})
 
-	for _, hostID := range peerHostIDs {
-		syncEventInput := &activities.TriggerSyncEventInput{Spec: input.Spec}
-		_, err = w.Activities.ExecuteTriggerSyncEvent(ctx, hostID, syncEventInput).Get(ctx)
+	for _, waitInput := range waitSyncInputs {
+		_, err := w.Activities.ExecuteWaitForSyncEvent(ctx, zodanInstance.HostID, waitInput).Get(ctx)
 		if err != nil {
-			return nil, handleError(fmt.Errorf("failed to trigger sync event on %s: %w", hostID, err))
+			return nil, handleError(fmt.Errorf("failed to wait for sync from origin %s: %w", waitInput.OriginName, err))
 		}
-	}
-	waitSyncInput := &activities.WaitForSyncEventInput{
-		Spec: input.Spec,
-	}
-	_, err = w.Activities.ExecuteWaitForSyncEvent(ctx, zodanHostID, waitSyncInput).Get(ctx)
-	if err != nil {
-		return nil, handleError(fmt.Errorf("failed to wait for sync event: %w", err))
 	}
 
 	reconcileInput := &ReconcileStateInput{
@@ -113,7 +118,7 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 
 	_ = w.Activities.ExecuteUpdateInstance(ctx, &activities.UpdateInstanceInput{
 		DatabaseID: input.Spec.DatabaseID,
-		InstanceID: zodanInstanceID,
+		InstanceID: zodanInstance.InstanceID,
 		State:      string(database.InstanceStateAvailable),
 	})
 

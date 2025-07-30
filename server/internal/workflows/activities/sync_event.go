@@ -12,7 +12,8 @@ import (
 )
 
 type TriggerSyncEventInput struct {
-	Spec *database.Spec `json:"spec"`
+	Spec       *database.Spec `json:"spec"`
+	InstanceID string         `json:"instance_id"`
 }
 
 type TriggerSyncEventOutput struct {
@@ -48,7 +49,7 @@ func (a *Activities) TriggerSyncEvent(ctx context.Context, input *TriggerSyncEve
 		return nil, err
 	}
 
-	lsn, err := dbSvc.TriggerSyncEvent(ctx, input.Spec)
+	lsn, err := dbSvc.TriggerSyncEvent(ctx, input.Spec, input.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to trigger sync event: %w", err)
 	}

@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/host"
-	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
@@ -384,24 +383,15 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 	return nil
 }
 
-func (s *Service) TriggerSyncEvent(ctx context.Context, spec *Spec) (string, error) {
-	instances, err := s.GetInstances(ctx, spec.DatabaseID)
+func (s *Service) TriggerSyncEvent(ctx context.Context, spec *Spec, originInstanceID string) (string, error) {
+	instance, err := s.store.Instance.
+		GetByKey(spec.DatabaseID, originInstanceID).
+		Exec(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get instances: %w", err)
+		return "", fmt.Errorf("failed to get origin instance %s: %w", originInstanceID, err)
 	}
 
-	var primary *Instance
-	for _, inst := range instances {
-		if inst.State == InstanceStateAvailable && *inst.Status.Role == patroni.InstanceRolePrimary {
-			primary = inst
-			break
-		}
-	}
-	if primary == nil {
-		return "", fmt.Errorf("no primary instance found for database %s", spec.DatabaseID)
-	}
-
-	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, primary.DatabaseID, primary.InstanceID)
+	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, instance.DatabaseID, instance.InstanceID)
 	if err != nil {
 		return "", fmt.Errorf("failed to get connection info: %w", err)
 	}
@@ -421,7 +411,7 @@ func (s *Service) TriggerSyncEvent(ctx context.Context, spec *Spec) (string, err
 		TLS: nil,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to connect to primary instance: %w", err)
+		return "", fmt.Errorf("failed to connect to instance: %w", err)
 	}
 	defer conn.Close(ctx)
 
@@ -433,41 +423,30 @@ func (s *Service) TriggerSyncEvent(ctx context.Context, spec *Spec) (string, err
 	return lsn, nil
 }
 
-func (s *Service) WaitForSyncEvent(ctx context.Context, spec *Spec, origin string, lsn string, timeoutMS int) error {
-	instances, err := s.GetInstances(ctx, spec.DatabaseID)
+func (s *Service) WaitForSyncEvent(ctx context.Context, spec *Spec, originInstanceID string, lsn string, timeoutMS int) error {
+	instance, err := s.store.Instance.
+		GetByKey(spec.DatabaseID, originInstanceID).
+		Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get instances: %w", err)
+		return fmt.Errorf("failed to get origin instance %s: %w", originInstanceID, err)
 	}
 
-	var primary *Instance
-	for _, inst := range instances {
-		if inst.State == InstanceStateAvailable && *inst.Status.Role == patroni.InstanceRolePrimary {
-			primary = inst
-			break
-		}
-	}
-	if primary == nil {
-		return fmt.Errorf("no primary instance found for database %s", spec.DatabaseID)
-	}
-
-	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, primary.DatabaseID, primary.InstanceID)
+	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, instance.DatabaseID, instance.InstanceID)
 	if err != nil {
 		return fmt.Errorf("failed to get connection info: %w", err)
 	}
-
-	// certs, err := do.Invoke[*certificates.Service](s.Injector)
-	// tlsCfg, err := certs.PostgresUserTLS(ctx, primary.InstanceID, connInfo.AdminHost, "pgedge")
 
 	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
 		DSN: connInfo.AdminDSN(spec.DatabaseName),
 		TLS: nil,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to connect to primary instance: %w", err)
+		return fmt.Errorf("failed to connect to instance: %w", err)
 	}
 	defer conn.Close(ctx)
 
-	stmt := postgres.WaitForSyncEvent(origin, lsn, timeoutMS)
+	// Call wait_for_sync_event using origin instance ID
+	stmt := postgres.WaitForSyncEvent(originInstanceID, lsn, timeoutMS)
 	if err := stmt.Exec(ctx, conn); err != nil {
 		return fmt.Errorf("failed to execute spock.wait_for_sync_event: %w", err)
 	}
