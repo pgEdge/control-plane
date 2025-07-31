@@ -182,11 +182,11 @@ func segregateZodanAndPeers(
 ) (zodan *database.InstanceSpec, peers []*database.InstanceSpec) {
 	for _, nodeInstance := range nodeInstances {
 		for _, inst := range nodeInstance.Instances {
-			switch {
-			case inst.NodeName == zodanNodeInfo.Name:
+			switch inst.NodeName {
+			case zodanNodeInfo.Name:
 				zodan = inst
-			case inst.NodeName == zodanNodeInfo.ZodanSource:
-				continue // skip source
+			case zodanNodeInfo.ZodanSource:
+				continue
 			default:
 				peers = append(peers, inst)
 			}
