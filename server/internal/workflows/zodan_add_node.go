@@ -65,6 +65,7 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 
 	var (
 		zodanInstance  *database.InstanceSpec
+		sourceInstance *database.InstanceSpec
 		waitSyncInputs []*activities.WaitForSyncEventInput
 		zodanNodeInfo  = input.Spec.HasZodanTargetNode()
 	)
@@ -74,7 +75,7 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 		return nil, fmt.Errorf("failed to get node instances: %w", err)
 	}
 
-	zodanInstance, peerInstances := segregateZodanAndPeers(nodeInstances, zodanNodeInfo)
+	zodanInstance, sourceInstance, peerInstances := segregateZodanAndPeers(nodeInstances, zodanNodeInfo)
 	if zodanInstance == nil {
 		return nil, fmt.Errorf("no zodan-enabled instance found")
 	}
@@ -135,6 +136,17 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 		}
 	}
 
+	// Add active subscription from source to Zodan
+	activeSubInput := &activities.CreateActiveSubscriptionInput{
+		TaskID:               input.TaskID,
+		Spec:                 input.Spec,
+		SubscriberInstanceID: zodanInstance.InstanceID,
+		ProviderInstanceID:   sourceInstance.InstanceID,
+	}
+	if _, err := w.Activities.ExecuteCreateActiveSubscription(ctx, zodanInstance.HostID, activeSubInput).Get(ctx); err != nil {
+		return nil, handleError(fmt.Errorf("failed to create active subscription from source to zodan: %w", err))
+	}
+
 	reconcileInput := &ReconcileStateInput{
 		DatabaseID: input.Spec.DatabaseID,
 		TaskID:     input.TaskID,
@@ -179,14 +191,14 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 func segregateZodanAndPeers(
 	nodeInstances []*database.NodeInstances,
 	zodanNodeInfo *database.Node,
-) (zodan *database.InstanceSpec, peers []*database.InstanceSpec) {
+) (zodan *database.InstanceSpec, sourceInstance *database.InstanceSpec, peers []*database.InstanceSpec) {
 	for _, nodeInstance := range nodeInstances {
 		for _, inst := range nodeInstance.Instances {
 			switch inst.NodeName {
 			case zodanNodeInfo.Name:
 				zodan = inst
 			case zodanNodeInfo.ZodanSource:
-				continue
+				sourceInstance = inst
 			default:
 				peers = append(peers, inst)
 			}

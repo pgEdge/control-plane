@@ -240,3 +240,22 @@ func CreateReplicationSlot(databaseName, providerNode, subscriberNode string) St
 		},
 	}
 }
+
+func CreateActiveSubscription(subscriberNode, providerNode string, providerDSN *DSN) Statement {
+	return Statement{
+		SQL: `
+			SELECT spock.sub_create(
+				subscription_name := @sub_name,
+				provider_dsn := @provider_dsn,
+				synchronize_structure := true,
+				synchronize_data := true,
+				forward_origins := '{}'::text[],
+				enabled := true
+			);
+		`,
+		Args: pgx.NamedArgs{
+			"sub_name":     subName(subscriberNode, providerNode),
+			"provider_dsn": providerDSN.String(),
+		},
+	}
+}

@@ -539,6 +539,58 @@ func (s *Service) CreateReplicationSlot(ctx context.Context, spec *Spec, provide
 	return nil
 }
 
+func (s *Service) CreateActiveSubscription(
+	ctx context.Context,
+	spec *Spec,
+	subscriberInstanceID string,
+	providerInstanceID string,
+) error {
+	// Lookup subscriber and provider instances
+	subscriberInstance, err := s.store.Instance.GetByKey(spec.DatabaseID, subscriberInstanceID).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get subscriber instance: %w", err)
+	}
+	providerInstance, err := s.store.Instance.GetByKey(spec.DatabaseID, providerInstanceID).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get provider instance: %w", err)
+	}
+
+	// Get connection info for the subscriber
+	subscriberConnInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, subscriberInstance.DatabaseID, subscriberInstance.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get subscriber connection info: %w", err)
+	}
+
+	// Get DSN of the provider instance (we connect TO this)
+	providerConnInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, providerInstance.DatabaseID, providerInstance.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get connection info for provider instance (%s): %w", providerInstanceID, err)
+	}
+	providerDSN := providerConnInfo.PeerDSN(spec.DatabaseName)
+
+	// Connect to subscriber instance
+	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
+		DSN: subscriberConnInfo.AdminDSN(spec.DatabaseName),
+		TLS: nil,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to subscriber instance: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	// Execute active subscription create query
+	stmt := postgres.CreateActiveSubscription(
+		subscriberInstance.NodeName,
+		providerInstance.NodeName,
+		providerDSN,
+	)
+	if err := stmt.Exec(ctx, conn); err != nil {
+		return fmt.Errorf("failed to execute create active subscription: %w", err)
+	}
+
+	return nil
+}
+
 func tenantIDsMatch(a, b *string) bool {
 	switch {
 	case a == nil && b == nil:
