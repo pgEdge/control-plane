@@ -590,6 +590,54 @@ func (s *Service) CreateActiveSubscription(
 
 	return nil
 }
+func (s *Service) AdvanceReplicationSlot(
+	ctx context.Context,
+	spec *Spec,
+	providerInstanceID string,
+	subscriberInstanceID string,
+	lsn string,
+) error {
+	// Get provider instance
+	provider, err := s.store.Instance.GetByKey(spec.DatabaseID, providerInstanceID).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get provider instance: %w", err)
+	}
+
+	// Get subscriber instance
+	subscriber, err := s.store.Instance.GetByKey(spec.DatabaseID, subscriberInstanceID).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get subscriber instance: %w", err)
+	}
+
+	// Get connection info for provider (slot lives on provider)
+	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, provider.DatabaseID, provider.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get connection info: %w", err)
+	}
+
+	// Connect to provider instance
+	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
+		DSN: connInfo.AdminDSN(spec.DatabaseName),
+		TLS: nil,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to provider instance: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	// Construct statement and execute
+	stmt := postgres.AdvanceReplicationSlot(
+		spec.DatabaseName,
+		provider.NodeName,
+		subscriber.NodeName,
+		lsn,
+	)
+	if err := stmt.Exec(ctx, conn); err != nil {
+		return fmt.Errorf("failed to advance replication slot: %w", err)
+	}
+
+	return nil
+}
 
 func tenantIDsMatch(a, b *string) bool {
 	switch {

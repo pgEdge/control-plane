@@ -168,6 +168,18 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 		return nil, handleError(fmt.Errorf("failed to wait for sync from source: %w", err))
 	}
 
+	// Advance replication slot on source to the LSN received from Zodan
+	advanceSlotInput := &activities.AdvanceReplicationSlotInput{
+		TaskID:               input.TaskID,
+		Spec:                 input.Spec,
+		ProviderInstanceID:   sourceInstance.InstanceID,
+		SubscriberInstanceID: zodanInstance.InstanceID,
+		LSN:                  triggerSourceOutput.LSN,
+	}
+	if _, err := w.Activities.ExecuteAdvanceReplicationSlot(ctx, sourceInstance.HostID, advanceSlotInput).Get(ctx); err != nil {
+		return nil, handleError(fmt.Errorf("failed to advance replication slot on source: %w", err))
+	}
+
 	reconcileInput := &ReconcileStateInput{
 		DatabaseID: input.Spec.DatabaseID,
 		TaskID:     input.TaskID,

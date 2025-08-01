@@ -259,3 +259,16 @@ func CreateActiveSubscription(subscriberNode, providerNode string, providerDSN *
 		},
 	}
 }
+
+func AdvanceReplicationSlot(databaseName, providerNode, subscriberNode, lsn string) Statement {
+	subName := subName(providerNode, subscriberNode)
+	slotName := fmt.Sprintf("spk_%s_%s_sub_%s", databaseName, providerNode, subName)
+
+	return Statement{
+		SQL: "SELECT pg_replication_slot_advance(@slot_name, @lsn);",
+		Args: pgx.NamedArgs{
+			"slot_name": slotName,
+			"lsn":       lsn,
+		},
+	}
+}
