@@ -147,6 +147,27 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 		return nil, handleError(fmt.Errorf("failed to create active subscription from source to zodan: %w", err))
 	}
 
+	// Trigger sync event from source to Zodan
+	triggerSourceInput := &activities.TriggerSyncEventInput{
+		Spec:       input.Spec,
+		InstanceID: sourceInstance.InstanceID,
+	}
+	triggerSourceOutput, err := w.Activities.ExecuteTriggerSyncEvent(ctx, sourceInstance.HostID, triggerSourceInput).Get(ctx)
+	if err != nil {
+		return nil, handleError(fmt.Errorf("failed to trigger sync event from source: %w", err))
+	}
+	// Wait for sync event from source to Zodan
+	waitSourceInput := &activities.WaitForSyncEventInput{
+		Spec:            input.Spec,
+		OriginName:      sourceInstance.NodeName,
+		LSN:             triggerSourceOutput.LSN,
+		ZodanInstanceID: zodanInstance.InstanceID,
+	}
+	_, err = w.Activities.ExecuteWaitForSyncEvent(ctx, zodanInstance.HostID, waitSourceInput).Get(ctx)
+	if err != nil {
+		return nil, handleError(fmt.Errorf("failed to wait for sync from source: %w", err))
+	}
+
 	reconcileInput := &ReconcileStateInput{
 		DatabaseID: input.Spec.DatabaseID,
 		TaskID:     input.TaskID,
