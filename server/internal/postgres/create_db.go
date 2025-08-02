@@ -272,3 +272,23 @@ func AdvanceReplicationSlot(databaseName, providerNode, subscriberNode, lsn stri
 		},
 	}
 }
+
+func CreateReverseSubscriptionStatement(providerNode, subscriberNode string, peerDSN *DSN) Statement {
+	sub := subName(providerNode, subscriberNode)
+	dsn := peerDSN.String()
+
+	return Statement{
+		SQL: `SELECT spock.sub_create(
+			sub_name := @sub_name,
+			provider_dsn := @peer_dsn,
+			synchronize_structure := false,
+			synchronize_data := false,
+			forward_origins := ARRAY[]::text[],
+			enabled := true
+		);`,
+		Args: pgx.NamedArgs{
+			"sub_name": sub,
+			"peer_dsn": dsn,
+		},
+	}
+}

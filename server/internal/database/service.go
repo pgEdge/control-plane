@@ -639,6 +639,56 @@ func (s *Service) AdvanceReplicationSlot(
 	return nil
 }
 
+func (s *Service) CreateReverseSubscription(
+	ctx context.Context,
+	spec *Spec,
+	subscriberInstanceID string,
+	providerInstanceID string,
+) error {
+	// Get subscriber instance (where the subscription will be created)
+	subscriber, err := s.store.Instance.GetByKey(spec.DatabaseID, subscriberInstanceID).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get subscriber instance: %w", err)
+	}
+
+	// Get connection info for subscriber
+	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, subscriber.DatabaseID, subscriber.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get connection info for subscriber: %w", err)
+	}
+
+	// Get provider instance (who is being subscribed to)
+	provider, err := s.store.Instance.GetByKey(spec.DatabaseID, providerInstanceID).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get provider instance: %w", err)
+	}
+
+	// Build DSN to the provider
+	providerConnInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, provider.DatabaseID, provider.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get provider connection info: %w", err)
+	}
+	providerDSN := providerConnInfo.PeerDSN(spec.DatabaseName)
+
+	// Connect to the subscriber (where the statement runs)
+	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
+		DSN: connInfo.AdminDSN(spec.DatabaseName),
+		TLS: nil,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to subscriber: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	// Build and execute reverse subscription statement
+	stmt := postgres.CreateReverseSubscriptionStatement(provider.NodeName, subscriber.NodeName, providerDSN)
+	if err := stmt.Exec(ctx, conn); err != nil {
+		return fmt.Errorf("failed to create reverse subscription: %w", err)
+	}
+
+	return nil
+}
+
 func tenantIDsMatch(a, b *string) bool {
 	switch {
 	case a == nil && b == nil:

@@ -180,6 +180,20 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 		return nil, handleError(fmt.Errorf("failed to advance replication slot on source: %w", err))
 	}
 
+	// Create reverse subscriptions from Zodan to peers
+	reverseTargets := append(peerInstances, sourceInstance)
+	for _, target := range reverseTargets {
+		input := &activities.CreateReverseSubscriptionInput{
+			TaskID:               input.TaskID,
+			Spec:                 input.Spec,
+			SubscriberInstanceID: target.InstanceID,        // n1/n2/n3
+			ProviderInstanceID:   zodanInstance.InstanceID, // n4
+		}
+		if _, err := w.Activities.ExecuteCreateReverseSubscription(ctx, target.HostID, input).Get(ctx); err != nil {
+			return nil, handleError(fmt.Errorf("failed to create reverse subscription to %s: %w", target.NodeName, err))
+		}
+	}
+
 	reconcileInput := &ReconcileStateInput{
 		DatabaseID: input.Spec.DatabaseID,
 		TaskID:     input.TaskID,
