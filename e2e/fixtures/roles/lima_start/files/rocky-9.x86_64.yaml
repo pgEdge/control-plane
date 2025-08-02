@@ -1,0 +1,12 @@
+---
+minimumLimaVersion: 1.1.0
+
+base: template://rocky-9
+
+cpus: 1
+plain: true
+memory: 4GiB
+disk: 20GiB
+networks:
+  - lima: user-v2
+  - lima: shared

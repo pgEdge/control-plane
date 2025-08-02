@@ -1,0 +1,7 @@
+---
+- name: Start VMs
+  hosts: localhost
+  become: false
+  roles:
+    - role: lima_start
+      when: provider == 'lima'

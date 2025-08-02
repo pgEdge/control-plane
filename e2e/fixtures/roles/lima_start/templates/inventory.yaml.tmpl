@@ -1,0 +1,9 @@
+---
+control_plane:
+  hosts:
+{% for machine in machines %}
+{% set vm_props = lima_vms[machine.name] %}
+    {{ machine.name }}:
+      ansible_host: lima-{{ machine.name }}
+      ansible_ssh_common_args: "-F {{ vm_props.sshConfigFile }}"
+{% endfor %}

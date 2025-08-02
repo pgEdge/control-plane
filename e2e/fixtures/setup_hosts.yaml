@@ -1,0 +1,109 @@
+---
+- name: Gather facts
+  hosts: all
+  gather_facts: true
+
+- name: Set shared facts
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - role: host_facts
+
+- name: Install prerequisites
+  hosts: all
+  become: true
+  roles:
+    - role: install_prerequisites
+
+- name: Initialize swarm
+  hosts: "{{ hostvars['localhost'].first_manager_host }}"
+  roles:
+    - role: init_swarm
+
+- name: Add managers
+  hosts: "{{ hostvars['localhost'].manager_hosts[1:] }}"
+  roles:
+    - role: join_swarm
+      vars:
+        join_token: "{{ hostvars[hostvars['localhost'].first_manager_host].manager_token.stdout }}"
+        manager_ip: "{{ hostvars['localhost'].first_manager_ip }}"
+
+- name: Add workers
+  hosts: "{{ hostvars['localhost'].worker_hosts }}"
+  roles:
+    - role: join_swarm
+      vars:
+        join_token: "{{ hostvars[hostvars['localhost'].first_manager_host].worker_token.stdout }}"
+        manager_ip: "{{ hostvars['localhost'].first_manager_ip }}"
+
+- name: Deploy registry
+  hosts: "{{ hostvars['localhost'].first_manager_host }}"
+  roles:
+    - role: deploy_registry
+
+- name: Deploy minio
+  hosts: "{{ hostvars['localhost'].first_manager_host }}"
+  become: true
+  roles:
+    - role: deploy_minio
+      when: minio_enabled
+
+- name: Distribute minio config files
+  hosts: "{{ hostvars['localhost'].manager_hosts[1:] + hostvars['localhost'].worker_hosts }}"
+  tasks:
+    - name: Read ca bundle
+      ansible.builtin.slurp:
+        src: /data/minio-certs/public.crt
+      delegate_to: "{{ hostvars['localhost'].first_manager_host }}"
+      run_once: true
+      register: ca_bundle
+
+    - name: Read aws credentials
+      ansible.builtin.slurp:
+        src: ~/.aws/credentials
+      delegate_to: "{{ hostvars['localhost'].first_manager_host }}"
+      run_once: true
+      register: aws_credentials
+
+    - name: Make minio-certs directory
+      file:
+        path: /data/minio-certs
+        state: directory
+      become: true
+
+    - name: Write ca bundle
+      ansible.builtin.copy:
+        content: '{{ ca_bundle.content | b64decode }}'
+        dest: /data/minio-certs/public.crt
+        mode: 0644
+      become: true
+    
+    - name: Make non-root aws config directory
+      file:
+        path: ~/.aws
+        state: directory
+    
+    - name: Make root aws config directory
+      file:
+        path: ~/.aws
+        state: directory
+      become: true
+
+    - name: Write non-root credentials file
+      ansible.builtin.copy:
+        content: '{{ aws_credentials.content | b64decode }}'
+        dest: ~/.aws/credentials
+        mode: 0600
+
+    - name: Write root credentials file
+      ansible.builtin.copy:
+        content: '{{ aws_credentials.content | b64decode }}'
+        dest: ~/.aws/credentials
+        mode: 0600
+      become: true
+
+- name: Shape traffic
+  hosts: all
+  become: true
+  roles:
+    - role: shape_traffic

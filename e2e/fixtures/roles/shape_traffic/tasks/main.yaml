@@ -1,0 +1,21 @@
+---
+- name: Reset traffic control rules
+  command: /usr/local/bin/tcdel {{ peer_interface }} --all
+  changed_when: false
+
+- name: Get this machine's simulated region
+  loop: '{{ machines }}'
+  when: item.name == inventory_hostname
+  set_fact:
+    my_region: "{{ item.region | default('none') }}"
+
+# Our latencies are roundtrip times. We're applying delays to both incoming and
+# outgoing traffic on each peer, so we divide by two to get the correct
+# roundtrip average.
+- name: Configure traffic control rules
+  loop: '{{ machines }}'
+  command: |
+    /usr/local/bin/tcset {{ peer_interface }} \
+      --delay {{ latencies[my_region][item.region] / 2 }} \
+      --network {{ hostvars[item.name].ansible_facts[peer_interface].ipv4.address }}
+  when: my_region != 'none' and item.name != inventory_hostname and (item.region | default('none')) != 'none'

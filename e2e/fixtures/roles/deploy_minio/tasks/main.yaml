@@ -1,0 +1,88 @@
+---
+- name: Create minio data directory
+  file:
+    path: /data/minio
+    state: directory
+
+- name: Create minio certs directory
+  file:
+    path: /data/minio-certs
+    state: directory
+
+- name: Create private key
+  community.crypto.openssl_privatekey:
+    path: /data/minio-certs/private.key
+
+- name: Create certificate signing request (CSR) for self-signed certificate
+  community.crypto.openssl_csr_pipe:
+    privatekey_path: /data/minio-certs/private.key
+    common_name: minio
+    organization_name: control-plane-e2e
+    subject_alt_name:
+      - 'IP:127.0.0.1'
+      - 'IP:{{ ansible_facts[peer_interface].ipv4.address }}'
+      - 'IP:{{ ansible_facts[external_interface].ipv4.address }}'
+      - 'DNS:localhost'
+  register: csr
+
+- name: Create self-signed certificate from CSR
+  community.crypto.x509_certificate:
+    path: /data/minio-certs/public.crt
+    csr_content: "{{ csr.csr }}"
+    privatekey_path: /data/minio-certs/private.key
+    provider: selfsigned
+
+- name: Deploy minio
+  community.docker.docker_swarm_service:
+    name: minio
+    image: minio/minio
+    command: /usr/bin/docker-entrypoint.sh minio server /data --console-address ":9001"
+    publish:
+      - published_port: 9000
+        target_port: 9000
+      - published_port: 9001
+        target_port: 9001
+    mounts:
+      - source: /data/minio
+        target: /data
+        type: bind
+      - source: /data/minio-certs
+        target: /root/.minio/certs
+        type: bind
+    env:
+      MINIO_ROOT_USER: '{{ s3_repository.access_key_id }}'
+      MINIO_ROOT_PASSWORD: '{{ s3_repository.secret_access_key }}'
+    placement:
+      constraints:
+        - node.hostname == {{ ansible_facts.hostname }}
+
+- name: Make backups bucket
+  file:
+    path: /data/minio/{{ s3_repository.bucket }}
+    state: directory
+
+- name: Create non-root aws config directory
+  file:
+    path: ~/.aws
+    state: directory
+  become: false
+
+- name: Create root aws config directory
+  file:
+    path: ~/.aws
+    state: directory
+  become: true
+
+- name: Write non-root aws credentials file
+  template:
+    src: aws.credentials.tmpl
+    dest: ~/.aws/credentials
+    mode: 0600
+  become: false
+
+- name: Write root aws credentials file
+  template:
+    src: aws.credentials.tmpl
+    dest: ~/.aws/credentials
+    mode: 0600
+  become: true

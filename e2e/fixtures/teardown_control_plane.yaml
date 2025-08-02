@@ -1,0 +1,32 @@
+---
+- name: Gather facts
+  hosts: all
+  gather_facts: true
+
+- name: Set shared facts
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - role: host_facts
+
+- name: Teardown swarm objects
+  hosts: "{{ hostvars['localhost'].first_manager_host }}"
+  roles:
+    - role: teardown_control_plane
+
+- name: Remove data directories
+  hosts: all
+  become: true
+  tasks:
+    - name: Remove control-plane data directory
+      file:
+        path: /data/control-plane
+        state: absent
+        owner: '{{ ansible_env.SUDO_USER }}'
+
+- name: Remove S3 repository data
+  hosts: "{{ hostvars['localhost'].first_manager_host }}"
+  tasks:
+    - name: Remove s3 repository data
+      command: aws s3 rm --recursive s3://{{ s3_repository.bucket }}
+      when: minio_enabled

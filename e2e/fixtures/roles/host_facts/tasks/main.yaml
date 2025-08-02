@@ -1,0 +1,13 @@
+---
+- name: Manager hosts
+  set_fact:
+    manager_hosts: "{{ machines | selectattr('swarm_manager') | map(attribute='name') | list }}"
+- name: Worker hosts
+  set_fact:
+    worker_hosts: "{{ machines | selectattr('swarm_manager', 'equalto', False) | map(attribute='name') | list }}"
+- name: Set first manager host
+  set_fact:
+    first_manager_host: '{{ manager_hosts[0] }}'
+- name: Set first manager IP
+  set_fact:
+    first_manager_ip: '{{ hostvars[first_manager_host].ansible_facts[peer_interface].ipv4.address }}'

@@ -101,7 +101,7 @@ control-plane-images:
 .PHONY: goreleaser-build
 goreleaser-build:
 	GORELEASER_CURRENT_TAG=$(CONTROL_PLANE_VERSION) \
-	goreleaser build --snapshot --clean
+	$(goreleaser) build --snapshot --clean
 	tar -C dist --strip-components=1 -c -z \
 		-f dist/control-plane_$(CONTROL_PLANE_VERSION:v%=%)_linux_amd64.tar.gz \
 		control-plane_linux_amd64_v1
@@ -111,7 +111,7 @@ goreleaser-build:
 
 goreleaser-test-publish:
 	GORELEASER_CURRENT_TAG=$(CONTROL_PLANE_VERSION) \
-	goreleaser release --skip=publish --snapshot --clean
+	$(goreleaser) release --skip=publish --snapshot --clean
 
 ###########
 # release #
