@@ -292,3 +292,17 @@ func CreateReverseSubscriptionStatement(providerNode, subscriberNode string, pee
 		},
 	}
 }
+
+func EnableSubscription(subscriberNode, providerNode string) Statement {
+	return Statement{
+		SQL: `
+			SELECT spock.sub_enable(
+				subscription_name := @sub_name,
+				immediate := true
+			);
+		`,
+		Args: pgx.NamedArgs{
+			"sub_name": subName(subscriberNode, providerNode),
+		},
+	}
+}

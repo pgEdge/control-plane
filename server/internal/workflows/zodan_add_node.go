@@ -181,16 +181,38 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 	}
 
 	// Create reverse subscriptions from Zodan to peers
-	reverseTargets := append(peerInstances, sourceInstance)
-	for _, target := range reverseTargets {
-		input := &activities.CreateReverseSubscriptionInput{
+	sourceReverse := &activities.CreateReverseSubscriptionInput{
+		TaskID:               input.TaskID,
+		Spec:                 input.Spec,
+		SubscriberInstanceID: sourceInstance.InstanceID, // n1
+		ProviderInstanceID:   zodanInstance.InstanceID,  // n4
+	}
+	if _, err := w.Activities.ExecuteCreateReverseSubscription(ctx, sourceInstance.HostID, sourceReverse).Get(ctx); err != nil {
+		return nil, handleError(fmt.Errorf("failed to create reverse subscription to %s: %w", sourceInstance.NodeName, err))
+	}
+
+	for _, peer := range peerInstances {
+		peerReverse := &activities.CreateReverseSubscriptionInput{
 			TaskID:               input.TaskID,
 			Spec:                 input.Spec,
-			SubscriberInstanceID: target.InstanceID,        // n1/n2/n3
+			SubscriberInstanceID: peer.InstanceID,          // n2/n3
 			ProviderInstanceID:   zodanInstance.InstanceID, // n4
 		}
-		if _, err := w.Activities.ExecuteCreateReverseSubscription(ctx, target.HostID, input).Get(ctx); err != nil {
-			return nil, handleError(fmt.Errorf("failed to create reverse subscription to %s: %w", target.NodeName, err))
+		if _, err := w.Activities.ExecuteCreateReverseSubscription(ctx, peer.HostID, peerReverse).Get(ctx); err != nil {
+			return nil, handleError(fmt.Errorf("failed to create reverse subscription to %s: %w", peer.NodeName, err))
+		}
+	}
+
+	for _, peer := range peerInstances {
+		subName := fmt.Sprintf("sub_%s_%s", peer.NodeName, zodanInstance.NodeName)
+		enableSubInput := &activities.EnableSubscriptionInput{
+			TaskID:               input.TaskID,
+			Spec:                 input.Spec,
+			SubscriberInstanceID: zodanInstance.InstanceID,
+			ProviderInstanceID:   peer.InstanceID,
+		}
+		if _, err := w.Activities.ExecuteEnableSubscription(ctx, zodanInstance.HostID, enableSubInput).Get(ctx); err != nil {
+			return nil, handleError(fmt.Errorf("failed to enable subscription %s: %w", subName, err))
 		}
 	}
 

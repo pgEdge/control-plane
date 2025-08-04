@@ -689,6 +689,46 @@ func (s *Service) CreateReverseSubscription(
 	return nil
 }
 
+func (s *Service) EnableSubscription(
+	ctx context.Context,
+	spec *Spec,
+	subscriberInstanceID string,
+	providerInstanceID string,
+) error {
+	// Lookup the subscriber instance
+	subscriber, err := s.store.Instance.GetByKey(spec.DatabaseID, subscriberInstanceID).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get subscriber instance: %w", err)
+	}
+
+	// Connect to the subscriber
+	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, subscriber.DatabaseID, subscriber.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get connection info for subscriber: %w", err)
+	}
+	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
+		DSN: connInfo.AdminDSN(spec.DatabaseName),
+		TLS: nil,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to subscriber: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	// Lookup the provider instance
+	provider, err := s.store.Instance.GetByKey(spec.DatabaseID, providerInstanceID).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get provider instance: %w", err)
+	}
+
+	stmt := postgres.EnableSubscription(provider.NodeName, subscriber.NodeName)
+	if err := stmt.Exec(ctx, conn); err != nil {
+		return fmt.Errorf("failed to enable subscription %s: %w", stmt.Args["sub_name"], err)
+	}
+
+	return nil
+}
+
 func tenantIDsMatch(a, b *string) bool {
 	switch {
 	case a == nil && b == nil:
