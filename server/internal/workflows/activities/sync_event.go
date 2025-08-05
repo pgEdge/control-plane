@@ -21,10 +21,10 @@ type TriggerSyncEventOutput struct {
 }
 
 type WaitForSyncEventInput struct {
-	Spec            *database.Spec `json:"spec"`
-	OriginName      string         `json:"origin_name"`
-	LSN             string         `json:"lsn"`
-	ZodanInstanceID string         `json:"zodan_instance_id,omitempty"`
+	Spec       *database.Spec `json:"spec"`
+	OriginName string         `json:"origin_name"`
+	LSN        string         `json:"lsn"`
+	InstanceID string         `json:"source_instance_id,omitempty"`
 }
 
 type WaitForSyncEventOutput struct{}
@@ -80,7 +80,7 @@ func (a *Activities) WaitForSyncEvent(ctx context.Context, input *WaitForSyncEve
 		return nil, err
 	}
 
-	err = dbSvc.WaitForSyncEvent(ctx, input.Spec, input.ZodanInstanceID, input.OriginName, input.LSN, 12000)
+	err = dbSvc.WaitForSyncEvent(ctx, input.Spec, input.InstanceID, input.OriginName, input.LSN, 12000)
 	if err != nil {
 		return nil, fmt.Errorf("failed to wait for sync event: %w", err)
 	}

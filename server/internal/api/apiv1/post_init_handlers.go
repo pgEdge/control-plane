@@ -210,10 +210,10 @@ func (s *PostInitHandlers) CreateDatabase(ctx context.Context, req *api.CreateDa
 		return nil, makeInvalidInputErr(fmt.Errorf("failed to validate database spec: %w", err))
 	}
 
-	err = s.ValidateSpec(ctx, spec)
-	if err != nil {
-		return nil, apiErr(err)
-	}
+	// err = s.ValidateSpec(ctx, spec)
+	// if err != nil {
+	// 	return nil, apiErr(err)
+	// }
 
 	db, err := s.dbSvc.CreateDatabase(ctx, spec)
 	if err != nil {
@@ -256,10 +256,10 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 		return nil, api.MakeInvalidInput(fmt.Errorf("failed to validate database spec: %w", err))
 	}
 
-	err = s.ValidateSpec(ctx, spec)
-	if err != nil {
-		return nil, apiErr(err)
-	}
+	// err = s.ValidateSpec(ctx, spec)
+	// if err != nil {
+	// 	return nil, apiErr(err)
+	// }
 
 	db, err := s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateModifying, spec)
 	if err != nil {

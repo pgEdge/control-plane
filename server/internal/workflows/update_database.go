@@ -58,19 +58,6 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 	if err := w.updateTask(ctx, logger, updateTaskInput); err != nil {
 		return nil, handleError(err)
 	}
-	zodanNode := input.Spec.HasZodanTargetNode()
-	if zodanNode != nil && input.Spec.RestoreConfig == nil {
-		logger.Info("zodan enabled: routing to zodan add node workflow")
-		zodanOutput, err := w.ZodanAddNode(ctx, &ZodanAddNodeInput{
-			TaskID:     input.TaskID,
-			Spec:       input.Spec,
-			SourceNode: zodanNode.ZodanSource,
-		})
-		if err != nil {
-			return nil, handleError(err)
-		}
-		return &UpdateDatabaseOutput{Updated: zodanOutput.Updated}, nil
-	}
 
 	refreshCurrentInput := &RefreshCurrentStateInput{
 		DatabaseID: input.Spec.DatabaseID,
@@ -121,6 +108,20 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		return nil, handleError(err)
 	}
 
+	// Check if Zodan is enabled and handle accordingly
+	zodanNode := input.Spec.HasZodanTargetNode()
+	if zodanNode != nil && input.Spec.RestoreConfig == nil {
+		logger.Info("zodan enabled: routing to zodan add node workflow")
+		zodanOutput, err := w.ZodanAddNode(ctx, &ZodanAddNodeInput{
+			TaskID:     input.TaskID,
+			Spec:       input.Spec,
+			SourceNode: zodanNode.ZodanSource,
+		})
+		if err != nil {
+			return nil, handleError(err)
+		}
+		return &UpdateDatabaseOutput{Updated: zodanOutput.Updated}, nil
+	}
 	logger.Info("successfully updated database")
 
 	return &UpdateDatabaseOutput{
