@@ -36,6 +36,14 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.UpdateDbState),
 		work.RegisterActivity(a.UpdateTask),
 		work.RegisterActivity(a.ValidateInstanceSpecs),
+		work.RegisterActivity(a.CreateDisabledSubscription),
+		work.RegisterActivity(a.CreateReplicationSlot),
+		work.RegisterActivity(a.TriggerSyncEvent),
+		work.RegisterActivity(a.WaitForSyncEvent),
+		work.RegisterActivity(a.CreateActiveSubscription),
+		work.RegisterActivity(a.AdvanceReplicationSlot),
+		work.RegisterActivity(a.CreateReverseSubscription),
+		work.RegisterActivity(a.EnableSubscription),
 	}
 	return errors.Join(errs...)
 }

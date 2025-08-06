@@ -185,8 +185,8 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 	sourceReverse := &activities.CreateReverseSubscriptionInput{
 		TaskID:               input.TaskID,
 		Spec:                 input.Spec,
-		SubscriberInstanceID: sourceInstance.InstanceID, // n1
-		ProviderInstanceID:   zodanInstance.InstanceID,  // n4
+		SubscriberInstanceID: sourceInstance.InstanceID, // N1
+		ProviderInstanceID:   zodanInstance.InstanceID,  // N4
 	}
 	if _, err := w.Activities.ExecuteCreateReverseSubscription(ctx, sourceInstance.HostID, sourceReverse).Get(ctx); err != nil { // sourceInstance.HostID -- On N1
 		return nil, handleError(fmt.Errorf("failed to create reverse subscription to %s: %w", sourceInstance.NodeName, err))

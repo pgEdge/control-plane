@@ -85,21 +85,21 @@ func (w *Workflows) GetDesiredState(ctx workflow.Context, input *GetDesiredState
 			}
 
 			if isZodan {
-				var providerInstanceIDs []string
-				for _, pInst := range peer.Instances {
-					providerInstanceIDs = append(providerInstanceIDs, pInst.InstanceID)
-				}
-				sub := &database.SubscriptionResource{
-					Spec:              input.Spec,
-					SubscriberNode:    nodeInstance.NodeName,
-					ProviderNode:      peer.NodeName,
-					ProviderInstances: providerInstanceIDs,
-					Zodan:             true,
-				}
-				err = state.AddResource(sub)
-				if err != nil {
-					return nil, fmt.Errorf("failed to add zodan subscription resource: %w", err)
-				}
+				// var providerInstanceIDs []string
+				// for _, pInst := range peer.Instances {
+				// 	providerInstanceIDs = append(providerInstanceIDs, pInst.InstanceID)
+				// }
+				// sub := &database.SubscriptionResource{
+				// 	Spec:              input.Spec,
+				// 	SubscriberNode:    nodeInstance.NodeName,
+				// 	ProviderNode:      peer.NodeName,
+				// 	ProviderInstances: providerInstanceIDs,
+				// 	Zodan:             true,
+				// }
+				// err = state.AddResource(sub)
+				// if err != nil {
+				// 	return nil, fmt.Errorf("failed to add zodan subscription resource: %w", err)
+				// }
 			} else {
 				err = state.AddResource(database.NewSubscriptionResource(nodeInstance, peer))
 				if err != nil {

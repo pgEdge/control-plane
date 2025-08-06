@@ -80,7 +80,7 @@ func (a *Activities) WaitForSyncEvent(ctx context.Context, input *WaitForSyncEve
 		return nil, err
 	}
 
-	err = dbSvc.WaitForSyncEvent(ctx, input.Spec, input.InstanceID, input.OriginName, input.LSN, 12000)
+	err = dbSvc.WaitForSyncEvent(ctx, input.Spec, input.InstanceID, input.OriginName, input.LSN, 1000)
 	if err != nil {
 		return nil, fmt.Errorf("failed to wait for sync event: %w", err)
 	}

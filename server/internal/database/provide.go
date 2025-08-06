@@ -4,6 +4,7 @@ import (
 	"github.com/samber/do"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
+	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/host"
 )
@@ -27,7 +28,11 @@ func provideService(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		return NewService(orch, store, hostSvc), nil
+		certs, err := do.Invoke[*certificates.Service](i)
+		if err != nil {
+			return nil, err
+		}
+		return NewService(orch, store, hostSvc, certs), nil
 	})
 }
 

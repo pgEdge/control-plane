@@ -190,7 +190,7 @@ func DropSpockAndCleanupSlots(dbName string) Statements {
 }
 
 func subName(nodeName, peerName string) string {
-	return fmt.Sprintf("sub_%s%s", nodeName, peerName)
+	return fmt.Sprintf("sub_%s_%s", nodeName, peerName)
 }
 
 func SyncEvent() Query[string] {
@@ -214,11 +214,10 @@ func CreateDisabledSubscription(subscriberNode, providerNode string, providerDSN
 	return Statement{
 		SQL: `
 			SELECT spock.sub_create(
-				sub_name := @sub_name,
+				subscription_name := @sub_name,
 				provider_dsn := @provider_dsn,
 				synchronize_structure := false,
 				synchronize_data := false,
-				forward_origins := ARRAY[]::text[],
 				enabled := false
 			);
 		`,
@@ -262,7 +261,7 @@ func CreateActiveSubscription(subscriberNode, providerNode string, providerDSN *
 
 func AdvanceReplicationSlot(databaseName, providerNode, subscriberNode, lsn string) Statement {
 	subName := subName(providerNode, subscriberNode)
-	slotName := fmt.Sprintf("spk_%s_%s_sub_%s", databaseName, providerNode, subName)
+	slotName := fmt.Sprintf("spk_%s_%s_%s", databaseName, providerNode, subName)
 
 	return Statement{
 		SQL: "SELECT pg_replication_slot_advance(@slot_name, @lsn);",
