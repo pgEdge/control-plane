@@ -162,8 +162,8 @@ func (e EmbeddedEtcd) validate() []error {
 }
 
 var embeddedEtcdDefault = EmbeddedEtcd{
-	ClientLogLevel: "error",
-	ServerLogLevel: "error",
+	ClientLogLevel: "fatal",
+	ServerLogLevel: "fatal",
 	PeerPort:       2380,
 	ClientPort:     2379,
 }
