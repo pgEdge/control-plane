@@ -11,6 +11,11 @@ ones we run through Docker Compose. We also have "test fixtures", which are
 Control Plane instances running on virtual machines.
 
 - [Automated end-to-end tests](#automated-end-to-end-tests)
+  - [End-to-end tests](#end-to-end-tests)
+    - [Running the tests against Docker compose](#running-the-tests-against-docker-compose)
+    - [Running the tests against a test fixture](#running-the-tests-against-a-test-fixture)
+    - [Additional test options](#additional-test-options)
+    - [Writing new tests](#writing-new-tests)
   - [Test fixtures](#test-fixtures)
     - [Common prerequisites](#common-prerequisites)
       - [`pipx`](#pipx)
@@ -37,6 +42,105 @@ Control Plane instances running on virtual machines.
       - [Cleanup](#cleanup-1)
         - [Tearing down the Control Plane](#tearing-down-the-control-plane-1)
         - [Tearing down the virtual machines](#tearing-down-the-virtual-machines-1)
+    - [Custom test fixtures](#custom-test-fixtures)
+
+## End-to-end tests
+
+The end-to-end (E2E) tests live in the top-level `e2e` package. By default,
+these tests are configured to run against a locally-running Control Plane
+cluster, but they can also be run against remote clusters and other test
+fixtures.
+
+The `TestMain` for this package starts by initializing the Control Plane cluster
+with our high-level `client` library, which makes them usable against both
+initialized and uninitialized clusters. The drawback of this decision is that we
+have limited ability to test cluster management features, such as adding or
+removing hosts. Instead, we've prioritized a fast-feedback loop for database
+management features.
+
+### Running the tests against Docker compose
+
+By default, the tests will run against a locally-running Control Plane cluster
+using the same settings as our Docker Compose setup. To run the tests, first
+start the Control Plane servers using either the `dev-watch` or `dev-detach`
+make targets:
+
+```sh
+make dev-watch
+```
+
+Then, use the `test-e2e` target in a separate terminal session:
+
+```sh
+make test-e2e
+```
+
+You'll notice that some tests, such as those that depend on S3, are skipped.
+This is because each test fixture has a set of supported features that we check
+at the start of each test.
+
+### Running the tests against a test fixture
+
+If you have a running test fixture, as described in the [Test
+fixtures](#test-fixtures) section below, you can target it by setting the
+`E2E_FIXTURE` environment variable. For example, to run the tests against the
+Lima test fixture:
+
+```sh
+make test-e2e E2E_FIXTURE=lima
+```
+
+Or to run against the EC2 test fixture:
+
+```sh
+make test-e2e E2E_FIXTURE=ec2
+```
+
+The test fixture name is used to find the "test config" YAML file in the
+`e2e/fixtures/outputs` directory. For example, the `lima` test fixture name
+corresponds to the `e2e/fixtures/outputs/lima.test_config.yaml` test config
+file. These files are generated when you deploy the control plane to the test
+fixture.
+
+### Additional test options
+
+The `test-e2e` target supports a few other environment variables besides
+`E2E_FIXTURE`:
+
+- `E2E_PARALLEL`: Sets the test parallelism. By default, the tests are
+  configured to run in parallel, and `go test` will run up to `GOMAXPROCS` tests
+  at once. An example usage of this variable is setting it to 1 to make tests
+  run sequentially:
+
+```sh
+make test-e2e E2E_PARALLEL=1
+```
+
+- `E2E_RUN`: Sets the `-run` go test option. This is a regular expression that
+  limits the tests to those that match the expression. For example, to use this
+  option to run only the `TestPosixBackupRestore` test:
+
+```sh
+make test-e2e E2E_RUN=TestPosixBackupRestore
+```
+
+- `E2E_SKIP_CLEANUP`: Setting this to 1 will skip the cleanup operations that
+  run at the end of the tests. This can be useful if you're debugging a
+  particular test. For example, using it with the `E2E_RUN` variable to leave
+  the database and local Posix repository in place:
+
+```sh
+make test-e2e E2E_RUN=TestPosixBackupRestore E2E_SKIP_CLEANUP=1
+```
+
+### Writing new tests
+
+The `e2e` package contains several helpers that make it easier to interact with
+the Control Plane API. Your tests can interact with the API and other host
+functions via the `fixture` global variable. You can also use this variable to
+create a `DatabaseFixture`, which is a wrapper around the API that makes it easy
+to write database lifecycle tests. See the backup and restore tests in
+`e2e/backup_restore_test.go` for examples of how to use these helpers.
 
 ## Test fixtures
 
@@ -399,4 +503,38 @@ make -C e2e/fixtures teardown-ec2-machines
 
 # It's important to include the `EXTRA_VARS` if you've deployed arm64 instances:
 make -C e2e/fixtures teardown-ec2-machines EXTRA_VARS='architecture=arm64'
+```
+
+### Custom test fixtures
+
+You can create custom test fixtures by writing new test config YAML files with
+the naming scheme `<fixture name>.test_config.yaml` to `e2e/fixtures/outputs`.
+For example, if you would like to run the S3 E2E tests using your local Docker
+Compose configuration, you could create a test config file such as:
+
+```yaml
+---
+hosts:
+  host-1:
+    external_ip: 127.0.0.1
+    port: 3000
+  host-2:
+    external_ip: 127.0.0.1
+    port: 3001
+  host-3:
+    external_ip: 127.0.0.1
+    port: 3002
+s3:
+  enabled: true
+  bucket: <an existing S3 bucket in your account>
+  access_key_id: <your access key ID>
+  secret_access_key: <your secret access key>
+  region: <your bucket's region>
+```
+
+and save it as `e2e/fixtures/local_s3.test_config.yaml`. Then, you can provide
+the fixture name `local_s3` to the `test-e2e` Make target:
+
+```sh
+make test-e2e E2E_FIXTURE=local_s3
 ```

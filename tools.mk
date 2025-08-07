@@ -1,4 +1,5 @@
-gobin=$(or $(shell go env GOBIN),$(shell go env GOPATH)/bin)
+first_gopath=$(firstword $(subst :, ,$(shell go env GOPATH)))
+gobin=$(or $(shell go env GOBIN),$(first_gopath)/bin)
 
 gotestsum=$(gobin)/gotestsum
 golangcilint=$(gobin)/golangci-lint

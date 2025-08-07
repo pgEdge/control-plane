@@ -8,6 +8,10 @@ CONTROL_PLANE_VERSION ?= $(shell git describe --tags --abbrev=0 --match 'v*')
 PGEDGE_IMAGE_REPO ?= host.docker.internal:5000/pgedge
 PACKAGE_REPO_BASE_URL ?= http://pgedge-529820047909-yum.s3-website.us-east-2.amazonaws.com
 PACKAGE_RELEASE_CHANNEL ?= dev
+E2E_FIXTURE ?=
+E2E_PARALLEL ?=
+E2E_RUN ?=
+E2E_SKIP_CLEANUP ?= 0
 
 buildx_builder=$(if $(CI),"control-plane-ci","control-plane")
 buildx_config=$(if $(CI),"./buildkit.ci.toml","./buildkit.toml")
@@ -15,6 +19,13 @@ docker_compose_dev=WORKSPACE_DIR=$(shell pwd) \
 		DEBUG=$(DEBUG) \
 		LOG_LEVEL=$(LOG_LEVEL) \
 		docker compose -f ./docker/control-plane-dev/docker-compose.yaml
+docker_compose_ci=docker compose -f ./docker/control-plane-ci/docker-compose.yaml
+e2e_args=-tags=e2e_test -count=1 ./e2e/... \
+	$(if $(E2E_PARALLEL),-parallel $(E2E_PARALLEL)) \
+	$(if $(E2E_RUN),-run $(E2E_RUN)) \
+	-args \
+	$(if $(E2E_FIXTURE),-fixture $(E2E_FIXTURE)) \
+	$(if $(filter 1,$(E2E_SKIP_CLEANUP)),-skip-cleanup)
 
 ###########
 # testing #
@@ -50,6 +61,23 @@ test-ci:
 		-- \
 		-tags=workflows_backend_test,etcd_lifecycle_test \
 		./...
+
+.PHONY: test-e2e
+test-e2e:
+	$(gotestsum) \
+		--format-hide-empty-pkg \
+		--format standard-verbose \
+		-- \
+		$(e2e_args)
+
+.PHONY: test-e2e-ci
+test-e2e-ci:
+	$(gotestsum) \
+		--format-hide-empty-pkg \
+		--format standard-verbose \
+		--junitfile e2e-test-results.xml \
+		-- \
+		$(e2e_args)
 
 .PHONY: lint
 lint:
@@ -182,13 +210,38 @@ dev-watch: dev-build docker-swarm-mode
 	$(docker_compose_dev) build
 	$(docker_compose_dev) up --watch
 
-.PHONY: down
+.PHONY: dev-detached
+dev-detached: dev-build docker-swarm-mode
+	$(docker_compose_dev) build
+	$(docker_compose_dev) up --detach --wait --wait-timeout 30
+
+.PHONY: dev-down
 dev-down:
 	$(docker_compose_dev) down
 
 .PHONY: api-docs
 api-docs:
 	WORKSPACE_DIR=$(shell pwd) DEBUG=0 docker compose -f ./docker/control-plane-dev/docker-compose.yaml up api-docs
+
+#################################
+# docker compose ci environment #
+#################################
+
+.PHONY: ci-compose-build
+ci-compose-build: 
+	GOOS=linux go build \
+		-gcflags "all=-N -l" \
+		-o docker/control-plane-ci/control-plane \
+		$(shell pwd)/server
+
+.PHONY: ci-compose-detached
+ci-compose-detached: ci-compose-build docker-swarm-mode
+	$(docker_compose_ci) build
+	$(docker_compose_ci) up --detach --wait --wait-timeout 30
+
+.PHONY: ci-compose-down
+ci-compose-down:
+	$(docker_compose_ci) down
 
 ######################
 # vm dev environment #
