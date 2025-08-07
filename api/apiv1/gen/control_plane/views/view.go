@@ -646,8 +646,8 @@ func ValidateDatabaseView(result *DatabaseView) (err error) {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.updated_at", *result.UpdatedAt, goa.FormatDateTime))
 	}
 	if result.State != nil {
-		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "available" || *result.State == "deleting" || *result.State == "degraded" || *result.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "available", "deleting", "degraded", "unknown"}))
+		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "available" || *result.State == "deleting" || *result.State == "degraded" || *result.State == "failed" || *result.State == "backing_up" || *result.State == "restoring" || *result.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "available", "deleting", "degraded", "failed", "backing_up", "restoring", "unknown"}))
 		}
 	}
 	if result.Spec != nil {
@@ -705,8 +705,8 @@ func ValidateDatabaseViewAbbreviated(result *DatabaseView) (err error) {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.updated_at", *result.UpdatedAt, goa.FormatDateTime))
 	}
 	if result.State != nil {
-		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "available" || *result.State == "deleting" || *result.State == "degraded" || *result.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "available", "deleting", "degraded", "unknown"}))
+		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "available" || *result.State == "deleting" || *result.State == "degraded" || *result.State == "failed" || *result.State == "backing_up" || *result.State == "restoring" || *result.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "available", "deleting", "degraded", "failed", "backing_up", "restoring", "unknown"}))
 		}
 	}
 	if result.Instances != nil {

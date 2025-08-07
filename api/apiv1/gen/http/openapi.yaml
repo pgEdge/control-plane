@@ -1585,13 +1585,16 @@ definitions:
             state:
                 type: string
                 description: Current state of the database.
-                example: unknown
+                example: available
                 enum:
                     - creating
                     - modifying
                     - available
                     - deleting
                     - degraded
+                    - failed
+                    - backing_up
+                    - restoring
                     - unknown
             tenant_id:
                 type: string
@@ -1822,13 +1825,16 @@ definitions:
             state:
                 type: string
                 description: Current state of the database.
-                example: available
+                example: unknown
                 enum:
                     - creating
                     - modifying
                     - available
                     - deleting
                     - degraded
+                    - failed
+                    - backing_up
+                    - restoring
                     - unknown
             tenant_id:
                 type: string
@@ -2152,13 +2158,16 @@ definitions:
             state:
                 type: string
                 description: Current state of the database.
-                example: available
+                example: unknown
                 enum:
                     - creating
                     - modifying
                     - available
                     - deleting
                     - degraded
+                    - failed
+                    - backing_up
+                    - restoring
                     - unknown
             tenant_id:
                 type: string
@@ -2192,7 +2201,7 @@ definitions:
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
                   state: degraded
-            state: available
+            state: unknown
             tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
             updated_at: "2025-01-01T02:30:00Z"
         required:

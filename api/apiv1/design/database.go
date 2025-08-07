@@ -475,6 +475,9 @@ var Database = g.ResultType("Database", func() {
 				"available",
 				"deleting",
 				"degraded",
+				"failed",
+				"backing_up",
+				"restoring",
 				"unknown",
 			)
 		})

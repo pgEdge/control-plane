@@ -3030,13 +3030,16 @@ components:
                 state:
                     type: string
                     description: Current state of the database.
-                    example: creating
+                    example: deleting
                     enum:
                         - creating
                         - modifying
                         - available
                         - deleting
                         - degraded
+                        - failed
+                        - backing_up
+                        - restoring
                         - unknown
                 tenant_id:
                     type: string
@@ -3264,13 +3267,16 @@ components:
                 state:
                     type: string
                     description: Current state of the database.
-                    example: available
+                    example: unknown
                     enum:
                         - creating
                         - modifying
                         - available
                         - deleting
                         - degraded
+                        - failed
+                        - backing_up
+                        - restoring
                         - unknown
                 tenant_id:
                     type: string

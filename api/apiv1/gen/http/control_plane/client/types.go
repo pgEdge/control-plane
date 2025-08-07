@@ -4958,8 +4958,8 @@ func ValidateDatabaseResponseBody(body *DatabaseResponseBody) (err error) {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
 	}
 	if body.State != nil {
-		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "available" || *body.State == "deleting" || *body.State == "degraded" || *body.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "available", "deleting", "degraded", "unknown"}))
+		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "available" || *body.State == "deleting" || *body.State == "degraded" || *body.State == "failed" || *body.State == "backing_up" || *body.State == "restoring" || *body.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "available", "deleting", "degraded", "failed", "backing_up", "restoring", "unknown"}))
 		}
 	}
 	if body.Instances != nil {

@@ -66,7 +66,7 @@ func CreateUserRole(opts UserRoleOptions) (Statements, error) {
 }
 
 type BuiltinRoleOptions struct {
-	PGVersion    int
+	PGVersion    string
 	DBName       string
 	ExtraSchemas []string
 }
@@ -131,14 +131,14 @@ func CreateApplicationReadOnlyRole(opts BuiltinRoleOptions) Statements {
 func CreatePgEdgeSuperuserRole(opts BuiltinRoleOptions) (Statements, error) {
 	var roles string
 	switch opts.PGVersion {
-	case 15:
+	case "15":
 		roles = pg15PgedgeSuperuserRoles()
-	case 16:
+	case "16":
 		roles = pg16PgedgeSuperuserRoles()
-	case 17:
+	case "17":
 		roles = pg17PgedgeSuperuserRoles()
 	default:
-		return nil, fmt.Errorf("no superuser template for PostgreSQL version: %d", opts.PGVersion)
+		return nil, fmt.Errorf("no superuser template for PostgreSQL version: %s", opts.PGVersion)
 	}
 
 	statements := Statements{
