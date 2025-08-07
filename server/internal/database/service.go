@@ -677,30 +677,39 @@ func (s *Service) CreateReverseSubscription(
 		return fmt.Errorf("failed to get subscriber instance: %w", err)
 	}
 
-	// Get connection info for subscriber
-	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, subscriber.DatabaseID, subscriber.InstanceID)
-	if err != nil {
-		return fmt.Errorf("failed to get connection info for subscriber: %w", err)
-	}
-
 	// Get provider instance (who is being subscribed to)
 	provider, err := s.store.Instance.GetByKey(spec.DatabaseID, providerInstanceID).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get provider instance: %w", err)
 	}
 
-	// Build DSN to the provider
+	// Build provider DSN
 	providerConnInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, provider.DatabaseID, provider.InstanceID)
 	if err != nil {
-		return fmt.Errorf("failed to get provider connection info: %w", err)
+		return fmt.Errorf("failed to get primary provider conn info: %w", err)
 	}
-	providerDSN := providerConnInfo.PeerDSN(spec.DatabaseName)
+	providerDSN := &postgres.DSN{
+		Hosts:       []string{providerConnInfo.PeerHost},
+		Ports:       []int{providerConnInfo.PeerPort},
+		DBName:      spec.DatabaseName,
+		User:        "pgedge",
+		SSLCert:     providerConnInfo.PeerSSLCert,
+		SSLKey:      providerConnInfo.PeerSSLKey,
+		SSLRootCert: providerConnInfo.PeerSSLRootCert,
+		Extra: map[string]string{
+			"target_session_attrs": "primary",
+		},
+	}
 
+	// TLS + Connect to subscriber
+	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, subscriber.DatabaseID, subscriber.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get connection info for subscriber: %w", err)
+	}
 	tlsCfg, err := s.certs.PostgresUserTLS(ctx, subscriber.InstanceID, connInfo.InstanceHostname, "pgedge")
 	if err != nil {
 		return fmt.Errorf("failed to get TLS config: %w", err)
 	}
-	// Connect to the subscriber (where the statement runs)
 	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
 		DSN: connInfo.AdminDSN(spec.DatabaseName),
 		TLS: tlsCfg,
@@ -710,7 +719,7 @@ func (s *Service) CreateReverseSubscription(
 	}
 	defer conn.Close(ctx)
 
-	// Build and execute reverse subscription statement
+	// Execute reverse subscription
 	stmt := postgres.CreateReverseSubscriptionStatement(provider.NodeName, subscriber.NodeName, providerDSN)
 	if err := stmt.Exec(ctx, conn); err != nil {
 		return fmt.Errorf("failed to create reverse subscription: %w", err)

@@ -222,7 +222,7 @@ func CreateDisabledSubscription(subscriberNode, providerNode string, providerDSN
 			);
 		`,
 		Args: pgx.NamedArgs{
-			"sub_name":     subName(subscriberNode, providerNode),
+			"sub_name":     subName(providerNode, subscriberNode),
 			"provider_dsn": providerDSN.String(),
 		},
 	}
@@ -278,7 +278,7 @@ func CreateReverseSubscriptionStatement(providerNode, subscriberNode string, pee
 
 	return Statement{
 		SQL: `SELECT spock.sub_create(
-			sub_name := @sub_name,
+			subscription_name := @sub_name,
 			provider_dsn := @peer_dsn,
 			synchronize_structure := false,
 			synchronize_data := false,

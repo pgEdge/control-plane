@@ -2,6 +2,7 @@ package workflows
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
@@ -91,7 +92,11 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 
 		_, err := w.Activities.ExecuteCreateDisabledSubscription(ctx, zodanInstance.HostID, subInput).Get(ctx) // zodanInstance.HostID -- On N4
 		if err != nil {
-			return nil, handleError(fmt.Errorf("failed to create disabled subscription to %s: %w", instance.NodeName, err))
+			if strings.Contains(err.Error(), "subscription sub_") && strings.Contains(err.Error(), "already exists") {
+				logger.With("node", instance.NodeName).Info("subscription already exists, skipping")
+			} else {
+				return nil, handleError(fmt.Errorf("failed to create disabled subscription to %s: %w", instance.NodeName, err))
+			}
 		}
 
 		// 2. Create replication slot on peer (N2, N3) for Zodan node(N4)
@@ -101,7 +106,12 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 			SubscriberInstanceID: zodanInstance.InstanceID, // N4
 		}
 		if _, err := w.Activities.ExecuteCreateReplicationSlot(ctx, instance.HostID, slotInput).Get(ctx); err != nil { // instance.HostID -- On N2/N3
-			return nil, handleError(fmt.Errorf("failed to create replication slot on %s: %w", instance.NodeName, err))
+			if strings.Contains(err.Error(), "already exists") {
+				logger.With("slot", fmt.Sprintf("spk_%s_sub_%s", instance.NodeName, zodanInstance.NodeName)).
+					Info("replication slot already exists, skipping")
+			} else {
+				return nil, handleError(fmt.Errorf("failed to create replication slot on %s: %w", instance.NodeName, err))
+			}
 		}
 
 		// 3. Trigger sync event from peer (N2, N3)
@@ -145,9 +155,26 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 		ProviderInstanceID:   sourceInstance.InstanceID,
 	}
 	if _, err := w.Activities.ExecuteCreateActiveSubscription(ctx, zodanInstance.HostID, activeSubInput).Get(ctx); err != nil { // zodanInstance.HostID -- On N4
-		return nil, handleError(fmt.Errorf("failed to create active subscription from source to zodan: %w", err))
+		if strings.Contains(err.Error(), "subscription sub_") && strings.Contains(err.Error(), "already exists") {
+			logger.With("node", sourceInstance.NodeName).Info("subscription already exists, skipping")
+		} else {
+			return nil, handleError(fmt.Errorf("failed to create active subscription from source to zodan: %w", err))
+		}
 	}
-
+	// 5.a. Create replication slot on source instance (N1) for Zodan (N4)
+	slotInput := &activities.CreateReplicationSlotInput{
+		Spec:                 input.Spec,
+		ProviderInstanceID:   sourceInstance.InstanceID, // N1
+		SubscriberInstanceID: zodanInstance.InstanceID,  // N4
+	}
+	if _, err := w.Activities.ExecuteCreateReplicationSlot(ctx, sourceInstance.HostID, slotInput).Get(ctx); err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			logger.With("slot", fmt.Sprintf("spk_%s_sub_%s", sourceInstance.NodeName, zodanInstance.NodeName)).
+				Info("replication slot already exists, skipping")
+		} else {
+			return nil, handleError(fmt.Errorf("failed to create replication slot on source: %w", err))
+		}
+	}
 	// 6. Trigger sync event from source instance
 	triggerSourceInput := &activities.TriggerSyncEventInput{
 		Spec:       input.Spec,
