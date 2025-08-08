@@ -6,7 +6,7 @@ set -o pipefail
 : "${DEBUG=0}"
 
 if [[ "${DEBUG}" == 1 ]]; then
-    /go/bin/dlv \
+    exec /go/bin/dlv \
         --listen=:2345 \
         --headless=true \
         --log=true \
@@ -19,7 +19,7 @@ if [[ "${DEBUG}" == 1 ]]; then
         --config-path /config.json \
         --logging.pretty
 else
-    /control-plane run \
+    exec /control-plane run \
         --config-path /config.json \
         --logging.pretty
 fi
