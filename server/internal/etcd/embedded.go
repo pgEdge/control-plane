@@ -740,7 +740,7 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 }
 
 func initializationConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error) {
-	lg, err := newZapLogger(logger, "fatal", "etcd_server")
+	lg, err := newZapLogger(logger, cfg.EmbeddedEtcd.ServerLogLevel, "etcd_server")
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize etcd server logger: %w", err)
 	}

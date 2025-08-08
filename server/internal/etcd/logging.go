@@ -18,7 +18,6 @@ func newZapLogger(base zerolog.Logger, logLevel, component string) (*zap.Logger,
 		Level(level).
 		With().
 		Str("component", component).
-		CallerWithSkipFrameCount(5). // Found via trial and error
 		Logger())
 	return zap.New(core), nil
 }
