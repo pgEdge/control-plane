@@ -90,7 +90,7 @@ changes, the Make recipe will then:
 
 - Create a commit
 - Push the release branch to the origin
-- Create and push release-candidate tags, e.g. `v1.0.0-rc.1`, `api/v1.0.0-rc.1`
+- Create and push release-candidate tag, e.g. `v1.0.0-rc.1`
 - Print out a link to open a PR for the release branch
 
 The new `v1.0.0-rc.1` tag will trigger a release build in CircleCI. The release
@@ -108,22 +108,12 @@ marked as a pre-release. At this point, it's ready for quality assurance and
 testing.
 
 If we find bugs in the release, the fixes should be PR'd or pushed into the
-release branch. Then, we must create a new release candidate by creating a new
-tag with an incremented `rc` number, e.g.: `v1.0.0-rc.2`. Because
-`control-plane` is a multi-module repository, we must create separate tags for
-each module, as described in the [Go wiki](https://go.dev/wiki/Modules#faqs--multi-module-repositories).
-There's a `make` target that automates this process:
-
-```sh
-make version-tags TAG=<version>
-
-# for example
-make version-tags TAG=v1.0.0-rc.2
-```
+release branch. Then, we must create a new release candidate by creating and
+pushing a new tag with an incremented `rc` number, e.g.: `v1.0.0-rc.2`.
 
 Once we're confident that the release is ready, a reviewer must approve the
 release PR, and then we can merge it.
 
-Merging the release PR will trigger a GitHub workflow to create the release
-tags, for example, `v1.0.0`, `api/v1.0.0`, etc. The new `v1.0.0` tag will
-trigger the same build process described above for the completed release.
+Merging the release PR will trigger a GitHub workflow to create the release tag,
+for example, `v1.0.0`. This new tag will trigger the same build process
+described above for the completed release.

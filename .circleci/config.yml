@@ -7,7 +7,7 @@ commands:
       - run:
           name: Compute go.sum checksums
           command: |
-            md5sum ./*/go.sum > /tmp/mod-checksums.txt
+            md5sum ./go.sum > /tmp/mod-checksums.txt
             md5sum tools.mk >> /tmp/mod-checksums.txt
       - restore_cache:
           keys:
@@ -18,10 +18,7 @@ commands:
             - v1-go-mod-
       - run:
           name: go mod download
-          command: |
-            for module in $(dirname ./*/go.mod); do
-              (cd ${module} && go mod download)
-            done
+          command: go mod download
       - run:
           name: Install tools
           command: make install-tools
