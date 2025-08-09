@@ -2577,7 +2577,6 @@ components:
                     type: string
                     description: An optional AWS access key ID to use for this repository. If not provided, pgbackrest will use the default credential provider chain. This field will be excluded from the response of all endpoints. It can also be omitted from update requests to keep the current value.
                     example: AKIAIOSFODNN7EXAMPLE
-                    minLength: 16
                     maxLength: 128
                 s3_key_secret:
                     type: string
@@ -6551,7 +6550,6 @@ components:
                     type: string
                     description: An optional AWS access key ID to use for this repository. If not provided, pgbackrest will use the default credential provider chain.
                     example: AKIAIOSFODNN7EXAMPLE
-                    minLength: 16
                     maxLength: 128
                 s3_key_secret:
                     type: string

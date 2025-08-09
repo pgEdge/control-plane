@@ -5333,11 +5333,6 @@ func ValidateBackupRepositorySpecResponseBody(body *BackupRepositorySpecResponse
 		}
 	}
 	if body.S3Key != nil {
-		if utf8.RuneCountInString(*body.S3Key) < 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 16, true))
-		}
-	}
-	if body.S3Key != nil {
 		if utf8.RuneCountInString(*body.S3Key) > 128 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 128, false))
 		}
@@ -5558,11 +5553,6 @@ func ValidateRestoreRepositorySpecResponseBody(body *RestoreRepositorySpecRespon
 	if body.S3Endpoint != nil {
 		if utf8.RuneCountInString(*body.S3Endpoint) > 128 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 128, false))
-		}
-	}
-	if body.S3Key != nil {
-		if utf8.RuneCountInString(*body.S3Key) < 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 16, true))
 		}
 	}
 	if body.S3Key != nil {
@@ -5958,11 +5948,6 @@ func ValidateBackupRepositorySpecRequestBody(body *BackupRepositorySpecRequestBo
 		}
 	}
 	if body.S3Key != nil {
-		if utf8.RuneCountInString(*body.S3Key) < 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 16, true))
-		}
-	}
-	if body.S3Key != nil {
 		if utf8.RuneCountInString(*body.S3Key) > 128 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 128, false))
 		}
@@ -6144,11 +6129,6 @@ func ValidateRestoreRepositorySpecRequestBody(body *RestoreRepositorySpecRequest
 	if body.S3Endpoint != nil {
 		if utf8.RuneCountInString(*body.S3Endpoint) > 128 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 128, false))
-		}
-	}
-	if body.S3Key != nil {
-		if utf8.RuneCountInString(*body.S3Key) < 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 16, true))
 		}
 	}
 	if body.S3Key != nil {
@@ -6576,11 +6556,6 @@ func ValidateBackupRepositorySpecRequestBodyRequestBody(body *BackupRepositorySp
 		}
 	}
 	if body.S3Key != nil {
-		if utf8.RuneCountInString(*body.S3Key) < 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 16, true))
-		}
-	}
-	if body.S3Key != nil {
 		if utf8.RuneCountInString(*body.S3Key) > 128 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 128, false))
 		}
@@ -6762,11 +6737,6 @@ func ValidateRestoreRepositorySpecRequestBodyRequestBody(body *RestoreRepository
 	if body.S3Endpoint != nil {
 		if utf8.RuneCountInString(*body.S3Endpoint) > 128 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 128, false))
-		}
-	}
-	if body.S3Key != nil {
-		if utf8.RuneCountInString(*body.S3Key) < 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 16, true))
 		}
 	}
 	if body.S3Key != nil {
