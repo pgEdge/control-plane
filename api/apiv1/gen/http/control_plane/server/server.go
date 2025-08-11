@@ -42,6 +42,7 @@ type Server struct {
 	RestartInstance     http.Handler
 	StopInstance        http.Handler
 	StartInstance       http.Handler
+	CancelDatabaseTask  http.Handler
 	GenHTTPOpenapi3JSON http.Handler
 }
 
@@ -99,6 +100,7 @@ func New(
 			{"RestartInstance", "POST", "/v1/databases/{database_id}/instances/{instance_id}/restart"},
 			{"StopInstance", "POST", "/v1/databases/{database_id}/instances/{instance_id}/stop-instance"},
 			{"StartInstance", "POST", "/v1/databases/{database_id}/instances/{instance_id}/start-instance"},
+			{"CancelDatabaseTask", "GET", "/v1/databases/{database_id}/tasks/{task_id}/cancel"},
 			{"Serve ./gen/http/openapi3.json", "GET", "/v1/openapi.json"},
 		},
 		InitCluster:         NewInitClusterHandler(e.InitCluster, mux, decoder, encoder, errhandler, formatter),
@@ -123,6 +125,7 @@ func New(
 		RestartInstance:     NewRestartInstanceHandler(e.RestartInstance, mux, decoder, encoder, errhandler, formatter),
 		StopInstance:        NewStopInstanceHandler(e.StopInstance, mux, decoder, encoder, errhandler, formatter),
 		StartInstance:       NewStartInstanceHandler(e.StartInstance, mux, decoder, encoder, errhandler, formatter),
+		CancelDatabaseTask:  NewCancelDatabaseTaskHandler(e.CancelDatabaseTask, mux, decoder, encoder, errhandler, formatter),
 		GenHTTPOpenapi3JSON: http.FileServer(fileSystemGenHTTPOpenapi3JSON),
 	}
 }
@@ -154,6 +157,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.RestartInstance = m(s.RestartInstance)
 	s.StopInstance = m(s.StopInstance)
 	s.StartInstance = m(s.StartInstance)
+	s.CancelDatabaseTask = m(s.CancelDatabaseTask)
 }
 
 // MethodNames returns the methods served.
@@ -183,6 +187,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountRestartInstanceHandler(mux, h.RestartInstance)
 	MountStopInstanceHandler(mux, h.StopInstance)
 	MountStartInstanceHandler(mux, h.StartInstance)
+	MountCancelDatabaseTaskHandler(mux, h.CancelDatabaseTask)
 	MountGenHTTPOpenapi3JSON(mux, http.StripPrefix("/v1", h.GenHTTPOpenapi3JSON))
 }
 
@@ -1252,6 +1257,58 @@ func NewStartInstanceHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "start-instance")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountCancelDatabaseTaskHandler configures the mux to serve the
+// "control-plane" service "cancel-database-task" endpoint.
+func MountCancelDatabaseTaskHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/v1/databases/{database_id}/tasks/{task_id}/cancel", f)
+}
+
+// NewCancelDatabaseTaskHandler creates a HTTP handler which loads the HTTP
+// request and calls the "control-plane" service "cancel-database-task"
+// endpoint.
+func NewCancelDatabaseTaskHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeCancelDatabaseTaskRequest(mux, decoder)
+		encodeResponse = EncodeCancelDatabaseTaskResponse(encoder)
+		encodeError    = EncodeCancelDatabaseTaskError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "cancel-database-task")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
 		payload, err := decodeRequest(r)
 		if err != nil {

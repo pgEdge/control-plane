@@ -363,6 +363,33 @@ type StartInstanceResponseBody struct {
 	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
+// CancelDatabaseTaskResponseBody is the type of the "control-plane" service
+// "cancel-database-task" endpoint HTTP response body.
+type CancelDatabaseTaskResponseBody struct {
+	// The parent task ID of the task.
+	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	// The database ID of the task.
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// The unique ID of the task.
+	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
+	// The time when the task was created.
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// The status of the task.
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
 // InitClusterClusterAlreadyInitializedResponseBody is the type of the
 // "control-plane" service "init-cluster" endpoint HTTP response body for the
 // "cluster_already_initialized" error.
@@ -1166,6 +1193,36 @@ type StartInstanceNotFoundResponseBody struct {
 // service "start-instance" endpoint HTTP response body for the "server_error"
 // error.
 type StartInstanceServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CancelDatabaseTaskNotFoundResponseBody is the type of the "control-plane"
+// service "cancel-database-task" endpoint HTTP response body for the
+// "not_found" error.
+type CancelDatabaseTaskNotFoundResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CancelDatabaseTaskInvalidInputResponseBody is the type of the
+// "control-plane" service "cancel-database-task" endpoint HTTP response body
+// for the "invalid_input" error.
+type CancelDatabaseTaskInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CancelDatabaseTaskServerErrorResponseBody is the type of the "control-plane"
+// service "cancel-database-task" endpoint HTTP response body for the
+// "server_error" error.
+type CancelDatabaseTaskServerErrorResponseBody struct {
 	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// The error message.
@@ -3605,6 +3662,59 @@ func NewStartInstanceServerError(body *StartInstanceServerErrorResponseBody) *co
 	return v
 }
 
+// NewCancelDatabaseTaskTaskOK builds a "control-plane" service
+// "cancel-database-task" endpoint result from a HTTP "OK" response.
+func NewCancelDatabaseTaskTaskOK(body *CancelDatabaseTaskResponseBody) *controlplane.Task {
+	v := &controlplane.Task{
+		ParentID:    body.ParentID,
+		DatabaseID:  *body.DatabaseID,
+		NodeName:    body.NodeName,
+		InstanceID:  body.InstanceID,
+		HostID:      body.HostID,
+		TaskID:      *body.TaskID,
+		CreatedAt:   *body.CreatedAt,
+		CompletedAt: body.CompletedAt,
+		Type:        *body.Type,
+		Status:      *body.Status,
+		Error:       body.Error,
+	}
+
+	return v
+}
+
+// NewCancelDatabaseTaskNotFound builds a control-plane service
+// cancel-database-task endpoint not_found error.
+func NewCancelDatabaseTaskNotFound(body *CancelDatabaseTaskNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCancelDatabaseTaskInvalidInput builds a control-plane service
+// cancel-database-task endpoint invalid_input error.
+func NewCancelDatabaseTaskInvalidInput(body *CancelDatabaseTaskInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCancelDatabaseTaskServerError builds a control-plane service
+// cancel-database-task endpoint server_error error.
+func NewCancelDatabaseTaskServerError(body *CancelDatabaseTaskServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
 // ValidateInitClusterResponseBody runs the validations defined on
 // Init-ClusterResponseBody
 func ValidateInitClusterResponseBody(body *InitClusterResponseBody) (err error) {
@@ -3902,8 +4012,8 @@ func ValidateGetDatabaseTaskLogResponseBody(body *GetDatabaseTaskLogResponseBody
 		err = goa.MergeErrors(err, goa.MissingFieldError("entries", "body"))
 	}
 	if body.TaskStatus != nil {
-		if !(*body.TaskStatus == "pending" || *body.TaskStatus == "running" || *body.TaskStatus == "completed" || *body.TaskStatus == "failed" || *body.TaskStatus == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.task_status", *body.TaskStatus, []any{"pending", "running", "completed", "failed", "unknown"}))
+		if !(*body.TaskStatus == "pending" || *body.TaskStatus == "running" || *body.TaskStatus == "completed" || *body.TaskStatus == "failed" || *body.TaskStatus == "unknown" || *body.TaskStatus == "canceled" || *body.TaskStatus == "canceling") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.task_status", *body.TaskStatus, []any{"pending", "running", "completed", "failed", "unknown", "canceled", "canceling"}))
 		}
 	}
 	for _, e := range body.Entries {
@@ -4048,6 +4158,44 @@ func ValidateStopInstanceResponseBody(body *StopInstanceResponseBody) (err error
 // ValidateStartInstanceResponseBody runs the validations defined on
 // Start-InstanceResponseBody
 func ValidateStartInstanceResponseBody(body *StartInstanceResponseBody) (err error) {
+	if body.DatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	}
+	if body.TaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
+	}
+	if body.CreatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
+	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.ParentID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
+	}
+	if body.TaskID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
+	}
+	if body.CreatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
+	}
+	if body.CompletedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
+	}
+	if body.Status != nil {
+		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		}
+	}
+	return
+}
+
+// ValidateCancelDatabaseTaskResponseBody runs the validations defined on
+// Cancel-Database-TaskResponseBody
+func ValidateCancelDatabaseTaskResponseBody(body *CancelDatabaseTaskResponseBody) (err error) {
 	if body.DatabaseID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
 	}
@@ -5068,6 +5216,42 @@ func ValidateStartInstanceNotFoundResponseBody(body *StartInstanceNotFoundRespon
 // ValidateStartInstanceServerErrorResponseBody runs the validations defined on
 // start-instance_server_error_response_body
 func ValidateStartInstanceServerErrorResponseBody(body *StartInstanceServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCancelDatabaseTaskNotFoundResponseBody runs the validations defined
+// on cancel-database-task_not_found_response_body
+func ValidateCancelDatabaseTaskNotFoundResponseBody(body *CancelDatabaseTaskNotFoundResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCancelDatabaseTaskInvalidInputResponseBody runs the validations
+// defined on cancel-database-task_invalid_input_response_body
+func ValidateCancelDatabaseTaskInvalidInputResponseBody(body *CancelDatabaseTaskInvalidInputResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCancelDatabaseTaskServerErrorResponseBody runs the validations
+// defined on cancel-database-task_server_error_response_body
+func ValidateCancelDatabaseTaskServerErrorResponseBody(body *CancelDatabaseTaskServerErrorResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}

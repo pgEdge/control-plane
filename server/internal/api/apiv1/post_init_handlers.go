@@ -677,3 +677,38 @@ func (s *PostInitHandlers) StartInstance(ctx context.Context, req *api.StartInst
 
 	return taskToAPI(t), nil
 }
+
+func (s *PostInitHandlers) CancelDatabaseTask(ctx context.Context, req *api.CancelDatabaseTaskPayload) (*api.Task, error) {
+	if req == nil {
+		return nil, makeInvalidInputErr(errors.New("request cannot be nil"))
+	}
+
+	databaseID, err := dbIdentToString(req.DatabaseID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	taskID, err := uuid.Parse(string(req.TaskID))
+	if err != nil {
+		return nil, makeInvalidInputErr(fmt.Errorf("invalid task ID: %w", err))
+	}
+
+	t, err := s.taskSvc.GetTask(ctx, databaseID, taskID)
+	if err != nil {
+		return nil, makeInvalidInputErr(fmt.Errorf("task is not associated with database "))
+	}
+
+	if t.Status != task.StatusPending && t.Status != task.StatusRunning {
+		return nil, makeInvalidInputErr(fmt.Errorf("task must be running or pending to be cancelled"))
+	}
+	t, err = s.workflowSvc.CancelDatabaseTask(ctx, databaseID, taskID)
+	if err != nil {
+		return nil, apiErr(fmt.Errorf("failed to cancel task: %w", err))
+	}
+	s.logger.Info().
+		Str("database_id", databaseID).
+		Str("task_id", taskID.String()).
+		Msg("task cancellation initiated")
+
+	return taskToAPI(t), nil
+}

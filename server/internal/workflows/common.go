@@ -101,3 +101,22 @@ func (w *Workflows) logTaskEvent(
 
 	return nil
 }
+
+func (w *Workflows) cancelTask(
+	cleanupCtx workflow.Context,
+	databaseID string,
+	taskID uuid.UUID,
+	logger *slog.Logger) {
+	updateTaskInput := &activities.UpdateTaskInput{
+		DatabaseID:    databaseID,
+		TaskID:        taskID,
+		UpdateOptions: task.UpdateCancel(),
+	}
+	_ = w.updateTask(cleanupCtx, logger, updateTaskInput)
+
+	w.logTaskEvent(cleanupCtx, databaseID, taskID, task.LogEntry{
+		Message: "task successfully canceled",
+		Fields:  map[string]any{"status": "canceled"},
+	})
+
+}

@@ -120,3 +120,8 @@ func StopInstanceControlPlanePath(databaseID string, instanceID string) string {
 func StartInstanceControlPlanePath(databaseID string, instanceID string) string {
 	return fmt.Sprintf("/v1/databases/%v/instances/%v/start-instance", databaseID, instanceID)
 }
+
+// CancelDatabaseTaskControlPlanePath returns the URL path to the control-plane service cancel-database-task HTTP endpoint.
+func CancelDatabaseTaskControlPlanePath(databaseID string, taskID string) string {
+	return fmt.Sprintf("/v1/databases/%v/tasks/%v/cancel", databaseID, taskID)
+}

@@ -1925,6 +1925,77 @@ paths:
                             example:
                                 message: A longer description of the error.
                                 name: error_name
+    /v1/databases/{database_id}/tasks/{task_id}/cancel:
+        get:
+            tags:
+                - Database
+            summary: Cancel a database task
+            description: Cancels a running or pending task for a database.
+            operationId: cancel-database-task
+            parameters:
+                - name: database_id
+                  in: path
+                  description: ID of the database that owns the task.
+                  required: true
+                  schema:
+                    type: string
+                    description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+                    example: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                    minLength: 1
+                    maxLength: 63
+                  example: abc123
+                - name: task_id
+                  in: path
+                  description: ID of the task to cancel.
+                  required: true
+                  schema:
+                    type: string
+                    description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+                    example: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                    minLength: 1
+                    maxLength: 63
+                  example: def456
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Task'
+                            example:
+                                completed_at: "2025-06-18T16:52:35Z"
+                                created_at: "2025-06-18T16:52:05Z"
+                                database_id: storefront
+                                status: completed
+                                task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+                                type: create
+                "400":
+                    description: 'invalid_input: Bad Request response.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/APIError'
+                            example:
+                                message: A longer description of the error.
+                                name: error_name
+                "404":
+                    description: 'not_found: Not Found response.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/APIError'
+                            example:
+                                message: A longer description of the error.
+                                name: error_name
+                "500":
+                    description: 'server_error: Internal Server Error response.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/APIError'
+                            example:
+                                message: A longer description of the error.
+                                name: error_name
     /v1/databases/{database_id}/tasks/{task_id}/log:
         get:
             tags:
@@ -2836,6 +2907,27 @@ components:
                 - id
                 - type
                 - cron_expression
+        CancelDatabaseTaskPayload:
+            type: object
+            properties:
+                database_id:
+                    type: string
+                    description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+                    example: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                    minLength: 1
+                    maxLength: 63
+                task_id:
+                    type: string
+                    description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+                    example: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                    minLength: 1
+                    maxLength: 63
+            example:
+                database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                task_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+            required:
+                - database_id
+                - task_id
         Cluster:
             type: object
             properties:
@@ -6998,6 +7090,8 @@ components:
                         - completed
                         - failed
                         - unknown
+                        - canceled
+                        - canceling
             example:
                 database_id: storefront
                 entries:

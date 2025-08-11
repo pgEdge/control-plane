@@ -223,3 +223,7 @@ func (s *PreInitHandlers) StopInstance(ctx context.Context, req *api.StopInstanc
 func (s *PreInitHandlers) StartInstance(ctx context.Context, req *api.StartInstancePayload) (res *api.Task, err error) {
 	return nil, ErrUninitialized
 }
+
+func (s *PreInitHandlers) CancelDatabaseTask(ctx context.Context, req *api.CancelDatabaseTaskPayload) (*api.Task, error) {
+	return nil, ErrUninitialized
+}

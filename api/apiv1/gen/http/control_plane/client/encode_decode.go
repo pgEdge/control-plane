@@ -2878,6 +2878,121 @@ func DecodeStartInstanceResponse(decoder func(*http.Response) goahttp.Decoder, r
 	}
 }
 
+// BuildCancelDatabaseTaskRequest instantiates a HTTP request object with
+// method and path set to call the "control-plane" service
+// "cancel-database-task" endpoint
+func (c *Client) BuildCancelDatabaseTaskRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		databaseID string
+		taskID     string
+	)
+	{
+		p, ok := v.(*controlplane.CancelDatabaseTaskPayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("control-plane", "cancel-database-task", "*controlplane.CancelDatabaseTaskPayload", v)
+		}
+		databaseID = string(p.DatabaseID)
+		taskID = string(p.TaskID)
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: CancelDatabaseTaskControlPlanePath(databaseID, taskID)}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("control-plane", "cancel-database-task", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// DecodeCancelDatabaseTaskResponse returns a decoder for responses returned by
+// the control-plane cancel-database-task endpoint. restoreBody controls
+// whether the response body should be restored after having been read.
+// DecodeCancelDatabaseTaskResponse may return the following errors:
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
+//   - error: internal error
+func DecodeCancelDatabaseTaskResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body CancelDatabaseTaskResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "cancel-database-task", err)
+			}
+			err = ValidateCancelDatabaseTaskResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "cancel-database-task", err)
+			}
+			res := NewCancelDatabaseTaskTaskOK(&body)
+			return res, nil
+		case http.StatusNotFound:
+			var (
+				body CancelDatabaseTaskNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "cancel-database-task", err)
+			}
+			err = ValidateCancelDatabaseTaskNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "cancel-database-task", err)
+			}
+			return nil, NewCancelDatabaseTaskNotFound(&body)
+		case http.StatusBadRequest:
+			var (
+				body CancelDatabaseTaskInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "cancel-database-task", err)
+			}
+			err = ValidateCancelDatabaseTaskInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "cancel-database-task", err)
+			}
+			return nil, NewCancelDatabaseTaskInvalidInput(&body)
+		case http.StatusInternalServerError:
+			var (
+				body CancelDatabaseTaskServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "cancel-database-task", err)
+			}
+			err = ValidateCancelDatabaseTaskServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "cancel-database-task", err)
+			}
+			return nil, NewCancelDatabaseTaskServerError(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("control-plane", "cancel-database-task", resp.StatusCode, string(body))
+		}
+	}
+}
+
 // unmarshalClusterPeerResponseBodyToControlplaneClusterPeer builds a value of
 // type *controlplane.ClusterPeer from a value of type *ClusterPeerResponseBody.
 func unmarshalClusterPeerResponseBodyToControlplaneClusterPeer(v *ClusterPeerResponseBody) *controlplane.ClusterPeer {

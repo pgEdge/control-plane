@@ -10,8 +10,11 @@ import (
 )
 
 func WaitForPatroniRunning(ctx context.Context, patroniClient *patroni.Client, timeout time.Duration) error {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
+	var cancel context.CancelFunc
+	if timeout > 0 {
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
 
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()

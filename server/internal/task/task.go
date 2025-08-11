@@ -40,6 +40,7 @@ const (
 	StatusCompleted Status = "completed"
 	StatusFailed    Status = "failed"
 	StatusCanceled  Status = "canceled"
+	StatusCanceling Status = "canceling"
 	StatusUnknown   Status = "unknown"
 )
 
@@ -144,6 +145,13 @@ func UpdateFail(cause error) UpdateOptions {
 		Status:      utils.PointerTo(StatusFailed),
 		CompletedAt: utils.PointerTo(time.Now()),
 		Error:       utils.PointerTo(cause.Error()),
+	}
+}
+
+func UpdateCancel() UpdateOptions {
+	return UpdateOptions{
+		Status:      utils.PointerTo(StatusCanceled),
+		CompletedAt: utils.PointerTo(time.Now()),
 	}
 }
 

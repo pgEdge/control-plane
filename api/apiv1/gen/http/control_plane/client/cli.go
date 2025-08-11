@@ -741,3 +741,40 @@ func BuildStartInstancePayload(controlPlaneStartInstanceDatabaseID string, contr
 
 	return v, nil
 }
+
+// BuildCancelDatabaseTaskPayload builds the payload for the control-plane
+// cancel-database-task endpoint from CLI flags.
+func BuildCancelDatabaseTaskPayload(controlPlaneCancelDatabaseTaskDatabaseID string, controlPlaneCancelDatabaseTaskTaskID string) (*controlplane.CancelDatabaseTaskPayload, error) {
+	var err error
+	var databaseID string
+	{
+		databaseID = controlPlaneCancelDatabaseTaskDatabaseID
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var taskID string
+	{
+		taskID = controlPlaneCancelDatabaseTaskTaskID
+		if utf8.RuneCountInString(taskID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("task_id", taskID, utf8.RuneCountInString(taskID), 1, true))
+		}
+		if utf8.RuneCountInString(taskID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("task_id", taskID, utf8.RuneCountInString(taskID), 63, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	v := &controlplane.CancelDatabaseTaskPayload{}
+	v.DatabaseID = controlplane.Identifier(databaseID)
+	v.TaskID = controlplane.Identifier(taskID)
+
+	return v, nil
+}
