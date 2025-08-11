@@ -1735,7 +1735,6 @@
           "type": "string",
           "description": "An optional AWS access key ID to use for this repository. If not provided, pgbackrest will use the default credential provider chain. This field will be excluded from the response of all endpoints. It can also be omitted from update requests to keep the current value.",
           "example": "AKIAIOSFODNN7EXAMPLE",
-          "minLength": 16,
           "maxLength": 128
         },
         "s3_key_secret": {
@@ -2207,13 +2206,16 @@
         "state": {
           "type": "string",
           "description": "Current state of the database.",
-          "example": "unknown",
+          "example": "available",
           "enum": [
             "creating",
             "modifying",
             "available",
             "deleting",
             "degraded",
+            "failed",
+            "backing_up",
+            "restoring",
             "unknown"
           ]
         },
@@ -2548,13 +2550,16 @@
         "state": {
           "type": "string",
           "description": "Current state of the database.",
-          "example": "available",
+          "example": "unknown",
           "enum": [
             "creating",
             "modifying",
             "available",
             "deleting",
             "degraded",
+            "failed",
+            "backing_up",
+            "restoring",
             "unknown"
           ]
         },
@@ -2997,13 +3002,16 @@
         "state": {
           "type": "string",
           "description": "Current state of the database.",
-          "example": "available",
+          "example": "unknown",
           "enum": [
             "creating",
             "modifying",
             "available",
             "deleting",
             "degraded",
+            "failed",
+            "backing_up",
+            "restoring",
             "unknown"
           ]
         },
@@ -3051,7 +3059,7 @@
             "state": "degraded"
           }
         ],
-        "state": "available",
+        "state": "unknown",
         "tenant_id": "8210ec10-2dca-406c-ac4a-0661d2189954",
         "updated_at": "2025-01-01T02:30:00Z"
       },
@@ -5525,7 +5533,6 @@
           "type": "string",
           "description": "An optional AWS access key ID to use for this repository. If not provided, pgbackrest will use the default credential provider chain.",
           "example": "AKIAIOSFODNN7EXAMPLE",
-          "minLength": 16,
           "maxLength": 128
         },
         "s3_key_secret": {

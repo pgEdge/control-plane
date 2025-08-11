@@ -253,7 +253,7 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 		return fmt.Errorf("failed to initialize pgedge extensions: %w", err)
 	}
 	roleStatements, err := postgres.CreateBuiltInRoles(postgres.BuiltinRoleOptions{
-		PGVersion: int(r.Spec.PgEdgeVersion.PostgresVersion.Major()),
+		PGVersion: r.Spec.PgEdgeVersion.PostgresVersion.String(),
 		DBName:    r.Spec.DatabaseName,
 	})
 	if err != nil {

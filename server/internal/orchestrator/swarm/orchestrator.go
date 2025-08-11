@@ -154,12 +154,12 @@ type Images struct {
 func GetImages(cfg config.Config, version *host.PgEdgeVersion) (*Images, error) {
 	// TODO: Real implementation
 	var tag string
-	switch version.PostgresVersion.Major() {
-	case 17:
+	switch version.PostgresVersion.String() {
+	case "17":
 		tag = "pgedge:pg17_5.0.0-1"
-	case 16:
+	case "16":
 		tag = "pgedge:pg16_5.0.0-1"
-	case 15:
+	case "15":
 		tag = "pgedge:pg15_5.0.0-1"
 	default:
 		return nil, fmt.Errorf("unsupported postgres version: %q", version.PostgresVersion)

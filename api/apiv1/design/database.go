@@ -133,7 +133,6 @@ var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
 	})
 	g.Attribute("s3_key", g.String, func() {
 		g.Description("An optional AWS access key ID to use for this repository. If not provided, pgbackrest will use the default credential provider chain. This field will be excluded from the response of all endpoints. It can also be omitted from update requests to keep the current value.")
-		g.MinLength(16)
 		g.MaxLength(128)
 		g.Example("AKIAIOSFODNN7EXAMPLE")
 	})
@@ -273,7 +272,6 @@ var RestoreRepositorySpec = g.Type("RestoreRepositorySpec", func() {
 	})
 	g.Attribute("s3_key", g.String, func() {
 		g.Description("An optional AWS access key ID to use for this repository. If not provided, pgbackrest will use the default credential provider chain.")
-		g.MinLength(16)
 		g.MaxLength(128)
 		g.Example("AKIAIOSFODNN7EXAMPLE")
 	})
@@ -475,6 +473,9 @@ var Database = g.ResultType("Database", func() {
 				"available",
 				"deleting",
 				"degraded",
+				"failed",
+				"backing_up",
+				"restoring",
 				"unknown",
 			)
 		})
