@@ -187,7 +187,14 @@ func (c *SingleServerClient) FollowTask(ctx context.Context, req *api.GetDatabas
 	ticker := time.NewTicker(taskPollInterval)
 	defer ticker.Stop()
 
-	taskLog, err := c.GetDatabaseTaskLog(ctx, req)
+	curr := &api.GetDatabaseTaskLogPayload{
+		DatabaseID:   req.DatabaseID,
+		TaskID:       req.TaskID,
+		AfterEntryID: req.AfterEntryID,
+		Limit:        req.Limit,
+	}
+
+	taskLog, err := c.GetDatabaseTaskLog(ctx, curr)
 	if err != nil {
 		return err
 	}
@@ -200,7 +207,9 @@ func (c *SingleServerClient) FollowTask(ctx context.Context, req *api.GetDatabas
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-			taskLog, err := c.GetDatabaseTaskLog(ctx, req)
+			curr.AfterEntryID = taskLog.LastEntryID
+
+			taskLog, err = c.GetDatabaseTaskLog(ctx, curr)
 			if err != nil {
 				return err
 			}
