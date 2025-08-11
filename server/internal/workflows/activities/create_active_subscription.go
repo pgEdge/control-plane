@@ -59,7 +59,7 @@ func (a *Activities) CreateActiveSubscription(
 		return nil, fmt.Errorf("failed to get database service: %w", err)
 	}
 
-	err = dbSvc.CreateActiveSubscription(
+	stmt, err := dbSvc.CreateActiveSubscription(
 		ctx,
 		input.Spec,
 		input.SubscriberInstanceID,
@@ -68,6 +68,7 @@ func (a *Activities) CreateActiveSubscription(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create active subscription: %w", err)
 	}
+	logger.Info("CreateActiveSubscription", "statement", stmt)
 
 	logger.Info("active subscription created successfully")
 	return &CreateActiveSubscriptionOutput{}, nil

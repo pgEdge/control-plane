@@ -50,10 +50,11 @@ func (a *Activities) TriggerSyncEvent(ctx context.Context, input *TriggerSyncEve
 		return nil, err
 	}
 
-	lsn, err := dbSvc.TriggerSyncEvent(ctx, input.Spec, input.InstanceID)
+	stmt, lsn, err := dbSvc.TriggerSyncEvent(ctx, input.Spec, input.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to trigger sync event: %w", err)
 	}
+	logger.Info("TriggerSyncEvent", "statement", stmt)
 
 	logger.With("lsn", lsn).Info("sync_event triggered successfully")
 	return &TriggerSyncEventOutput{LSN: lsn}, nil
@@ -80,11 +81,11 @@ func (a *Activities) WaitForSyncEvent(ctx context.Context, input *WaitForSyncEve
 		return nil, err
 	}
 
-	err = dbSvc.WaitForSyncEvent(ctx, input.Spec, input.InstanceID, input.OriginName, input.LSN, 1000)
+	stmt, err := dbSvc.WaitForSyncEvent(ctx, input.Spec, input.InstanceID, input.OriginName, input.LSN, 1000)
 	if err != nil {
 		return nil, fmt.Errorf("failed to wait for sync event: %w", err)
 	}
-
+	logger.Info("WaitForSyncEvent", "statement", stmt)
 	logger.Info("sync_event wait completed successfully")
 	return &WaitForSyncEventOutput{}, nil
 }

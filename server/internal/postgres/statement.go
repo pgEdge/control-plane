@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -25,6 +27,34 @@ type Statement struct {
 func (s Statement) Exec(ctx context.Context, conn Executor) error {
 	_, err := conn.Exec(ctx, s.SQL, s.Args)
 	return err
+}
+
+// ToSQLString substitutes named arguments into the SQL string (for debugging/logging only)
+func (s Statement) ToSQLString() string {
+	sql := s.SQL
+	for key, val := range s.Args {
+		placeholder := "@" + key
+		replacement := formatValue(val)
+		sql = strings.ReplaceAll(sql, placeholder, replacement)
+	}
+	return sql
+}
+
+// formatValue converts value to a safe string representation
+func formatValue(val any) string {
+	switch v := val.(type) {
+	case string:
+		return fmt.Sprintf("'%s'", escapeString(v))
+	case fmt.Stringer:
+		return fmt.Sprintf("'%s'", escapeString(v.String()))
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
+// escapeString escapes single quotes
+func escapeString(s string) string {
+	return strings.ReplaceAll(s, "'", "''")
 }
 
 type Statements []IStatement

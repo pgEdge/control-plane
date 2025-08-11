@@ -59,12 +59,13 @@ func (a *Activities) CreateDisabledSubscription(
 		return nil, fmt.Errorf("failed to get database service: %w", err)
 	}
 
-	err = dbSvc.CreateDisabledSubscription(
+	stmt, err := dbSvc.CreateDisabledSubscription(
 		ctx,
 		input.Spec,
 		input.SubscriberInstanceID,
 		input.ProviderInstanceID,
 	)
+	logger.Info("CreateDisabledSubscriptionstatement", stmt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create disabled subscription: %w", err)
 	}

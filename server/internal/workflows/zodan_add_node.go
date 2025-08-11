@@ -36,14 +36,14 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 		return err
 	}
 
-	updateTaskInput := &activities.UpdateTaskInput{
-		DatabaseID:    input.Spec.DatabaseID,
-		TaskID:        input.TaskID,
-		UpdateOptions: task.UpdateStart(),
-	}
-	if err := w.updateTask(ctx, logger, updateTaskInput); err != nil {
-		return nil, handleError(err)
-	}
+	// updateTaskInput := &activities.UpdateTaskInput{
+	// 	DatabaseID:    input.Spec.DatabaseID,
+	// 	TaskID:        input.TaskID,
+	// 	UpdateOptions: task.UpdateStart(),
+	// }
+	// if err := w.updateTask(ctx, logger, updateTaskInput); err != nil {
+	// 	return nil, handleError(err)
+	// }
 
 	refreshCurrentInput := &RefreshCurrentStateInput{
 		DatabaseID: input.Spec.DatabaseID,
@@ -270,7 +270,7 @@ func (w *Workflows) ZodanAddNode(ctx workflow.Context, input *ZodanAddNodeInput)
 		return nil, handleError(fmt.Errorf("failed to update database state to available: %w", err))
 	}
 
-	updateTaskInput = &activities.UpdateTaskInput{
+	updateTaskInput := &activities.UpdateTaskInput{
 		DatabaseID:    input.Spec.DatabaseID,
 		TaskID:        input.TaskID,
 		UpdateOptions: task.UpdateComplete(),

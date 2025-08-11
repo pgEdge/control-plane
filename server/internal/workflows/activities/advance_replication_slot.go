@@ -58,7 +58,7 @@ func (a *Activities) AdvanceReplicationSlot(
 		return nil, fmt.Errorf("failed to get database service: %w", err)
 	}
 
-	err = dbSvc.AdvanceReplicationSlot(
+	stmt, err := dbSvc.AdvanceReplicationSlot(
 		ctx,
 		input.Spec,
 		input.ProviderInstanceID,
@@ -68,7 +68,7 @@ func (a *Activities) AdvanceReplicationSlot(
 	if err != nil {
 		return nil, fmt.Errorf("failed to advance replication slot: %w", err)
 	}
-
+	logger.Info("AdvancedReplicationSlot", "statement", stmt)
 	logger.Info("replication slot advanced successfully")
 	return &AdvanceReplicationSlotOutput{}, nil
 }

@@ -57,10 +57,11 @@ func (a *Activities) EnableSubscription(
 		return nil, fmt.Errorf("failed to get database service: %w", err)
 	}
 
-	if err := dbSvc.EnableSubscription(ctx, input.Spec, input.SubscriberInstanceID, input.ProviderInstanceID); err != nil {
+	stmt, err := dbSvc.EnableSubscription(ctx, input.Spec, input.SubscriberInstanceID, input.ProviderInstanceID)
+	if err != nil {
 		return nil, fmt.Errorf("failed to enable subscription: %w", err)
 	}
-
+	logger.Info("EnableSubscription", "statement", stmt)
 	logger.Info("subscription enabled successfully")
 	return &EnableSubscriptionOutput{}, nil
 }

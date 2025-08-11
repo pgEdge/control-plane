@@ -386,12 +386,47 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 	return nil
 }
 
-func (s *Service) TriggerSyncEvent(ctx context.Context, spec *Spec, originInstanceID string) (string, error) {
+func (s *Service) TriggerSyncEvent(ctx context.Context, spec *Spec, originInstanceID string) (string, string, error) {
 	instance, err := s.store.Instance.
 		GetByKey(spec.DatabaseID, originInstanceID).
 		Exec(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get origin instance %s: %w", originInstanceID, err)
+		return "", "", fmt.Errorf("failed to get origin instance %s: %w", originInstanceID, err)
+	}
+
+	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, instance.DatabaseID, instance.InstanceID)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get connection info: %w", err)
+	}
+
+	tlsCfg, err := s.certs.PostgresUserTLS(ctx, instance.InstanceID, connInfo.InstanceHostname, "pgedge")
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get TLS config: %w", err)
+	}
+
+	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
+		DSN: connInfo.AdminDSN(spec.DatabaseName),
+		TLS: tlsCfg,
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("failed to connect to instance: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	lsn, err := postgres.SyncEvent().Row(ctx, conn)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to trigger spock.sync_event: %w", err)
+	}
+
+	return "SELECT spock.sync_event();", lsn, nil
+}
+
+func (s *Service) WaitForSyncEvent(ctx context.Context, spec *Spec, zodanInstanceID string, originNodeName string, lsn string, timeoutMS int) (string, error) {
+	instance, err := s.store.Instance.
+		GetByKey(spec.DatabaseID, zodanInstanceID).
+		Exec(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get target instance %s: %w", zodanInstanceID, err)
 	}
 
 	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, instance.DatabaseID, instance.InstanceID)
@@ -399,11 +434,11 @@ func (s *Service) TriggerSyncEvent(ctx context.Context, spec *Spec, originInstan
 		return "", fmt.Errorf("failed to get connection info: %w", err)
 	}
 
+	// Get TLS config for the subscriber instance
 	tlsCfg, err := s.certs.PostgresUserTLS(ctx, instance.InstanceID, connInfo.InstanceHostname, "pgedge")
 	if err != nil {
 		return "", fmt.Errorf("failed to get TLS config: %w", err)
 	}
-
 	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
 		DSN: connInfo.AdminDSN(spec.DatabaseName),
 		TLS: tlsCfg,
@@ -413,48 +448,13 @@ func (s *Service) TriggerSyncEvent(ctx context.Context, spec *Spec, originInstan
 	}
 	defer conn.Close(ctx)
 
-	lsn, err := postgres.SyncEvent().Row(ctx, conn)
-	if err != nil {
-		return "", fmt.Errorf("failed to trigger spock.sync_event: %w", err)
-	}
-
-	return lsn, nil
-}
-
-func (s *Service) WaitForSyncEvent(ctx context.Context, spec *Spec, zodanInstanceID string, originNodeName string, lsn string, timeoutMS int) error {
-	instance, err := s.store.Instance.
-		GetByKey(spec.DatabaseID, zodanInstanceID).
-		Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get target instance %s: %w", zodanInstanceID, err)
-	}
-
-	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, instance.DatabaseID, instance.InstanceID)
-	if err != nil {
-		return fmt.Errorf("failed to get connection info: %w", err)
-	}
-
-	// Get TLS config for the subscriber instance
-	tlsCfg, err := s.certs.PostgresUserTLS(ctx, instance.InstanceID, connInfo.InstanceHostname, "pgedge")
-	if err != nil {
-		return fmt.Errorf("failed to get TLS config: %w", err)
-	}
-	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
-		DSN: connInfo.AdminDSN(spec.DatabaseName),
-		TLS: tlsCfg,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to connect to instance: %w", err)
-	}
-	defer conn.Close(ctx)
-
 	// We're waiting *on* the Zodan node *for* the origin node's LSN to replicate
 	stmt := postgres.WaitForSyncEvent(originNodeName, lsn, timeoutMS)
 	if err := stmt.Exec(ctx, conn); err != nil {
-		return fmt.Errorf("failed to execute spock.wait_for_sync_event: %w", err)
+		return "", fmt.Errorf("failed to execute spock.wait_for_sync_event: %w", err)
 	}
 
-	return nil
+	return stmt.ToSQLString(), nil
 }
 
 func (s *Service) CreateDisabledSubscription(
@@ -462,13 +462,13 @@ func (s *Service) CreateDisabledSubscription(
 	spec *Spec,
 	subscriberInstanceID string, // e.g., n4
 	providerInstanceID string, // e.g., n2
-) error {
+) (string, error) {
 	// Fetch subscriber (Zodan) instance
 	subscriberInstance, err := s.store.Instance.
 		GetByKey(spec.DatabaseID, subscriberInstanceID).
 		Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get subscriber instance (%s): %w", subscriberInstanceID, err)
+		return "", fmt.Errorf("failed to get subscriber instance (%s): %w", subscriberInstanceID, err)
 	}
 
 	// Fetch provider (peer) instance
@@ -476,33 +476,33 @@ func (s *Service) CreateDisabledSubscription(
 		GetByKey(spec.DatabaseID, providerInstanceID).
 		Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get provider instance (%s): %w", providerInstanceID, err)
+		return "", fmt.Errorf("failed to get provider instance (%s): %w", providerInstanceID, err)
 	}
 
 	// Get DSN of the provider instance (we connect TO this)
 	providerConnInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, providerInstance.DatabaseID, providerInstance.InstanceID)
 	if err != nil {
-		return fmt.Errorf("failed to get connection info for provider instance (%s): %w", providerInstanceID, err)
+		return "", fmt.Errorf("failed to get connection info for provider instance (%s): %w", providerInstanceID, err)
 	}
 	providerDSN := providerConnInfo.PeerDSN(spec.DatabaseName)
 
 	// Get connection to the subscriber (Zodan) instance
 	subscriberConnInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, subscriberInstance.DatabaseID, subscriberInstance.InstanceID)
 	if err != nil {
-		return fmt.Errorf("failed to get connection info for subscriber instance (%s): %w", subscriberInstanceID, err)
+		return "", fmt.Errorf("failed to get connection info for subscriber instance (%s): %w", subscriberInstanceID, err)
 	}
 
 	// Get TLS config for the subscriber instance
 	tlsCfg, err := s.certs.PostgresUserTLS(ctx, subscriberInstance.InstanceID, subscriberConnInfo.InstanceHostname, "pgedge")
 	if err != nil {
-		return fmt.Errorf("failed to get TLS config: %w", err)
+		return "", fmt.Errorf("failed to get TLS config: %w", err)
 	}
 	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
 		DSN: subscriberConnInfo.AdminDSN(spec.DatabaseName),
 		TLS: tlsCfg,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to connect to subscriber instance (%s): %w", subscriberInstanceID, err)
+		return "", fmt.Errorf("failed to connect to subscriber instance (%s): %w", subscriberInstanceID, err)
 	}
 	defer conn.Close(ctx)
 
@@ -513,46 +513,46 @@ func (s *Service) CreateDisabledSubscription(
 		providerDSN,
 	)
 	if err := subStmt.Exec(ctx, conn); err != nil {
-		return fmt.Errorf("failed to execute CreateDisabledSubscription: %w", err)
+		return "", fmt.Errorf("failed to execute CreateDisabledSubscription: %w", err)
 	}
 
-	return nil
+	return subStmt.ToSQLString(), nil
 }
 
-func (s *Service) CreateReplicationSlot(ctx context.Context, spec *Spec, providerInstanceID, subscriberInstanceID string) error {
+func (s *Service) CreateReplicationSlot(ctx context.Context, spec *Spec, providerInstanceID, subscriberInstanceID string) (string, error) {
 	provider, err := s.store.Instance.GetByKey(spec.DatabaseID, providerInstanceID).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get provider instance: %w", err)
+		return "", fmt.Errorf("failed to get provider instance: %w", err)
 	}
 
 	subscriber, err := s.store.Instance.GetByKey(spec.DatabaseID, subscriberInstanceID).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get subscriber instance: %w", err)
+		return "", fmt.Errorf("failed to get subscriber instance: %w", err)
 	}
 	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, provider.DatabaseID, provider.InstanceID)
 	if err != nil {
-		return fmt.Errorf("failed to get connection info: %w", err)
+		return "", fmt.Errorf("failed to get connection info: %w", err)
 	}
 
 	tlsCfg, err := s.certs.PostgresUserTLS(ctx, provider.InstanceID, connInfo.InstanceHostname, "pgedge")
 	if err != nil {
-		return fmt.Errorf("failed to get TLS config: %w", err)
+		return "", fmt.Errorf("failed to get TLS config: %w", err)
 	}
 	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
 		DSN: connInfo.AdminDSN(spec.DatabaseName),
 		TLS: tlsCfg,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to connect to instance: %w", err)
+		return "", fmt.Errorf("failed to connect to instance: %w", err)
 	}
 	defer conn.Close(ctx)
 
 	stmt := postgres.CreateReplicationSlot(spec.DatabaseName, provider.NodeName, subscriber.NodeName)
 	if err := stmt.Exec(ctx, conn); err != nil {
-		return fmt.Errorf("failed to create replication slot: %w", err)
+		return "", fmt.Errorf("failed to create replication slot: %w", err)
 	}
 
-	return nil
+	return stmt.ToSQLString(), nil
 }
 
 func (s *Service) CreateActiveSubscription(
@@ -560,34 +560,34 @@ func (s *Service) CreateActiveSubscription(
 	spec *Spec,
 	subscriberInstanceID string,
 	providerInstanceID string,
-) error {
+) (string, error) {
 	// Lookup subscriber and provider instances
 	subscriberInstance, err := s.store.Instance.GetByKey(spec.DatabaseID, subscriberInstanceID).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get subscriber instance: %w", err)
+		return "", fmt.Errorf("failed to get subscriber instance: %w", err)
 	}
 	providerInstance, err := s.store.Instance.GetByKey(spec.DatabaseID, providerInstanceID).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get provider instance: %w", err)
+		return "", fmt.Errorf("failed to get provider instance: %w", err)
 	}
 
 	// Get connection info for the subscriber
 	subscriberConnInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, subscriberInstance.DatabaseID, subscriberInstance.InstanceID)
 	if err != nil {
-		return fmt.Errorf("failed to get subscriber connection info: %w", err)
+		return "", fmt.Errorf("failed to get subscriber connection info: %w", err)
 	}
 
 	// Get DSN of the provider instance (we connect TO this)
 	providerConnInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, providerInstance.DatabaseID, providerInstance.InstanceID)
 	if err != nil {
-		return fmt.Errorf("failed to get connection info for provider instance (%s): %w", providerInstanceID, err)
+		return "", fmt.Errorf("failed to get connection info for provider instance (%s): %w", providerInstanceID, err)
 	}
 	providerDSN := providerConnInfo.PeerDSN(spec.DatabaseName)
 
 	// Get TLS config for the subscriber instance
 	tlsCfg, err := s.certs.PostgresUserTLS(ctx, subscriberInstance.InstanceID, subscriberConnInfo.InstanceHostname, "pgedge")
 	if err != nil {
-		return fmt.Errorf("failed to get TLS config: %w", err)
+		return "", fmt.Errorf("failed to get TLS config: %w", err)
 	}
 
 	// Connect to subscriber instance
@@ -596,7 +596,7 @@ func (s *Service) CreateActiveSubscription(
 		TLS: tlsCfg,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to connect to subscriber instance: %w", err)
+		return "", fmt.Errorf("failed to connect to subscriber instance: %w", err)
 	}
 	defer conn.Close(ctx)
 
@@ -607,10 +607,10 @@ func (s *Service) CreateActiveSubscription(
 		providerDSN,
 	)
 	if err := stmt.Exec(ctx, conn); err != nil {
-		return fmt.Errorf("failed to execute create active subscription: %w", err)
+		return "", fmt.Errorf("failed to execute create active subscription: %w", err)
 	}
 
-	return nil
+	return stmt.ToSQLString(), nil
 }
 func (s *Service) AdvanceReplicationSlot(
 	ctx context.Context,
@@ -618,28 +618,28 @@ func (s *Service) AdvanceReplicationSlot(
 	providerInstanceID string,
 	subscriberInstanceID string,
 	lsn string,
-) error {
+) (string, error) {
 	// Get provider instance
 	provider, err := s.store.Instance.GetByKey(spec.DatabaseID, providerInstanceID).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get provider instance: %w", err)
+		return "", fmt.Errorf("failed to get provider instance: %w", err)
 	}
 
 	// Get subscriber instance
 	subscriber, err := s.store.Instance.GetByKey(spec.DatabaseID, subscriberInstanceID).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get subscriber instance: %w", err)
+		return "", fmt.Errorf("failed to get subscriber instance: %w", err)
 	}
 
 	// Get connection info for provider (slot lives on provider)
 	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, provider.DatabaseID, provider.InstanceID)
 	if err != nil {
-		return fmt.Errorf("failed to get connection info: %w", err)
+		return "", fmt.Errorf("failed to get connection info: %w", err)
 	}
 
 	tlsCfg, err := s.certs.PostgresUserTLS(ctx, provider.InstanceID, connInfo.InstanceHostname, "pgedge")
 	if err != nil {
-		return fmt.Errorf("failed to get TLS config: %w", err)
+		return "", fmt.Errorf("failed to get TLS config: %w", err)
 	}
 	// Connect to provider instance
 	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
@@ -647,7 +647,7 @@ func (s *Service) AdvanceReplicationSlot(
 		TLS: tlsCfg,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to connect to provider instance: %w", err)
+		return "", fmt.Errorf("failed to connect to provider instance: %w", err)
 	}
 	defer conn.Close(ctx)
 
@@ -659,10 +659,10 @@ func (s *Service) AdvanceReplicationSlot(
 		lsn,
 	)
 	if err := stmt.Exec(ctx, conn); err != nil {
-		return fmt.Errorf("failed to advance replication slot: %w", err)
+		return "", fmt.Errorf("failed to advance replication slot: %w", err)
 	}
 
-	return nil
+	return stmt.ToSQLString(), nil
 }
 
 func (s *Service) CreateReverseSubscription(
@@ -670,23 +670,23 @@ func (s *Service) CreateReverseSubscription(
 	spec *Spec,
 	subscriberInstanceID string,
 	providerInstanceID string,
-) error {
+) (string, error) {
 	// Get subscriber instance (where the subscription will be created)
 	subscriber, err := s.store.Instance.GetByKey(spec.DatabaseID, subscriberInstanceID).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get subscriber instance: %w", err)
+		return "", fmt.Errorf("failed to get subscriber instance: %w", err)
 	}
 
 	// Get provider instance (who is being subscribed to)
 	provider, err := s.store.Instance.GetByKey(spec.DatabaseID, providerInstanceID).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get provider instance: %w", err)
+		return "", fmt.Errorf("failed to get provider instance: %w", err)
 	}
 
 	// Build provider DSN
 	providerConnInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, provider.DatabaseID, provider.InstanceID)
 	if err != nil {
-		return fmt.Errorf("failed to get primary provider conn info: %w", err)
+		return "", fmt.Errorf("failed to get primary provider conn info: %w", err)
 	}
 	providerDSN := &postgres.DSN{
 		Hosts:       []string{providerConnInfo.PeerHost},
@@ -704,28 +704,28 @@ func (s *Service) CreateReverseSubscription(
 	// TLS + Connect to subscriber
 	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, subscriber.DatabaseID, subscriber.InstanceID)
 	if err != nil {
-		return fmt.Errorf("failed to get connection info for subscriber: %w", err)
+		return "", fmt.Errorf("failed to get connection info for subscriber: %w", err)
 	}
 	tlsCfg, err := s.certs.PostgresUserTLS(ctx, subscriber.InstanceID, connInfo.InstanceHostname, "pgedge")
 	if err != nil {
-		return fmt.Errorf("failed to get TLS config: %w", err)
+		return "", fmt.Errorf("failed to get TLS config: %w", err)
 	}
 	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
 		DSN: connInfo.AdminDSN(spec.DatabaseName),
 		TLS: tlsCfg,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to connect to subscriber: %w", err)
+		return "", fmt.Errorf("failed to connect to subscriber: %w", err)
 	}
 	defer conn.Close(ctx)
 
 	// Execute reverse subscription
 	stmt := postgres.CreateReverseSubscriptionStatement(provider.NodeName, subscriber.NodeName, providerDSN)
 	if err := stmt.Exec(ctx, conn); err != nil {
-		return fmt.Errorf("failed to create reverse subscription: %w", err)
+		return "", fmt.Errorf("failed to create reverse subscription: %w", err)
 	}
 
-	return nil
+	return stmt.ToSQLString(), nil
 }
 
 func (s *Service) EnableSubscription(
@@ -733,44 +733,44 @@ func (s *Service) EnableSubscription(
 	spec *Spec,
 	subscriberInstanceID string,
 	providerInstanceID string,
-) error {
+) (string, error) {
 	// Lookup the subscriber instance
 	subscriber, err := s.store.Instance.GetByKey(spec.DatabaseID, subscriberInstanceID).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get subscriber instance: %w", err)
+		return "", fmt.Errorf("failed to get subscriber instance: %w", err)
 	}
 
 	// Connect to the subscriber
 	connInfo, err := s.orchestrator.GetInstanceConnectionInfo(ctx, subscriber.DatabaseID, subscriber.InstanceID)
 	if err != nil {
-		return fmt.Errorf("failed to get connection info for subscriber: %w", err)
+		return "", fmt.Errorf("failed to get connection info for subscriber: %w", err)
 	}
 
 	lsCfg, err := s.certs.PostgresUserTLS(ctx, subscriber.InstanceID, connInfo.InstanceHostname, "pgedge")
 	if err != nil {
-		return fmt.Errorf("failed to get TLS config: %w", err)
+		return "", fmt.Errorf("failed to get TLS config: %w", err)
 	}
 	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
 		DSN: connInfo.AdminDSN(spec.DatabaseName),
 		TLS: lsCfg,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to connect to subscriber: %w", err)
+		return "", fmt.Errorf("failed to connect to subscriber: %w", err)
 	}
 	defer conn.Close(ctx)
 
 	// Lookup the provider instance
 	provider, err := s.store.Instance.GetByKey(spec.DatabaseID, providerInstanceID).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get provider instance: %w", err)
+		return "", fmt.Errorf("failed to get provider instance: %w", err)
 	}
 
 	stmt := postgres.EnableSubscription(provider.NodeName, subscriber.NodeName)
 	if err := stmt.Exec(ctx, conn); err != nil {
-		return fmt.Errorf("failed to enable subscription %s: %w", stmt.Args["sub_name"], err)
+		return "", fmt.Errorf("failed to enable subscription %s: %w", stmt.Args["sub_name"], err)
 	}
 
-	return nil
+	return stmt.ToSQLString(), nil
 }
 
 func tenantIDsMatch(a, b *string) bool {

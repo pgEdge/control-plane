@@ -49,11 +49,11 @@ func (a *Activities) CreateReplicationSlot(
 		return nil, fmt.Errorf("failed to get database service: %w", err)
 	}
 
-	err = dbSvc.CreateReplicationSlot(ctx, input.Spec, input.ProviderInstanceID, input.SubscriberInstanceID)
+	stmt, err := dbSvc.CreateReplicationSlot(ctx, input.Spec, input.ProviderInstanceID, input.SubscriberInstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create replication slot: %w", err)
 	}
-
+	logger = logger.With("CreateReplicationSlot - statement", stmt)
 	logger.Info("replication slot created successfully")
 	return &CreateReplicationSlotOutput{}, nil
 }

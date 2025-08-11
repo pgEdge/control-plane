@@ -57,7 +57,7 @@ func (a *Activities) CreateReverseSubscription(
 		return nil, fmt.Errorf("failed to get database service: %w", err)
 	}
 
-	err = dbSvc.CreateReverseSubscription(
+	stmt, err := dbSvc.CreateReverseSubscription(
 		ctx,
 		input.Spec,
 		input.SubscriberInstanceID,
@@ -66,7 +66,7 @@ func (a *Activities) CreateReverseSubscription(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create reverse subscription: %w", err)
 	}
-
+	logger.Info("CreateReverseSubscription", "statement", stmt)
 	logger.Info("reverse subscription created successfully")
 	return &CreateReverseSubscriptionOutput{}, nil
 }
