@@ -20,8 +20,8 @@
     organization_name: control-plane-e2e
     subject_alt_name:
       - 'IP:127.0.0.1'
-      - 'IP:{{ ansible_facts[peer_interface].ipv4.address }}'
-      - 'IP:{{ ansible_facts[external_interface].ipv4.address }}'
+      - 'IP:{{ peer_ip }}'
+      - 'IP:{{ external_ip }}'
       - 'DNS:localhost'
   register: csr
 
@@ -54,7 +54,7 @@
       MINIO_ROOT_PASSWORD: '{{ s3_repository.secret_access_key }}'
     placement:
       constraints:
-        - node.hostname == {{ ansible_facts.hostname }}
+        - node.hostname == {{ docker_node_hostname }}
 
 - name: Make backups bucket
   file:

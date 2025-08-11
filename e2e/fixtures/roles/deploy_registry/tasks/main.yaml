@@ -8,4 +8,4 @@
         target_port: 5000
     placement:
       constraints:
-        - node.hostname == {{ ansible_facts.hostname }}
+        - node.hostname == {{ docker_node_hostname }}

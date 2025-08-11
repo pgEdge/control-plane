@@ -2,6 +2,11 @@
 - name: Gather facts
   hosts: all
   gather_facts: true
+  roles:
+    - role: lima_facts
+      when: provider == 'lima'
+    - role: ec2_facts
+      when: provider == 'ec2'
 
 - name: Set shared facts
   hosts: localhost

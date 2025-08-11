@@ -5,8 +5,3 @@
   loop: '{{ machines }}'
   command: limactl stop --yes {{ item.name }}
   when: item.name in lima_vms and lima_vms[item.name].status == 'Running'
-
-- name: Remove hosts
-  loop: '{{ machines }}'
-  command: limactl remove --yes {{ item.name }}
-  when: item.name in lima_vms

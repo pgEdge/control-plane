@@ -1,6 +1,6 @@
 ---
 - name: Reset traffic control rules
-  command: /usr/local/bin/tcdel {{ peer_interface }} --all
+  command: /usr/local/bin/tcdel eth0 --all
   changed_when: false
 
 - name: Get this machine's simulated region
@@ -15,7 +15,7 @@
 - name: Configure traffic control rules
   loop: '{{ machines }}'
   command: |
-    /usr/local/bin/tcset {{ peer_interface }} \
+    /usr/local/bin/tcset eth0 \
       --delay {{ latencies[my_region][item.region] / 2 }} \
-      --network {{ hostvars[item.name].ansible_facts[peer_interface].ipv4.address }}
+      --network {{ hostvars[item.name].peer_ip }}
   when: my_region != 'none' and item.name != inventory_hostname and (item.region | default('none')) != 'none'

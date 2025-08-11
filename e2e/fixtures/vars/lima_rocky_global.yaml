@@ -3,8 +3,6 @@ minio_enabled: true
 provider: lima
 architecture: "{{ ansible_facts['architecture'] }}"
 template: rocky-9
-peer_interface: eth0
-external_interface: lima1
 machines:
   - name: host-1
     swarm_manager: true

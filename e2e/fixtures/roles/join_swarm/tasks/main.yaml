@@ -2,6 +2,6 @@
 - name: Add node
   community.docker.docker_swarm:
     state: join
-    advertise_addr: '{{ ansible_facts[peer_interface].ipv4.address }}'
+    advertise_addr: '{{ peer_ip }}'
     join_token: '{{ join_token }}'
     remote_addrs: ['{{ manager_ip }}:2377']

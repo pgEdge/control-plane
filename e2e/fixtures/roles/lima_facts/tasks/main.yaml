@@ -1,0 +1,12 @@
+---
+- name: Set peer_ip
+  set_fact:
+    peer_ip: '{{ ansible_facts.eth0.ipv4.address }}'
+
+- name: Set external_ip
+  set_fact:
+    external_ip: '{{ ansible_facts.lima1.ipv4.address }}'
+
+- name: Set docker_node_hostname
+  set_fact:
+    docker_node_hostname: '{{ ansible_facts.hostname }}'

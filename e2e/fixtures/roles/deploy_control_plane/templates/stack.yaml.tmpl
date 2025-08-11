@@ -1,12 +1,11 @@
 ---
 services:
 {% for host in groups['control_plane'] %}
-{% set host_facts = hostvars[host].ansible_facts %}
   {{ host }}:
     image: {{ control_plane_image }}
     command: run
     environment:
-      - PGEDGE_IPV4_ADDRESS={{ host_facts[peer_interface].ipv4.address }}
+      - PGEDGE_IPV4_ADDRESS={{ hostvars[host].peer_ip }}
       - PGEDGE_CLUSTER_ID=e2e
       - PGEDGE_HOST_ID={{ host }}
       - PGEDGE_DATA_DIR=/data/control-plane
@@ -18,7 +17,7 @@ services:
     deploy:
       placement:
         constraints:
-          - node.hostname == {{ host_facts.hostname }}
+          - node.hostname == {{ hostvars[host].docker_node_hostname }}
 {% endfor %}
 networks:
   host:

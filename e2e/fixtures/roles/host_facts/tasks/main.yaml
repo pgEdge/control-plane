@@ -10,4 +10,4 @@
     first_manager_host: '{{ manager_hosts[0] }}'
 - name: Set first manager IP
   set_fact:
-    first_manager_ip: '{{ hostvars[first_manager_host].ansible_facts[peer_interface].ipv4.address }}'
+    first_manager_ip: '{{ hostvars[first_manager_host].peer_ip }}'

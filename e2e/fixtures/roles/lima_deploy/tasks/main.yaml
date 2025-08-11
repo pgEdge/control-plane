@@ -1,0 +1,24 @@
+---
+- include_tasks: ../../lima_common/tasks/list.yaml
+
+- name: Create hosts
+  loop: '{{ machines }}'
+  command: limactl start --yes --arch={{ _arch_transform[architecture] }} --name={{ item.name }} roles/lima_deploy/files/{{ template }}.{{ architecture }}.yaml
+  when: item.name not in lima_vms
+
+- name: Start stopped hosts
+  loop: '{{ machines }}'
+  command: limactl start --name={{ item.name }}
+  when: item.name in lima_vms and lima_vms[item.name].status != 'Running'
+
+- include_tasks: ../../lima_common/tasks/list.yaml
+
+- name: Create inventory directory
+  ansible.builtin.file:
+    path: outputs
+    state: directory
+
+- name: Generate inventory
+  template:
+    src: inventory.yaml.tmpl
+    dest: outputs/lima.inventory.yaml

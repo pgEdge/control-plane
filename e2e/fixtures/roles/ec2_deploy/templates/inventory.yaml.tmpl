@@ -1,0 +1,17 @@
+---
+control_plane:
+  hosts:
+{% for machine in machines %}
+{% set instance_props = ec2_instances['control-plane-e2e-' + architecture + '-' + machine.name] %}
+    {{ machine.name }}:
+      peer_ip: {{ instance_props.private_ip_address }}
+      external_ip: {{ instance_props.public_ip_address }}
+      ansible_host: {{ instance_props.public_ip_address }}
+      ansible_ssh_common_args: -l {{ _ssh_user[instance_os] }} -i {{ lookup('env', 'PWD') }}/e2e/fixtures/outputs/ec2_deploy
+{% endfor %}
+all:
+  vars:
+    aws_region: {{ aws_region }}
+    s3_repository:
+      bucket: {{ s3_bucket_name }}
+      region: {{ aws_region }}

@@ -2,7 +2,7 @@
 - name: Init a new swarm
   community.docker.docker_swarm:
     state: present
-    advertise_addr: '{{ ansible_facts[peer_interface].ipv4.address }}'
+    advertise_addr: '{{ peer_ip }}'
 - name: Retrieve Docker Swarm manager token
   ansible.builtin.shell: docker swarm join-token manager -q
   register: manager_token

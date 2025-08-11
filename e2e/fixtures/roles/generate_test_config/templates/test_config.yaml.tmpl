@@ -1,10 +1,9 @@
 ---
 hosts:
 {% for machine in machines %}
-{% set host_facts = hostvars[machine.name].ansible_facts %}
   {{ machine.name }}:
-    peer_ip: {{ host_facts[peer_interface].ipv4.address }}
-    external_ip: {{ host_facts[external_interface].ipv4.address }}
+    peer_ip: {{ hostvars[machine.name].peer_ip }}
+    external_ip: {{ hostvars[machine.name].external_ip }}
     port: 3000
 {% if hostvars[machine.name].ansible_ssh_common_args %}
     ssh_command: ssh {{ hostvars[machine.name].ansible_ssh_common_args }} {{ hostvars[machine.name].ansible_host }}

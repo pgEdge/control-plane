@@ -3,5 +3,5 @@
   hosts: localhost
   become: false
   roles:
-    - role: lima_start
-      when: provider == 'lima'
+    - role: ec2_deploy
+      when: provider == 'ec2'
