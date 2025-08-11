@@ -34,7 +34,8 @@ func NewMQTTServerConfig(hostID string, brokerURL *url.URL, topic string, opts .
 	}
 
 	return ServerConfig{
-		mqtt: cfg,
+		hostID: hostID,
+		mqtt:   cfg,
 	}
 }
 
