@@ -292,7 +292,7 @@ func (s *Service) StopInstance(ctx context.Context, input *StopInstanceInput) (*
 		return nil, fmt.Errorf("failed to create new task: %w", err)
 	}
 	input.TaskID = t.TaskID
-	err = s.createWorkflow(ctx, t, input.InstanceID, s.workflows.RestartInstance, input)
+	err = s.createWorkflow(ctx, t, input.InstanceID, s.workflows.StopInstance, input)
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +310,7 @@ func (s *Service) StartInstance(ctx context.Context, input *StartInstanceInput) 
 		return nil, fmt.Errorf("failed to create new task: %w", err)
 	}
 	input.TaskID = t.TaskID
-	err = s.createWorkflow(ctx, t, input.InstanceID, s.workflows.RestartInstance, input)
+	err = s.createWorkflow(ctx, t, input.InstanceID, s.workflows.StartInstance, input)
 	if err != nil {
 		return nil, err
 	}
