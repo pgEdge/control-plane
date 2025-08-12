@@ -90,16 +90,14 @@ func (s *PostgresService) Create(ctx context.Context, rc *resource.Context) erro
 		return fmt.Errorf("failed to get postgres service spec from state: %w", err)
 	}
 
-	serviceID, err := client.ServiceDeploy(ctx, spec.Spec)
+	res, err := client.ServiceDeploy(ctx, spec.Spec)
 	if err != nil {
 		return fmt.Errorf("failed to deploy postgres service: %w", err)
 	}
 
-	s.ServiceID = serviceID
+	s.ServiceID = res.ServiceID
 
-	// TODO: this might need to be a lot longer if we use Patroni's bootstrap
-	// functionality to restore from backup or from another node.
-	if err := client.WaitForService(ctx, serviceID, 5*time.Minute); err != nil {
+	if err := client.WaitForService(ctx, res.ServiceID, 5*time.Minute, res.Previous); err != nil {
 		return fmt.Errorf("failed to wait for postgres service to start: %w", err)
 	}
 

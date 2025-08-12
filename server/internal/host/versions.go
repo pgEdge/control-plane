@@ -9,9 +9,21 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
+type Version struct {
+	SemVer *semver.Version `json:"semver"`
+}
+
+func (v *Version) String() string {
+	return fmt.Sprintf("%d", v.SemVer.Major())
+}
+
+func (v *Version) Compare(other *Version) int {
+	return v.SemVer.Compare(other.SemVer)
+}
+
 type PgEdgeVersion struct {
-	PostgresVersion *semver.Version `json:"postgres_version"`
-	SpockVersion    *semver.Version `json:"spock_version"`
+	PostgresVersion *Version `json:"postgres_version"`
+	SpockVersion    *Version `json:"spock_version"`
 }
 
 func (v *PgEdgeVersion) String() string {
@@ -55,8 +67,8 @@ func NewPgEdgeVersion(postgresVersion, spockVersion string) (*PgEdgeVersion, err
 		return nil, fmt.Errorf("invalid spock version: %w", err)
 	}
 	return &PgEdgeVersion{
-		PostgresVersion: pv,
-		SpockVersion:    sv,
+		PostgresVersion: &Version{SemVer: pv},
+		SpockVersion:    &Version{SemVer: sv},
 	}, nil
 }
 

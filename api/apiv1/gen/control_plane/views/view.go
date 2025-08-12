@@ -646,8 +646,8 @@ func ValidateDatabaseView(result *DatabaseView) (err error) {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.updated_at", *result.UpdatedAt, goa.FormatDateTime))
 	}
 	if result.State != nil {
-		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "available" || *result.State == "deleting" || *result.State == "degraded" || *result.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "available", "deleting", "degraded", "unknown"}))
+		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "available" || *result.State == "deleting" || *result.State == "degraded" || *result.State == "failed" || *result.State == "backing_up" || *result.State == "restoring" || *result.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "available", "deleting", "degraded", "failed", "backing_up", "restoring", "unknown"}))
 		}
 	}
 	if result.Spec != nil {
@@ -705,8 +705,8 @@ func ValidateDatabaseViewAbbreviated(result *DatabaseView) (err error) {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.updated_at", *result.UpdatedAt, goa.FormatDateTime))
 	}
 	if result.State != nil {
-		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "available" || *result.State == "deleting" || *result.State == "degraded" || *result.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "available", "deleting", "degraded", "unknown"}))
+		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "available" || *result.State == "deleting" || *result.State == "degraded" || *result.State == "failed" || *result.State == "backing_up" || *result.State == "restoring" || *result.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "available", "deleting", "degraded", "failed", "backing_up", "restoring", "unknown"}))
 		}
 	}
 	if result.Instances != nil {
@@ -1117,11 +1117,6 @@ func ValidateBackupRepositorySpecView(result *BackupRepositorySpecView) (err err
 		}
 	}
 	if result.S3Key != nil {
-		if utf8.RuneCountInString(*result.S3Key) < 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_key", *result.S3Key, utf8.RuneCountInString(*result.S3Key), 16, true))
-		}
-	}
-	if result.S3Key != nil {
 		if utf8.RuneCountInString(*result.S3Key) > 128 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_key", *result.S3Key, utf8.RuneCountInString(*result.S3Key), 128, false))
 		}
@@ -1342,11 +1337,6 @@ func ValidateRestoreRepositorySpecView(result *RestoreRepositorySpecView) (err e
 	if result.S3Endpoint != nil {
 		if utf8.RuneCountInString(*result.S3Endpoint) > 128 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_endpoint", *result.S3Endpoint, utf8.RuneCountInString(*result.S3Endpoint), 128, false))
-		}
-	}
-	if result.S3Key != nil {
-		if utf8.RuneCountInString(*result.S3Key) < 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("result.s3_key", *result.S3Key, utf8.RuneCountInString(*result.S3Key), 16, true))
 		}
 	}
 	if result.S3Key != nil {

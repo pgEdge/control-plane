@@ -61,7 +61,7 @@ func (s *Service) CreateDatabase(ctx context.Context, spec *database.Spec) (*tas
 		TaskID: t.TaskID,
 		Spec:   spec,
 	}
-	err = s.createWorkflow(ctx, t, databaseID, s.workflows.UpdateDatabase, input)
+	err = s.createWorkflow(ctx, t, s.workflows.UpdateDatabase, input)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, spec *database.Spec, force
 		Spec:        spec,
 		ForceUpdate: forceUpdate,
 	}
-	err = s.createWorkflow(ctx, t, databaseID, s.workflows.UpdateDatabase, input)
+	err = s.createWorkflow(ctx, t, s.workflows.UpdateDatabase, input)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) (*task.
 		DatabaseID: databaseID,
 		TaskID:     t.TaskID,
 	}
-	err = s.createWorkflow(ctx, t, databaseID, s.workflows.DeleteDatabase, input)
+	err = s.createWorkflow(ctx, t, s.workflows.DeleteDatabase, input)
 	if err != nil {
 		return nil, err
 	}
@@ -134,8 +134,7 @@ func (s *Service) CreatePgBackRestBackup(
 		Instances:         instances,
 		BackupOptions:     backupOptions,
 	}
-	instanceID := databaseID + "-" + nodeName
-	err = s.createWorkflow(ctx, t, instanceID, s.workflows.CreatePgBackRestBackup, input)
+	err = s.createWorkflow(ctx, t, s.workflows.CreatePgBackRestBackup, input)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +184,7 @@ func (s *Service) PgBackRestRestore(
 		RestoreConfig: restoreConfig.Clone(),
 		NodeTaskIDs:   nodeTaskIDs,
 	}
-	err = s.createWorkflow(ctx, t, databaseID, s.workflows.PgBackRestRestore, input)
+	err = s.createWorkflow(ctx, t, s.workflows.PgBackRestRestore, input)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -193,10 +192,10 @@ func (s *Service) PgBackRestRestore(
 	return t, nodeTasks, nil
 }
 
-func (s *Service) createWorkflow(ctx context.Context, t *task.Task, instanceID string, wf workflow.Workflow, args ...any) error {
+func (s *Service) createWorkflow(ctx context.Context, t *task.Task, wf workflow.Workflow, args ...any) error {
 	opts := client.WorkflowInstanceOptions{
 		Queue:      core.Queue(s.cfg.HostID),
-		InstanceID: instanceID,
+		InstanceID: uuid.NewString(),
 	}
 	instance, err := s.client.CreateWorkflowInstance(ctx, opts, wf, args...)
 	if err != nil {
@@ -242,7 +241,7 @@ func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) (*Valid
 	databaseID := spec.DatabaseID
 	opts := client.WorkflowInstanceOptions{
 		Queue:      core.Queue(s.cfg.HostID),
-		InstanceID: databaseID,
+		InstanceID: uuid.NewString(),
 	}
 	input := &ValidateSpecInput{
 		DatabaseID: databaseID,
@@ -274,7 +273,7 @@ func (s *Service) RestartInstance(ctx context.Context, input *RestartInstanceInp
 		return nil, fmt.Errorf("failed to create new task: %w", err)
 	}
 	input.TaskID = t.TaskID
-	err = s.createWorkflow(ctx, t, input.InstanceID, s.workflows.RestartInstance, input)
+	err = s.createWorkflow(ctx, t, s.workflows.RestartInstance, input)
 	if err != nil {
 		return nil, err
 	}

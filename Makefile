@@ -9,8 +9,6 @@ PGEDGE_IMAGE_REPO ?= host.docker.internal:5000/pgedge
 PACKAGE_REPO_BASE_URL ?= http://pgedge-529820047909-yum.s3-website.us-east-2.amazonaws.com
 PACKAGE_RELEASE_CHANNEL ?= dev
 
-modules=$(shell go list -m -f '{{ .Dir }}' | awk -F '/' '{ print "./" $$NF "/..."  }')
-module_src_files=$(shell go list -m -f '{{ .Dir }}' | xargs find -f)
 buildx_builder=$(if $(CI),"control-plane-ci","control-plane")
 buildx_config=$(if $(CI),"./buildkit.ci.toml","./buildkit.toml")
 docker_compose_dev=WORKSPACE_DIR=$(shell pwd) \
@@ -26,7 +24,7 @@ docker_compose_dev=WORKSPACE_DIR=$(shell pwd) \
 test:
 	$(gotestsum) \
 		--format-hide-empty-pkg \
-		$(modules)
+		./...
 
 .PHONY: test-etcd
 test-etcd-lifecycle:
@@ -51,17 +49,17 @@ test-ci:
 		--junitfile test-results.xml \
 		-- \
 		-tags=workflows_backend_test,etcd_lifecycle_test \
-		$(modules)
+		./...
 
 .PHONY: lint
 lint:
-	$(golangcilint) run $(modules)
+	$(golangcilint) run ./...
 
 .PHONY: lint-ci
 lint-ci:
 	$(golangcilint) run \
 		--output.junit-xml.path lint-results.xml \
-		$(modules)
+		./...
 
 .PHONY: ci
 ci: test-ci lint-ci
@@ -123,24 +121,6 @@ goreleaser-test-publish:
 changelog-entry:
 	$(changie) new
 
-.PHONY: version-tags
-version-tags:
-ifeq ($(TAG),)
-	$(error TAG must be set. )
-endif
-ifeq ($(CHANGELOG),)
-	git tag $(TAG)
-else
-	git tag -a -F $(CHANGELOG) $(TAG)
-endif
-	git push origin $(TAG)
-	@for module in $(shell go list -m | xargs basename); do \
-		module_tag="$${module}/$(TAG)"; \
-		echo "creating and pushing module tag $${module_tag}"; \
-		git tag $${module_tag}; \
-		git push origin $${module_tag}; \
-	done
-
 .PHONY: release
 release:
 ifeq ($(VERSION),)
@@ -157,7 +137,8 @@ endif
 	@echo -n "Are you sure? [y/N] " && read ans && [ $${ans:-N} == y ]
 	git commit -m "build(release): bump version to $(VERSION)"
 	git push origin release/$(VERSION)
-	@$(MAKE) version-tags TAG=$(VERSION)-rc.1
+	git tag $(VERSION)-rc.1
+	git push origin $(VERSION)-rc.1
 	@echo "Go to https://github.com/pgEdge/control-plane/compare/release/$(VERSION)?expand=1 to open the release PR."
 
 .PHONY: major-release
@@ -183,7 +164,11 @@ print-next-versions:
 ##################################
 
 .PHONY: dev-build
-dev-build: docker/control-plane-dev/control-plane
+dev-build: 
+	GOOS=linux go build \
+		-gcflags "all=-N -l" \
+		-o docker/control-plane-dev/control-plane \
+		$(shell pwd)/server
 
 .PHONY: docker-swarm-mode
 docker-swarm-mode:
@@ -200,9 +185,6 @@ dev-watch: dev-build docker-swarm-mode
 .PHONY: down
 dev-down:
 	$(docker_compose_dev) down
-
-docker/control-plane-dev/control-plane: $(module_src_files)
-	GOOS=linux go build -gcflags "all=-N -l" -o $@ $(shell pwd)/server
 
 .PHONY: api-docs
 api-docs:

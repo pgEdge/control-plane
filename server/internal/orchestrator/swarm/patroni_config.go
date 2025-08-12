@@ -153,7 +153,7 @@ func (c *PatroniConfig) Create(ctx context.Context, rc *resource.Context) error 
 		return fmt.Errorf("failed to generate patroni config: %w", err)
 	}
 
-	content, err := json.Marshal(config)
+	content, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal patroni config: %w", err)
 	}

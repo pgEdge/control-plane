@@ -29,7 +29,7 @@ func (a *Activities) ExecuteGetPrimaryInstance(
 	input *GetPrimaryInstanceInput,
 ) workflow.Future[*GetPrimaryInstanceOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(a.Config.HostID),
+		Queue: core.Queue(hostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},

@@ -224,30 +224,33 @@ func (d *Docker) ServiceInspectByLabels(ctx context.Context, labels map[string]s
 	return matches[0], nil
 }
 
-type ServiceDeployOptions struct {
-	Spec        swarm.ServiceSpec
-	Wait        bool
-	WaitTimeout time.Duration
+type ServiceDeployResult struct {
+	ServiceID string
+	Previous  swarm.Version
 }
 
-func (d *Docker) ServiceDeploy(ctx context.Context, spec swarm.ServiceSpec) (string, error) {
+func (d *Docker) ServiceDeploy(ctx context.Context, spec swarm.ServiceSpec) (ServiceDeployResult, error) {
 	existing, _, err := d.client.ServiceInspectWithRaw(ctx, spec.Name, types.ServiceInspectOptions{})
-	if client.IsErrNotFound(err) {
+	switch {
+	case client.IsErrNotFound(err):
 		// service does not exist, create it
 		resp, err := d.client.ServiceCreate(ctx, spec, types.ServiceCreateOptions{})
 		if err != nil {
-			return "", fmt.Errorf("failed to create service: %w", err)
+			return ServiceDeployResult{}, fmt.Errorf("failed to create service: %w", err)
 		}
-		return resp.ID, nil
-	} else if err == nil {
-		// service exists, update it
+		return ServiceDeployResult{ServiceID: resp.ID}, nil
+	case err == nil:
+		// service does exist, update it
 		_, err := d.client.ServiceUpdate(ctx, existing.ID, existing.Version, spec, types.ServiceUpdateOptions{})
 		if err != nil {
-			return "", fmt.Errorf("failed to update service: %w", errTranslate(err))
+			return ServiceDeployResult{}, fmt.Errorf("failed to update service: %w", errTranslate(err))
 		}
-		return existing.ID, nil
-	} else {
-		return "", fmt.Errorf("failed to check for existing service: %w", err)
+		return ServiceDeployResult{
+			ServiceID: existing.ID,
+			Previous:  existing.Version,
+		}, nil
+	default:
+		return ServiceDeployResult{}, fmt.Errorf("failed to check for existing service: %w", err)
 	}
 }
 
@@ -324,7 +327,7 @@ func (d *Docker) ServiceScale(ctx context.Context, opts ServiceScaleOptions) err
 		return nil
 	}
 
-	return d.WaitForService(ctx, opts.ServiceID, opts.WaitTimeout)
+	return d.WaitForService(ctx, opts.ServiceID, opts.WaitTimeout, service.Version)
 }
 
 func (d *Docker) ServiceRemove(ctx context.Context, serviceID string) error {
@@ -350,25 +353,17 @@ func (d *Docker) TasksByServiceID(ctx context.Context) (map[string][]swarm.Task,
 	return tasksByServiceID, nil
 }
 
-func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout time.Duration) error {
+// WaitForService waits until the given service achieves the desired state and
+// number of tasks. The Swarm API can return stale data before the updated spec
+// has propagated to all manager nodes, so the optional 'previous swarm.Version'
+// parameter can be used to detect stale reads.
+func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout time.Duration, previous swarm.Version) error {
 	if timeout == 0 {
 		timeout = time.Minute
 	}
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	// The Docker Swarm API doesn't give us a reliable way to wait until the
-	// service spec has been propagated, so calling the inspect endpoint
-	// immediately after update can return a stale result. This ticker not only
-	// gives us an elegant way to poll, it also gives us a brief delay before
-	// the polling starts. That delay should be enough for the service spec to
-	// propagate.
-	//
-	// For comparison, the Docker CLI validates that the service hits a steady
-	// state for a specified time period, which defaults to 5 seconds:
-	// https://github.com/docker/cli/blob/8ed44f916fa908a04f03f69369bc2a16e0db7cc9/cli/command/service/progress/progress.go#L143
-	// We can use a simpler implementation because our service always has a
-	// health check.
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
@@ -387,6 +382,10 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 			if service.UpdateStatus != nil && service.UpdateStatus.State != swarm.UpdateStateCompleted {
 				continue
 			}
+			if service.Version.Index == previous.Index {
+				// The old service version was returned
+				continue
+			}
 			var desired uint64
 			if r := service.Spec.Mode.Replicated.Replicas; r != nil {
 				desired = *r
@@ -400,13 +399,17 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 			if err != nil {
 				return fmt.Errorf("failed to list tasks for service: %w", errTranslate(err))
 			}
-			var running uint64
+			var running, stopping uint64
 			for _, t := range tasks {
-				if t.DesiredState == swarm.TaskStateRunning && t.Status.State == swarm.TaskStateRunning {
-					running++
+				if t.Status.State == swarm.TaskStateRunning {
+					if t.DesiredState == swarm.TaskStateRunning {
+						running++
+					} else {
+						stopping++
+					}
 				}
 			}
-			if running == desired {
+			if running == desired && stopping == 0 {
 				return nil
 			}
 		}

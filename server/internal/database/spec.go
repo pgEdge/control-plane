@@ -483,9 +483,10 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		if node.RestoreConfig != nil {
 			restoreConfig = node.RestoreConfig
 		}
-		// Create a merged PostgreSQL configuration with node-level overrides
 		postgresqlConf := maps.Clone(s.PostgreSQLConf)
-		maps.Copy(postgresqlConf, node.PostgreSQLConf)
+		if node.PostgreSQLConf != nil {
+			postgresqlConf = maps.Clone(node.PostgreSQLConf)
+		}
 		orchestratorOpts := s.OrchestratorOpts
 		if node.OrchestratorOpts != nil {
 			orchestratorOpts = node.OrchestratorOpts
