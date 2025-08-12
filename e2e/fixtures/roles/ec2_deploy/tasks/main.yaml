@@ -194,6 +194,17 @@
       Environment: e2e-test
       Project: control-plane
   with_items: '{{ machines }}'
+
+# We split this into a separate task because when we're starting stopped
+# instances, the output of the previous command is always missing the public_ip.
+# This seems to be a timing issue the task stops polling before the public IP
+# is provisioned.
+- name: Gather EC2 instance info
+  amazon.aws.ec2_instance_info:
+    region: '{{ aws_region }}'
+    filters:
+      "tag:Name": control-plane-e2e-{{ architecture }}-{{ item.name }}
+  with_items: '{{ machines }}'
   register: ec2
 
 - name: Concat instances

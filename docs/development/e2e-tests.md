@@ -18,6 +18,7 @@ Control Plane instances running on virtual machines.
     - [Writing new tests](#writing-new-tests)
   - [Test fixtures](#test-fixtures)
     - [Common prerequisites](#common-prerequisites)
+      - [Project-level tools](#project-level-tools)
       - [`pipx`](#pipx)
       - [Ansible](#ansible)
     - [Lima test fixtures](#lima-test-fixtures)
@@ -149,6 +150,14 @@ We deploy test fixtures using Ansible, which we invoke through `make` targets.
 ### Common prerequisites
 
 These prerequisites are common to all types of test fixtures.
+
+#### Project-level tools
+
+Make sure you've installed the project-level tools with:
+
+```sh
+make install-tools
+```
 
 #### `pipx`
 
@@ -371,13 +380,6 @@ because it makes it easier to switch between fixtures, such as deploying a
 different architecture.
 
 #### EC2 test fixture targets
-
-> [!NOTE]
-> Sometimes, AWS takes too long to provision a public IP and you'll see
-> an error like `'dict object' has no attribute 'public_ip_address'`. These
-> plays are idempotent, so you can safely rerun it if you see a failure. We're
-> already using the available mechanism to wait for the instance to be ready, so
-> we may need some new approaches if this is a common problem.
 
 ```sh
 # Deploy the virtual machines. By default, this will create Rocky 9 VMs with
