@@ -53,7 +53,7 @@ func (a *Activities) CreateReplicationSlot(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create replication slot: %w", err)
 	}
-	logger = logger.With("CreateReplicationSlot - statement", stmt)
+	logger.Info("CreateReplicationSlot", "statement", stmt)
 	logger.Info("replication slot created successfully")
 	return &CreateReplicationSlotOutput{}, nil
 }

@@ -65,11 +65,11 @@ func (a *Activities) CreateDisabledSubscription(
 		input.SubscriberInstanceID,
 		input.ProviderInstanceID,
 	)
-	logger.Info("CreateDisabledSubscriptionstatement", stmt)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to create disabled subscription: %w", err)
 	}
-
+	logger.Info("CreateDisabledSubscription", "statement", stmt)
 	logger.Info("disabled subscription created successfully")
 	return &CreateDisabledSubscriptionOutput{}, nil
 }
