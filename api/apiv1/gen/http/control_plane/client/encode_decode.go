@@ -2590,6 +2590,264 @@ func DecodeRestartInstanceResponse(decoder func(*http.Response) goahttp.Decoder,
 	}
 }
 
+// BuildStopInstanceRequest instantiates a HTTP request object with method and
+// path set to call the "control-plane" service "stop-instance" endpoint
+func (c *Client) BuildStopInstanceRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		databaseID string
+		instanceID string
+	)
+	{
+		p, ok := v.(*controlplane.StopInstancePayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("control-plane", "stop-instance", "*controlplane.StopInstancePayload", v)
+		}
+		databaseID = string(p.DatabaseID)
+		instanceID = string(p.InstanceID)
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: StopInstanceControlPlanePath(databaseID, instanceID)}
+	req, err := http.NewRequest("POST", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("control-plane", "stop-instance", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// DecodeStopInstanceResponse returns a decoder for responses returned by the
+// control-plane stop-instance endpoint. restoreBody controls whether the
+// response body should be restored after having been read.
+// DecodeStopInstanceResponse may return the following errors:
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
+//   - error: internal error
+func DecodeStopInstanceResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body StopInstanceResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "stop-instance", err)
+			}
+			err = ValidateStopInstanceResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "stop-instance", err)
+			}
+			res := NewStopInstanceTaskOK(&body)
+			return res, nil
+		case http.StatusConflict:
+			var (
+				body StopInstanceClusterNotInitializedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "stop-instance", err)
+			}
+			err = ValidateStopInstanceClusterNotInitializedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "stop-instance", err)
+			}
+			return nil, NewStopInstanceClusterNotInitialized(&body)
+		case http.StatusBadRequest:
+			var (
+				body StopInstanceInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "stop-instance", err)
+			}
+			err = ValidateStopInstanceInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "stop-instance", err)
+			}
+			return nil, NewStopInstanceInvalidInput(&body)
+		case http.StatusNotFound:
+			var (
+				body StopInstanceNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "stop-instance", err)
+			}
+			err = ValidateStopInstanceNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "stop-instance", err)
+			}
+			return nil, NewStopInstanceNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body StopInstanceServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "stop-instance", err)
+			}
+			err = ValidateStopInstanceServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "stop-instance", err)
+			}
+			return nil, NewStopInstanceServerError(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("control-plane", "stop-instance", resp.StatusCode, string(body))
+		}
+	}
+}
+
+// BuildStartInstanceRequest instantiates a HTTP request object with method and
+// path set to call the "control-plane" service "start-instance" endpoint
+func (c *Client) BuildStartInstanceRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		databaseID string
+		instanceID string
+	)
+	{
+		p, ok := v.(*controlplane.StartInstancePayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("control-plane", "start-instance", "*controlplane.StartInstancePayload", v)
+		}
+		databaseID = string(p.DatabaseID)
+		instanceID = string(p.InstanceID)
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: StartInstanceControlPlanePath(databaseID, instanceID)}
+	req, err := http.NewRequest("POST", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("control-plane", "start-instance", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// DecodeStartInstanceResponse returns a decoder for responses returned by the
+// control-plane start-instance endpoint. restoreBody controls whether the
+// response body should be restored after having been read.
+// DecodeStartInstanceResponse may return the following errors:
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
+//   - error: internal error
+func DecodeStartInstanceResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body StartInstanceResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "start-instance", err)
+			}
+			err = ValidateStartInstanceResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "start-instance", err)
+			}
+			res := NewStartInstanceTaskOK(&body)
+			return res, nil
+		case http.StatusConflict:
+			var (
+				body StartInstanceClusterNotInitializedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "start-instance", err)
+			}
+			err = ValidateStartInstanceClusterNotInitializedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "start-instance", err)
+			}
+			return nil, NewStartInstanceClusterNotInitialized(&body)
+		case http.StatusBadRequest:
+			var (
+				body StartInstanceInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "start-instance", err)
+			}
+			err = ValidateStartInstanceInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "start-instance", err)
+			}
+			return nil, NewStartInstanceInvalidInput(&body)
+		case http.StatusNotFound:
+			var (
+				body StartInstanceNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "start-instance", err)
+			}
+			err = ValidateStartInstanceNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "start-instance", err)
+			}
+			return nil, NewStartInstanceNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body StartInstanceServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "start-instance", err)
+			}
+			err = ValidateStartInstanceServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "start-instance", err)
+			}
+			return nil, NewStartInstanceServerError(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("control-plane", "start-instance", resp.StatusCode, string(body))
+		}
+	}
+}
+
 // unmarshalClusterPeerResponseBodyToControlplaneClusterPeer builds a value of
 // type *controlplane.ClusterPeer from a value of type *ClusterPeerResponseBody.
 func unmarshalClusterPeerResponseBodyToControlplaneClusterPeer(v *ClusterPeerResponseBody) *controlplane.ClusterPeer {

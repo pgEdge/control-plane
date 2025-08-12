@@ -2100,6 +2100,234 @@ func EncodeRestartInstanceError(encoder func(context.Context, http.ResponseWrite
 	}
 }
 
+// EncodeStopInstanceResponse returns an encoder for responses returned by the
+// control-plane stop-instance endpoint.
+func EncodeStopInstanceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.Task)
+		enc := encoder(ctx, w)
+		body := NewStopInstanceResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeStopInstanceRequest returns a decoder for requests sent to the
+// control-plane stop-instance endpoint.
+func DecodeStopInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			databaseID string
+			instanceID string
+			err        error
+
+			params = mux.Vars(r)
+		)
+		databaseID = params["database_id"]
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
+		instanceID = params["instance_id"]
+		if utf8.RuneCountInString(instanceID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 1, true))
+		}
+		if utf8.RuneCountInString(instanceID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 63, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewStopInstancePayload(databaseID, instanceID)
+
+		return payload, nil
+	}
+}
+
+// EncodeStopInstanceError returns an encoder for errors returned by the
+// stop-instance control-plane endpoint.
+func EncodeStopInstanceError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewStopInstanceClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewStopInstanceInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "not_found":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewStopInstanceNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewStopInstanceServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeStartInstanceResponse returns an encoder for responses returned by the
+// control-plane start-instance endpoint.
+func EncodeStartInstanceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.Task)
+		enc := encoder(ctx, w)
+		body := NewStartInstanceResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeStartInstanceRequest returns a decoder for requests sent to the
+// control-plane start-instance endpoint.
+func DecodeStartInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			databaseID string
+			instanceID string
+			err        error
+
+			params = mux.Vars(r)
+		)
+		databaseID = params["database_id"]
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
+		instanceID = params["instance_id"]
+		if utf8.RuneCountInString(instanceID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 1, true))
+		}
+		if utf8.RuneCountInString(instanceID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 63, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewStartInstancePayload(databaseID, instanceID)
+
+		return payload, nil
+	}
+}
+
+// EncodeStartInstanceError returns an encoder for errors returned by the
+// start-instance control-plane endpoint.
+func EncodeStartInstanceError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewStartInstanceClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewStartInstanceInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "not_found":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewStartInstanceNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewStartInstanceServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // marshalControlplaneClusterPeerToClusterPeerResponseBody builds a value of
 // type *ClusterPeerResponseBody from a value of type *controlplane.ClusterPeer.
 func marshalControlplaneClusterPeerToClusterPeerResponseBody(v *controlplane.ClusterPeer) *ClusterPeerResponseBody {

@@ -215,3 +215,11 @@ func (s *PreInitHandlers) RestoreDatabase(ctx context.Context, req *api.RestoreD
 func (s *PreInitHandlers) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (res *api.Task, err error) {
 	return nil, ErrUninitialized
 }
+
+func (s *PreInitHandlers) StopInstance(ctx context.Context, req *api.StopInstancePayload) (res *api.Task, err error) {
+	return nil, ErrUninitialized
+}
+
+func (s *PreInitHandlers) StartInstance(ctx context.Context, req *api.StartInstancePayload) (res *api.Task, err error) {
+	return nil, ErrUninitialized
+}

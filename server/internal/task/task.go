@@ -24,6 +24,8 @@ const (
 	TypeRestore         Type = "restore"
 	TypeNodeRestore     Type = "node_restore"
 	TypeRestartInstance Type = "restart_instance"
+	TypeStopInstance    Type = "stop_instance"
+	TypeStartInstance   Type = "start_instance"
 )
 
 type Status string

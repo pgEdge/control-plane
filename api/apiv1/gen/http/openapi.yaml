@@ -451,6 +451,124 @@ paths:
                             - message
             schemes:
                 - http
+    /v1/databases/{database_id}/instances/{instance_id}/start-instance:
+        post:
+            tags:
+                - Database
+            summary: Starts a database instance
+            description: Starts a specific instance within a database. Supports immediate starts
+            operationId: control-plane#start-instance
+            parameters:
+                - name: database_id
+                  in: path
+                  description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+                  required: true
+                  type: string
+                - name: instance_id
+                  in: path
+                  description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/Task'
+                        required:
+                            - database_id
+                            - task_id
+                            - created_at
+                            - type
+                            - status
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/APIError'
+                        required:
+                            - name
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/APIError'
+                        required:
+                            - name
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/APIError'
+                        required:
+                            - name
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/APIError'
+                        required:
+                            - name
+                            - message
+            schemes:
+                - http
+    /v1/databases/{database_id}/instances/{instance_id}/stop-instance:
+        post:
+            tags:
+                - Database
+            summary: Stops a database instance
+            description: Stops a specific instance within a database. Supports immediate stops.
+            operationId: control-plane#stop-instance
+            parameters:
+                - name: database_id
+                  in: path
+                  description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+                  required: true
+                  type: string
+                - name: instance_id
+                  in: path
+                  description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/Task'
+                        required:
+                            - database_id
+                            - task_id
+                            - created_at
+                            - type
+                            - status
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/APIError'
+                        required:
+                            - name
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/APIError'
+                        required:
+                            - name
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/APIError'
+                        required:
+                            - name
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/APIError'
+                        required:
+                            - name
+                            - message
+            schemes:
+                - http
     /v1/databases/{database_id}/nodes/{node_name}/backups:
         post:
             tags:

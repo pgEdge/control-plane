@@ -110,3 +110,13 @@ func GetVersionControlPlanePath() string {
 func RestartInstanceControlPlanePath(databaseID string, instanceID string) string {
 	return fmt.Sprintf("/v1/databases/%v/instances/%v/restart", databaseID, instanceID)
 }
+
+// StopInstanceControlPlanePath returns the URL path to the control-plane service stop-instance HTTP endpoint.
+func StopInstanceControlPlanePath(databaseID string, instanceID string) string {
+	return fmt.Sprintf("/v1/databases/%v/instances/%v/stop-instance", databaseID, instanceID)
+}
+
+// StartInstanceControlPlanePath returns the URL path to the control-plane service start-instance HTTP endpoint.
+func StartInstanceControlPlanePath(databaseID string, instanceID string) string {
+	return fmt.Sprintf("/v1/databases/%v/instances/%v/start-instance", databaseID, instanceID)
+}

@@ -40,6 +40,8 @@ type Server struct {
 	RestoreDatabase     http.Handler
 	GetVersion          http.Handler
 	RestartInstance     http.Handler
+	StopInstance        http.Handler
+	StartInstance       http.Handler
 	GenHTTPOpenapi3JSON http.Handler
 }
 
@@ -95,6 +97,8 @@ func New(
 			{"RestoreDatabase", "POST", "/v1/databases/{database_id}/restore"},
 			{"GetVersion", "GET", "/v1/version"},
 			{"RestartInstance", "POST", "/v1/databases/{database_id}/instances/{instance_id}/restart"},
+			{"StopInstance", "POST", "/v1/databases/{database_id}/instances/{instance_id}/stop-instance"},
+			{"StartInstance", "POST", "/v1/databases/{database_id}/instances/{instance_id}/start-instance"},
 			{"Serve ./gen/http/openapi3.json", "GET", "/v1/openapi.json"},
 		},
 		InitCluster:         NewInitClusterHandler(e.InitCluster, mux, decoder, encoder, errhandler, formatter),
@@ -117,6 +121,8 @@ func New(
 		RestoreDatabase:     NewRestoreDatabaseHandler(e.RestoreDatabase, mux, decoder, encoder, errhandler, formatter),
 		GetVersion:          NewGetVersionHandler(e.GetVersion, mux, decoder, encoder, errhandler, formatter),
 		RestartInstance:     NewRestartInstanceHandler(e.RestartInstance, mux, decoder, encoder, errhandler, formatter),
+		StopInstance:        NewStopInstanceHandler(e.StopInstance, mux, decoder, encoder, errhandler, formatter),
+		StartInstance:       NewStartInstanceHandler(e.StartInstance, mux, decoder, encoder, errhandler, formatter),
 		GenHTTPOpenapi3JSON: http.FileServer(fileSystemGenHTTPOpenapi3JSON),
 	}
 }
@@ -146,6 +152,8 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.RestoreDatabase = m(s.RestoreDatabase)
 	s.GetVersion = m(s.GetVersion)
 	s.RestartInstance = m(s.RestartInstance)
+	s.StopInstance = m(s.StopInstance)
+	s.StartInstance = m(s.StartInstance)
 }
 
 // MethodNames returns the methods served.
@@ -173,6 +181,8 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountRestoreDatabaseHandler(mux, h.RestoreDatabase)
 	MountGetVersionHandler(mux, h.GetVersion)
 	MountRestartInstanceHandler(mux, h.RestartInstance)
+	MountStopInstanceHandler(mux, h.StopInstance)
+	MountStartInstanceHandler(mux, h.StartInstance)
 	MountGenHTTPOpenapi3JSON(mux, http.StripPrefix("/v1", h.GenHTTPOpenapi3JSON))
 }
 
@@ -1140,6 +1150,108 @@ func NewRestartInstanceHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "restart-instance")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountStopInstanceHandler configures the mux to serve the "control-plane"
+// service "stop-instance" endpoint.
+func MountStopInstanceHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/v1/databases/{database_id}/instances/{instance_id}/stop-instance", f)
+}
+
+// NewStopInstanceHandler creates a HTTP handler which loads the HTTP request
+// and calls the "control-plane" service "stop-instance" endpoint.
+func NewStopInstanceHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeStopInstanceRequest(mux, decoder)
+		encodeResponse = EncodeStopInstanceResponse(encoder)
+		encodeError    = EncodeStopInstanceError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "stop-instance")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountStartInstanceHandler configures the mux to serve the "control-plane"
+// service "start-instance" endpoint.
+func MountStartInstanceHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/v1/databases/{database_id}/instances/{instance_id}/start-instance", f)
+}
+
+// NewStartInstanceHandler creates a HTTP handler which loads the HTTP request
+// and calls the "control-plane" service "start-instance" endpoint.
+func NewStartInstanceHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeStartInstanceRequest(mux, decoder)
+		encodeResponse = EncodeStartInstanceResponse(encoder)
+		encodeError    = EncodeStartInstanceError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "start-instance")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
 		payload, err := decodeRequest(r)
 		if err != nil {

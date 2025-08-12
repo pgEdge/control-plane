@@ -572,3 +572,51 @@ func (s *PostInitHandlers) RestartInstance(ctx context.Context, req *api.Restart
 
 	return taskToAPI(t), nil
 }
+
+func (s *PostInitHandlers) StopInstance(ctx context.Context, req *api.StopInstancePayload) (*api.Task, error) {
+	if req == nil {
+		return nil, makeInvalidInputErr(errors.New("request cannot be nil"))
+	}
+
+	input := &workflows.StopInstanceInput{
+		DatabaseID: string(req.DatabaseID),
+		InstanceID: string(req.InstanceID),
+	}
+
+	t, err := s.workflowSvc.StopInstance(ctx, input)
+	if err != nil {
+		return nil, apiErr(fmt.Errorf("failed to start stop-instance workflow: %w", err))
+	}
+
+	s.logger.Info().
+		Str("database_id", string(req.DatabaseID)).
+		Str("instance_id", string(req.InstanceID)).
+		Str("task_id", t.TaskID.String()).
+		Msg("stop instance workflow initiated")
+
+	return taskToAPI(t), nil
+}
+
+func (s *PostInitHandlers) StartInstance(ctx context.Context, req *api.StartInstancePayload) (*api.Task, error) {
+	if req == nil {
+		return nil, makeInvalidInputErr(errors.New("request cannot be nil"))
+	}
+
+	input := &workflows.StartInstanceInput{
+		DatabaseID: string(req.DatabaseID),
+		InstanceID: string(req.InstanceID),
+	}
+
+	t, err := s.workflowSvc.StartInstance(ctx, input)
+	if err != nil {
+		return nil, apiErr(fmt.Errorf("failed to start start-instance workflow: %w", err))
+	}
+
+	s.logger.Info().
+		Str("database_id", string(req.DatabaseID)).
+		Str("instance_id", string(req.InstanceID)).
+		Str("task_id", t.TaskID.String()).
+		Msg("start instance workflow initiated")
+
+	return taskToAPI(t), nil
+}

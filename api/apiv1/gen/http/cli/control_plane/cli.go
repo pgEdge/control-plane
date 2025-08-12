@@ -22,7 +22,7 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `control-plane (init-cluster|join-cluster|get-join-token|get-join-options|get-cluster|list-hosts|get-host|remove-host|list-databases|create-database|get-database|update-database|delete-database|backup-database-node|list-database-tasks|get-database-task|get-database-task-log|restore-database|get-version|restart-instance)
+	return `control-plane (init-cluster|join-cluster|get-join-token|get-join-options|get-cluster|list-hosts|get-host|remove-host|list-databases|create-database|get-database|update-database|delete-database|backup-database-node|list-database-tasks|get-database-task|get-database-task-log|restore-database|get-version|restart-instance|stop-instance|start-instance)
 `
 }
 
@@ -114,6 +114,14 @@ func ParseEndpoint(
 		controlPlaneRestartInstanceBodyFlag       = controlPlaneRestartInstanceFlags.String("body", "REQUIRED", "")
 		controlPlaneRestartInstanceDatabaseIDFlag = controlPlaneRestartInstanceFlags.String("database-id", "REQUIRED", "The ID of the database that owns the instance.")
 		controlPlaneRestartInstanceInstanceIDFlag = controlPlaneRestartInstanceFlags.String("instance-id", "REQUIRED", "The ID of the instance to restart.")
+
+		controlPlaneStopInstanceFlags          = flag.NewFlagSet("stop-instance", flag.ExitOnError)
+		controlPlaneStopInstanceDatabaseIDFlag = controlPlaneStopInstanceFlags.String("database-id", "REQUIRED", "The ID of the database that owns the instance.")
+		controlPlaneStopInstanceInstanceIDFlag = controlPlaneStopInstanceFlags.String("instance-id", "REQUIRED", "The ID of the instance to stop.")
+
+		controlPlaneStartInstanceFlags          = flag.NewFlagSet("start-instance", flag.ExitOnError)
+		controlPlaneStartInstanceDatabaseIDFlag = controlPlaneStartInstanceFlags.String("database-id", "REQUIRED", "The ID of the database that owns the instance.")
+		controlPlaneStartInstanceInstanceIDFlag = controlPlaneStartInstanceFlags.String("instance-id", "REQUIRED", "The ID of the instance to stop.")
 	)
 	controlPlaneFlags.Usage = controlPlaneUsage
 	controlPlaneInitClusterFlags.Usage = controlPlaneInitClusterUsage
@@ -136,6 +144,8 @@ func ParseEndpoint(
 	controlPlaneRestoreDatabaseFlags.Usage = controlPlaneRestoreDatabaseUsage
 	controlPlaneGetVersionFlags.Usage = controlPlaneGetVersionUsage
 	controlPlaneRestartInstanceFlags.Usage = controlPlaneRestartInstanceUsage
+	controlPlaneStopInstanceFlags.Usage = controlPlaneStopInstanceUsage
+	controlPlaneStartInstanceFlags.Usage = controlPlaneStartInstanceUsage
 
 	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
 		return nil, nil, err
@@ -231,6 +241,12 @@ func ParseEndpoint(
 			case "restart-instance":
 				epf = controlPlaneRestartInstanceFlags
 
+			case "stop-instance":
+				epf = controlPlaneStopInstanceFlags
+
+			case "start-instance":
+				epf = controlPlaneStartInstanceFlags
+
 			}
 
 		}
@@ -310,6 +326,12 @@ func ParseEndpoint(
 			case "restart-instance":
 				endpoint = c.RestartInstance()
 				data, err = controlplanec.BuildRestartInstancePayload(*controlPlaneRestartInstanceBodyFlag, *controlPlaneRestartInstanceDatabaseIDFlag, *controlPlaneRestartInstanceInstanceIDFlag)
+			case "stop-instance":
+				endpoint = c.StopInstance()
+				data, err = controlplanec.BuildStopInstancePayload(*controlPlaneStopInstanceDatabaseIDFlag, *controlPlaneStopInstanceInstanceIDFlag)
+			case "start-instance":
+				endpoint = c.StartInstance()
+				data, err = controlplanec.BuildStartInstancePayload(*controlPlaneStartInstanceDatabaseIDFlag, *controlPlaneStartInstanceInstanceIDFlag)
 			}
 		}
 	}
@@ -348,6 +370,8 @@ COMMAND:
     restore-database: Perform an in-place restore of one or more nodes using the given restore configuration.
     get-version: Returns version information for this Control Plane server.
     restart-instance: Restarts a specific instance within a database. Supports immediate or scheduled restarts.
+    stop-instance: Stops a specific instance within a database. Supports immediate stops.
+    start-instance: Starts a specific instance within a database. Supports immediate starts
 
 Additional help:
     %[1]s control-plane COMMAND --help
@@ -720,5 +744,29 @@ Example:
     %[1]s control-plane restart-instance --body '{
       "scheduled_at": "2025-06-18T03:45:00Z"
    }' --database-id "68f50878-44d2-4524-a823-e31bd478706d" --instance-id "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi"
+`, os.Args[0])
+}
+
+func controlPlaneStopInstanceUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane stop-instance -database-id STRING -instance-id STRING
+
+Stops a specific instance within a database. Supports immediate stops.
+    -database-id STRING: The ID of the database that owns the instance.
+    -instance-id STRING: The ID of the instance to stop.
+
+Example:
+    %[1]s control-plane stop-instance --database-id "68f50878-44d2-4524-a823-e31bd478706d" --instance-id "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi"
+`, os.Args[0])
+}
+
+func controlPlaneStartInstanceUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane start-instance -database-id STRING -instance-id STRING
+
+Starts a specific instance within a database. Supports immediate starts
+    -database-id STRING: The ID of the database that owns the instance.
+    -instance-id STRING: The ID of the instance to stop.
+
+Example:
+    %[1]s control-plane start-instance --database-id "68f50878-44d2-4524-a823-e31bd478706d" --instance-id "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi"
 `, os.Args[0])
 }

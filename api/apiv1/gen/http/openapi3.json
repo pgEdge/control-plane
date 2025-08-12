@@ -1850,6 +1850,248 @@
         }
       }
     },
+    "/v1/databases/{database_id}/instances/{instance_id}/start-instance": {
+      "post": {
+        "tags": [
+          "Database"
+        ],
+        "summary": "Starts a database instance",
+        "description": "Starts a specific instance within a database. Supports immediate starts",
+        "operationId": "start-instance",
+        "parameters": [
+          {
+            "name": "database_id",
+            "in": "path",
+            "description": "The ID of the database that owns the instance.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+              "minLength": 1,
+              "maxLength": 63
+            },
+            "example": "68f50878-44d2-4524-a823-e31bd478706d"
+          },
+          {
+            "name": "instance_id",
+            "in": "path",
+            "description": "The ID of the instance to stop.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+              "minLength": 1,
+              "maxLength": 63
+            },
+            "example": "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "default",
+                    "value": {
+                      "created_at": "2025-06-18T16:52:05Z",
+                      "database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
+                      "instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
+                      "status": "pending",
+                      "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
+                      "type": "start_instance"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_input: Bad Request response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: Not Found response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "cluster_not_initialized: Conflict response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "server_error: Internal Server Error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/databases/{database_id}/instances/{instance_id}/stop-instance": {
+      "post": {
+        "tags": [
+          "Database"
+        ],
+        "summary": "Stops a database instance",
+        "description": "Stops a specific instance within a database. Supports immediate stops.",
+        "operationId": "stop-instance",
+        "parameters": [
+          {
+            "name": "database_id",
+            "in": "path",
+            "description": "The ID of the database that owns the instance.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+              "minLength": 1,
+              "maxLength": 63
+            },
+            "example": "68f50878-44d2-4524-a823-e31bd478706d"
+          },
+          {
+            "name": "instance_id",
+            "in": "path",
+            "description": "The ID of the instance to stop.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+              "minLength": 1,
+              "maxLength": 63
+            },
+            "example": "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "default",
+                    "value": {
+                      "created_at": "2025-06-18T16:52:05Z",
+                      "database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
+                      "instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
+                      "status": "pending",
+                      "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
+                      "type": "stop_instance"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_input: Bad Request response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: Not Found response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "cluster_not_initialized: Conflict response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "server_error: Internal Server Error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/databases/{database_id}/nodes/{node_name}/backups": {
       "post": {
         "tags": [

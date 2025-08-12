@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/samber/do"
 	"io"
 	"maps"
 	"net/netip"
@@ -502,6 +503,60 @@ func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, specs []*datab
 	}
 
 	return results, nil
+}
+
+func (o *Orchestrator) StopInstance(
+	ctx context.Context,
+	rc *resource.Context,
+	instanceID string,
+) error {
+	dockerClient, err := do.Invoke[*docker.Docker](rc.Injector)
+	if err != nil {
+		return err
+	}
+
+	svcResource, err := resource.FromContext[*PostgresService](rc, PostgresServiceResourceIdentifier(instanceID))
+	if err != nil {
+		return fmt.Errorf("failed to get postgres service resource from state: %w", err)
+	}
+
+	if err := dockerClient.ServiceScale(ctx, docker.ServiceScaleOptions{
+		ServiceID:   svcResource.ServiceID,
+		Scale:       0,
+		Wait:        true,
+		WaitTimeout: time.Minute,
+	}); err != nil {
+		return fmt.Errorf("failed to scale down postgres service: %w", err)
+	}
+
+	return nil
+}
+
+func (o *Orchestrator) StartInstance(
+	ctx context.Context,
+	rc *resource.Context,
+	instanceID string,
+) error {
+	dockerClient, err := do.Invoke[*docker.Docker](rc.Injector)
+	if err != nil {
+		return err
+	}
+
+	svcResource, err := resource.FromContext[*PostgresService](rc, PostgresServiceResourceIdentifier(instanceID))
+	if err != nil {
+		return fmt.Errorf("failed to get postgres service resource from state: %w", err)
+	}
+
+	if err := dockerClient.ServiceScale(ctx, docker.ServiceScaleOptions{
+		ServiceID:   svcResource.ServiceID,
+		Scale:       1,
+		Wait:        true,
+		WaitTimeout: time.Minute,
+	}); err != nil {
+		return fmt.Errorf("failed to scale up postgres service: %w", err)
+	}
+
+	return nil
 }
 
 func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.InstanceSpec, result *database.ValidationResult) error {
