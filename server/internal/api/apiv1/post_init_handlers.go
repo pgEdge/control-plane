@@ -583,6 +583,14 @@ func (s *PostInitHandlers) StopInstance(ctx context.Context, req *api.StopInstan
 		InstanceID: string(req.InstanceID),
 	}
 
+	db, err := s.dbSvc.GetDatabase(ctx, input.DatabaseID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+	if !req.Force && !database.DatabaseStateModifiable(db.State) {
+		return nil, ErrDatabaseNotModifiable
+	}
+
 	t, err := s.workflowSvc.StopInstance(ctx, input)
 	if err != nil {
 		return nil, apiErr(fmt.Errorf("failed to start stop-instance workflow: %w", err))
@@ -605,6 +613,14 @@ func (s *PostInitHandlers) StartInstance(ctx context.Context, req *api.StartInst
 	input := &workflows.StartInstanceInput{
 		DatabaseID: string(req.DatabaseID),
 		InstanceID: string(req.InstanceID),
+	}
+
+	db, err := s.dbSvc.GetDatabase(ctx, input.DatabaseID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+	if !req.Force && !database.DatabaseStateModifiable(db.State) {
+		return nil, ErrDatabaseNotModifiable
 	}
 
 	t, err := s.workflowSvc.StartInstance(ctx, input)
