@@ -561,6 +561,11 @@ var _ = g.Service("control-plane", func() {
 				g.Description("The ID of the instance to stop.")
 				g.Example("68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi")
 			})
+			g.Attribute("force", g.Boolean, func() {
+				g.Description("Force stopping an instance even if database in an unmodifiable state")
+				g.Default(false)
+				g.Example(true)
+			})
 
 			g.Required("database_id", "instance_id")
 		})
@@ -606,6 +611,11 @@ var _ = g.Service("control-plane", func() {
 			g.Attribute("instance_id", Identifier, func() {
 				g.Description("The ID of the instance to start.")
 				g.Example("68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi")
+			})
+			g.Attribute("force", g.Boolean, func() {
+				g.Description("Force starting an instance even if database in an unmodifiable state")
+				g.Default(false)
+				g.Example(true)
 			})
 
 			g.Required("database_id", "instance_id")
