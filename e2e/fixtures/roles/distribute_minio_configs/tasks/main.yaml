@@ -1,0 +1,51 @@
+---
+- name: Read ca bundle
+  ansible.builtin.slurp:
+    src: /data/minio-certs/public.crt
+  delegate_to: "{{ minio_host }}"
+  run_once: true
+  register: ca_bundle
+
+- name: Read aws credentials
+  ansible.builtin.slurp:
+    src: ~/.aws/credentials
+  delegate_to: "{{ minio_host }}"
+  run_once: true
+  register: aws_credentials
+
+- name: Make minio-certs directory
+  file:
+    path: /data/minio-certs
+    state: directory
+  become: true
+
+- name: Write ca bundle
+  ansible.builtin.copy:
+    content: '{{ ca_bundle.content | b64decode }}'
+    dest: /data/minio-certs/public.crt
+    mode: 0644
+  become: true
+
+- name: Make non-root aws config directory
+  file:
+    path: ~/.aws
+    state: directory
+
+- name: Make root aws config directory
+  file:
+    path: ~/.aws
+    state: directory
+  become: true
+
+- name: Write non-root credentials file
+  ansible.builtin.copy:
+    content: '{{ aws_credentials.content | b64decode }}'
+    dest: ~/.aws/credentials
+    mode: 0600
+
+- name: Write root credentials file
+  ansible.builtin.copy:
+    content: '{{ aws_credentials.content | b64decode }}'
+    dest: ~/.aws/credentials
+    mode: 0600
+  become: true

@@ -1,0 +1,25 @@
+---
+services:
+{% for host in groups['control_plane'] %}
+  {{ host }}:
+    image: {{ control_plane_image }}
+    command: run
+    environment:
+      - PGEDGE_IPV4_ADDRESS={{ hostvars[host].peer_ip }}
+      - PGEDGE_CLUSTER_ID=e2e
+      - PGEDGE_HOST_ID={{ host }}
+      - PGEDGE_DATA_DIR=/data/control-plane
+    volumes:
+      - /data/control-plane:/data/control-plane
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - host
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == {{ hostvars[host].docker_node_hostname }}
+{% endfor %}
+networks:
+  host:
+    name: host
+    external: true

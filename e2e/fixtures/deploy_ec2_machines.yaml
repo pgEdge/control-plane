@@ -1,0 +1,7 @@
+---
+- name: Start VMs
+  hosts: localhost
+  become: false
+  roles:
+    - role: ec2_deploy
+      when: provider == 'ec2'

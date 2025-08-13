@@ -1,0 +1,22 @@
+---
+- name: Copy Docker directory
+  copy:
+    src: ../../docker/control-plane
+    dest: /tmp
+
+- name: Copy archive
+  copy:
+    src: ../../dist/{{ _archive_name }}
+    dest: /tmp/control-plane
+
+# Not using the community docker module because its change detection prevents it
+# from rebuilding, even when the archive has changed.
+- name: Build image
+  command:
+  args:
+    cmd: |
+      docker build .
+        --build-arg=ARCHIVE_VERSION={{ version }}
+        --tag=127.0.0.1:5000/control-plane:latest
+        --push
+    chdir: /tmp/control-plane

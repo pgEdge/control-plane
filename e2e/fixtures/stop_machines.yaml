@@ -1,0 +1,9 @@
+---
+- name: Stop VMs
+  hosts: localhost
+  become: false
+  roles:
+    - role: lima_stop
+      when: provider == 'lima'
+    - role: ec2_stop
+      when: provider == 'ec2'

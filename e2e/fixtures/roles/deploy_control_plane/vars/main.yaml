@@ -1,0 +1,2 @@
+---
+control_plane_image: 127.0.0.1:5000/control-plane:latest

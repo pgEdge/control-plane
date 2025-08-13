@@ -1,0 +1,68 @@
+---
+- name: Gather facts
+  hosts: all
+  gather_facts: true
+  roles:
+    - role: lima_facts
+      when: provider == 'lima'
+    - role: ec2_facts
+      when: provider == 'ec2'
+
+- name: Set shared facts
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - role: host_facts
+
+- name: Install prerequisites
+  hosts: all
+  become: true
+  roles:
+    - role: install_prerequisites
+
+- name: Initialize swarm
+  hosts: "{{ hostvars['localhost'].first_manager_host }}"
+  roles:
+    - role: init_swarm
+
+- name: Add managers
+  hosts: "{{ hostvars['localhost'].manager_hosts[1:] }}"
+  roles:
+    - role: join_swarm
+      vars:
+        join_token: "{{ hostvars[hostvars['localhost'].first_manager_host].manager_token.stdout }}"
+        manager_ip: "{{ hostvars['localhost'].first_manager_ip }}"
+
+- name: Add workers
+  hosts: "{{ hostvars['localhost'].worker_hosts }}"
+  roles:
+    - role: join_swarm
+      vars:
+        join_token: "{{ hostvars[hostvars['localhost'].first_manager_host].worker_token.stdout }}"
+        manager_ip: "{{ hostvars['localhost'].first_manager_ip }}"
+
+- name: Deploy registry
+  hosts: "{{ hostvars['localhost'].first_manager_host }}"
+  roles:
+    - role: deploy_registry
+
+- name: Deploy minio
+  hosts: "{{ hostvars['localhost'].first_manager_host }}"
+  become: true
+  roles:
+    - role: deploy_minio
+      when: minio_enabled
+
+- name: Distribute minio config files
+  hosts: "{{ hostvars['localhost'].manager_hosts[1:] + hostvars['localhost'].worker_hosts }}"
+  roles:
+    - role: distribute_minio_configs
+      vars:
+        minio_host: "{{ hostvars['localhost'].first_manager_host }}"
+      when: minio_enabled
+
+- name: Shape traffic
+  hosts: all
+  become: true
+  roles:
+    - role: shape_traffic

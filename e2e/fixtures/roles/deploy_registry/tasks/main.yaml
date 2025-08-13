@@ -1,0 +1,11 @@
+---
+- name: Deploy registry
+  community.docker.docker_swarm_service:
+    name: registry
+    image: registry:2
+    publish:
+      - published_port: 5000
+        target_port: 5000
+    placement:
+      constraints:
+        - node.hostname == {{ docker_node_hostname }}

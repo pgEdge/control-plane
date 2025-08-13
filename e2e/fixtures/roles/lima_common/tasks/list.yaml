@@ -1,0 +1,20 @@
+---
+- name: Get list of Lima VMs in JSON format
+  command: limactl list --log-level error --json
+  register: lima_vm_list_json
+  changed_when: false
+
+- name: Parse JSON output of Lima VMs
+  set_fact:
+    lima_vm_list: "{{ lima_vm_list_json.stdout.split('\n') | reject('equalto', '') | map('from_json') | list }}"
+
+- name: Produce items2dict input
+  no_log: true
+  set_fact:
+    lima_vm_kvs: "{{ lima_vm_kvs | default([]) + [{ 'key': item.name, 'value': item }] }}"
+  with_items: '{{ lima_vm_list }}'
+
+- name: Final dictionary of VMs
+  no_log: true
+  set_fact:
+    lima_vms: '{{ lima_vm_kvs | default([]) | items2dict }}'

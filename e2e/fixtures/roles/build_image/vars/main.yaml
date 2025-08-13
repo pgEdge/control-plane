@@ -1,0 +1,7 @@
+---
+_arch_transform:
+  amd64: amd64
+  x86_64: amd64
+  aarch64: arm64
+  arm64: arm64
+_archive_name: control-plane_{{ version }}_linux_{{ _arch_transform[architecture] }}.tar.gz

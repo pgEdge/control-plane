@@ -1,0 +1,10 @@
+---
+- name: Create test_configs directory
+  ansible.builtin.file:
+    path: outputs
+    state: directory
+
+- name: Generate test_config
+  template:
+    src: test_config.yaml.tmpl
+    dest: outputs/{{ provider }}.test_config.yaml

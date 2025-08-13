@@ -1,0 +1,10 @@
+---
+_ami_params:
+  rocky-9:
+    name: Rocky-9-EC2-Base-9.6-*
+    owner: 792107900819
+_instance_types:
+  x86_64: r6i.large
+  arm64: r6g.large
+_ssh_user:
+  rocky-9: rocky

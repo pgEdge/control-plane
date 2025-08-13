@@ -1,0 +1,12 @@
+---
+- name: Template control plane stack yaml
+  template:
+    src: stack.yaml.tmpl
+    dest: /tmp/stack.yaml
+
+# Using command instead of the community docker module because it won't rerun
+# this command if the stack hasn't changed. We use `:latest` for the
+# locally-built images because it simplifies the modules, so we want to redeploy
+# even if the stack hasn't changed.
+- name: Deploy control-plane stack
+  command: docker stack deploy -c /tmp/stack.yaml control-plane

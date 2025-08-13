@@ -1,0 +1,4 @@
+---
+- name: Set docker_node_hostname
+  set_fact:
+    docker_node_hostname: '{{ ansible_facts.hostname }}.{{ aws_region }}.compute.internal'

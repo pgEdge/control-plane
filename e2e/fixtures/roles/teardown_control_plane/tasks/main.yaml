@@ -1,0 +1,35 @@
+---
+- name: Remove control-plane stack
+  community.docker.docker_stack:
+    state: absent
+    name: control-plane
+
+- name: List database services
+  shell: docker service ls --format=json --filter='label=pgedge.component=postgres'
+  register: service_list_json
+  changed_when: false
+
+- name: List networks
+  shell: docker network ls --filter='scope=swarm' --format=json
+  register: network_list_json
+  changed_when: false
+
+- name: Transform service list
+  set_fact:
+    service_list: "{{ service_list_json.stdout.split('\n') | reject('equalto', '') | map('from_json') | map(attribute='Name') | list }}"
+
+- name: Transform network list
+  set_fact:
+    network_list: "{{ network_list_json.stdout.split('\n') | reject('equalto', '') | map('from_json') | map(attribute='Name') | select('match', '.*-database$') | list }}"
+
+- name: Remove database services
+  loop: "{{ service_list }}"
+  community.docker.docker_swarm_service:
+    name: "{{ item }}"
+    state: absent
+
+- name: Remove database networks
+  loop: "{{ network_list }}"
+  community.docker.docker_network:
+    name: "{{ item }}"
+    state: absent

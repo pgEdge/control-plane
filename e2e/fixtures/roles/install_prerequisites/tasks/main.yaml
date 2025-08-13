@@ -1,0 +1,42 @@
+---
+- name: Add Docker repository
+  yum_repository:
+    name: docker-ce-stable
+    description: Docker CE Stable - $basearch
+    baseurl: https://download.docker.com/linux/rhel/$releasever/$basearch/stable
+    enabled: true
+    gpgcheck: true
+    gpgkey: https://download.docker.com/linux/rhel/gpg
+- name: Install packages
+  package:
+    name: '{{ item }}'
+    state: present
+  with_items:
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+    - docker-compose-plugin
+    - python3-pip
+    - awscli
+- name: Install python modules
+  pip:
+    state: present
+    name:
+      - docker
+      - jsondiff
+      - tcconfig
+- name: Create the docker.socket.d directory if it does not exist
+  file:
+    path: /etc/systemd/system/docker.socket.d
+    state: directory
+- name: Override the Docker socket user # Prevents us from needing a restart
+  copy:
+    dest: /etc/systemd/system/docker.socket.d/override.conf
+    content: |
+      [Socket]
+      SocketUser={{ ansible_env.SUDO_USER }}
+- name: Start and enable Docker
+  systemd_service:
+    name: docker
+    state: started
+    enabled: yes

@@ -1,0 +1,6 @@
+---
+- name: Stop EC2 instances
+  amazon.aws.ec2_instance:
+    name: control-plane-e2e-{{ architecture }}-{{ item.name }}
+    state: stopped
+  with_items: '{{ machines }}'

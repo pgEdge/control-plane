@@ -1,0 +1,28 @@
+---
+hosts:
+{% for machine in machines %}
+  {{ machine.name }}:
+    peer_ip: {{ hostvars[machine.name].peer_ip }}
+    external_ip: {{ hostvars[machine.name].external_ip }}
+    port: 3000
+{% if hostvars[machine.name].ansible_ssh_common_args %}
+    ssh_command: ssh {{ hostvars[machine.name].ansible_ssh_common_args }} {{ hostvars[machine.name].ansible_host }}
+{% endif %}
+{% endfor %}
+{% if s3_repository is defined %}
+s3:
+  enabled: true
+  bucket: {{ s3_repository.bucket }}
+{% if minio_enabled %}
+  endpoint: https://{{ hostvars['localhost'].first_manager_ip }}:9000
+{% endif %}
+{% if s3_repository.access_key_id is defined %}
+  access_key_id: {{ s3_repository.access_key_id }}
+{% endif %}
+{% if s3_repository.secret_access_key is defined %}
+  secret_access_key: {{ s3_repository.secret_access_key }}
+{% endif %}
+{% if s3_repository.region is defined %}
+  region: {{ s3_repository.region }}
+{% endif %}
+{% endif %}

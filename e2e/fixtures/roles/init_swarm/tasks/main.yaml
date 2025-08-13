@@ -1,0 +1,13 @@
+---
+- name: Init a new swarm
+  community.docker.docker_swarm:
+    state: present
+    advertise_addr: '{{ peer_ip }}'
+- name: Retrieve Docker Swarm manager token
+  ansible.builtin.shell: docker swarm join-token manager -q
+  register: manager_token
+  changed_when: false
+- name: Retrieve Docker Swarm worker token
+  ansible.builtin.shell: docker swarm join-token worker -q
+  register: worker_token
+  changed_when: false

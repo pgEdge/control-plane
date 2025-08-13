@@ -1,0 +1,9 @@
+---
+- name: Teardown VMs
+  hosts: localhost
+  become: false
+  roles:
+    - role: lima_teardown
+      when: provider == 'lima'
+    - role: ec2_teardown
+      when: provider == 'ec2'
