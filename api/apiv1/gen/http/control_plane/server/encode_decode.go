@@ -2117,9 +2117,24 @@ func EncodeStopInstanceResponse(encoder func(context.Context, http.ResponseWrite
 func DecodeStopInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
+			body StopInstanceRequestBody
+			err  error
+		)
+		err = decoder(r).Decode(&body)
+		if err != nil {
+			if err == io.EOF {
+				return nil, goa.MissingPayloadError()
+			}
+			var gerr *goa.ServiceError
+			if errors.As(err, &gerr) {
+				return nil, gerr
+			}
+			return nil, goa.DecodePayloadError(err.Error())
+		}
+
+		var (
 			databaseID string
 			instanceID string
-			err        error
 
 			params = mux.Vars(r)
 		)
@@ -2140,7 +2155,7 @@ func DecodeStopInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) go
 		if err != nil {
 			return nil, err
 		}
-		payload := NewStopInstancePayload(databaseID, instanceID)
+		payload := NewStopInstancePayload(&body, databaseID, instanceID)
 
 		return payload, nil
 	}
@@ -2231,9 +2246,24 @@ func EncodeStartInstanceResponse(encoder func(context.Context, http.ResponseWrit
 func DecodeStartInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
+			body StartInstanceRequestBody
+			err  error
+		)
+		err = decoder(r).Decode(&body)
+		if err != nil {
+			if err == io.EOF {
+				return nil, goa.MissingPayloadError()
+			}
+			var gerr *goa.ServiceError
+			if errors.As(err, &gerr) {
+				return nil, gerr
+			}
+			return nil, goa.DecodePayloadError(err.Error())
+		}
+
+		var (
 			databaseID string
 			instanceID string
-			err        error
 
 			params = mux.Vars(r)
 		)
@@ -2254,7 +2284,7 @@ func DecodeStartInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) g
 		if err != nil {
 			return nil, err
 		}
-		payload := NewStartInstancePayload(databaseID, instanceID)
+		payload := NewStartInstancePayload(&body, databaseID, instanceID)
 
 		return payload, nil
 	}

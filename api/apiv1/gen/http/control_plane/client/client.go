@@ -590,10 +590,15 @@ func (c *Client) RestartInstance() goa.Endpoint {
 // control-plane service stop-instance server.
 func (c *Client) StopInstance() goa.Endpoint {
 	var (
+		encodeRequest  = EncodeStopInstanceRequest(c.encoder)
 		decodeResponse = DecodeStopInstanceResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
 		req, err := c.BuildStopInstanceRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
 		if err != nil {
 			return nil, err
 		}
@@ -609,10 +614,15 @@ func (c *Client) StopInstance() goa.Endpoint {
 // control-plane service start-instance server.
 func (c *Client) StartInstance() goa.Endpoint {
 	var (
+		encodeRequest  = EncodeStartInstanceRequest(c.encoder)
 		decodeResponse = DecodeStartInstanceResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
 		req, err := c.BuildStartInstanceRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
 		if err != nil {
 			return nil, err
 		}

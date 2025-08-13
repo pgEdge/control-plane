@@ -2617,6 +2617,22 @@ func (c *Client) BuildStopInstanceRequest(ctx context.Context, v any) (*http.Req
 	return req, nil
 }
 
+// EncodeStopInstanceRequest returns an encoder for requests sent to the
+// control-plane stop-instance server.
+func EncodeStopInstanceRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.StopInstancePayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "stop-instance", "*controlplane.StopInstancePayload", v)
+		}
+		body := NewStopInstanceRequestBody(p)
+		if err := encoder(req).Encode(&body); err != nil {
+			return goahttp.ErrEncodingError("control-plane", "stop-instance", err)
+		}
+		return nil
+	}
+}
+
 // DecodeStopInstanceResponse returns a decoder for responses returned by the
 // control-plane stop-instance endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
@@ -2744,6 +2760,22 @@ func (c *Client) BuildStartInstanceRequest(ctx context.Context, v any) (*http.Re
 	}
 
 	return req, nil
+}
+
+// EncodeStartInstanceRequest returns an encoder for requests sent to the
+// control-plane start-instance server.
+func EncodeStartInstanceRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.StartInstancePayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "start-instance", "*controlplane.StartInstancePayload", v)
+		}
+		body := NewStartInstanceRequestBody(p)
+		if err := encoder(req).Encode(&body); err != nil {
+			return goahttp.ErrEncodingError("control-plane", "start-instance", err)
+		}
+		return nil
+	}
 }
 
 // DecodeStartInstanceResponse returns a decoder for responses returned by the

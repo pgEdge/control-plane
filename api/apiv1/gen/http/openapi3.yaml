@@ -1221,6 +1221,14 @@ paths:
                     minLength: 1
                     maxLength: 63
                   example: 68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/StopInstanceRequestBody'
+                        example:
+                            force: true
             responses:
                 "200":
                     description: OK response.
@@ -1304,6 +1312,14 @@ paths:
                     minLength: 1
                     maxLength: 63
                   example: 68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/StopInstanceRequestBody'
+                        example:
+                            force: true
             responses:
                 "200":
                     description: OK response.
@@ -6758,6 +6774,16 @@ components:
                 type: s3
             required:
                 - type
+        StopInstanceRequestBody:
+            type: object
+            properties:
+                force:
+                    type: boolean
+                    description: Force stopping an instance even if database in an unmodifiable state
+                    default: false
+                    example: true
+            example:
+                force: true
         SwarmOpts:
             type: object
             properties:

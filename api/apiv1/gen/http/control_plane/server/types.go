@@ -84,6 +84,20 @@ type RestartInstanceRequestBody struct {
 	ScheduledAt *string `form:"scheduled_at,omitempty" json:"scheduled_at,omitempty" xml:"scheduled_at,omitempty"`
 }
 
+// StopInstanceRequestBody is the type of the "control-plane" service
+// "stop-instance" endpoint HTTP request body.
+type StopInstanceRequestBody struct {
+	// Force stopping an instance even if database in an unmodifiable state
+	Force *bool `form:"force,omitempty" json:"force,omitempty" xml:"force,omitempty"`
+}
+
+// StartInstanceRequestBody is the type of the "control-plane" service
+// "start-instance" endpoint HTTP request body.
+type StartInstanceRequestBody struct {
+	// Force starting an instance even if database in an unmodifiable state
+	Force *bool `form:"force,omitempty" json:"force,omitempty" xml:"force,omitempty"`
+}
+
 // InitClusterResponseBody is the type of the "control-plane" service
 // "init-cluster" endpoint HTTP response body.
 type InitClusterResponseBody struct {
@@ -3678,8 +3692,14 @@ func NewRestartInstancePayload(body *RestartInstanceRequestBody, databaseID stri
 
 // NewStopInstancePayload builds a control-plane service stop-instance endpoint
 // payload.
-func NewStopInstancePayload(databaseID string, instanceID string) *controlplane.StopInstancePayload {
+func NewStopInstancePayload(body *StopInstanceRequestBody, databaseID string, instanceID string) *controlplane.StopInstancePayload {
 	v := &controlplane.StopInstancePayload{}
+	if body.Force != nil {
+		v.Force = *body.Force
+	}
+	if body.Force == nil {
+		v.Force = false
+	}
 	v.DatabaseID = controlplane.Identifier(databaseID)
 	v.InstanceID = controlplane.Identifier(instanceID)
 
@@ -3688,8 +3708,14 @@ func NewStopInstancePayload(databaseID string, instanceID string) *controlplane.
 
 // NewStartInstancePayload builds a control-plane service start-instance
 // endpoint payload.
-func NewStartInstancePayload(databaseID string, instanceID string) *controlplane.StartInstancePayload {
+func NewStartInstancePayload(body *StartInstanceRequestBody, databaseID string, instanceID string) *controlplane.StartInstancePayload {
 	v := &controlplane.StartInstancePayload{}
+	if body.Force != nil {
+		v.Force = *body.Force
+	}
+	if body.Force == nil {
+		v.Force = false
+	}
 	v.DatabaseID = controlplane.Identifier(databaseID)
 	v.InstanceID = controlplane.Identifier(instanceID)
 

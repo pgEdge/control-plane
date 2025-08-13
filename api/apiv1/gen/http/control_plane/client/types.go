@@ -84,6 +84,20 @@ type RestartInstanceRequestBody struct {
 	ScheduledAt *string `form:"scheduled_at,omitempty" json:"scheduled_at,omitempty" xml:"scheduled_at,omitempty"`
 }
 
+// StopInstanceRequestBody is the type of the "control-plane" service
+// "stop-instance" endpoint HTTP request body.
+type StopInstanceRequestBody struct {
+	// Force stopping an instance even if database in an unmodifiable state
+	Force bool `form:"force" json:"force" xml:"force"`
+}
+
+// StartInstanceRequestBody is the type of the "control-plane" service
+// "start-instance" endpoint HTTP request body.
+type StartInstanceRequestBody struct {
+	// Force starting an instance even if database in an unmodifiable state
+	Force bool `form:"force" json:"force" xml:"force"`
+}
+
 // InitClusterResponseBody is the type of the "control-plane" service
 // "init-cluster" endpoint HTTP response body.
 type InitClusterResponseBody struct {
@@ -2365,6 +2379,36 @@ func NewRestoreDatabaseRequestBody(p *controlplane.RestoreDatabasePayload) *Rest
 func NewRestartInstanceRequestBody(p *controlplane.RestartInstancePayload) *RestartInstanceRequestBody {
 	body := &RestartInstanceRequestBody{
 		ScheduledAt: p.RestartOptions.ScheduledAt,
+	}
+	return body
+}
+
+// NewStopInstanceRequestBody builds the HTTP request body from the payload of
+// the "stop-instance" endpoint of the "control-plane" service.
+func NewStopInstanceRequestBody(p *controlplane.StopInstancePayload) *StopInstanceRequestBody {
+	body := &StopInstanceRequestBody{
+		Force: p.Force,
+	}
+	{
+		var zero bool
+		if body.Force == zero {
+			body.Force = false
+		}
+	}
+	return body
+}
+
+// NewStartInstanceRequestBody builds the HTTP request body from the payload of
+// the "start-instance" endpoint of the "control-plane" service.
+func NewStartInstanceRequestBody(p *controlplane.StartInstancePayload) *StartInstanceRequestBody {
+	body := &StartInstanceRequestBody{
+		Force: p.Force,
+	}
+	{
+		var zero bool
+		if body.Force == zero {
+			body.Force = false
+		}
 	}
 	return body
 }

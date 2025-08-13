@@ -674,6 +674,14 @@
             "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "Start-InstanceRequestBody",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ControlPlaneStartInstanceRequestBody"
+            }
           }
         ],
         "responses": {
@@ -758,6 +766,14 @@
             "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "Stop-InstanceRequestBody",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ControlPlaneStopInstanceRequestBody"
+            }
           }
         ],
         "responses": {
@@ -2557,6 +2573,36 @@
         "updated_at",
         "state"
       ]
+    },
+    "ControlPlaneStartInstanceRequestBody": {
+      "title": "ControlPlaneStartInstanceRequestBody",
+      "type": "object",
+      "properties": {
+        "force": {
+          "type": "boolean",
+          "description": "Force starting an instance even if database in an unmodifiable state",
+          "default": false,
+          "example": true
+        }
+      },
+      "example": {
+        "force": true
+      }
+    },
+    "ControlPlaneStopInstanceRequestBody": {
+      "title": "ControlPlaneStopInstanceRequestBody",
+      "type": "object",
+      "properties": {
+        "force": {
+          "type": "boolean",
+          "description": "Force stopping an instance even if database in an unmodifiable state",
+          "default": false,
+          "example": true
+        }
+      },
+      "example": {
+        "force": true
+      }
     },
     "CreateDatabaseRequest": {
       "title": "CreateDatabaseRequest",

@@ -734,6 +734,8 @@ type StartInstancePayload struct {
 	DatabaseID Identifier
 	// The ID of the instance to start.
 	InstanceID Identifier
+	// Force starting an instance even if database in an unmodifiable state
+	Force bool
 }
 
 // StopInstancePayload is the payload type of the control-plane service
@@ -743,6 +745,8 @@ type StopInstancePayload struct {
 	DatabaseID Identifier
 	// The ID of the instance to stop.
 	InstanceID Identifier
+	// Force stopping an instance even if database in an unmodifiable state
+	Force bool
 }
 
 // Docker Swarm-specific options.
