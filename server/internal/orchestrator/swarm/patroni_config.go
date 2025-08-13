@@ -261,12 +261,13 @@ func generatePatroniConfig(
 
 	var tags patroni.Tags
 
-	if spec.FailoverPolicy == "" || spec.FailoverPolicy == "automatic" {
+	switch spec.FailoverPolicy {
+	case "", "automatic":
 		tags = patroni.Tags{
 			NoFailover: utils.PointerTo(false),
 			DatabaseID: &spec.DatabaseID,
 		}
-	} else if spec.FailoverPolicy == "disabled" {
+	case "disabled":
 		tags = patroni.Tags{
 			NoFailover: utils.PointerTo(true),
 			DatabaseID: &spec.DatabaseID,
