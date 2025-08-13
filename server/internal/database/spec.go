@@ -425,6 +425,7 @@ type InstanceSpec struct {
 	EnableBackups    bool                `json:"enable_backups"`
 	ClusterSize      int                 `json:"cluster_size"`
 	OrchestratorOpts *OrchestratorOpts   `json:"orchestrator_opts,omitempty"`
+	FailoverPolicy   string              `json:"failover_policy"`
 }
 
 type NodeInstances struct {
