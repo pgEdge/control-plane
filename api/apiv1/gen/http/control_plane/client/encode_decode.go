@@ -2971,6 +2971,7 @@ func unmarshalDatabaseSpecResponseBodyToControlplaneviewsDatabaseSpecView(v *Dat
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		FailoverPolicy:  v.FailoverPolicy,
 	}
 	res.Nodes = make([]*controlplaneviews.DatabaseNodeSpecView, len(v.Nodes))
 	for i, val := range v.Nodes {
@@ -3306,6 +3307,7 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecRequestBody(v *controlplane.Da
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*DatabaseNodeSpecRequestBody, len(v.Nodes))
@@ -3653,6 +3655,7 @@ func marshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecReq
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*controlplane.DatabaseNodeSpec, len(v.Nodes))
@@ -4149,6 +4152,7 @@ func unmarshalDatabaseSpecResponseBodyToControlplaneDatabaseSpec(v *DatabaseSpec
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		FailoverPolicy:  v.FailoverPolicy,
 	}
 	res.Nodes = make([]*controlplane.DatabaseNodeSpec, len(v.Nodes))
 	for i, val := range v.Nodes {
@@ -4482,6 +4486,7 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecRequestBodyRequestBody(v *cont
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*DatabaseNodeSpecRequestBodyRequestBody, len(v.Nodes))
@@ -4830,6 +4835,7 @@ func marshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Data
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*controlplane.DatabaseNodeSpec, len(v.Nodes))

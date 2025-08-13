@@ -1387,6 +1387,10 @@ type DatabaseSpecResponseBody struct {
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsResponseBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+	// The failover policy for this database. If failover_policy is automatic,
+	// automatic failover should be configured on all instances. If it is disabled,
+	// nofailover tag should be applied on all instances
+	FailoverPolicy *string `form:"failover_policy,omitempty" json:"failover_policy,omitempty" xml:"failover_policy,omitempty"`
 }
 
 // DatabaseNodeSpecResponseBody is used to define fields on response body types.
@@ -1665,6 +1669,10 @@ type DatabaseSpecRequestBody struct {
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+	// The failover policy for this database. If failover_policy is automatic,
+	// automatic failover should be configured on all instances. If it is disabled,
+	// nofailover tag should be applied on all instances
+	FailoverPolicy *string `form:"failover_policy,omitempty" json:"failover_policy,omitempty" xml:"failover_policy,omitempty"`
 }
 
 // DatabaseNodeSpecRequestBody is used to define fields on request body types.
@@ -1928,6 +1936,10 @@ type DatabaseSpecRequestBodyRequestBody struct {
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsRequestBodyRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+	// The failover policy for this database. If failover_policy is automatic,
+	// automatic failover should be configured on all instances. If it is disabled,
+	// nofailover tag should be applied on all instances
+	FailoverPolicy *string `form:"failover_policy,omitempty" json:"failover_policy,omitempty" xml:"failover_policy,omitempty"`
 }
 
 // DatabaseNodeSpecRequestBodyRequestBody is used to define fields on request
@@ -3669,6 +3681,11 @@ func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) 
 			err = goa.MergeErrors(err, err2)
 		}
 	}
+	if body.FailoverPolicy != nil {
+		if !(*body.FailoverPolicy == "automatic" || *body.FailoverPolicy == "disabled") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.failover_policy", *body.FailoverPolicy, []any{"automatic", "disabled"}))
+		}
+	}
 	return
 }
 
@@ -4299,6 +4316,11 @@ func ValidateDatabaseSpecRequestBodyRequestBody(body *DatabaseSpecRequestBodyReq
 	if body.OrchestratorOpts != nil {
 		if err2 := ValidateOrchestratorOptsRequestBodyRequestBody(body.OrchestratorOpts); err2 != nil {
 			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.FailoverPolicy != nil {
+		if !(*body.FailoverPolicy == "automatic" || *body.FailoverPolicy == "disabled") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.failover_policy", *body.FailoverPolicy, []any{"automatic", "disabled"}))
 		}
 	}
 	return

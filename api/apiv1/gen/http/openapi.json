@@ -3248,6 +3248,15 @@
           ],
           "maxItems": 16
         },
+        "failover_policy": {
+          "type": "string",
+          "description": "The failover policy for this database. If failover_policy is automatic, automatic failover should be configured on all instances. If it is disabled, nofailover tag should be applied on all instances",
+          "example": "disabled",
+          "enum": [
+            "automatic",
+            "disabled"
+          ]
+        },
         "memory": {
           "type": "string",
           "description": "The amount of memory in SI or IEC notation to allocate for the database and to use for tuning Postgres. Defaults to the total available memory on the host. Whether this limit is enforced depends on the orchestrator.",
@@ -3582,6 +3591,7 @@
             "username": "admin"
           }
         ],
+        "failover_policy": "disabled",
         "memory": "500M",
         "nodes": [
           {

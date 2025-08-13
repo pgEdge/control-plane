@@ -372,6 +372,10 @@ type DatabaseSpec struct {
 	PostgresqlConf map[string]any
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOpts
+	// The failover policy for this database. If failover_policy is automatic,
+	// automatic failover should be configured on all instances. If it is disabled,
+	// nofailover tag should be applied on all instances
+	FailoverPolicy *string
 }
 
 type DatabaseUserSpec struct {
@@ -1231,6 +1235,7 @@ func transformControlplaneviewsDatabaseSpecViewToDatabaseSpec(v *controlplanevie
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*DatabaseNodeSpec, len(v.Nodes))
@@ -1580,6 +1585,7 @@ func transformDatabaseSpecToControlplaneviewsDatabaseSpecView(v *DatabaseSpec) *
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*controlplaneviews.DatabaseNodeSpecView, len(v.Nodes))

@@ -166,6 +166,10 @@ type DatabaseSpecView struct {
 	PostgresqlConf map[string]any
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsView
+	// The failover policy for this database. If failover_policy is automatic,
+	// automatic failover should be configured on all instances. If it is disabled,
+	// nofailover tag should be applied on all instances
+	FailoverPolicy *string
 }
 
 // DatabaseNodeSpecView is a type that runs validations on a projected type.
@@ -967,6 +971,11 @@ func ValidateDatabaseSpecView(result *DatabaseSpecView) (err error) {
 	if result.OrchestratorOpts != nil {
 		if err2 := ValidateOrchestratorOptsView(result.OrchestratorOpts); err2 != nil {
 			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if result.FailoverPolicy != nil {
+		if !(*result.FailoverPolicy == "automatic" || *result.FailoverPolicy == "disabled") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.failover_policy", *result.FailoverPolicy, []any{"automatic", "disabled"}))
 		}
 	}
 	return
