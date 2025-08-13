@@ -510,32 +510,22 @@ func (o *Orchestrator) StopInstance(
 	rc *resource.Context,
 	instanceID string,
 ) error {
-	dockerClient, err := do.Invoke[*docker.Docker](rc.Injector)
-	if err != nil {
-		return err
-	}
-
-	svcResource, err := resource.FromContext[*PostgresService](rc, PostgresServiceResourceIdentifier(instanceID))
-	if err != nil {
-		return fmt.Errorf("failed to get postgres service resource from state: %w", err)
-	}
-
-	if err := dockerClient.ServiceScale(ctx, docker.ServiceScaleOptions{
-		ServiceID:   svcResource.ServiceID,
-		Scale:       0,
-		Wait:        true,
-		WaitTimeout: time.Minute,
-	}); err != nil {
-		return fmt.Errorf("failed to scale down postgres service: %w", err)
-	}
-
-	return nil
+	return o.scaleInstance(ctx, rc, instanceID, 0)
 }
 
 func (o *Orchestrator) StartInstance(
 	ctx context.Context,
 	rc *resource.Context,
 	instanceID string,
+) error {
+	return o.scaleInstance(ctx, rc, instanceID, 1)
+}
+
+func (o *Orchestrator) scaleInstance(
+	ctx context.Context,
+	rc *resource.Context,
+	instanceID string,
+	scale uint64,
 ) error {
 	dockerClient, err := do.Invoke[*docker.Docker](rc.Injector)
 	if err != nil {
@@ -549,7 +539,7 @@ func (o *Orchestrator) StartInstance(
 
 	if err := dockerClient.ServiceScale(ctx, docker.ServiceScaleOptions{
 		ServiceID:   svcResource.ServiceID,
-		Scale:       1,
+		Scale:       scale,
 		Wait:        true,
 		WaitTimeout: time.Minute,
 	}); err != nil {
