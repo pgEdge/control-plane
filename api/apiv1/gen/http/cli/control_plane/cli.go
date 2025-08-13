@@ -121,7 +121,7 @@ func ParseEndpoint(
 
 		controlPlaneStartInstanceFlags          = flag.NewFlagSet("start-instance", flag.ExitOnError)
 		controlPlaneStartInstanceDatabaseIDFlag = controlPlaneStartInstanceFlags.String("database-id", "REQUIRED", "The ID of the database that owns the instance.")
-		controlPlaneStartInstanceInstanceIDFlag = controlPlaneStartInstanceFlags.String("instance-id", "REQUIRED", "The ID of the instance to stop.")
+		controlPlaneStartInstanceInstanceIDFlag = controlPlaneStartInstanceFlags.String("instance-id", "REQUIRED", "The ID of the instance to start.")
 	)
 	controlPlaneFlags.Usage = controlPlaneUsage
 	controlPlaneInitClusterFlags.Usage = controlPlaneInitClusterUsage
@@ -764,7 +764,7 @@ func controlPlaneStartInstanceUsage() {
 
 Starts a specific instance within a database. Supports immediate starts
     -database-id STRING: The ID of the database that owns the instance.
-    -instance-id STRING: The ID of the instance to stop.
+    -instance-id STRING: The ID of the instance to start.
 
 Example:
     %[1]s control-plane start-instance --database-id "68f50878-44d2-4524-a823-e31bd478706d" --instance-id "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi"

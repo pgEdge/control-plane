@@ -604,7 +604,7 @@ var _ = g.Service("control-plane", func() {
 				g.Example("68f50878-44d2-4524-a823-e31bd478706d")
 			})
 			g.Attribute("instance_id", Identifier, func() {
-				g.Description("The ID of the instance to stop.")
+				g.Description("The ID of the instance to start.")
 				g.Example("68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi")
 			})
 

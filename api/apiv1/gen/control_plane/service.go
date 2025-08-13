@@ -732,7 +732,7 @@ type RestoreRepositorySpec struct {
 type StartInstancePayload struct {
 	// The ID of the database that owns the instance.
 	DatabaseID Identifier
-	// The ID of the instance to stop.
+	// The ID of the instance to start.
 	InstanceID Identifier
 }
 

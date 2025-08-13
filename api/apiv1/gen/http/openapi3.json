@@ -1876,7 +1876,7 @@
           {
             "name": "instance_id",
             "in": "path",
-            "description": "The ID of the instance to stop.",
+            "description": "The ID of the instance to start.",
             "required": true,
             "schema": {
               "type": "string",
