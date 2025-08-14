@@ -22,6 +22,8 @@ commands:
       - run:
           name: Install tools
           command: make install-tools
+          environment:
+            GOTOOLCHAIN: go1.24.3
       - save_cache:
           key: v2-go-mod-{{ arch }}-{{ checksum "/tmp/mod-checksums.txt" }}
           paths:
@@ -39,6 +41,25 @@ jobs:
       - run:
           name: Run CI checks
           command: make ci
+      - store_test_results:
+          path: .
+  test-e2e:
+    machine:
+      image: ubuntu-2404:2024.11.1
+      docker_layer_caching: true
+    resource_class: arm.medium
+    steps:
+      - checkout
+      - use_mod_cache
+      - run:
+          name: Run e2e tests with Docker Compose
+          command: |
+            make ci-compose-detached
+            make test-e2e-ci
+      - run:
+          name: Ensure Docker Compose is stopped
+          command: make ci-compose-down
+          when: always
       - store_test_results:
           path: .
   release:
@@ -93,6 +114,9 @@ workflows:
   test:
     jobs:
       - test
+      - test-e2e:
+          requires:
+            - test
   release:
     jobs:
       - release:
