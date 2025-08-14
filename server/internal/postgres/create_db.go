@@ -65,12 +65,15 @@ func InitializePgEdgeExtensions(nodeName string, dsn *DSN) Statements {
 		Statement{
 			SQL: "CREATE EXTENSION IF NOT EXISTS spock;",
 		},
-		Statement{
-			SQL: "CREATE EXTENSION IF NOT EXISTS snowflake;",
-		},
-		Statement{
-			SQL: "CREATE EXTENSION IF NOT EXISTS lolor;",
-		},
+		// TODO: These need to run after we create subscriptions so that they
+		// don't interfere with the add-node process.
+		//
+		// Statement{
+		// 	SQL: "CREATE EXTENSION IF NOT EXISTS snowflake;",
+		// },
+		// Statement{
+		// 	SQL: "CREATE EXTENSION IF NOT EXISTS lolor;",
+		// },
 		ConditionalStatement{
 			If: Query[bool]{
 				SQL: "SELECT NOT EXISTS (SELECT 1 FROM spock.node WHERE node_name = @node_name);",
