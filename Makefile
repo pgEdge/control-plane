@@ -1,13 +1,11 @@
 include tools.mk
+include pgedge.mk
 
 # Overridable vars
 DEBUG ?= 0
 LOG_LEVEL ?= info
 CONTROL_PLANE_IMAGE_REPO ?= host.docker.internal:5000/control-plane
 CONTROL_PLANE_VERSION ?= $(shell git describe --tags --abbrev=0 --match 'v*')
-PGEDGE_IMAGE_REPO ?= host.docker.internal:5000/pgedge
-PACKAGE_REPO_BASE_URL ?= http://pgedge-529820047909-yum.s3-website.us-east-2.amazonaws.com
-PACKAGE_RELEASE_CHANNEL ?= dev
 E2E_FIXTURE ?=
 E2E_PARALLEL ?=
 E2E_RUN ?=
@@ -106,16 +104,6 @@ buildx-init:
 		--name=$(buildx_builder) \
 		--platform=linux/arm64,linux/amd64 \
 		--config=$(buildx_config)
-
-.PHONY: pgedge-images
-pgedge-images:
-	PGEDGE_IMAGE_REPO="$(PGEDGE_IMAGE_REPO)" \
-	PACKAGE_REPO_BASE_URL="$(PACKAGE_REPO_BASE_URL)" \
-	PACKAGE_RELEASE_CHANNEL="$(PACKAGE_RELEASE_CHANNEL)" \
-	docker buildx bake \
-		--builder $(buildx_builder) \
-		--push \
-		pgedge
 
 .PHONY: control-plane-images
 control-plane-images:
