@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	controlplane "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	"github.com/pgEdge/control-plane/client"
@@ -328,4 +330,54 @@ func (d *DatabaseFixture) waitForTask(ctx context.Context, task *controlplane.Ta
 	}
 
 	return nil
+}
+
+func (f *DatabaseFixture) VerifySpockReplication(ctx context.Context, t testing.TB, nodes []*controlplane.DatabaseNodeSpec, opts ConnectionOptions) {
+
+	t.Log("Verifying spock nodes are in sync")
+
+	// Execute sync_event on all primary nodes
+	nodeSyncMap := make(map[string]string)
+	for _, node := range nodes {
+		primaryOpts := ConnectionOptions{
+			Matcher:  And(WithNode(node.Name), WithRole("primary")),
+			Username: opts.Username,
+			Password: opts.Password,
+		}
+
+		f.WithConnection(ctx, primaryOpts, t, func(conn *pgx.Conn) {
+			var syncLSN string
+
+			row := conn.QueryRow(ctx, "SELECT spock.sync_event();")
+			require.NoError(t, row.Scan(&syncLSN))
+
+			assert.NotEmpty(t, syncLSN)
+
+			nodeSyncMap[node.Name] = syncLSN
+		})
+	}
+
+	// Verify wait_for_sync_event on all other nodes
+	for _, node := range nodes {
+
+		primaryOpts := ConnectionOptions{
+			Matcher:  And(WithNode(node.Name), WithRole("primary")),
+			Username: opts.Username,
+			Password: opts.Password,
+		}
+
+		for _, peerNode := range nodes {
+			if peerNode.Name == node.Name {
+				continue
+			}
+
+			f.WithConnection(ctx, primaryOpts, t, func(conn *pgx.Conn) {
+				var synced bool
+
+				row := conn.QueryRow(ctx, "CALL spock.wait_for_sync_event(true, $1, $2::pg_lsn, 10);", peerNode.Name, nodeSyncMap[peerNode.Name])
+				require.NoError(t, row.Scan(&synced))
+				assert.True(t, synced)
+			})
+		}
+	}
 }
