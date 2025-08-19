@@ -166,9 +166,10 @@ type DatabaseSpecView struct {
 	PostgresqlConf map[string]any
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsView
-	// The failover policy for this database. If failover_policy is automatic,
-	// automatic failover should be configured on all instances. If it is disabled,
-	// nofailover tag should be applied on all instances
+	// The failover policy for this database's read replicas. If failover_policy is
+	// automatic, a read replica will automatically be promoted when a primary
+	// instance fails. If it is disabled, read replicas will not be promoted when a
+	// primary instance fails.
 	FailoverPolicy *string
 }
 
@@ -209,6 +210,11 @@ type DatabaseNodeSpecView struct {
 	RestoreConfig *RestoreConfigSpecView
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsView
+	// The failover policy for this database's read replicas. If failover_policy is
+	// automatic, a read replica will automatically be promoted when a primary
+	// instance fails. If it is disabled, read replicas will not be promoted when a
+	// primary instance fails.
+	FailoverPolicy *string
 }
 
 // BackupConfigSpecView is a type that runs validations on a projected type.
@@ -1040,6 +1046,11 @@ func ValidateDatabaseNodeSpecView(result *DatabaseNodeSpecView) (err error) {
 	if result.OrchestratorOpts != nil {
 		if err2 := ValidateOrchestratorOptsView(result.OrchestratorOpts); err2 != nil {
 			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if result.FailoverPolicy != nil {
+		if !(*result.FailoverPolicy == "automatic" || *result.FailoverPolicy == "disabled") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.failover_policy", *result.FailoverPolicy, []any{"automatic", "disabled"}))
 		}
 	}
 	return

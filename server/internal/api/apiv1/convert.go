@@ -193,6 +193,7 @@ func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 		RestoreConfig:    restoreConfigToAPI(d.RestoreConfig),
 		PostgresqlConf:   d.PostgreSQLConf,
 		OrchestratorOpts: orchestratorOptsToAPI(d.OrchestratorOpts),
+		FailoverPolicy:   utils.NillablePointerTo(d.FailoverPolicy),
 	}
 }
 
@@ -518,6 +519,7 @@ func apiToDatabaseSpec(id, tID *api.Identifier, apiSpec *api.DatabaseSpec) (*dat
 		PostgreSQLConf:   apiSpec.PostgresqlConf,
 		RestoreConfig:    restoreConfig,
 		OrchestratorOpts: orchestratorOptsToDatabase(apiSpec.OrchestratorOpts),
+		FailoverPolicy:   utils.FromPointer(apiSpec.FailoverPolicy),
 	}, nil
 }
 

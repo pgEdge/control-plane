@@ -68,6 +68,12 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 	g.Attribute("orchestrator_opts", OrchestratorOpts, func() {
 		g.Description("Orchestrator-specific configuration options.")
 	})
+	g.Attribute("failover_policy", g.String, func() {
+		g.Description("The failover policy for this database's read replicas. If failover_policy is automatic, a read replica will automatically be promoted when a primary instance fails. If it is disabled, read replicas will not be promoted when a primary instance fails.")
+		g.Enum(failoverPolicies...)
+		g.Example("automatic")
+		g.Example("disabled")
+	})
 
 	g.Required("name", "host_ids")
 })
@@ -440,7 +446,7 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 		g.Description("Orchestrator-specific configuration options.")
 	})
 	g.Attribute("failover_policy", g.String, func() {
-		g.Description("The failover policy for this database. If failover_policy is automatic, automatic failover should be configured on all instances. If it is disabled, nofailover tag should be applied on all instances")
+		g.Description("The failover policy for this database's read replicas. If failover_policy is automatic, a read replica will automatically be promoted when a primary instance fails. If it is disabled, read replicas will not be promoted when a primary instance fails.")
 		g.Enum(failoverPolicies...)
 		g.Example("automatic")
 		g.Example("disabled")

@@ -337,6 +337,11 @@ type DatabaseNodeSpec struct {
 	RestoreConfig *RestoreConfigSpec
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOpts
+	// The failover policy for this database's read replicas. If failover_policy is
+	// automatic, a read replica will automatically be promoted when a primary
+	// instance fails. If it is disabled, read replicas will not be promoted when a
+	// primary instance fails.
+	FailoverPolicy *string
 }
 
 type DatabaseSpec struct {
@@ -372,9 +377,10 @@ type DatabaseSpec struct {
 	PostgresqlConf map[string]any
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOpts
-	// The failover policy for this database. If failover_policy is automatic,
-	// automatic failover should be configured on all instances. If it is disabled,
-	// nofailover tag should be applied on all instances
+	// The failover policy for this database's read replicas. If failover_policy is
+	// automatic, a read replica will automatically be promoted when a primary
+	// instance fails. If it is disabled, read replicas will not be promoted when a
+	// primary instance fails.
 	FailoverPolicy *string
 }
 
@@ -1282,6 +1288,7 @@ func transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec(v *control
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]Identifier, len(v.HostIds))
@@ -1632,6 +1639,7 @@ func transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView(v *Databas
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]controlplaneviews.IdentifierView, len(v.HostIds))

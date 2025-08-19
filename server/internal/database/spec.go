@@ -258,6 +258,7 @@ type Spec struct {
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
+	FailoverPolicy   string            `json:"failover_policy"`
 }
 
 func (s *Spec) Node(name string) (*Node, error) {
@@ -339,6 +340,7 @@ func (s *Spec) Clone() *Spec {
 		BackupConfig:     s.BackupConfig.Clone(),
 		RestoreConfig:    s.RestoreConfig.Clone(),
 		OrchestratorOpts: s.OrchestratorOpts.Clone(),
+		FailoverPolicy:   s.FailoverPolicy,
 	}
 }
 
@@ -517,6 +519,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				EnableBackups:    backupConfig != nil && hostIdx == len(node.HostIDs)-1,
 				ClusterSize:      clusterSize,
 				OrchestratorOpts: orchestratorOpts.Clone(),
+				FailoverPolicy:   s.FailoverPolicy,
 			}
 		}
 

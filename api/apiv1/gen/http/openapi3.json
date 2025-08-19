@@ -5035,6 +5035,7 @@
                   ]
                 },
                 "cpus": "500m",
+                "failover_policy": "disabled",
                 "host_ids": [
                   "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
                 ],
@@ -5457,6 +5458,7 @@
                     ]
                   },
                   "cpus": "500m",
+                  "failover_policy": "disabled",
                   "host_ids": [
                     "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
                   ],
@@ -5866,6 +5868,7 @@
                     ]
                   },
                   "cpus": "500m",
+                  "failover_policy": "disabled",
                   "host_ids": [
                     "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
                   ],
@@ -6275,6 +6278,7 @@
                     ]
                   },
                   "cpus": "500m",
+                  "failover_policy": "disabled",
                   "host_ids": [
                     "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
                   ],
@@ -6480,6 +6484,15 @@
             "example": "500m",
             "pattern": "^[0-9]+(\\.[0-9]{1,3}|m)?$"
           },
+          "failover_policy": {
+            "type": "string",
+            "description": "The failover policy for this database's read replicas. If failover_policy is automatic, a read replica will automatically be promoted when a primary instance fails. If it is disabled, read replicas will not be promoted when a primary instance fails.",
+            "example": "disabled",
+            "enum": [
+              "automatic",
+              "disabled"
+            ]
+          },
           "host_ids": {
             "type": "array",
             "items": {
@@ -6587,6 +6600,7 @@
             ]
           },
           "cpus": "500m",
+          "failover_policy": "disabled",
           "host_ids": [
             "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
             "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
@@ -6759,7 +6773,7 @@
           },
           "failover_policy": {
             "type": "string",
-            "description": "The failover policy for this database. If failover_policy is automatic, automatic failover should be configured on all instances. If it is disabled, nofailover tag should be applied on all instances",
+            "description": "The failover policy for this database's read replicas. If failover_policy is automatic, a read replica will automatically be promoted when a primary instance fails. If it is disabled, read replicas will not be promoted when a primary instance fails.",
             "example": "disabled",
             "enum": [
               "automatic",
@@ -6825,6 +6839,7 @@
                   ]
                 },
                 "cpus": "500m",
+                "failover_policy": "disabled",
                 "host_ids": [
                   "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
                 ],
@@ -7103,6 +7118,7 @@
                 ]
               },
               "cpus": "500m",
+              "failover_policy": "disabled",
               "host_ids": [
                 "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
               ],
@@ -7244,6 +7260,7 @@
                 ]
               },
               "cpus": "500m",
+              "failover_policy": "disabled",
               "host_ids": [
                 "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
               ],
@@ -7385,6 +7402,7 @@
                 ]
               },
               "cpus": "500m",
+              "failover_policy": "disabled",
               "host_ids": [
                 "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
               ],
