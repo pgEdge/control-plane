@@ -1,5 +1,16 @@
 # Changelog
-## v0.2.0 - 2025-07-22
+## v0.3.0 - 2025-08-19
+### Added
+- Added ability to override 'database modifiable state' check via `force` parameters on several endpoints.
+- Added a `client` package that wraps the generated client code in a friendlier interface.
+### Changed
+- Merged separate Go modules into single top-level `github.com/pgEdge/control-plane` module.
+### Fixed
+- Fixed high CPU usage from Etcd after recovering from some network partition scenarios.
+- Fixed error in restore database workflow when the request is submitted to a host that is not running the target instance.
+- Fixed client-side validation errors from missing enum values in our generated client code.
+- Fixed timing issue where a new database operation could not be started immediately after the task was marked as completed.
+- Fixed a bug in the restore database workflow where, sometimes, the restore would start before Postgres had finished shutting down.## v0.2.0 - 2025-07-22
 ### Added
 - Tasks and task logs for every database operation.
 - `parent_id`, `node_name`, `host_id`, and `instance_id` fields to task API entities.
@@ -30,7 +41,6 @@
 ### Fixed
 - Delay when resuming workflows after a restart.
 - Database operation errors when instance IPs change after restarting.
-- Method to determine default IPv4 address to always return IPv4.
-## v0.1.0 - 2025-05-28
+- Method to determine default IPv4 address to always return IPv4.## v0.1.0 - 2025-05-28
 ### Added
 - Release process to publish Docker images for the Control Plane server.
