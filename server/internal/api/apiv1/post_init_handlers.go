@@ -578,17 +578,38 @@ func (s *PostInitHandlers) StopInstance(ctx context.Context, req *api.StopInstan
 		return nil, makeInvalidInputErr(errors.New("request cannot be nil"))
 	}
 
-	input := &workflows.StopInstanceInput{
-		DatabaseID: string(req.DatabaseID),
-		InstanceID: string(req.InstanceID),
-	}
+	databaseID := string(req.DatabaseID)
+	instanceID := string(req.InstanceID)
 
-	db, err := s.dbSvc.GetDatabase(ctx, input.DatabaseID)
+	db, err := s.dbSvc.GetDatabase(ctx, databaseID)
 	if err != nil {
 		return nil, apiErr(err)
 	}
 	if !req.Force && !database.DatabaseStateModifiable(db.State) {
 		return nil, ErrDatabaseNotModifiable
+	}
+
+	storedInstance, err := s.dbSvc.GetInstance(ctx, databaseID, instanceID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	if storedInstance.State != database.InstanceStateAvailable &&
+		storedInstance.State != database.InstanceStateDegraded {
+		return nil, apiErr(fmt.Errorf("instance %s is not stoppable, it is in %s state",
+			req.InstanceID, storedInstance.State))
+	}
+
+	storedHost, err := s.hostSvc.GetHost(ctx, storedInstance.HostID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	input := &workflows.StopInstanceInput{
+		DatabaseID: databaseID,
+		InstanceID: instanceID,
+		HostID:     storedHost.ID,
+		Cohort:     storedHost.Cohort,
 	}
 
 	t, err := s.workflowSvc.StopInstance(ctx, input)
@@ -610,17 +631,37 @@ func (s *PostInitHandlers) StartInstance(ctx context.Context, req *api.StartInst
 		return nil, makeInvalidInputErr(errors.New("request cannot be nil"))
 	}
 
-	input := &workflows.StartInstanceInput{
-		DatabaseID: string(req.DatabaseID),
-		InstanceID: string(req.InstanceID),
-	}
+	databaseID := string(req.DatabaseID)
+	instanceID := string(req.InstanceID)
 
-	db, err := s.dbSvc.GetDatabase(ctx, input.DatabaseID)
+	db, err := s.dbSvc.GetDatabase(ctx, databaseID)
 	if err != nil {
 		return nil, apiErr(err)
 	}
 	if !req.Force && !database.DatabaseStateModifiable(db.State) {
 		return nil, ErrDatabaseNotModifiable
+	}
+
+	storedInstance, err := s.dbSvc.GetInstance(ctx, databaseID, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	if storedInstance.State != database.InstanceStateUnknown {
+		return nil, apiErr(fmt.Errorf("instance %s is not startable, it is in %s state",
+			req.InstanceID, storedInstance.State))
+	}
+
+	storedHost, err := s.hostSvc.GetHost(ctx, storedInstance.HostID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	input := &workflows.StartInstanceInput{
+		DatabaseID: databaseID,
+		InstanceID: instanceID,
+		HostID:     storedHost.ID,
+		Cohort:     storedHost.Cohort,
 	}
 
 	t, err := s.workflowSvc.StartInstance(ctx, input)

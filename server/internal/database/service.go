@@ -293,6 +293,25 @@ func (s *Service) GetInstances(ctx context.Context, databaseID string) ([]*Insta
 	return instances, nil
 }
 
+func (s *Service) GetInstance(ctx context.Context, databaseID, instanceID string) (*Instance, error) {
+	storedInstance, err := s.store.Instance.
+		GetByKey(databaseID, instanceID).
+		Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stored instance: %w", err)
+	}
+	storedStatus, err := s.store.InstanceStatus.
+		GetByKey(databaseID, instanceID).
+		Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stored instance status: %w", err)
+	}
+
+	instance := storedToInstance(storedInstance, storedStatus)
+
+	return instance, nil
+}
+
 func (s *Service) GetAllInstances(ctx context.Context) ([]*Instance, error) {
 	storedInstances, err := s.store.Instance.
 		GetAll().

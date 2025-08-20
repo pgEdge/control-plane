@@ -3,8 +3,8 @@ package swarm
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
-	"github.com/samber/do"
 	"io"
 	"maps"
 	"net/netip"
@@ -507,38 +507,33 @@ func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, specs []*datab
 
 func (o *Orchestrator) StopInstance(
 	ctx context.Context,
-	rc *resource.Context,
 	instanceID string,
 ) error {
-	return o.scaleInstance(ctx, rc, instanceID, 0)
+	return o.scaleInstance(ctx, instanceID, 0)
 }
 
 func (o *Orchestrator) StartInstance(
 	ctx context.Context,
-	rc *resource.Context,
 	instanceID string,
 ) error {
-	return o.scaleInstance(ctx, rc, instanceID, 1)
+	return o.scaleInstance(ctx, instanceID, 1)
 }
 
 func (o *Orchestrator) scaleInstance(
 	ctx context.Context,
-	rc *resource.Context,
 	instanceID string,
 	scale uint64,
 ) error {
-	dockerClient, err := do.Invoke[*docker.Docker](rc.Injector)
-	if err != nil {
-		return err
+	resp, err := o.docker.ServiceInspectByLabels(ctx, map[string]string{
+		"pgedge.component":   "postgres",
+		"pgedge.instance.id": instanceID,
+	})
+	if err != nil && !errors.Is(err, docker.ErrNotFound) {
+		return fmt.Errorf("failed to inspect postgres service: %w", err)
 	}
 
-	svcResource, err := resource.FromContext[*PostgresService](rc, PostgresServiceResourceIdentifier(instanceID))
-	if err != nil {
-		return fmt.Errorf("failed to get postgres service resource from state: %w", err)
-	}
-
-	if err := dockerClient.ServiceScale(ctx, docker.ServiceScaleOptions{
-		ServiceID:   svcResource.ServiceID,
+	if err := o.docker.ServiceScale(ctx, docker.ServiceScaleOptions{
+		ServiceID:   resp.ID,
 		Scale:       scale,
 		Wait:        true,
 		WaitTimeout: time.Minute,

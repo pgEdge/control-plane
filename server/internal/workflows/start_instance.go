@@ -1,9 +1,9 @@
 package workflows
 
 import (
-	"fmt"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
+	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
@@ -11,6 +11,8 @@ import (
 type StartInstanceInput struct {
 	DatabaseID string
 	InstanceID string
+	HostID     string
+	Cohort     *host.Cohort
 	TaskID     uuid.UUID
 }
 
@@ -48,24 +50,14 @@ func (w *Workflows) StartInstance(ctx workflow.Context, input *StartInstanceInpu
 		return nil, handleError(err)
 	}
 
-	refreshCurrentInput := &RefreshCurrentStateInput{
-		DatabaseID: input.DatabaseID,
-		TaskID:     input.TaskID,
-	}
-	refreshCurrentOutput, err := w.
-		ExecuteRefreshCurrentState(ctx, refreshCurrentInput).
-		Get(ctx)
-	if err != nil {
-		return nil, handleError(fmt.Errorf("failed to get current state: %w", err))
-	}
-
 	req := activities.StartInstanceInput{
 		DatabaseID: input.DatabaseID,
 		InstanceID: input.InstanceID,
+		HostID:     input.HostID,
+		Cohort:     input.Cohort,
 		TaskID:     input.TaskID,
-		State:      refreshCurrentOutput.State,
 	}
-	_, err = w.Activities.ExecuteStartInstance(ctx, &req).Get(ctx)
+	_, err := w.Activities.ExecuteStartInstance(ctx, &req).Get(ctx)
 	if err != nil {
 		return nil, handleError(err)
 	}

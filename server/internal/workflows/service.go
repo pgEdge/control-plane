@@ -285,6 +285,7 @@ func (s *Service) StopInstance(ctx context.Context, input *StopInstanceInput) (*
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
 		DatabaseID: input.DatabaseID,
 		InstanceID: input.InstanceID,
+		HostID:     input.HostID,
 		Type:       task.TypeStopInstance,
 	})
 	if err != nil {
@@ -303,6 +304,7 @@ func (s *Service) StartInstance(ctx context.Context, input *StartInstanceInput) 
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
 		DatabaseID: input.DatabaseID,
 		InstanceID: input.InstanceID,
+		HostID:     input.HostID,
 		Type:       task.TypeStartInstance,
 	})
 	if err != nil {
