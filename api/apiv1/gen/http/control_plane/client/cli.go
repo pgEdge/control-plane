@@ -650,15 +650,8 @@ func BuildRestartInstancePayload(controlPlaneRestartInstanceBody string, control
 
 // BuildStopInstancePayload builds the payload for the control-plane
 // stop-instance endpoint from CLI flags.
-func BuildStopInstancePayload(controlPlaneStopInstanceBody string, controlPlaneStopInstanceDatabaseID string, controlPlaneStopInstanceInstanceID string) (*controlplane.StopInstancePayload, error) {
+func BuildStopInstancePayload(controlPlaneStopInstanceDatabaseID string, controlPlaneStopInstanceInstanceID string, controlPlaneStopInstanceForce string) (*controlplane.StopInstancePayload, error) {
 	var err error
-	var body StopInstanceRequestBody
-	{
-		err = json.Unmarshal([]byte(controlPlaneStopInstanceBody), &body)
-		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"force\": true\n   }'")
-		}
-	}
 	var databaseID string
 	{
 		databaseID = controlPlaneStopInstanceDatabaseID
@@ -685,32 +678,27 @@ func BuildStopInstancePayload(controlPlaneStopInstanceBody string, controlPlaneS
 			return nil, err
 		}
 	}
-	v := &controlplane.StopInstancePayload{
-		Force: body.Force,
-	}
+	var force bool
 	{
-		var zero bool
-		if v.Force == zero {
-			v.Force = false
+		if controlPlaneStopInstanceForce != "" {
+			force, err = strconv.ParseBool(controlPlaneStopInstanceForce)
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for force, must be BOOL")
+			}
 		}
 	}
+	v := &controlplane.StopInstancePayload{}
 	v.DatabaseID = controlplane.Identifier(databaseID)
 	v.InstanceID = controlplane.Identifier(instanceID)
+	v.Force = force
 
 	return v, nil
 }
 
 // BuildStartInstancePayload builds the payload for the control-plane
 // start-instance endpoint from CLI flags.
-func BuildStartInstancePayload(controlPlaneStartInstanceBody string, controlPlaneStartInstanceDatabaseID string, controlPlaneStartInstanceInstanceID string) (*controlplane.StartInstancePayload, error) {
+func BuildStartInstancePayload(controlPlaneStartInstanceDatabaseID string, controlPlaneStartInstanceInstanceID string, controlPlaneStartInstanceForce string) (*controlplane.StartInstancePayload, error) {
 	var err error
-	var body StartInstanceRequestBody
-	{
-		err = json.Unmarshal([]byte(controlPlaneStartInstanceBody), &body)
-		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"force\": true\n   }'")
-		}
-	}
 	var databaseID string
 	{
 		databaseID = controlPlaneStartInstanceDatabaseID
@@ -737,17 +725,19 @@ func BuildStartInstancePayload(controlPlaneStartInstanceBody string, controlPlan
 			return nil, err
 		}
 	}
-	v := &controlplane.StartInstancePayload{
-		Force: body.Force,
-	}
+	var force bool
 	{
-		var zero bool
-		if v.Force == zero {
-			v.Force = false
+		if controlPlaneStartInstanceForce != "" {
+			force, err = strconv.ParseBool(controlPlaneStartInstanceForce)
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for force, must be BOOL")
+			}
 		}
 	}
+	v := &controlplane.StartInstancePayload{}
 	v.DatabaseID = controlplane.Identifier(databaseID)
 	v.InstanceID = controlplane.Identifier(instanceID)
+	v.Force = force
 
 	return v, nil
 }

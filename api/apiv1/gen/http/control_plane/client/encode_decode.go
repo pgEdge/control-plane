@@ -2625,10 +2625,9 @@ func EncodeStopInstanceRequest(encoder func(*http.Request) goahttp.Encoder) func
 		if !ok {
 			return goahttp.ErrInvalidType("control-plane", "stop-instance", "*controlplane.StopInstancePayload", v)
 		}
-		body := NewStopInstanceRequestBody(p)
-		if err := encoder(req).Encode(&body); err != nil {
-			return goahttp.ErrEncodingError("control-plane", "stop-instance", err)
-		}
+		values := req.URL.Query()
+		values.Add("force", fmt.Sprintf("%v", p.Force))
+		req.URL.RawQuery = values.Encode()
 		return nil
 	}
 }
@@ -2770,10 +2769,9 @@ func EncodeStartInstanceRequest(encoder func(*http.Request) goahttp.Encoder) fun
 		if !ok {
 			return goahttp.ErrInvalidType("control-plane", "start-instance", "*controlplane.StartInstancePayload", v)
 		}
-		body := NewStartInstanceRequestBody(p)
-		if err := encoder(req).Encode(&body); err != nil {
-			return goahttp.ErrEncodingError("control-plane", "start-instance", err)
-		}
+		values := req.URL.Query()
+		values.Add("force", fmt.Sprintf("%v", p.Force))
+		req.URL.RawQuery = values.Encode()
 		return nil
 	}
 }

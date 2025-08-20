@@ -596,6 +596,8 @@ var _ = g.Service("control-plane", func() {
 
 		g.HTTP(func() {
 			g.POST("/v1/databases/{database_id}/instances/{instance_id}/stop-instance")
+			g.Param("force")
+
 			g.Meta("openapi:tag:Database")
 		})
 	})
@@ -647,6 +649,8 @@ var _ = g.Service("control-plane", func() {
 
 		g.HTTP(func() {
 			g.POST("/v1/databases/{database_id}/instances/{instance_id}/start-instance")
+			g.Param("force")
+
 			g.Meta("openapi:tag:Database")
 		})
 	})

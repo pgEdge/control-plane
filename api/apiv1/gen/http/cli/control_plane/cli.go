@@ -116,14 +116,14 @@ func ParseEndpoint(
 		controlPlaneRestartInstanceInstanceIDFlag = controlPlaneRestartInstanceFlags.String("instance-id", "REQUIRED", "The ID of the instance to restart.")
 
 		controlPlaneStopInstanceFlags          = flag.NewFlagSet("stop-instance", flag.ExitOnError)
-		controlPlaneStopInstanceBodyFlag       = controlPlaneStopInstanceFlags.String("body", "REQUIRED", "")
 		controlPlaneStopInstanceDatabaseIDFlag = controlPlaneStopInstanceFlags.String("database-id", "REQUIRED", "The ID of the database that owns the instance.")
 		controlPlaneStopInstanceInstanceIDFlag = controlPlaneStopInstanceFlags.String("instance-id", "REQUIRED", "The ID of the instance to stop.")
+		controlPlaneStopInstanceForceFlag      = controlPlaneStopInstanceFlags.String("force", "", "")
 
 		controlPlaneStartInstanceFlags          = flag.NewFlagSet("start-instance", flag.ExitOnError)
-		controlPlaneStartInstanceBodyFlag       = controlPlaneStartInstanceFlags.String("body", "REQUIRED", "")
 		controlPlaneStartInstanceDatabaseIDFlag = controlPlaneStartInstanceFlags.String("database-id", "REQUIRED", "The ID of the database that owns the instance.")
 		controlPlaneStartInstanceInstanceIDFlag = controlPlaneStartInstanceFlags.String("instance-id", "REQUIRED", "The ID of the instance to start.")
+		controlPlaneStartInstanceForceFlag      = controlPlaneStartInstanceFlags.String("force", "", "")
 	)
 	controlPlaneFlags.Usage = controlPlaneUsage
 	controlPlaneInitClusterFlags.Usage = controlPlaneInitClusterUsage
@@ -330,10 +330,10 @@ func ParseEndpoint(
 				data, err = controlplanec.BuildRestartInstancePayload(*controlPlaneRestartInstanceBodyFlag, *controlPlaneRestartInstanceDatabaseIDFlag, *controlPlaneRestartInstanceInstanceIDFlag)
 			case "stop-instance":
 				endpoint = c.StopInstance()
-				data, err = controlplanec.BuildStopInstancePayload(*controlPlaneStopInstanceBodyFlag, *controlPlaneStopInstanceDatabaseIDFlag, *controlPlaneStopInstanceInstanceIDFlag)
+				data, err = controlplanec.BuildStopInstancePayload(*controlPlaneStopInstanceDatabaseIDFlag, *controlPlaneStopInstanceInstanceIDFlag, *controlPlaneStopInstanceForceFlag)
 			case "start-instance":
 				endpoint = c.StartInstance()
-				data, err = controlplanec.BuildStartInstancePayload(*controlPlaneStartInstanceBodyFlag, *controlPlaneStartInstanceDatabaseIDFlag, *controlPlaneStartInstanceInstanceIDFlag)
+				data, err = controlplanec.BuildStartInstancePayload(*controlPlaneStartInstanceDatabaseIDFlag, *controlPlaneStartInstanceInstanceIDFlag, *controlPlaneStartInstanceForceFlag)
 			}
 		}
 	}
@@ -750,31 +750,27 @@ Example:
 }
 
 func controlPlaneStopInstanceUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane stop-instance -body JSON -database-id STRING -instance-id STRING
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane stop-instance -database-id STRING -instance-id STRING -force BOOL
 
 Stops a specific instance within a database. Supports immediate stops.
-    -body JSON: 
     -database-id STRING: The ID of the database that owns the instance.
     -instance-id STRING: The ID of the instance to stop.
+    -force BOOL: 
 
 Example:
-    %[1]s control-plane stop-instance --body '{
-      "force": true
-   }' --database-id "68f50878-44d2-4524-a823-e31bd478706d" --instance-id "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi"
+    %[1]s control-plane stop-instance --database-id "68f50878-44d2-4524-a823-e31bd478706d" --instance-id "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi" --force true
 `, os.Args[0])
 }
 
 func controlPlaneStartInstanceUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane start-instance -body JSON -database-id STRING -instance-id STRING
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane start-instance -database-id STRING -instance-id STRING -force BOOL
 
 Starts a specific instance within a database. Supports immediate starts
-    -body JSON: 
     -database-id STRING: The ID of the database that owns the instance.
     -instance-id STRING: The ID of the instance to start.
+    -force BOOL: 
 
 Example:
-    %[1]s control-plane start-instance --body '{
-      "force": true
-   }' --database-id "68f50878-44d2-4524-a823-e31bd478706d" --instance-id "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi"
+    %[1]s control-plane start-instance --database-id "68f50878-44d2-4524-a823-e31bd478706d" --instance-id "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi" --force true
 `, os.Args[0])
 }

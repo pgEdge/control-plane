@@ -2117,24 +2117,10 @@ func EncodeStopInstanceResponse(encoder func(context.Context, http.ResponseWrite
 func DecodeStopInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			body StopInstanceRequestBody
-			err  error
-		)
-		err = decoder(r).Decode(&body)
-		if err != nil {
-			if err == io.EOF {
-				return nil, goa.MissingPayloadError()
-			}
-			var gerr *goa.ServiceError
-			if errors.As(err, &gerr) {
-				return nil, gerr
-			}
-			return nil, goa.DecodePayloadError(err.Error())
-		}
-
-		var (
 			databaseID string
 			instanceID string
+			force      bool
+			err        error
 
 			params = mux.Vars(r)
 		)
@@ -2152,10 +2138,20 @@ func DecodeStopInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) go
 		if utf8.RuneCountInString(instanceID) > 63 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 63, false))
 		}
+		{
+			forceRaw := r.URL.Query().Get("force")
+			if forceRaw != "" {
+				v, err2 := strconv.ParseBool(forceRaw)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("force", forceRaw, "boolean"))
+				}
+				force = v
+			}
+		}
 		if err != nil {
 			return nil, err
 		}
-		payload := NewStopInstancePayload(&body, databaseID, instanceID)
+		payload := NewStopInstancePayload(databaseID, instanceID, force)
 
 		return payload, nil
 	}
@@ -2246,24 +2242,10 @@ func EncodeStartInstanceResponse(encoder func(context.Context, http.ResponseWrit
 func DecodeStartInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
 	return func(r *http.Request) (any, error) {
 		var (
-			body StartInstanceRequestBody
-			err  error
-		)
-		err = decoder(r).Decode(&body)
-		if err != nil {
-			if err == io.EOF {
-				return nil, goa.MissingPayloadError()
-			}
-			var gerr *goa.ServiceError
-			if errors.As(err, &gerr) {
-				return nil, gerr
-			}
-			return nil, goa.DecodePayloadError(err.Error())
-		}
-
-		var (
 			databaseID string
 			instanceID string
+			force      bool
+			err        error
 
 			params = mux.Vars(r)
 		)
@@ -2281,10 +2263,20 @@ func DecodeStartInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request) g
 		if utf8.RuneCountInString(instanceID) > 63 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 63, false))
 		}
+		{
+			forceRaw := r.URL.Query().Get("force")
+			if forceRaw != "" {
+				v, err2 := strconv.ParseBool(forceRaw)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("force", forceRaw, "boolean"))
+				}
+				force = v
+			}
+		}
 		if err != nil {
 			return nil, err
 		}
-		payload := NewStartInstancePayload(&body, databaseID, instanceID)
+		payload := NewStartInstancePayload(databaseID, instanceID, force)
 
 		return payload, nil
 	}

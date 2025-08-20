@@ -1860,6 +1860,19 @@
         "operationId": "start-instance",
         "parameters": [
           {
+            "name": "force",
+            "in": "query",
+            "description": "Force starting an instance even if database in an unmodifiable state",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "boolean",
+              "description": "Force starting an instance even if database in an unmodifiable state",
+              "default": false,
+              "example": true
+            },
+            "example": true
+          },
+          {
             "name": "database_id",
             "in": "path",
             "description": "The ID of the database that owns the instance.",
@@ -1888,19 +1901,6 @@
             "example": "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi"
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StopInstanceRequestBody"
-              },
-              "example": {
-                "force": true
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "OK response.",
@@ -1994,6 +1994,19 @@
         "operationId": "stop-instance",
         "parameters": [
           {
+            "name": "force",
+            "in": "query",
+            "description": "Force stopping an instance even if database in an unmodifiable state",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "boolean",
+              "description": "Force stopping an instance even if database in an unmodifiable state",
+              "default": false,
+              "example": true
+            },
+            "example": true
+          },
+          {
             "name": "database_id",
             "in": "path",
             "description": "The ID of the database that owns the instance.",
@@ -2022,19 +2035,6 @@
             "example": "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi"
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StopInstanceRequestBody"
-              },
-              "example": {
-                "force": true
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "OK response.",
@@ -9686,20 +9686,6 @@
         "required": [
           "type"
         ]
-      },
-      "StopInstanceRequestBody": {
-        "type": "object",
-        "properties": {
-          "force": {
-            "type": "boolean",
-            "description": "Force stopping an instance even if database in an unmodifiable state",
-            "default": false,
-            "example": true
-          }
-        },
-        "example": {
-          "force": true
-        }
       },
       "SwarmOpts": {
         "type": "object",
