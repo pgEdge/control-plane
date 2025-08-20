@@ -47,6 +47,7 @@ type Node struct {
 	BackupConfig     *BackupConfig     `json:"backup_config"`
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
+	FailoverPolicy   string            `json:"failover_policy"`
 }
 
 func (n *Node) Clone() *Node {
@@ -64,6 +65,7 @@ func (n *Node) Clone() *Node {
 		BackupConfig:     n.BackupConfig.Clone(),
 		RestoreConfig:    n.RestoreConfig.Clone(),
 		OrchestratorOpts: n.OrchestratorOpts.Clone(),
+		FailoverPolicy:   n.FailoverPolicy,
 	}
 }
 
@@ -494,6 +496,10 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		if node.OrchestratorOpts != nil {
 			orchestratorOpts = node.OrchestratorOpts
 		}
+		failoverPolicy := s.FailoverPolicy
+		if node.FailoverPolicy != "" {
+			failoverPolicy = node.FailoverPolicy
+		}
 
 		instances := make([]*InstanceSpec, len(node.HostIDs))
 		for hostIdx, hostID := range node.HostIDs {
@@ -519,7 +525,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				EnableBackups:    backupConfig != nil && hostIdx == len(node.HostIDs)-1,
 				ClusterSize:      clusterSize,
 				OrchestratorOpts: orchestratorOpts.Clone(),
-				FailoverPolicy:   s.FailoverPolicy,
+				FailoverPolicy:   failoverPolicy,
 			}
 		}
 
