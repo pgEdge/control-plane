@@ -486,7 +486,7 @@ func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, specs []*datab
 			Valid:      true,
 		}
 		if instance.Port != nil {
-			if occupiedPorts.Has(*instance.Port) {
+			if *instance.Port != 0 && occupiedPorts.Has(*instance.Port) {
 				result.Valid = false
 				result.Errors = append(
 					result.Errors,
