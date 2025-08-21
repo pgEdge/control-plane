@@ -647,3 +647,97 @@ func BuildRestartInstancePayload(controlPlaneRestartInstanceBody string, control
 
 	return res, nil
 }
+
+// BuildStopInstancePayload builds the payload for the control-plane
+// stop-instance endpoint from CLI flags.
+func BuildStopInstancePayload(controlPlaneStopInstanceDatabaseID string, controlPlaneStopInstanceInstanceID string, controlPlaneStopInstanceForce string) (*controlplane.StopInstancePayload, error) {
+	var err error
+	var databaseID string
+	{
+		databaseID = controlPlaneStopInstanceDatabaseID
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var instanceID string
+	{
+		instanceID = controlPlaneStopInstanceInstanceID
+		if utf8.RuneCountInString(instanceID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 1, true))
+		}
+		if utf8.RuneCountInString(instanceID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 63, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var force bool
+	{
+		if controlPlaneStopInstanceForce != "" {
+			force, err = strconv.ParseBool(controlPlaneStopInstanceForce)
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for force, must be BOOL")
+			}
+		}
+	}
+	v := &controlplane.StopInstancePayload{}
+	v.DatabaseID = controlplane.Identifier(databaseID)
+	v.InstanceID = controlplane.Identifier(instanceID)
+	v.Force = force
+
+	return v, nil
+}
+
+// BuildStartInstancePayload builds the payload for the control-plane
+// start-instance endpoint from CLI flags.
+func BuildStartInstancePayload(controlPlaneStartInstanceDatabaseID string, controlPlaneStartInstanceInstanceID string, controlPlaneStartInstanceForce string) (*controlplane.StartInstancePayload, error) {
+	var err error
+	var databaseID string
+	{
+		databaseID = controlPlaneStartInstanceDatabaseID
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var instanceID string
+	{
+		instanceID = controlPlaneStartInstanceInstanceID
+		if utf8.RuneCountInString(instanceID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 1, true))
+		}
+		if utf8.RuneCountInString(instanceID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("instance_id", instanceID, utf8.RuneCountInString(instanceID), 63, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var force bool
+	{
+		if controlPlaneStartInstanceForce != "" {
+			force, err = strconv.ParseBool(controlPlaneStartInstanceForce)
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for force, must be BOOL")
+			}
+		}
+	}
+	v := &controlplane.StartInstancePayload{}
+	v.DatabaseID = controlplane.Identifier(databaseID)
+	v.InstanceID = controlplane.Identifier(instanceID)
+	v.Force = force
+
+	return v, nil
+}

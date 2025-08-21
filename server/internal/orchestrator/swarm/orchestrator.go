@@ -504,6 +504,45 @@ func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, specs []*datab
 	return results, nil
 }
 
+func (o *Orchestrator) StopInstance(
+	ctx context.Context,
+	instanceID string,
+) error {
+	return o.scaleInstance(ctx, instanceID, 0)
+}
+
+func (o *Orchestrator) StartInstance(
+	ctx context.Context,
+	instanceID string,
+) error {
+	return o.scaleInstance(ctx, instanceID, 1)
+}
+
+func (o *Orchestrator) scaleInstance(
+	ctx context.Context,
+	instanceID string,
+	scale uint64,
+) error {
+	resp, err := o.docker.ServiceInspectByLabels(ctx, map[string]string{
+		"pgedge.component":   "postgres",
+		"pgedge.instance.id": instanceID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to inspect postgres service: %w", err)
+	}
+
+	if err := o.docker.ServiceScale(ctx, docker.ServiceScaleOptions{
+		ServiceID:   resp.ID,
+		Scale:       scale,
+		Wait:        true,
+		WaitTimeout: time.Minute,
+	}); err != nil {
+		return fmt.Errorf("failed to scale up postgres service: %w", err)
+	}
+
+	return nil
+}
+
 func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.InstanceSpec, result *database.ValidationResult) error {
 	orchestratorOpts := spec.OrchestratorOpts
 

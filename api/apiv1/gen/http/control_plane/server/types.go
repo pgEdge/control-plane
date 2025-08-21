@@ -309,6 +309,60 @@ type RestartInstanceResponseBody struct {
 	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
+// StopInstanceResponseBody is the type of the "control-plane" service
+// "stop-instance" endpoint HTTP response body.
+type StopInstanceResponseBody struct {
+	// The parent task ID of the task.
+	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	// The database ID of the task.
+	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// The unique ID of the task.
+	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+	// The time when the task was created.
+	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The status of the task.
+	Status string `form:"status" json:"status" xml:"status"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
+// StartInstanceResponseBody is the type of the "control-plane" service
+// "start-instance" endpoint HTTP response body.
+type StartInstanceResponseBody struct {
+	// The parent task ID of the task.
+	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	// The database ID of the task.
+	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// The unique ID of the task.
+	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+	// The time when the task was created.
+	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The status of the task.
+	Status string `form:"status" json:"status" xml:"status"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
 // InitClusterClusterAlreadyInitializedResponseBody is the type of the
 // "control-plane" service "init-cluster" endpoint HTTP response body for the
 // "cluster_already_initialized" error.
@@ -1034,6 +1088,84 @@ type RestartInstanceNotFoundResponseBody struct {
 // service "restart-instance" endpoint HTTP response body for the
 // "server_error" error.
 type RestartInstanceServerErrorResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StopInstanceClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "stop-instance" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type StopInstanceClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StopInstanceInvalidInputResponseBody is the type of the "control-plane"
+// service "stop-instance" endpoint HTTP response body for the "invalid_input"
+// error.
+type StopInstanceInvalidInputResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StopInstanceNotFoundResponseBody is the type of the "control-plane" service
+// "stop-instance" endpoint HTTP response body for the "not_found" error.
+type StopInstanceNotFoundResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StopInstanceServerErrorResponseBody is the type of the "control-plane"
+// service "stop-instance" endpoint HTTP response body for the "server_error"
+// error.
+type StopInstanceServerErrorResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StartInstanceClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "start-instance" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type StartInstanceClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StartInstanceInvalidInputResponseBody is the type of the "control-plane"
+// service "start-instance" endpoint HTTP response body for the "invalid_input"
+// error.
+type StartInstanceInvalidInputResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StartInstanceNotFoundResponseBody is the type of the "control-plane" service
+// "start-instance" endpoint HTTP response body for the "not_found" error.
+type StartInstanceNotFoundResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// StartInstanceServerErrorResponseBody is the type of the "control-plane"
+// service "start-instance" endpoint HTTP response body for the "server_error"
+// error.
+type StartInstanceServerErrorResponseBody struct {
 	// The name of the error.
 	Name string `form:"name" json:"name" xml:"name"`
 	// The error message.
@@ -2477,6 +2609,44 @@ func NewRestartInstanceResponseBody(res *controlplane.Task) *RestartInstanceResp
 	return body
 }
 
+// NewStopInstanceResponseBody builds the HTTP response body from the result of
+// the "stop-instance" endpoint of the "control-plane" service.
+func NewStopInstanceResponseBody(res *controlplane.Task) *StopInstanceResponseBody {
+	body := &StopInstanceResponseBody{
+		ParentID:    res.ParentID,
+		DatabaseID:  res.DatabaseID,
+		NodeName:    res.NodeName,
+		InstanceID:  res.InstanceID,
+		HostID:      res.HostID,
+		TaskID:      res.TaskID,
+		CreatedAt:   res.CreatedAt,
+		CompletedAt: res.CompletedAt,
+		Type:        res.Type,
+		Status:      res.Status,
+		Error:       res.Error,
+	}
+	return body
+}
+
+// NewStartInstanceResponseBody builds the HTTP response body from the result
+// of the "start-instance" endpoint of the "control-plane" service.
+func NewStartInstanceResponseBody(res *controlplane.Task) *StartInstanceResponseBody {
+	body := &StartInstanceResponseBody{
+		ParentID:    res.ParentID,
+		DatabaseID:  res.DatabaseID,
+		NodeName:    res.NodeName,
+		InstanceID:  res.InstanceID,
+		HostID:      res.HostID,
+		TaskID:      res.TaskID,
+		CreatedAt:   res.CreatedAt,
+		CompletedAt: res.CompletedAt,
+		Type:        res.Type,
+		Status:      res.Status,
+		Error:       res.Error,
+	}
+	return body
+}
+
 // NewInitClusterClusterAlreadyInitializedResponseBody builds the HTTP response
 // body from the result of the "init-cluster" endpoint of the "control-plane"
 // service.
@@ -3258,6 +3428,88 @@ func NewRestartInstanceServerErrorResponseBody(res *controlplane.APIError) *Rest
 	return body
 }
 
+// NewStopInstanceClusterNotInitializedResponseBody builds the HTTP response
+// body from the result of the "stop-instance" endpoint of the "control-plane"
+// service.
+func NewStopInstanceClusterNotInitializedResponseBody(res *controlplane.APIError) *StopInstanceClusterNotInitializedResponseBody {
+	body := &StopInstanceClusterNotInitializedResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStopInstanceInvalidInputResponseBody builds the HTTP response body from
+// the result of the "stop-instance" endpoint of the "control-plane" service.
+func NewStopInstanceInvalidInputResponseBody(res *controlplane.APIError) *StopInstanceInvalidInputResponseBody {
+	body := &StopInstanceInvalidInputResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStopInstanceNotFoundResponseBody builds the HTTP response body from the
+// result of the "stop-instance" endpoint of the "control-plane" service.
+func NewStopInstanceNotFoundResponseBody(res *controlplane.APIError) *StopInstanceNotFoundResponseBody {
+	body := &StopInstanceNotFoundResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStopInstanceServerErrorResponseBody builds the HTTP response body from
+// the result of the "stop-instance" endpoint of the "control-plane" service.
+func NewStopInstanceServerErrorResponseBody(res *controlplane.APIError) *StopInstanceServerErrorResponseBody {
+	body := &StopInstanceServerErrorResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStartInstanceClusterNotInitializedResponseBody builds the HTTP response
+// body from the result of the "start-instance" endpoint of the "control-plane"
+// service.
+func NewStartInstanceClusterNotInitializedResponseBody(res *controlplane.APIError) *StartInstanceClusterNotInitializedResponseBody {
+	body := &StartInstanceClusterNotInitializedResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStartInstanceInvalidInputResponseBody builds the HTTP response body from
+// the result of the "start-instance" endpoint of the "control-plane" service.
+func NewStartInstanceInvalidInputResponseBody(res *controlplane.APIError) *StartInstanceInvalidInputResponseBody {
+	body := &StartInstanceInvalidInputResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStartInstanceNotFoundResponseBody builds the HTTP response body from the
+// result of the "start-instance" endpoint of the "control-plane" service.
+func NewStartInstanceNotFoundResponseBody(res *controlplane.APIError) *StartInstanceNotFoundResponseBody {
+	body := &StartInstanceNotFoundResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewStartInstanceServerErrorResponseBody builds the HTTP response body from
+// the result of the "start-instance" endpoint of the "control-plane" service.
+func NewStartInstanceServerErrorResponseBody(res *controlplane.APIError) *StartInstanceServerErrorResponseBody {
+	body := &StartInstanceServerErrorResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewJoinClusterClusterJoinToken builds a control-plane service join-cluster
 // endpoint payload.
 func NewJoinClusterClusterJoinToken(body *JoinClusterRequestBody) *controlplane.ClusterJoinToken {
@@ -3452,6 +3704,28 @@ func NewRestartInstancePayload(body *RestartInstanceRequestBody, databaseID stri
 	res.InstanceID = controlplane.Identifier(instanceID)
 
 	return res
+}
+
+// NewStopInstancePayload builds a control-plane service stop-instance endpoint
+// payload.
+func NewStopInstancePayload(databaseID string, instanceID string, force bool) *controlplane.StopInstancePayload {
+	v := &controlplane.StopInstancePayload{}
+	v.DatabaseID = controlplane.Identifier(databaseID)
+	v.InstanceID = controlplane.Identifier(instanceID)
+	v.Force = force
+
+	return v
+}
+
+// NewStartInstancePayload builds a control-plane service start-instance
+// endpoint payload.
+func NewStartInstancePayload(databaseID string, instanceID string, force bool) *controlplane.StartInstancePayload {
+	v := &controlplane.StartInstancePayload{}
+	v.DatabaseID = controlplane.Identifier(databaseID)
+	v.InstanceID = controlplane.Identifier(instanceID)
+	v.Force = force
+
+	return v
 }
 
 // ValidateJoinClusterRequestBody runs the validations defined on

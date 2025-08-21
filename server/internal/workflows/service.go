@@ -280,3 +280,41 @@ func (s *Service) RestartInstance(ctx context.Context, input *RestartInstanceInp
 
 	return t, nil
 }
+
+func (s *Service) StopInstance(ctx context.Context, input *StopInstanceInput) (*task.Task, error) {
+	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		DatabaseID: input.DatabaseID,
+		InstanceID: input.InstanceID,
+		HostID:     input.HostID,
+		Type:       task.TypeStopInstance,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new task: %w", err)
+	}
+	input.TaskID = t.TaskID
+	err = s.createWorkflow(ctx, t, s.workflows.StopInstance, input)
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
+func (s *Service) StartInstance(ctx context.Context, input *StartInstanceInput) (*task.Task, error) {
+	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		DatabaseID: input.DatabaseID,
+		InstanceID: input.InstanceID,
+		HostID:     input.HostID,
+		Type:       task.TypeStartInstance,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new task: %w", err)
+	}
+	input.TaskID = t.TaskID
+	err = s.createWorkflow(ctx, t, s.workflows.StartInstance, input)
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}

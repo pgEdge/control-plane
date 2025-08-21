@@ -309,6 +309,60 @@ type RestartInstanceResponseBody struct {
 	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
+// StopInstanceResponseBody is the type of the "control-plane" service
+// "stop-instance" endpoint HTTP response body.
+type StopInstanceResponseBody struct {
+	// The parent task ID of the task.
+	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	// The database ID of the task.
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// The unique ID of the task.
+	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
+	// The time when the task was created.
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// The status of the task.
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
+// StartInstanceResponseBody is the type of the "control-plane" service
+// "start-instance" endpoint HTTP response body.
+type StartInstanceResponseBody struct {
+	// The parent task ID of the task.
+	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	// The database ID of the task.
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// The unique ID of the task.
+	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
+	// The time when the task was created.
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// The status of the task.
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
 // InitClusterClusterAlreadyInitializedResponseBody is the type of the
 // "control-plane" service "init-cluster" endpoint HTTP response body for the
 // "cluster_already_initialized" error.
@@ -1034,6 +1088,84 @@ type RestartInstanceNotFoundResponseBody struct {
 // service "restart-instance" endpoint HTTP response body for the
 // "server_error" error.
 type RestartInstanceServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// StopInstanceClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "stop-instance" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type StopInstanceClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// StopInstanceInvalidInputResponseBody is the type of the "control-plane"
+// service "stop-instance" endpoint HTTP response body for the "invalid_input"
+// error.
+type StopInstanceInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// StopInstanceNotFoundResponseBody is the type of the "control-plane" service
+// "stop-instance" endpoint HTTP response body for the "not_found" error.
+type StopInstanceNotFoundResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// StopInstanceServerErrorResponseBody is the type of the "control-plane"
+// service "stop-instance" endpoint HTTP response body for the "server_error"
+// error.
+type StopInstanceServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// StartInstanceClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "start-instance" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type StartInstanceClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// StartInstanceInvalidInputResponseBody is the type of the "control-plane"
+// service "start-instance" endpoint HTTP response body for the "invalid_input"
+// error.
+type StartInstanceInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// StartInstanceNotFoundResponseBody is the type of the "control-plane" service
+// "start-instance" endpoint HTTP response body for the "not_found" error.
+type StartInstanceNotFoundResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// StartInstanceServerErrorResponseBody is the type of the "control-plane"
+// service "start-instance" endpoint HTTP response body for the "server_error"
+// error.
+type StartInstanceServerErrorResponseBody struct {
 	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// The error message.
@@ -3345,6 +3477,134 @@ func NewRestartInstanceServerError(body *RestartInstanceServerErrorResponseBody)
 	return v
 }
 
+// NewStopInstanceTaskOK builds a "control-plane" service "stop-instance"
+// endpoint result from a HTTP "OK" response.
+func NewStopInstanceTaskOK(body *StopInstanceResponseBody) *controlplane.Task {
+	v := &controlplane.Task{
+		ParentID:    body.ParentID,
+		DatabaseID:  *body.DatabaseID,
+		NodeName:    body.NodeName,
+		InstanceID:  body.InstanceID,
+		HostID:      body.HostID,
+		TaskID:      *body.TaskID,
+		CreatedAt:   *body.CreatedAt,
+		CompletedAt: body.CompletedAt,
+		Type:        *body.Type,
+		Status:      *body.Status,
+		Error:       body.Error,
+	}
+
+	return v
+}
+
+// NewStopInstanceClusterNotInitialized builds a control-plane service
+// stop-instance endpoint cluster_not_initialized error.
+func NewStopInstanceClusterNotInitialized(body *StopInstanceClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewStopInstanceInvalidInput builds a control-plane service stop-instance
+// endpoint invalid_input error.
+func NewStopInstanceInvalidInput(body *StopInstanceInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewStopInstanceNotFound builds a control-plane service stop-instance
+// endpoint not_found error.
+func NewStopInstanceNotFound(body *StopInstanceNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewStopInstanceServerError builds a control-plane service stop-instance
+// endpoint server_error error.
+func NewStopInstanceServerError(body *StopInstanceServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewStartInstanceTaskOK builds a "control-plane" service "start-instance"
+// endpoint result from a HTTP "OK" response.
+func NewStartInstanceTaskOK(body *StartInstanceResponseBody) *controlplane.Task {
+	v := &controlplane.Task{
+		ParentID:    body.ParentID,
+		DatabaseID:  *body.DatabaseID,
+		NodeName:    body.NodeName,
+		InstanceID:  body.InstanceID,
+		HostID:      body.HostID,
+		TaskID:      *body.TaskID,
+		CreatedAt:   *body.CreatedAt,
+		CompletedAt: body.CompletedAt,
+		Type:        *body.Type,
+		Status:      *body.Status,
+		Error:       body.Error,
+	}
+
+	return v
+}
+
+// NewStartInstanceClusterNotInitialized builds a control-plane service
+// start-instance endpoint cluster_not_initialized error.
+func NewStartInstanceClusterNotInitialized(body *StartInstanceClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewStartInstanceInvalidInput builds a control-plane service start-instance
+// endpoint invalid_input error.
+func NewStartInstanceInvalidInput(body *StartInstanceInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewStartInstanceNotFound builds a control-plane service start-instance
+// endpoint not_found error.
+func NewStartInstanceNotFound(body *StartInstanceNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewStartInstanceServerError builds a control-plane service start-instance
+// endpoint server_error error.
+func NewStartInstanceServerError(body *StartInstanceServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
 // ValidateInitClusterResponseBody runs the validations defined on
 // Init-ClusterResponseBody
 func ValidateInitClusterResponseBody(body *InitClusterResponseBody) (err error) {
@@ -3712,6 +3972,82 @@ func ValidateGetVersionResponseBody(body *GetVersionResponseBody) (err error) {
 // ValidateRestartInstanceResponseBody runs the validations defined on
 // Restart-InstanceResponseBody
 func ValidateRestartInstanceResponseBody(body *RestartInstanceResponseBody) (err error) {
+	if body.DatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	}
+	if body.TaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
+	}
+	if body.CreatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
+	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.ParentID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
+	}
+	if body.TaskID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
+	}
+	if body.CreatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
+	}
+	if body.CompletedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
+	}
+	if body.Status != nil {
+		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		}
+	}
+	return
+}
+
+// ValidateStopInstanceResponseBody runs the validations defined on
+// Stop-InstanceResponseBody
+func ValidateStopInstanceResponseBody(body *StopInstanceResponseBody) (err error) {
+	if body.DatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	}
+	if body.TaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
+	}
+	if body.CreatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
+	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.ParentID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
+	}
+	if body.TaskID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
+	}
+	if body.CreatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
+	}
+	if body.CompletedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
+	}
+	if body.Status != nil {
+		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		}
+	}
+	return
+}
+
+// ValidateStartInstanceResponseBody runs the validations defined on
+// Start-InstanceResponseBody
+func ValidateStartInstanceResponseBody(body *StartInstanceResponseBody) (err error) {
 	if body.DatabaseID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
 	}
@@ -4636,6 +4972,102 @@ func ValidateRestartInstanceNotFoundResponseBody(body *RestartInstanceNotFoundRe
 // ValidateRestartInstanceServerErrorResponseBody runs the validations defined
 // on restart-instance_server_error_response_body
 func ValidateRestartInstanceServerErrorResponseBody(body *RestartInstanceServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateStopInstanceClusterNotInitializedResponseBody runs the validations
+// defined on stop-instance_cluster_not_initialized_response_body
+func ValidateStopInstanceClusterNotInitializedResponseBody(body *StopInstanceClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateStopInstanceInvalidInputResponseBody runs the validations defined on
+// stop-instance_invalid_input_response_body
+func ValidateStopInstanceInvalidInputResponseBody(body *StopInstanceInvalidInputResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateStopInstanceNotFoundResponseBody runs the validations defined on
+// stop-instance_not_found_response_body
+func ValidateStopInstanceNotFoundResponseBody(body *StopInstanceNotFoundResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateStopInstanceServerErrorResponseBody runs the validations defined on
+// stop-instance_server_error_response_body
+func ValidateStopInstanceServerErrorResponseBody(body *StopInstanceServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateStartInstanceClusterNotInitializedResponseBody runs the validations
+// defined on start-instance_cluster_not_initialized_response_body
+func ValidateStartInstanceClusterNotInitializedResponseBody(body *StartInstanceClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateStartInstanceInvalidInputResponseBody runs the validations defined
+// on start-instance_invalid_input_response_body
+func ValidateStartInstanceInvalidInputResponseBody(body *StartInstanceInvalidInputResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateStartInstanceNotFoundResponseBody runs the validations defined on
+// start-instance_not_found_response_body
+func ValidateStartInstanceNotFoundResponseBody(body *StartInstanceNotFoundResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateStartInstanceServerErrorResponseBody runs the validations defined on
+// start-instance_server_error_response_body
+func ValidateStartInstanceServerErrorResponseBody(body *StartInstanceServerErrorResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}

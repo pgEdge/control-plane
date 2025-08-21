@@ -109,6 +109,13 @@ func storedToInstance(instance *StoredInstance, status *StoredInstanceStatus) *I
 	if status != nil {
 		out.Status = status.Status
 	}
+
+	// We want to infer the instance state if the instance is supposed to be
+	// available.
+	if out.State == InstanceStateAvailable && status != nil {
+		out.State = patroniToInstanceState(status.Status.PatroniState)
+	}
+
 	return out
 }
 
@@ -122,11 +129,6 @@ func storedToInstances(storedInstances []*StoredInstance, storedStatuses []*Stor
 	for idx, stored := range storedInstances {
 		status := statusesByID[stored.InstanceID]
 		instance := storedToInstance(stored, status)
-		// We want to infer the instance state if the instance is supposed to be
-		// available.
-		if instance.State == InstanceStateAvailable && status != nil {
-			instance.State = patroniToInstanceState(status.Status.PatroniState)
-		}
 		instances[idx] = instance
 	}
 

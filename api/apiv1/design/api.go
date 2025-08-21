@@ -548,6 +548,112 @@ var _ = g.Service("control-plane", func() {
 			g.Meta("openapi:tag:Database")
 		})
 	})
+	g.Method("stop-instance", func() {
+		g.Description("Stops a specific instance within a database. Supports immediate stops.")
+		g.Meta("openapi:summary", "Stops a database instance")
+
+		g.Payload(func() {
+			g.Attribute("database_id", Identifier, func() {
+				g.Description("The ID of the database that owns the instance.")
+				g.Example("68f50878-44d2-4524-a823-e31bd478706d")
+			})
+			g.Attribute("instance_id", Identifier, func() {
+				g.Description("The ID of the instance to stop.")
+				g.Example("68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi")
+			})
+			g.Attribute("force", g.Boolean, func() {
+				g.Description("Force stopping an instance even if database in an unmodifiable state")
+				g.Default(false)
+				g.Example(true)
+			})
+
+			g.Required("database_id", "instance_id")
+		})
+
+		g.Result(Task, func() {
+			g.Description("Returns a task representing the stop operation.")
+			g.Example(map[string]any{
+				"created_at":  "2025-06-18T16:52:05Z",
+				"database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
+				"instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
+				"status":      "pending",
+				"task_id":     "019783f4-75f4-71e7-85a3-c9b96b345d77",
+				"type":        "stop_instance",
+			})
+		})
+		g.Error("cluster_not_initialized", func() {
+			g.Description("The cluster must be initialized before instance operations.")
+		})
+		g.Error("invalid_input", func() {
+			g.Description("The input values are malformed or missing.")
+		})
+		g.Error("not_found", func() {
+			g.Description("The specified database or instance could not be found.")
+		})
+		g.Error("stop_failed", func() {
+			g.Description("Stop operation could not be completed.")
+		})
+
+		g.HTTP(func() {
+			g.POST("/v1/databases/{database_id}/instances/{instance_id}/stop-instance")
+			g.Param("force")
+
+			g.Meta("openapi:tag:Database")
+		})
+	})
+	g.Method("start-instance", func() {
+		g.Description("Starts a specific instance within a database. Supports immediate starts")
+		g.Meta("openapi:summary", "Starts a database instance")
+
+		g.Payload(func() {
+			g.Attribute("database_id", Identifier, func() {
+				g.Description("The ID of the database that owns the instance.")
+				g.Example("68f50878-44d2-4524-a823-e31bd478706d")
+			})
+			g.Attribute("instance_id", Identifier, func() {
+				g.Description("The ID of the instance to start.")
+				g.Example("68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi")
+			})
+			g.Attribute("force", g.Boolean, func() {
+				g.Description("Force starting an instance even if database in an unmodifiable state")
+				g.Default(false)
+				g.Example(true)
+			})
+
+			g.Required("database_id", "instance_id")
+		})
+
+		g.Result(Task, func() {
+			g.Description("Returns a task representing the start operation.")
+			g.Example(map[string]any{
+				"created_at":  "2025-06-18T16:52:05Z",
+				"database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
+				"instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
+				"status":      "pending",
+				"task_id":     "019783f4-75f4-71e7-85a3-c9b96b345d77",
+				"type":        "start_instance",
+			})
+		})
+		g.Error("cluster_not_initialized", func() {
+			g.Description("The cluster must be initialized before instance operations.")
+		})
+		g.Error("invalid_input", func() {
+			g.Description("The input values are malformed or missing.")
+		})
+		g.Error("not_found", func() {
+			g.Description("The specified database or instance could not be found.")
+		})
+		g.Error("start_failed", func() {
+			g.Description("Start operation could not be completed.")
+		})
+
+		g.HTTP(func() {
+			g.POST("/v1/databases/{database_id}/instances/{instance_id}/start-instance")
+			g.Param("force")
+
+			g.Meta("openapi:tag:Database")
+		})
+	})
 
 	// Serves the OpenAPI spec as a static file
 	g.Files("/v1/openapi.json", "./gen/http/openapi3.json", func() {

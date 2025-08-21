@@ -97,6 +97,14 @@ type Client struct {
 	// restart-instance endpoint.
 	RestartInstanceDoer goahttp.Doer
 
+	// StopInstance Doer is the HTTP client used to make requests to the
+	// stop-instance endpoint.
+	StopInstanceDoer goahttp.Doer
+
+	// StartInstance Doer is the HTTP client used to make requests to the
+	// start-instance endpoint.
+	StartInstanceDoer goahttp.Doer
+
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
 	RestoreResponseBody bool
@@ -138,6 +146,8 @@ func NewClient(
 		RestoreDatabaseDoer:    doer,
 		GetVersionDoer:         doer,
 		RestartInstanceDoer:    doer,
+		StopInstanceDoer:       doer,
+		StartInstanceDoer:      doer,
 		RestoreResponseBody:    restoreBody,
 		scheme:                 scheme,
 		host:                   host,
@@ -571,6 +581,54 @@ func (c *Client) RestartInstance() goa.Endpoint {
 		resp, err := c.RestartInstanceDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("control-plane", "restart-instance", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// StopInstance returns an endpoint that makes HTTP requests to the
+// control-plane service stop-instance server.
+func (c *Client) StopInstance() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeStopInstanceRequest(c.encoder)
+		decodeResponse = DecodeStopInstanceResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildStopInstanceRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.StopInstanceDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "stop-instance", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// StartInstance returns an endpoint that makes HTTP requests to the
+// control-plane service start-instance server.
+func (c *Client) StartInstance() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeStartInstanceRequest(c.encoder)
+		decodeResponse = DecodeStartInstanceResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildStartInstanceRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.StartInstanceDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "start-instance", err)
 		}
 		return decodeResponse(resp)
 	}
