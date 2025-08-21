@@ -614,7 +614,7 @@ func (s *PostInitHandlers) StopInstance(ctx context.Context, req *api.StopInstan
 
 	t, err := s.workflowSvc.StopInstance(ctx, input)
 	if err != nil {
-		return nil, apiErr(fmt.Errorf("failed to start stop-instance workflow: %w", err))
+		return nil, makeInvalidInputErr(fmt.Errorf("failed to start stop-instance workflow: %w", err))
 	}
 
 	s.logger.Info().
@@ -648,7 +648,7 @@ func (s *PostInitHandlers) StartInstance(ctx context.Context, req *api.StartInst
 	}
 
 	if storedInstance.State != database.InstanceStateUnknown {
-		return nil, apiErr(fmt.Errorf("instance %s is not startable, it is in %s state",
+		return nil, makeInvalidInputErr(fmt.Errorf("instance %s is not startable, it is in %s state",
 			req.InstanceID, storedInstance.State))
 	}
 

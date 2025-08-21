@@ -3,7 +3,6 @@ package swarm
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -528,7 +527,7 @@ func (o *Orchestrator) scaleInstance(
 		"pgedge.component":   "postgres",
 		"pgedge.instance.id": instanceID,
 	})
-	if err != nil && !errors.Is(err, docker.ErrNotFound) {
+	if err != nil {
 		return fmt.Errorf("failed to inspect postgres service: %w", err)
 	}
 
