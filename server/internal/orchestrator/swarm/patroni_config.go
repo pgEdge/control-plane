@@ -259,6 +259,21 @@ func generatePatroniConfig(
 		etcdHosts[i] = u.Host
 	}
 
+	var tags patroni.Tags
+
+	switch spec.FailoverPolicy {
+	case "", "automatic":
+		tags = patroni.Tags{
+			NoFailover: utils.PointerTo(false),
+			DatabaseID: &spec.DatabaseID,
+		}
+	case "disabled":
+		tags = patroni.Tags{
+			NoFailover: utils.PointerTo(true),
+			DatabaseID: &spec.DatabaseID,
+		}
+	}
+
 	cfg := &patroni.Config{
 		Name:      utils.PointerTo(spec.InstanceID),
 		Namespace: utils.PointerTo(patroni.Namespace(spec.DatabaseID, spec.NodeName)),
@@ -439,6 +454,7 @@ func generatePatroniConfig(
 				}.String(),
 			},
 		},
+		Tags: &tags,
 	}
 
 	if spec.RestoreConfig != nil {

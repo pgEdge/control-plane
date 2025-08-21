@@ -3411,6 +3411,7 @@ components:
                           roles:
                             - pgedge_superuser
                           username: admin
+                    failover_policy: disabled
                     memory: 500M
                     nodes:
                         - backup_config:
@@ -3446,6 +3447,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
+                          failover_policy: disabled
                           host_ids:
                             - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                           memory: 500M
@@ -3708,6 +3710,7 @@ components:
                           roles:
                             - pgedge_superuser
                           username: admin
+                    failover_policy: disabled
                     memory: 500M
                     nodes:
                         - backup_config:
@@ -3743,6 +3746,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
+                          failover_policy: disabled
                           host_ids:
                             - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                           memory: 500M
@@ -3995,6 +3999,7 @@ components:
                           roles:
                             - pgedge_superuser
                           username: admin
+                    failover_policy: disabled
                     memory: 500M
                     nodes:
                         - backup_config:
@@ -4030,6 +4035,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
+                          failover_policy: disabled
                           host_ids:
                             - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                           memory: 500M
@@ -4282,6 +4288,7 @@ components:
                           roles:
                             - pgedge_superuser
                           username: admin
+                    failover_policy: disabled
                     memory: 500M
                     nodes:
                         - backup_config:
@@ -4317,6 +4324,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
+                          failover_policy: disabled
                           host_ids:
                             - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                           memory: 500M
@@ -4457,6 +4465,13 @@ components:
                     description: The number of CPUs to allocate for the database on this node and to use for tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Cannot allocate units smaller than 1m. Defaults to the number of available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs than are available on the host. Whether this limit is enforced depends on the orchestrator.
                     example: 500m
                     pattern: ^[0-9]+(\.[0-9]{1,3}|m)?$
+                failover_policy:
+                    type: string
+                    description: The failover policy for this database's read replicas. If failover_policy is automatic, a read replica will automatically be promoted when a primary instance fails. If it is disabled, read replicas will not be promoted when a primary instance fails.
+                    example: disabled
+                    enum:
+                        - automatic
+                        - disabled
                 host_ids:
                     type: array
                     items:
@@ -4539,6 +4554,7 @@ components:
                           id: daily-full-backup
                           type: full
                 cpus: 500m
+                failover_policy: disabled
                 host_ids:
                     - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                     - de3b1388-1f0c-42f1-a86c-59ab72f255ec
@@ -4659,6 +4675,13 @@ components:
                             - pgedge_superuser
                           username: admin
                     maxItems: 16
+                failover_policy:
+                    type: string
+                    description: The failover policy for this database's read replicas. If failover_policy is automatic, a read replica will automatically be promoted when a primary instance fails. If it is disabled, read replicas will not be promoted when a primary instance fails.
+                    example: disabled
+                    enum:
+                        - automatic
+                        - disabled
                 memory:
                     type: string
                     description: The amount of memory in SI or IEC notation to allocate for the database and to use for tuning Postgres. Defaults to the total available memory on the host. Whether this limit is enforced depends on the orchestrator.
@@ -4703,6 +4726,7 @@ components:
                                   id: daily-full-backup
                                   type: full
                           cpus: 500m
+                          failover_policy: disabled
                           host_ids:
                             - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                           memory: 500M
@@ -4865,6 +4889,7 @@ components:
                       roles:
                         - pgedge_superuser
                       username: admin
+                failover_policy: disabled
                 memory: 500M
                 nodes:
                     - backup_config:
@@ -4900,6 +4925,7 @@ components:
                               id: daily-full-backup
                               type: full
                       cpus: 500m
+                      failover_policy: disabled
                       host_ids:
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M
@@ -4998,6 +5024,7 @@ components:
                               id: daily-full-backup
                               type: full
                       cpus: 500m
+                      failover_policy: disabled
                       host_ids:
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M
@@ -5096,6 +5123,7 @@ components:
                               id: daily-full-backup
                               type: full
                       cpus: 500m
+                      failover_policy: disabled
                       host_ids:
                         - de3b1388-1f0c-42f1-a86c-59ab72f255ec
                       memory: 500M

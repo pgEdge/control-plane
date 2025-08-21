@@ -2747,6 +2747,15 @@
           "example": "500m",
           "pattern": "^[0-9]+(\\.[0-9]{1,3}|m)?$"
         },
+        "failover_policy": {
+          "type": "string",
+          "description": "The failover policy for this database's read replicas. If failover_policy is automatic, a read replica will automatically be promoted when a primary instance fails. If it is disabled, read replicas will not be promoted when a primary instance fails.",
+          "example": "disabled",
+          "enum": [
+            "automatic",
+            "disabled"
+          ]
+        },
         "host_ids": {
           "type": "array",
           "items": {
@@ -2877,6 +2886,7 @@
           ]
         },
         "cpus": "500m",
+        "failover_policy": "disabled",
         "host_ids": [
           "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
           "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
@@ -3248,6 +3258,15 @@
           ],
           "maxItems": 16
         },
+        "failover_policy": {
+          "type": "string",
+          "description": "The failover policy for this database's read replicas. If failover_policy is automatic, a read replica will automatically be promoted when a primary instance fails. If it is disabled, read replicas will not be promoted when a primary instance fails.",
+          "example": "disabled",
+          "enum": [
+            "automatic",
+            "disabled"
+          ]
+        },
         "memory": {
           "type": "string",
           "description": "The amount of memory in SI or IEC notation to allocate for the database and to use for tuning Postgres. Defaults to the total available memory on the host. Whether this limit is enforced depends on the orchestrator.",
@@ -3330,6 +3349,7 @@
                 ]
               },
               "cpus": "500m",
+              "failover_policy": "disabled",
               "host_ids": [
                 "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
               ],
@@ -3582,6 +3602,7 @@
             "username": "admin"
           }
         ],
+        "failover_policy": "disabled",
         "memory": "500M",
         "nodes": [
           {
@@ -3653,6 +3674,7 @@
               ]
             },
             "cpus": "500m",
+            "failover_policy": "disabled",
             "host_ids": [
               "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
             ],

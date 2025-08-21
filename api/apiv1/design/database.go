@@ -6,6 +6,7 @@ import (
 
 var postgresVersions = []any{"15", "16", "17"}
 var spockVersions = []any{"5"}
+var failoverPolicies = []any{"automatic", "disabled"}
 
 const (
 	nodeNamePattern = `n[0-9]+`
@@ -66,6 +67,12 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 	})
 	g.Attribute("orchestrator_opts", OrchestratorOpts, func() {
 		g.Description("Orchestrator-specific configuration options.")
+	})
+	g.Attribute("failover_policy", g.String, func() {
+		g.Description("The failover policy for this database's read replicas. If failover_policy is automatic, a read replica will automatically be promoted when a primary instance fails. If it is disabled, read replicas will not be promoted when a primary instance fails.")
+		g.Enum(failoverPolicies...)
+		g.Example("automatic")
+		g.Example("disabled")
 	})
 
 	g.Required("name", "host_ids")
@@ -437,6 +444,12 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 	})
 	g.Attribute("orchestrator_opts", OrchestratorOpts, func() {
 		g.Description("Orchestrator-specific configuration options.")
+	})
+	g.Attribute("failover_policy", g.String, func() {
+		g.Description("The failover policy for this database's read replicas. If failover_policy is automatic, a read replica will automatically be promoted when a primary instance fails. If it is disabled, read replicas will not be promoted when a primary instance fails.")
+		g.Enum(failoverPolicies...)
+		g.Example("automatic")
+		g.Example("disabled")
 	})
 
 	g.Required("database_name", "nodes")

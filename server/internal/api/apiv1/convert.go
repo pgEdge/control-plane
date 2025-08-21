@@ -83,6 +83,7 @@ func databaseNodesToAPI(nodes []*database.Node) []*api.DatabaseNodeSpec {
 			BackupConfig:     backupConfigToAPI(node.BackupConfig),
 			RestoreConfig:    restoreConfigToAPI(node.RestoreConfig),
 			OrchestratorOpts: orchestratorOptsToAPI(node.OrchestratorOpts),
+			FailoverPolicy:   utils.NillablePointerTo(node.FailoverPolicy),
 		}
 	}
 	return apiNodes
@@ -193,6 +194,7 @@ func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 		RestoreConfig:    restoreConfigToAPI(d.RestoreConfig),
 		PostgresqlConf:   d.PostgreSQLConf,
 		OrchestratorOpts: orchestratorOptsToAPI(d.OrchestratorOpts),
+		FailoverPolicy:   utils.NillablePointerTo(d.FailoverPolicy),
 	}
 }
 
@@ -345,6 +347,7 @@ func apiToDatabaseNodes(apiNodes []*api.DatabaseNodeSpec) ([]*database.Node, err
 			BackupConfig:     backupConfig,
 			RestoreConfig:    restoreConfig,
 			OrchestratorOpts: orchestratorOptsToDatabase(apiNode.OrchestratorOpts),
+			FailoverPolicy:   utils.FromPointer(apiNode.FailoverPolicy),
 		}
 	}
 	return nodes, nil
@@ -518,6 +521,7 @@ func apiToDatabaseSpec(id, tID *api.Identifier, apiSpec *api.DatabaseSpec) (*dat
 		PostgreSQLConf:   apiSpec.PostgresqlConf,
 		RestoreConfig:    restoreConfig,
 		OrchestratorOpts: orchestratorOptsToDatabase(apiSpec.OrchestratorOpts),
+		FailoverPolicy:   utils.FromPointer(apiSpec.FailoverPolicy),
 	}, nil
 }
 

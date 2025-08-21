@@ -337,6 +337,11 @@ type DatabaseNodeSpec struct {
 	RestoreConfig *RestoreConfigSpec
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOpts
+	// The failover policy for this database's read replicas. If failover_policy is
+	// automatic, a read replica will automatically be promoted when a primary
+	// instance fails. If it is disabled, read replicas will not be promoted when a
+	// primary instance fails.
+	FailoverPolicy *string
 }
 
 type DatabaseSpec struct {
@@ -372,6 +377,11 @@ type DatabaseSpec struct {
 	PostgresqlConf map[string]any
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOpts
+	// The failover policy for this database's read replicas. If failover_policy is
+	// automatic, a read replica will automatically be promoted when a primary
+	// instance fails. If it is disabled, read replicas will not be promoted when a
+	// primary instance fails.
+	FailoverPolicy *string
 }
 
 type DatabaseUserSpec struct {
@@ -1231,6 +1241,7 @@ func transformControlplaneviewsDatabaseSpecViewToDatabaseSpec(v *controlplanevie
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*DatabaseNodeSpec, len(v.Nodes))
@@ -1277,6 +1288,7 @@ func transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec(v *control
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]Identifier, len(v.HostIds))
@@ -1580,6 +1592,7 @@ func transformDatabaseSpecToControlplaneviewsDatabaseSpecView(v *DatabaseSpec) *
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*controlplaneviews.DatabaseNodeSpecView, len(v.Nodes))
@@ -1626,6 +1639,7 @@ func transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView(v *Databas
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]controlplaneviews.IdentifierView, len(v.HostIds))

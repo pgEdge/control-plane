@@ -47,6 +47,7 @@ type Node struct {
 	BackupConfig     *BackupConfig     `json:"backup_config"`
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
+	FailoverPolicy   string            `json:"failover_policy"`
 }
 
 func (n *Node) Clone() *Node {
@@ -64,6 +65,7 @@ func (n *Node) Clone() *Node {
 		BackupConfig:     n.BackupConfig.Clone(),
 		RestoreConfig:    n.RestoreConfig.Clone(),
 		OrchestratorOpts: n.OrchestratorOpts.Clone(),
+		FailoverPolicy:   n.FailoverPolicy,
 	}
 }
 
@@ -258,6 +260,7 @@ type Spec struct {
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
+	FailoverPolicy   string            `json:"failover_policy"`
 }
 
 func (s *Spec) Node(name string) (*Node, error) {
@@ -339,6 +342,7 @@ func (s *Spec) Clone() *Spec {
 		BackupConfig:     s.BackupConfig.Clone(),
 		RestoreConfig:    s.RestoreConfig.Clone(),
 		OrchestratorOpts: s.OrchestratorOpts.Clone(),
+		FailoverPolicy:   s.FailoverPolicy,
 	}
 }
 
@@ -425,6 +429,7 @@ type InstanceSpec struct {
 	EnableBackups    bool                `json:"enable_backups"`
 	ClusterSize      int                 `json:"cluster_size"`
 	OrchestratorOpts *OrchestratorOpts   `json:"orchestrator_opts,omitempty"`
+	FailoverPolicy   string              `json:"failover_policy"`
 }
 
 type NodeInstances struct {
@@ -491,6 +496,10 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		if node.OrchestratorOpts != nil {
 			orchestratorOpts = node.OrchestratorOpts
 		}
+		failoverPolicy := s.FailoverPolicy
+		if node.FailoverPolicy != "" {
+			failoverPolicy = node.FailoverPolicy
+		}
 
 		instances := make([]*InstanceSpec, len(node.HostIDs))
 		for hostIdx, hostID := range node.HostIDs {
@@ -516,6 +525,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				EnableBackups:    backupConfig != nil && hostIdx == len(node.HostIDs)-1,
 				ClusterSize:      clusterSize,
 				OrchestratorOpts: orchestratorOpts.Clone(),
+				FailoverPolicy:   failoverPolicy,
 			}
 		}
 
