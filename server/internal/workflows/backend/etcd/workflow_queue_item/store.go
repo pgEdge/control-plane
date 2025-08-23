@@ -1,7 +1,6 @@
 package workflow_queue_item
 
 import (
-	"path"
 	"time"
 
 	"github.com/cschleiden/go-workflows/backend/metadata"
@@ -40,19 +39,19 @@ func NewStore(client *clientv3.Client, root string) *Store {
 }
 
 func (s *Store) AllQueuesPrefix() string {
-	return path.Join("/", s.root, "workflows", "workflow_queue_items")
+	return storage.Prefix("/", s.root, "workflows", "workflow_queue_items")
 }
 
 func (s *Store) QueuePrefix(queue string) string {
-	return path.Join(s.AllQueuesPrefix(), queue)
+	return storage.Prefix(s.AllQueuesPrefix(), queue)
 }
 
 func (s *Store) InstanceIDPrefix(queue, instanceID string) string {
-	return path.Join(s.QueuePrefix(queue), instanceID)
+	return storage.Prefix(s.QueuePrefix(queue), instanceID)
 }
 
 func (s *Store) Key(queue, instanceID, executionID string) string {
-	return path.Join(s.InstanceIDPrefix(queue, instanceID), executionID)
+	return storage.Key(s.InstanceIDPrefix(queue, instanceID), executionID)
 }
 
 func (s *Store) GetAll() storage.GetMultipleOp[*Value] {

@@ -1,7 +1,6 @@
 package workflow_instance
 
 import (
-	"path"
 	"time"
 
 	"github.com/cschleiden/go-workflows/backend/metadata"
@@ -35,20 +34,20 @@ func NewStore(client *clientv3.Client, root string) *Store {
 }
 
 func (s *Store) InstancesPrefix() string {
-	return path.Join("/", s.root, "workflows", "instances")
+	return storage.Prefix("/", s.root, "workflows", "instances")
 }
 
 func (s *Store) InstanceIDPrefix(instanceID string) string {
-	return path.Join(s.InstancesPrefix(), instanceID)
+	return storage.Prefix(s.InstancesPrefix(), instanceID)
+}
+
+func (s *Store) Key(instanceID, executionID string) string {
+	return storage.Key(s.InstanceIDPrefix(instanceID), executionID)
 }
 
 func (s *Store) ExistsByKey(instanceID, executionID string) storage.ExistsOp {
 	key := s.Key(instanceID, executionID)
 	return storage.NewExistsOp(s.client, key)
-}
-
-func (s *Store) Key(instanceID, executionID string) string {
-	return path.Join(s.InstanceIDPrefix(instanceID), executionID)
 }
 
 func (s *Store) GetByKey(instanceID, executionID string) storage.GetOp[*Value] {

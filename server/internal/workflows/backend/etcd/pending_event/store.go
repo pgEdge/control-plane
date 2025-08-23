@@ -1,8 +1,6 @@
 package pending_event
 
 import (
-	"path"
-
 	"github.com/cschleiden/go-workflows/backend/history"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
@@ -29,15 +27,15 @@ func NewStore(client *clientv3.Client, root string) *Store {
 }
 
 func (s *Store) AllEventsPrefix() string {
-	return path.Join("/", s.root, "workflows", "pending_events")
+	return storage.Prefix("/", s.root, "workflows", "pending_events")
 }
 
 func (s *Store) InstanceExecutionPrefix(instanceID, executionID string) string {
-	return path.Join(s.AllEventsPrefix(), instanceID, executionID)
+	return storage.Prefix(s.AllEventsPrefix(), instanceID, executionID)
 }
 
 func (s *Store) Key(instanceID, executionID, eventID string) string {
-	return path.Join(s.InstanceExecutionPrefix(instanceID, executionID), eventID)
+	return storage.Key(s.InstanceExecutionPrefix(instanceID, executionID), eventID)
 }
 
 func (s *Store) GetAll() storage.GetMultipleOp[*Value] {

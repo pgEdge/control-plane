@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"path"
 
 	"github.com/cschleiden/go-workflows/backend/history"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -32,7 +31,7 @@ func NewStore(client *clientv3.Client, root string) *Store {
 }
 
 func (s *Store) InstanceExecutionPrefix(instanceID, executionID string) string {
-	return path.Join("/", s.root, "workflows", "history_events", instanceID, executionID)
+	return storage.Prefix("/", s.root, "workflows", "history_events", instanceID, executionID)
 }
 
 func (s *Store) Key(instanceID, executionID string, sequenceID int64) string {
@@ -40,7 +39,7 @@ func (s *Store) Key(instanceID, executionID string, sequenceID int64) string {
 	// important so that we're able to properly use range queries, because etcd
 	// sorts alphabetically, meaning that 10 comes before 9. The leading zeros
 	// ensure that larger numbers are sorted after smaller numbers.
-	return path.Join(s.InstanceExecutionPrefix(instanceID, executionID), fmt.Sprintf("%016x", sequenceID))
+	return storage.Key(s.InstanceExecutionPrefix(instanceID, executionID), fmt.Sprintf("%016x", sequenceID))
 }
 
 func (s *Store) GetLastSequenceID(ctx context.Context, instanceID, executionID string) (int64, error) {

@@ -223,13 +223,14 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 
 	// patroni resources - used to clean up etcd on deletion
 	patroniCluster := &PatroniCluster{
-		ClusterID:        o.cfg.ClusterID,
-		DatabaseID:       spec.DatabaseID,
-		NodeName:         spec.NodeName,
-		PatroniNamespace: patroni.Namespace(spec.DatabaseID, spec.NodeName),
+		ClusterID:            o.cfg.ClusterID,
+		DatabaseID:           spec.DatabaseID,
+		NodeName:             spec.NodeName,
+		PatroniClusterPrefix: patroni.ClusterPrefix(spec.DatabaseID, spec.NodeName),
 	}
 	patroniMember := &PatroniMember{
 		ClusterID:  o.cfg.ClusterID,
+		DatabaseID: spec.DatabaseID,
 		NodeName:   spec.NodeName,
 		InstanceID: spec.InstanceID,
 	}

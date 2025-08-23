@@ -1,7 +1,6 @@
 package workflow_instance_lock
 
 import (
-	"path"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -37,7 +36,7 @@ func NewStore(client *clientv3.Client, root string) *Store {
 }
 
 func (s *Store) Key(instanceID, executionID string) string {
-	return path.Join("/", s.root, "workflows", "workflow_instance_locks", instanceID, executionID)
+	return storage.Key("/", s.root, "workflows", "workflow_instance_locks", instanceID, executionID)
 }
 
 func (s *Store) ExistsByKey(instanceID, executionID string) storage.ExistsOp {

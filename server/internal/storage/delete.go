@@ -51,7 +51,7 @@ type deletePrefixOp struct {
 func NewDeletePrefixOp(client *clientv3.Client, prefix string, options ...clientv3.OpOption) DeleteOp {
 	return &deletePrefixOp{
 		client:  client,
-		prefix:  prefix,
+		prefix:  ensureTrailingSlash(prefix),
 		options: options,
 	}
 }

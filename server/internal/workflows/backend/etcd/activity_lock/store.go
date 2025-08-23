@@ -1,7 +1,6 @@
 package activity_lock
 
 import (
-	"path"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -37,7 +36,7 @@ func NewStore(client *clientv3.Client, root string) *Store {
 }
 
 func (s *Store) Key(instanceID, eventID string) string {
-	return path.Join("/", s.root, "workflows", "activity_locks", instanceID, eventID)
+	return storage.Key("/", s.root, "workflows", "activity_locks", instanceID, eventID)
 }
 
 func (s *Store) ExistsByKey(instanceID, eventID string) storage.ExistsOp {

@@ -1,8 +1,6 @@
 package database
 
 import (
-	"path"
-
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/storage"
@@ -28,15 +26,15 @@ func NewInstanceStatusStore(client *clientv3.Client, root string) *InstanceStatu
 }
 
 func (s *InstanceStatusStore) Prefix() string {
-	return path.Join("/", s.root, "instance_statuses")
+	return storage.Prefix("/", s.root, "instance_statuses")
 }
 
 func (s *InstanceStatusStore) DatabasePrefix(databaseID string) string {
-	return path.Join(s.Prefix(), databaseID)
+	return storage.Prefix(s.Prefix(), databaseID)
 }
 
 func (s *InstanceStatusStore) Key(databaseID, instanceID string) string {
-	return path.Join(s.DatabasePrefix(databaseID), instanceID)
+	return storage.Key(s.DatabasePrefix(databaseID), instanceID)
 }
 
 func (s *InstanceStatusStore) GetByKey(databaseID, instanceID string) storage.GetOp[*StoredInstanceStatus] {

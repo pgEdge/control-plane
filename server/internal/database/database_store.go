@@ -1,7 +1,6 @@
 package database
 
 import (
-	"path"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -31,11 +30,11 @@ func NewDatabaseStore(client *clientv3.Client, root string) *DatabaseStore {
 }
 
 func (s *DatabaseStore) Prefix() string {
-	return path.Join("/", s.root, "databases")
+	return storage.Prefix("/", s.root, "databases")
 }
 
 func (s *DatabaseStore) Key(databaseID string) string {
-	return path.Join(s.Prefix(), databaseID)
+	return storage.Key(s.Prefix(), databaseID)
 }
 
 func (s *DatabaseStore) ExistsByKey(databaseID string) storage.ExistsOp {

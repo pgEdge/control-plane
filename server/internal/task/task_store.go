@@ -1,8 +1,6 @@
 package task
 
 import (
-	"path"
-
 	"github.com/google/uuid"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
@@ -27,15 +25,15 @@ func NewTaskStore(client *clientv3.Client, root string) *TaskStore {
 }
 
 func (s *TaskStore) Prefix() string {
-	return path.Join("/", s.root, "tasks")
+	return storage.Prefix("/", s.root, "tasks")
 }
 
 func (s *TaskStore) DatabasePrefix(databaseID string) string {
-	return path.Join(s.Prefix(), databaseID)
+	return storage.Prefix(s.Prefix(), databaseID)
 }
 
 func (s *TaskStore) Key(databaseID string, taskID uuid.UUID) string {
-	return path.Join(s.DatabasePrefix(databaseID), taskID.String())
+	return storage.Key(s.DatabasePrefix(databaseID), taskID.String())
 }
 
 func (s *TaskStore) GetByKey(databaseID string, taskID uuid.UUID) storage.GetOp[*StoredTask] {

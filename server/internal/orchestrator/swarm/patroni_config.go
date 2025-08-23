@@ -276,8 +276,8 @@ func generatePatroniConfig(
 
 	cfg := &patroni.Config{
 		Name:      utils.PointerTo(spec.InstanceID),
-		Namespace: utils.PointerTo(patroni.Namespace(spec.DatabaseID, spec.NodeName)),
-		Scope:     utils.PointerTo(spec.DatabaseID + ":" + spec.NodeName),
+		Namespace: utils.PointerTo(patroni.Namespace()),
+		Scope:     utils.PointerTo(patroni.ClusterName(spec.DatabaseID, spec.NodeName)),
 		Log: &patroni.Log{
 			Type:         utils.PointerTo(patroni.LogTypeJson),
 			Level:        utils.PointerTo(patroni.LogLevelInfo),

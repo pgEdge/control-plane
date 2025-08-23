@@ -1,8 +1,6 @@
 package ipam
 
 import (
-	"path"
-
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/storage"
@@ -28,11 +26,11 @@ func NewStore(client *clientv3.Client, root string) *Store {
 }
 
 func (s *Store) Prefix() string {
-	return path.Join("/", s.root, "ipam")
+	return storage.Prefix("/", s.root, "ipam")
 }
 
 func (s *Store) Key(allocatorName string) string {
-	return path.Join(s.Prefix(), allocatorName)
+	return storage.Key(s.Prefix(), allocatorName)
 }
 
 func (s *Store) ExistsByKey(allocatorName string) storage.ExistsOp {

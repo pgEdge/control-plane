@@ -1,7 +1,6 @@
 package workflow_instance_sticky
 
 import (
-	"path"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -29,7 +28,7 @@ func NewStore(client *clientv3.Client, root string) *Store {
 }
 
 func (s *Store) Key(instanceID string) string {
-	return path.Join("/", s.root, "workflows", "workflow_instance_stickies", instanceID)
+	return storage.Key("/", s.root, "workflows", "workflow_instance_stickies", instanceID)
 }
 
 func (s *Store) GetByKey(instanceID string) storage.GetOp[*Value] {
