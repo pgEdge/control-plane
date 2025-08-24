@@ -24,7 +24,7 @@ type TaskLogEntryStore struct {
 	root   string
 }
 
-func NewTaskLogMessageStore(client *clientv3.Client, root string) *TaskLogEntryStore {
+func NewTaskLogEntryStore(client *clientv3.Client, root string) *TaskLogEntryStore {
 	return &TaskLogEntryStore{
 		client: client,
 		root:   root,
