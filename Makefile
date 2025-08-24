@@ -219,6 +219,19 @@ dev-detached: dev-build docker-swarm-mode
 dev-down:
 	$(docker_compose_dev) down
 
+.PHONY: dev-teardown
+dev-teardown: dev-down
+	docker service ls \
+		--filter=label=pgedge.component=postgres \
+		--format '{{ .ID }}' \
+		| xargs docker service rm
+	docker network ls \
+		--filter=scope=swarm \
+		--format '{{ .Name }}' \
+		| awk '$$1 ~ /-database$$/' \
+		| xargs docker network rm
+	rm -rf ./docker/control-plane-dev/data
+
 .PHONY: api-docs
 api-docs:
 	WORKSPACE_DIR=$(shell pwd) DEBUG=0 docker compose -f ./docker/control-plane-dev/docker-compose.yaml up api-docs
