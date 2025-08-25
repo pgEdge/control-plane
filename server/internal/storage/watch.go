@@ -34,7 +34,7 @@ func NewWatchPrefixOp[V Value](client *clientv3.Client, key string, options ...c
 
 	return &watchOp[V]{
 		client:  client,
-		key:     key,
+		key:     ensureTrailingSlash(key),
 		options: allOptions,
 	}
 }

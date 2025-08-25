@@ -1,8 +1,6 @@
 package resource
 
 import (
-	"path"
-
 	"github.com/pgEdge/control-plane/server/internal/storage"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
@@ -26,11 +24,11 @@ func NewStore(client *clientv3.Client, root string) *Store {
 }
 
 func (s *Store) Prefix() string {
-	return path.Join("/", s.root, "resource_state")
+	return storage.Prefix("/", s.root, "resource_state")
 }
 
 func (s *Store) Key(databaseID string) string {
-	return path.Join(s.Prefix(), databaseID)
+	return storage.Key(s.Prefix(), databaseID)
 }
 
 func (s *Store) ExistsByKey(databaseID string) storage.ExistsOp {

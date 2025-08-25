@@ -1,7 +1,6 @@
 package scheduler
 
 import (
-	"path"
 	"time"
 
 	"github.com/pgEdge/control-plane/server/internal/storage"
@@ -27,7 +26,7 @@ func NewLeaderStore(client *clientv3.Client, root string) *LeaderStore {
 }
 
 func (s *LeaderStore) Key() string {
-	return path.Join("/", s.root, SchedulerLeaderPrefix, "leader")
+	return storage.Prefix("/", s.root, SchedulerLeaderPrefix, "leader")
 }
 
 func (s *LeaderStore) GetByKey() storage.GetOp[*StoredLeader] {

@@ -1,8 +1,6 @@
 package scheduler
 
 import (
-	"path"
-
 	"github.com/pgEdge/control-plane/server/internal/storage"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
@@ -20,15 +18,11 @@ func NewScheduledJobStore(client *clientv3.Client, root string) *ScheduledJobSto
 }
 
 func (s *ScheduledJobStore) Prefix() string {
-	return path.Join("/", s.root, ScheduledJobPrefix)
-}
-
-func (s *ScheduledJobStore) ElectorPrefix() string {
-	return path.Join("/", s.root, SchedulerLeaderPrefix)
+	return storage.Prefix("/", s.root, ScheduledJobPrefix)
 }
 
 func (s *ScheduledJobStore) Key(id string) string {
-	return path.Join(s.Prefix(), id)
+	return storage.Key(s.Prefix(), id)
 }
 func (s *ScheduledJobStore) Put(job *StoredScheduledJob) storage.PutOp[*StoredScheduledJob] {
 	return storage.NewPutOp(s.client, s.Key(job.ID), job)

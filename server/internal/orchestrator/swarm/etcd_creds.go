@@ -131,7 +131,7 @@ func (c *EtcdCreds) Create(ctx context.Context, rc *resource.Context) error {
 		certService,
 		etcd.InstanceUserOptions{
 			InstanceID: c.InstanceID,
-			KeyPrefix:  patroni.Namespace(c.DatabaseID, c.NodeName),
+			KeyPrefix:  patroni.ClusterPrefix(c.DatabaseID, c.NodeName),
 			Password:   c.Password,
 		},
 	)

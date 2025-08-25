@@ -1,8 +1,6 @@
 package database
 
 import (
-	"path"
-
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/storage"
@@ -26,11 +24,11 @@ func NewSpecStore(client *clientv3.Client, root string) *SpecStore {
 }
 
 func (s *SpecStore) Prefix() string {
-	return path.Join("/", s.root, "database_specs")
+	return storage.Prefix("/", s.root, "database_specs")
 }
 
 func (s *SpecStore) Key(databaseID string) string {
-	return path.Join(s.Prefix(), databaseID)
+	return storage.Key(s.Prefix(), databaseID)
 }
 
 func (s *SpecStore) ExistsByKey(databaseID string) storage.ExistsOp {

@@ -2,12 +2,14 @@ package swarm
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/samber/do"
 	clientv3 "go.etcd.io/etcd/client/v3"
+
+	"github.com/pgEdge/control-plane/server/internal/patroni"
+	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
 var _ resource.Resource = (*PatroniMember)(nil)
@@ -23,6 +25,7 @@ func PatroniMemberResourceIdentifier(instanceID string) resource.Identifier {
 
 type PatroniMember struct {
 	ClusterID  string `json:"cluster_id"`
+	DatabaseID string `json:"database_id"`
 	NodeName   string `json:"node_name"`
 	InstanceID string `json:"instance_id"`
 }
@@ -70,15 +73,8 @@ func (p *PatroniMember) Delete(ctx context.Context, rc *resource.Context) error 
 		return err
 	}
 
-	cluster, err := resource.FromContext[*PatroniCluster](rc, PatroniClusterResourceIdentifier(p.NodeName))
-	if errors.Is(err, resource.ErrNotFound) {
-		return nil
-	} else if err != nil {
-		return fmt.Errorf("failed to get patroni cluster from state: %w", err)
-	}
-
-	key := fmt.Sprintf("%s/members/%s", cluster.PatroniNamespace, p.InstanceID)
-	_, err = client.Delete(ctx, key, clientv3.WithPrefix())
+	key := patroni.MemberKey(p.DatabaseID, p.NodeName, p.InstanceID)
+	_, err = storage.NewDeleteKeyOp(client, key).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to delete patroni cluster member from DCS: %w", err)
 	}

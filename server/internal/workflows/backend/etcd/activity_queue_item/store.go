@@ -1,7 +1,6 @@
 package activity_queue_item
 
 import (
-	"path"
 	"time"
 
 	"github.com/cschleiden/go-workflows/backend/history"
@@ -37,15 +36,15 @@ func NewStore(client *clientv3.Client, root string) *Store {
 }
 
 func (s *Store) AllQueuesPrefix() string {
-	return path.Join("/", s.root, "workflows", "activity_queue_items")
+	return storage.Prefix("/", s.root, "workflows", "activity_queue_items")
 }
 
 func (s *Store) QueuePrefix(queue string) string {
-	return path.Join(s.AllQueuesPrefix(), queue)
+	return storage.Prefix(s.AllQueuesPrefix(), queue)
 }
 
 func (s *Store) Key(queue, instanceID, eventID string) string {
-	return path.Join(s.QueuePrefix(queue), instanceID, eventID)
+	return storage.Key(s.QueuePrefix(queue), instanceID, eventID)
 }
 
 func (s *Store) GetAll() storage.GetMultipleOp[*Value] {

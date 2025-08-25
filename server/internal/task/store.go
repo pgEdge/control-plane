@@ -16,7 +16,7 @@ func NewStore(client *clientv3.Client, root string) *Store {
 	return &Store{
 		client:         client,
 		Task:           NewTaskStore(client, root),
-		TaskLogMessage: NewTaskLogMessageStore(client, root),
+		TaskLogMessage: NewTaskLogEntryStore(client, root),
 	}
 }
 

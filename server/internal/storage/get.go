@@ -89,7 +89,7 @@ type getPrefixOp[V Value] struct {
 func NewGetPrefixOp[V Value](client *clientv3.Client, prefix string, options ...clientv3.OpOption) GetMultipleOp[V] {
 	return &getPrefixOp[V]{
 		client:  client,
-		prefix:  prefix,
+		prefix:  ensureTrailingSlash(prefix),
 		options: options,
 	}
 }

@@ -3,7 +3,6 @@ package certificates
 import (
 	"encoding/base64"
 	"fmt"
-	"path"
 
 	"github.com/pgEdge/control-plane/server/internal/storage"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -35,11 +34,11 @@ func NewPrincipalStore(client *clientv3.Client, root string) *PrincipalStore {
 }
 
 func (s *PrincipalStore) Prefix() string {
-	return path.Join("/", s.root, "principals")
+	return storage.Prefix("/", s.root, "principals")
 }
 
 func (s *PrincipalStore) Key(certificateID string) string {
-	return path.Join(s.Prefix(), certificateID)
+	return storage.Key(s.Prefix(), certificateID)
 }
 
 func (s *PrincipalStore) ExistsByKey(certificateID string) storage.ExistsOp {

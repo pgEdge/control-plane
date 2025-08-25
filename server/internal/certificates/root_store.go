@@ -6,10 +6,10 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"path"
+
+	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/storage"
-	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type StoredCA struct {
@@ -32,7 +32,7 @@ func NewCAStore(client *clientv3.Client, root string) *CAStore {
 }
 
 func (s *CAStore) Key() string {
-	return path.Join("/", s.root, "root_ca")
+	return storage.Key("/", s.root, "root_ca")
 }
 
 func (s *CAStore) Get() storage.GetOp[*StoredCA] {

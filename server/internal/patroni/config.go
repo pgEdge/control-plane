@@ -1,11 +1,23 @@
 package patroni
 
 import (
-	"fmt"
+	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
-func Namespace(databaseID string, nodeName string) string {
-	return fmt.Sprintf("/patroni/%s/%s", databaseID, nodeName)
+func Namespace() string {
+	return storage.Prefix("/", "patroni")
+}
+
+func ClusterName(databaseID, nodeName string) string {
+	return databaseID + ":" + nodeName
+}
+
+func ClusterPrefix(databaseID, nodeName string) string {
+	return storage.Prefix(Namespace(), ClusterName(databaseID, nodeName))
+}
+
+func MemberKey(databaseID, nodeName, instanceID string) string {
+	return storage.Key(Namespace(), ClusterName(databaseID, nodeName), "members", instanceID)
 }
 
 type LogType string

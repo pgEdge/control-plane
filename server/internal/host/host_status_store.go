@@ -1,7 +1,6 @@
 package host
 
 import (
-	"path"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -31,11 +30,11 @@ func NewHostStatusStore(client *clientv3.Client, root string) *HostStatusStore {
 }
 
 func (s *HostStatusStore) Prefix() string {
-	return path.Join("/", s.root, "host_statuses")
+	return storage.Prefix("/", s.root, "host_statuses")
 }
 
 func (s *HostStatusStore) Key(hostID string) string {
-	return path.Join(s.Prefix(), hostID)
+	return storage.Key(s.Prefix(), hostID)
 }
 
 func (s *HostStatusStore) GetByKey(hostID string) storage.GetOp[*StoredHostStatus] {

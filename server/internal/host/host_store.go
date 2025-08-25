@@ -1,8 +1,6 @@
 package host
 
 import (
-	"path"
-
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
@@ -42,11 +40,11 @@ func NewHostStore(client *clientv3.Client, root string) *HostStore {
 }
 
 func (s *HostStore) Prefix() string {
-	return path.Join("/", s.root, "hosts")
+	return storage.Prefix("/", s.root, "hosts")
 }
 
 func (s *HostStore) Key(hostID string) string {
-	return path.Join(s.Prefix(), hostID)
+	return storage.Key(s.Prefix(), hostID)
 }
 
 func (s *HostStore) GetByKey(hostID string) storage.GetOp[*StoredHost] {

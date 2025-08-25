@@ -1,8 +1,6 @@
 package monitor
 
 import (
-	"path"
-
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/storage"
@@ -30,15 +28,15 @@ func NewInstanceMonitorStore(client *clientv3.Client, root string) *InstanceMoni
 }
 
 func (s *InstanceMonitorStore) Prefix() string {
-	return path.Join("/", s.root, "instance_monitors")
+	return storage.Prefix("/", s.root, "instance_monitors")
 }
 
 func (s *InstanceMonitorStore) HostPrefix(hostID string) string {
-	return path.Join(s.Prefix(), hostID)
+	return storage.Prefix(s.Prefix(), hostID)
 }
 
 func (s *InstanceMonitorStore) Key(hostID, instanceID string) string {
-	return path.Join(s.HostPrefix(hostID), instanceID)
+	return storage.Key(s.HostPrefix(hostID), instanceID)
 }
 
 func (s *InstanceMonitorStore) GetAllByHostID(hostID string) storage.GetMultipleOp[*StoredInstanceMonitor] {

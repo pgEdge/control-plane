@@ -1,7 +1,6 @@
 package task
 
 import (
-	"path"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,7 +24,7 @@ type TaskLogEntryStore struct {
 	root   string
 }
 
-func NewTaskLogMessageStore(client *clientv3.Client, root string) *TaskLogEntryStore {
+func NewTaskLogEntryStore(client *clientv3.Client, root string) *TaskLogEntryStore {
 	return &TaskLogEntryStore{
 		client: client,
 		root:   root,
@@ -33,19 +32,19 @@ func NewTaskLogMessageStore(client *clientv3.Client, root string) *TaskLogEntryS
 }
 
 func (s *TaskLogEntryStore) Prefix() string {
-	return path.Join("/", s.root, "task_log_messages")
+	return storage.Prefix("/", s.root, "task_log_messages")
 }
 
 func (s *TaskLogEntryStore) DatabasePrefix(databaseID string) string {
-	return path.Join(s.Prefix(), databaseID)
+	return storage.Prefix(s.Prefix(), databaseID)
 }
 
 func (s *TaskLogEntryStore) TaskPrefix(databaseID string, taskID uuid.UUID) string {
-	return path.Join(s.DatabasePrefix(databaseID), taskID.String())
+	return storage.Prefix(s.DatabasePrefix(databaseID), taskID.String())
 }
 
 func (s *TaskLogEntryStore) Key(databaseID string, taskID, entryID uuid.UUID) string {
-	return path.Join(s.TaskPrefix(databaseID, taskID), entryID.String())
+	return storage.Key(s.TaskPrefix(databaseID, taskID), entryID.String())
 }
 
 type TaskLogOptions struct {

@@ -1,7 +1,6 @@
 package database
 
 import (
-	"path"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -63,15 +62,15 @@ func NewInstanceStore(client *clientv3.Client, root string) *InstanceStore {
 }
 
 func (s *InstanceStore) Prefix() string {
-	return path.Join("/", s.root, "instances")
+	return storage.Prefix("/", s.root, "instances")
 }
 
 func (s *InstanceStore) DatabasePrefix(databaseID string) string {
-	return path.Join(s.Prefix(), databaseID)
+	return storage.Prefix(s.Prefix(), databaseID)
 }
 
 func (s *InstanceStore) Key(databaseID, instanceID string) string {
-	return path.Join(s.DatabasePrefix(databaseID), instanceID)
+	return storage.Key(s.DatabasePrefix(databaseID), instanceID)
 }
 
 func (s *InstanceStore) GetByKey(databaseID, instanceID string) storage.GetOp[*StoredInstance] {
