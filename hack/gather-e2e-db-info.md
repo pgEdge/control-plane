@@ -23,10 +23,10 @@ with the engineering team or attached to a ticket.
 
 ## Prerequisites
 
-This script uses both `jq` and `yq`.
+This script `jq`, `yq`, and utilities from `coreutils`.
 
 ```sh
-brew install jq yq
+brew install jq yq coreutils
 ```
 
 ## Usage
