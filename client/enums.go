@@ -94,4 +94,7 @@ const (
 	TaskStatusCompleted = "completed"
 	TaskStatusFailed    = "failed"
 	TaskStatusUnknown   = "unknown"
+	TaskStatusCanceling = "canceling"
+	TaskStatusCanceled  = "canceled"
+	DatabaseStateFailed = "failed"
 )

@@ -28,7 +28,7 @@ type Client interface {
 	RestoreDatabase(ctx context.Context, req *api.RestoreDatabasePayload) (*api.RestoreDatabaseResponse, error)
 	GetVersion(ctx context.Context) (*api.VersionInfo, error)
 	RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (*api.Task, error)
-
+	CancelDatabaseTask(ctx context.Context, req *api.CancelDatabaseTaskPayload) (res *api.Task, err error)
 	// Helper methods
 
 	WaitForTask(ctx context.Context, req *api.GetDatabaseTaskPayload) (*api.Task, error)

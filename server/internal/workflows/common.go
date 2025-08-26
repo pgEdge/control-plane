@@ -114,9 +114,10 @@ func (w *Workflows) cancelTask(
 	}
 	_ = w.updateTask(cleanupCtx, logger, updateTaskInput)
 
-	w.logTaskEvent(cleanupCtx, databaseID, taskID, task.LogEntry{
+	err := w.logTaskEvent(cleanupCtx, databaseID, taskID, task.LogEntry{
 		Message: "task successfully canceled",
 		Fields:  map[string]any{"status": "canceled"},
 	})
+	logger.With("error", err).Error("failed to log task event")
 
 }
