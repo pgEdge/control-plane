@@ -1,6 +1,7 @@
 package workflows
 
 import (
+	"errors"
 	"fmt"
 	"math/rand/v2"
 
@@ -35,6 +36,15 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 		"task_id", input.TaskID.String(),
 		"backup_from_standby", input.BackupFromStandby,
 	)
+
+	defer func() {
+		if errors.Is(ctx.Err(), workflow.Canceled) {
+			logger.Warn("workflow was canceled")
+			cleanupCtx := workflow.NewDisconnectedContext(ctx)
+			w.cancelTask(cleanupCtx, input.DatabaseID, input.TaskID, logger)
+		}
+	}()
+
 	logger.Info("creating pgbackrest backup")
 
 	var handleError = func(cause error) error {

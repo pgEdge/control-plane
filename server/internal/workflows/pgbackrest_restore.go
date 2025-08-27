@@ -1,6 +1,7 @@
 package workflows
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -26,6 +27,14 @@ type PgBackRestRestoreOutput struct{}
 func (w *Workflows) PgBackRestRestore(ctx workflow.Context, input *PgBackRestRestoreInput) (*PgBackRestRestoreOutput, error) {
 	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID)
 	logger.Info("restoring database from pgbackrest backup")
+
+	defer func() {
+		if errors.Is(ctx.Err(), workflow.Canceled) {
+			logger.Warn("workflow was canceled")
+			cleanupCtx := workflow.NewDisconnectedContext(ctx)
+			w.cancelTask(cleanupCtx, input.Spec.DatabaseID, input.TaskID, logger)
+		}
+	}()
 
 	// This is an 'in-place' restore, meaning that the data directory is left
 	// intact. We always want to include the 'delta' option for this type of

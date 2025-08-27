@@ -52,6 +52,7 @@ func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*A
 		"event_resource_type", input.Event.Resource.Identifier.Type,
 		"event_resource_id", input.Event.Resource.Identifier.ID,
 	)
+
 	if input.Event.Type == resource.EventTypeRefresh {
 		// Refresh messages are less helpful during normal operation
 		logStart.Debug("applying resource event to state")
@@ -77,41 +78,56 @@ func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*A
 
 	outputEventType := input.Event.Type
 
-	switch input.Event.Type {
-	case resource.EventTypeRefresh:
-		err := r.Refresh(ctx, rc)
-		if errors.Is(err, resource.ErrNotFound) {
-			// The resource was deleted in the meantime, so we'll remove it from
-			// the state.
-			outputEventType = resource.EventTypeDelete
-		} else if err != nil {
-			return nil, fmt.Errorf("failed to refresh resource %s: %w", r.Identifier().String(), err)
-		}
-	case resource.EventTypeCreate:
-		err := a.logEvent(ctx, input.DatabaseID, input.TaskID, "creating", r, func() error {
-			return r.Create(ctx, rc)
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to create resource %s: %w", r.Identifier().String(), err)
-		}
-	case resource.EventTypeUpdate:
-		err := a.logEvent(ctx, input.DatabaseID, input.TaskID, "updating", r, func() error {
-			return r.Update(ctx, rc)
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to update resource %s: %w", r.Identifier().String(), err)
-		}
-	case resource.EventTypeDelete:
-		err := a.logEvent(ctx, input.DatabaseID, input.TaskID, "deleting", r, func() error {
-			return r.Delete(ctx, rc)
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to delete resource %s: %w", r.Identifier().String(), err)
-		}
-	default:
-		return nil, fmt.Errorf("unknown event type: %s", input.Event.Type)
-	}
+	ctxWithCancel, cancel := context.WithCancel(ctx)
+	defer cancel()
 
+	resultCh := make(chan error, 1)
+
+	go func() {
+		var applyErr error
+		switch input.Event.Type {
+		case resource.EventTypeRefresh:
+			applyErr = r.Refresh(ctxWithCancel, rc)
+			if errors.Is(applyErr, resource.ErrNotFound) {
+				outputEventType = resource.EventTypeDelete
+			} else if applyErr != nil {
+				applyErr = fmt.Errorf("failed to refresh resource %s: %w", r.Identifier().String(), applyErr)
+			}
+		case resource.EventTypeCreate:
+			applyErr = a.logEvent(ctxWithCancel, input.DatabaseID, input.TaskID, "creating", r, func() error {
+				return r.Create(ctxWithCancel, rc)
+			})
+			if applyErr != nil {
+				applyErr = fmt.Errorf("failed to create resource %s: %w", r.Identifier().String(), applyErr)
+			}
+		case resource.EventTypeUpdate:
+			applyErr = a.logEvent(ctxWithCancel, input.DatabaseID, input.TaskID, "updating", r, func() error {
+				return r.Update(ctxWithCancel, rc)
+			})
+			if applyErr != nil {
+				applyErr = fmt.Errorf("failed to update resource %s: %w", r.Identifier().String(), applyErr)
+			}
+		case resource.EventTypeDelete:
+			applyErr = a.logEvent(ctxWithCancel, input.DatabaseID, input.TaskID, "deleting", r, func() error {
+				return r.Delete(ctxWithCancel, rc)
+			})
+			if applyErr != nil {
+				applyErr = fmt.Errorf("failed to delete resource %s: %w", r.Identifier().String(), applyErr)
+			}
+		default:
+			applyErr = fmt.Errorf("unknown event type: %s", input.Event.Type)
+		}
+		resultCh <- applyErr
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, fmt.Errorf("acitvity canceled: %w", ctx.Err())
+	case err := <-resultCh:
+		if err != nil {
+			return nil, err
+		}
+	}
 	data, err := resource.ToResourceData(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare resource for serialization: %w", err)

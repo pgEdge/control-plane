@@ -842,6 +842,58 @@ paths:
                             - message
             schemes:
                 - http
+    /v1/databases/{database_id}/tasks/{task_id}/cancel:
+        get:
+            tags:
+                - Database
+            summary: Cancel a database task
+            description: Cancels a running or pending task for a database.
+            operationId: control-plane#cancel-database-task
+            parameters:
+                - name: database_id
+                  in: path
+                  description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+                  required: true
+                  type: string
+                - name: task_id
+                  in: path
+                  description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+                  required: true
+                  type: string
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/Task'
+                        required:
+                            - database_id
+                            - task_id
+                            - created_at
+                            - type
+                            - status
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/APIError'
+                        required:
+                            - name
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/APIError'
+                        required:
+                            - name
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/APIError'
+                        required:
+                            - name
+                            - message
+            schemes:
+                - http
     /v1/databases/{database_id}/tasks/{task_id}/log:
         get:
             tags:
@@ -4392,6 +4444,8 @@ definitions:
                     - completed
                     - failed
                     - unknown
+                    - canceled
+                    - canceling
         example:
             database_id: storefront
             entries:

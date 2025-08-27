@@ -1,10 +1,12 @@
 package workflows
 
 import (
+	"errors"
 	"time"
 
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
+	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
@@ -25,6 +27,24 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 		"task_id", input.TaskID.String(),
 	)
 	logger.Info("restarting instance")
+
+	defer func() {
+		if errors.Is(ctx.Err(), workflow.Canceled) {
+			logger.Warn("workflow was canceled")
+			cleanupCtx := workflow.NewDisconnectedContext(ctx)
+			w.cancelTask(cleanupCtx, input.DatabaseID, input.TaskID, logger)
+
+			updateStateInput := &activities.UpdateDbStateInput{
+				DatabaseID: input.DatabaseID,
+				State:      database.DatabaseStateFailed,
+			}
+
+			_, stateErr := w.Activities.ExecuteUpdateDbState(cleanupCtx, updateStateInput).Get(cleanupCtx)
+			if stateErr != nil {
+				logger.With("error", stateErr).Error("failed to update database state after cancellation")
+			}
+		}
+	}()
 
 	handleError := func(cause error) error {
 		logger.With("error", cause).Error("failed to restart instance")

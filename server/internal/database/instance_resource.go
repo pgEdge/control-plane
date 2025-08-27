@@ -171,8 +171,7 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 	}
 
 	patroniClient := r.patroniClient()
-
-	err = WaitForPatroniRunning(ctx, patroniClient, 12*time.Hour)
+	err = WaitForPatroniRunning(ctx, patroniClient, 0)
 	if err != nil {
 		return fmt.Errorf("failed to wait for patroni to enter running state: %w", err)
 	}

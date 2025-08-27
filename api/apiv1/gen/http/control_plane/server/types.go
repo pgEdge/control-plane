@@ -363,6 +363,33 @@ type StartInstanceResponseBody struct {
 	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
+// CancelDatabaseTaskResponseBody is the type of the "control-plane" service
+// "cancel-database-task" endpoint HTTP response body.
+type CancelDatabaseTaskResponseBody struct {
+	// The parent task ID of the task.
+	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	// The database ID of the task.
+	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// The unique ID of the task.
+	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+	// The time when the task was created.
+	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The status of the task.
+	Status string `form:"status" json:"status" xml:"status"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
 // InitClusterClusterAlreadyInitializedResponseBody is the type of the
 // "control-plane" service "init-cluster" endpoint HTTP response body for the
 // "cluster_already_initialized" error.
@@ -1166,6 +1193,36 @@ type StartInstanceNotFoundResponseBody struct {
 // service "start-instance" endpoint HTTP response body for the "server_error"
 // error.
 type StartInstanceServerErrorResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// CancelDatabaseTaskNotFoundResponseBody is the type of the "control-plane"
+// service "cancel-database-task" endpoint HTTP response body for the
+// "not_found" error.
+type CancelDatabaseTaskNotFoundResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// CancelDatabaseTaskInvalidInputResponseBody is the type of the
+// "control-plane" service "cancel-database-task" endpoint HTTP response body
+// for the "invalid_input" error.
+type CancelDatabaseTaskInvalidInputResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// CancelDatabaseTaskServerErrorResponseBody is the type of the "control-plane"
+// service "cancel-database-task" endpoint HTTP response body for the
+// "server_error" error.
+type CancelDatabaseTaskServerErrorResponseBody struct {
 	// The name of the error.
 	Name string `form:"name" json:"name" xml:"name"`
 	// The error message.
@@ -2647,6 +2704,25 @@ func NewStartInstanceResponseBody(res *controlplane.Task) *StartInstanceResponse
 	return body
 }
 
+// NewCancelDatabaseTaskResponseBody builds the HTTP response body from the
+// result of the "cancel-database-task" endpoint of the "control-plane" service.
+func NewCancelDatabaseTaskResponseBody(res *controlplane.Task) *CancelDatabaseTaskResponseBody {
+	body := &CancelDatabaseTaskResponseBody{
+		ParentID:    res.ParentID,
+		DatabaseID:  res.DatabaseID,
+		NodeName:    res.NodeName,
+		InstanceID:  res.InstanceID,
+		HostID:      res.HostID,
+		TaskID:      res.TaskID,
+		CreatedAt:   res.CreatedAt,
+		CompletedAt: res.CompletedAt,
+		Type:        res.Type,
+		Status:      res.Status,
+		Error:       res.Error,
+	}
+	return body
+}
+
 // NewInitClusterClusterAlreadyInitializedResponseBody builds the HTTP response
 // body from the result of the "init-cluster" endpoint of the "control-plane"
 // service.
@@ -3510,6 +3586,39 @@ func NewStartInstanceServerErrorResponseBody(res *controlplane.APIError) *StartI
 	return body
 }
 
+// NewCancelDatabaseTaskNotFoundResponseBody builds the HTTP response body from
+// the result of the "cancel-database-task" endpoint of the "control-plane"
+// service.
+func NewCancelDatabaseTaskNotFoundResponseBody(res *controlplane.APIError) *CancelDatabaseTaskNotFoundResponseBody {
+	body := &CancelDatabaseTaskNotFoundResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewCancelDatabaseTaskInvalidInputResponseBody builds the HTTP response body
+// from the result of the "cancel-database-task" endpoint of the
+// "control-plane" service.
+func NewCancelDatabaseTaskInvalidInputResponseBody(res *controlplane.APIError) *CancelDatabaseTaskInvalidInputResponseBody {
+	body := &CancelDatabaseTaskInvalidInputResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewCancelDatabaseTaskServerErrorResponseBody builds the HTTP response body
+// from the result of the "cancel-database-task" endpoint of the
+// "control-plane" service.
+func NewCancelDatabaseTaskServerErrorResponseBody(res *controlplane.APIError) *CancelDatabaseTaskServerErrorResponseBody {
+	body := &CancelDatabaseTaskServerErrorResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewJoinClusterClusterJoinToken builds a control-plane service join-cluster
 // endpoint payload.
 func NewJoinClusterClusterJoinToken(body *JoinClusterRequestBody) *controlplane.ClusterJoinToken {
@@ -3724,6 +3833,16 @@ func NewStartInstancePayload(databaseID string, instanceID string, force bool) *
 	v.DatabaseID = controlplane.Identifier(databaseID)
 	v.InstanceID = controlplane.Identifier(instanceID)
 	v.Force = force
+
+	return v
+}
+
+// NewCancelDatabaseTaskPayload builds a control-plane service
+// cancel-database-task endpoint payload.
+func NewCancelDatabaseTaskPayload(databaseID string, taskID string) *controlplane.CancelDatabaseTaskPayload {
+	v := &controlplane.CancelDatabaseTaskPayload{}
+	v.DatabaseID = controlplane.Identifier(databaseID)
+	v.TaskID = controlplane.Identifier(taskID)
 
 	return v
 }

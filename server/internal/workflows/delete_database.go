@@ -1,6 +1,7 @@
 package workflows
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/cschleiden/go-workflows/workflow"
@@ -22,6 +23,24 @@ type DeleteDatabaseOutput struct{}
 func (w *Workflows) DeleteDatabase(ctx workflow.Context, input *DeleteDatabaseInput) (*DeleteDatabaseOutput, error) {
 	logger := workflow.Logger(ctx).With("database_id", input.DatabaseID)
 	logger.Info("deleting database")
+
+	defer func() {
+		if errors.Is(ctx.Err(), workflow.Canceled) {
+			logger.Warn("workflow was canceled")
+			cleanupCtx := workflow.NewDisconnectedContext(ctx)
+			w.cancelTask(cleanupCtx, input.DatabaseID, input.TaskID, logger)
+
+			updateStateInput := &activities.UpdateDbStateInput{
+				DatabaseID: input.DatabaseID,
+				State:      database.DatabaseStateFailed,
+			}
+
+			_, stateErr := w.Activities.ExecuteUpdateDbState(cleanupCtx, updateStateInput).Get(cleanupCtx)
+			if stateErr != nil {
+				logger.With("error", stateErr).Error("failed to update database state after cancellation")
+			}
+		}
+	}()
 
 	handleError := func(cause error) error {
 		logger.With("error", cause).Error("failed to delete database")

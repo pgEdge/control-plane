@@ -318,3 +318,35 @@ func (s *Service) StartInstance(ctx context.Context, input *StartInstanceInput) 
 
 	return t, nil
 }
+
+func (s *Service) CancelDatabaseTask(ctx context.Context, DatabaseID string, taskID uuid.UUID) (*task.Task, error) {
+	t, err := s.taskSvc.GetTask(ctx, DatabaseID, taskID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve task from database : %w", err)
+	}
+	if t.WorkflowInstanceID == "" {
+		return nil, fmt.Errorf("no worflow instances associated with task")
+	}
+
+	t.Status = task.StatusCanceling
+	err = s.taskSvc.UpdateTask(ctx, t)
+	if err != nil {
+		return t, fmt.Errorf("failed to update task status to canceling  %w", err)
+	}
+	_ = s.taskSvc.AddLogEntry(ctx, DatabaseID, taskID, task.LogEntry{
+		Message: "task is canceling",
+		Fields:  map[string]any{"status": "canceling"},
+	})
+
+	wrkflw_instance := core.WorkflowInstance{
+		InstanceID:  t.WorkflowInstanceID,
+		ExecutionID: t.WorkflowExecutionID,
+	}
+
+	if err := s.client.CancelWorkflowInstance(ctx, &wrkflw_instance); err != nil {
+		return nil, fmt.Errorf("failed to cancel workflow instance %w", err)
+	}
+
+	return t, nil
+
+}

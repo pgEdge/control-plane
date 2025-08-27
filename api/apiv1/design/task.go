@@ -97,7 +97,7 @@ var TaskLog = g.Type("TaskLog", func() {
 		g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
 	})
 	g.Attribute("task_status", g.String, func() {
-		g.Enum("pending", "running", "completed", "failed", "unknown")
+		g.Enum("pending", "running", "completed", "failed", "unknown", "canceled", "canceling")
 		g.Description("The status of the task.")
 		g.Example("pending")
 	})

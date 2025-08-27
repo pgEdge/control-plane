@@ -18,6 +18,7 @@ const (
 	DatabaseStateDeleting  = "deleting"
 	DatabaseStateDegraded  = "degraded"
 	DatabaseStateUnknown   = "unknown"
+	DatabaseStateFailed    = "failed"
 )
 
 const (
@@ -94,4 +95,6 @@ const (
 	TaskStatusCompleted = "completed"
 	TaskStatusFailed    = "failed"
 	TaskStatusUnknown   = "unknown"
+	TaskStatusCanceling = "canceling"
+	TaskStatusCanceled  = "canceled"
 )

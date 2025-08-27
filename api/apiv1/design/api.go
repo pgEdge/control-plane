@@ -655,6 +655,44 @@ var _ = g.Service("control-plane", func() {
 		})
 	})
 
+	g.Method("cancel-database-task", func() {
+		g.Description("Cancels a running or pending task for a database.")
+		g.Meta("openapi:summary", "Cancel a database task")
+
+		g.Payload(func() {
+			g.Attribute("database_id", Identifier, func() {
+				g.Description("ID of the database that owns the task.")
+				g.Example("abc123")
+			})
+			g.Attribute("task_id", Identifier, func() {
+				g.Description("ID of the task to cancel.")
+				g.Example("def456")
+			})
+
+			g.Required("database_id", "task_id")
+		})
+
+		g.Result(Task, func() {
+			g.Description("Returns the canceled task.")
+		})
+
+		g.Error("not_found", func() {
+			g.Description("The specified database or task could not be found.")
+		})
+		g.Error("invalid_input", func() {
+			g.Description("The input values are malformed or missing.")
+		})
+		g.Error("cancel_failed", func() {
+			g.Description("The task could not be canceled.")
+		})
+
+		g.HTTP(func() {
+			g.GET("/v1/databases/{database_id}/tasks/{task_id}/cancel")
+			g.Meta("openapi:tag:Database")
+
+		})
+	})
+
 	// Serves the OpenAPI spec as a static file
 	g.Files("/v1/openapi.json", "./gen/http/openapi3.json", func() {
 		g.Meta("openapi:generate", "false")

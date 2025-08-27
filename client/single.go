@@ -182,6 +182,10 @@ func (c *SingleServerClient) WaitForTask(ctx context.Context, req *api.GetDataba
 
 	return task, nil
 }
+func (c *SingleServerClient) CancelDatabaseTask(ctx context.Context, req *api.CancelDatabaseTaskPayload) (*api.Task, error) {
+	resp, err := c.api.CancelDatabaseTask(ctx, req)
+	return resp, translateErr(err)
+}
 
 func (c *SingleServerClient) FollowTask(ctx context.Context, req *api.GetDatabaseTaskLogPayload, handler func(e *api.TaskLogEntry)) error {
 	ticker := time.NewTicker(taskPollInterval)

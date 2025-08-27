@@ -37,10 +37,11 @@ type Client struct {
 	RestartInstanceEndpoint    goa.Endpoint
 	StopInstanceEndpoint       goa.Endpoint
 	StartInstanceEndpoint      goa.Endpoint
+	CancelDatabaseTaskEndpoint goa.Endpoint
 }
 
 // NewClient initializes a "control-plane" service client given the endpoints.
-func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluster, listHosts, getHost, removeHost, listDatabases, createDatabase, getDatabase, updateDatabase, deleteDatabase, backupDatabaseNode, listDatabaseTasks, getDatabaseTask, getDatabaseTaskLog, restoreDatabase, getVersion, restartInstance, stopInstance, startInstance goa.Endpoint) *Client {
+func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluster, listHosts, getHost, removeHost, listDatabases, createDatabase, getDatabase, updateDatabase, deleteDatabase, backupDatabaseNode, listDatabaseTasks, getDatabaseTask, getDatabaseTaskLog, restoreDatabase, getVersion, restartInstance, stopInstance, startInstance, cancelDatabaseTask goa.Endpoint) *Client {
 	return &Client{
 		InitClusterEndpoint:        initCluster,
 		JoinClusterEndpoint:        joinCluster,
@@ -64,6 +65,7 @@ func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluste
 		RestartInstanceEndpoint:    restartInstance,
 		StopInstanceEndpoint:       stopInstance,
 		StartInstanceEndpoint:      startInstance,
+		CancelDatabaseTaskEndpoint: cancelDatabaseTask,
 	}
 }
 
@@ -416,6 +418,23 @@ func (c *Client) StopInstance(ctx context.Context, p *StopInstancePayload) (res 
 func (c *Client) StartInstance(ctx context.Context, p *StartInstancePayload) (res *Task, err error) {
 	var ires any
 	ires, err = c.StartInstanceEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*Task), nil
+}
+
+// CancelDatabaseTask calls the "cancel-database-task" endpoint of the
+// "control-plane" service.
+// CancelDatabaseTask may return the following errors:
+//   - "not_found" (type *goa.ServiceError): The specified database or task could not be found.
+//   - "invalid_input" (type *goa.ServiceError): The input values are malformed or missing.
+//   - "cancel_failed" (type *goa.ServiceError): The task could not be canceled.
+//   - "server_error" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) CancelDatabaseTask(ctx context.Context, p *CancelDatabaseTaskPayload) (res *Task, err error) {
+	var ires any
+	ires, err = c.CancelDatabaseTaskEndpoint(ctx, p)
 	if err != nil {
 		return
 	}

@@ -2350,6 +2350,107 @@ func EncodeStartInstanceError(encoder func(context.Context, http.ResponseWriter)
 	}
 }
 
+// EncodeCancelDatabaseTaskResponse returns an encoder for responses returned
+// by the control-plane cancel-database-task endpoint.
+func EncodeCancelDatabaseTaskResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.Task)
+		enc := encoder(ctx, w)
+		body := NewCancelDatabaseTaskResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeCancelDatabaseTaskRequest returns a decoder for requests sent to the
+// control-plane cancel-database-task endpoint.
+func DecodeCancelDatabaseTaskRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			databaseID string
+			taskID     string
+			err        error
+
+			params = mux.Vars(r)
+		)
+		databaseID = params["database_id"]
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
+		taskID = params["task_id"]
+		if utf8.RuneCountInString(taskID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("task_id", taskID, utf8.RuneCountInString(taskID), 1, true))
+		}
+		if utf8.RuneCountInString(taskID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("task_id", taskID, utf8.RuneCountInString(taskID), 63, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewCancelDatabaseTaskPayload(databaseID, taskID)
+
+		return payload, nil
+	}
+}
+
+// EncodeCancelDatabaseTaskError returns an encoder for errors returned by the
+// cancel-database-task control-plane endpoint.
+func EncodeCancelDatabaseTaskError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "not_found":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewCancelDatabaseTaskNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewCancelDatabaseTaskInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewCancelDatabaseTaskServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // marshalControlplaneClusterPeerToClusterPeerResponseBody builds a value of
 // type *ClusterPeerResponseBody from a value of type *controlplane.ClusterPeer.
 func marshalControlplaneClusterPeerToClusterPeerResponseBody(v *controlplane.ClusterPeer) *ClusterPeerResponseBody {

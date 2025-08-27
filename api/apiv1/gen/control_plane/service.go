@@ -62,6 +62,8 @@ type Service interface {
 	StopInstance(context.Context, *StopInstancePayload) (res *Task, err error)
 	// Starts a specific instance within a database. Supports immediate starts
 	StartInstance(context.Context, *StartInstancePayload) (res *Task, err error)
+	// Cancels a running or pending task for a database.
+	CancelDatabaseTask(context.Context, *CancelDatabaseTaskPayload) (res *Task, err error)
 }
 
 // APIName is the name of the API as defined in the design.
@@ -78,7 +80,7 @@ const ServiceName = "control-plane"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [22]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "delete-database", "backup-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "restore-database", "get-version", "restart-instance", "stop-instance", "start-instance"}
+var MethodNames = [23]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "delete-database", "backup-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "restore-database", "get-version", "restart-instance", "stop-instance", "start-instance", "cancel-database-task"}
 
 // A Control Plane API error.
 type APIError struct {
@@ -184,6 +186,15 @@ type BackupScheduleSpec struct {
 	Type string
 	// The cron expression for this schedule.
 	CronExpression string
+}
+
+// CancelDatabaseTaskPayload is the payload type of the control-plane service
+// cancel-database-task method.
+type CancelDatabaseTaskPayload struct {
+	// ID of the database that owns the task.
+	DatabaseID Identifier
+	// ID of the task to cancel.
+	TaskID Identifier
 }
 
 // Cluster is the result type of the control-plane service get-cluster method.
@@ -931,6 +942,11 @@ func MakeStopFailed(err error) *goa.ServiceError {
 // MakeStartFailed builds a goa.ServiceError from an error.
 func MakeStartFailed(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "start_failed", false, false, false)
+}
+
+// MakeCancelFailed builds a goa.ServiceError from an error.
+func MakeCancelFailed(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "cancel_failed", false, false, false)
 }
 
 // NewListDatabasesResponse initializes result type ListDatabasesResponse from

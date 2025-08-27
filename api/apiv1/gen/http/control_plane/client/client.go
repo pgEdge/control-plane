@@ -105,6 +105,10 @@ type Client struct {
 	// start-instance endpoint.
 	StartInstanceDoer goahttp.Doer
 
+	// CancelDatabaseTask Doer is the HTTP client used to make requests to the
+	// cancel-database-task endpoint.
+	CancelDatabaseTaskDoer goahttp.Doer
+
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
 	RestoreResponseBody bool
@@ -148,6 +152,7 @@ func NewClient(
 		RestartInstanceDoer:    doer,
 		StopInstanceDoer:       doer,
 		StartInstanceDoer:      doer,
+		CancelDatabaseTaskDoer: doer,
 		RestoreResponseBody:    restoreBody,
 		scheme:                 scheme,
 		host:                   host,
@@ -629,6 +634,25 @@ func (c *Client) StartInstance() goa.Endpoint {
 		resp, err := c.StartInstanceDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("control-plane", "start-instance", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// CancelDatabaseTask returns an endpoint that makes HTTP requests to the
+// control-plane service cancel-database-task server.
+func (c *Client) CancelDatabaseTask() goa.Endpoint {
+	var (
+		decodeResponse = DecodeCancelDatabaseTaskResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildCancelDatabaseTaskRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.CancelDatabaseTaskDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "cancel-database-task", err)
 		}
 		return decodeResponse(resp)
 	}

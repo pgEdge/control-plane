@@ -256,6 +256,13 @@ func (c *MultiServerClient) RestartInstance(ctx context.Context, req *api.Restar
 	}
 	return server.RestartInstance(ctx, req)
 }
+func (c *MultiServerClient) CancelDatabaseTask(ctx context.Context, req *api.CancelDatabaseTaskPayload) (res *api.Task, err error) {
+	server, err := c.liveServer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return server.CancelDatabaseTask(ctx, req)
+}
 
 func (c *MultiServerClient) WaitForTask(ctx context.Context, req *api.GetDatabaseTaskPayload) (*api.Task, error) {
 	server, err := c.liveServer(ctx)

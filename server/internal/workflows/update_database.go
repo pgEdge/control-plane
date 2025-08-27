@@ -1,6 +1,7 @@
 package workflows
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/cschleiden/go-workflows/workflow"
@@ -24,6 +25,25 @@ type UpdateDatabaseOutput struct {
 
 func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseInput) (*UpdateDatabaseOutput, error) {
 	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID)
+	defer func() {
+		if errors.Is(ctx.Err(), workflow.Canceled) {
+			logger.Warn("workflow was canceled")
+			cleanupCtx := workflow.NewDisconnectedContext(ctx)
+			w.cancelTask(cleanupCtx, input.Spec.DatabaseID, input.TaskID, logger)
+
+			updateStateInput := &activities.UpdateDbStateInput{
+				DatabaseID: input.Spec.DatabaseID,
+				State:      database.DatabaseStateFailed,
+			}
+
+			_, err := w.Activities.ExecuteUpdateDbState(cleanupCtx, updateStateInput).Get(cleanupCtx)
+			if err != nil {
+				logger.With("error", err).Error("failed to update database state after cancellation")
+			}
+
+		}
+	}()
+
 	logger.Info("updating database")
 
 	handleError := func(cause error) error {
