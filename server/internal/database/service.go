@@ -17,6 +17,7 @@ var ErrDatabaseNotFound = errors.New("database not found")
 var ErrDatabaseNotModifiable = errors.New("database not modifiable")
 var ErrInstanceNotFound = errors.New("instance not found")
 var ErrTenantIDCannotBeChanged = errors.New("tenant ID cannot be changed")
+var ErrDatabaseNameCannotBeChanged = errors.New("database name cannot be changed")
 
 type Service struct {
 	orchestrator Orchestrator
@@ -71,9 +72,17 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 		}
 		return nil, fmt.Errorf("failed to get database spec: %w", err)
 	}
+
+	// Immutable: tenant_id must not change
 	if !tenantIDsMatch(currentSpec.TenantID, spec.TenantID) {
 		return nil, ErrTenantIDCannotBeChanged
 	}
+
+	// Immutable: database_name must not change
+	if currentSpec.DatabaseName != spec.DatabaseName {
+		return nil, errors.New("database name cannot be changed")
+	}
+
 	currentDB, err := s.store.Database.GetByKey(spec.DatabaseID).Exec(ctx)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
