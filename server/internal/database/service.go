@@ -80,7 +80,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 
 	// Immutable: database_name must not change
 	if currentSpec.DatabaseName != spec.DatabaseName {
-		return nil, errors.New("database name cannot be changed")
+		return nil, ErrDatabaseNameCannotBeChanged
 	}
 
 	currentDB, err := s.store.Database.GetByKey(spec.DatabaseID).Exec(ctx)
