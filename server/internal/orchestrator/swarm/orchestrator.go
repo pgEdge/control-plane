@@ -7,7 +7,6 @@ import (
 	"io"
 	"maps"
 	"net/netip"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -35,21 +34,13 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/scheduler"
 )
 
-var defaultVersion = host.MustPgEdgeVersion("17", "5")
-
 const (
 	OverlayDriver = "overlay"
 )
 
-// TODO: What should this look like?
-var allVersions = []*host.PgEdgeVersion{
-	defaultVersion,
-	host.MustPgEdgeVersion("16", "5"),
-	host.MustPgEdgeVersion("15", "5"),
-}
-
 type Orchestrator struct {
 	cfg                config.Config
+	versions           *Versions
 	docker             *docker.Docker
 	logger             zerolog.Logger
 	dbNetworkAllocator Allocator
@@ -94,9 +85,10 @@ func NewOrchestrator(
 	}
 
 	return &Orchestrator{
-		cfg:    cfg,
-		docker: d,
-		logger: logger,
+		cfg:      cfg,
+		versions: NewVersions(cfg),
+		docker:   d,
+		logger:   logger,
 		dbNetworkAllocator: Allocator{
 			Prefix: dbNetworkPrefix,
 			Bits:   cfg.DockerSwarm.DatabaseNetworksSubnetBits,
@@ -119,8 +111,8 @@ func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
 		MemberID:         o.swarmNodeID,
 		ControlAvailable: o.controlAvailable,
 	}
-	h.DefaultPgEdgeVersion = defaultVersion
-	h.SupportedPgEdgeVersions = allVersions
+	h.DefaultPgEdgeVersion = o.versions.Default()
+	h.SupportedPgEdgeVersions = o.versions.Supported()
 
 	return nil
 }
@@ -147,32 +139,8 @@ func (o *Orchestrator) PopulateHostStatus(ctx context.Context, status *host.Host
 	return nil
 }
 
-type Images struct {
-	PgEdgeImage string
-}
-
-func GetImages(cfg config.Config, version *host.PgEdgeVersion) (*Images, error) {
-	// TODO: Real implementation
-	var tag string
-	switch version.PostgresVersion.String() {
-	case "17":
-		tag = "pgedge:pg17_5.0.0-1"
-	case "16":
-		tag = "pgedge:pg16_5.0.0-1"
-	case "15":
-		tag = "pgedge:pg15_5.0.0-1"
-	default:
-		return nil, fmt.Errorf("unsupported postgres version: %q", version.PostgresVersion)
-	}
-
-	return &Images{
-		PgEdgeImage: path.Join(cfg.DockerSwarm.ImageRepositoryHost, tag),
-	}, nil
-}
-
 func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*database.InstanceResources, error) {
-	// instanceDir := filepath.Join(o.cfg.DataDir, "databases", spec.DatabaseID.String(), spec.InstanceID.String())
-	images, err := GetImages(o.cfg, spec.PgEdgeVersion)
+	images, err := o.versions.GetImages(spec.PgEdgeVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get images: %w", err)
 	}
@@ -557,10 +525,10 @@ func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.
 	specVersion := spec.PgEdgeVersion
 	if specVersion == nil {
 		o.logger.Warn().Msg("PostgresVersion not provided, using default version")
-		specVersion = defaultVersion
+		specVersion = o.versions.defaultVersion
 	}
 
-	images, err := GetImages(o.cfg, specVersion)
+	images, err := o.versions.GetImages(specVersion)
 	if err != nil {
 		return fmt.Errorf("image fetch error: %w", err)
 	}

@@ -84,10 +84,12 @@ func DatabaseServiceSpec(
 	return swarm.ServiceSpec{
 		TaskTemplate: swarm.TaskSpec{
 			ContainerSpec: &swarm.ContainerSpec{
-				Image:    options.Images.PgEdgeImage,
-				Labels:   labels,
-				Args:     []string{"/opt/pgedge/configs/patroni.yaml"},
-				Hostname: options.InstanceHostname,
+				Image:      options.Images.PgEdgeImage,
+				StopSignal: "SIGTERM", // Have to override stop signal for Patroni
+				Command:    []string{"/usr/local/bin/patroni"},
+				Labels:     labels,
+				Args:       []string{"/opt/pgedge/configs/patroni.yaml"},
+				Hostname:   options.InstanceHostname,
 				Env: []string{
 					"PATRONICTL_CONFIG_FILE=/opt/pgedge/configs/patroni.yaml",
 				},

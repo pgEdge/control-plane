@@ -291,7 +291,7 @@ func defaultConfig() (Config, error) {
 		StopGracePeriodSeconds: 30,
 		EmbeddedEtcd:           embeddedEtcdDefault,
 		DockerSwarm:            defaultDockerSwarm,
-		DatabaseOwnerUID:       1020,
+		DatabaseOwnerUID:       26,
 	}, nil
 }
 
