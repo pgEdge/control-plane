@@ -4,6 +4,7 @@ include pgedge.mk
 # Overridable vars
 DEBUG ?= 0
 LOG_LEVEL ?= info
+DEV_IMAGE_REPO ?= ghcr.io/pgedge
 CONTROL_PLANE_IMAGE_REPO ?= host.docker.internal:5000/control-plane
 CONTROL_PLANE_VERSION ?= $(shell git describe --tags --abbrev=0 --match 'v*')
 E2E_FIXTURE ?=
@@ -16,6 +17,7 @@ buildx_config=$(if $(CI),"./buildkit.ci.toml","./buildkit.toml")
 docker_compose_dev=WORKSPACE_DIR=$(shell pwd) \
 		DEBUG=$(DEBUG) \
 		LOG_LEVEL=$(LOG_LEVEL) \
+		DEV_IMAGE_REPO=$(DEV_IMAGE_REPO) \
 		docker compose -f ./docker/control-plane-dev/docker-compose.yaml
 docker_compose_ci=docker compose -f ./docker/control-plane-ci/docker-compose.yaml
 e2e_args=-tags=e2e_test -count=1 -timeout=20m ./e2e/... \
