@@ -136,7 +136,7 @@ type InstanceSubscriptionView struct {
 type DatabaseSpecView struct {
 	// The name of the Postgres database.
 	DatabaseName *string
-	// The major version of the Postgres database.
+	// The Postgres version in 'major.minor' format.
 	PostgresVersion *string
 	// The major version of the Spock extension.
 	SpockVersion *string
@@ -181,8 +181,8 @@ type DatabaseNodeSpecView struct {
 	// specified, one host will chosen as a primary, and the others will be read
 	// replicas.
 	HostIds []IdentifierView
-	// The major version of Postgres for this node. Overrides the Postgres version
-	// set in the DatabaseSpec.
+	// The Postgres version for this node in 'major.minor' format. Overrides the
+	// Postgres version set in the DatabaseSpec.
 	PostgresVersion *string
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
@@ -914,14 +914,10 @@ func ValidateDatabaseSpecView(result *DatabaseSpecView) (err error) {
 		}
 	}
 	if result.PostgresVersion != nil {
-		if !(*result.PostgresVersion == "15" || *result.PostgresVersion == "16" || *result.PostgresVersion == "17") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.postgres_version", *result.PostgresVersion, []any{"15", "16", "17"}))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.postgres_version", *result.PostgresVersion, "^\\d{2}\\.\\d{1,2}$"))
 	}
 	if result.SpockVersion != nil {
-		if !(*result.SpockVersion == "5") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.spock_version", *result.SpockVersion, []any{"5"}))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.spock_version", *result.SpockVersion, "^\\d{1}$"))
 	}
 	if result.Port != nil {
 		if *result.Port < 0 {
@@ -1014,9 +1010,7 @@ func ValidateDatabaseNodeSpecView(result *DatabaseNodeSpecView) (err error) {
 		}
 	}
 	if result.PostgresVersion != nil {
-		if !(*result.PostgresVersion == "15" || *result.PostgresVersion == "16" || *result.PostgresVersion == "17") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.postgres_version", *result.PostgresVersion, []any{"15", "16", "17"}))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.postgres_version", *result.PostgresVersion, "^\\d{2}\\.\\d{1,2}$"))
 	}
 	if result.Port != nil {
 		if *result.Port < 0 {
