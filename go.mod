@@ -3,7 +3,6 @@ module github.com/pgEdge/control-plane
 go 1.24.3
 
 require (
-	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/cilium/ipam v0.0.0-20230509084518-fd66eae7909b
 	github.com/cschleiden/go-workflows v0.19.0
 	github.com/docker/docker v27.1.1+incompatible
