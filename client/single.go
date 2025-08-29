@@ -60,6 +60,7 @@ func NewSingleServerClient(ctx context.Context, server ServerConfig) (*SingleSer
 			RestoreDatabaseEndpoint:    cli.RestoreDatabase(),
 			GetVersionEndpoint:         cli.GetVersion(),
 			RestartInstanceEndpoint:    cli.RestartInstance(),
+			CancelDatabaseTaskEndpoint: cli.CancelDatabaseTask(),
 		},
 	}, nil
 }
@@ -168,7 +169,7 @@ func (c *SingleServerClient) WaitForTask(ctx context.Context, req *api.GetDataba
 		return nil, err
 	}
 
-	for task.Status != TaskStatusCompleted && task.Status != TaskStatusFailed {
+	for task.Status != TaskStatusCompleted && task.Status != TaskStatusCanceled && task.Status != TaskStatusFailed {
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
@@ -206,7 +207,7 @@ func (c *SingleServerClient) FollowTask(ctx context.Context, req *api.GetDatabas
 		handler(entry)
 	}
 
-	for taskLog.TaskStatus != TaskStatusCompleted && taskLog.TaskStatus != TaskStatusFailed {
+	for taskLog.TaskStatus != TaskStatusCompleted && taskLog.TaskStatus != TaskStatusCanceled && taskLog.TaskStatus != TaskStatusFailed {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()

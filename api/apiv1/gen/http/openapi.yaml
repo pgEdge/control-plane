@@ -4378,6 +4378,8 @@ definitions:
                     - pending
                     - running
                     - completed
+                    - canceled
+                    - canceling
                     - failed
                     - unknown
             task_id:

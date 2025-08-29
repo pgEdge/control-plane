@@ -1584,8 +1584,8 @@ func ValidateTaskView(result *TaskView) (err error) {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.completed_at", *result.CompletedAt, goa.FormatDateTime))
 	}
 	if result.Status != nil {
-		if !(*result.Status == "pending" || *result.Status == "running" || *result.Status == "completed" || *result.Status == "failed" || *result.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.status", *result.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		if !(*result.Status == "pending" || *result.Status == "running" || *result.Status == "completed" || *result.Status == "canceled" || *result.Status == "canceling" || *result.Status == "failed" || *result.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.status", *result.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
 		}
 	}
 	return

@@ -3989,8 +3989,8 @@ func ValidateGetDatabaseTaskResponseBody(body *GetDatabaseTaskResponseBody) (err
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
 	}
 	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
 		}
 	}
 	return
@@ -4110,8 +4110,8 @@ func ValidateRestartInstanceResponseBody(body *RestartInstanceResponseBody) (err
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
 	}
 	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
 		}
 	}
 	return
@@ -4148,8 +4148,8 @@ func ValidateStopInstanceResponseBody(body *StopInstanceResponseBody) (err error
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
 	}
 	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
 		}
 	}
 	return
@@ -4186,8 +4186,8 @@ func ValidateStartInstanceResponseBody(body *StartInstanceResponseBody) (err err
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
 	}
 	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
 		}
 	}
 	return
@@ -4224,8 +4224,8 @@ func ValidateCancelDatabaseTaskResponseBody(body *CancelDatabaseTaskResponseBody
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
 	}
 	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
 		}
 	}
 	return
@@ -6983,8 +6983,8 @@ func ValidateTaskResponseBody(body *TaskResponseBody) (err error) {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
 	}
 	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "failed", "unknown"}))
+		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
 		}
 	}
 	return
