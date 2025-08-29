@@ -2,8 +2,12 @@ package api
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/rs/zerolog"
@@ -33,6 +37,14 @@ func newHTTPServer(
 }
 
 func (s *httpServer) start() {
+	if s.cfg.CACert == "" {
+		s.listenAndServe()
+	} else {
+		s.listenAndServeTLS()
+	}
+}
+
+func (s *httpServer) listenAndServe() {
 	go func() {
 		s.logger.Info().
 			Str("host_port", s.server.Addr).
@@ -40,6 +52,36 @@ func (s *httpServer) start() {
 
 		if err := s.server.ListenAndServe(); err != nil {
 			s.errCh <- fmt.Errorf("http server error: %w", err)
+		}
+	}()
+}
+
+func (s *httpServer) listenAndServeTLS() {
+	go func() {
+		s.logger.Info().
+			Str("host_port", s.server.Addr).
+			Msg("starting https server")
+
+		rootCA, err := os.ReadFile(s.cfg.CACert)
+		if err != nil {
+			s.errCh <- fmt.Errorf("failed to read CA cert: %w", err)
+			return
+		}
+
+		certPool := x509.NewCertPool()
+		if ok := certPool.AppendCertsFromPEM(rootCA); !ok {
+			s.errCh <- errors.New("failed to use CA cert")
+			return
+		}
+
+		s.server.TLSConfig = &tls.Config{
+			RootCAs:    certPool,
+			ClientCAs:  certPool,
+			ClientAuth: tls.RequireAndVerifyClientCert,
+		}
+
+		if err := s.server.ListenAndServeTLS(s.cfg.ServerCert, s.cfg.ServerKey); err != nil {
+			s.errCh <- fmt.Errorf("https server error: %w", err)
 		}
 	}()
 }
