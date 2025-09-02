@@ -1,24 +1,93 @@
 package host
 
 import (
+	"encoding"
+	"encoding/json"
 	"fmt"
+	"regexp"
 	"slices"
-
-	"github.com/Masterminds/semver/v3"
+	"strconv"
+	"strings"
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
+var _ encoding.TextMarshaler = (*Version)(nil)
+var _ encoding.TextUnmarshaler = (*Version)(nil)
+
 type Version struct {
-	SemVer *semver.Version `json:"semver"`
+	Components []uint64 `json:"components"`
 }
 
 func (v *Version) String() string {
-	return fmt.Sprintf("%d", v.SemVer.Major())
+	components := make([]string, len(v.Components))
+	for i, c := range v.Components {
+		components[i] = strconv.FormatUint(c, 10)
+	}
+	return strings.Join(components, ".")
+}
+
+func (v *Version) MarshalText() (data []byte, err error) {
+	return []byte(v.String()), nil
+}
+
+func (v *Version) UnmarshalText(data []byte) error {
+	parsed, err := ParseVersion(string(data))
+	if err != nil {
+		return err
+	}
+	v.Components = parsed.Components
+	return nil
+}
+
+func (v *Version) UnmarshalJSON(data []byte) error {
+	// Needed temporarily for backwards compatibility. We can remove this entire
+	// UnmarshalJSON function once everyone has upgraded.
+	if len(data) == 0 {
+		return nil
+	}
+
+	d := string(data)
+	switch d[0] {
+	case '{':
+		var m map[string]string
+		err := json.Unmarshal(data, &m)
+		if err != nil {
+			return err
+		}
+		return v.UnmarshalText([]byte(m["semver"]))
+	case '"':
+		var s string
+		err := json.Unmarshal(data, &s)
+		if err != nil {
+			return err
+		}
+		return v.UnmarshalText([]byte(s))
+	default:
+		return fmt.Errorf("invalid version format: %s", data)
+	}
 }
 
 func (v *Version) Compare(other *Version) int {
-	return v.SemVer.Compare(other.SemVer)
+	return slices.Compare(v.Components, other.Components)
+}
+
+var semverRegexp = regexp.MustCompile(`^\d+(.\d+){0,2}$`)
+
+func ParseVersion(s string) (*Version, error) {
+	if !semverRegexp.MatchString(s) {
+		return nil, fmt.Errorf("invalid version format: %q", s)
+	}
+	parts := strings.Split(s, ".")
+	components := make([]uint64, len(parts))
+	for i, p := range parts {
+		c, err := strconv.ParseUint(p, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid version component %q: %w", p, err)
+		}
+		components[i] = c
+	}
+	return &Version{Components: components}, nil
 }
 
 type PgEdgeVersion struct {
@@ -27,7 +96,7 @@ type PgEdgeVersion struct {
 }
 
 func (v *PgEdgeVersion) String() string {
-	return fmt.Sprintf("%s-%s", v.PostgresVersion.String(), v.SpockVersion.String())
+	return fmt.Sprintf("%s_%s", v.PostgresVersion, v.SpockVersion)
 }
 
 func (v *PgEdgeVersion) Compare(other *PgEdgeVersion) int {
@@ -58,98 +127,59 @@ func MustPgEdgeVersion(postgresVersion, spockVersion string) *PgEdgeVersion {
 }
 
 func NewPgEdgeVersion(postgresVersion, spockVersion string) (*PgEdgeVersion, error) {
-	pv, err := semver.NewVersion(postgresVersion)
+	pv, err := ParseVersion(postgresVersion)
 	if err != nil {
-		return nil, fmt.Errorf("invalid postgres version: %w", err)
+		return nil, fmt.Errorf("invalid postgres version: %q", postgresVersion)
 	}
-	sv, err := semver.NewVersion(spockVersion)
+	sv, err := ParseVersion(spockVersion)
 	if err != nil {
-		return nil, fmt.Errorf("invalid spock version: %w", err)
+		return nil, fmt.Errorf("invalid spock version: %q", spockVersion)
 	}
+
 	return &PgEdgeVersion{
-		PostgresVersion: &Version{SemVer: pv},
-		SpockVersion:    &Version{SemVer: sv},
+		PostgresVersion: pv,
+		SpockVersion:    sv,
 	}, nil
 }
 
-// func pgEdgeVersionFromStrings(postgresVersion, spockVersion string) (PgEdgeVersion, error) {
-// 	pv, err := semver.NewVersion(postgresVersion)
-// 	if err != nil {
-// 		return PgEdgeVersion{}, fmt.Errorf("invalid postgres version: %w", err)
-// 	}
-// 	sv, err := semver.NewVersion(spockVersion)
-// 	if err != nil {
-// 		return PgEdgeVersion{}, fmt.Errorf("invalid spock version: %w", err)
-// 	}
-// 	return PgEdgeVersion{
-// 		PostgresVersion: pv,
-// 		SpockVersion:    sv,
-// 	}, nil
-// }
-
 func GreatestCommonDefaultVersion(hosts ...*Host) (*PgEdgeVersion, error) {
-	allVersions := map[string]*PgEdgeVersion{}
-	commonSet := ds.NewSet[string]()
-	supported := make([][]*PgEdgeVersion, 0, len(hosts))
+	// We can't do set operations on *PgEdgeVersion, and we can't do semver
+	// comparisons on strings. So, we'll use strings for set operations, then
+	// translate them back to *PgEdgeVersions to do the version comparisons.
+	stringToVersion := map[string]*PgEdgeVersion{}
+	defaultVersions := ds.NewSet[string]()
+	var commonVersions ds.Set[string]
 	for _, h := range hosts {
-		s := h.DefaultPgEdgeVersion.String()
-		allVersions[s] = h.DefaultPgEdgeVersion
-		commonSet.Add(s)
-	}
-	for _, sv := range supported {
-		svSet := ds.NewSet[string]()
-		for _, v := range sv {
-			allVersions[v.String()] = v
-			svSet.Add(v.String())
+		defaultVersions.Add(h.DefaultPgEdgeVersion.String())
+		supported := ds.NewSet[string]()
+		for _, v := range h.SupportedPgEdgeVersions {
+			vs := v.String()
+			supported.Add(vs)
+			stringToVersion[vs] = v
 		}
-		commonSet = commonSet.Intersection(svSet)
-		if len(commonSet) == 0 {
-			// short-circuit as soon as we know there are no common versions
-			break
+		if commonVersions == nil {
+			commonVersions = supported
+		} else {
+			commonVersions = commonVersions.Intersection(supported)
 		}
 	}
-	if len(commonSet) == 0 {
-		return nil, fmt.Errorf("no common versions found")
+
+	commonDefaults := defaultVersions.Intersection(commonVersions)
+	if len(commonDefaults) == 0 {
+		return nil, fmt.Errorf("no common default versions found between the given hosts")
 	}
-	common := make([]*PgEdgeVersion, 0, len(commonSet))
-	for versionString := range commonSet {
-		version, ok := allVersions[versionString]
+
+	versions := make([]*PgEdgeVersion, 0, len(commonDefaults))
+	for vs := range commonDefaults {
+		v, ok := stringToVersion[vs]
 		if !ok {
-			return nil, fmt.Errorf("invalid state - missing version: %q", versionString)
+			return nil, fmt.Errorf("invalid state - missing version: %q", vs)
 		}
-		common = append(common, version)
+		versions = append(versions, v)
 	}
-	slices.SortFunc(common, func(a, b *PgEdgeVersion) int {
+	slices.SortFunc(versions, func(a, b *PgEdgeVersion) int {
 		// Sort in reverse order
 		return -a.Compare(b)
 	})
-	return common[0], nil
+	return versions[0], nil
 }
-
-// func (sv SupportedVersions) Supports(postgresVersion PostgresVersion, spockVersion SpockVersion) bool {
-// 	if _, ok := sv[postgresVersion]; !ok {
-// 		return false
-// 	}
-// 	return sv[postgresVersion][spockVersion]
-// }
-
-// func (sv SupportedVersions) All() ds.Set[PgEdgeVersion] {
-// 	versions := ds.NewSet[PgEdgeVersion]()
-// 	for postgresVersion, spockVersions := range sv {
-// 		for spockVersion := range spockVersions {
-// 			versions.Add(PgEdgeVersion{
-// 				PostgresVersion: postgresVersion,
-// 				SpockVersion:    spockVersion,
-// 			})
-// 		}
-// 	}
-// 	return versions
-// }
-
-// func (sv SupportedVersions) CommonVersions(others ...SupportedVersions) ds.Set[PgEdgeVersion] {
-// 	commonVersions := sv.All()
-// 	for _, other := range others {
-// 		commonVersions = commonVersions.Intersection(other.All())
-// 	}
-// 	return commonVersions
-// }
