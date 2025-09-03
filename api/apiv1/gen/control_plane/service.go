@@ -352,6 +352,9 @@ type DatabaseNodeSpec struct {
 	RestoreConfig *RestoreConfigSpec
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOpts
+	// The name of the source node to use for sync. This is typically the node
+	// (like 'n1') from which the data will be copied to initialize this new node.
+	SourceNode *string
 	// The failover policy for this database's read replicas. If failover_policy is
 	// automatic, a read replica will automatically be promoted when a primary
 	// instance fails. If it is disabled, read replicas will not be promoted when a
@@ -1340,6 +1343,7 @@ func transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec(v *control
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		SourceNode:      v.SourceNode,
 		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.HostIds != nil {
@@ -1691,6 +1695,7 @@ func transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView(v *Databas
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		SourceNode:      v.SourceNode,
 		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.HostIds != nil {

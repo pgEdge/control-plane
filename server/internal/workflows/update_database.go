@@ -88,24 +88,56 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		return nil, handleError(fmt.Errorf("failed to get current state: %w", err))
 	}
 
+	current := refreshCurrentOutput.State
+	desiredStates := []*resource.State{}
+
+	targetNodeName := input.Spec.GetTargetNode()
+	addingNodeWithoutDowntime := false
+	if targetNodeName != nil && input.Spec.RestoreConfig == nil {
+
+		if _, exists := current.Get(database.NodeResourceIdentifier(targetNodeName.Name)); !exists {
+			addingNodeWithoutDowntime = true
+		}
+	}
+
+	if addingNodeWithoutDowntime {
+		getAddNodeSyncStateInput := &GetAddNodeSyncStateInput{
+			Spec:           input.Spec,
+			SourceNodeName: &targetNodeName.SourceNode,
+			TargetNodeName: &targetNodeName.Name,
+		}
+
+		getAddNodeSyncStateOutput, err := w.ExecuteGetAddNodeSyncState(ctx, getAddNodeSyncStateInput).Get(ctx)
+		if err != nil {
+			return nil, handleError(fmt.Errorf("failed to get add node sync state: %w", err))
+		}
+
+		desiredStates = append(desiredStates, getAddNodeSyncStateOutput.State)
+	}
+
 	getDesiredInput := &GetDesiredStateInput{
 		Spec: input.Spec,
 	}
+
 	getDesiredOutput, err := w.ExecuteGetDesiredState(ctx, getDesiredInput).Get(ctx)
 	if err != nil {
 		return nil, handleError(fmt.Errorf("failed to get desired state: %w", err))
 	}
 
-	reconcileInput := &ReconcileStateInput{
-		DatabaseID:  input.Spec.DatabaseID,
-		TaskID:      input.TaskID,
-		Current:     refreshCurrentOutput.State,
-		Desired:     getDesiredOutput.State,
-		ForceUpdate: input.ForceUpdate,
-	}
-	reconcileOutput, err := w.ExecuteReconcileState(ctx, reconcileInput).Get(ctx)
-	if err != nil {
-		return nil, handleError(fmt.Errorf("failed to reconcile state: %w", err))
+	// Now we'll loop through the states and reconcile them
+	desiredStates = append(desiredStates, getDesiredOutput.State)
+	for _, desired := range desiredStates {
+		reconcileInput := &ReconcileStateInput{
+			DatabaseID: input.Spec.DatabaseID,
+			TaskID:     input.TaskID,
+			Current:    current,
+			Desired:    desired,
+		}
+		reconcileOutput, err := w.ExecuteReconcileState(ctx, reconcileInput).Get(ctx)
+		if err != nil {
+			return nil, handleError(fmt.Errorf("failed to reconcile state: %w", err))
+		}
+		current = reconcileOutput.Updated
 	}
 
 	updateStateInput := &activities.UpdateDbStateInput{
@@ -127,10 +159,9 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 	if err := w.updateTask(ctx, logger, updateTaskInput); err != nil {
 		return nil, handleError(err)
 	}
-
 	logger.Info("successfully updated database")
 
 	return &UpdateDatabaseOutput{
-		Updated: reconcileOutput.Updated,
+		Updated: current,
 	}, nil
 }

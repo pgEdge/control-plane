@@ -65,12 +65,12 @@ func InitializePgEdgeExtensions(nodeName string, dsn *DSN) Statements {
 		Statement{
 			SQL: "CREATE EXTENSION IF NOT EXISTS spock;",
 		},
-		Statement{
-			SQL: "CREATE EXTENSION IF NOT EXISTS snowflake;",
-		},
-		Statement{
-			SQL: "CREATE EXTENSION IF NOT EXISTS lolor;",
-		},
+		// Statement{
+		// 	SQL: "CREATE EXTENSION IF NOT EXISTS snowflake;",
+		// },
+		// Statement{
+		// 	SQL: "CREATE EXTENSION IF NOT EXISTS lolor;",
+		// },
 		ConditionalStatement{
 			If: Query[bool]{
 				SQL: "SELECT NOT EXISTS (SELECT 1 FROM spock.node WHERE node_name = @node_name);",
@@ -98,7 +98,7 @@ func GetSubscriptionID(nodeName, peerName string) Query[uint32] {
 	}
 }
 
-func CreateSubscription(nodeName, peerName string, peerDSN *DSN) ConditionalStatement {
+func CreateSubscription(nodeName, peerName string, peerDSN *DSN, enabled bool, syncStructure bool, syncData bool) ConditionalStatement {
 	sub := subName(nodeName, peerName)
 	dsn := peerDSN.String()
 	interfaceName := fmt.Sprintf("%s_%d", peerName, time.Now().Unix())
@@ -110,10 +110,21 @@ func CreateSubscription(nodeName, peerName string, peerDSN *DSN) ConditionalStat
 			},
 		},
 		Then: Statement{
-			SQL: "SELECT spock.sub_create(@sub_name, @peer_dsn);",
+			SQL: `
+				SELECT spock.sub_create(
+				subscription_name      => @sub_name::name,
+				provider_dsn           => @peer_dsn::text,
+				synchronize_structure  => @sync_structure::boolean,
+				synchronize_data       => @sync_data::boolean,
+				enabled                => @enabled::boolean
+				);
+			`,
 			Args: pgx.NamedArgs{
-				"sub_name": sub,
-				"peer_dsn": dsn,
+				"sub_name":       sub,
+				"peer_dsn":       dsn,
+				"sync_structure": syncStructure,
+				"sync_data":      syncData,
+				"enabled":        enabled,
 			},
 		},
 		Else: ConditionalStatement{
@@ -190,5 +201,81 @@ func DropSpockAndCleanupSlots(dbName string) Statements {
 }
 
 func subName(nodeName, peerName string) string {
-	return fmt.Sprintf("sub_%s%s", nodeName, peerName)
+	return fmt.Sprintf("sub_%s_%s", nodeName, peerName)
+}
+
+func SyncEvent() Query[string] {
+	return Query[string]{
+		SQL: "SELECT spock.sync_event();",
+	}
+}
+
+func WaitForSyncEvent(originNode, lsn string, timeoutSeconds int) Statement {
+	return Statement{
+		SQL: "CALL spock.wait_for_sync_event(true, @origin_node, @lsn, @timeout);",
+		Args: pgx.NamedArgs{
+			"origin_node": originNode,
+			"lsn":         lsn,
+			"timeout":     timeoutSeconds,
+		},
+	}
+}
+
+func CreateReplicationSlot(databaseName, providerNode, subscriberNode string) Statement {
+	subName := subName(providerNode, subscriberNode)
+	slotName := fmt.Sprintf("spk_%s_%s_%s", databaseName, providerNode, subName)
+
+	return Statement{
+		SQL: "SELECT pg_create_logical_replication_slot(@slot_name, 'spock_output');",
+		Args: pgx.NamedArgs{
+			"slot_name": slotName,
+		},
+	}
+}
+
+func LagTrackerCommitTimestamp(originNode, receiverNode string) Query[time.Time] {
+	return Query[time.Time]{
+		SQL: `
+			SELECT commit_timestamp
+			FROM spock.lag_tracker
+			WHERE origin_name = @origin_node
+			  AND receiver_name = @receiver_node;
+		`,
+		Args: pgx.NamedArgs{
+			"origin_node":   originNode,
+			"receiver_node": receiverNode,
+		},
+	}
+}
+
+func AdvanceReplicationSlotFromCommitTS(databaseName, providerNode, subscriberNode string, commitTS time.Time) Statement {
+	sub := subName(providerNode, subscriberNode)
+	slotName := fmt.Sprintf("spk_%s_%s_%s", databaseName, providerNode, sub)
+
+	return Statement{
+		SQL: `
+			WITH lsn_cte AS (
+				SELECT spock.get_lsn_from_commit_ts(@slot_name, @commit_ts::timestamp) AS lsn
+			)
+			SELECT pg_replication_slot_advance(@slot_name, lsn) FROM lsn_cte;
+		`,
+		Args: pgx.NamedArgs{
+			"slot_name": slotName,
+			"commit_ts": commitTS,
+		},
+	}
+}
+
+func EnableSubscription(subscriberNode, providerNode string) Statement {
+	return Statement{
+		SQL: `
+			SELECT spock.sub_enable(
+				subscription_name := @sub_name,
+				immediate := true
+			);
+		`,
+		Args: pgx.NamedArgs{
+			"sub_name": subName(subscriberNode, providerNode),
+		},
+	}
 }

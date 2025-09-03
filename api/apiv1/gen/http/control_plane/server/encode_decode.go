@@ -2792,6 +2792,7 @@ func unmarshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *Datab
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		SourceNode:      v.SourceNode,
 		FailoverPolicy:  v.FailoverPolicy,
 	}
 	res.HostIds = make([]controlplane.Identifier, len(v.HostIds))
@@ -3280,6 +3281,7 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecResponseBody(v *contro
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		SourceNode:      v.SourceNode,
 		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.HostIds != nil {
@@ -3733,6 +3735,7 @@ func marshalControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpecResponseBody(
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		SourceNode:      v.SourceNode,
 		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.HostIds != nil {
@@ -4079,6 +4082,7 @@ func unmarshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSp
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
+		SourceNode:      v.SourceNode,
 		FailoverPolicy:  v.FailoverPolicy,
 	}
 	res.HostIds = make([]controlplane.Identifier, len(v.HostIds))

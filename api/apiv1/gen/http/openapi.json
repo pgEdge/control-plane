@@ -3073,6 +3073,11 @@
         },
         "restore_config": {
           "$ref": "#/definitions/RestoreConfigSpec"
+        },
+        "source_node": {
+          "type": "string",
+          "description": "The name of the source node to use for sync. This is typically the node (like 'n1') from which the data will be copied to initialize this new node.",
+          "example": "n1"
         }
       },
       "example": {
@@ -3240,7 +3245,8 @@
           "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
           "source_database_name": "northwind",
           "source_node_name": "n1"
-        }
+        },
+        "source_node": "n1"
       },
       "required": [
         "name",
@@ -3701,7 +3707,8 @@
                 "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
                 "source_database_name": "northwind",
                 "source_node_name": "n1"
-              }
+              },
+              "source_node": "n1"
             }
           ],
           "minItems": 1,
@@ -4026,7 +4033,8 @@
               "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
               "source_database_name": "northwind",
               "source_node_name": "n1"
-            }
+            },
+            "source_node": "n1"
           }
         ],
         "orchestrator_opts": {
