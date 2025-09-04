@@ -1,0 +1,87 @@
+
+services:
+  pgedge-postgres:
+    image: localhost:5000/pgedge-postgres:pg17.6-spock5.0.1-standard-1
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-example_db}
+    configs:
+      - source: init-extensions
+        target: /docker-entrypoint-initdb.d/10-init-extensions.sh
+        mode: 0755
+      - source: configure-spock
+        target: /docker-entrypoint-initdb.d/20-configure-spock.sh
+        mode: 0755
+      - source: restart-postgres
+        target: /docker-entrypoint-initdb.d/30-restart-postgres.sh
+        mode: 0755
+      - source: create-extensions
+        target: /docker-entrypoint-initdb.d/40-create-extensions.sh
+        mode: 0755
+    ports:
+      - target: 5432
+        published: 6432
+
+configs:
+  init-extensions:
+    content: |-
+      #!/usr/bin/env bash
+      set -Eeo pipefail
+
+      EXTENSIONS=("pg_stat_statements" "pgaudit" "snowflake" "spock" "postgis-3")
+
+      PGCONF="$$PGDATA/postgresql.conf"
+
+      echo "Setting shared_preload_libraries to: $${EXTENSIONS[*]}"
+
+      LIBS=$$(IFS=','; echo "$${EXTENSIONS[*]}")
+
+      if grep -q '^[ ]*shared_preload_libraries' "$$PGCONF"; then
+        sed -i "s|^[ ]*shared_preload_libraries.*|shared_preload_libraries = '$$LIBS'|" "$$PGCONF"
+      else
+        echo "shared_preload_libraries = '$$LIBS'" >> "$$PGCONF"
+      fi
+  configure-spock:
+    content: |-
+      #!/usr/bin/env bash
+      set -Eeo pipefail
+
+      PGCONF="$$PGDATA/postgresql.conf"
+
+      echo "Initializing required spock configuration parameters in postgresql.conf"
+
+      # Enable logical replication
+      echo "wal_level = 'logical'"                     >> "$$PGCONF"
+      echo "max_worker_processes = 10"                 >> "$$PGCONF"
+      echo "max_replication_slots = 10"                >> "$$PGCONF"
+      echo "max_wal_senders = 10"                      >> "$$PGCONF"
+      echo "track_commit_timestamp = 'on'"             >> "$$PGCONF"
+
+      # Set Spock parameters
+      echo "spock.enable_ddl_replication = 'on'"            >> "$$PGCONF"
+      echo "spock.include_ddl_repset = 'on'"                >> "$$PGCONF"
+      echo "spock.allow_ddl_from_functions = 'on'"          >> "$$PGCONF"
+      echo "spock.conflict_resolution = 'last_update_wins'" >> "$$PGCONF"
+      echo "spock.save_resolutions = 'on'"                  >> "$$PGCONF"
+      echo "spock.conflict_log_level = 'DEBUG'"             >> "$$PGCONF"
+  restart-postgres:
+    content: |-
+      #!/usr/bin/env bash
+      set -Eeo pipefail
+
+      echo "Restarting PostgreSQL to apply configuration changes..."
+      pg_ctl -D "$$PGDATA" -m fast restart
+  create-extensions:
+    content: |-
+      #!/usr/bin/env bash
+      set -Eeo pipefail
+
+      EXTENSIONS=("pg_stat_statements" "pgaudit" "snowflake" "spock" "postgis")
+
+      echo "Initializing extensions: $${EXTENSIONS[*]}"
+      for EXT in "$${EXTENSIONS[@]}"; do
+        echo "Creating extension: $$EXT"
+        psql -v ON_ERROR_STOP=1 --username "$$POSTGRES_USER" --dbname "$$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS \"$$EXT\";"
+      done
