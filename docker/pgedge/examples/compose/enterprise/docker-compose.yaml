@@ -1,7 +1,7 @@
 
 services:
   pgedge-postgres:
-    image: localhost:5000/pgedge-postgres:pg17.6-spock5.0.1-standard-1
+    image: ghcr.io/pgedge/pgedge-postgres:pg16-spock5-standard
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-admin}

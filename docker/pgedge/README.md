@@ -29,7 +29,7 @@ Standard images are based on minimal images, and contain additional extension an
 
 ## Entry Points
 
-The default entry point for this image is based on the official Postgres image entrypoint. Documentation on supported entrypoint behavior is located in the [docker-library/docs repo](https://github.com/docker-library/docs/blob/master/postgres/README.md).
+The default entry point for this image is based on the official Postgres image entrypoint. Documentation on supported entrypoint behavior is located in the [docker-library/docs repo](https://github.com/docker-library/docs/blob/master/postgres/README.md). Running the container as root is not currently supported.
 
 In addition to the default entry point, Patroni (`/usr/local/bin/patroni`) can also be used as an entrypoint in the standard image.
 
