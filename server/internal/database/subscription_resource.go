@@ -25,16 +25,24 @@ func SubscriptionResourceIdentifier(subscriberNode, providerNode string) resourc
 }
 
 type SubscriptionResource struct {
-	SubscriberNode    string   `json:"subscriber_node"`
-	ProviderNode      string   `json:"provider_node"`
-	ProviderInstances []string `json:"provider_instances"`
+	SubscriberNode     string                `json:"subscriber_node"`
+	ProviderNode       string                `json:"provider_node"`
+	ProviderInstances  []string              `json:"provider_instances"`
+	Enabled            bool                  `json:"enabled"`
+	SyncStructure      bool                  `json:"sync_structure"`
+	SyncData           bool                  `json:"sync_data"`
+	DependentResources []resource.Identifier `json:"dependent_subscriptions"`
 }
 
-func NewSubscriptionResource(subscriber *NodeInstances, provider *NodeInstances) *SubscriptionResource {
+func NewSubscriptionResource(subscriber *NodeInstances, provider *NodeInstances, enabled bool, syncStructure bool, syncData bool) *SubscriptionResource {
 	return &SubscriptionResource{
-		SubscriberNode:    subscriber.NodeName,
-		ProviderNode:      provider.NodeName,
-		ProviderInstances: provider.InstanceIDs(),
+		SubscriberNode:     subscriber.NodeName,
+		ProviderNode:       provider.NodeName,
+		ProviderInstances:  provider.InstanceIDs(),
+		Enabled:            enabled,
+		SyncStructure:      syncStructure,
+		SyncData:           syncData,
+		DependentResources: []resource.Identifier{},
 	}
 }
 
@@ -57,11 +65,17 @@ func (s *SubscriptionResource) Identifier() resource.Identifier {
 	return SubscriptionResourceIdentifier(s.SubscriberNode, s.ProviderNode)
 }
 
+func (s *SubscriptionResource) AddDependentResource(dep resource.Identifier) {
+	s.DependentResources = append(s.DependentResources, dep)
+}
+
 func (s *SubscriptionResource) Dependencies() []resource.Identifier {
-	return []resource.Identifier{
+	deps := []resource.Identifier{
 		NodeResourceIdentifier(s.SubscriberNode),
 		NodeResourceIdentifier(s.ProviderNode),
 	}
+	deps = append(deps, s.DependentResources...)
+	return deps
 }
 
 func (s *SubscriptionResource) Refresh(ctx context.Context, rc *resource.Context) error {
@@ -91,6 +105,7 @@ func (s *SubscriptionResource) Create(ctx context.Context, rc *resource.Context)
 	if err != nil {
 		return fmt.Errorf("failed to get subscriber instance: %w", err)
 	}
+
 	providers, err := GetAllInstances(ctx, rc, s.ProviderNode)
 	if err != nil {
 		return fmt.Errorf("failed to get provider instances: %w", err)
@@ -115,18 +130,25 @@ func (s *SubscriptionResource) Create(ctx context.Context, rc *resource.Context)
 	}
 	defer conn.Close(ctx)
 
-	err = postgres.CreateSubscription(s.SubscriberNode, s.ProviderNode, &postgres.DSN{
-		Hosts:       hosts,
-		Ports:       ports,
-		DBName:      providers[0].Spec.DatabaseName,
-		User:        "pgedge",
-		SSLCert:     providers[0].ConnectionInfo.PeerSSLCert,
-		SSLKey:      providers[0].ConnectionInfo.PeerSSLKey,
-		SSLRootCert: providers[0].ConnectionInfo.PeerSSLRootCert,
-		Extra: map[string]string{
-			"target_session_attrs": "primary",
+	err = postgres.CreateSubscription(
+		s.SubscriberNode,
+		s.ProviderNode,
+		&postgres.DSN{
+			Hosts:       hosts,
+			Ports:       ports,
+			DBName:      providers[0].Spec.DatabaseName,
+			User:        "pgedge",
+			SSLCert:     providers[0].ConnectionInfo.PeerSSLCert,
+			SSLKey:      providers[0].ConnectionInfo.PeerSSLKey,
+			SSLRootCert: providers[0].ConnectionInfo.PeerSSLRootCert,
+			Extra: map[string]string{
+				"target_session_attrs": "primary",
+			},
 		},
-	}).Exec(ctx, conn)
+		s.Enabled,
+		s.SyncStructure,
+		s.SyncData,
+	).Exec(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to create subscription on node %s: %w", s.SubscriberNode, err)
 	}
@@ -138,9 +160,25 @@ func (s *SubscriptionResource) Create(ctx context.Context, rc *resource.Context)
 
 	return nil
 }
-
 func (s *SubscriptionResource) Update(ctx context.Context, rc *resource.Context) error {
-	return s.Create(ctx, rc)
+	subscriber, err := GetPrimaryInstance(ctx, rc, s.SubscriberNode)
+	if err != nil {
+		return fmt.Errorf("failed to get subscriber instance: %w", err)
+	}
+	conn, err := subscriber.Connection(ctx, rc, subscriber.Spec.DatabaseName)
+	if err != nil {
+		return fmt.Errorf("failed to connect to database %q: %w", subscriber.Spec.DatabaseName, err)
+	}
+	defer conn.Close(ctx)
+
+	if s.Enabled {
+		// Enable subscription if disabled
+		err = postgres.EnableSubscription(s.SubscriberNode, s.ProviderNode).Exec(ctx, conn)
+		if err != nil {
+			return fmt.Errorf("failed to enable subscription %q->%q: %w", s.SubscriberNode, s.ProviderNode, err)
+		}
+	}
+	return nil
 }
 
 func (s *SubscriptionResource) Delete(ctx context.Context, rc *resource.Context) error {
@@ -192,4 +230,8 @@ func GetAllInstances(ctx context.Context, rc *resource.Context, nodeName string)
 		instances[i] = instance
 	}
 	return instances, nil
+}
+
+func (s *SubscriptionResource) Enable(enabled bool) {
+	s.Enabled = enabled
 }

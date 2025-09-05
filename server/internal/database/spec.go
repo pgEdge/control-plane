@@ -47,6 +47,7 @@ type Node struct {
 	BackupConfig     *BackupConfig     `json:"backup_config"`
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
+	SourceNode       string            `json:"source_node,omitempty"`
 	FailoverPolicy   string            `json:"failover_policy"`
 }
 
@@ -65,6 +66,7 @@ func (n *Node) Clone() *Node {
 		BackupConfig:     n.BackupConfig.Clone(),
 		RestoreConfig:    n.RestoreConfig.Clone(),
 		OrchestratorOpts: n.OrchestratorOpts.Clone(),
+		SourceNode:       n.SourceNode,
 		FailoverPolicy:   n.FailoverPolicy,
 	}
 }
@@ -546,4 +548,13 @@ func extractOrdinal(name string) (int, error) {
 		return 0, fmt.Errorf("invalid name: %s", name)
 	}
 	return ordinal, nil
+}
+
+func (s *Spec) GetTargetNode() *Node {
+	for _, node := range s.Nodes {
+		if node.SourceNode != "" {
+			return node
+		}
+	}
+	return nil
 }

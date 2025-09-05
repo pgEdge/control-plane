@@ -1620,6 +1620,9 @@ type DatabaseNodeSpecResponseBody struct {
 	RestoreConfig *RestoreConfigSpecResponseBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsResponseBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+	// The name of the source node to use for sync. This is typically the node
+	// (like 'n1') from which the data will be copied to initialize this new node.
+	SourceNode *string `form:"source_node,omitempty" json:"source_node,omitempty" xml:"source_node,omitempty"`
 	// The failover policy for this database's read replicas. If failover_policy is
 	// automatic, a read replica will automatically be promoted when a primary
 	// instance fails. If it is disabled, read replicas will not be promoted when a
@@ -1908,6 +1911,9 @@ type DatabaseNodeSpecRequestBody struct {
 	RestoreConfig *RestoreConfigSpecRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+	// The name of the source node to use for sync. This is typically the node
+	// (like 'n1') from which the data will be copied to initialize this new node.
+	SourceNode *string `form:"source_node,omitempty" json:"source_node,omitempty" xml:"source_node,omitempty"`
 	// The failover policy for this database's read replicas. If failover_policy is
 	// automatic, a read replica will automatically be promoted when a primary
 	// instance fails. If it is disabled, read replicas will not be promoted when a
@@ -2182,6 +2188,9 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	RestoreConfig *RestoreConfigSpecRequestBodyRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsRequestBodyRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+	// The name of the source node to use for sync. This is typically the node
+	// (like 'n1') from which the data will be copied to initialize this new node.
+	SourceNode *string `form:"source_node,omitempty" json:"source_node,omitempty" xml:"source_node,omitempty"`
 	// The failover policy for this database's read replicas. If failover_policy is
 	// automatic, a read replica will automatically be promoted when a primary
 	// instance fails. If it is disabled, read replicas will not be promoted when a

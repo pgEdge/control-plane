@@ -210,6 +210,9 @@ type DatabaseNodeSpecView struct {
 	RestoreConfig *RestoreConfigSpecView
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsView
+	// The name of the source node to use for sync. This is typically the node
+	// (like 'n1') from which the data will be copied to initialize this new node.
+	SourceNode *string
 	// The failover policy for this database's read replicas. If failover_policy is
 	// automatic, a read replica will automatically be promoted when a primary
 	// instance fails. If it is disabled, read replicas will not be promoted when a

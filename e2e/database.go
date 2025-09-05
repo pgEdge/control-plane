@@ -374,7 +374,7 @@ func (f *DatabaseFixture) VerifySpockReplication(ctx context.Context, t testing.
 			f.WithConnection(ctx, primaryOpts, t, func(conn *pgx.Conn) {
 				var synced bool
 
-				row := conn.QueryRow(ctx, "CALL spock.wait_for_sync_event(true, $1, $2::pg_lsn, 10);", peerNode.Name, nodeSyncMap[peerNode.Name])
+				row := conn.QueryRow(ctx, "CALL spock.wait_for_sync_event(true, $1, $2::pg_lsn, 30);", peerNode.Name, nodeSyncMap[peerNode.Name])
 				require.NoError(t, row.Scan(&synced))
 				assert.True(t, synced)
 			})

@@ -22,6 +22,7 @@ func (w *Workflows) Register(work *worker.Worker) error {
 		work.RegisterWorkflow(w.CreatePgBackRestBackup),
 		work.RegisterWorkflow(w.DeleteDatabase),
 		work.RegisterWorkflow(w.GetDesiredState),
+		work.RegisterWorkflow(w.GetAddNodeSyncState),
 		work.RegisterWorkflow(w.GetPreRestoreState),
 		work.RegisterWorkflow(w.GetRestoreState),
 		work.RegisterWorkflow(w.PgBackRestRestore),

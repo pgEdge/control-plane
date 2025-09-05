@@ -68,6 +68,10 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 	g.Attribute("orchestrator_opts", OrchestratorOpts, func() {
 		g.Description("Orchestrator-specific configuration options.")
 	})
+	g.Attribute("source_node", g.String, func() {
+		g.Description("The name of the source node to use for sync. This is typically the node (like 'n1') from which the data will be copied to initialize this new node.")
+		g.Example("n1")
+	})
 	g.Attribute("failover_policy", g.String, func() {
 		g.Description("The failover policy for this database's read replicas. If failover_policy is automatic, a read replica will automatically be promoted when a primary instance fails. If it is disabled, read replicas will not be promoted when a primary instance fails.")
 		g.Enum(failoverPolicies...)
