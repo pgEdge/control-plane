@@ -1,0 +1,7 @@
+---
+exclude_paths:
+  - 'api/apiv1/gen/**'
+  - 'e2e/**'
+  - '**/*_test.go'
+  - 'scripts/**'
+  - 'hack/**'

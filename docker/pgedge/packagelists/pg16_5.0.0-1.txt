@@ -1,9 +1,0 @@
-postgresql16-server-16.9-2PGDG.rhel9
-spock_16-5.0.0-1PGDG.rhel9
-snowflake_16-2.2-1PGDG.rhel9
-lolor_16-1.2-1PGDG.rhel9
-postgis35_16-3.5.2-1PGDG.rhel9
-pgvector_16-0.8.0-1PGDG.rhel9
-pgbackrest-2.55.1-1PGDG.rhel9
-python3-pip-21.3.1-1.el9
-python3-psycopg2-2.9.10-1PGDG.rhel9
