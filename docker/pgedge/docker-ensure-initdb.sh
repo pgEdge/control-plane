@@ -1,4 +1,29 @@
 #!/usr/bin/env bash
+
+# Copyright (c) 2025 pgEdge, Inc.
+# Copyright (c) 2014, Docker PostgreSQL Authors
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+
 set -Eeuo pipefail
 
 #
@@ -27,7 +52,8 @@ docker_setup_env
 docker_create_db_directories
 if [ "$(id -u)" = '0' ]; then
 	# then restart script as postgres user
-	exec gosu postgres "$BASH_SOURCE" "$@"
+	echo "Error: Running as root is not supported. Please run this script as the 'postgres' user."
+	exit 1
 fi
 
 # only run initialization on an empty data directory
