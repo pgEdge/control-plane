@@ -1,7 +1,7 @@
 
 services:
   pgedge-postgres:
-    image: ghcr.io/pgedge/pgedge-postgres:pg17-spock5-standard
+    image: ${POSTGRES_IMAGE:-ghcr.io/pgedge/pgedge-postgres:pg17-spock5-standard}
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
