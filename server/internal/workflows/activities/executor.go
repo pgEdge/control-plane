@@ -4,15 +4,17 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/cschleiden/go-workflows/core"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
-var ErrExecutorNotFound = fmt.Errorf("executor not found")
+var ErrExecutorNotFound = errors.New("executor not found")
 
-func (a *Activities) ResolveExecutor(state *resource.State, executor resource.Executor) (string, error) {
+func (a *Activities) ResolveExecutor(state *resource.State, executor resource.Executor) (core.Queue, error) {
 	registry, err := do.Invoke[*resource.Registry](a.Injector)
 	if err != nil {
 		return "", err
@@ -24,8 +26,12 @@ func (a *Activities) ResolveExecutor(state *resource.State, executor resource.Ex
 	}
 
 	switch executor.Type {
-	case resource.ExecutorTypeHost, resource.ExecutorTypeCluster, resource.ExecutorTypeCohort:
-		return executor.ID, nil
+	case resource.ExecutorTypeHost:
+		return utils.HostQueue(executor.ID), nil
+	case resource.ExecutorTypeCohort:
+		return utils.CohortQueue(executor.ID), nil
+	case resource.ExecutorTypeCluster:
+		return utils.ClusterQueue(), nil
 	case resource.ExecutorTypeNode:
 		node, err := resource.FromContext[*database.NodeResource](rc, database.NodeResourceIdentifier(executor.ID))
 		if errors.Is(err, resource.ErrNotFound) {
@@ -48,7 +54,7 @@ func (a *Activities) ResolveExecutor(state *resource.State, executor resource.Ex
 			// This should be impossible
 			return "", fmt.Errorf("instance %s has no host ID", instance.Spec.InstanceID)
 		}
-		return instance.Spec.HostID, nil
+		return utils.HostQueue(instance.Spec.HostID), nil
 	default:
 		return "", fmt.Errorf("unknown executor type: %s", executor.Type)
 	}

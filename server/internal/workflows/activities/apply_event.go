@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/cschleiden/go-workflows/activity"
-	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
 	"github.com/samber/do"
@@ -37,7 +36,7 @@ func (a *Activities) ExecuteApplyEvent(
 		return nil, fmt.Errorf("failed to resolve executor for %s resource %s: %w", identifier.Type, identifier.ID, err)
 	}
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(queue),
+		Queue: queue,
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
@@ -84,45 +83,45 @@ func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*A
 	resultCh := make(chan error, 1)
 
 	go func() {
-		var applyErr error
+		defer close(resultCh)
+
 		switch input.Event.Type {
 		case resource.EventTypeRefresh:
-			applyErr = r.Refresh(ctxWithCancel, rc)
-			if errors.Is(applyErr, resource.ErrNotFound) {
+			err := r.Refresh(ctxWithCancel, rc)
+			if errors.Is(err, resource.ErrNotFound) {
 				outputEventType = resource.EventTypeDelete
-			} else if applyErr != nil {
-				applyErr = fmt.Errorf("failed to refresh resource %s: %w", r.Identifier().String(), applyErr)
+			} else if err != nil {
+				resultCh <- fmt.Errorf("failed to refresh resource %s: %w", r.Identifier().String(), err)
 			}
 		case resource.EventTypeCreate:
-			applyErr = a.logEvent(ctxWithCancel, input.DatabaseID, input.TaskID, "creating", r, func() error {
+			err := a.logEvent(ctxWithCancel, input.DatabaseID, input.TaskID, "creating", r, func() error {
 				return r.Create(ctxWithCancel, rc)
 			})
-			if applyErr != nil {
-				applyErr = fmt.Errorf("failed to create resource %s: %w", r.Identifier().String(), applyErr)
+			if err != nil {
+				resultCh <- fmt.Errorf("failed to create resource %s: %w", r.Identifier().String(), err)
 			}
 		case resource.EventTypeUpdate:
-			applyErr = a.logEvent(ctxWithCancel, input.DatabaseID, input.TaskID, "updating", r, func() error {
+			err := a.logEvent(ctxWithCancel, input.DatabaseID, input.TaskID, "updating", r, func() error {
 				return r.Update(ctxWithCancel, rc)
 			})
-			if applyErr != nil {
-				applyErr = fmt.Errorf("failed to update resource %s: %w", r.Identifier().String(), applyErr)
+			if err != nil {
+				resultCh <- fmt.Errorf("failed to update resource %s: %w", r.Identifier().String(), err)
 			}
 		case resource.EventTypeDelete:
-			applyErr = a.logEvent(ctxWithCancel, input.DatabaseID, input.TaskID, "deleting", r, func() error {
+			err := a.logEvent(ctxWithCancel, input.DatabaseID, input.TaskID, "deleting", r, func() error {
 				return r.Delete(ctxWithCancel, rc)
 			})
-			if applyErr != nil {
-				applyErr = fmt.Errorf("failed to delete resource %s: %w", r.Identifier().String(), applyErr)
+			if err != nil {
+				resultCh <- fmt.Errorf("failed to delete resource %s: %w", r.Identifier().String(), err)
 			}
 		default:
-			applyErr = fmt.Errorf("unknown event type: %s", input.Event.Type)
+			resultCh <- fmt.Errorf("unknown event type: %s", input.Event.Type)
 		}
-		resultCh <- applyErr
 	}()
 
 	select {
 	case <-ctx.Done():
-		return nil, fmt.Errorf("acitvity canceled: %w", ctx.Err())
+		return nil, fmt.Errorf("activity canceled: %w", ctx.Err())
 	case err := <-resultCh:
 		if err != nil {
 			return nil, err

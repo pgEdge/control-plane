@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/cschleiden/go-workflows/activity"
-	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 type GetPrimaryInstanceInput struct {
@@ -29,7 +29,7 @@ func (a *Activities) ExecuteGetPrimaryInstance(
 	input *GetPrimaryInstanceInput,
 ) workflow.Future[*GetPrimaryInstanceOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(hostID),
+		Queue: utils.HostQueue(hostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},

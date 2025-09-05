@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/cschleiden/go-workflows/activity"
-	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 type GetInstanceResourcesInput struct {
@@ -23,9 +23,8 @@ func (a *Activities) ExecuteGetInstanceResources(
 	ctx workflow.Context,
 	input *GetInstanceResourcesInput,
 ) workflow.Future[*GetInstanceResourcesOutput] {
-	executor := input.Spec.HostID
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(executor),
+		Queue: utils.HostQueue(input.Spec.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},

@@ -52,6 +52,8 @@ func apiErr(err error) error {
 		return makeInvalidInputErr(err)
 	case errors.Is(err, database.ErrDatabaseNotFound):
 		return newAPIError(errNotFound, err.Error())
+	case errors.Is(err, database.ErrInstanceNotFound):
+		return newAPIError(errNotFound, err.Error())
 	case errors.Is(err, task.ErrTaskNotFound):
 		return ErrTaskNotFound
 	case errors.Is(err, database.ErrDatabaseNotModifiable):

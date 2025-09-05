@@ -5,12 +5,12 @@ import (
 	"fmt"
 
 	"github.com/cschleiden/go-workflows/activity"
-	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/task"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 type UpdateTaskInput struct {
@@ -26,7 +26,7 @@ func (a *Activities) ExecuteUpdateTask(
 	input *UpdateTaskInput,
 ) workflow.Future[*UpdateTaskOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(a.Config.HostID),
+		Queue: utils.HostQueue(a.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},

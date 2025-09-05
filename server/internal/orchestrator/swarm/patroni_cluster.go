@@ -22,7 +22,6 @@ func PatroniClusterResourceIdentifier(nodeName string) resource.Identifier {
 }
 
 type PatroniCluster struct {
-	ClusterID            string `json:"cluster_id"`
 	DatabaseID           string `json:"database_id"`
 	NodeName             string `json:"node_name"`
 	PatroniClusterPrefix string `json:"patroni_namespace"`
@@ -39,7 +38,6 @@ func (p *PatroniCluster) DiffIgnore() []string {
 func (p *PatroniCluster) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeCluster,
-		ID:   p.ClusterID,
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 type ValidateInstanceSpecsInput struct {
@@ -25,7 +26,7 @@ func (a *Activities) ExecuteValidateInstanceSpecs(
 	input *ValidateInstanceSpecsInput,
 ) workflow.Future[*ValidateInstanceSpecsOutput] {
 	options := workflow.ActivityOptions{
-		Queue: workflow.Queue(hostID),
+		Queue: utils.HostQueue(hostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},

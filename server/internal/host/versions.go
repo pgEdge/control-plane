@@ -3,6 +3,7 @@ package host
 import (
 	"encoding"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"slices"
@@ -25,6 +26,12 @@ func (v *Version) String() string {
 		components[i] = strconv.FormatUint(c, 10)
 	}
 	return strings.Join(components, ".")
+}
+
+func (v *Version) Clone() *Version {
+	return &Version{
+		Components: slices.Clone(v.Components),
+	}
 }
 
 func (v *Version) MarshalText() (data []byte, err error) {
@@ -93,6 +100,13 @@ func ParseVersion(s string) (*Version, error) {
 type PgEdgeVersion struct {
 	PostgresVersion *Version `json:"postgres_version"`
 	SpockVersion    *Version `json:"spock_version"`
+}
+
+func (v *PgEdgeVersion) Clone() *PgEdgeVersion {
+	return &PgEdgeVersion{
+		PostgresVersion: v.PostgresVersion.Clone(),
+		SpockVersion:    v.SpockVersion.Clone(),
+	}
 }
 
 func (v *PgEdgeVersion) String() string {
@@ -166,7 +180,7 @@ func GreatestCommonDefaultVersion(hosts ...*Host) (*PgEdgeVersion, error) {
 
 	commonDefaults := defaultVersions.Intersection(commonVersions)
 	if len(commonDefaults) == 0 {
-		return nil, fmt.Errorf("no common default versions found between the given hosts")
+		return nil, errors.New("no common default versions found between the given hosts")
 	}
 
 	versions := make([]*PgEdgeVersion, 0, len(commonDefaults))

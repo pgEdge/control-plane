@@ -306,13 +306,17 @@ func (s *Service) GetInstance(ctx context.Context, databaseID, instanceID string
 	storedInstance, err := s.store.Instance.
 		GetByKey(databaseID, instanceID).
 		Exec(ctx)
-	if err != nil {
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrInstanceNotFound
+	} else if err != nil {
 		return nil, fmt.Errorf("failed to get stored instance: %w", err)
 	}
 	storedStatus, err := s.store.InstanceStatus.
 		GetByKey(databaseID, instanceID).
 		Exec(ctx)
-	if err != nil {
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrInstanceNotFound
+	} else if err != nil {
 		return nil, fmt.Errorf("failed to get stored instance status: %w", err)
 	}
 

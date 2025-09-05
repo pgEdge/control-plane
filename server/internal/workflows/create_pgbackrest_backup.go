@@ -105,7 +105,7 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 		}
 	}
 	if backupInstance == nil {
-		return nil, handleError(fmt.Errorf("no suitable instance found to run backup"))
+		return nil, handleError(errors.New("no suitable instance found to run backup"))
 	}
 
 	backupInput := &activities.CreatePgBackRestBackupInput{

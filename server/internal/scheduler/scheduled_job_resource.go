@@ -23,11 +23,10 @@ type ScheduledJobResource struct {
 	Workflow  string                 `json:"workflow"`             // Name of the workflow to execute
 	Args      map[string]interface{} `json:"args"`                 // Arguments to the workflow
 	DependsOn []resource.Identifier  `json:"depends_on,omitempty"` // Optional resource dependencies
-	ClusterID string                 `json:"cluster_id,omitempty"` // Cluster to execute the job on
 }
 
 func NewScheduledJobResource(
-	id, cronExpr, workflow, clusterID string,
+	id, cronExpr, workflow string,
 	args map[string]interface{},
 	dependsOn []resource.Identifier,
 ) *ScheduledJobResource {
@@ -36,7 +35,6 @@ func NewScheduledJobResource(
 		CronExpr:  cronExpr,
 		Workflow:  workflow,
 		Args:      args,
-		ClusterID: clusterID,
 		DependsOn: dependsOn,
 	}
 }
@@ -51,7 +49,6 @@ func (r *ScheduledJobResource) DiffIgnore() []string {
 func (r *ScheduledJobResource) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeCluster,
-		ID:   r.ClusterID,
 	}
 }
 

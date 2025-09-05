@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
-	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/database/operations"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
@@ -84,16 +84,16 @@ func (w *Workflows) DeleteDatabase(ctx workflow.Context, input *DeleteDatabaseIn
 	if err != nil {
 		return nil, handleError(fmt.Errorf("failed to get current state: %w", err))
 	}
+	current := refreshCurrentOutput.State
 
-	reconcileInput := &ReconcileStateInput{
-		DatabaseID: input.DatabaseID,
-		TaskID:     input.TaskID,
-		Current:    refreshCurrentOutput.State,
-		Desired:    resource.NewState(),
-	}
-	_, err = w.ExecuteReconcileState(ctx, reconcileInput).Get(ctx)
+	plans, err := operations.UpdateDatabase(operations.UpdateDatabaseOptions{}, current, nil)
 	if err != nil {
-		return nil, handleError(fmt.Errorf("failed to reconcile state: %w", err))
+		return nil, fmt.Errorf("failed to plan database delete: %w", err)
+	}
+
+	err = w.applyPlans(ctx, input.DatabaseID, input.TaskID, current, plans)
+	if err != nil {
+		return nil, handleError(err)
 	}
 
 	deleteInput := &activities.DeleteDbEntitiesInput{

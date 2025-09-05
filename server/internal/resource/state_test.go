@@ -45,7 +45,7 @@ func TestState(t *testing.T) {
 			plan, err := current.PlanRefresh()
 			assert.NoError(t, err)
 
-			expected := [][]*resource.Event{
+			expected := resource.Plan{
 				{
 					{
 						Type:     resource.EventTypeRefresh,
@@ -102,10 +102,10 @@ func TestState(t *testing.T) {
 			desired.AddResource(resource2)
 			desired.AddResource(resource3)
 
-			plan, err := current.Plan(desired, false)
+			plan, err := current.Plan(resource.PlanOptions{}, desired)
 			assert.NoError(t, err)
 
-			expected := [][]*resource.Event{
+			expected := resource.Plan{
 				{
 					{
 						Type:     resource.EventTypeCreate,
@@ -160,10 +160,10 @@ func TestState(t *testing.T) {
 			desired.AddResource(resource2)
 			desired.AddResource(resource3)
 
-			plan, err := current.Plan(desired, false)
+			plan, err := current.Plan(resource.PlanOptions{}, desired)
 			assert.NoError(t, err)
 
-			expected := [][]*resource.Event{
+			expected := resource.Plan{
 				{
 					{
 						Type:     resource.EventTypeCreate,
@@ -222,10 +222,10 @@ func TestState(t *testing.T) {
 			desired.AddResource(updatedResource2)
 			desired.AddResource(resource3)
 
-			plan, err := current.Plan(desired, false)
+			plan, err := current.Plan(resource.PlanOptions{}, desired)
 			assert.NoError(t, err)
 
-			expected := [][]*resource.Event{
+			expected := resource.Plan{
 				{
 					{
 						Type:     resource.EventTypeUpdate,
@@ -276,10 +276,10 @@ func TestState(t *testing.T) {
 			current.AddResource(resource2)
 			current.AddResource(resource3)
 
-			plan, err := current.Plan(desired, false)
+			plan, err := current.Plan(resource.PlanOptions{}, desired)
 			assert.NoError(t, err)
 
-			expected := [][]*resource.Event{
+			expected := resource.Plan{
 				{
 					{
 						Type:     resource.EventTypeDelete,
@@ -359,12 +359,12 @@ func TestState(t *testing.T) {
 			current.AddResource(resource5)
 			current.AddResource(resource6)
 
-			plan, err := current.Plan(desired, false)
+			plan, err := current.Plan(resource.PlanOptions{}, desired)
 			assert.NoError(t, err)
 
 			// The order of the content of each phase is non-deterministic
 			// because of map iteration.
-			expected := [][]*resource.Event{
+			expected := resource.Plan{
 				{
 					{
 						Type:     resource.EventTypeCreate,
@@ -418,7 +418,7 @@ func TestState(t *testing.T) {
 			// missing dependencies produce an error during creates
 			desired.AddResource(resource1)
 
-			plan, err := current.Plan(desired, false)
+			plan, err := current.Plan(resource.PlanOptions{}, desired)
 			assert.ErrorContains(t, err, "dependency of test_resource::test1 not found: test_resource::test2")
 			assert.Nil(t, plan)
 		})
@@ -439,10 +439,10 @@ func TestState(t *testing.T) {
 			// missing dependencies are allowed during deletes
 			current.AddResource(resource1)
 
-			plan, err := current.Plan(desired, false)
+			plan, err := current.Plan(resource.PlanOptions{}, desired)
 			assert.NoError(t, err)
 
-			expected := [][]*resource.Event{
+			expected := resource.Plan{
 				{
 					{
 						Type:     resource.EventTypeDelete,
@@ -468,7 +468,7 @@ func TestState(t *testing.T) {
 			current.AddResource(currentResource)
 			desired.AddResource(desiredResource)
 
-			plan, err := current.Plan(desired, false)
+			plan, err := current.Plan(resource.PlanOptions{}, desired)
 			assert.NoError(t, err)
 
 			assert.Empty(t, plan)

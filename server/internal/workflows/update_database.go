@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/database/operations"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
@@ -88,57 +89,25 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 	if err != nil {
 		return nil, handleError(fmt.Errorf("failed to get current state: %w", err))
 	}
-
 	current := refreshCurrentOutput.State
-	desiredStates := []*resource.State{}
 
-	targetNodeName := input.Spec.GetTargetNode()
-	addingNodeWithoutDowntime := false
-	if targetNodeName != nil && input.Spec.RestoreConfig == nil {
-
-		if _, exists := current.Get(database.NodeResourceIdentifier(targetNodeName.Name)); !exists {
-			addingNodeWithoutDowntime = true
-		}
+	planInput := &PlanUpdateInput{
+		Spec:    input.Spec,
+		Current: current,
+		Options: operations.UpdateDatabaseOptions{
+			PlanOptions: resource.PlanOptions{
+				ForceUpdate: input.ForceUpdate,
+			},
+		},
 	}
-
-	if addingNodeWithoutDowntime {
-		getAddNodeSyncStateInput := &GetAddNodeSyncStateInput{
-			Spec:           input.Spec,
-			SourceNodeName: &targetNodeName.SourceNode,
-			TargetNodeName: &targetNodeName.Name,
-		}
-
-		getAddNodeSyncStateOutput, err := w.ExecuteGetAddNodeSyncState(ctx, getAddNodeSyncStateInput).Get(ctx)
-		if err != nil {
-			return nil, handleError(fmt.Errorf("failed to get add node sync state: %w", err))
-		}
-
-		desiredStates = append(desiredStates, getAddNodeSyncStateOutput.State)
-	}
-
-	getDesiredInput := &GetDesiredStateInput{
-		Spec: input.Spec,
-	}
-
-	getDesiredOutput, err := w.ExecuteGetDesiredState(ctx, getDesiredInput).Get(ctx)
+	planOutput, err := w.ExecutePlanUpdate(ctx, planInput).Get(ctx)
 	if err != nil {
-		return nil, handleError(fmt.Errorf("failed to get desired state: %w", err))
+		return nil, handleError(fmt.Errorf("failed to execute plan update: %w", err))
 	}
 
-	// Now we'll loop through the states and reconcile them
-	desiredStates = append(desiredStates, getDesiredOutput.State)
-	for _, desired := range desiredStates {
-		reconcileInput := &ReconcileStateInput{
-			DatabaseID: input.Spec.DatabaseID,
-			TaskID:     input.TaskID,
-			Current:    current,
-			Desired:    desired,
-		}
-		reconcileOutput, err := w.ExecuteReconcileState(ctx, reconcileInput).Get(ctx)
-		if err != nil {
-			return nil, handleError(fmt.Errorf("failed to reconcile state: %w", err))
-		}
-		current = reconcileOutput.Updated
+	err = w.applyPlans(ctx, input.Spec.DatabaseID, input.TaskID, current, planOutput.Plans)
+	if err != nil {
+		return nil, handleError(err)
 	}
 
 	updateStateInput := &activities.UpdateDbStateInput{

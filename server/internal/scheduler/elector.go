@@ -126,7 +126,7 @@ func (e *Elector) checkClaim(ctx context.Context) error {
 		WithTTL(e.ttl).
 		Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to refresh claim")
+		return fmt.Errorf("failed to refresh claim: %w", err)
 	}
 
 	return nil

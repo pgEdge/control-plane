@@ -89,34 +89,53 @@ func InitializePgEdgeExtensions(nodeName string, dsn *DSN) Statements {
 	}
 }
 
-func GetSubscriptionID(nodeName, peerName string) Query[uint32] {
-	return Query[uint32]{
-		SQL: "SELECT sub_id FROM spock.subscription WHERE sub_name = @sub_name;",
+func SubscriptionNeedsCreate(providerName, subscriberName string) Query[bool] {
+	sub := subName(providerName, subscriberName)
+	return Query[bool]{
+		SQL: "SELECT NOT EXISTS (SELECT 1 FROM spock.subscription WHERE sub_name = @sub_name);",
 		Args: pgx.NamedArgs{
-			"sub_name": subName(nodeName, peerName),
+			"sub_name": sub,
 		},
 	}
 }
 
-func CreateSubscription(nodeName, peerName string, peerDSN *DSN, enabled bool, syncStructure bool, syncData bool) ConditionalStatement {
-	sub := subName(nodeName, peerName)
-	dsn := peerDSN.String()
-	interfaceName := fmt.Sprintf("%s_%d", peerName, time.Now().Unix())
-	return ConditionalStatement{
-		If: Query[bool]{
-			SQL: "SELECT NOT EXISTS (SELECT 1 FROM spock.subscription WHERE sub_name = @sub_name);",
-			Args: pgx.NamedArgs{
-				"sub_name": sub,
-			},
+func SubscriptionDsnNeedsUpdate(providerName, subscriberName string, providerDSN *DSN) Query[bool] {
+	sub := subName(providerName, subscriberName)
+	dsn := providerDSN.String()
+	return Query[bool]{
+		SQL: "SELECT NOT EXISTS (SELECT 1 from spock.node_interface JOIN spock.subscription ON if_id = sub_origin_if WHERE sub_name = @sub_name AND if_dsn = @peer_dsn);",
+		Args: pgx.NamedArgs{
+			"sub_name": sub,
+			"peer_dsn": dsn,
 		},
+	}
+}
+
+func SubscriptionNeedsEnable(providerName, subscriberName string, disabled bool) Query[bool] {
+	sub := subName(providerName, subscriberName)
+	return Query[bool]{
+		SQL: "SELECT NOT @disabled AND EXISTS (SELECT 1 from spock.subscription WHERE sub_name = @sub_name AND sub_enabled = 'f');",
+		Args: pgx.NamedArgs{
+			"sub_name": sub,
+			"disabled": disabled,
+		},
+	}
+}
+
+func CreateSubscription(providerName, subscriberName string, providerDSN *DSN, disabled bool, syncStructure bool, syncData bool) ConditionalStatement {
+	sub := subName(providerName, subscriberName)
+	dsn := providerDSN.String()
+	interfaceName := fmt.Sprintf("%s_%d", providerName, time.Now().Unix())
+	return ConditionalStatement{
+		If: SubscriptionNeedsCreate(providerName, subscriberName),
 		Then: Statement{
 			SQL: `
 				SELECT spock.sub_create(
-				subscription_name      => @sub_name::name,
-				provider_dsn           => @peer_dsn::text,
-				synchronize_structure  => @sync_structure::boolean,
-				synchronize_data       => @sync_data::boolean,
-				enabled                => @enabled::boolean
+					subscription_name      => @sub_name::name,
+					provider_dsn           => @peer_dsn::text,
+					synchronize_structure  => @sync_structure::boolean,
+					synchronize_data       => @sync_data::boolean,
+					enabled                => @enabled::boolean
 				);
 			`,
 			Args: pgx.NamedArgs{
@@ -124,22 +143,16 @@ func CreateSubscription(nodeName, peerName string, peerDSN *DSN, enabled bool, s
 				"peer_dsn":       dsn,
 				"sync_structure": syncStructure,
 				"sync_data":      syncData,
-				"enabled":        enabled,
+				"enabled":        !disabled,
 			},
 		},
 		Else: ConditionalStatement{
-			If: Query[bool]{
-				SQL: "SELECT NOT EXISTS (SELECT 1 from spock.node_interface JOIN spock.subscription ON if_id = sub_origin_if WHERE sub_name = @sub_name AND if_dsn = @peer_dsn);",
-				Args: pgx.NamedArgs{
-					"sub_name": sub,
-					"peer_dsn": dsn,
-				},
-			},
+			If: SubscriptionDsnNeedsUpdate(providerName, subscriberName, providerDSN),
 			Then: Statements{
 				Statement{
 					SQL: "SELECT spock.node_add_interface(@peer_name, @interface_name, @peer_dsn);",
 					Args: pgx.NamedArgs{
-						"peer_name":      peerName,
+						"peer_name":      providerName,
 						"interface_name": interfaceName,
 						"peer_dsn":       dsn,
 					},
@@ -154,7 +167,7 @@ func CreateSubscription(nodeName, peerName string, peerDSN *DSN, enabled bool, s
 				Statement{
 					SQL: "SELECT spock.node_drop_interface(@peer_name, if_name) FROM spock.node_interface JOIN spock.node ON if_nodeid = node_id WHERE node_name = @peer_name AND if_name != @interface_name;",
 					Args: pgx.NamedArgs{
-						"peer_name":      peerName,
+						"peer_name":      providerName,
 						"interface_name": interfaceName,
 					},
 				},
@@ -163,11 +176,11 @@ func CreateSubscription(nodeName, peerName string, peerDSN *DSN, enabled bool, s
 	}
 }
 
-func DropSubscription(nodeName, peerName string) Statement {
+func DropSubscription(providerName, subscriberName string) Statement {
 	return Statement{
 		SQL: "SELECT spock.sub_drop(@sub_name, ifexists := 'true');",
 		Args: pgx.NamedArgs{
-			"sub_name": fmt.Sprintf("sub_%s%s", nodeName, peerName),
+			"sub_name": subName(providerName, subscriberName),
 		},
 	}
 }
@@ -200,8 +213,17 @@ func DropSpockAndCleanupSlots(dbName string) Statements {
 	}
 }
 
-func subName(nodeName, peerName string) string {
-	return fmt.Sprintf("sub_%s_%s", nodeName, peerName)
+func ReplicationSlotName(databaseName, providerName, subscriberName string) string {
+	return fmt.Sprintf(
+		"spk_%s_%s_%s",
+		databaseName,
+		providerName,
+		subName(providerName, subscriberName),
+	)
+}
+
+func subName(providerName, subscriberName string) string {
+	return fmt.Sprintf("sub_%s_%s", providerName, subscriberName)
 }
 
 func SyncEvent() Query[string] {
@@ -221,14 +243,27 @@ func WaitForSyncEvent(originNode, lsn string, timeoutSeconds int) Statement {
 	}
 }
 
-func CreateReplicationSlot(databaseName, providerNode, subscriberNode string) Statement {
-	subName := subName(providerNode, subscriberNode)
-	slotName := fmt.Sprintf("spk_%s_%s_%s", databaseName, providerNode, subName)
+func ReplicationSlotNeedsCreate(databaseName, providerNode, subscriberNode string) Query[bool] {
+	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
 
-	return Statement{
-		SQL: "SELECT pg_create_logical_replication_slot(@slot_name, 'spock_output');",
+	return Query[bool]{
+		SQL: "SELECT NOT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = @slot_name);",
 		Args: pgx.NamedArgs{
 			"slot_name": slotName,
+		},
+	}
+}
+
+func CreateReplicationSlot(databaseName, providerNode, subscriberNode string) ConditionalStatement {
+	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
+
+	return ConditionalStatement{
+		If: ReplicationSlotNeedsCreate(databaseName, providerNode, subscriberNode),
+		Then: Statement{
+			SQL: "SELECT pg_create_logical_replication_slot(@slot_name, 'spock_output');",
+			Args: pgx.NamedArgs{
+				"slot_name": slotName,
+			},
 		},
 	}
 }
@@ -248,17 +283,22 @@ func LagTrackerCommitTimestamp(originNode, receiverNode string) Query[time.Time]
 	}
 }
 
-func AdvanceReplicationSlotFromCommitTS(databaseName, providerNode, subscriberNode string, commitTS time.Time) Statement {
-	sub := subName(providerNode, subscriberNode)
-	slotName := fmt.Sprintf("spk_%s_%s_%s", databaseName, providerNode, sub)
+func CurrentReplicationSlotLSN(databaseName, providerNode, subscriberNode string) Query[string] {
+	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
 
-	return Statement{
-		SQL: `
-			WITH lsn_cte AS (
-				SELECT spock.get_lsn_from_commit_ts(@slot_name, @commit_ts::timestamp) AS lsn
-			)
-			SELECT pg_replication_slot_advance(@slot_name, lsn) FROM lsn_cte;
-		`,
+	return Query[string]{
+		SQL: "SELECT restart_lsn FROM pg_replication_slots WHERE slot_name = @slot_name;",
+		Args: pgx.NamedArgs{
+			"slot_name": slotName,
+		},
+	}
+}
+
+func GetReplicationSlotLSNFromCommitTS(databaseName, providerNode, subscriberNode string, commitTS time.Time) Query[string] {
+	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
+
+	return Query[string]{
+		SQL: "SELECT spock.get_lsn_from_commit_ts(@slot_name, @commit_ts::timestamp);",
 		Args: pgx.NamedArgs{
 			"slot_name": slotName,
 			"commit_ts": commitTS,
@@ -266,16 +306,31 @@ func AdvanceReplicationSlotFromCommitTS(databaseName, providerNode, subscriberNo
 	}
 }
 
-func EnableSubscription(subscriberNode, providerNode string) Statement {
+func AdvanceReplicationSlotToLSN(databaseName, providerNode, subscriberNode string, targetLSN string) Statement {
+	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
+
 	return Statement{
-		SQL: `
-			SELECT spock.sub_enable(
-				subscription_name := @sub_name,
-				immediate := true
-			);
-		`,
+		SQL: "SELECT pg_replication_slot_advance(@slot_name, @lsn) FROM lsn_cte;",
 		Args: pgx.NamedArgs{
-			"sub_name": subName(subscriberNode, providerNode),
+			"slot_name": slotName,
+			"lsn":       targetLSN,
+		},
+	}
+}
+
+func EnableSubscription(providerNode, subscriberNode string, disabled bool) ConditionalStatement {
+	return ConditionalStatement{
+		If: SubscriptionNeedsEnable(providerNode, subscriberNode, disabled),
+		Then: Statement{
+			SQL: `
+				SELECT spock.sub_enable(
+					subscription_name := @sub_name,
+					immediate := true
+				);
+			`,
+			Args: pgx.NamedArgs{
+				"sub_name": subName(providerNode, subscriberNode),
+			},
 		},
 	}
 }

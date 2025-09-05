@@ -18,7 +18,7 @@ const ResourceTypeLagTrackerCommitTS resource.Type = "database.lag_tracker_commi
 func LagTrackerCommitTSIdentifier(originNode, receiverNode string) resource.Identifier {
 	return resource.Identifier{
 		Type: ResourceTypeLagTrackerCommitTS,
-		ID:   fmt.Sprintf("on_%s_lag_tracker_origin_name_%s_and_receiver_name_%s", receiverNode, originNode, receiverNode),
+		ID:   originNode + receiverNode,
 	}
 }
 
@@ -27,11 +27,8 @@ type LagTrackerCommitTimestampResource struct {
 	OriginNode   string `json:"origin_node"`
 	ReceiverNode string `json:"receiver_node"`
 
-	// Execution routing
-	NodeName string `json:"node_name"`
-
 	// Dependency wiring
-	DependentResources []resource.Identifier `json:"dependent_resources,omitempty"`
+	ExtraDependencies []resource.Identifier `json:"dependent_resources,omitempty"`
 
 	// Output (filled at Refresh/Create time)
 	CommitTimestamp *time.Time `json:"commit_timestamp,omitempty"`
@@ -41,7 +38,6 @@ func NewLagTrackerCommitTimestampResource(originNode, receiverNode string) *LagT
 	return &LagTrackerCommitTimestampResource{
 		OriginNode:   originNode,
 		ReceiverNode: receiverNode,
-		NodeName:     receiverNode,
 	}
 }
 
@@ -53,7 +49,7 @@ func (r *LagTrackerCommitTimestampResource) DiffIgnore() []string {
 func (r *LagTrackerCommitTimestampResource) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeNode,
-		ID:   r.NodeName,
+		ID:   r.ReceiverNode,
 	}
 }
 
@@ -61,23 +57,19 @@ func (r *LagTrackerCommitTimestampResource) Identifier() resource.Identifier {
 	return LagTrackerCommitTSIdentifier(r.OriginNode, r.ReceiverNode)
 }
 
-func (r *LagTrackerCommitTimestampResource) AddDependentResource(dep resource.Identifier) {
-	r.DependentResources = append(r.DependentResources, dep)
-}
-
 func (r *LagTrackerCommitTimestampResource) Dependencies() []resource.Identifier {
 	deps := []resource.Identifier{
-		NodeResourceIdentifier(r.NodeName),
+		NodeResourceIdentifier(r.ReceiverNode),
 	}
-	deps = append(deps, r.DependentResources...)
+	deps = append(deps, r.ExtraDependencies...)
 	return deps
 }
 
 func (r *LagTrackerCommitTimestampResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	// Connect to receiver node
-	instance, err := GetPrimaryInstance(ctx, rc, r.NodeName)
+	instance, err := GetPrimaryInstance(ctx, rc, r.ReceiverNode)
 	if err != nil {
-		return fmt.Errorf("failed to get instance for node %s: %w", r.NodeName, err)
+		return fmt.Errorf("failed to get instance for node %s: %w", r.ReceiverNode, err)
 	}
 
 	conn, err := instance.Connection(ctx, rc, instance.Spec.DatabaseName)

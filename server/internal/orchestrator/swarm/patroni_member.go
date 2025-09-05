@@ -24,7 +24,6 @@ func PatroniMemberResourceIdentifier(instanceID string) resource.Identifier {
 }
 
 type PatroniMember struct {
-	ClusterID  string `json:"cluster_id"`
 	DatabaseID string `json:"database_id"`
 	NodeName   string `json:"node_name"`
 	InstanceID string `json:"instance_id"`
@@ -41,7 +40,6 @@ func (p *PatroniMember) DiffIgnore() []string {
 func (p *PatroniMember) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeCluster,
-		ID:   p.ClusterID,
 	}
 }
 

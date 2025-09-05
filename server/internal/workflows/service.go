@@ -17,6 +17,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/task"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 var ErrDuplicateWorkflow = errors.New("duplicate workflow already in progress")
@@ -194,7 +195,7 @@ func (s *Service) PgBackRestRestore(
 
 func (s *Service) createWorkflow(ctx context.Context, t *task.Task, wf workflow.Workflow, args ...any) error {
 	opts := client.WorkflowInstanceOptions{
-		Queue:      core.Queue(s.cfg.HostID),
+		Queue:      utils.HostQueue(s.cfg.HostID),
 		InstanceID: uuid.NewString(),
 	}
 	instance, err := s.client.CreateWorkflowInstance(ctx, opts, wf, args...)
@@ -240,7 +241,7 @@ func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) (*Valid
 
 	databaseID := spec.DatabaseID
 	opts := client.WorkflowInstanceOptions{
-		Queue:      core.Queue(s.cfg.HostID),
+		Queue:      utils.HostQueue(s.cfg.HostID),
 		InstanceID: uuid.NewString(),
 	}
 	input := &ValidateSpecInput{

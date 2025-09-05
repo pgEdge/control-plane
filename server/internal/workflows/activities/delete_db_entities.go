@@ -6,12 +6,12 @@ import (
 	"fmt"
 
 	"github.com/cschleiden/go-workflows/activity"
-	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 type DeleteDbEntitiesInput struct {
@@ -25,7 +25,7 @@ func (a *Activities) ExecuteDeleteDbEntities(
 	input *DeleteDbEntitiesInput,
 ) workflow.Future[*DeleteDbEntitiesOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(a.Config.HostID),
+		Queue: utils.HostQueue(a.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},

@@ -15,24 +15,16 @@ var _ resource.Resource = (*WaitForSyncEventResource)(nil)
 
 const ResourceTypeWaitForSyncEvent resource.Type = "database.wait_for_sync_event"
 
-func WaitForSyncEventResourceIdentifier(subscriberNode string, providerNode string) resource.Identifier {
+func WaitForSyncEventResourceIdentifier(providerNode, subscriberNode string) resource.Identifier {
 	return resource.Identifier{
-		ID:   subscriberNode + providerNode,
 		Type: ResourceTypeWaitForSyncEvent,
+		ID:   providerNode + subscriberNode,
 	}
 }
 
 type WaitForSyncEventResource struct {
-	SubscriberNode     string                `json:"subscriber_node"`
-	ProviderNode       string                `json:"provider_node"`
-	DependentResources []resource.Identifier `json:"dependent_resources"`
-}
-
-func NewWaitForSyncEventResource(subscriberNode string, providerNode string) *WaitForSyncEventResource {
-	return &WaitForSyncEventResource{
-		SubscriberNode: subscriberNode,
-		ProviderNode:   providerNode,
-	}
+	SubscriberNode string `json:"subscriber_node"`
+	ProviderNode   string `json:"provider_node"`
 }
 
 func (r *WaitForSyncEventResource) ResourceVersion() string {
@@ -51,23 +43,13 @@ func (r *WaitForSyncEventResource) Executor() resource.Executor {
 }
 
 func (r *WaitForSyncEventResource) Identifier() resource.Identifier {
-	return WaitForSyncEventResourceIdentifier(r.SubscriberNode, r.ProviderNode)
-}
-
-func (r *WaitForSyncEventResource) AddDependentResource(dep resource.Identifier) {
-	r.DependentResources = append(r.DependentResources, dep)
+	return WaitForSyncEventResourceIdentifier(r.ProviderNode, r.SubscriberNode)
 }
 
 func (r *WaitForSyncEventResource) Dependencies() []resource.Identifier {
-	deps := []resource.Identifier{
-		NodeResourceIdentifier(r.SubscriberNode),
-		SubscriptionResourceIdentifier(r.SubscriberNode, r.ProviderNode),
-		SyncEventResourceIdentifier(r.SubscriberNode, r.ProviderNode),
+	return []resource.Identifier{
+		SyncEventResourceIdentifier(r.ProviderNode, r.SubscriberNode),
 	}
-
-	deps = append(deps, r.DependentResources...)
-
-	return deps
 }
 
 // Confirm synchronization by sending sync_event from provider and waiting for it on subscriber
@@ -85,9 +67,9 @@ func (r *WaitForSyncEventResource) Refresh(ctx context.Context, rc *resource.Con
 
 	// Wait for sync event on subscriber
 
-	syncEvent, err := resource.FromContext[*SyncEventResource](rc, SyncEventResourceIdentifier(r.SubscriberNode, r.ProviderNode))
+	syncEvent, err := resource.FromContext[*SyncEventResource](rc, SyncEventResourceIdentifier(r.ProviderNode, r.SubscriberNode))
 	if err != nil {
-		return fmt.Errorf("failed to get node %q: %w", r.ProviderNode, err)
+		return fmt.Errorf("failed to get sync event: %w", err)
 	}
 	if syncEvent.SyncEventLsn == "" {
 		return fmt.Errorf("sync event LSN is empty on resource %q", syncEvent.Identifier())

@@ -14,31 +14,18 @@ var _ resource.Resource = (*ReplicationSlotAdvanceFromCTSResource)(nil)
 const ResourceTypeReplicationSlotAdvanceFromCTS resource.Type = "database.replication_slot_advance_from_cts"
 
 // ReplicationSlotAdvanceFromCTSResourceIdentifier creates a stable identifier for this resource.
-// We key it by the slot name and provider node (where the slot lives).
-func ReplicationSlotAdvanceFromCTSResourceIdentifier(dbName, providerNode, subscriberNode string) resource.Identifier {
-	slotName := slotNameFor(dbName, providerNode, subscriberNode)
+func ReplicationSlotAdvanceFromCTSResourceIdentifier(providerNode, subscriberNode string) resource.Identifier {
 	return resource.Identifier{
 		Type: ResourceTypeReplicationSlotAdvanceFromCTS,
-		ID:   slotName, // e.g. spk_<db>_<provider>_sub_<subscriber>_<provider>
+		ID:   providerNode + subscriberNode,
 	}
 }
 
 // ReplicationSlotAdvanceFromCTSResource advances the replication slot on the provider
 // to the LSN derived from the commit timestamp captured in lag_tracker.
 type ReplicationSlotAdvanceFromCTSResource struct {
-	DatabaseName   string `json:"database_name"`
 	ProviderNode   string `json:"provider_node"`   // slot lives here
 	SubscriberNode string `json:"subscriber_node"` // target/receiver node
-	// internal dependency wiring
-	dependentResources []resource.Identifier
-}
-
-func NewReplicationSlotAdvanceFromCTSResource(dbName, providerNode, subscriberNode string) *ReplicationSlotAdvanceFromCTSResource {
-	return &ReplicationSlotAdvanceFromCTSResource{
-		DatabaseName:   dbName,
-		ProviderNode:   providerNode,
-		SubscriberNode: subscriberNode,
-	}
 }
 
 func (r *ReplicationSlotAdvanceFromCTSResource) ResourceVersion() string { return "1" }
@@ -55,23 +42,21 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Executor() resource.Executor {
 }
 
 func (r *ReplicationSlotAdvanceFromCTSResource) Identifier() resource.Identifier {
-	return ReplicationSlotAdvanceFromCTSResourceIdentifier(r.DatabaseName, r.ProviderNode, r.SubscriberNode)
-}
-
-func (r *ReplicationSlotAdvanceFromCTSResource) AddDependentResource(dep resource.Identifier) {
-	r.dependentResources = append(r.dependentResources, dep)
+	return ReplicationSlotAdvanceFromCTSResourceIdentifier(r.ProviderNode, r.SubscriberNode)
 }
 
 func (r *ReplicationSlotAdvanceFromCTSResource) Dependencies() []resource.Identifier {
-	deps := []resource.Identifier{
+	return []resource.Identifier{
 		NodeResourceIdentifier(r.ProviderNode),                         // must run on provider
 		LagTrackerCommitTSIdentifier(r.ProviderNode, r.SubscriberNode), // need commit_ts first
 	}
-	deps = append(deps, r.dependentResources...)
-	return deps
 }
 
 func (r *ReplicationSlotAdvanceFromCTSResource) Refresh(ctx context.Context, rc *resource.Context) error {
+	return nil
+}
+
+func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *resource.Context) error {
 	// Fetch commit timestamp from lag tracker resource
 	lagTracker, err := resource.FromContext[*LagTrackerCommitTimestampResource](
 		rc,
@@ -98,36 +83,52 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Refresh(ctx context.Context, rc 
 	}
 	defer conn.Close(ctx)
 
-	// Build and execute replication slot advance query using commit timestamp
-	stmt := postgres.AdvanceReplicationSlotFromCommitTS(r.DatabaseName, r.ProviderNode, r.SubscriberNode, commitTS)
-	if err := stmt.Exec(ctx, conn); err != nil {
-		return fmt.Errorf("failed to advance replication slot from commit ts: %w", err)
+	currentLSN, err := postgres.
+		CurrentReplicationSlotLSN(
+			provider.Spec.DatabaseName,
+			r.ProviderNode,
+			r.SubscriberNode).
+		Row(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("failed to query current replication slot lsn: %w", err)
+	}
+
+	targetLSN, err := postgres.
+		GetReplicationSlotLSNFromCommitTS(
+			provider.Spec.DatabaseName,
+			r.ProviderNode,
+			r.SubscriberNode,
+			commitTS).
+		Row(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("failed to query target replication slot lsn: %w", err)
+	}
+
+	if targetLSN <= currentLSN {
+		// No need to advance if the slot is already ahead of the commit
+		// timestamp
+		return nil
+	}
+
+	err = postgres.
+		AdvanceReplicationSlotToLSN(
+			provider.Spec.DatabaseName,
+			r.ProviderNode,
+			r.SubscriberNode,
+			targetLSN).
+		Exec(ctx, conn)
+	if err != nil {
+		return fmt.Errorf("failed to advance replication slot: %w", err)
 	}
 
 	return nil
 }
 
-func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *resource.Context) error {
-	return r.Refresh(ctx, rc)
-}
-
 func (r *ReplicationSlotAdvanceFromCTSResource) Update(ctx context.Context, rc *resource.Context) error {
-	// No-op; advance is a point-in-time action directed by dependencies.
-	return nil
+	return r.Create(ctx, rc)
 }
 
 func (r *ReplicationSlotAdvanceFromCTSResource) Delete(ctx context.Context, rc *resource.Context) error {
 	// No-op; advancing a slot does not create durable config to remove.
 	return nil
-}
-
-// --- helpers ---
-
-// slotNameFor matches the naming used elsewhere in the codebase:
-//
-//	sub name:  sub_<target>_<source>  (created on the target/subscriber)
-//	slot name: spk_<db>_<provider>_<sub name>
-func slotNameFor(dbName, providerNode, subscriberNode string) string {
-	sub := fmt.Sprintf("sub_%s_%s", providerNode, subscriberNode)
-	return fmt.Sprintf("spk_%s_%s_%s", dbName, providerNode, sub)
 }

@@ -19,7 +19,6 @@ func NodeResourceIdentifier(nodeName string) resource.Identifier {
 }
 
 type NodeResource struct {
-	ClusterID         string   `json:"cluster_id"`
 	Name              string   `json:"name"`
 	InstanceIDs       []string `json:"instance_ids"`
 	PrimaryInstanceID string   `json:"primary_instance_id"`
@@ -38,7 +37,6 @@ func (n *NodeResource) DiffIgnore() []string {
 func (n *NodeResource) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeCluster,
-		ID:   n.ClusterID,
 	}
 }
 

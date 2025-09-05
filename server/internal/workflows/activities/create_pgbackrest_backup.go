@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/cschleiden/go-workflows/activity"
-	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
 	"github.com/samber/do"
@@ -13,6 +12,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/task"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 type CreatePgBackRestBackupInput struct {
@@ -30,7 +30,7 @@ func (a *Activities) ExecuteCreatePgBackRestBackup(
 	input *CreatePgBackRestBackupInput,
 ) workflow.Future[*CreatePgBackRestBackupOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(hostID),
+		Queue: utils.HostQueue(hostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},

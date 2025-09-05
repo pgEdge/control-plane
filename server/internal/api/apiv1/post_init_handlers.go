@@ -546,9 +546,15 @@ func (s *PostInitHandlers) RestartInstance(ctx context.Context, req *api.Restart
 		return nil, makeInvalidInputErr(errors.New("request cannot be nil"))
 	}
 
+	instance, err := s.dbSvc.GetInstance(ctx, string(req.DatabaseID), string(req.InstanceID))
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
 	input := &workflows.RestartInstanceInput{
-		DatabaseID: string(req.DatabaseID),
-		InstanceID: string(req.InstanceID),
+		HostID:     instance.HostID,
+		DatabaseID: instance.DatabaseID,
+		InstanceID: instance.InstanceID,
 	}
 
 	if req.RestartOptions != nil && req.RestartOptions.ScheduledAt != nil {

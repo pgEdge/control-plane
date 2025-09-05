@@ -35,13 +35,15 @@ func NewState() *State {
 	}
 }
 
-func (s *State) Add(data *ResourceData) {
-	resources, ok := s.Resources[data.Identifier.Type]
-	if !ok {
-		resources = make(map[string]*ResourceData)
+func (s *State) Add(data ...*ResourceData) {
+	for _, d := range data {
+		resources, ok := s.Resources[d.Identifier.Type]
+		if !ok {
+			resources = make(map[string]*ResourceData)
+		}
+		resources[d.Identifier.ID] = d
+		s.Resources[d.Identifier.Type] = resources
 	}
-	resources[data.Identifier.ID] = data
-	s.Resources[data.Identifier.Type] = resources
 }
 
 func (s *State) RemoveByIdentifier(identifier Identifier) {
@@ -88,6 +90,29 @@ func (s *State) Apply(event *Event) error {
 		return fmt.Errorf("unknown event type: %s", event.Type)
 	}
 	return nil
+}
+
+func (s *State) Clone() *State {
+	resources := make(map[Type]map[string]*ResourceData, len(s.Resources))
+	for t, byID := range s.Resources {
+		resources[t] = make(map[string]*ResourceData, len(byID))
+		for i, resource := range byID {
+			resources[t][i] = resource.Clone()
+		}
+	}
+
+	return &State{
+		Resources: resources,
+	}
+}
+
+func (s *State) Merge(other *State) {
+	for t, byID := range other.Resources {
+		if _, ok := s.Resources[t]; !ok {
+			s.Resources[t] = make(map[string]*ResourceData)
+		}
+		maps.Copy(s.Resources[t], byID)
+	}
 }
 
 type node struct {
@@ -196,12 +221,12 @@ func (s *State) graph(opts graphOptions) (*simple.DirectedGraph, error) {
 	return graph, nil
 }
 
-func (s *State) PlanRefresh() ([][]*Event, error) {
+func (s *State) PlanRefresh() (Plan, error) {
 	layers, err := s.CreationOrdered(true)
 	if err != nil {
 		return nil, err
 	}
-	var phases [][]*Event
+	var plan Plan
 	for layer := range layers {
 		phase := make([]*Event, len(layer))
 		for i, resource := range layer {
@@ -210,13 +235,19 @@ func (s *State) PlanRefresh() ([][]*Event, error) {
 				Resource: resource,
 			}
 		}
-		phases = append(phases, phase)
+		plan = append(plan, phase)
 	}
-	return phases, nil
+	return plan, nil
 }
 
-func (s *State) Plan(desired *State, forceUpdate bool) ([][]*Event, error) {
-	creates, err := s.planCreates(desired, forceUpdate)
+type PlanOptions struct {
+	ForceUpdate bool
+}
+
+type Plan [][]*Event
+
+func (s *State) Plan(options PlanOptions, desired *State) (Plan, error) {
+	creates, err := s.planCreates(options, desired)
 	if err != nil {
 		return nil, err
 	}
@@ -228,12 +259,12 @@ func (s *State) Plan(desired *State, forceUpdate bool) ([][]*Event, error) {
 	return append(creates, deletes...), nil
 }
 
-func (s *State) planCreates(desired *State, forceUpdate bool) ([][]*Event, error) {
+func (s *State) planCreates(options PlanOptions, desired *State) (Plan, error) {
 	layers, err := desired.CreationOrdered(false)
 	if err != nil {
 		return nil, err
 	}
-	var phases [][]*Event
+	var plan Plan
 
 	// Keeps track of all modified resources so that we can update their
 	// dependents.
@@ -250,7 +281,7 @@ func (s *State) planCreates(desired *State, forceUpdate bool) ([][]*Event, error
 					Type:     EventTypeCreate,
 					Resource: resource,
 				}
-			} else if forceUpdate || slices.ContainsFunc(resource.Dependencies, modified.Has) {
+			} else if options.ForceUpdate || slices.ContainsFunc(resource.Dependencies, modified.Has) {
 				event = &Event{
 					Type:     EventTypeUpdate,
 					Resource: resource,
@@ -275,18 +306,18 @@ func (s *State) planCreates(desired *State, forceUpdate bool) ([][]*Event, error
 		}
 
 		if len(phase) > 0 {
-			phases = append(phases, phase)
+			plan = append(plan, phase)
 		}
 	}
-	return phases, nil
+	return plan, nil
 }
 
-func (s *State) planDeletes(desired *State) ([][]*Event, error) {
+func (s *State) planDeletes(desired *State) (Plan, error) {
 	layers, err := s.DeletionOrdered(true)
 	if err != nil {
 		return nil, err
 	}
-	var phases [][]*Event
+	var plan Plan
 	for layer := range layers {
 		var phase []*Event
 
@@ -302,30 +333,57 @@ func (s *State) planDeletes(desired *State) ([][]*Event, error) {
 			})
 		}
 		if len(phase) > 0 {
-			phases = append(phases, phase)
+			plan = append(plan, phase)
 		}
 	}
-	return phases, nil
+	return plan, nil
 }
 
-func (s *State) AddResource(resource Resource) error {
-	data, err := ToResourceData(resource)
-	if err != nil {
-		return err
+func (s *State) PlanAll(options PlanOptions, new ...*State) ([]Plan, error) {
+	var plans []Plan
+	curr := s
+	for i, state := range new {
+		opts := PlanOptions{}
+		if options.ForceUpdate && i == len(new)-1 {
+			// We only want to apply the forced update to the final state.
+			// Otherwise we'll end up with a huge number of redundant updates
+			// in most scenarios.
+			opts.ForceUpdate = true
+		}
+
+		plan, err := curr.Plan(opts, state)
+		if err != nil {
+			return nil, fmt.Errorf("error at state index %d: %w", i, err)
+		}
+		if len(plan) > 0 {
+			// Only include non-empty plans
+			plans = append(plans, plan)
+		}
+		curr = state
 	}
-	s.Add(data)
+	return plans, nil
+}
+
+func (s *State) AddResource(resources ...Resource) error {
+	for _, r := range resources {
+		data, err := ToResourceData(r)
+		if err != nil {
+			return err
+		}
+		s.Add(data)
+	}
 	return nil
 }
 
-func FromState[T Resource](state *State, registry *Registry, identifier Identifier) (T, error) {
+func FromState[T Resource](state *State, identifier Identifier) (T, error) {
 	var zero T
 	data, ok := state.Get(identifier)
 	if !ok {
 		return zero, fmt.Errorf("%w: %s", ErrNotFound, identifier.String())
 	}
-	return TypedFromRegistry[T](registry, data)
+	return ToResource[T](data)
 }
 
 func FromContext[T Resource](rc *Context, identifier Identifier) (T, error) {
-	return FromState[T](rc.State, rc.Registry, identifier)
+	return FromState[T](rc.State, identifier)
 }
