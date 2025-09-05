@@ -6,6 +6,7 @@ FROM rockylinux/rockylinux:9-ubi AS base
 
 ARG PACKAGE_RELEASE_CHANNEL=""
 ARG POSTGRES_USER_ID="1020"
+COPY docker-entrypoint.sh docker-ensure-initdb.sh /usr/local/bin/
 
 RUN <<EOF
 #!/usr/bin/env bash
@@ -24,6 +25,8 @@ if [[ -n "${PACKAGE_RELEASE_CHANNEL}" ]]; then
     sed -i "s|release|${PACKAGE_RELEASE_CHANNEL}|g" /etc/yum.repos.d/pgedge.repo
 fi
 
+mkdir /docker-entrypoint-initdb.d
+
 EOF
 
 ##########################
@@ -37,8 +40,6 @@ ARG TARGETARCH
 ARG POSTGRES_MAJOR_VERSION
 
 COPY packagelists/${TARGETARCH}/${PACKAGE_LIST_FILE} /usr/share/pgedge/packages.txt
-COPY docker-entrypoint.sh docker-ensure-initdb.sh /usr/local/bin/
-RUN mkdir /docker-entrypoint-initdb.d
 
 RUN <<EOF
 #!/usr/bin/env bash
@@ -100,8 +101,6 @@ ARG TARGETARCH
 ARG POSTGRES_MAJOR_VERSION
 
 COPY packagelists/${TARGETARCH}/${PACKAGE_LIST_FILE} /usr/share/pgedge/packages.txt
-COPY docker-entrypoint.sh docker-ensure-initdb.sh /usr/local/bin/
-RUN mkdir /docker-entrypoint-initdb.d
 
 RUN <<EOF
 #!/usr/bin/env bash
