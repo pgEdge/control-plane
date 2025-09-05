@@ -5,7 +5,7 @@
 FROM rockylinux/rockylinux:9-ubi AS base
 
 ARG PACKAGE_RELEASE_CHANNEL=""
-ARG POSTGRES_USER_ID="1020"
+ARG POSTGRES_USER_ID="26"
 COPY docker-entrypoint.sh docker-ensure-initdb.sh /usr/local/bin/
 
 RUN <<EOF
