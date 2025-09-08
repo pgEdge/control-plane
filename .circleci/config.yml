@@ -7,11 +7,12 @@ commands:
       - run:
           name: Compute go.sum checksums
           command: |
-            md5sum ./go.sum > /tmp/mod-checksums.txt
+            uname -m > /tmp/mod-checksums.txt
+            md5sum ./go.sum >> /tmp/mod-checksums.txt
             md5sum tools.mk >> /tmp/mod-checksums.txt
       - restore_cache:
           keys:
-            - v3-go-mod-{{ arch }}-{{ checksum "/tmp/mod-checksums.txt" }}
+            - v3-go-mod-{{ checksum "/tmp/mod-checksums.txt" }}
             # Fallback to the most recently-generated cache if an exact match
             # does not exist.
             - v3-go-mod-
@@ -23,7 +24,7 @@ commands:
           name: Install tools
           command: make install-tools
       - save_cache:
-          key: v3-go-mod-{{ arch }}-{{ checksum "/tmp/mod-checksums.txt" }}
+          key: v3-go-mod-{{ checksum "/tmp/mod-checksums.txt" }}
           paths:
             - /home/circleci/go/pkg/mod
             - /home/circleci/go/bin
