@@ -45,7 +45,7 @@ docker run --name pgedge-postgres \
   -e POSTGRES_USER=admin \
   -e POSTGRES_DB=example_db \
   -p 6432:5432 \
-  -d ghcr.io/pgedge/pgedge-postgres:pg17-spock5-standard
+  -d ghcr.io/pgedge/pgedge-postgres:17-spock5-standard
 ```
 
 You can then log in using `psql` with the following command:
@@ -85,7 +85,7 @@ An example Docker compose spec that shows this looks like this:
 
 ```yaml
 pgedge-postgres:
-    image: ghcr.io/pgedge/pgedge-postgres:pg17-spock5-standard
+    image: ghcr.io/pgedge/pgedge-postgres:17-spock5-standard
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
@@ -100,7 +100,7 @@ volumes:
 
 ## Image Tags
 
-- Every image will have an immutable tag, `pg<postgres major.minor>-spock<major.minor.patch>-<flavor>-<epoch>`, e.g. `pg17.6-spock5.0.0-standard-1`
+- Every image will have an immutable tag, `<postgres major.minor>-spock<major.minor.patch>-<flavor>-<epoch>`, e.g. `17.6-spock5.0.0-standard-1`
 - Mutable tags also exist for:
-  - The latest image for a given postgres major.minor + spock major version, `pg<postgres major.minor>-spock<major>-<flavor>` , e.g. `pg17.6-spock5-standard`
-   - The latest image for a given postgres major + spock major version, `pg<postgres major>-spock<major>-<flavor>`, e.g. `pg17-spock5-standard`
+  - The latest image for a given postgres major.minor + spock major version, `pg<postgres major.minor>-spock<major>-<flavor>` , e.g. `17.6-spock5-standard`
+   - The latest image for a given postgres major + spock major version, `pg<postgres major>-spock<major>-<flavor>`, e.g. `17-spock5-standard`

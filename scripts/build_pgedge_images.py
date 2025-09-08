@@ -40,7 +40,7 @@ class Tag:
     flavor: str = None
 
     def __str__(self) -> str:
-        tag = f"pg{self.postgres_version}"
+        tag = f"{self.postgres_version}"
 
         if self.spock_version:
             tag += f"-spock{self.spock_version}"

@@ -8,13 +8,13 @@
 - Changed the tagging and versioning scheme
   - Images are no longer identified by a single version
   - Every image gets an immutable tag: `pg<major.minor>-spock<major.minor.patch>-<flavor>-<epoch>`
-    - For example: `pg17.6-spock5.0.1-standard-1`
+    - For example: `17.6-spock5.0.1-standard-1`
   - The latest image for a given spock major.minor.patch + pg major.minor version gets a mutable tag: `pg<major.minor>-spock<major.minor.patch>-<flavor>`
-    - For example: `pg17.6-spock5.0.1-standard`
+    - For example: `17.6-spock5.0.1-standard`
   - The latest image for a given spock major version + pg major.minor version gets a mutable tag: `pg<pg major.minor>-spock<major>-<flavor>`
-    - `pg17.6-spock5-standard`
+    - `17.6-spock5-standard`
   - The latest image for a given spock major version + pg major version gets a mutable tag: `pg<pg major>-spock<major>-<flavor>`
-    - `pg17-spock5-standard`
+    - `17-spock5-standard`
 - The build now produces two image flavors
   - `minimal` which includes pgEdge PostgreSQL and pgEdge's first-party extensions
   - `standard` which includes everything in minimal as well as:
