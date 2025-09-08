@@ -328,6 +328,11 @@ func (s *PostInitHandlers) BackupDatabaseNode(ctx context.Context, req *api.Back
 		return nil, apiErr(err)
 	}
 
+	_, err = IsSourceInstanceValid(db, req.NodeName)
+	if err != nil {
+		return nil, err
+	}
+
 	if !req.Force && !database.DatabaseStateModifiable(db.State) {
 		return nil, ErrDatabaseNotModifiable
 	}
@@ -454,6 +459,17 @@ func (s *PostInitHandlers) RestoreDatabase(ctx context.Context, req *api.Restore
 	if err != nil {
 		return nil, apiErr(err)
 	}
+
+	sourceDB, err := s.dbSvc.GetDatabase(ctx, restoreConfig.SourceDatabaseID)
+	if err != nil {
+		return nil, apiErr(fmt.Errorf("failed to get source database: %w", err))
+	}
+
+	_, err = IsSourceInstanceValid(sourceDB, restoreConfig.SourceNodeName)
+	if err != nil {
+		return nil, err
+	}
+
 	if !req.Force && !database.DatabaseStateModifiable(db.State) {
 		return nil, ErrDatabaseNotModifiable
 	}
@@ -545,16 +561,19 @@ func (s *PostInitHandlers) RestartInstance(ctx context.Context, req *api.Restart
 	if req == nil {
 		return nil, makeInvalidInputErr(errors.New("request cannot be nil"))
 	}
-
-	instance, err := s.dbSvc.GetInstance(ctx, string(req.DatabaseID), string(req.InstanceID))
+	databaseID, instanceID := string(req.DatabaseID), string(req.InstanceID)
+	storedInstance, err := s.dbSvc.GetInstance(ctx, databaseID, instanceID)
 	if err != nil {
 		return nil, apiErr(err)
 	}
-
+	if storedInstance.State != database.InstanceStateAvailable {
+		return nil, apiErr(fmt.Errorf("instance %s is not restartable, it is in %s state",
+			req.InstanceID, storedInstance.State))
+	}
 	input := &workflows.RestartInstanceInput{
-		HostID:     instance.HostID,
-		DatabaseID: instance.DatabaseID,
-		InstanceID: instance.InstanceID,
+		HostID:     storedInstance.HostID,
+		DatabaseID: databaseID,
+		InstanceID: instanceID,
 	}
 
 	if req.RestartOptions != nil && req.RestartOptions.ScheduledAt != nil {
@@ -653,7 +672,7 @@ func (s *PostInitHandlers) StartInstance(ctx context.Context, req *api.StartInst
 		return nil, err
 	}
 
-	if storedInstance.State != database.InstanceStateUnknown {
+	if storedInstance.State != database.InstanceStateUnknown && storedInstance.State != database.InstanceStateStopped {
 		return nil, makeInvalidInputErr(fmt.Errorf("instance %s is not startable, it is in %s state",
 			req.InstanceID, storedInstance.State))
 	}
@@ -717,4 +736,17 @@ func (s *PostInitHandlers) CancelDatabaseTask(ctx context.Context, req *api.Canc
 		Msg("task cancellation initiated")
 
 	return taskToAPI(t), nil
+}
+
+func IsSourceInstanceValid(db *database.Database, nodeName string) (bool, error) {
+	for _, instance := range db.Instances {
+		if instance.NodeName == nodeName {
+			if instance.State == database.InstanceStateStopped || instance.State == database.InstanceStateFailed {
+				return false, makeInvalidInputErr(fmt.Errorf(
+					"source node %s is in an unsupported state (%s)", instance.NodeName, instance.State))
+			}
+			return true, nil
+		}
+	}
+	return false, makeInvalidInputErr(fmt.Errorf("source node %s not found", nodeName))
 }

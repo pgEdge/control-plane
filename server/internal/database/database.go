@@ -15,12 +15,13 @@ const (
 	DatabaseStateFailed    DatabaseState = "failed"
 	DatabaseStateBackingUp DatabaseState = "backing_up"
 	DatabaseStateRestoring DatabaseState = "restoring"
+	DatabaseStateStopped   DatabaseState = "stopped"
 	DatabaseStateUnknown   DatabaseState = "unknown"
 )
 
 func DatabaseStateModifiable(state DatabaseState) bool {
 	switch state {
-	case DatabaseStateAvailable, DatabaseStateDegraded, DatabaseStateFailed:
+	case DatabaseStateAvailable, DatabaseStateDegraded, DatabaseStateFailed, DatabaseStateStopped:
 		return true
 	default:
 		return false
