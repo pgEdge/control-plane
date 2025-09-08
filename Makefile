@@ -18,7 +18,7 @@ docker_compose_dev=WORKSPACE_DIR=$(shell pwd) \
 		LOG_LEVEL=$(LOG_LEVEL) \
 		docker compose -f ./docker/control-plane-dev/docker-compose.yaml
 docker_compose_ci=docker compose -f ./docker/control-plane-ci/docker-compose.yaml
-e2e_args=-tags=e2e_test -count=1 ./e2e/... \
+e2e_args=-tags=e2e_test -count=1 -timeout=20m ./e2e/... \
 	$(if $(E2E_PARALLEL),-parallel $(E2E_PARALLEL)) \
 	$(if $(E2E_RUN),-run $(E2E_RUN)) \
 	-args \
