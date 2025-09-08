@@ -23,6 +23,8 @@ func TestUpdateAddNode12(t *testing.T) {
 }
 
 func testUpdateAddNode(t *testing.T, nodeCount int, deployReplicas bool) {
+	t.Parallel()
+
 	username := "admin"
 	password := "password"
 
