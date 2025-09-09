@@ -17,7 +17,6 @@ func TestCancelDatabaseTask(t *testing.T) {
 	testCancelDB(t)
 }
 func testCancelDB(t *testing.T) {
-	t.Logf("CANCEL DB DEBUG")
 	dbID := uuid.NewString()
 	host1 := fixture.HostIDs()[0]
 
@@ -73,7 +72,7 @@ func testCancelDB(t *testing.T) {
 	t.Logf("assertions passed")
 
 	t.Cleanup(func() {
-		t.Logf("cleanup begain")
+		t.Logf("cleanup began")
 
 		if fixture.skipCleanup {
 			t.Logf("skipping cleanup for database %s", dbID)
