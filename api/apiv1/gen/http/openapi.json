@@ -6061,6 +6061,8 @@
             "pending",
             "running",
             "completed",
+            "canceled",
+            "canceling",
             "failed",
             "unknown"
           ]

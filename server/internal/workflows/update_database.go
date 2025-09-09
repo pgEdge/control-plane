@@ -29,7 +29,6 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		if errors.Is(ctx.Err(), workflow.Canceled) {
 			logger.Warn("workflow was canceled")
 			cleanupCtx := workflow.NewDisconnectedContext(ctx)
-			w.cancelTask(cleanupCtx, input.Spec.DatabaseID, input.TaskID, logger)
 
 			updateStateInput := &activities.UpdateDbStateInput{
 				DatabaseID: input.Spec.DatabaseID,
@@ -38,8 +37,10 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 
 			_, err := w.Activities.ExecuteUpdateDbState(cleanupCtx, updateStateInput).Get(cleanupCtx)
 			if err != nil {
-				logger.With("error", err).Error("failed to update database state after cancellation")
+				logger.With("error", err).Error("failed to update database state ")
 			}
+
+			w.cancelTask(cleanupCtx, input.Spec.DatabaseID, input.TaskID, logger)
 
 		}
 	}()

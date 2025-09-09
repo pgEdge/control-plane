@@ -46,7 +46,7 @@ var Task = g.Type("Task", func() {
 		g.Example("backup", "restore")
 	})
 	g.Attribute("status", g.String, func() {
-		g.Enum("pending", "running", "completed", "failed", "unknown")
+		g.Enum("pending", "running", "completed", "canceled", "canceling", "failed", "unknown")
 		g.Description("The status of the task.")
 		g.Example("pending")
 	})
