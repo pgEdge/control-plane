@@ -4,13 +4,13 @@ import (
 	g "goa.design/goa/v3/dsl"
 )
 
-var postgresVersions = []any{"15", "16", "17"}
-var spockVersions = []any{"5"}
 var failoverPolicies = []any{"automatic", "disabled"}
 
 const (
-	nodeNamePattern = `n[0-9]+`
-	cpuPattern      = `^[0-9]+(\.[0-9]{1,3}|m)?$`
+	nodeNamePattern        = `n[0-9]+`
+	cpuPattern             = `^[0-9]+(\.[0-9]{1,3}|m)?$`
+	postgresVersionPattern = `^\d{2}\.\d{1,2}$`
+	spockVersionPattern    = `^\d{1}$`
 )
 
 var HostIDs = g.ArrayOf(Identifier, func() {
@@ -30,9 +30,9 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 		g.MinLength(1)
 	})
 	g.Attribute("postgres_version", g.String, func() {
-		g.Description("The major version of Postgres for this node. Overrides the Postgres version set in the DatabaseSpec.")
-		g.Enum(postgresVersions...)
-		g.Example("17")
+		g.Description("The Postgres version for this node in 'major.minor' format. Overrides the Postgres version set in the DatabaseSpec.")
+		g.Pattern(postgresVersionPattern)
+		g.Example("17.6")
 	})
 	g.Attribute("port", g.Int, func() {
 		g.Description("The port used by the Postgres database for this node. Overrides the Postgres port set in the DatabaseSpec.")
@@ -396,13 +396,13 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 		g.Example("northwind")
 	})
 	g.Attribute("postgres_version", g.String, func() {
-		g.Description("The major version of the Postgres database.")
-		g.Enum(postgresVersions...)
-		g.Example("17")
+		g.Description("The Postgres version in 'major.minor' format.")
+		g.Pattern(postgresVersionPattern)
+		g.Example("17.6")
 	})
 	g.Attribute("spock_version", g.String, func() {
 		g.Description("The major version of the Spock extension.")
-		g.Enum(spockVersions...)
+		g.Pattern(spockVersionPattern)
 		g.Example("5")
 	})
 	g.Attribute("port", g.Int, func() {
@@ -851,7 +851,7 @@ var CreateDatabaseResponse = g.Type("CreateDatabaseResponse", func() {
 					{"name": "n2", "host_ids": []string{"ap-south-1"}},
 					{"name": "n3", "host_ids": []string{"eu-central-1"}},
 				},
-				"postgres_version": "17",
+				"postgres_version": "17.6",
 				"spock_version":    "5",
 			},
 			"state":      "creating",
@@ -1334,7 +1334,7 @@ var exampleDatabase = map[string]any{
 			{"host_ids": []any{"ap-south-1"}, "name": "n2"},
 			{"host_ids": []any{"eu-central-1"}, "name": "n3"},
 		},
-		"postgres_version": "17",
+		"postgres_version": "17.6",
 		"spock_version":    "5",
 	},
 	"state":      "restoring",

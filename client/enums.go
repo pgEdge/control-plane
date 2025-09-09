@@ -57,12 +57,6 @@ const (
 )
 
 const (
-	PostgresVersion_15 = "15"
-	PostgresVersion_16 = "16"
-	PostgresVersion_17 = "17"
-)
-
-const (
 	RepositoryTypeS3    = "s3"
 	RepositoryTypeGCS   = "gcs"
 	RepositoryTypeAzure = "azure"
@@ -78,10 +72,6 @@ const (
 const (
 	RoleReplica = "replica"
 	RolePrimary = "primary"
-)
-
-const (
-	SpockVersion_5 = "5"
 )
 
 const (

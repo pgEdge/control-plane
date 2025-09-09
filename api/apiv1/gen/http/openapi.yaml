@@ -1515,7 +1515,7 @@ definitions:
                         type: swarm
                       cpus: 16
                       default_pgedge_version:
-                        postgres_version: "17"
+                        postgres_version: "17.6"
                         spock_version: "5"
                       hostname: i-0123456789abcdef.ec2.internal
                       id: us-east-1
@@ -1527,11 +1527,11 @@ definitions:
                         state: healthy
                         updated_at: "2025-06-17T00:00:00Z"
                       supported_pgedge_versions:
-                        - postgres_version: "17"
+                        - postgres_version: "17.6"
                           spock_version: "5"
-                        - postgres_version: "16"
+                        - postgres_version: "17.5"
                           spock_version: "5"
-                        - postgres_version: "15"
+                        - postgres_version: "16.10"
                           spock_version: "5"
                     - cohort:
                         cohort_id: zdjfu3tfxg1cihv3146ro3hy2
@@ -1540,8 +1540,8 @@ definitions:
                         type: swarm
                       cpus: 16
                       default_pgedge_version:
-                        postgres_version: 17.0.0
-                        spock_version: 4.0.0
+                        postgres_version: "17.6"
+                        spock_version: "5"
                       hostname: i-058731542fee493f.ec2.internal
                       id: ap-south-1
                       ipv4_address: 10.24.35.2
@@ -1552,11 +1552,11 @@ definitions:
                         state: healthy
                         updated_at: "2025-06-17T00:00:00Z"
                       supported_pgedge_versions:
-                        - postgres_version: "17"
+                        - postgres_version: "17.6"
                           spock_version: "5"
-                        - postgres_version: "16"
+                        - postgres_version: "17.5"
                           spock_version: "5"
-                        - postgres_version: "15"
+                        - postgres_version: "16.10"
                           spock_version: "5"
                     - cohort:
                         cohort_id: zdjfu3tfxg1cihv3146ro3hy2
@@ -1565,7 +1565,7 @@ definitions:
                         type: swarm
                       cpus: 16
                       default_pgedge_version:
-                        postgres_version: "17"
+                        postgres_version: "17.6"
                         spock_version: "5"
                       hostname: i-494027b7b53f6a23.ec2.internal
                       id: eu-central-1
@@ -1577,11 +1577,11 @@ definitions:
                         state: healthy
                         updated_at: "2025-06-17T00:00:00Z"
                       supported_pgedge_versions:
-                        - postgres_version: "17"
+                        - postgres_version: "17.6"
                           spock_version: "5"
-                        - postgres_version: "16"
+                        - postgres_version: "17.5"
                           spock_version: "5"
-                        - postgres_version: "15"
+                        - postgres_version: "16.10"
                           spock_version: "5"
             id:
                 type: string
@@ -1606,7 +1606,7 @@ definitions:
                     type: swarm
                   cpus: 16
                   default_pgedge_version:
-                    postgres_version: "17"
+                    postgres_version: "17.6"
                     spock_version: "5"
                   hostname: i-0123456789abcdef.ec2.internal
                   id: us-east-1
@@ -1618,11 +1618,11 @@ definitions:
                     state: healthy
                     updated_at: "2025-06-17T00:00:00Z"
                   supported_pgedge_versions:
-                    - postgres_version: "17"
+                    - postgres_version: "17.6"
                       spock_version: "5"
-                    - postgres_version: "16"
+                    - postgres_version: "17.5"
                       spock_version: "5"
-                    - postgres_version: "15"
+                    - postgres_version: "16.10"
                       spock_version: "5"
                 - cohort:
                     cohort_id: zdjfu3tfxg1cihv3146ro3hy2
@@ -1631,8 +1631,8 @@ definitions:
                     type: swarm
                   cpus: 16
                   default_pgedge_version:
-                    postgres_version: 17.0.0
-                    spock_version: 4.0.0
+                    postgres_version: "17.6"
+                    spock_version: "5"
                   hostname: i-058731542fee493f.ec2.internal
                   id: ap-south-1
                   ipv4_address: 10.24.35.2
@@ -1643,11 +1643,11 @@ definitions:
                     state: healthy
                     updated_at: "2025-06-17T00:00:00Z"
                   supported_pgedge_versions:
-                    - postgres_version: "17"
+                    - postgres_version: "17.6"
                       spock_version: "5"
-                    - postgres_version: "16"
+                    - postgres_version: "17.5"
                       spock_version: "5"
-                    - postgres_version: "15"
+                    - postgres_version: "16.10"
                       spock_version: "5"
                 - cohort:
                     cohort_id: zdjfu3tfxg1cihv3146ro3hy2
@@ -1656,7 +1656,7 @@ definitions:
                     type: swarm
                   cpus: 16
                   default_pgedge_version:
-                    postgres_version: "17"
+                    postgres_version: "17.6"
                     spock_version: "5"
                   hostname: i-494027b7b53f6a23.ec2.internal
                   id: eu-central-1
@@ -1668,11 +1668,11 @@ definitions:
                     state: healthy
                     updated_at: "2025-06-17T00:00:00Z"
                   supported_pgedge_versions:
-                    - postgres_version: "17"
+                    - postgres_version: "17.6"
                       spock_version: "5"
-                    - postgres_version: "16"
+                    - postgres_version: "17.5"
                       spock_version: "5"
-                    - postgres_version: "15"
+                    - postgres_version: "16.10"
                       spock_version: "5"
             id: production
             status:
@@ -1887,7 +1887,7 @@ definitions:
                         - eu-central-1
                       name: n3
                 port: 5432
-                postgres_version: "17"
+                postgres_version: "17.6"
                 spock_version: "5"
             state: restoring
             updated_at: "2025-06-18T17:58:59Z"
@@ -1971,7 +1971,7 @@ definitions:
                             - eu-central-1
                           name: n3
                     port: 5432
-                    postgres_version: "17"
+                    postgres_version: "17.6"
                     spock_version: "5"
                 state: creating
                 updated_at: "2025-06-18T16:52:05Z"
@@ -2127,7 +2127,7 @@ definitions:
                         - eu-central-1
                       name: n3
                 port: 5432
-                postgres_version: "17"
+                postgres_version: "17.6"
                 spock_version: "5"
             state: restoring
             updated_at: "2025-06-18T17:58:59Z"
@@ -2188,12 +2188,9 @@ definitions:
                 maximum: 65535
             postgres_version:
                 type: string
-                description: The major version of Postgres for this node. Overrides the Postgres version set in the DatabaseSpec.
-                example: "17"
-                enum:
-                    - "15"
-                    - "16"
-                    - "17"
+                description: The Postgres version for this node in 'major.minor' format. Overrides the Postgres version set in the DatabaseSpec.
+                example: "17.6"
+                pattern: ^\d{2}\.\d{1,2}$
             postgresql_conf:
                 type: object
                 description: Additional postgresql.conf settings for this particular node. Will be merged with the settings provided by control-plane.
@@ -2299,7 +2296,7 @@ definitions:
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
             port: 5432
-            postgres_version: "17"
+            postgres_version: "17.6"
             postgresql_conf:
                 max_connections: 1000
             restore_config:
@@ -2635,7 +2632,7 @@ definitions:
                                 - destination_path: /backups/container
                                   host_path: /Users/user/backups/host
                       port: 5432
-                      postgres_version: "17"
+                      postgres_version: "17.6"
                       postgresql_conf:
                         max_connections: 1000
                       restore_config:
@@ -2678,12 +2675,9 @@ definitions:
                 maximum: 65535
             postgres_version:
                 type: string
-                description: The major version of the Postgres database.
-                example: "17"
-                enum:
-                    - "15"
-                    - "16"
-                    - "17"
+                description: The Postgres version in 'major.minor' format.
+                example: "17.6"
+                pattern: ^\d{2}\.\d{1,2}$
             postgresql_conf:
                 type: object
                 description: Additional postgresql.conf settings. Will be merged with the settings provided by control-plane.
@@ -2697,8 +2691,7 @@ definitions:
                 type: string
                 description: The major version of the Spock extension.
                 example: "5"
-                enum:
-                    - "5"
+                pattern: ^\d{1}$
         example:
             backup_config:
                 repositories:
@@ -2875,7 +2868,7 @@ definitions:
                             - destination_path: /backups/container
                               host_path: /Users/user/backups/host
                   port: 5432
-                  postgres_version: "17"
+                  postgres_version: "17.6"
                   postgresql_conf:
                     max_connections: 1000
                   restore_config:
@@ -2937,7 +2930,7 @@ definitions:
                         - destination_path: /backups/container
                           host_path: /Users/user/backups/host
             port: 5432
-            postgres_version: "17"
+            postgres_version: "17.6"
             postgresql_conf:
                 max_connections: 1000
             restore_config:
@@ -3136,9 +3129,9 @@ definitions:
                     $ref: '#/definitions/PgEdgeVersion'
                 description: The PgEdge versions supported by this host.
                 example:
-                    - postgres_version: "16"
+                    - postgres_version: "17.6"
                       spock_version: "5"
-                    - postgres_version: "16"
+                    - postgres_version: "17.6"
                       spock_version: "5"
         example:
             cohort:
@@ -3148,7 +3141,7 @@ definitions:
                 type: swarm
             cpus: 4
             default_pgedge_version:
-                postgres_version: "16"
+                postgres_version: "17.6"
                 spock_version: "5"
             hostname: i-0123456789abcdef.ec2.internal
             id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
@@ -3166,13 +3159,13 @@ definitions:
                 state: available
                 updated_at: "2021-07-01T12:34:56Z"
             supported_pgedge_versions:
-                - postgres_version: "16"
+                - postgres_version: "17.6"
                   spock_version: "5"
-                - postgres_version: "16"
+                - postgres_version: "17.6"
                   spock_version: "5"
-                - postgres_version: "16"
+                - postgres_version: "17.6"
                   spock_version: "5"
-                - postgres_version: "16"
+                - postgres_version: "17.6"
                   spock_version: "5"
         required:
             - id
@@ -3846,14 +3839,14 @@ definitions:
         properties:
             postgres_version:
                 type: string
-                description: The Postgres major version.
-                example: "16"
+                description: The Postgres major and minor version.
+                example: "17.6"
             spock_version:
                 type: string
                 description: The Spock major version.
                 example: "5"
         example:
-            postgres_version: "16"
+            postgres_version: "17.6"
             spock_version: "5"
         required:
             - postgres_version
@@ -4099,7 +4092,7 @@ definitions:
                             - eu-central-1
                           name: n3
                     port: 5432
-                    postgres_version: "17"
+                    postgres_version: "17.6"
                     spock_version: "5"
                 state: restoring
                 updated_at: "2025-06-18T17:58:59Z"
@@ -4689,7 +4682,7 @@ definitions:
                             - eu-central-1
                           name: n3
                     port: 5432
-                    postgres_version: "17"
+                    postgres_version: "17.6"
                     spock_version: "5"
                 state: restoring
                 updated_at: "2025-06-18T17:58:59Z"

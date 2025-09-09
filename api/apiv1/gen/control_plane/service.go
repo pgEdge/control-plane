@@ -323,8 +323,8 @@ type DatabaseNodeSpec struct {
 	// specified, one host will chosen as a primary, and the others will be read
 	// replicas.
 	HostIds []Identifier
-	// The major version of Postgres for this node. Overrides the Postgres version
-	// set in the DatabaseSpec.
+	// The Postgres version for this node in 'major.minor' format. Overrides the
+	// Postgres version set in the DatabaseSpec.
 	PostgresVersion *string
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
@@ -365,7 +365,7 @@ type DatabaseNodeSpec struct {
 type DatabaseSpec struct {
 	// The name of the Postgres database.
 	DatabaseName string
-	// The major version of the Postgres database.
+	// The Postgres version in 'major.minor' format.
 	PostgresVersion *string
 	// The major version of the Spock extension.
 	SpockVersion *string
@@ -636,7 +636,7 @@ type OrchestratorOpts struct {
 }
 
 type PgEdgeVersion struct {
-	// The Postgres major version.
+	// The Postgres major and minor version.
 	PostgresVersion string
 	// The Spock major version.
 	SpockVersion string

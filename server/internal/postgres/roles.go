@@ -130,12 +130,10 @@ func CreateApplicationReadOnlyRole(opts BuiltinRoleOptions) Statements {
 
 func CreatePgEdgeSuperuserRole(opts BuiltinRoleOptions) (Statements, error) {
 	var roles string
-	switch opts.PGVersion {
-	case "15":
-		roles = pg15PgedgeSuperuserRoles()
-	case "16":
+	switch {
+	case strings.HasPrefix(opts.PGVersion, "16"):
 		roles = pg16PgedgeSuperuserRoles()
-	case "17":
+	case strings.HasPrefix(opts.PGVersion, "17"):
 		roles = pg17PgedgeSuperuserRoles()
 	default:
 		return nil, fmt.Errorf("no superuser template for PostgreSQL version: %s", opts.PGVersion)
@@ -238,19 +236,6 @@ func superuserParameters() string {
 		"track_counts",
 		"track_functions",
 		"track_io_timing",
-	}, ", ")
-}
-
-func pg15PgedgeSuperuserRoles() string {
-	return strings.Join([]string{
-		"pg_read_all_data",
-		"pg_write_all_data",
-		"pg_read_all_settings",
-		"pg_read_all_stats",
-		"pg_stat_scan_tables",
-		"pg_monitor",
-		"pg_signal_backend",
-		"pg_checkpoint",
 	}, ", ")
 }
 

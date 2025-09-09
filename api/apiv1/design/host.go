@@ -42,8 +42,8 @@ var HostStatus = g.Type("HostStatus", func() {
 
 var PgEdgeVersion = g.Type("PgEdgeVersion", func() {
 	g.Attribute("postgres_version", g.String, func() {
-		g.Description("The Postgres major version.")
-		g.Example("16")
+		g.Description("The Postgres major and minor version.")
+		g.Example("17.6")
 	})
 	g.Attribute("spock_version", g.String, func() {
 		g.Description("The Spock major version.")
@@ -134,7 +134,7 @@ var HostsExample = []map[string]any{
 		},
 		"cpus": 16,
 		"default_pgedge_version": map[string]any{
-			"postgres_version": "17",
+			"postgres_version": "17.6",
 			"spock_version":    "5",
 		},
 		"hostname":     "i-0123456789abcdef.ec2.internal",
@@ -149,15 +149,15 @@ var HostsExample = []map[string]any{
 		},
 		"supported_pgedge_versions": []map[string]any{
 			{
-				"postgres_version": "17",
+				"postgres_version": "17.6",
 				"spock_version":    "5",
 			},
 			{
-				"postgres_version": "16",
+				"postgres_version": "17.5",
 				"spock_version":    "5",
 			},
 			{
-				"postgres_version": "15",
+				"postgres_version": "16.10",
 				"spock_version":    "5",
 			},
 		},
@@ -171,8 +171,8 @@ var HostsExample = []map[string]any{
 		},
 		"cpus": 16,
 		"default_pgedge_version": map[string]any{
-			"postgres_version": "17.0.0",
-			"spock_version":    "4.0.0",
+			"postgres_version": "17.6",
+			"spock_version":    "5",
 		},
 		"hostname":     "i-058731542fee493f.ec2.internal",
 		"id":           "ap-south-1",
@@ -186,15 +186,15 @@ var HostsExample = []map[string]any{
 		},
 		"supported_pgedge_versions": []map[string]any{
 			{
-				"postgres_version": "17",
+				"postgres_version": "17.6",
 				"spock_version":    "5",
 			},
 			{
-				"postgres_version": "16",
+				"postgres_version": "17.5",
 				"spock_version":    "5",
 			},
 			{
-				"postgres_version": "15",
+				"postgres_version": "16.10",
 				"spock_version":    "5",
 			},
 		},
@@ -208,7 +208,7 @@ var HostsExample = []map[string]any{
 		},
 		"cpus": 16,
 		"default_pgedge_version": map[string]any{
-			"postgres_version": "17",
+			"postgres_version": "17.6",
 			"spock_version":    "5",
 		},
 		"hostname":     "i-494027b7b53f6a23.ec2.internal",
@@ -223,15 +223,15 @@ var HostsExample = []map[string]any{
 		},
 		"supported_pgedge_versions": []map[string]any{
 			{
-				"postgres_version": "17",
+				"postgres_version": "17.6",
 				"spock_version":    "5",
 			},
 			{
-				"postgres_version": "16",
+				"postgres_version": "17.5",
 				"spock_version":    "5",
 			},
 			{
-				"postgres_version": "15",
+				"postgres_version": "16.10",
 				"spock_version":    "5",
 			},
 		},

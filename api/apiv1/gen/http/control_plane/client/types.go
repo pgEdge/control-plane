@@ -1317,7 +1317,7 @@ type ComponentStatusResponseBody struct {
 
 // PgEdgeVersionResponseBody is used to define fields on response body types.
 type PgEdgeVersionResponseBody struct {
-	// The Postgres major version.
+	// The Postgres major and minor version.
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
 	// The Spock major version.
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
@@ -1380,7 +1380,7 @@ type ComponentStatusResponse struct {
 
 // PgEdgeVersionResponse is used to define fields on response body types.
 type PgEdgeVersionResponse struct {
-	// The Postgres major version.
+	// The Postgres major and minor version.
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
 	// The Spock major version.
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
@@ -1487,7 +1487,7 @@ type InstanceSubscriptionResponseBody struct {
 type DatabaseSpecResponseBody struct {
 	// The name of the Postgres database.
 	DatabaseName *string `form:"database_name,omitempty" json:"database_name,omitempty" xml:"database_name,omitempty"`
-	// The major version of the Postgres database.
+	// The Postgres version in 'major.minor' format.
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
 	// The major version of the Spock extension.
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
@@ -1532,8 +1532,8 @@ type DatabaseNodeSpecResponseBody struct {
 	// specified, one host will chosen as a primary, and the others will be read
 	// replicas.
 	HostIds []string `form:"host_ids,omitempty" json:"host_ids,omitempty" xml:"host_ids,omitempty"`
-	// The major version of Postgres for this node. Overrides the Postgres version
-	// set in the DatabaseSpec.
+	// The Postgres version for this node in 'major.minor' format. Overrides the
+	// Postgres version set in the DatabaseSpec.
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
@@ -1764,7 +1764,7 @@ type DatabaseUserSpecResponseBody struct {
 type DatabaseSpecRequestBody struct {
 	// The name of the Postgres database.
 	DatabaseName string `form:"database_name" json:"database_name" xml:"database_name"`
-	// The major version of the Postgres database.
+	// The Postgres version in 'major.minor' format.
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
 	// The major version of the Spock extension.
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
@@ -1809,8 +1809,8 @@ type DatabaseNodeSpecRequestBody struct {
 	// specified, one host will chosen as a primary, and the others will be read
 	// replicas.
 	HostIds []string `form:"host_ids" json:"host_ids" xml:"host_ids"`
-	// The major version of Postgres for this node. Overrides the Postgres version
-	// set in the DatabaseSpec.
+	// The Postgres version for this node in 'major.minor' format. Overrides the
+	// Postgres version set in the DatabaseSpec.
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
@@ -2070,7 +2070,7 @@ type InstanceResponseBodyCollection []*InstanceResponseBody
 type DatabaseSpecRequestBodyRequestBody struct {
 	// The name of the Postgres database.
 	DatabaseName string `form:"database_name" json:"database_name" xml:"database_name"`
-	// The major version of the Postgres database.
+	// The Postgres version in 'major.minor' format.
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
 	// The major version of the Spock extension.
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
@@ -2116,8 +2116,8 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// specified, one host will chosen as a primary, and the others will be read
 	// replicas.
 	HostIds []string `form:"host_ids" json:"host_ids" xml:"host_ids"`
-	// The major version of Postgres for this node. Overrides the Postgres version
-	// set in the DatabaseSpec.
+	// The Postgres version for this node in 'major.minor' format. Overrides the
+	// Postgres version set in the DatabaseSpec.
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
@@ -5772,14 +5772,10 @@ func ValidateDatabaseSpecResponseBody(body *DatabaseSpecResponseBody) (err error
 		}
 	}
 	if body.PostgresVersion != nil {
-		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"15", "16", "17"}))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.postgres_version", *body.PostgresVersion, "^\\d{2}\\.\\d{1,2}$"))
 	}
 	if body.SpockVersion != nil {
-		if !(*body.SpockVersion == "5") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.spock_version", *body.SpockVersion, []any{"5"}))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.spock_version", *body.SpockVersion, "^\\d{1}$"))
 	}
 	if body.Port != nil {
 		if *body.Port < 0 {
@@ -5872,9 +5868,7 @@ func ValidateDatabaseNodeSpecResponseBody(body *DatabaseNodeSpecResponseBody) (e
 		}
 	}
 	if body.PostgresVersion != nil {
-		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"15", "16", "17"}))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.postgres_version", *body.PostgresVersion, "^\\d{2}\\.\\d{1,2}$"))
 	}
 	if body.Port != nil {
 		if *body.Port < 0 {
@@ -6407,14 +6401,10 @@ func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) 
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.database_name", body.DatabaseName, utf8.RuneCountInString(body.DatabaseName), 31, false))
 	}
 	if body.PostgresVersion != nil {
-		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"15", "16", "17"}))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.postgres_version", *body.PostgresVersion, "^\\d{2}\\.\\d{1,2}$"))
 	}
 	if body.SpockVersion != nil {
-		if !(*body.SpockVersion == "5") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.spock_version", *body.SpockVersion, []any{"5"}))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.spock_version", *body.SpockVersion, "^\\d{1}$"))
 	}
 	if body.Port != nil {
 		if *body.Port < 0 {
@@ -6502,9 +6492,7 @@ func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err
 		}
 	}
 	if body.PostgresVersion != nil {
-		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"15", "16", "17"}))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.postgres_version", *body.PostgresVersion, "^\\d{2}\\.\\d{1,2}$"))
 	}
 	if body.Port != nil {
 		if *body.Port < 0 {
@@ -7025,14 +7013,10 @@ func ValidateDatabaseSpecRequestBodyRequestBody(body *DatabaseSpecRequestBodyReq
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.database_name", body.DatabaseName, utf8.RuneCountInString(body.DatabaseName), 31, false))
 	}
 	if body.PostgresVersion != nil {
-		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"15", "16", "17"}))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.postgres_version", *body.PostgresVersion, "^\\d{2}\\.\\d{1,2}$"))
 	}
 	if body.SpockVersion != nil {
-		if !(*body.SpockVersion == "5") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.spock_version", *body.SpockVersion, []any{"5"}))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.spock_version", *body.SpockVersion, "^\\d{1}$"))
 	}
 	if body.Port != nil {
 		if *body.Port < 0 {
@@ -7120,9 +7104,7 @@ func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecReques
 		}
 	}
 	if body.PostgresVersion != nil {
-		if !(*body.PostgresVersion == "15" || *body.PostgresVersion == "16" || *body.PostgresVersion == "17") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.postgres_version", *body.PostgresVersion, []any{"15", "16", "17"}))
-		}
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.postgres_version", *body.PostgresVersion, "^\\d{2}\\.\\d{1,2}$"))
 	}
 	if body.Port != nil {
 		if *body.Port < 0 {
