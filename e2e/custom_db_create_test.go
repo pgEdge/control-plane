@@ -1,3 +1,5 @@
+//go:build e2e_test
+
 package e2e
 
 import (
@@ -20,19 +22,19 @@ var password string = "password"
 // Creates a database with a custom PostgreSQL version.
 // Performs various validations, such as checking primary and replica node functionality.
 // Uses DatabaseFixture to create the database.
-func TestCreateDbWithCustomePgVersion(t *testing.T) {
+func TestCreateDbWithCustomPgVersion(t *testing.T) {
 
 	t.Parallel()
 
 	targetPgVersion := "16.10"
 
-	fmt.Printf("This is a test for custom db creation, going to create for Pg version %s", targetPgVersion)
+	t.Logf("This is a test for custom db creation, going to create for Pg version %s", targetPgVersion)
 
 	// define the cluster topology(nodes structure)
 	totalhost := len(fixture.config.Hosts)
 	nodeCount := 2
 	hostPerNode := 2
-	nodes := createNodesStruct(nodeCount, hostPerNode)
+	nodes := createNodesStruct(nodeCount, hostPerNode, t)
 
 	expectedReplicas := totalhost - len(nodes)
 
@@ -104,12 +106,12 @@ func TestCreateDbWithCustomePgVersion(t *testing.T) {
 
 // Build Nodes struct for database specs, based on number of nodes and hosts per node. If there
 // is any leftover node it will create a new node for that
-func createNodesStruct(numNodes int, hostsPerNode int) []*controlplane.DatabaseNodeSpec {
+func createNodesStruct(numNodes int, hostsPerNode int, t testing.TB) []*controlplane.DatabaseNodeSpec {
 	nodes := []*controlplane.DatabaseNodeSpec{}
 	totalHosts := len(fixture.config.Hosts)
 	hostIndex := 0
 
-	fmt.Printf("Going to create topology for number of nodes %d and total hosts %d\n", numNodes, totalHosts)
+	t.Logf("Going to create topology for number of nodes %d and total hosts %d\n", numNodes, totalHosts)
 
 	for i := 1; i <= numNodes && hostIndex < totalHosts; i++ {
 		end := hostIndex + hostsPerNode
@@ -179,7 +181,7 @@ func verifyPrimaryNodes(ctx context.Context, db *DatabaseFixture,
 		if isInRecovery {
 			require.NoError(t, err)
 		}
-		fmt.Println("Node is PRIMARY (pg_is_in_recovery = false)")
+		t.Log("Node is PRIMARY (pg_is_in_recovery = false)")
 
 		// 2. Check WAL generation
 		var walLSN string
@@ -187,7 +189,7 @@ func verifyPrimaryNodes(ctx context.Context, db *DatabaseFixture,
 		if err != nil {
 			require.NoError(t, err)
 		}
-		fmt.Printf("WAL is being generated, current LSN: %s\n", walLSN)
+		t.Logf("WAL is being generated, current LSN: %s\n", walLSN)
 
 		// 3. Insert/Update test (write check)
 		_, err = conn.Exec(ctx, "CREATE TEMP TABLE IF NOT EXISTS test_table(id SERIAL, val TEXT)")
@@ -198,7 +200,7 @@ func verifyPrimaryNodes(ctx context.Context, db *DatabaseFixture,
 		if err != nil {
 			require.NoError(t, err)
 		}
-		fmt.Println("Insert succeeded, primary allows writes")
+		t.Log("Insert succeeded, primary allows writes")
 
 		// 4. Check replication slots and connected hosts rows info
 		rows, err := conn.Query(ctx, "SELECT slot_name, active FROM pg_replication_slots")
@@ -213,7 +215,7 @@ func verifyPrimaryNodes(ctx context.Context, db *DatabaseFixture,
 			if err := rows.Scan(&slotName, &active); err != nil {
 				require.NoError(t, err)
 			}
-			fmt.Printf("   - Slot: %s, Active: %t\n", slotName, active)
+			t.Logf("   - Slot: %s, Active: %t\n", slotName, active)
 		}
 	})
 }
@@ -231,7 +233,7 @@ func verifyReplicasNodes(ctx context.Context, db *DatabaseFixture,
 		if !isInRecovery {
 			t.Fatalf("Expected a replica, but pg_is_in_recovery=false (this is a primary)")
 		}
-		fmt.Println("Node is REPLICA (pg_is_in_recovery = true)")
+		t.Log("Node is REPLICA (pg_is_in_recovery = true)")
 
 		// 2. Check replication source LSNs
 		var receiveLSN, replayLSN string
@@ -240,14 +242,14 @@ func verifyReplicasNodes(ctx context.Context, db *DatabaseFixture,
 		if err != nil {
 			require.NoError(t, err)
 		}
-		fmt.Printf("WAL received up to: %s, replayed up to: %s\n", receiveLSN, replayLSN)
+		t.Logf("WAL received up to: %s, replayed up to: %s\n", receiveLSN, replayLSN)
 
 		// 3. Verify read-only mode (writes should fail)
 		_, err = conn.Exec(ctx, "CREATE TEMP TABLE test_table_replica(id SERIAL, val TEXT)")
 		if err == nil {
 			t.Fatalf("Replica accepted a write")
 		}
-		fmt.Println("Replica is in read-only mode (writes are not allowed)")
+		t.Log("Replica is in read-only mode (writes are not allowed)")
 	})
 }
 
@@ -263,7 +265,7 @@ func verifyPgVersion(ctx context.Context, db *DatabaseFixture,
 		if !strings.Contains(versionStr, expectedVersion) {
 			log.Fatalf("Expected PostgreSQL version %s, but got: %s", expectedVersion, versionStr)
 		}
-		fmt.Printf("PostgreSQL version validation passed (found %s)\n", expectedVersion)
+		t.Logf("PostgreSQL version validation passed (found %s)\n", expectedVersion)
 	})
 }
 
@@ -309,7 +311,7 @@ func validateReplication(ctx context.Context, db *DatabaseFixture, t testing.TB)
 			if rowCount != expectedCount {
 				t.Fatalf("Expected %d rows in foo, but found %d", expectedCount, rowCount)
 			}
-			fmt.Printf("Data is successfully replicated on %s", db.Instances[i].HostID)
+			t.Logf("Data is successfully replicated on %s", db.Instances[i].HostID)
 		})
 	}
 }
