@@ -36,7 +36,7 @@ func TestCreateDbWithCustomePgVersion(t *testing.T) {
 
 	expectedReplicas := totalhost - len(nodes)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Minute)
 	defer cancel()
 
 	// Create a new database fixture that provisions a database based on the given
