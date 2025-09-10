@@ -11,7 +11,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
-var ErrTaskNotFound = fmt.Errorf("task not found")
+var ErrTaskNotFound = errors.New("task not found")
 
 type Service struct {
 	Store *Store

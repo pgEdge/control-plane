@@ -12,26 +12,18 @@ var _ resource.Resource = (*SyncEventResource)(nil)
 
 const ResourceTypeSyncEvent resource.Type = "database.sync_event"
 
-func SyncEventResourceIdentifier(subscriberNode string, providerNode string) resource.Identifier {
+func SyncEventResourceIdentifier(providerNode, subscriberNode string) resource.Identifier {
 	return resource.Identifier{
-		ID:   subscriberNode + providerNode,
+		ID:   providerNode + subscriberNode,
 		Type: ResourceTypeSyncEvent,
 	}
 }
 
 type SyncEventResource struct {
-	ProviderNode       string                `json:"provider_node"`
-	SubscriberNode     string                `json:"subscriber_node"`
-	SyncEventLsn       string                `json:"sync_event_lsn"`
-	DependentResources []resource.Identifier `json:"dependent_resources"`
-}
-
-func NewSyncEventResource(subscriberNode string, providerNode string) *SyncEventResource {
-	return &SyncEventResource{
-		ProviderNode:       providerNode,
-		SubscriberNode:     subscriberNode,
-		DependentResources: []resource.Identifier{},
-	}
+	ProviderNode      string                `json:"provider_node"`
+	SubscriberNode    string                `json:"subscriber_node"`
+	SyncEventLsn      string                `json:"sync_event_lsn"`
+	ExtraDependencies []resource.Identifier `json:"extra_dependencies"`
 }
 
 func (r *SyncEventResource) ResourceVersion() string {
@@ -50,20 +42,16 @@ func (r *SyncEventResource) Executor() resource.Executor {
 }
 
 func (r *SyncEventResource) Identifier() resource.Identifier {
-	return SyncEventResourceIdentifier(r.SubscriberNode, r.ProviderNode)
-}
-
-func (r *SyncEventResource) AddDependentResource(dep resource.Identifier) {
-	r.DependentResources = append(r.DependentResources, dep)
+	return SyncEventResourceIdentifier(r.ProviderNode, r.SubscriberNode)
 }
 
 func (r *SyncEventResource) Dependencies() []resource.Identifier {
 	deps := []resource.Identifier{
 		NodeResourceIdentifier(r.ProviderNode),
-		SubscriptionResourceIdentifier(r.SubscriberNode, r.ProviderNode),
+		SubscriptionResourceIdentifier(r.ProviderNode, r.SubscriberNode),
 	}
 
-	deps = append(deps, r.DependentResources...)
+	deps = append(deps, r.ExtraDependencies...)
 	return deps
 }
 
@@ -85,8 +73,6 @@ func (r *SyncEventResource) Refresh(ctx context.Context, rc *resource.Context) e
 	if err != nil {
 		return fmt.Errorf("failed to send sync event %q from provider: %w", lsn, err)
 	}
-
-	fmt.Println("sent sync event from provider", r.Identifier(), lsn)
 
 	r.SyncEventLsn = lsn
 

@@ -8,13 +8,21 @@ import (
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
 
+	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/database/operations"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
-func (w *Workflows) applyEvents(ctx workflow.Context, databaseID string, taskID uuid.UUID, state *resource.State, phases [][]*resource.Event) error {
-	for _, phase := range phases {
+func (w *Workflows) applyEvents(
+	ctx workflow.Context,
+	databaseID string,
+	taskID uuid.UUID,
+	state *resource.State,
+	plan resource.Plan,
+) error {
+	for _, phase := range plan {
 		futures := make([]workflow.Future[*activities.ApplyEventOutput], len(phase))
 		for i, event := range phase {
 			in := &activities.ApplyEventInput{
@@ -61,6 +69,36 @@ func (w *Workflows) applyEvents(ctx workflow.Context, databaseID string, taskID 
 		}
 	}
 
+	return nil
+}
+
+func (w *Workflows) applyPlans(
+	ctx workflow.Context,
+	databaseID string,
+	taskID uuid.UUID,
+	state *resource.State,
+	plans []resource.Plan,
+) error {
+	logger := workflow.Logger(ctx).With("database_id", databaseID)
+
+	// We always want to persist the updated state.
+	defer func() {
+		in := &activities.PersistStateInput{
+			DatabaseID: databaseID,
+			State:      state,
+		}
+		_, err := w.Activities.ExecutePersistState(ctx, in).Get(ctx)
+		if err != nil {
+			logger.Error("failed to persist state", "error", err)
+		}
+	}()
+
+	for i, plan := range plans {
+		err := w.applyEvents(ctx, databaseID, taskID, state, plan)
+		if err != nil {
+			return fmt.Errorf("error in plan %d: %w", i, err)
+		}
+	}
 	return nil
 }
 
@@ -120,4 +158,31 @@ func (w *Workflows) cancelTask(
 	})
 	logger.With("error", err).Error("failed to log task event")
 
+}
+
+func (w *Workflows) getNodeResources(
+	ctx workflow.Context,
+	node *database.NodeInstances,
+) (*operations.NodeResources, error) {
+	resources := make([]*database.InstanceResources, len(node.Instances))
+
+	for i, instance := range node.Instances {
+		in := &activities.GetInstanceResourcesInput{
+			Spec: instance,
+		}
+		out, err := w.Activities.
+			ExecuteGetInstanceResources(ctx, in).
+			Get(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get instance resources: %w", err)
+		}
+
+		resources[i] = out.Resources
+	}
+
+	return &operations.NodeResources{
+		NodeName:          node.NodeName,
+		SourceNode:        node.SourceNode,
+		InstanceResources: resources,
+	}, nil
 }

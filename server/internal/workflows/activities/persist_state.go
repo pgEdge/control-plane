@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 type PersistStateInput struct {
@@ -23,7 +23,7 @@ func (a *Activities) ExecutePersistState(
 	input *PersistStateInput,
 ) workflow.Future[*PersistStateOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(a.Config.HostID),
+		Queue: utils.HostQueue(a.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},

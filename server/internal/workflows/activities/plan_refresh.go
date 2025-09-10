@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/cschleiden/go-workflows/activity"
-	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
 
 	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 type PlanRefreshInput struct {
@@ -16,7 +16,7 @@ type PlanRefreshInput struct {
 }
 
 type PlanRefreshOutput struct {
-	Plan [][]*resource.Event `json:"plan"`
+	Plan resource.Plan `json:"plan"`
 }
 
 func (a *Activities) ExecutePlanRefresh(
@@ -24,7 +24,7 @@ func (a *Activities) ExecutePlanRefresh(
 	input *PlanRefreshInput,
 ) workflow.Future[*PlanRefreshOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(a.Config.HostID),
+		Queue: utils.HostQueue(a.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},

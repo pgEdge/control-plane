@@ -1,56 +1,55 @@
 version: 2.1
 orbs:
   go: circleci/go@3.0.2
+executors:
+  common:
+    machine:
+      image: ubuntu-2404:2024.11.1
+      docker_layer_caching: true
+    resource_class: large
 commands:
   use_mod_cache:
     steps:
       - run:
           name: Compute go.sum checksums
           command: |
-            md5sum ./go.sum > /tmp/mod-checksums.txt
+            uname -m > /tmp/mod-checksums.txt
+            md5sum ./go.sum >> /tmp/mod-checksums.txt
             md5sum tools.mk >> /tmp/mod-checksums.txt
       - restore_cache:
           keys:
-            - v2-go-mod-{{ arch }}-{{ checksum "/tmp/mod-checksums.txt" }}
+            - v4-go-mod-{{ checksum "/tmp/mod-checksums.txt" }}
             # Fallback to the most recently-generated cache if an exact match
             # does not exist.
+            - v4-go-mod-
+            - v3-go-mod-
             - v2-go-mod-
-            - v1-go-mod-
       - run:
           name: go mod download
           command: go mod download
       - run:
           name: Install tools
           command: make install-tools
-          environment:
-            GOTOOLCHAIN: go1.24.3
       - save_cache:
-          key: v2-go-mod-{{ arch }}-{{ checksum "/tmp/mod-checksums.txt" }}
+          key: v4-go-mod-{{ checksum "/tmp/mod-checksums.txt" }}
           paths:
-            - /home/circleci/go/pkg/mod
-            - /home/circleci/go/bin
+            - /home/circleci/.go_workspace/pkg/mod
+            - /home/circleci/.go_workspace/bin/gotestsum
             - /home/circleci/.cache/go-build
+  common_setup:
+    steps:
+      - go/install:
+          version: '1.24.3'
+      - checkout
+      - use_mod_cache
 jobs:
   test:
-    docker:
-      - image: cimg/go:1.24.3
+    executor: common
     steps:
-      - checkout
-      - setup_remote_docker
-      - use_mod_cache
+      - common_setup
       - run:
           name: Run CI checks
           command: make ci
-      - store_test_results:
-          path: .
-  test-e2e:
-    machine:
-      image: ubuntu-2404:2024.11.1
-      docker_layer_caching: true
-    resource_class: arm.large
-    steps:
-      - checkout
-      - use_mod_cache
       - run:
           name: Run e2e tests with Docker Compose
           command: |
@@ -63,12 +62,9 @@ jobs:
       - store_test_results:
           path: .
   release:
-    docker:
-      - image: cimg/go:1.24.3
+    executor: common
     steps:
-      - checkout
-      - setup_remote_docker
-      - use_mod_cache
+      - common_setup
       - run:
           name: Build and publish release artifacts
           command: |
@@ -114,9 +110,7 @@ workflows:
   test:
     jobs:
       - test
-      - test-e2e:
-          requires:
-            - test
+
   release:
     jobs:
       - release:

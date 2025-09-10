@@ -19,6 +19,37 @@ type InstanceResources struct {
 	Resources []*resource.ResourceData
 }
 
+func (r *InstanceResources) InstanceID() string {
+	return r.Instance.Spec.InstanceID
+}
+
+func (r *InstanceResources) DatabaseID() string {
+	return r.Instance.Spec.DatabaseID
+}
+
+func (r *InstanceResources) HostID() string {
+	return r.Instance.Spec.HostID
+}
+
+func (r *InstanceResources) DatabaseName() string {
+	return r.Instance.Spec.DatabaseName
+}
+
+func (r *InstanceResources) NodeName() string {
+	return r.Instance.Spec.NodeName
+}
+
+func (r *InstanceResources) State() (*resource.State, error) {
+	state := resource.NewState()
+	state.Add(r.Resources...)
+
+	if err := state.AddResource(r.Instance); err != nil {
+		return nil, fmt.Errorf("failed to add instance to state: %w", err)
+	}
+
+	return state, nil
+}
+
 type ValidationResult struct {
 	InstanceID string   `json:"instance_id"`
 	HostID     string   `json:"host_id"`

@@ -1,7 +1,7 @@
 package version
 
 import (
-	"fmt"
+	"errors"
 	"runtime/debug"
 )
 
@@ -15,7 +15,7 @@ type Info struct {
 func GetInfo() (*Info, error) {
 	buildInfo, ok := debug.ReadBuildInfo()
 	if !ok {
-		return nil, fmt.Errorf("could not read build info")
+		return nil, errors.New("could not read build info")
 	}
 	var revision, revisionTime, arch string
 	for _, setting := range buildInfo.Settings {

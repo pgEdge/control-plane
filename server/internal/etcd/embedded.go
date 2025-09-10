@@ -213,7 +213,7 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 
 	initialized, err := e.IsInitialized()
 	if err != nil {
-		return fmt.Errorf("failed to determine if etcd is already ")
+		return fmt.Errorf("failed to determine if etcd is already initialized: %w", err)
 	}
 	if initialized {
 		return errors.New("etcd already initialized - cannot join another cluster")

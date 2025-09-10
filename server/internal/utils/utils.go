@@ -6,10 +6,14 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"path"
 	"regexp"
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/cschleiden/go-workflows/core"
+	"github.com/cschleiden/go-workflows/workflow"
 )
 
 var ErrTimedOut = errors.New("operation timed out")
@@ -134,4 +138,16 @@ func ValidateID(value string) error {
 		return ErrInvalidIdentifier
 	}
 	return nil
+}
+
+func HostQueue(hostID string) workflow.Queue {
+	return core.Queue(path.Join("host", hostID))
+}
+
+func CohortQueue(cohortID string) workflow.Queue {
+	return core.Queue(path.Join("cohort", cohortID))
+}
+
+func ClusterQueue() workflow.Queue {
+	return core.Queue(path.Join("cluster"))
 }

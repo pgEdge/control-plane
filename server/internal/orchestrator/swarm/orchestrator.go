@@ -32,6 +32,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/scheduler"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 const (
@@ -191,13 +192,11 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 
 	// patroni resources - used to clean up etcd on deletion
 	patroniCluster := &PatroniCluster{
-		ClusterID:            o.cfg.ClusterID,
 		DatabaseID:           spec.DatabaseID,
 		NodeName:             spec.NodeName,
 		PatroniClusterPrefix: patroni.ClusterPrefix(spec.DatabaseID, spec.NodeName),
 	}
 	patroniMember := &PatroniMember{
-		ClusterID:  o.cfg.ClusterID,
 		DatabaseID: spec.DatabaseID,
 		NodeName:   spec.NodeName,
 		InstanceID: spec.InstanceID,
@@ -295,7 +294,6 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 				fmt.Sprintf("%s-%s-%s", schedule.ID, spec.DatabaseID, spec.NodeName),
 				schedule.CronExpression,
 				scheduler.WorkflowCreatePgBackRestBackup,
-				o.cfg.ClusterID,
 				map[string]interface{}{
 					"database_id": spec.DatabaseID,
 					"node_name":   spec.NodeName,
@@ -423,11 +421,11 @@ func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID
 
 func (o *Orchestrator) WorkerQueues() ([]workflow.Queue, error) {
 	queues := []workflow.Queue{
-		workflow.Queue(o.cfg.HostID),
-		workflow.Queue(o.cfg.ClusterID),
+		utils.ClusterQueue(),
+		utils.HostQueue(o.cfg.HostID),
 	}
 	if o.controlAvailable {
-		queues = append(queues, workflow.Queue(o.swarmID))
+		queues = append(queues, utils.CohortQueue(o.swarmID))
 	}
 	return queues, nil
 }

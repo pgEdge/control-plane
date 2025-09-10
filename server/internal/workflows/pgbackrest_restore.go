@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
-	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
@@ -69,77 +68,22 @@ func (w *Workflows) PgBackRestRestore(ctx workflow.Context, input *PgBackRestRes
 	if err != nil {
 		return nil, handleError(fmt.Errorf("failed to get current state: %w", err))
 	}
-
 	current := refreshCurrentOutput.State
 
-	restoreSpecInput := &activities.RestoreSpecInput{
-		State:         current,
+	planInput := &PlanRestoreInput{
 		Spec:          input.Spec,
-		TargetNodes:   input.TargetNodes,
+		Current:       current,
 		RestoreConfig: input.RestoreConfig,
+		NodeTaskIDs:   input.NodeTaskIDs,
 	}
-	restoreSpecOutput, err := w.Activities.
-		ExecuteRestoreSpec(ctx, restoreSpecInput).
-		Get(ctx)
+	planOutput, err := w.ExecutePlanRestore(ctx, planInput).Get(ctx)
 	if err != nil {
-		return nil, handleError(fmt.Errorf("failed to compute restore spec: %w", err))
+		return nil, handleError(fmt.Errorf("failed to execute plan restore: %w", err))
 	}
 
-	// Now we'll compute each state that we'll transition to
-	// 1. Pre-restore state. Here we'll remove the read replicas as well as the
-	//    Node and Instance resources for the target nodes.
-	preRestoreDesiredInput := &GetPreRestoreStateInput{
-		Spec:        restoreSpecOutput.Spec,
-		NodeTaskIDs: input.NodeTaskIDs,
-	}
-	preRestoreDesiredOutput, err := w.ExecuteGetPreRestoreState(ctx, preRestoreDesiredInput).Get(ctx)
+	err = w.applyPlans(ctx, input.Spec.DatabaseID, input.TaskID, current, planOutput.Plans)
 	if err != nil {
-		return nil, handleError(fmt.Errorf("failed to get pre-restore state: %w", err))
-	}
-	preRestoreDesired := preRestoreDesiredOutput.State
-
-	// 2. The restore state. This creates restore-specific resources for the
-	//    target nodes and recreates the Node, Instance, and Subscription
-	//    resources.
-	restoreDesiredInput := &GetRestoreStateInput{
-		Spec:        restoreSpecOutput.Spec,
-		NodeTaskIDs: input.NodeTaskIDs,
-	}
-	restoreDesiredOutput, err := w.ExecuteGetRestoreState(ctx, restoreDesiredInput).Get(ctx)
-	if err != nil {
-		return nil, handleError(fmt.Errorf("failed to get restore state: %w", err))
-	}
-	restoreDesired := restoreDesiredOutput.State
-
-	// 3. Post-restore state. After the restore is complete, we'll remove the
-	//    restore-specific resources and recreate the read replicas.
-	postRestoreDesiredInput := &GetDesiredStateInput{
-		Spec: input.Spec,
-	}
-	postRestoreDesiredOutput, err := w.ExecuteGetDesiredState(ctx, postRestoreDesiredInput).Get(ctx)
-	if err != nil {
-		return nil, handleError(fmt.Errorf("failed to get post-restore state: %w", err))
-	}
-	postRestoreDesired := postRestoreDesiredOutput.State
-
-	// Now we'll loop through the states and reconcile them
-	desiredStates := []*resource.State{
-		preRestoreDesired,
-		restoreDesired,
-		postRestoreDesired,
-	}
-	for _, desired := range desiredStates {
-		reconcileInput := &ReconcileStateInput{
-			DatabaseID: input.Spec.DatabaseID,
-			TaskID:     input.TaskID,
-			Current:    current,
-			Desired:    desired,
-		}
-		reconcileOutput, err := w.ExecuteReconcileState(ctx, reconcileInput).Get(ctx)
-		if err != nil {
-			return nil, handleError(fmt.Errorf("failed to reconcile state: %w", err))
-		}
-		current = reconcileOutput.Updated
+		return nil, handleError(err)
 	}
 
 	updateStateInput := &activities.UpdateDbStateInput{

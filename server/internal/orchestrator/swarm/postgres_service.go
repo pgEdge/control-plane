@@ -134,6 +134,20 @@ func (s *PostgresService) Delete(ctx context.Context, rc *resource.Context) erro
 		return err
 	}
 
+	// We scale down before removing the service so that we can guarantee that
+	// the containers have stopped before this function returns. Otherwise, we
+	// can encounter errors from trying to remove other resources while the
+	// containers are still up.
+	err = client.ServiceScale(ctx, docker.ServiceScaleOptions{
+		ServiceID:   s.ServiceName,
+		Scale:       0,
+		Wait:        true,
+		WaitTimeout: time.Minute,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to scale down postgres service before removal: %w", err)
+	}
+
 	if err := client.ServiceRemove(ctx, s.ServiceName); err != nil {
 		return fmt.Errorf("failed to remove postgres service: %w", err)
 	}

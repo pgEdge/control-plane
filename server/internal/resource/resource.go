@@ -3,13 +3,15 @@ package resource
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/samber/do"
 	"github.com/wI2L/jsondiff"
 )
 
-var ErrNotFound = fmt.Errorf("resource not found")
+var ErrNotFound = errors.New("resource not found")
 
 func ProvideRegistry(i *do.Injector) {
 	do.Provide(i, func(_ *do.Injector) (*Registry, error) {
@@ -59,6 +61,26 @@ func (r *ResourceData) Differs(other *ResourceData) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func (r *ResourceData) Clone() *ResourceData {
+	return &ResourceData{
+		NeedsCreate:     r.NeedsCreate,
+		Executor:        r.Executor,
+		Identifier:      r.Identifier,
+		Attributes:      slices.Clone(r.Attributes),
+		Dependencies:    slices.Clone(r.Dependencies),
+		DiffIgnore:      slices.Clone(r.DiffIgnore),
+		ResourceVersion: r.ResourceVersion,
+	}
+}
+
+func ToResource[T Resource](data *ResourceData) (T, error) {
+	var resource T
+	if err := json.Unmarshal(data.Attributes, &resource); err != nil {
+		return resource, fmt.Errorf("failed to unmarshal resource attributes: %w", err)
+	}
+	return resource, nil
 }
 
 type Context struct {
@@ -136,11 +158,7 @@ func (r *Registry) Resource(data *ResourceData) (Resource, error) {
 
 func RegisterResourceType[T Resource](registry *Registry, t Type) {
 	registry.factories[t] = func(data *ResourceData) (Resource, error) {
-		var resource T
-		if err := json.Unmarshal(data.Attributes, &resource); err != nil {
-			return resource, fmt.Errorf("failed to unmarshal resource attributes: %w", err)
-		}
-		return resource, nil
+		return ToResource[T](data)
 	}
 }
 

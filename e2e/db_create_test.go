@@ -31,6 +31,7 @@ func TestCreateMultiNodeDBWithReplicas(t *testing.T) {
 }
 
 func testCreateDB(t *testing.T, nodeCount int, deployReplicas bool) {
+	t.Parallel()
 
 	host1 := fixture.HostIDs()[0]
 	host2 := fixture.HostIDs()[1]

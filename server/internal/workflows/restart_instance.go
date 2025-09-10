@@ -12,10 +12,11 @@ import (
 )
 
 type RestartInstanceInput struct {
-	DatabaseID  string
-	InstanceID  string
-	TaskID      uuid.UUID
-	ScheduledAt time.Time // Optional, if empty, restart immediately
+	HostID      string    `json:"host_id"`
+	DatabaseID  string    `json:"database_id"`
+	InstanceID  string    `json:"instance_id"`
+	TaskID      uuid.UUID `json:"task_id"`
+	ScheduledAt time.Time `json:"scheduled_at"` // Optional, if empty, restart immediately
 }
 
 type RestartInstanceOutput struct{}
@@ -74,7 +75,7 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 		InstanceID: input.InstanceID,
 		TaskID:     input.TaskID,
 	}
-	_, err := w.Activities.ExecuteRestartInstance(ctx, &req).Get(ctx)
+	_, err := w.Activities.ExecuteRestartInstance(ctx, input.HostID, &req).Get(ctx)
 	if err != nil {
 		return nil, handleError(err)
 	}

@@ -428,15 +428,43 @@ type InstanceSpec struct {
 	BackupConfig     *BackupConfig       `json:"backup_config"`
 	RestoreConfig    *RestoreConfig      `json:"restore_config"`
 	PostgreSQLConf   map[string]any      `json:"postgresql_conf"`
-	EnableBackups    bool                `json:"enable_backups"`
 	ClusterSize      int                 `json:"cluster_size"`
 	OrchestratorOpts *OrchestratorOpts   `json:"orchestrator_opts,omitempty"`
 	FailoverPolicy   string              `json:"failover_policy"`
 }
 
+func (s *InstanceSpec) Clone() *InstanceSpec {
+	users := make([]*User, len(s.DatabaseUsers))
+	for i, user := range s.DatabaseUsers {
+		users[i] = user.Clone()
+	}
+
+	return &InstanceSpec{
+		InstanceID:       s.InstanceID,
+		TenantID:         utils.ClonePointer(s.TenantID),
+		DatabaseID:       s.DatabaseID,
+		HostID:           s.HostID,
+		DatabaseName:     s.DatabaseName,
+		NodeName:         s.NodeName,
+		NodeOrdinal:      s.NodeOrdinal,
+		PgEdgeVersion:    s.PgEdgeVersion.Clone(),
+		Port:             utils.ClonePointer(s.Port),
+		CPUs:             s.CPUs,
+		MemoryBytes:      s.MemoryBytes,
+		DatabaseUsers:    users,
+		BackupConfig:     s.BackupConfig.Clone(),
+		RestoreConfig:    s.RestoreConfig.Clone(),
+		PostgreSQLConf:   maps.Clone(s.PostgreSQLConf),
+		ClusterSize:      s.ClusterSize,
+		OrchestratorOpts: s.OrchestratorOpts.Clone(),
+		FailoverPolicy:   s.FailoverPolicy,
+	}
+}
+
 type NodeInstances struct {
-	NodeName  string          `json:"node_name"`
-	Instances []*InstanceSpec `json:"instances"`
+	NodeName   string          `json:"node_name"`
+	SourceNode string          `json:"source_node"`
+	Instances  []*InstanceSpec `json:"instances"`
 }
 
 func (n *NodeInstances) InstanceIDs() []string {
@@ -470,70 +498,35 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				return nil, fmt.Errorf("failed to parse version from node spec: %w", err)
 			}
 		}
-		port := s.Port
-		if node.Port != nil {
-			port = node.Port
-		}
-		cpus := s.CPUs
-		if node.CPUs > 0 {
-			cpus = node.CPUs
-		}
-		memoryBytes := s.MemoryBytes
-		if node.MemoryBytes > 0 {
-			memoryBytes = node.MemoryBytes
-		}
-		backupConfig := s.BackupConfig
-		if node.BackupConfig != nil {
-			backupConfig = node.BackupConfig
-		}
-		restoreConfig := s.RestoreConfig
-		if node.RestoreConfig != nil {
-			restoreConfig = node.RestoreConfig
-		}
-		postgresqlConf := maps.Clone(s.PostgreSQLConf)
-		if node.PostgreSQLConf != nil {
-			postgresqlConf = maps.Clone(node.PostgreSQLConf)
-		}
-		orchestratorOpts := s.OrchestratorOpts
-		if node.OrchestratorOpts != nil {
-			orchestratorOpts = node.OrchestratorOpts
-		}
-		failoverPolicy := s.FailoverPolicy
-		if node.FailoverPolicy != "" {
-			failoverPolicy = node.FailoverPolicy
-		}
 
 		instances := make([]*InstanceSpec, len(node.HostIDs))
 		for hostIdx, hostID := range node.HostIDs {
 			instances[hostIdx] = &InstanceSpec{
-				InstanceID:     InstanceIDFor(hostID, s.DatabaseID, node.Name),
-				TenantID:       s.TenantID,
-				DatabaseID:     s.DatabaseID,
-				HostID:         hostID,
-				DatabaseName:   s.DatabaseName,
-				NodeName:       node.Name,
-				NodeOrdinal:    nodeOrdinal,
-				PgEdgeVersion:  nodeVersion,
-				Port:           port,
-				CPUs:           cpus,
-				MemoryBytes:    memoryBytes,
-				DatabaseUsers:  s.DatabaseUsers,
-				BackupConfig:   backupConfig,
-				RestoreConfig:  restoreConfig,
-				PostgreSQLConf: postgresqlConf,
-				// By default, we'll choose the last host in the list to run
-				// backups. We'll want to incorporate the current state of the
-				// cluster into this decision when we implement updates.
-				EnableBackups:    backupConfig != nil && hostIdx == len(node.HostIDs)-1,
+				InstanceID:       InstanceIDFor(hostID, s.DatabaseID, node.Name),
+				TenantID:         s.TenantID,
+				DatabaseID:       s.DatabaseID,
+				HostID:           hostID,
+				DatabaseName:     s.DatabaseName,
+				NodeName:         node.Name,
+				NodeOrdinal:      nodeOrdinal,
+				PgEdgeVersion:    nodeVersion,
+				Port:             overridableValue(s.Port, node.Port),
+				CPUs:             overridableValue(s.CPUs, node.CPUs),
+				MemoryBytes:      overridableValue(s.MemoryBytes, node.MemoryBytes),
+				DatabaseUsers:    s.DatabaseUsers,
+				BackupConfig:     overridableValue(s.BackupConfig, node.BackupConfig),
+				RestoreConfig:    overridableValue(s.RestoreConfig, node.RestoreConfig),
+				PostgreSQLConf:   overridableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
 				ClusterSize:      clusterSize,
-				OrchestratorOpts: orchestratorOpts.Clone(),
-				FailoverPolicy:   failoverPolicy,
+				OrchestratorOpts: overridableValue(s.OrchestratorOpts, node.OrchestratorOpts),
+				FailoverPolicy:   overridableValue(s.FailoverPolicy, node.FailoverPolicy),
 			}
 		}
 
 		nodes[nodeIdx] = &NodeInstances{
-			NodeName:  node.Name,
-			Instances: instances,
+			NodeName:   node.Name,
+			SourceNode: node.SourceNode,
+			Instances:  instances,
 		}
 	}
 	return nodes, nil
@@ -550,11 +543,17 @@ func extractOrdinal(name string) (int, error) {
 	return ordinal, nil
 }
 
-func (s *Spec) GetTargetNode() *Node {
-	for _, node := range s.Nodes {
-		if node.SourceNode != "" {
-			return node
-		}
+func overridableValue[T comparable](base, override T) T {
+	var zero T
+	if override != zero {
+		return override
 	}
-	return nil
+	return base
+}
+
+func overridableMapValue[T ~map[V]any, V comparable](base, override T) T {
+	if override != nil {
+		return override
+	}
+	return base
 }

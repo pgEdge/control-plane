@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/cschleiden/go-workflows/activity"
-	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 	"github.com/samber/do"
 )
 
@@ -26,10 +26,11 @@ type RestartInstanceOutput struct{}
 
 func (a *Activities) ExecuteRestartInstance(
 	ctx workflow.Context,
+	hostID string,
 	input *RestartInstanceInput,
 ) workflow.Future[*RestartInstanceOutput] {
 	options := workflow.ActivityOptions{
-		Queue: core.Queue(a.Config.HostID),
+		Queue: utils.HostQueue(hostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},

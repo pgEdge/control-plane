@@ -209,7 +209,7 @@ func (p *PgBackRestRestore) stopPostgres(
 	// Remove the postmaster.pid file if it exists. This can happen if there was
 	// an improper shutdown. We know that Postgres is not running because we
 	// scaled down the service above.
-	err = fs.Remove(filepath.Join(dataDir.Path, "pgdata", "postmaster.pid"))
+	err = fs.Remove(filepath.Join(dataDir.FullPath, "pgdata", "postmaster.pid"))
 	if err != nil && !errors.Is(err, afero.ErrFileNotFound) {
 		return fmt.Errorf("failed to remove postmaster.pid file: %w", err)
 	}

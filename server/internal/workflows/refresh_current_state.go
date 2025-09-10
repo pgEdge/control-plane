@@ -3,11 +3,11 @@ package workflows
 import (
 	"fmt"
 
-	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/task"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
@@ -25,7 +25,7 @@ func (w *Workflows) ExecuteRefreshCurrentState(
 	input *RefreshCurrentStateInput,
 ) workflow.Future[*RefreshCurrentStateOutput] {
 	options := workflow.SubWorkflowOptions{
-		Queue: core.Queue(w.Config.HostID),
+		Queue: utils.HostQueue(w.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},
