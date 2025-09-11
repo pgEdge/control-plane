@@ -2379,19 +2379,19 @@ definitions:
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: degraded
+                  state: backing_up
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: degraded
+                  state: backing_up
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: degraded
+                  state: backing_up
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: degraded
+                  state: backing_up
             state: unknown
             tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
             updated_at: "2025-01-01T02:30:00Z"
@@ -2413,19 +2413,19 @@ definitions:
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: degraded
+                  state: backing_up
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: degraded
+                  state: backing_up
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: degraded
+                  state: backing_up
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: degraded
+                  state: backing_up
               state: creating
               tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
               updated_at: "2025-01-01T02:30:00Z"
@@ -2435,19 +2435,19 @@ definitions:
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: degraded
+                  state: backing_up
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: degraded
+                  state: backing_up
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: degraded
+                  state: backing_up
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: degraded
+                  state: backing_up
               state: creating
               tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
               updated_at: "2025-01-01T02:30:00Z"
@@ -2457,19 +2457,19 @@ definitions:
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: degraded
+                  state: backing_up
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: degraded
+                  state: backing_up
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: degraded
+                  state: backing_up
                 - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
                   id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
                   node_name: n1
-                  state: degraded
+                  state: backing_up
               state: creating
               tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
               updated_at: "2025-01-01T02:30:00Z"
@@ -3356,7 +3356,7 @@ definitions:
                 $ref: '#/definitions/InstanceSpockStatus'
             state:
                 type: string
-                example: failed
+                example: degraded
                 enum:
                     - creating
                     - modifying
@@ -3364,6 +3364,7 @@ definitions:
                     - available
                     - degraded
                     - failed
+                    - stopped
                     - unknown
             status_updated_at:
                 type: string
@@ -3405,7 +3406,7 @@ definitions:
                       provider_node: n2
                       status: down
                 version: 4.10.0
-            state: unknown
+            state: creating
             status_updated_at: "2012-05-29T03:43:47Z"
             updated_at: "2013-10-24T21:11:51Z"
         required:
@@ -3433,7 +3434,7 @@ definitions:
                 example: n1
             state:
                 type: string
-                example: backing_up
+                example: available
                 enum:
                     - creating
                     - modifying
@@ -3441,13 +3442,14 @@ definitions:
                     - available
                     - degraded
                     - failed
+                    - stopped
                     - unknown
         description: An instance of pgEdge Postgres running on a host. (abbreviated view) (default view)
         example:
             host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: unknown
+            state: degraded
         required:
             - id
             - host_id
@@ -3488,7 +3490,7 @@ definitions:
                       provider_node: n2
                       status: down
                 version: 4.10.0
-              state: failed
+              state: available
               status_updated_at: "2000-12-09T00:28:19Z"
               updated_at: "1976-03-08T20:50:11Z"
             - connection_info:
@@ -3519,7 +3521,7 @@ definitions:
                       provider_node: n2
                       status: down
                 version: 4.10.0
-              state: failed
+              state: available
               status_updated_at: "2000-12-09T00:28:19Z"
               updated_at: "1976-03-08T20:50:11Z"
             - connection_info:
@@ -3550,7 +3552,7 @@ definitions:
                       provider_node: n2
                       status: down
                 version: 4.10.0
-              state: failed
+              state: available
               status_updated_at: "2000-12-09T00:28:19Z"
               updated_at: "1976-03-08T20:50:11Z"
     InstanceResponseBodyCollection:
@@ -3588,7 +3590,7 @@ definitions:
                       provider_node: n2
                       status: down
                 version: 4.10.0
-              state: failed
+              state: available
               status_updated_at: "2000-12-09T00:28:19Z"
               updated_at: "1976-03-08T20:50:11Z"
             - connection_info:
@@ -3619,7 +3621,7 @@ definitions:
                       provider_node: n2
                       status: down
                 version: 4.10.0
-              state: failed
+              state: available
               status_updated_at: "2000-12-09T00:28:19Z"
               updated_at: "1976-03-08T20:50:11Z"
     InstanceSpockStatus:

@@ -3308,25 +3308,25 @@
             "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
             "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
             "node_name": "n1",
-            "state": "degraded"
+            "state": "backing_up"
           },
           {
             "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
             "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
             "node_name": "n1",
-            "state": "degraded"
+            "state": "backing_up"
           },
           {
             "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
             "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
             "node_name": "n1",
-            "state": "degraded"
+            "state": "backing_up"
           },
           {
             "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
             "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
             "node_name": "n1",
-            "state": "degraded"
+            "state": "backing_up"
           }
         ],
         "state": "unknown",
@@ -3356,25 +3356,25 @@
               "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
               "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
               "node_name": "n1",
-              "state": "degraded"
+              "state": "backing_up"
             },
             {
               "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
               "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
               "node_name": "n1",
-              "state": "degraded"
+              "state": "backing_up"
             },
             {
               "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
               "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
               "node_name": "n1",
-              "state": "degraded"
+              "state": "backing_up"
             },
             {
               "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
               "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
               "node_name": "n1",
-              "state": "degraded"
+              "state": "backing_up"
             }
           ],
           "state": "creating",
@@ -3389,25 +3389,25 @@
               "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
               "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
               "node_name": "n1",
-              "state": "degraded"
+              "state": "backing_up"
             },
             {
               "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
               "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
               "node_name": "n1",
-              "state": "degraded"
+              "state": "backing_up"
             },
             {
               "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
               "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
               "node_name": "n1",
-              "state": "degraded"
+              "state": "backing_up"
             },
             {
               "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
               "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
               "node_name": "n1",
-              "state": "degraded"
+              "state": "backing_up"
             }
           ],
           "state": "creating",
@@ -3422,25 +3422,25 @@
               "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
               "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
               "node_name": "n1",
-              "state": "degraded"
+              "state": "backing_up"
             },
             {
               "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
               "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
               "node_name": "n1",
-              "state": "degraded"
+              "state": "backing_up"
             },
             {
               "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
               "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
               "node_name": "n1",
-              "state": "degraded"
+              "state": "backing_up"
             },
             {
               "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
               "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
               "node_name": "n1",
-              "state": "degraded"
+              "state": "backing_up"
             }
           ],
           "state": "creating",
@@ -4644,7 +4644,7 @@
         },
         "state": {
           "type": "string",
-          "example": "failed",
+          "example": "degraded",
           "enum": [
             "creating",
             "modifying",
@@ -4652,6 +4652,7 @@
             "available",
             "degraded",
             "failed",
+            "stopped",
             "unknown"
           ]
         },
@@ -4708,7 +4709,7 @@
           ],
           "version": "4.10.0"
         },
-        "state": "unknown",
+        "state": "creating",
         "status_updated_at": "2012-05-29T03:43:47Z",
         "updated_at": "2013-10-24T21:11:51Z"
       },
@@ -4742,7 +4743,7 @@
         },
         "state": {
           "type": "string",
-          "example": "backing_up",
+          "example": "available",
           "enum": [
             "creating",
             "modifying",
@@ -4750,6 +4751,7 @@
             "available",
             "degraded",
             "failed",
+            "stopped",
             "unknown"
           ]
         }
@@ -4759,7 +4761,7 @@
         "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
         "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
         "node_name": "n1",
-        "state": "unknown"
+        "state": "degraded"
       },
       "required": [
         "id",
@@ -4815,7 +4817,7 @@
             ],
             "version": "4.10.0"
           },
-          "state": "failed",
+          "state": "available",
           "status_updated_at": "2000-12-09T00:28:19Z",
           "updated_at": "1976-03-08T20:50:11Z"
         },
@@ -4858,7 +4860,7 @@
             ],
             "version": "4.10.0"
           },
-          "state": "failed",
+          "state": "available",
           "status_updated_at": "2000-12-09T00:28:19Z",
           "updated_at": "1976-03-08T20:50:11Z"
         },
@@ -4901,7 +4903,7 @@
             ],
             "version": "4.10.0"
           },
-          "state": "failed",
+          "state": "available",
           "status_updated_at": "2000-12-09T00:28:19Z",
           "updated_at": "1976-03-08T20:50:11Z"
         }
@@ -4954,7 +4956,7 @@
             ],
             "version": "4.10.0"
           },
-          "state": "failed",
+          "state": "available",
           "status_updated_at": "2000-12-09T00:28:19Z",
           "updated_at": "1976-03-08T20:50:11Z"
         },
@@ -4997,7 +4999,7 @@
             ],
             "version": "4.10.0"
           },
-          "state": "failed",
+          "state": "available",
           "status_updated_at": "2000-12-09T00:28:19Z",
           "updated_at": "1976-03-08T20:50:11Z"
         }

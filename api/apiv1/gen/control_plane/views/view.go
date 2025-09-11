@@ -794,8 +794,8 @@ func ValidateInstanceView(result *InstanceView) (err error) {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.status_updated_at", *result.StatusUpdatedAt, goa.FormatDateTime))
 	}
 	if result.State != nil {
-		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "backing_up" || *result.State == "available" || *result.State == "degraded" || *result.State == "failed" || *result.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "backing_up", "available", "degraded", "failed", "unknown"}))
+		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "backing_up" || *result.State == "available" || *result.State == "degraded" || *result.State == "failed" || *result.State == "stopped" || *result.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "backing_up", "available", "degraded", "failed", "stopped", "unknown"}))
 		}
 	}
 	if result.ConnectionInfo != nil {
@@ -832,8 +832,8 @@ func ValidateInstanceViewAbbreviated(result *InstanceView) (err error) {
 		err = goa.MergeErrors(err, goa.MissingFieldError("state", "result"))
 	}
 	if result.State != nil {
-		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "backing_up" || *result.State == "available" || *result.State == "degraded" || *result.State == "failed" || *result.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "backing_up", "available", "degraded", "failed", "unknown"}))
+		if !(*result.State == "creating" || *result.State == "modifying" || *result.State == "backing_up" || *result.State == "available" || *result.State == "degraded" || *result.State == "failed" || *result.State == "stopped" || *result.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "modifying", "backing_up", "available", "degraded", "failed", "stopped", "unknown"}))
 		}
 	}
 	return

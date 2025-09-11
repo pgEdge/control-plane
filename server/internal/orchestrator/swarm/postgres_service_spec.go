@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/samber/do"
@@ -83,8 +84,35 @@ func (s *PostgresServiceSpecResource) Refresh(ctx context.Context, rc *resource.
 	if errors.Is(err, docker.ErrNotFound) {
 		return resource.ErrNotFound
 	}
-	s.Spec = service.Spec
 
+	serviceMode := &service.Spec.Mode
+	if *serviceMode.Replicated.Replicas == 0 {
+		// Scale up the service
+		err := client.ServiceScale(ctx, docker.ServiceScaleOptions{
+			ServiceID:   service.ID,
+			Scale:       1,
+			Wait:        true,
+			WaitTimeout: time.Minute,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to scale up postgres service: %w", err)
+		}
+
+		dbSvc, err := do.Invoke[*database.Service](rc.Injector)
+		if err != nil {
+			return fmt.Errorf("failed to get database service: %w", err)
+		}
+		err = dbSvc.UpdateInstance(ctx, &database.InstanceUpdateOptions{
+			InstanceID: s.Instance.InstanceID,
+			DatabaseID: s.Instance.DatabaseID,
+			State:      database.InstanceStateAvailable,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to update instance: %w", err)
+		}
+	}
+
+	s.Spec = service.Spec
 	return nil
 }
 

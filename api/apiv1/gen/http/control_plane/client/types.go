@@ -5674,8 +5674,8 @@ func ValidateInstanceResponseBody(body *InstanceResponseBody) (err error) {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.status_updated_at", *body.StatusUpdatedAt, goa.FormatDateTime))
 	}
 	if body.State != nil {
-		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "backing_up" || *body.State == "available" || *body.State == "degraded" || *body.State == "failed" || *body.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "backing_up", "available", "degraded", "failed", "unknown"}))
+		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "backing_up" || *body.State == "available" || *body.State == "degraded" || *body.State == "failed" || *body.State == "stopped" || *body.State == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "backing_up", "available", "degraded", "failed", "stopped", "unknown"}))
 		}
 	}
 	if body.ConnectionInfo != nil {

@@ -6,11 +6,11 @@ import (
 	"fmt"
 
 	"github.com/cschleiden/go-workflows/activity"
-	"github.com/cschleiden/go-workflows/core"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 	"github.com/samber/do"
 )
 
@@ -35,9 +35,9 @@ func (a *Activities) ExecuteStartInstance(
 	}
 
 	if input.Cohort != nil {
-		options.Queue = core.Queue(input.Cohort.CohortID)
+		options.Queue = utils.CohortQueue(input.Cohort.CohortID)
 	} else {
-		options.Queue = core.Queue(input.HostID)
+		options.Queue = utils.HostQueue(input.HostID)
 	}
 
 	return workflow.ExecuteActivity[*StartInstanceOutput](ctx, options, a.StartInstance, input)

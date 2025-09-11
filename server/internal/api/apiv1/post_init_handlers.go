@@ -328,7 +328,7 @@ func (s *PostInitHandlers) BackupDatabaseNode(ctx context.Context, req *api.Back
 		return nil, apiErr(err)
 	}
 
-	_, err = IsSourceInstanceValid(db, req.NodeName)
+	_, err = IsNodeAvailable(db, req.NodeName)
 	if err != nil {
 		return nil, err
 	}
@@ -465,7 +465,7 @@ func (s *PostInitHandlers) RestoreDatabase(ctx context.Context, req *api.Restore
 		return nil, apiErr(fmt.Errorf("failed to get source database: %w", err))
 	}
 
-	_, err = IsSourceInstanceValid(sourceDB, restoreConfig.SourceNodeName)
+	_, err = IsNodeAvailable(sourceDB, restoreConfig.SourceNodeName)
 	if err != nil {
 		return nil, err
 	}
@@ -567,7 +567,7 @@ func (s *PostInitHandlers) RestartInstance(ctx context.Context, req *api.Restart
 		return nil, apiErr(err)
 	}
 	if storedInstance.State != database.InstanceStateAvailable {
-		return nil, apiErr(fmt.Errorf("instance %s is not restartable, it is in %s state",
+		return nil, makeInvalidInputErr(fmt.Errorf("instance %s is not restartable, it is in %s state",
 			req.InstanceID, storedInstance.State))
 	}
 	input := &workflows.RestartInstanceInput{
@@ -738,15 +738,27 @@ func (s *PostInitHandlers) CancelDatabaseTask(ctx context.Context, req *api.Canc
 	return taskToAPI(t), nil
 }
 
-func IsSourceInstanceValid(db *database.Database, nodeName string) (bool, error) {
+func IsNodeAvailable(db *database.Database, nodeName string) (bool, error) {
 	for _, instance := range db.Instances {
-		if instance.NodeName == nodeName {
-			if instance.State == database.InstanceStateStopped || instance.State == database.InstanceStateFailed {
-				return false, makeInvalidInputErr(fmt.Errorf(
-					"source node %s is in an unsupported state (%s)", instance.NodeName, instance.State))
-			}
+		if instance.NodeName != nodeName {
+			continue
+		}
+		if IsInstanceAvailable(instance) && instance.Status.IsPrimary() {
 			return true, nil
 		}
+		return false, makeInvalidInputErr(fmt.Errorf(
+			"node %s is in an unsupported state (%s)", instance.NodeName, instance.State))
 	}
-	return false, makeInvalidInputErr(fmt.Errorf("source node %s not found", nodeName))
+	return false, makeInvalidInputErr(fmt.Errorf("node %s not found", nodeName))
+}
+
+func IsInstanceAvailable(inst *database.Instance) bool {
+	switch inst.State {
+	case database.InstanceStateAvailable:
+		return true
+	default:
+		// All other states are considered unavailable, including
+		// InstanceStateUnknown and InstanceStateStopped.
+		return false
+	}
 }
