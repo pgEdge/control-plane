@@ -127,6 +127,7 @@ var Instance = g.ResultType("Instance", func() {
 				"available",
 				"degraded",
 				"failed",
+				"stopped",
 				"unknown",
 			)
 		})

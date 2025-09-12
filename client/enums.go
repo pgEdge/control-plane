@@ -35,6 +35,7 @@ const (
 	InstanceStateAvailable = "available"
 	InstanceStateDegraded  = "degraded"
 	InstanceStateFailed    = "failed"
+	InstanceStateStopped   = "stopped"
 	InstanceStateUnknown   = "unknown"
 )
 
