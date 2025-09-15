@@ -67,6 +67,12 @@ func (m *InstanceMonitor) checkStatus(ctx context.Context) error {
 
 	info, err := m.orch.GetInstanceConnectionInfo(ctx, m.databaseID, m.instanceID)
 	if err != nil {
+		_ = m.dbSvc.UpdateInstance(ctx, &database.InstanceUpdateOptions{
+			InstanceID: m.instanceID,
+			DatabaseID: m.databaseID,
+			State:      database.InstanceStateStopped,
+			Error:      err.Error(),
+		})
 		return m.updateInstanceErrStatus(ctx, status, err)
 	}
 
@@ -90,7 +96,19 @@ func (m *InstanceMonitor) checkStatus(ctx context.Context) error {
 			return m.updateInstanceErrStatus(ctx, status, err)
 		}
 	}
+	currentInstance, err := m.dbSvc.GetInstance(ctx, m.databaseID, m.instanceID)
+	if err != nil {
+		return m.updateInstanceErrStatus(ctx, status, err)
+	}
+	if currentInstance != nil && currentInstance.State != database.InstanceStateAvailable {
 
+		_ = m.dbSvc.UpdateInstance(ctx, &database.InstanceUpdateOptions{
+			InstanceID: m.instanceID,
+			DatabaseID: m.databaseID,
+			State:      database.InstanceStateAvailable,
+			Error:      "",
+		})
+	}
 	return m.updateInstanceStatus(ctx, status)
 }
 

@@ -332,6 +332,16 @@ func (r *InstanceResource) updateConnectionInfo(ctx context.Context, rc *resourc
 	}
 	connInfo, err := orch.GetInstanceConnectionInfo(ctx, r.Spec.DatabaseID, r.Spec.InstanceID)
 	if err != nil {
+		if svc, svcErr := do.Invoke[*Service](rc.Injector); svcErr == nil {
+			_ = svc.UpdateInstance(ctx, &InstanceUpdateOptions{
+				InstanceID: r.Spec.InstanceID,
+				DatabaseID: r.Spec.DatabaseID,
+				HostID:     r.Spec.HostID,
+				NodeName:   r.Spec.NodeName,
+				State:      InstanceStateStopped,
+				Error:      err.Error(),
+			})
+		}
 		return fmt.Errorf("failed to get instance connection info: %w", err)
 	}
 	r.ConnectionInfo = connInfo
