@@ -43,15 +43,18 @@ func TestHTTPRequestResponse(t *testing.T) {
 
 		defer server.Stop(ctx)
 
-		doer := mqtt.NewHTTPDoer(mqtt.HTTPDoerConfig{
-			Topic: t.Name(),
+		endpoint := mqtt.New(mqtt.Config{
 			Broker: mqtt.BrokerConfig{
 				URL: broker.URL(),
 			},
 		})
-		require.NoError(t, doer.Connect(ctx))
+		require.NoError(t, endpoint.Connect(ctx))
+		defer endpoint.Disconnect(ctx)
 
-		defer doer.Disconnect(ctx)
+		doer := mqtt.NewHTTPDoer(mqtt.HTTPDoerConfig{
+			Topic:    t.Name(),
+			Endpoint: endpoint,
+		})
 
 		req, err := http.NewRequestWithContext(ctx, "POST", "/hello", bytes.NewBuffer([]byte("test")))
 		require.NoError(t, err)
@@ -75,18 +78,21 @@ func TestHTTPRequestResponse(t *testing.T) {
 	t.Run("message retain", func(t *testing.T) {
 		// validates that the client can be configured in a way that its
 		// requests will be retained even if the server is down.
-		doer := mqtt.NewHTTPDoer(mqtt.HTTPDoerConfig{
-			Topic: t.Name(),
+		endpoint := mqtt.New(mqtt.Config{
 			Broker: mqtt.BrokerConfig{
 				URL: broker.URL(),
 			},
-			MaxWait: time.Second * 30,
-			QoS:     2,
-			Retain:  true,
 		})
-		require.NoError(t, doer.Connect(ctx))
+		require.NoError(t, endpoint.Connect(ctx))
+		defer endpoint.Disconnect(ctx)
 
-		defer doer.Disconnect(ctx)
+		doer := mqtt.NewHTTPDoer(mqtt.HTTPDoerConfig{
+			Topic:    t.Name(),
+			Endpoint: endpoint,
+			MaxWait:  time.Second * 30,
+			QoS:      2,
+			Retain:   true,
+		})
 
 		req, err := http.NewRequestWithContext(ctx, "POST", "/hello", bytes.NewBuffer([]byte("test")))
 		require.NoError(t, err)

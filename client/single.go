@@ -25,14 +25,14 @@ type ServerConfig struct {
 	mqtt   *MQTTServerConfig
 }
 
-func NewSingleServerClient(ctx context.Context, server ServerConfig) (*SingleServerClient, error) {
+func NewSingleServerClient(server ServerConfig) (*SingleServerClient, error) {
 	var cli *client.Client
 	switch {
 	case server.http != nil:
 		cli = server.http.newClient()
 	case server.mqtt != nil:
 		var err error
-		cli, err = server.mqtt.newClient(ctx)
+		cli, err = server.mqtt.newClient()
 		if err != nil {
 			return nil, err
 		}
