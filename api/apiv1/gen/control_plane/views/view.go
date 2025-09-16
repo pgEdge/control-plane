@@ -166,11 +166,6 @@ type DatabaseSpecView struct {
 	PostgresqlConf map[string]any
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsView
-	// The failover policy for this database's read replicas. If failover_policy is
-	// automatic, a read replica will automatically be promoted when a primary
-	// instance fails. If it is disabled, read replicas will not be promoted when a
-	// primary instance fails.
-	FailoverPolicy *string
 }
 
 // DatabaseNodeSpecView is a type that runs validations on a projected type.
@@ -213,11 +208,6 @@ type DatabaseNodeSpecView struct {
 	// The name of the source node to use for sync. This is typically the node
 	// (like 'n1') from which the data will be copied to initialize this new node.
 	SourceNode *string
-	// The failover policy for this database's read replicas. If failover_policy is
-	// automatic, a read replica will automatically be promoted when a primary
-	// instance fails. If it is disabled, read replicas will not be promoted when a
-	// primary instance fails.
-	FailoverPolicy *string
 }
 
 // BackupConfigSpecView is a type that runs validations on a projected type.
@@ -978,11 +968,6 @@ func ValidateDatabaseSpecView(result *DatabaseSpecView) (err error) {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if result.FailoverPolicy != nil {
-		if !(*result.FailoverPolicy == "automatic" || *result.FailoverPolicy == "disabled") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.failover_policy", *result.FailoverPolicy, []any{"automatic", "disabled"}))
-		}
-	}
 	return
 }
 
@@ -1043,11 +1028,6 @@ func ValidateDatabaseNodeSpecView(result *DatabaseNodeSpecView) (err error) {
 	if result.OrchestratorOpts != nil {
 		if err2 := ValidateOrchestratorOptsView(result.OrchestratorOpts); err2 != nil {
 			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if result.FailoverPolicy != nil {
-		if !(*result.FailoverPolicy == "automatic" || *result.FailoverPolicy == "disabled") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.failover_policy", *result.FailoverPolicy, []any{"automatic", "disabled"}))
 		}
 	}
 	return

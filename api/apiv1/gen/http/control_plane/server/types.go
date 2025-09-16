@@ -1576,11 +1576,6 @@ type DatabaseSpecResponseBody struct {
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsResponseBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
-	// The failover policy for this database's read replicas. If failover_policy is
-	// automatic, a read replica will automatically be promoted when a primary
-	// instance fails. If it is disabled, read replicas will not be promoted when a
-	// primary instance fails.
-	FailoverPolicy *string `form:"failover_policy,omitempty" json:"failover_policy,omitempty" xml:"failover_policy,omitempty"`
 }
 
 // DatabaseNodeSpecResponseBody is used to define fields on response body types.
@@ -1623,11 +1618,6 @@ type DatabaseNodeSpecResponseBody struct {
 	// The name of the source node to use for sync. This is typically the node
 	// (like 'n1') from which the data will be copied to initialize this new node.
 	SourceNode *string `form:"source_node,omitempty" json:"source_node,omitempty" xml:"source_node,omitempty"`
-	// The failover policy for this database's read replicas. If failover_policy is
-	// automatic, a read replica will automatically be promoted when a primary
-	// instance fails. If it is disabled, read replicas will not be promoted when a
-	// primary instance fails.
-	FailoverPolicy *string `form:"failover_policy,omitempty" json:"failover_policy,omitempty" xml:"failover_policy,omitempty"`
 }
 
 // BackupConfigSpecResponseBody is used to define fields on response body types.
@@ -1867,11 +1857,6 @@ type DatabaseSpecRequestBody struct {
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
-	// The failover policy for this database's read replicas. If failover_policy is
-	// automatic, a read replica will automatically be promoted when a primary
-	// instance fails. If it is disabled, read replicas will not be promoted when a
-	// primary instance fails.
-	FailoverPolicy *string `form:"failover_policy,omitempty" json:"failover_policy,omitempty" xml:"failover_policy,omitempty"`
 }
 
 // DatabaseNodeSpecRequestBody is used to define fields on request body types.
@@ -1914,11 +1899,6 @@ type DatabaseNodeSpecRequestBody struct {
 	// The name of the source node to use for sync. This is typically the node
 	// (like 'n1') from which the data will be copied to initialize this new node.
 	SourceNode *string `form:"source_node,omitempty" json:"source_node,omitempty" xml:"source_node,omitempty"`
-	// The failover policy for this database's read replicas. If failover_policy is
-	// automatic, a read replica will automatically be promoted when a primary
-	// instance fails. If it is disabled, read replicas will not be promoted when a
-	// primary instance fails.
-	FailoverPolicy *string `form:"failover_policy,omitempty" json:"failover_policy,omitempty" xml:"failover_policy,omitempty"`
 }
 
 // BackupConfigSpecRequestBody is used to define fields on request body types.
@@ -2143,11 +2123,6 @@ type DatabaseSpecRequestBodyRequestBody struct {
 	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsRequestBodyRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
-	// The failover policy for this database's read replicas. If failover_policy is
-	// automatic, a read replica will automatically be promoted when a primary
-	// instance fails. If it is disabled, read replicas will not be promoted when a
-	// primary instance fails.
-	FailoverPolicy *string `form:"failover_policy,omitempty" json:"failover_policy,omitempty" xml:"failover_policy,omitempty"`
 }
 
 // DatabaseNodeSpecRequestBodyRequestBody is used to define fields on request
@@ -2191,11 +2166,6 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// The name of the source node to use for sync. This is typically the node
 	// (like 'n1') from which the data will be copied to initialize this new node.
 	SourceNode *string `form:"source_node,omitempty" json:"source_node,omitempty" xml:"source_node,omitempty"`
-	// The failover policy for this database's read replicas. If failover_policy is
-	// automatic, a read replica will automatically be promoted when a primary
-	// instance fails. If it is disabled, read replicas will not be promoted when a
-	// primary instance fails.
-	FailoverPolicy *string `form:"failover_policy,omitempty" json:"failover_policy,omitempty" xml:"failover_policy,omitempty"`
 }
 
 // BackupConfigSpecRequestBodyRequestBody is used to define fields on request
@@ -4097,11 +4067,6 @@ func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) 
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if body.FailoverPolicy != nil {
-		if !(*body.FailoverPolicy == "automatic" || *body.FailoverPolicy == "disabled") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.failover_policy", *body.FailoverPolicy, []any{"automatic", "disabled"}))
-		}
-	}
 	return
 }
 
@@ -4162,11 +4127,6 @@ func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err
 	if body.OrchestratorOpts != nil {
 		if err2 := ValidateOrchestratorOptsRequestBody(body.OrchestratorOpts); err2 != nil {
 			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.FailoverPolicy != nil {
-		if !(*body.FailoverPolicy == "automatic" || *body.FailoverPolicy == "disabled") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.failover_policy", *body.FailoverPolicy, []any{"automatic", "disabled"}))
 		}
 	}
 	return
@@ -4733,11 +4693,6 @@ func ValidateDatabaseSpecRequestBodyRequestBody(body *DatabaseSpecRequestBodyReq
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if body.FailoverPolicy != nil {
-		if !(*body.FailoverPolicy == "automatic" || *body.FailoverPolicy == "disabled") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.failover_policy", *body.FailoverPolicy, []any{"automatic", "disabled"}))
-		}
-	}
 	return
 }
 
@@ -4798,11 +4753,6 @@ func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecReques
 	if body.OrchestratorOpts != nil {
 		if err2 := ValidateOrchestratorOptsRequestBodyRequestBody(body.OrchestratorOpts); err2 != nil {
 			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.FailoverPolicy != nil {
-		if !(*body.FailoverPolicy == "automatic" || *body.FailoverPolicy == "disabled") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.failover_policy", *body.FailoverPolicy, []any{"automatic", "disabled"}))
 		}
 	}
 	return
