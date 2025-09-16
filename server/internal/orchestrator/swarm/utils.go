@@ -2,6 +2,7 @@ package swarm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -17,6 +18,11 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 )
 
+var (
+	ErrNoPostgresContainer = errors.New("no postgres container found")
+	ErrNoPostgresService   = errors.New("no postgres service found")
+)
+
 func GetPostgresContainer(ctx context.Context, dockerClient *docker.Docker, instanceID string) (types.Container, error) {
 	matches, err := dockerClient.ContainerList(ctx, container.ListOptions{
 		Filters: filters.NewArgs(
@@ -29,7 +35,7 @@ func GetPostgresContainer(ctx context.Context, dockerClient *docker.Docker, inst
 		return types.Container{}, fmt.Errorf("failed to list containers: %w", err)
 	}
 	if len(matches) == 0 {
-		return types.Container{}, fmt.Errorf("no postgres container found for %q", instanceID)
+		return types.Container{}, fmt.Errorf("%w: %q", ErrNoPostgresContainer, instanceID)
 	}
 	return matches[0], nil
 }
@@ -57,7 +63,7 @@ func GetPostgresService(ctx context.Context, dockerClient *docker.Docker, instan
 		return swarm.Service{}, fmt.Errorf("failed to list services: %w", err)
 	}
 	if len(matches) == 0 {
-		return swarm.Service{}, fmt.Errorf("no postgres service found for %q", instanceID)
+		return swarm.Service{}, fmt.Errorf("%w: %q", ErrNoPostgresService, instanceID)
 	}
 	return matches[0], nil
 }

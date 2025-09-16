@@ -85,6 +85,7 @@ type InstanceStatus struct {
 	PendingRestart  *bool                 `json:"pending_restart,omitempty"`
 	PatroniPaused   *bool                 `json:"patroni_paused,omitempty"`
 	StatusUpdatedAt *time.Time            `json:"status_updated_at,omitempty"`
+	Stopped         *bool                 `json:"stopped,omitempty"`
 	Subscriptions   []SubscriptionStatus  `json:"subscriptions,omitempty"`
 	Error           *string               `json:"error,omitempty"`
 }
@@ -114,7 +115,12 @@ func storedToInstance(instance *StoredInstance, status *StoredInstanceStatus) *I
 	// We want to infer the instance state if the instance is supposed to be
 	// available.
 	if out.State == InstanceStateAvailable && status != nil {
-		out.State = patroniToInstanceState(status.Status.PatroniState)
+		if status.Status.Stopped != nil && *status.Status.Stopped {
+			out.State = InstanceStateStopped
+			instance.State = InstanceStateStopped
+		} else {
+			out.State = patroniToInstanceState(status.Status.PatroniState)
+		}
 	}
 
 	return out

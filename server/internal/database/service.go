@@ -12,12 +12,15 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
-var ErrDatabaseAlreadyExists = errors.New("database already exists")
-var ErrDatabaseNotFound = errors.New("database not found")
-var ErrDatabaseNotModifiable = errors.New("database not modifiable")
-var ErrInstanceNotFound = errors.New("instance not found")
-var ErrTenantIDCannotBeChanged = errors.New("tenant ID cannot be changed")
-var ErrDatabaseNameCannotBeChanged = errors.New("database name cannot be changed")
+var (
+	ErrDatabaseAlreadyExists       = errors.New("database already exists")
+	ErrDatabaseNotFound            = errors.New("database not found")
+	ErrDatabaseNotModifiable       = errors.New("database not modifiable")
+	ErrInstanceNotFound            = errors.New("instance not found")
+	ErrInstanceStopped             = errors.New("instance stopped")
+	ErrTenantIDCannotBeChanged     = errors.New("tenant ID cannot be changed")
+	ErrDatabaseNameCannotBeChanged = errors.New("database name cannot be changed")
+)
 
 type Service struct {
 	orchestrator Orchestrator

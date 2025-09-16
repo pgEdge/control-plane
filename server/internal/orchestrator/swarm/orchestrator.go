@@ -3,6 +3,7 @@ package swarm
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -376,6 +377,9 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*database.ConnectionInfo, error) {
 	container, err := GetPostgresContainer(ctx, o.docker, instanceID)
 	if err != nil {
+		if errors.Is(err, ErrNoPostgresContainer) {
+			return nil, fmt.Errorf("%w: %v", database.ErrInstanceStopped, err)
+		}
 		return nil, fmt.Errorf("failed to get postgres container: %w", err)
 	}
 	inspect, err := o.docker.ContainerInspect(ctx, container.ID)
