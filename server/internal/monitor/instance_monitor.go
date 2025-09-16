@@ -3,6 +3,7 @@ package monitor
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"time"
 
@@ -67,14 +68,15 @@ func (m *InstanceMonitor) checkStatus(ctx context.Context) error {
 
 	info, err := m.orch.GetInstanceConnectionInfo(ctx, m.databaseID, m.instanceID)
 	if err != nil {
-		_ = m.dbSvc.UpdateInstance(ctx, &database.InstanceUpdateOptions{
-			InstanceID: m.instanceID,
-			DatabaseID: m.databaseID,
-			State:      database.InstanceStateStopped,
-			Error:      err.Error(),
-		})
+		if errors.Is(err, database.ErrInstanceStopped) {
+			status.Stopped = utils.PointerTo(true)
+			status.Error = utils.PointerTo(err.Error())
+			return m.updateInstanceStatus(ctx, status)
+		}
 		return m.updateInstanceErrStatus(ctx, status, err)
 	}
+	status.Stopped = utils.PointerTo(false)
+	status.Error = utils.PointerTo("")
 
 	tlsCfg, err := m.certSvc.PostgresUserTLS(ctx, m.instanceID, info.InstanceHostname, "pgedge")
 	if err != nil {
