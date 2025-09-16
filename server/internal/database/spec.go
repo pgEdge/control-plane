@@ -48,7 +48,6 @@ type Node struct {
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 	SourceNode       string            `json:"source_node,omitempty"`
-	FailoverPolicy   string            `json:"failover_policy"`
 }
 
 func (n *Node) Clone() *Node {
@@ -67,7 +66,6 @@ func (n *Node) Clone() *Node {
 		RestoreConfig:    n.RestoreConfig.Clone(),
 		OrchestratorOpts: n.OrchestratorOpts.Clone(),
 		SourceNode:       n.SourceNode,
-		FailoverPolicy:   n.FailoverPolicy,
 	}
 }
 
@@ -262,7 +260,6 @@ type Spec struct {
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
-	FailoverPolicy   string            `json:"failover_policy"`
 }
 
 func (s *Spec) Node(name string) (*Node, error) {
@@ -344,7 +341,6 @@ func (s *Spec) Clone() *Spec {
 		BackupConfig:     s.BackupConfig.Clone(),
 		RestoreConfig:    s.RestoreConfig.Clone(),
 		OrchestratorOpts: s.OrchestratorOpts.Clone(),
-		FailoverPolicy:   s.FailoverPolicy,
 	}
 }
 
@@ -430,7 +426,6 @@ type InstanceSpec struct {
 	PostgreSQLConf   map[string]any      `json:"postgresql_conf"`
 	ClusterSize      int                 `json:"cluster_size"`
 	OrchestratorOpts *OrchestratorOpts   `json:"orchestrator_opts,omitempty"`
-	FailoverPolicy   string              `json:"failover_policy"`
 }
 
 func (s *InstanceSpec) Clone() *InstanceSpec {
@@ -457,7 +452,6 @@ func (s *InstanceSpec) Clone() *InstanceSpec {
 		PostgreSQLConf:   maps.Clone(s.PostgreSQLConf),
 		ClusterSize:      s.ClusterSize,
 		OrchestratorOpts: s.OrchestratorOpts.Clone(),
-		FailoverPolicy:   s.FailoverPolicy,
 	}
 }
 
@@ -519,7 +513,6 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				PostgreSQLConf:   overridableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
 				ClusterSize:      clusterSize,
 				OrchestratorOpts: overridableValue(s.OrchestratorOpts, node.OrchestratorOpts),
-				FailoverPolicy:   overridableValue(s.FailoverPolicy, node.FailoverPolicy),
 			}
 		}
 

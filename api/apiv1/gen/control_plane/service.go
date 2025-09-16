@@ -355,11 +355,6 @@ type DatabaseNodeSpec struct {
 	// The name of the source node to use for sync. This is typically the node
 	// (like 'n1') from which the data will be copied to initialize this new node.
 	SourceNode *string
-	// The failover policy for this database's read replicas. If failover_policy is
-	// automatic, a read replica will automatically be promoted when a primary
-	// instance fails. If it is disabled, read replicas will not be promoted when a
-	// primary instance fails.
-	FailoverPolicy *string
 }
 
 type DatabaseSpec struct {
@@ -395,11 +390,6 @@ type DatabaseSpec struct {
 	PostgresqlConf map[string]any
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOpts
-	// The failover policy for this database's read replicas. If failover_policy is
-	// automatic, a read replica will automatically be promoted when a primary
-	// instance fails. If it is disabled, read replicas will not be promoted when a
-	// primary instance fails.
-	FailoverPolicy *string
 }
 
 type DatabaseUserSpec struct {
@@ -1296,7 +1286,6 @@ func transformControlplaneviewsDatabaseSpecViewToDatabaseSpec(v *controlplanevie
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
-		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*DatabaseNodeSpec, len(v.Nodes))
@@ -1344,7 +1333,6 @@ func transformControlplaneviewsDatabaseNodeSpecViewToDatabaseNodeSpec(v *control
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 		SourceNode:      v.SourceNode,
-		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]Identifier, len(v.HostIds))
@@ -1648,7 +1636,6 @@ func transformDatabaseSpecToControlplaneviewsDatabaseSpecView(v *DatabaseSpec) *
 		Port:            v.Port,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
-		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.Nodes != nil {
 		res.Nodes = make([]*controlplaneviews.DatabaseNodeSpecView, len(v.Nodes))
@@ -1696,7 +1683,6 @@ func transformDatabaseNodeSpecToControlplaneviewsDatabaseNodeSpecView(v *Databas
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 		SourceNode:      v.SourceNode,
-		FailoverPolicy:  v.FailoverPolicy,
 	}
 	if v.HostIds != nil {
 		res.HostIds = make([]controlplaneviews.IdentifierView, len(v.HostIds))
