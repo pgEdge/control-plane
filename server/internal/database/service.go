@@ -76,14 +76,8 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 		return nil, fmt.Errorf("failed to get database spec: %w", err)
 	}
 
-	// Immutable: tenant_id must not change
-	if !tenantIDsMatch(currentSpec.TenantID, spec.TenantID) {
-		return nil, ErrTenantIDCannotBeChanged
-	}
-
-	// Immutable: database_name must not change
-	if currentSpec.DatabaseName != spec.DatabaseName {
-		return nil, ErrDatabaseNameCannotBeChanged
+	if err := ValidateChangedSpec(currentSpec.Spec, spec); err != nil {
+		return nil, err
 	}
 
 	currentDB, err := s.store.Database.GetByKey(spec.DatabaseID).Exec(ctx)
@@ -101,10 +95,6 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database instances: %w", err)
 	}
-
-	// Copy sensitive fields from the previous spec to the current spec if they
-	// are unset.
-	spec.DefaultSensitiveFieldsFrom(currentSpec.Spec)
 
 	currentSpec.Spec = spec
 	currentDB.UpdatedAt = time.Now()
@@ -412,6 +402,20 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 				}
 			}
 		}
+	}
+
+	return nil
+}
+
+func ValidateChangedSpec(current, updated *Spec) error {
+	// Immutable: tenant_id must not change
+	if !tenantIDsMatch(current.TenantID, updated.TenantID) {
+		return ErrTenantIDCannotBeChanged
+	}
+
+	// Immutable: database_name must not change
+	if current.DatabaseName != updated.DatabaseName {
+		return ErrDatabaseNameCannotBeChanged
 	}
 
 	return nil

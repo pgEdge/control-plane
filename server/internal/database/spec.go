@@ -69,14 +69,18 @@ func (n *Node) Clone() *Node {
 	}
 }
 
-// DefaultSensitiveFieldsFrom will default this node's sensitive fields to the
+// DefaultOptionalFieldsFrom will default this node's optional fields to the
 // values from the given node.
-func (n *Node) DefaultSensitiveFieldsFrom(other *Node) {
+func (n *Node) DefaultOptionalFieldsFrom(other *Node) {
+	if n.PostgresVersion == "" && other.PostgresVersion != "" {
+		n.PostgresVersion = other.PostgresVersion
+	}
+
 	if n.BackupConfig != nil && other.BackupConfig != nil {
-		n.BackupConfig.DefaultSensitiveFieldsFrom(other.BackupConfig)
+		n.BackupConfig.DefaultOptionalFieldsFrom(other.BackupConfig)
 	}
 	if n.RestoreConfig != nil && other.RestoreConfig != nil {
-		n.RestoreConfig.DefaultSensitiveFieldsFrom(other.RestoreConfig)
+		n.RestoreConfig.DefaultOptionalFieldsFrom(other.RestoreConfig)
 	}
 }
 
@@ -101,9 +105,9 @@ func (u *User) Clone() *User {
 	}
 }
 
-// DefaultSensitiveFieldsFrom will default this user's sensitive fields to the
+// DefaultOptionalFieldsFrom will default this user's optional fields to the
 // values from the given user.
-func (u *User) DefaultSensitiveFieldsFrom(other *User) {
+func (u *User) DefaultOptionalFieldsFrom(other *User) {
 	if u.Password == "" {
 		u.Password = other.Password
 	}
@@ -168,9 +172,9 @@ func (b *BackupConfig) Clone() *BackupConfig {
 	}
 }
 
-// DefaultSensitiveFieldsFrom will default this config's sensitive fields to the
+// DefaultOptionalFieldsFrom will default this config's optional fields to the
 // values from the given config.
-func (b *BackupConfig) DefaultSensitiveFieldsFrom(other *BackupConfig) {
+func (b *BackupConfig) DefaultOptionalFieldsFrom(other *BackupConfig) {
 	otherRepositoriesByID := make(map[string]*pgbackrest.Repository, len(other.Repositories))
 	for _, r := range other.Repositories {
 		otherRepositoriesByID[r.Identifier()] = r
@@ -179,7 +183,7 @@ func (b *BackupConfig) DefaultSensitiveFieldsFrom(other *BackupConfig) {
 	for _, r := range b.Repositories {
 		otherRepo, ok := otherRepositoriesByID[r.Identifier()]
 		if ok {
-			r.DefaultSensitiveFieldsFrom(otherRepo)
+			r.DefaultOptionalFieldsFrom(otherRepo)
 		}
 	}
 }
@@ -192,11 +196,11 @@ type RestoreConfig struct {
 	RestoreOptions     map[string]string      `json:"restore_options"`
 }
 
-// DefaultSensitiveFieldsFrom will default this config's sensitive fields to the
+// DefaultOptionalFieldsFrom will default this config's optional fields to the
 // values from the given config.
-func (r *RestoreConfig) DefaultSensitiveFieldsFrom(other *RestoreConfig) {
+func (r *RestoreConfig) DefaultOptionalFieldsFrom(other *RestoreConfig) {
 	if r.Repository != nil && other.Repository != nil {
-		r.Repository.DefaultSensitiveFieldsFrom(other.Repository)
+		r.Repository.DefaultOptionalFieldsFrom(other.Repository)
 	}
 }
 
@@ -344,21 +348,28 @@ func (s *Spec) Clone() *Spec {
 	}
 }
 
-// DefaultSensitiveFieldsFrom will default this spec's sensitive fields to the
+// DefaultOptionalFieldsFrom will default this spec's optional fields to the
 // values from the given spec.
-func (s *Spec) DefaultSensitiveFieldsFrom(other *Spec) {
-	s.defaultSensitiveFieldFromNodes(other.Nodes)
-	s.defaultSensitiveFieldFromUsers(other.DatabaseUsers)
+func (s *Spec) DefaultOptionalFieldsFrom(other *Spec) {
+	if s.PostgresVersion == "" && other.PostgresVersion != "" {
+		s.PostgresVersion = other.PostgresVersion
+	}
+	if s.SpockVersion == "" && other.SpockVersion != "" {
+		s.SpockVersion = other.SpockVersion
+	}
+
+	s.defaultOptionalFieldFromNodes(other.Nodes)
+	s.defaultOptionalFieldFromUsers(other.DatabaseUsers)
 
 	if s.BackupConfig != nil && other.BackupConfig != nil {
-		s.BackupConfig.DefaultSensitiveFieldsFrom(other.BackupConfig)
+		s.BackupConfig.DefaultOptionalFieldsFrom(other.BackupConfig)
 	}
 	if s.RestoreConfig != nil && other.RestoreConfig != nil {
-		s.RestoreConfig.DefaultSensitiveFieldsFrom(other.RestoreConfig)
+		s.RestoreConfig.DefaultOptionalFieldsFrom(other.RestoreConfig)
 	}
 }
 
-func (s Spec) defaultSensitiveFieldFromNodes(other []*Node) {
+func (s Spec) defaultOptionalFieldFromNodes(other []*Node) {
 	otherNodesByName := make(map[string]*Node)
 	for _, n := range other {
 		otherNodesByName[n.Name] = n
@@ -367,12 +378,12 @@ func (s Spec) defaultSensitiveFieldFromNodes(other []*Node) {
 	for _, n := range s.Nodes {
 		otherNode, ok := otherNodesByName[n.Name]
 		if ok {
-			n.DefaultSensitiveFieldsFrom(otherNode)
+			n.DefaultOptionalFieldsFrom(otherNode)
 		}
 	}
 }
 
-func (s Spec) defaultSensitiveFieldFromUsers(other []*User) {
+func (s Spec) defaultOptionalFieldFromUsers(other []*User) {
 	otherUsersByName := make(map[string]*User)
 	for _, u := range other {
 		otherUsersByName[u.Username] = u
@@ -381,7 +392,7 @@ func (s Spec) defaultSensitiveFieldFromUsers(other []*User) {
 	for _, u := range s.DatabaseUsers {
 		otherUser, ok := otherUsersByName[u.Username]
 		if ok {
-			u.DefaultSensitiveFieldsFrom(otherUser)
+			u.DefaultOptionalFieldsFrom(otherUser)
 		}
 	}
 }

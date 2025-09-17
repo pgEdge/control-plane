@@ -120,9 +120,9 @@ func (r *Repository) WithDefaults() *Repository {
 	return out
 }
 
-// DefaultSensitiveFieldsFrom will default this repository's sensitive fields to
+// DefaultOptionalFieldsFrom will default this repository's optional fields to
 // the values from the given repository.
-func (r *Repository) DefaultSensitiveFieldsFrom(other *Repository) {
+func (r *Repository) DefaultOptionalFieldsFrom(other *Repository) {
 	if other == nil {
 		return
 	}

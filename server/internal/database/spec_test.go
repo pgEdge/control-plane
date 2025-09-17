@@ -12,7 +12,7 @@ import (
 func TestSpec(t *testing.T) {
 	port := 5432
 	base := &database.Spec{
-		PostgresVersion: "17",
+		PostgresVersion: "17.6",
 		SpockVersion:    "5",
 		Port:            &port,
 		CPUs:            0.5,
@@ -112,7 +112,9 @@ func TestSpec(t *testing.T) {
 		t.Run("no changes", func(t *testing.T) {
 			current := base.Clone()
 			new := base.Clone()
-			// simulating an update request that excluded sensitive fields
+			// simulating an update request that excluded optional fields
+			new.PostgresVersion = ""
+			new.SpockVersion = ""
 			new.DatabaseUsers = []*database.User{
 				{
 					Username:   "admin",
@@ -175,7 +177,7 @@ func TestSpec(t *testing.T) {
 			}
 			expected := base.Clone()
 
-			new.DefaultSensitiveFieldsFrom(current)
+			new.DefaultOptionalFieldsFrom(current)
 
 			assert.Equal(t, expected, new)
 		})
@@ -213,7 +215,7 @@ func TestSpec(t *testing.T) {
 				},
 			}
 
-			new.DefaultSensitiveFieldsFrom(current)
+			new.DefaultOptionalFieldsFrom(current)
 
 			assert.Equal(t, expected, new)
 		})
@@ -260,7 +262,7 @@ func TestSpec(t *testing.T) {
 				},
 			}
 
-			new.DefaultSensitiveFieldsFrom(current)
+			new.DefaultOptionalFieldsFrom(current)
 
 			assert.Equal(t, expected, new)
 		})
@@ -284,7 +286,7 @@ func TestSpec(t *testing.T) {
 				},
 			}
 
-			new.DefaultSensitiveFieldsFrom(current)
+			new.DefaultOptionalFieldsFrom(current)
 
 			assert.Equal(t, expected, new)
 		})
@@ -308,7 +310,7 @@ func TestSpec(t *testing.T) {
 			new := base.Clone()
 			expected := base.Clone()
 
-			new.DefaultSensitiveFieldsFrom(current)
+			new.DefaultOptionalFieldsFrom(current)
 
 			assert.Equal(t, expected, new)
 		})
@@ -337,13 +339,13 @@ func TestSpec(t *testing.T) {
 					HostIDs: []string{"host-2"},
 					BackupConfig: &database.BackupConfig{
 						Repositories: []*pgbackrest.Repository{
-							&pgbackrest.Repository{
+							{
 								ID:             "azure-backups",
 								AzureAccount:   "pgedge-backups",
 								AzureContainer: "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
 								AzureKey:       "NEWYXpLZXk=",
 							},
-							&pgbackrest.Repository{
+							{
 								ID:             "google-backups",
 								AzureAccount:   "pgedge-backups",
 								AzureContainer: "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -357,7 +359,7 @@ func TestSpec(t *testing.T) {
 					HostIDs: []string{"host-3"},
 					BackupConfig: &database.BackupConfig{
 						Repositories: []*pgbackrest.Repository{
-							&pgbackrest.Repository{
+							{
 								ID:             "google-backups",
 								AzureAccount:   "pgedge-backups",
 								AzureContainer: "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -382,7 +384,7 @@ func TestSpec(t *testing.T) {
 				},
 			}
 
-			new.DefaultSensitiveFieldsFrom(current)
+			new.DefaultOptionalFieldsFrom(current)
 
 			assert.Equal(t, expected, new)
 		})
@@ -406,7 +408,7 @@ func TestSpec(t *testing.T) {
 			}
 			expected := new.Clone()
 
-			new.DefaultSensitiveFieldsFrom(current)
+			new.DefaultOptionalFieldsFrom(current)
 
 			assert.Equal(t, expected, new)
 		})
@@ -429,7 +431,7 @@ func TestSpec(t *testing.T) {
 			}
 			expected := new.Clone()
 
-			new.DefaultSensitiveFieldsFrom(current)
+			new.DefaultOptionalFieldsFrom(current)
 
 			assert.Equal(t, expected, new)
 		})
@@ -466,7 +468,7 @@ func TestSpec(t *testing.T) {
 			}
 			expected := new.Clone()
 
-			new.DefaultSensitiveFieldsFrom(current)
+			new.DefaultOptionalFieldsFrom(current)
 
 			assert.Equal(t, expected, new)
 		})
@@ -489,7 +491,19 @@ func TestSpec(t *testing.T) {
 			new := base.Clone()
 			expected := base.Clone()
 
-			new.DefaultSensitiveFieldsFrom(current)
+			new.DefaultOptionalFieldsFrom(current)
+
+			assert.Equal(t, expected, new)
+		})
+
+		t.Run("updating postgres and spock versions", func(t *testing.T) {
+			current := base.Clone()
+			new := base.Clone()
+			new.PostgresVersion = "18.0"
+			new.SpockVersion = "6"
+			expected := new.Clone()
+
+			new.DefaultOptionalFieldsFrom(current)
 
 			assert.Equal(t, expected, new)
 		})

@@ -251,6 +251,15 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 		return nil, makeInvalidInputErr(err)
 	}
 
+	existing, err := s.dbSvc.GetDatabase(ctx, spec.DatabaseID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	// Copy optional fields from the previous spec to the current spec if they
+	// are unset.
+	spec.DefaultOptionalFieldsFrom(existing.Spec)
+
 	err = s.dbSvc.PopulateSpecDefaults(ctx, spec)
 	if err != nil {
 		return nil, api.MakeInvalidInput(fmt.Errorf("failed to validate database spec: %w", err))
@@ -458,16 +467,6 @@ func (s *PostInitHandlers) RestoreDatabase(ctx context.Context, req *api.Restore
 	db, err := s.dbSvc.GetDatabase(ctx, databaseID)
 	if err != nil {
 		return nil, apiErr(err)
-	}
-
-	sourceDB, err := s.dbSvc.GetDatabase(ctx, restoreConfig.SourceDatabaseID)
-	if err != nil {
-		return nil, apiErr(fmt.Errorf("failed to get source database: %w", err))
-	}
-
-	_, err = IsNodeAvailable(sourceDB, restoreConfig.SourceNodeName)
-	if err != nil {
-		return nil, err
 	}
 
 	if !req.Force && !database.DatabaseStateModifiable(db.State) {
