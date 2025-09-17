@@ -1039,14 +1039,3 @@ func removeUserIfExists(
 
 	return nil
 }
-func (e *EmbeddedEtcd) GetConfig() config.Config {
-	return e.cfg
-}
-
-func (e *EmbeddedEtcd) GetClusterState(ctx context.Context) string {
-	cfg, err := embedConfig(e.cfg, e.logger)
-	if err != nil {
-		return "unknown"
-	}
-	return cfg.ClusterState
-}
