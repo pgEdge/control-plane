@@ -310,7 +310,7 @@ func AdvanceReplicationSlotToLSN(databaseName, providerNode, subscriberNode stri
 	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
 
 	return Statement{
-		SQL: "SELECT pg_replication_slot_advance(@slot_name, @lsn) FROM lsn_cte;",
+		SQL: "SELECT pg_replication_slot_advance(@slot_name, @lsn);",
 		Args: pgx.NamedArgs{
 			"slot_name": slotName,
 			"lsn":       targetLSN,
