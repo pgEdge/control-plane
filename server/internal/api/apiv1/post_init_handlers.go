@@ -119,16 +119,15 @@ func (s *PostInitHandlers) GetCluster(ctx context.Context) (*api.Cluster, error)
 		return nil, apiErr(err)
 	}
 	apiHosts := make([]*api.Host, len(hosts))
-
 	for idx, h := range hosts {
 		apiHosts[idx] = hostToAPI(h)
 	}
-	config := s.etcd.GetConfig()
+
 	cluster := &api.Cluster{
-		ID:       api.Identifier(config.ClusterID),
-		TenantID: api.Identifier(config.TenantID),
+		ID:       api.Identifier(s.cfg.ClusterID),
+		TenantID: api.Identifier(s.cfg.TenantID),
 		Hosts:    apiHosts,
-		Status:   &api.ClusterStatus{State: s.etcd.GetClusterState(ctx)},
+		Status:   &api.ClusterStatus{State: "available"},
 	}
 
 	return cluster, nil
