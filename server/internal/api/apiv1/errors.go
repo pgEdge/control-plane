@@ -66,9 +66,7 @@ func apiErr(err error) error {
 		return ErrOperationAlreadyInProgress
 	case errors.Is(err, database.ErrDatabaseAlreadyExists):
 		return ErrDatabaseAlreadyExists
-	case errors.Is(err, database.ErrDatabaseNameCannotBeChanged):
-		return makeInvalidInputErr(err)
-	case errors.Is(err, database.ErrTenantIDCannotBeChanged):
+	case errors.Is(err, database.ErrInvalidDatabaseUpdate):
 		return makeInvalidInputErr(err)
 	case errors.Is(err, etcd.ErrCannotRemoveSelf):
 		return makeInvalidInputErr(err)

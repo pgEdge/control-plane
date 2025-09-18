@@ -20,6 +20,13 @@ type Version struct {
 	Components []uint64 `json:"components"`
 }
 
+func (v *Version) Major() (uint64, bool) {
+	if len(v.Components) == 0 {
+		return 0, false
+	}
+	return v.Components[0], true
+}
+
 func (v *Version) String() string {
 	components := make([]string, len(v.Components))
 	for i, c := range v.Components {

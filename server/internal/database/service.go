@@ -13,13 +13,12 @@ import (
 )
 
 var (
-	ErrDatabaseAlreadyExists       = errors.New("database already exists")
-	ErrDatabaseNotFound            = errors.New("database not found")
-	ErrDatabaseNotModifiable       = errors.New("database not modifiable")
-	ErrInstanceNotFound            = errors.New("instance not found")
-	ErrInstanceStopped             = errors.New("instance stopped")
-	ErrTenantIDCannotBeChanged     = errors.New("tenant ID cannot be changed")
-	ErrDatabaseNameCannotBeChanged = errors.New("database name cannot be changed")
+	ErrDatabaseAlreadyExists = errors.New("database already exists")
+	ErrDatabaseNotFound      = errors.New("database not found")
+	ErrDatabaseNotModifiable = errors.New("database not modifiable")
+	ErrInstanceNotFound      = errors.New("instance not found")
+	ErrInstanceStopped       = errors.New("instance stopped")
+	ErrInvalidDatabaseUpdate = errors.New("invalid database update")
 )
 
 type Service struct {
@@ -76,14 +75,8 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 		return nil, fmt.Errorf("failed to get database spec: %w", err)
 	}
 
-	// Immutable: tenant_id must not change
-	if !tenantIDsMatch(currentSpec.TenantID, spec.TenantID) {
-		return nil, ErrTenantIDCannotBeChanged
-	}
-
-	// Immutable: database_name must not change
-	if currentSpec.DatabaseName != spec.DatabaseName {
-		return nil, ErrDatabaseNameCannotBeChanged
+	if err := ValidateChangedSpec(currentSpec.Spec, spec); err != nil {
+		return nil, err
 	}
 
 	currentDB, err := s.store.Database.GetByKey(spec.DatabaseID).Exec(ctx)
@@ -101,10 +94,6 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database instances: %w", err)
 	}
-
-	// Copy sensitive fields from the previous spec to the current spec if they
-	// are unset.
-	spec.DefaultSensitiveFieldsFrom(currentSpec.Spec)
 
 	currentSpec.Spec = spec
 	currentDB.UpdatedAt = time.Now()
@@ -414,6 +403,82 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 		}
 	}
 
+	return nil
+}
+
+func ValidateChangedSpec(current, updated *Spec) error {
+	var errs []error
+
+	// Immutable: tenant_id must not change
+	if !tenantIDsMatch(current.TenantID, updated.TenantID) {
+		errs = append(errs, errors.New("tenant ID cannot be changed"))
+	}
+
+	// Immutable: database_name must not change
+	if current.DatabaseName != updated.DatabaseName {
+		errs = append(errs, errors.New("database name cannot be changed"))
+	}
+
+	currentInstances, err := instancesByID(current)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("failed to compute instances from current spec: %w", err))
+		return fmt.Errorf("%w: %s", ErrInvalidDatabaseUpdate, errors.Join(errs...))
+	}
+	updatedInstances, err := instancesByID(updated)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("failed to compute instances from updated spec: %w", err))
+		return fmt.Errorf("%w: %s", ErrInvalidDatabaseUpdate, errors.Join(errs...))
+	}
+
+	for id, newInstance := range updatedInstances {
+		oldInstance, ok := currentInstances[id]
+		if !ok {
+			// We only care about instances that have changed here. New and
+			// removed instances don't need to be checked.
+			continue
+		}
+		err := majorVersionChanged(oldInstance.PgEdgeVersion, newInstance.PgEdgeVersion)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("invalid change for instance %s: %w", id, err))
+		}
+	}
+
+	if len(errs) != 0 {
+		return fmt.Errorf("%w: %s", ErrInvalidDatabaseUpdate, errors.Join(errs...))
+	}
+
+	return nil
+}
+
+func instancesByID(spec *Spec) (map[string]*InstanceSpec, error) {
+	nodes, err := spec.NodeInstances()
+	if err != nil {
+		return nil, err
+	}
+	byID := map[string]*InstanceSpec{}
+	for _, node := range nodes {
+		for _, instance := range node.Instances {
+			byID[instance.InstanceID] = instance
+		}
+	}
+	return byID, nil
+}
+
+func majorVersionChanged(old, new *host.PgEdgeVersion) error {
+	if old == nil || new == nil {
+		return errors.New("expected both current and updated versions to be defined")
+	}
+	oldPgMajor, ok := old.PostgresVersion.Major()
+	if !ok {
+		return errors.New("current postgres version is missing its major component")
+	}
+	newPgMajor, ok := new.PostgresVersion.Major()
+	if !ok {
+		return errors.New("updated postgres version is missing its major component")
+	}
+	if oldPgMajor != newPgMajor {
+		return fmt.Errorf("major version changed from %d to %d", oldPgMajor, newPgMajor)
+	}
 	return nil
 }
 
