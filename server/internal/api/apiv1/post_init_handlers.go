@@ -114,7 +114,23 @@ func (s *PostInitHandlers) ServiceDescription(ctx context.Context) (string, erro
 }
 
 func (s *PostInitHandlers) GetCluster(ctx context.Context) (*api.Cluster, error) {
-	return nil, ErrNotImplemented
+	hosts, err := s.hostSvc.GetAllHosts(ctx)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+	apiHosts := make([]*api.Host, len(hosts))
+	for idx, h := range hosts {
+		apiHosts[idx] = hostToAPI(h)
+	}
+
+	cluster := &api.Cluster{
+		ID:       api.Identifier(s.cfg.ClusterID),
+		TenantID: api.Identifier(s.cfg.TenantID),
+		Hosts:    apiHosts,
+		Status:   &api.ClusterStatus{State: "available"},
+	}
+
+	return cluster, nil
 }
 
 func (s *PostInitHandlers) ListHosts(ctx context.Context) ([]*api.Host, error) {
@@ -131,7 +147,15 @@ func (s *PostInitHandlers) ListHosts(ctx context.Context) ([]*api.Host, error) {
 }
 
 func (s *PostInitHandlers) GetHost(ctx context.Context, req *api.GetHostPayload) (*api.Host, error) {
-	return nil, ErrNotImplemented
+	hostID, err := hostIdentToString(req.HostID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+	host, err := s.hostSvc.GetHost(ctx, hostID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+	return hostToAPI(host), nil
 }
 
 func (s *PostInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) error {
