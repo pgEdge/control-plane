@@ -20,7 +20,7 @@ type MultiServerClient struct {
 	servers map[string]*SingleServerClient
 }
 
-func NewMultiServerClient(ctx context.Context, servers ...ServerConfig) (*MultiServerClient, error) {
+func NewMultiServerClient(servers ...ServerConfig) (*MultiServerClient, error) {
 	if len(servers) == 0 {
 		return nil, ErrNoServers
 	}
@@ -30,7 +30,7 @@ func NewMultiServerClient(ctx context.Context, servers ...ServerConfig) (*MultiS
 	}
 
 	for i, server := range servers {
-		s, err := NewSingleServerClient(ctx, server)
+		s, err := NewSingleServerClient(server)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create client for server at index %d: %w", i, err)
 		}
@@ -281,12 +281,16 @@ func (c *MultiServerClient) FollowTask(ctx context.Context, req *api.GetDatabase
 }
 
 func (c *MultiServerClient) liveServer(ctx context.Context) (*SingleServerClient, error) {
+	var errs []error
 	for _, server := range c.servers {
 		_, err := server.GetVersion(ctx)
 		if err == nil {
-
 			return server, nil
+		} else {
+			errs = append(errs, err)
 		}
 	}
-	return nil, ErrNoHealthyServers
+
+	errs = append(errs, ErrNoHealthyServers)
+	return nil, errors.Join(errs...)
 }

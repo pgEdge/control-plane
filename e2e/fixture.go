@@ -119,7 +119,7 @@ func NewTestFixture(ctx context.Context, config TestConfig, skipCleanup bool) (*
 		servers = append(servers, server)
 	}
 
-	cli, err := client.NewMultiServerClient(ctx, servers...)
+	cli, err := client.NewMultiServerClient(servers...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize client: %w", err)
 	}

@@ -1,9 +1,6 @@
 package client
 
 import (
-	"context"
-	"fmt"
-	"net/url"
 	"time"
 
 	goahttp "goa.design/goa/v3/http"
@@ -14,23 +11,19 @@ import (
 
 // MQTTServerConfig configures a connection to a Control Plane server via MQTT.
 type MQTTServerConfig struct {
-	brokerURL *url.URL
-	topic     string
-	clientID  string
-	username  string
-	password  string
-	maxWait   time.Duration
+	endpoint mqtt.Endpoint
+	topic    string
+	maxWait  time.Duration
 }
 
-func NewMQTTServerConfig(hostID string, brokerURL *url.URL, topic string, opts ...MQTTServerOption) ServerConfig {
-	cfg := &MQTTServerConfig{
-		brokerURL: brokerURL,
-		topic:     topic,
-		maxWait:   30 * time.Second, // Default max wait time
+func NewMQTTServerConfig(hostID string, endpoint mqtt.Endpoint, topic string, maxWait time.Duration) ServerConfig {
+	if maxWait == 0 {
+		maxWait = 30 * time.Second // Default max wait time
 	}
-
-	for _, opt := range opts {
-		opt(cfg)
+	cfg := &MQTTServerConfig{
+		endpoint: endpoint,
+		topic:    topic,
+		maxWait:  maxWait,
 	}
 
 	return ServerConfig{
@@ -39,50 +32,12 @@ func NewMQTTServerConfig(hostID string, brokerURL *url.URL, topic string, opts .
 	}
 }
 
-type MQTTServerOption func(cfg *MQTTServerConfig)
-
-// WithClientID sets the client ID for the MQTT connection.
-func WithClientID(clientID string) MQTTServerOption {
-	return func(cfg *MQTTServerConfig) {
-		cfg.clientID = clientID
-	}
-}
-
-// WithUsername sets the username for the MQTT connection.
-func WithUsername(username string) MQTTServerOption {
-	return func(cfg *MQTTServerConfig) {
-		cfg.username = username
-	}
-}
-
-// WithPassword sets the password for the MQTT connection.
-func WithPassword(password string) MQTTServerOption {
-	return func(cfg *MQTTServerConfig) {
-		cfg.password = password
-	}
-}
-
-// WithMaxWait sets the maximum wait time for MQTT operations.
-func WithMaxWait(maxWait time.Duration) MQTTServerOption {
-	return func(cfg *MQTTServerConfig) {
-		cfg.maxWait = maxWait
-	}
-}
-
-func (c *MQTTServerConfig) newClient(ctx context.Context) (*client.Client, error) {
+func (c *MQTTServerConfig) newClient() (*client.Client, error) {
 	mqttDoer := mqtt.NewHTTPDoer(mqtt.HTTPDoerConfig{
-		Topic: c.topic,
-		Broker: mqtt.BrokerConfig{
-			URL:      c.brokerURL.String(),
-			ClientID: c.clientID,
-			Username: c.username,
-			Password: c.password,
-		},
-		MaxWait: c.maxWait,
+		Topic:    c.topic,
+		Endpoint: c.endpoint,
+		MaxWait:  c.maxWait,
 	})
-	if err := mqttDoer.Connect(ctx); err != nil {
-		return nil, fmt.Errorf("failed to connect mqtt client: %w", err)
-	}
 	return client.NewClient(
 		"",
 		"",

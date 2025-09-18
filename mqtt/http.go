@@ -82,38 +82,21 @@ type HTTPDoer struct {
 }
 
 type HTTPDoerConfig struct {
-	Topic   string
-	Broker  BrokerConfig
-	MaxWait time.Duration
-	QoS     int
-	Retain  bool
+	Topic    string
+	Endpoint Endpoint
+	MaxWait  time.Duration
+	QoS      int
+	Retain   bool
 }
 
 func NewHTTPDoer(config HTTPDoerConfig) *HTTPDoer {
-	endpoint := New(Config{
-		Broker: config.Broker,
-	})
 	return &HTTPDoer{
 		topic:    config.Topic,
-		endpoint: endpoint,
+		endpoint: config.Endpoint,
 		maxWait:  config.MaxWait,
 		qos:      config.QoS,
 		retain:   config.Retain,
 	}
-}
-
-func (d *HTTPDoer) Connect(ctx context.Context) error {
-	if err := d.endpoint.Connect(ctx); err != nil {
-		return fmt.Errorf("failed to connect to broker: %w", err)
-	}
-	return nil
-}
-
-func (d *HTTPDoer) Disconnect(ctx context.Context) error {
-	if err := d.endpoint.Disconnect(ctx); err != nil {
-		return fmt.Errorf("failed to disconnect from broker: %w", err)
-	}
-	return nil
 }
 
 func (d *HTTPDoer) Do(req *http.Request) (*http.Response, error) {
