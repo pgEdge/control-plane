@@ -422,12 +422,12 @@ func ValidateChangedSpec(current, updated *Spec) error {
 	currentInstances, err := instancesByID(current)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("failed to compute instances from current spec: %w", err))
-		return errors.Join(errs...)
+		return fmt.Errorf("%w: %s", ErrInvalidDatabaseUpdate, errors.Join(errs...))
 	}
 	updatedInstances, err := instancesByID(updated)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("failed to compute instances from updated spec: %w", err))
-		return errors.Join(errs...)
+		return fmt.Errorf("%w: %s", ErrInvalidDatabaseUpdate, errors.Join(errs...))
 	}
 
 	for id, newInstance := range updatedInstances {
