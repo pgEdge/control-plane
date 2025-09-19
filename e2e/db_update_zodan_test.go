@@ -337,7 +337,7 @@ func verifyDataAllInstances(ctx context.Context, db *DatabaseFixture, tablename 
 func updateSpecNodesObject(db *DatabaseFixture, addNewNode bool,
 	nodeName string, hostname string, infoTobeVerified NewInstanceInfo, t testing.TB) NewInstanceInfo {
 	if addNewNode {
-		t.Logf("Updating Nodes specs, a new node: %s will be added with host: %s", hostname, nodeName)
+		t.Logf("Updating Nodes specs, a new node: %s will be added with host: %s", nodeName, hostname)
 		db.Spec.Nodes = append(db.Spec.Nodes, &controlplane.DatabaseNodeSpec{
 			Name:       nodeName,
 			HostIds:    []controlplane.Identifier{controlplane.Identifier(hostname)},
