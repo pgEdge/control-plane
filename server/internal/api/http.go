@@ -78,6 +78,7 @@ func (s *httpServer) listenAndServeTLS() {
 			RootCAs:    certPool,
 			ClientCAs:  certPool,
 			ClientAuth: tls.RequireAndVerifyClientCert,
+			MinVersion: 13,
 		}
 
 		if err := s.server.ListenAndServeTLS(s.cfg.ServerCert, s.cfg.ServerKey); err != nil {

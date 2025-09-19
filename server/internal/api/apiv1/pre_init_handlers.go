@@ -255,6 +255,7 @@ func (s *PreInitHandlers) GetClient() (res *http.Client, err error) {
 			TLSClientConfig: &tls.Config{
 				RootCAs:      caCertPool,
 				Certificates: []tls.Certificate{cert},
+				MinVersion:   tls.VersionTLS13,
 			},
 		},
 	}, nil
