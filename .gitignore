@@ -6,6 +6,7 @@ docker/control-plane-dev/data
 vagrant-ssh.cfg
 .terraform
 *.tar.gz
+hack/apis
 
 # build artifacts
 *-results.xml
