@@ -14,4 +14,6 @@ func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*PgBackRestStanza](registry, ResourceTypePgBackRestStanza)
 	resource.RegisterResourceType[*PatroniCluster](registry, ResourceTypePatroniCluster)
 	resource.RegisterResourceType[*PatroniMember](registry, ResourceTypePatroniMember)
+	resource.RegisterResourceType[*CheckWillRestart](registry, ResourceTypeCheckWillRestart)
+	resource.RegisterResourceType[*Switchover](registry, ResourceTypeSwitchover)
 }

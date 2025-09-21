@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -15,17 +16,20 @@ func UpdateNode(node *NodeResources) ([]*resource.State, error) {
 	// Updates are performed on replica instances first
 	var primary *resource.State
 
+	var primaryHostID string
 	instanceIDs := make([]string, len(node.InstanceResources))
 	states := make([]*resource.State, 0, len(node.InstanceResources))
 	for i, inst := range node.InstanceResources {
-		instanceIDs[i] = inst.InstanceID()
+		instanceID := inst.InstanceID()
+		instanceIDs[i] = instanceID
 
 		state, err := instanceState(inst)
 		if err != nil {
 			return nil, err
 		}
-		if inst.InstanceID() == node.PrimaryInstanceID {
+		if instanceID == node.PrimaryInstanceID {
 			primary = state
+			primaryHostID = inst.HostID()
 		} else {
 			states = append(states, state)
 		}
@@ -37,6 +41,19 @@ func UpdateNode(node *NodeResources) ([]*resource.State, error) {
 		// to change this if we want workflows to handle nodes without a primary
 		// instance.
 		return nil, fmt.Errorf("node %s has no primary instance", node.NodeName)
+	}
+
+	// This condition is true when we have replicas
+	if len(states) != 0 {
+		// Ensure that we always switch back to the original primary
+		err := primary.AddResource(&database.SwitchoverResource{
+			HostID:     primaryHostID,
+			InstanceID: node.PrimaryInstanceID,
+			TargetRole: patroni.InstanceRolePrimary,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to add switchover resource to replica state: %w", err)
+		}
 	}
 
 	states = append(states, primary)

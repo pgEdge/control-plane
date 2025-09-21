@@ -2,16 +2,20 @@ package patroni
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"iter"
 	"net/http"
 	"net/url"
 	"path"
+	"slices"
 	"time"
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 type State string
@@ -36,6 +40,7 @@ const (
 	StateCustomBootstrapFailed        State = "custom bootstrap failed"
 	StateCreatingReplica              State = "creating replica"
 	StateUnknown                      State = "unknown"
+	StateStreaming                    State = "streaming"
 )
 
 var errorStates = ds.NewSet(
@@ -132,6 +137,10 @@ func (s *InstanceStatus) InRunningState() bool {
 	return s.State != nil && *s.State == StateRunning
 }
 
+func (s *InstanceStatus) IsPrimary() bool {
+	return s.Role != nil && *s.Role == InstanceRolePrimary
+}
+
 type ClusterRole string
 
 const (
@@ -155,6 +164,10 @@ func (l *Lag) UnmarshalJSON(data []byte) error {
 	}
 	*l = Lag(lag)
 	return nil
+}
+
+func (l *Lag) IsKnown() bool {
+	return l != nil && *l >= 0
 }
 
 type ClusterMember struct {
@@ -188,6 +201,14 @@ func (m *ClusterMember) IsLeader() bool {
 	return m.Role != nil && *m.Role == ClusterRoleLeader
 }
 
+func (m *ClusterMember) IsRunning() bool {
+	return m.State != nil && (*m.State == StateRunning || *m.State == StateStreaming)
+}
+
+func (m *ClusterMember) InErrorState() bool {
+	return m.State != nil && IsErrorState(*m.State)
+}
+
 type ScheduledSwitchover struct {
 	// timestamp when switchover was scheduled to occur;
 	At *string `json:"at,omitempty"`
@@ -204,6 +225,38 @@ type ClusterState struct {
 	Pause *bool `json:"pause,omitempty"`
 	// Populated if a switchover has been scheduled
 	ScheduledSwitchover *ScheduledSwitchover `json:"scheduled_switchover,omitempty"`
+}
+
+func (c *ClusterState) Leader() (ClusterMember, bool) {
+	for _, member := range c.Members {
+		if member.IsLeader() {
+			return member, true
+		}
+	}
+	return ClusterMember{}, false
+}
+
+func (c *ClusterState) eligibleForSwitchover() iter.Seq[ClusterMember] {
+	return func(yield func(ClusterMember) bool) {
+		for _, m := range c.Members {
+			if m.IsLeader() || !m.IsRunning() || m.Name == nil || !m.Lag.IsKnown() {
+				continue
+			}
+			if !yield(m) {
+				return
+			}
+		}
+	}
+}
+
+func (c *ClusterState) MostAlignedReplica() (ClusterMember, bool) {
+	sorted := slices.SortedFunc(c.eligibleForSwitchover(), func(a, b ClusterMember) int {
+		return cmp.Compare(*a.Lag, *b.Lag)
+	})
+	if len(sorted) == 0 {
+		return ClusterMember{}, false
+	}
+	return sorted[0], true
 }
 
 type SynchronousMode string
@@ -322,7 +375,7 @@ type DynamicConfig struct {
 	// matching properties will cause a slot to be ignored.
 	IgnoreSlots *[]IgnoreSlot `json:"ignore_slots,omitempty"`
 	// Stops Patroni from making changes to the cluster.
-	Pause bool `json:"pause,omitempty"`
+	Pause bool `json:"pause"`
 }
 
 type Switchover struct {
@@ -482,7 +535,7 @@ func (c *Client) PatchDynamicConfig(ctx context.Context, config *DynamicConfig) 
 	return &updatedConfig, nil
 }
 
-func (c *Client) ScheduleSwitchover(ctx context.Context, switchover *Switchover) error {
+func (c *Client) ScheduleSwitchover(ctx context.Context, switchover *Switchover, wait bool) error {
 	data, err := json.Marshal(switchover)
 	if err != nil {
 		return fmt.Errorf("failed to marshal switchover: %w", err)
@@ -500,6 +553,9 @@ func (c *Client) ScheduleSwitchover(ctx context.Context, switchover *Switchover)
 	if !successful(resp) {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("failed to schedule switchover: %d %s", resp.StatusCode, body)
+	}
+	if wait {
+		return c.waitForSwitchover(ctx, switchover.Leader)
 	}
 	return nil
 }
@@ -648,6 +704,43 @@ func (c *Client) Readiness(ctx context.Context) error {
 		return fmt.Errorf("failed to check readiness: %d %s", resp.StatusCode, body)
 	}
 	return nil
+}
+
+func (c *Client) waitForSwitchover(ctx context.Context, oldLeader *string) error {
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	// We want some tolerance to transient connection errors.
+	const maxConnectionErrors = 3
+	var errCount int
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			cluster, err := c.GetClusterStatus(ctx)
+			if err != nil {
+				errCount++
+				if errCount >= maxConnectionErrors {
+					return fmt.Errorf("failed to get cluster status: %w", err)
+				}
+				continue
+			}
+			leader, ok := cluster.Leader()
+			if !ok || utils.FromPointer(leader.Name) == utils.FromPointer(oldLeader) {
+				continue
+			}
+			if leader.IsRunning() {
+				return nil
+			} else if leader.InErrorState() {
+				return fmt.Errorf("leader instance is in error state: %s", utils.FromPointer(leader.State))
+			}
+		}
+	}
 }
 
 func successful(resp *http.Response) bool {

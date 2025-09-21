@@ -244,6 +244,14 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		ConfigsDirID:        configsDir.ID,
 		CertificatesDirID:   certificatesDir.ID,
 	}
+	checkWillRestart := &CheckWillRestart{
+		InstanceID: spec.InstanceID,
+		CohortID:   o.swarmID,
+	}
+	switchover := &Switchover{
+		HostID:     spec.HostID,
+		InstanceID: spec.InstanceID,
+	}
 	service := &PostgresService{
 		Instance:    spec,
 		CohortID:    o.swarmID,
@@ -270,6 +278,8 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		postgresCerts,
 		patroniConfig,
 		serviceSpec,
+		checkWillRestart,
+		switchover,
 		service,
 	}
 
