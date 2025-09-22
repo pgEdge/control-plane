@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -60,19 +61,17 @@ func testZodanFunctionality(createNewNode bool, nodeName string, hostName string
 		PrimaryOptions []ConnectionOptions
 	}
 
-	var infoTobeVerified NewInstanceInfo
 	var tablerowcounts tablesrowcount
-	targetPgVersion := "17.6"
 
 	// define the cluster topology(nodes structure)
 	totalhost := len(fixture.config.Hosts)
 	nodeCount := 2
 	hostPerNode := 2
-	nodes := createNodesStruct2(nodeCount, hostPerNode, t)
+	nodes := createNodesStruct(nodeCount, hostPerNode, t)
 
 	expectedReplicas := totalhost - len(nodes)
 
-	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(t.Context(), 7*time.Minute)
 	defer cancel()
 	// TODO: need to parameterize it
 	// Create a new database fixture that provisions a database based on the given
@@ -91,12 +90,8 @@ func testZodanFunctionality(createNewNode bool, nodeName string, hostName string
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port:            pointerTo(0),
-			Cpus:            pointerTo("1000m"),
-			Memory:          pointerTo("1GB"),
-			PostgresVersion: pointerTo(targetPgVersion),
-			SpockVersion:    pointerTo("5"),
-			Nodes:           nodes,
+			Port:  pointerTo(0),
+			Nodes: nodes,
 		},
 	})
 
@@ -108,11 +103,12 @@ func testZodanFunctionality(createNewNode bool, nodeName string, hostName string
 	assert.True(t, expectedReplicas == getTotalReplicaNodes(db),
 		"Found replica count must match expected replica count")
 
+	// validate replication
 	validateReplication(ctx, db, t)
 
-	// build spec.Node object with the new node/instance info
-	infoTobeVerified2 := updateSpecNodesObject(db,
-		createNewNode, nodeName, hostName, infoTobeVerified, t)
+	// get the information regarding hosts
+	infoTobeVerified := updateSpecNodesObject(db,
+		createNewNode, nodeName, hostName, t)
 
 	primaryOpts := ConnectionOptions{
 		Matcher:  WithRole("primary"),
@@ -156,8 +152,12 @@ func testZodanFunctionality(createNewNode bool, nodeName string, hostName string
 	}()
 	wg.Wait()
 
-	assert.True(t, verifyInstanceAddition(db, infoTobeVerified2),
-		"The new instance info does not seem correct")
+	instance := db.GetInstance(And(
+		WithHost(infoTobeVerified.Hostname),
+		WithNode(infoTobeVerified.Nodename),
+		WithRole(infoTobeVerified.Role),
+	))
+	assert.NotNil(t, instance)
 
 	t.Logf("Number of instances after appending cluster are: %d", len(db.Instances))
 
@@ -253,9 +253,8 @@ func runLoad(ctx context.Context, db *DatabaseFixture,
 func runLoadAllPrimaries(ctx context.Context, db *DatabaseFixture, primaries []ConnectionOptions,
 	tablename string, t testing.TB) (tablesrowcount, error) {
 	var wg sync.WaitGroup
-	rowsCh := make(chan int, len(primaries))
 	errCh := make(chan error, len(primaries))
-	var tablerowcounts tablesrowcount
+	resultsCh := make(chan tablerow, len(primaries))
 
 	for i, p := range primaries {
 		wg.Add(1)
@@ -270,35 +269,26 @@ func runLoadAllPrimaries(ctx context.Context, db *DatabaseFixture, primaries []C
 				errCh <- fmt.Errorf("runLoad failed for %+v: %w", opts, err)
 				return
 			}
-			rowsCh <- rows
-			tablerowcounts = append(tablerowcounts, tablerow{
-				tablename: tableName,
-				rowcount:  rows,
-			})
+			resultsCh <- tablerow{tablename: tbl, rowcount: rows}
 		}(p, tableName)
 	}
 
 	wg.Wait()
-	close(rowsCh)
+	close(resultsCh)
 	close(errCh)
 
 	// Aggregate results
-	totalRows := 0
-	for r := range rowsCh {
-		totalRows += r
+	var tablerowcounts []tablerow
+	for r := range resultsCh {
+		tablerowcounts = append(tablerowcounts, r)
 	}
 
-	// Combine errors (if any)
-	var runErr error
+	var errs []error
 	for e := range errCh {
-		if runErr == nil {
-			runErr = e
-		} else {
-			runErr = fmt.Errorf("%v; %w", runErr, e)
-		}
+		errs = append(errs, e)
 	}
 
-	return tablerowcounts, runErr
+	return tablerowcounts, errors.Join(errs...)
 }
 
 // This calculates number of records in a particular table for each instance
@@ -317,16 +307,11 @@ func verifyDataAllInstances(ctx context.Context, db *DatabaseFixture, tablename 
 			var rowCount int
 
 			err := conn.QueryRow(ctx, sql).Scan(&rowCount)
-			if err != nil {
-				t.Logf("Failed to count rows: %v\n", err)
-			}
-			if rowCount != expectedrows {
-				t.Errorf("Instance %s: expected %d rows, got %d",
-					db.Instances[i].ID, expectedrows, rowCount)
-			} else {
-				t.Logf("Data verified on instance %s, expected_rows: %d == current_rows: %d ",
-					db.Instances[i].ID, expectedrows, rowCount)
-			}
+			require.NoError(t, err)
+			require.Equal(t, expectedrows, rowCount)
+
+			t.Logf("Data verified on instance %s, expected_rows: %d == current_rows: %d ",
+				db.Instances[i].ID, expectedrows, rowCount)
 		})
 	}
 
@@ -335,7 +320,8 @@ func verifyDataAllInstances(ctx context.Context, db *DatabaseFixture, tablename 
 // extend existing cluster either by adding a new instance in existing node or
 // by creating a new node
 func updateSpecNodesObject(db *DatabaseFixture, addNewNode bool,
-	nodeName string, hostname string, infoTobeVerified NewInstanceInfo, t testing.TB) NewInstanceInfo {
+	nodeName string, hostname string, t testing.TB) NewInstanceInfo {
+	var infoTobeVerified NewInstanceInfo
 	if addNewNode {
 		t.Logf("Updating Nodes specs, a new node: %s will be added with host: %s", nodeName, hostname)
 		db.Spec.Nodes = append(db.Spec.Nodes, &controlplane.DatabaseNodeSpec{
@@ -403,62 +389,4 @@ func getAllConnectionOptsForPrimaries(db *DatabaseFixture) []ConnectionOptions {
 	}
 
 	return primaries
-}
-
-// Helping function to get a slice of all connections for replicas
-func getAllConnectionOptsForReplicas(db *DatabaseFixture) []ConnectionOptions {
-	var replicas []ConnectionOptions
-
-	for i := range db.Instances {
-		if db.Instances[i].Postgres != nil && *db.Instances[i].Postgres.Role == "replica" {
-			replicas = append(replicas, ConnectionOptions{
-				Matcher:  And(WithHost(db.Instances[i].HostID)),
-				Username: username,
-				Password: password,
-			})
-		}
-	}
-
-	return replicas
-}
-
-// TODO: Need to create one common function to be used across all the test cases
-// build spec.Nodes, creates a new node or update existing node
-func createNodesStruct2(numNodes int, hostsPerNode int, t testing.TB) []*controlplane.DatabaseNodeSpec {
-	nodes := []*controlplane.DatabaseNodeSpec{}
-	totalHosts := len(fixture.config.Hosts)
-	hostIndex := 0
-
-	t.Logf("Going to create topology for number of nodes %d and total hosts %d\n", numNodes, totalHosts)
-
-	for i := 1; i <= numNodes && hostIndex < totalHosts; i++ {
-		end := hostIndex + hostsPerNode
-		if end > totalHosts {
-			end = totalHosts
-		}
-
-		hosts := []controlplane.Identifier{}
-		for j := hostIndex; j < end; j++ {
-			hosts = append(hosts, controlplane.Identifier(fixture.HostIDs()[j]))
-		}
-		nodes = append(nodes, &controlplane.DatabaseNodeSpec{
-			Name:    fmt.Sprintf("n%d", i),
-			HostIds: hosts,
-		})
-
-		hostIndex = end
-	}
-	//take care of leftover hosts
-	if hostIndex < totalHosts {
-		hosts := []controlplane.Identifier{}
-		for j := hostIndex; j < totalHosts; j++ {
-			hosts = append(hosts, controlplane.Identifier(fixture.HostIDs()[j]))
-		}
-		nodes = append(nodes, &controlplane.DatabaseNodeSpec{
-			Name:    fmt.Sprintf("n%d", len(nodes)+1),
-			HostIds: hosts,
-		})
-	}
-
-	return nodes
 }

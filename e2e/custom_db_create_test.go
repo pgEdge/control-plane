@@ -104,8 +104,8 @@ func TestCreateDbWithCustomPgVersion(t *testing.T) {
 	validateReplication(ctx, db, t)
 }
 
-// Build Nodes struct for database specs, based on number of nodes and hosts per node. If there
-// is any leftover node it will create a new node for that
+// TODO: Need to create one common function to be used across all the test cases
+// build spec.Nodes, creates a new node or update existing node
 func createNodesStruct(numNodes int, hostsPerNode int, t testing.TB) []*controlplane.DatabaseNodeSpec {
 	nodes := []*controlplane.DatabaseNodeSpec{}
 	totalHosts := len(fixture.config.Hosts)
