@@ -8,11 +8,9 @@
 
 ## Running the Control Plane locally
 
-There are two supported methods to run the Control Plane server in a local
-development environment:
-
-- [With Docker Compose](./running-locally-docker.md) (Recommended)
-- [With VMs with Vagrant](./running-locally-vms.md)
+We use Docker Compose to run the control plane for development. Please see the
+["Running a local Control Plane cluster in Docker"](./running-locally-docker.md)
+document for the full set of instructions.
 
 ## Pull requests
 

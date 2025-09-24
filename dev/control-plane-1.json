@@ -1,8 +1,0 @@
-{
-  "cluster_id": "dev",
-  "host_id": "host-1",
-  "data_dir": "/opt/pgedge/data",
-  "docker_swarm": {
-    "image_repository_host": "10.1.0.1:5000"
-  }
-}
