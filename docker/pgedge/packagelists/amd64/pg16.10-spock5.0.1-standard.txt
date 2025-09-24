@@ -1,9 +1,0 @@
-pgedge-postgresql16-16.10-1.el9
-pgedge-spock50_16-5.0.1-1.el9
-pgedge-snowflake_16-2.2-1.el9
-pgedge-lolor_16-1.2-1.el9
-pgedge-pgaudit_16-16.1-1.el9
-pgedge-postgis35_16-3.5.3-1.el9
-pgedge-pgvector_16-0.8.0-1.el9
-pgedge-pgbackrest-2.56.0-1.el9
-pgedge-python3-psycopg2-2.9.10-1.el9

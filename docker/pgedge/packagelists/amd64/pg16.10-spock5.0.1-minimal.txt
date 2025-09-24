@@ -1,4 +1,0 @@
-pgedge-postgresql16-16.10-1.el9
-pgedge-spock50_16-5.0.1-1.el9
-pgedge-snowflake_16-2.2-1.el9
-pgedge-lolor_16-1.2-1.el9

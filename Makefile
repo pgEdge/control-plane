@@ -1,5 +1,4 @@
 include tools.mk
-include pgedge.mk
 
 # Overridable vars
 DEBUG ?= 0
