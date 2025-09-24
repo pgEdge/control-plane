@@ -15,57 +15,59 @@ import (
 
 // Client is the "control-plane" service client.
 type Client struct {
-	InitClusterEndpoint        goa.Endpoint
-	JoinClusterEndpoint        goa.Endpoint
-	GetJoinTokenEndpoint       goa.Endpoint
-	GetJoinOptionsEndpoint     goa.Endpoint
-	GetClusterEndpoint         goa.Endpoint
-	ListHostsEndpoint          goa.Endpoint
-	GetHostEndpoint            goa.Endpoint
-	RemoveHostEndpoint         goa.Endpoint
-	ListDatabasesEndpoint      goa.Endpoint
-	CreateDatabaseEndpoint     goa.Endpoint
-	GetDatabaseEndpoint        goa.Endpoint
-	UpdateDatabaseEndpoint     goa.Endpoint
-	DeleteDatabaseEndpoint     goa.Endpoint
-	BackupDatabaseNodeEndpoint goa.Endpoint
-	ListDatabaseTasksEndpoint  goa.Endpoint
-	GetDatabaseTaskEndpoint    goa.Endpoint
-	GetDatabaseTaskLogEndpoint goa.Endpoint
-	RestoreDatabaseEndpoint    goa.Endpoint
-	GetVersionEndpoint         goa.Endpoint
-	RestartInstanceEndpoint    goa.Endpoint
-	StopInstanceEndpoint       goa.Endpoint
-	StartInstanceEndpoint      goa.Endpoint
-	CancelDatabaseTaskEndpoint goa.Endpoint
+	InitClusterEndpoint            goa.Endpoint
+	JoinClusterEndpoint            goa.Endpoint
+	GetJoinTokenEndpoint           goa.Endpoint
+	GetJoinOptionsEndpoint         goa.Endpoint
+	GetClusterEndpoint             goa.Endpoint
+	ListHostsEndpoint              goa.Endpoint
+	GetHostEndpoint                goa.Endpoint
+	RemoveHostEndpoint             goa.Endpoint
+	ListDatabasesEndpoint          goa.Endpoint
+	CreateDatabaseEndpoint         goa.Endpoint
+	GetDatabaseEndpoint            goa.Endpoint
+	UpdateDatabaseEndpoint         goa.Endpoint
+	DeleteDatabaseEndpoint         goa.Endpoint
+	BackupDatabaseNodeEndpoint     goa.Endpoint
+	SwitchoverDatabaseNodeEndpoint goa.Endpoint
+	ListDatabaseTasksEndpoint      goa.Endpoint
+	GetDatabaseTaskEndpoint        goa.Endpoint
+	GetDatabaseTaskLogEndpoint     goa.Endpoint
+	RestoreDatabaseEndpoint        goa.Endpoint
+	GetVersionEndpoint             goa.Endpoint
+	RestartInstanceEndpoint        goa.Endpoint
+	StopInstanceEndpoint           goa.Endpoint
+	StartInstanceEndpoint          goa.Endpoint
+	CancelDatabaseTaskEndpoint     goa.Endpoint
 }
 
 // NewClient initializes a "control-plane" service client given the endpoints.
-func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluster, listHosts, getHost, removeHost, listDatabases, createDatabase, getDatabase, updateDatabase, deleteDatabase, backupDatabaseNode, listDatabaseTasks, getDatabaseTask, getDatabaseTaskLog, restoreDatabase, getVersion, restartInstance, stopInstance, startInstance, cancelDatabaseTask goa.Endpoint) *Client {
+func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluster, listHosts, getHost, removeHost, listDatabases, createDatabase, getDatabase, updateDatabase, deleteDatabase, backupDatabaseNode, switchoverDatabaseNode, listDatabaseTasks, getDatabaseTask, getDatabaseTaskLog, restoreDatabase, getVersion, restartInstance, stopInstance, startInstance, cancelDatabaseTask goa.Endpoint) *Client {
 	return &Client{
-		InitClusterEndpoint:        initCluster,
-		JoinClusterEndpoint:        joinCluster,
-		GetJoinTokenEndpoint:       getJoinToken,
-		GetJoinOptionsEndpoint:     getJoinOptions,
-		GetClusterEndpoint:         getCluster,
-		ListHostsEndpoint:          listHosts,
-		GetHostEndpoint:            getHost,
-		RemoveHostEndpoint:         removeHost,
-		ListDatabasesEndpoint:      listDatabases,
-		CreateDatabaseEndpoint:     createDatabase,
-		GetDatabaseEndpoint:        getDatabase,
-		UpdateDatabaseEndpoint:     updateDatabase,
-		DeleteDatabaseEndpoint:     deleteDatabase,
-		BackupDatabaseNodeEndpoint: backupDatabaseNode,
-		ListDatabaseTasksEndpoint:  listDatabaseTasks,
-		GetDatabaseTaskEndpoint:    getDatabaseTask,
-		GetDatabaseTaskLogEndpoint: getDatabaseTaskLog,
-		RestoreDatabaseEndpoint:    restoreDatabase,
-		GetVersionEndpoint:         getVersion,
-		RestartInstanceEndpoint:    restartInstance,
-		StopInstanceEndpoint:       stopInstance,
-		StartInstanceEndpoint:      startInstance,
-		CancelDatabaseTaskEndpoint: cancelDatabaseTask,
+		InitClusterEndpoint:            initCluster,
+		JoinClusterEndpoint:            joinCluster,
+		GetJoinTokenEndpoint:           getJoinToken,
+		GetJoinOptionsEndpoint:         getJoinOptions,
+		GetClusterEndpoint:             getCluster,
+		ListHostsEndpoint:              listHosts,
+		GetHostEndpoint:                getHost,
+		RemoveHostEndpoint:             removeHost,
+		ListDatabasesEndpoint:          listDatabases,
+		CreateDatabaseEndpoint:         createDatabase,
+		GetDatabaseEndpoint:            getDatabase,
+		UpdateDatabaseEndpoint:         updateDatabase,
+		DeleteDatabaseEndpoint:         deleteDatabase,
+		BackupDatabaseNodeEndpoint:     backupDatabaseNode,
+		SwitchoverDatabaseNodeEndpoint: switchoverDatabaseNode,
+		ListDatabaseTasksEndpoint:      listDatabaseTasks,
+		GetDatabaseTaskEndpoint:        getDatabaseTask,
+		GetDatabaseTaskLogEndpoint:     getDatabaseTaskLog,
+		RestoreDatabaseEndpoint:        restoreDatabase,
+		GetVersionEndpoint:             getVersion,
+		RestartInstanceEndpoint:        restartInstance,
+		StopInstanceEndpoint:           stopInstance,
+		StartInstanceEndpoint:          startInstance,
+		CancelDatabaseTaskEndpoint:     cancelDatabaseTask,
 	}
 }
 
@@ -285,6 +287,25 @@ func (c *Client) BackupDatabaseNode(ctx context.Context, p *BackupDatabaseNodePa
 		return
 	}
 	return ires.(*BackupDatabaseNodeResponse), nil
+}
+
+// SwitchoverDatabaseNode calls the "switchover-database-node" endpoint of the
+// "control-plane" service.
+// SwitchoverDatabaseNode may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "database_not_modifiable" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
+//   - "operation_already_in_progress" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) SwitchoverDatabaseNode(ctx context.Context, p *SwitchoverDatabaseNodePayload) (res *SwitchoverDatabaseNodeResponse, err error) {
+	var ires any
+	ires, err = c.SwitchoverDatabaseNodeEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*SwitchoverDatabaseNodeResponse), nil
 }
 
 // ListDatabaseTasks calls the "list-database-tasks" endpoint of the

@@ -37,6 +37,7 @@ var (
 	ErrInvalidJoinToken           = newAPIError(errInvalidJoinToken, "the given join token is invalid")
 	ErrDatabaseAlreadyExists      = newAPIError(errDatabaseAlreadyExists, "a database already exists with the given ID")
 	ErrHostNotFound               = newAPIError(errNotFound, "no host found with the given ID")
+	ErrNoPrimaryInstance          = newAPIError(errNotFound, "no primary instance found for the given node")
 )
 
 func apiErr(err error) error {

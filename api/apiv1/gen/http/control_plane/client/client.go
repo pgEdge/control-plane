@@ -73,6 +73,10 @@ type Client struct {
 	// backup-database-node endpoint.
 	BackupDatabaseNodeDoer goahttp.Doer
 
+	// SwitchoverDatabaseNode Doer is the HTTP client used to make requests to the
+	// switchover-database-node endpoint.
+	SwitchoverDatabaseNodeDoer goahttp.Doer
+
 	// ListDatabaseTasks Doer is the HTTP client used to make requests to the
 	// list-database-tasks endpoint.
 	ListDatabaseTasksDoer goahttp.Doer
@@ -130,34 +134,35 @@ func NewClient(
 	restoreBody bool,
 ) *Client {
 	return &Client{
-		InitClusterDoer:        doer,
-		JoinClusterDoer:        doer,
-		GetJoinTokenDoer:       doer,
-		GetJoinOptionsDoer:     doer,
-		GetClusterDoer:         doer,
-		ListHostsDoer:          doer,
-		GetHostDoer:            doer,
-		RemoveHostDoer:         doer,
-		ListDatabasesDoer:      doer,
-		CreateDatabaseDoer:     doer,
-		GetDatabaseDoer:        doer,
-		UpdateDatabaseDoer:     doer,
-		DeleteDatabaseDoer:     doer,
-		BackupDatabaseNodeDoer: doer,
-		ListDatabaseTasksDoer:  doer,
-		GetDatabaseTaskDoer:    doer,
-		GetDatabaseTaskLogDoer: doer,
-		RestoreDatabaseDoer:    doer,
-		GetVersionDoer:         doer,
-		RestartInstanceDoer:    doer,
-		StopInstanceDoer:       doer,
-		StartInstanceDoer:      doer,
-		CancelDatabaseTaskDoer: doer,
-		RestoreResponseBody:    restoreBody,
-		scheme:                 scheme,
-		host:                   host,
-		decoder:                dec,
-		encoder:                enc,
+		InitClusterDoer:            doer,
+		JoinClusterDoer:            doer,
+		GetJoinTokenDoer:           doer,
+		GetJoinOptionsDoer:         doer,
+		GetClusterDoer:             doer,
+		ListHostsDoer:              doer,
+		GetHostDoer:                doer,
+		RemoveHostDoer:             doer,
+		ListDatabasesDoer:          doer,
+		CreateDatabaseDoer:         doer,
+		GetDatabaseDoer:            doer,
+		UpdateDatabaseDoer:         doer,
+		DeleteDatabaseDoer:         doer,
+		BackupDatabaseNodeDoer:     doer,
+		SwitchoverDatabaseNodeDoer: doer,
+		ListDatabaseTasksDoer:      doer,
+		GetDatabaseTaskDoer:        doer,
+		GetDatabaseTaskLogDoer:     doer,
+		RestoreDatabaseDoer:        doer,
+		GetVersionDoer:             doer,
+		RestartInstanceDoer:        doer,
+		StopInstanceDoer:           doer,
+		StartInstanceDoer:          doer,
+		CancelDatabaseTaskDoer:     doer,
+		RestoreResponseBody:        restoreBody,
+		scheme:                     scheme,
+		host:                       host,
+		decoder:                    dec,
+		encoder:                    enc,
 	}
 }
 
@@ -452,6 +457,30 @@ func (c *Client) BackupDatabaseNode() goa.Endpoint {
 		resp, err := c.BackupDatabaseNodeDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("control-plane", "backup-database-node", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// SwitchoverDatabaseNode returns an endpoint that makes HTTP requests to the
+// control-plane service switchover-database-node server.
+func (c *Client) SwitchoverDatabaseNode() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeSwitchoverDatabaseNodeRequest(c.encoder)
+		decodeResponse = DecodeSwitchoverDatabaseNodeResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildSwitchoverDatabaseNodeRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.SwitchoverDatabaseNodeDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "switchover-database-node", err)
 		}
 		return decodeResponse(resp)
 	}

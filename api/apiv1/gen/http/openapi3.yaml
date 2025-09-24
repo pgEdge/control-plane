@@ -1487,6 +1487,94 @@ paths:
                             example:
                                 message: A longer description of the error.
                                 name: error_name
+    /v1/databases/{database_id}/nodes/{node_name}/switchover:
+        post:
+            tags:
+                - Database
+            summary: Switchover database node
+            description: Performs a planned switchover for a node's primary to a replica candidate.
+            operationId: switchover-database-node
+            parameters:
+                - name: database_id
+                  in: path
+                  description: ID of the database to operate on.
+                  required: true
+                  schema:
+                    type: string
+                    description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+                    example: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                    minLength: 1
+                    maxLength: 63
+                  example: my-app
+                - name: node_name
+                  in: path
+                  description: Name of the node to operate on.
+                  required: true
+                  schema:
+                    type: string
+                    description: Name of the node to operate on.
+                    example: n1
+                    pattern: n[0-9]+
+                  example: n1
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SwitchoverDatabaseNodeRequestBody'
+                        example:
+                            candidate_instance_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+                            scheduled_at: "2025-09-20T22:00:00+05:30"
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SwitchoverDatabaseNodeResponse'
+                            example:
+                                task:
+                                    created_at: "2025-06-18T17:54:28Z"
+                                    database_id: storefront
+                                    status: pending
+                                    task_id: 0197842d-9082-7496-b787-77bd2e11809f
+                                    type: switchover
+                "400":
+                    description: 'invalid_input: Bad Request response.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/APIError'
+                            example:
+                                message: A longer description of the error.
+                                name: error_name
+                "404":
+                    description: 'not_found: Not Found response.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/APIError'
+                            example:
+                                message: A longer description of the error.
+                                name: error_name
+                "409":
+                    description: 'operation_already_in_progress: Conflict response.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/APIError'
+                            example:
+                                message: A longer description of the error.
+                                name: error_name
+                "500":
+                    description: 'server_error: Internal Server Error response.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/APIError'
+                            example:
+                                message: A longer description of the error.
+                                name: error_name
     /v1/databases/{database_id}/restore:
         post:
             tags:
@@ -6959,6 +7047,66 @@ components:
                       host_path: /Users/user/backups/host
                     - destination_path: /backups/container
                       host_path: /Users/user/backups/host
+        SwitchoverDatabaseNodeRequest:
+            type: object
+            properties:
+                candidate_instance_id:
+                    type: string
+                    description: Optional instance_id of the replica to promote. If omitted, a candidate will be selected.
+                    example: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+                database_id:
+                    type: string
+                    description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+                    example: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                    minLength: 1
+                    maxLength: 63
+                node_name:
+                    type: string
+                    description: Name of the node to initiate the switchover from (informational).
+                    example: n1
+                    pattern: n[0-9]+
+                scheduled_at:
+                    type: string
+                    description: Optional ISO8601 datetime when the switchover should occur. If omitted the switchover occurs immediately.
+                    example: "2025-09-20T22:00:00+05:30"
+                    format: date-time
+            example:
+                candidate_instance_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+                database_id: my-app
+                node_name: n1
+                scheduled_at: "2025-09-20T22:00:00+05:30"
+            required:
+                - database_id
+                - node_name
+        SwitchoverDatabaseNodeRequestBody:
+            type: object
+            properties:
+                candidate_instance_id:
+                    type: string
+                    description: Optional instance_id for the replica candidate.
+                    example: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+                scheduled_at:
+                    type: string
+                    description: Optional scheduled time (ISO8601) for the switchover. If absent switchover happens immediately.
+                    example: "2025-09-20T22:00:00+05:30"
+                    format: date-time
+            example:
+                candidate_instance_id: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+                scheduled_at: "2025-09-20T22:00:00+05:30"
+        SwitchoverDatabaseNodeResponse:
+            type: object
+            properties:
+                task:
+                    $ref: '#/components/schemas/Task'
+            example:
+                task:
+                    created_at: "2025-06-18T17:54:28Z"
+                    database_id: storefront
+                    status: pending
+                    task_id: 0197842d-9082-7496-b787-77bd2e11809f
+                    type: switchover
+            required:
+                - task
         Task:
             type: object
             properties:

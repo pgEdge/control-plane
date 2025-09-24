@@ -933,6 +933,95 @@
         ]
       }
     },
+    "/v1/databases/{database_id}/nodes/{node_name}/switchover": {
+      "post": {
+        "tags": [
+          "Database"
+        ],
+        "summary": "Switchover database node",
+        "description": "Performs a planned switchover for a node's primary to a replica candidate.",
+        "operationId": "control-plane#switchover-database-node",
+        "parameters": [
+          {
+            "name": "database_id",
+            "in": "path",
+            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "node_name",
+            "in": "path",
+            "description": "Name of the node to operate on.",
+            "required": true,
+            "type": "string",
+            "pattern": "n[0-9]+"
+          },
+          {
+            "name": "Switchover-Database-NodeRequestBody",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ControlPlaneSwitchoverDatabaseNodeRequestBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK response.",
+            "schema": {
+              "$ref": "#/definitions/SwitchoverDatabaseNodeResponse",
+              "required": [
+                "task"
+              ]
+            }
+          },
+          "400": {
+            "description": "Bad Request response.",
+            "schema": {
+              "$ref": "#/definitions/APIError",
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          },
+          "404": {
+            "description": "Not Found response.",
+            "schema": {
+              "$ref": "#/definitions/APIError",
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          },
+          "409": {
+            "description": "Conflict response.",
+            "schema": {
+              "$ref": "#/definitions/APIError",
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          },
+          "500": {
+            "description": "Internal Server Error response.",
+            "schema": {
+              "$ref": "#/definitions/APIError",
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          }
+        },
+        "schemes": [
+          "http"
+        ]
+      }
+    },
     "/v1/databases/{database_id}/restore": {
       "post": {
         "tags": [
@@ -2647,6 +2736,27 @@
         "updated_at",
         "state"
       ]
+    },
+    "ControlPlaneSwitchoverDatabaseNodeRequestBody": {
+      "title": "ControlPlaneSwitchoverDatabaseNodeRequestBody",
+      "type": "object",
+      "properties": {
+        "candidate_instance_id": {
+          "type": "string",
+          "description": "Optional instance_id for the replica candidate.",
+          "example": "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348"
+        },
+        "scheduled_at": {
+          "type": "string",
+          "description": "Optional scheduled time (ISO8601) for the switchover. If absent switchover happens immediately.",
+          "example": "2025-09-20T22:00:00+05:30",
+          "format": "date-time"
+        }
+      },
+      "example": {
+        "candidate_instance_id": "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348",
+        "scheduled_at": "2025-09-20T22:00:00+05:30"
+      }
     },
     "CreateDatabaseRequest": {
       "title": "CreateDatabaseRequest",
@@ -5975,6 +6085,27 @@
           }
         ]
       }
+    },
+    "SwitchoverDatabaseNodeResponse": {
+      "title": "SwitchoverDatabaseNodeResponse",
+      "type": "object",
+      "properties": {
+        "task": {
+          "$ref": "#/definitions/Task"
+        }
+      },
+      "example": {
+        "task": {
+          "created_at": "2025-06-18T17:54:28Z",
+          "database_id": "storefront",
+          "status": "pending",
+          "task_id": "0197842d-9082-7496-b787-77bd2e11809f",
+          "type": "switchover"
+        }
+      },
+      "required": [
+        "task"
+      ]
     },
     "Task": {
       "title": "Task",

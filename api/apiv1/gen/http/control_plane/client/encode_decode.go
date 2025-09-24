@@ -1760,6 +1760,189 @@ func DecodeBackupDatabaseNodeResponse(decoder func(*http.Response) goahttp.Decod
 	}
 }
 
+// BuildSwitchoverDatabaseNodeRequest instantiates a HTTP request object with
+// method and path set to call the "control-plane" service
+// "switchover-database-node" endpoint
+func (c *Client) BuildSwitchoverDatabaseNodeRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		databaseID string
+		nodeName   string
+	)
+	{
+		p, ok := v.(*controlplane.SwitchoverDatabaseNodePayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("control-plane", "switchover-database-node", "*controlplane.SwitchoverDatabaseNodePayload", v)
+		}
+		databaseID = string(p.DatabaseID)
+		nodeName = p.NodeName
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: SwitchoverDatabaseNodeControlPlanePath(databaseID, nodeName)}
+	req, err := http.NewRequest("POST", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("control-plane", "switchover-database-node", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeSwitchoverDatabaseNodeRequest returns an encoder for requests sent to
+// the control-plane switchover-database-node server.
+func EncodeSwitchoverDatabaseNodeRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.SwitchoverDatabaseNodePayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "switchover-database-node", "*controlplane.SwitchoverDatabaseNodePayload", v)
+		}
+		body := NewSwitchoverDatabaseNodeRequestBody(p)
+		if err := encoder(req).Encode(&body); err != nil {
+			return goahttp.ErrEncodingError("control-plane", "switchover-database-node", err)
+		}
+		return nil
+	}
+}
+
+// DecodeSwitchoverDatabaseNodeResponse returns a decoder for responses
+// returned by the control-plane switchover-database-node endpoint. restoreBody
+// controls whether the response body should be restored after having been read.
+// DecodeSwitchoverDatabaseNodeResponse may return the following errors:
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "database_not_modifiable" (type *controlplane.APIError): http.StatusConflict
+//   - "operation_already_in_progress" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
+//   - error: internal error
+func DecodeSwitchoverDatabaseNodeResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body SwitchoverDatabaseNodeResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "switchover-database-node", err)
+			}
+			err = ValidateSwitchoverDatabaseNodeResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "switchover-database-node", err)
+			}
+			res := NewSwitchoverDatabaseNodeResponseOK(&body)
+			return res, nil
+		case http.StatusConflict:
+			en := resp.Header.Get("goa-error")
+			switch en {
+			case "cluster_not_initialized":
+				var (
+					body SwitchoverDatabaseNodeClusterNotInitializedResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "switchover-database-node", err)
+				}
+				err = ValidateSwitchoverDatabaseNodeClusterNotInitializedResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "switchover-database-node", err)
+				}
+				return nil, NewSwitchoverDatabaseNodeClusterNotInitialized(&body)
+			case "database_not_modifiable":
+				var (
+					body SwitchoverDatabaseNodeDatabaseNotModifiableResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "switchover-database-node", err)
+				}
+				err = ValidateSwitchoverDatabaseNodeDatabaseNotModifiableResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "switchover-database-node", err)
+				}
+				return nil, NewSwitchoverDatabaseNodeDatabaseNotModifiable(&body)
+			case "operation_already_in_progress":
+				var (
+					body SwitchoverDatabaseNodeOperationAlreadyInProgressResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "switchover-database-node", err)
+				}
+				err = ValidateSwitchoverDatabaseNodeOperationAlreadyInProgressResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "switchover-database-node", err)
+				}
+				return nil, NewSwitchoverDatabaseNodeOperationAlreadyInProgress(&body)
+			default:
+				body, _ := io.ReadAll(resp.Body)
+				return nil, goahttp.ErrInvalidResponse("control-plane", "switchover-database-node", resp.StatusCode, string(body))
+			}
+		case http.StatusBadRequest:
+			var (
+				body SwitchoverDatabaseNodeInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "switchover-database-node", err)
+			}
+			err = ValidateSwitchoverDatabaseNodeInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "switchover-database-node", err)
+			}
+			return nil, NewSwitchoverDatabaseNodeInvalidInput(&body)
+		case http.StatusNotFound:
+			var (
+				body SwitchoverDatabaseNodeNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "switchover-database-node", err)
+			}
+			err = ValidateSwitchoverDatabaseNodeNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "switchover-database-node", err)
+			}
+			return nil, NewSwitchoverDatabaseNodeNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body SwitchoverDatabaseNodeServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "switchover-database-node", err)
+			}
+			err = ValidateSwitchoverDatabaseNodeServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "switchover-database-node", err)
+			}
+			return nil, NewSwitchoverDatabaseNodeServerError(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("control-plane", "switchover-database-node", resp.StatusCode, string(body))
+		}
+	}
+}
+
 // BuildListDatabaseTasksRequest instantiates a HTTP request object with method
 // and path set to call the "control-plane" service "list-database-tasks"
 // endpoint

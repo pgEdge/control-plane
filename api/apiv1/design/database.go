@@ -1008,6 +1008,46 @@ var BackupDatabaseNodeResponse = g.Type("BackupDatabaseNodeResponse", func() {
 	})
 })
 
+var SwitchoverDatabaseNodeRequest = g.Type("SwitchoverDatabaseNodeRequest", func() {
+	g.Attribute("database_id", Identifier, func() {
+		g.Description("ID of the database to perform the switchover for.")
+		g.Example("my-app")
+	})
+	g.Attribute("node_name", g.String, func() {
+		g.Description("Name of the node to initiate the switchover from (informational).")
+		g.Pattern(nodeNamePattern)
+		g.Example("n1")
+	})
+	g.Attribute("candidate_instance_id", g.String, func() {
+		g.Description("Optional instance_id of the replica to promote. If omitted, a candidate will be selected.")
+		g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+	})
+	g.Attribute("scheduled_at", g.String, func() {
+		g.Description("Optional ISO8601 datetime when the switchover should occur. If omitted the switchover occurs immediately.")
+		g.Format(g.FormatDateTime)
+		g.Example("2025-09-20T22:00:00+05:30")
+	})
+
+	g.Required("database_id", "node_name")
+})
+
+var SwitchoverDatabaseNodeResponse = g.Type("SwitchoverDatabaseNodeResponse", func() {
+	g.Attribute("task", Task, func() {
+		g.Description("The task that will perform the switchover.")
+	})
+
+	g.Required("task")
+
+	g.Example(map[string]any{
+		"task": map[string]any{
+			"created_at":  "2025-06-18T17:54:28Z",
+			"database_id": "storefront",
+			"status":      "pending",
+			"task_id":     "0197842d-9082-7496-b787-77bd2e11809f",
+			"type":        "switchover",
+		},
+	})
+})
 var RestoreDatabaseRequest = g.Type("RestoreDatabaseRequest", func() {
 	g.Attribute("restore_config", RestoreConfigSpec, func() {
 		g.Description("Configuration for the restore process.")

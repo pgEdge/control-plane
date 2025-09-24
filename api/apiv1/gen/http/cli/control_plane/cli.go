@@ -22,7 +22,7 @@ import (
 //
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() string {
-	return `control-plane (init-cluster|join-cluster|get-join-token|get-join-options|get-cluster|list-hosts|get-host|remove-host|list-databases|create-database|get-database|update-database|delete-database|backup-database-node|list-database-tasks|get-database-task|get-database-task-log|restore-database|get-version|restart-instance|stop-instance|start-instance|cancel-database-task)
+	return `control-plane (init-cluster|join-cluster|get-join-token|get-join-options|get-cluster|list-hosts|get-host|remove-host|list-databases|create-database|get-database|update-database|delete-database|backup-database-node|switchover-database-node|list-database-tasks|get-database-task|get-database-task-log|restore-database|get-version|restart-instance|stop-instance|start-instance|cancel-database-task)
 `
 }
 
@@ -87,6 +87,11 @@ func ParseEndpoint(
 		controlPlaneBackupDatabaseNodeNodeNameFlag   = controlPlaneBackupDatabaseNodeFlags.String("node-name", "REQUIRED", "Name of the node to back up.")
 		controlPlaneBackupDatabaseNodeForceFlag      = controlPlaneBackupDatabaseNodeFlags.String("force", "", "")
 
+		controlPlaneSwitchoverDatabaseNodeFlags          = flag.NewFlagSet("switchover-database-node", flag.ExitOnError)
+		controlPlaneSwitchoverDatabaseNodeBodyFlag       = controlPlaneSwitchoverDatabaseNodeFlags.String("body", "REQUIRED", "")
+		controlPlaneSwitchoverDatabaseNodeDatabaseIDFlag = controlPlaneSwitchoverDatabaseNodeFlags.String("database-id", "REQUIRED", "ID of the database to operate on.")
+		controlPlaneSwitchoverDatabaseNodeNodeNameFlag   = controlPlaneSwitchoverDatabaseNodeFlags.String("node-name", "REQUIRED", "Name of the node to operate on.")
+
 		controlPlaneListDatabaseTasksFlags           = flag.NewFlagSet("list-database-tasks", flag.ExitOnError)
 		controlPlaneListDatabaseTasksDatabaseIDFlag  = controlPlaneListDatabaseTasksFlags.String("database-id", "REQUIRED", "ID of the database to list tasks for.")
 		controlPlaneListDatabaseTasksAfterTaskIDFlag = controlPlaneListDatabaseTasksFlags.String("after-task-id", "", "")
@@ -144,6 +149,7 @@ func ParseEndpoint(
 	controlPlaneUpdateDatabaseFlags.Usage = controlPlaneUpdateDatabaseUsage
 	controlPlaneDeleteDatabaseFlags.Usage = controlPlaneDeleteDatabaseUsage
 	controlPlaneBackupDatabaseNodeFlags.Usage = controlPlaneBackupDatabaseNodeUsage
+	controlPlaneSwitchoverDatabaseNodeFlags.Usage = controlPlaneSwitchoverDatabaseNodeUsage
 	controlPlaneListDatabaseTasksFlags.Usage = controlPlaneListDatabaseTasksUsage
 	controlPlaneGetDatabaseTaskFlags.Usage = controlPlaneGetDatabaseTaskUsage
 	controlPlaneGetDatabaseTaskLogFlags.Usage = controlPlaneGetDatabaseTaskLogUsage
@@ -229,6 +235,9 @@ func ParseEndpoint(
 
 			case "backup-database-node":
 				epf = controlPlaneBackupDatabaseNodeFlags
+
+			case "switchover-database-node":
+				epf = controlPlaneSwitchoverDatabaseNodeFlags
 
 			case "list-database-tasks":
 				epf = controlPlaneListDatabaseTasksFlags
@@ -319,6 +328,9 @@ func ParseEndpoint(
 			case "backup-database-node":
 				endpoint = c.BackupDatabaseNode()
 				data, err = controlplanec.BuildBackupDatabaseNodePayload(*controlPlaneBackupDatabaseNodeBodyFlag, *controlPlaneBackupDatabaseNodeDatabaseIDFlag, *controlPlaneBackupDatabaseNodeNodeNameFlag, *controlPlaneBackupDatabaseNodeForceFlag)
+			case "switchover-database-node":
+				endpoint = c.SwitchoverDatabaseNode()
+				data, err = controlplanec.BuildSwitchoverDatabaseNodePayload(*controlPlaneSwitchoverDatabaseNodeBodyFlag, *controlPlaneSwitchoverDatabaseNodeDatabaseIDFlag, *controlPlaneSwitchoverDatabaseNodeNodeNameFlag)
 			case "list-database-tasks":
 				endpoint = c.ListDatabaseTasks()
 				data, err = controlplanec.BuildListDatabaseTasksPayload(*controlPlaneListDatabaseTasksDatabaseIDFlag, *controlPlaneListDatabaseTasksAfterTaskIDFlag, *controlPlaneListDatabaseTasksLimitFlag, *controlPlaneListDatabaseTasksSortOrderFlag)
@@ -377,6 +389,7 @@ COMMAND:
     update-database: Updates a database with the given specification.
     delete-database: Deletes a database from the cluster.
     backup-database-node: Initiates a backup for a database node.
+    switchover-database-node: Performs a planned switchover for a node's primary to a replica candidate.
     list-database-tasks: Lists all tasks for a database.
     get-database-task: Returns information about a particular task.
     get-database-task-log: Returns the log of a particular task for a database.
@@ -667,6 +680,22 @@ Example:
       },
       "type": "full"
    }' --database-id "my-app" --node-name "n1" --force true
+`, os.Args[0])
+}
+
+func controlPlaneSwitchoverDatabaseNodeUsage() {
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane switchover-database-node -body JSON -database-id STRING -node-name STRING
+
+Performs a planned switchover for a node's primary to a replica candidate.
+    -body JSON: 
+    -database-id STRING: ID of the database to operate on.
+    -node-name STRING: Name of the node to operate on.
+
+Example:
+    %[1]s control-plane switchover-database-node --body '{
+      "candidate_instance_id": "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348",
+      "scheduled_at": "2025-09-20T22:00:00+05:30"
+   }' --database-id "my-app" --node-name "n1"
 `, os.Args[0])
 }
 

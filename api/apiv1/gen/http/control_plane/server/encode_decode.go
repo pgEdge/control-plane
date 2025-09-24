@@ -1387,6 +1387,160 @@ func EncodeBackupDatabaseNodeError(encoder func(context.Context, http.ResponseWr
 	}
 }
 
+// EncodeSwitchoverDatabaseNodeResponse returns an encoder for responses
+// returned by the control-plane switchover-database-node endpoint.
+func EncodeSwitchoverDatabaseNodeResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.SwitchoverDatabaseNodeResponse)
+		enc := encoder(ctx, w)
+		body := NewSwitchoverDatabaseNodeResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeSwitchoverDatabaseNodeRequest returns a decoder for requests sent to
+// the control-plane switchover-database-node endpoint.
+func DecodeSwitchoverDatabaseNodeRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			body SwitchoverDatabaseNodeRequestBody
+			err  error
+		)
+		err = decoder(r).Decode(&body)
+		if err != nil {
+			if err == io.EOF {
+				return nil, goa.MissingPayloadError()
+			}
+			var gerr *goa.ServiceError
+			if errors.As(err, &gerr) {
+				return nil, gerr
+			}
+			return nil, goa.DecodePayloadError(err.Error())
+		}
+		err = ValidateSwitchoverDatabaseNodeRequestBody(&body)
+		if err != nil {
+			return nil, err
+		}
+
+		var (
+			databaseID string
+			nodeName   string
+
+			params = mux.Vars(r)
+		)
+		databaseID = params["database_id"]
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
+		nodeName = params["node_name"]
+		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "n[0-9]+"))
+		if err != nil {
+			return nil, err
+		}
+		payload := NewSwitchoverDatabaseNodePayload(&body, databaseID, nodeName)
+
+		return payload, nil
+	}
+}
+
+// EncodeSwitchoverDatabaseNodeError returns an encoder for errors returned by
+// the switchover-database-node control-plane endpoint.
+func EncodeSwitchoverDatabaseNodeError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewSwitchoverDatabaseNodeClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "database_not_modifiable":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewSwitchoverDatabaseNodeDatabaseNotModifiableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "operation_already_in_progress":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewSwitchoverDatabaseNodeOperationAlreadyInProgressResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewSwitchoverDatabaseNodeInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "not_found":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewSwitchoverDatabaseNodeNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewSwitchoverDatabaseNodeServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeListDatabaseTasksResponse returns an encoder for responses returned by
 // the control-plane list-database-tasks endpoint.
 func EncodeListDatabaseTasksResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
