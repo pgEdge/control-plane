@@ -1,5 +1,4 @@
 include tools.mk
-include pgedge.mk
 
 # Overridable vars
 DEBUG ?= 0
@@ -245,33 +244,3 @@ ci-compose-detached: ci-compose-build docker-swarm-mode
 .PHONY: ci-compose-down
 ci-compose-down:
 	$(docker_compose_ci) down
-
-######################
-# vm dev environment #
-######################
-
-.PHONY: vagrant-init
-vagrant-init:
-	@$(MAKE) vagrant-up
-	ansible-playbook playbook.yaml
-
-.PHONY: vagrant-up
-vagrant-up:
-	ansible-inventory --list | jq -r '.control_plane.hosts[]' | xargs -P3 -I {} vagrant up {}
-	vagrant ssh-config > ./vagrant-ssh.cfg
-
-.PHONY: vagrant-destroy
-vagrant-destroy:
-	vagrant destroy -f
-
-.PHONY: ssh-1
-ssh-1:
-	ssh -F ./vagrant-ssh.cfg control-plane-1
-
-.PHONY: ssh-2
-ssh-2:
-	ssh -F ./vagrant-ssh.cfg control-plane-2
-
-.PHONY: ssh-3
-ssh-3:
-	ssh -F ./vagrant-ssh.cfg control-plane-3
