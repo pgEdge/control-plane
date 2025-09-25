@@ -132,10 +132,24 @@ in a variety of places:
 
 Endpoints that are unimplemented will return a "not implemented" error.
 
-## Resetting each Control Plane instance
+# Resetting your dev environment
 
-This configuration stores all of its data in the `docker/control-plane-dev/data`
-directory. You can remove this entire directory to reset the 
+To reset your dev environment to its initial state, run:
+
+```
+make dev-teardown
+```
+
+This will:
+
+- Shutdown the control plane
+- Remove any databases and database networks
+- Remove the data directories for each instance
+
+When you start the control plane again with `make dev-watch`, it will be in an
+uninitialized state. Then, you can follow the instructions in the
+[Interact with the Control Plane API](#interact-with-the-control-plane-api)
+section to reinitialize your cluster.
 
 ## Development workflow
 
