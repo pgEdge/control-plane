@@ -393,7 +393,7 @@ func BuildSwitchoverDatabaseNodePayload(controlPlaneSwitchoverDatabaseNodeBody s
 	{
 		err = json.Unmarshal([]byte(controlPlaneSwitchoverDatabaseNodeBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"candidate_instance_id\": \"3c875a27-f6a6-4c1c-ba5f-6972fb1fc348\",\n      \"scheduled_at\": \"2025-09-20T22:00:00+05:30\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"candidate_instance_id\": \"68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi\",\n      \"scheduled_at\": \"2025-09-20T22:00:00+05:30\"\n   }'")
 		}
 		if body.ScheduledAt != nil {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.scheduled_at", *body.ScheduledAt, goa.FormatDateTime))

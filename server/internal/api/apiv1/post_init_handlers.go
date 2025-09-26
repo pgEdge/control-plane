@@ -448,7 +448,6 @@ func (s *PostInitHandlers) SwitchoverDatabaseNode(ctx context.Context, req *api.
 		DatabaseID: databaseID,
 		NodeName:   req.NodeName,
 		Instances:  instances,
-		NodeHostID: node.HostIDs[0],
 	}
 
 	if req.CandidateInstanceID != nil && string(*req.CandidateInstanceID) != "" {
@@ -467,8 +466,6 @@ func (s *PostInitHandlers) SwitchoverDatabaseNode(ctx context.Context, req *api.
 		}
 
 		input.CandidateInstanceID = cand
-
-		input.CandidateHostID = storedInst.HostID
 	}
 
 	if req.ScheduledAt != nil && *req.ScheduledAt != "" {

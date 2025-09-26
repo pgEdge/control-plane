@@ -693,7 +693,7 @@ Performs a planned switchover for a node's primary to a replica candidate.
 
 Example:
     %[1]s control-plane switchover-database-node --body '{
-      "candidate_instance_id": "3c875a27-f6a6-4c1c-ba5f-6972fb1fc348",
+      "candidate_instance_id": "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi",
       "scheduled_at": "2025-09-20T22:00:00+05:30"
    }' --database-id "my-app" --node-name "n1"
 `, os.Args[0])

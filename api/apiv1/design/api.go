@@ -362,7 +362,7 @@ var _ = g.Service("control-plane", func() {
 			})
 			g.Attribute("candidate_instance_id", g.String, func() {
 				g.Description("Optional instance_id for the replica candidate.")
-				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+				g.Example("68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi")
 			})
 			g.Attribute("scheduled_at", g.String, func() {
 				g.Description("Optional scheduled time (ISO8601) for the switchover. If absent switchover happens immediately.")

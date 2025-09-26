@@ -41,26 +41,27 @@ func NewSingleServerClient(server ServerConfig) (*SingleServerClient, error) {
 	}
 	return &SingleServerClient{
 		api: &api.Client{
-			InitClusterEndpoint:        cli.InitCluster(),
-			JoinClusterEndpoint:        cli.JoinCluster(),
-			GetJoinTokenEndpoint:       cli.GetJoinToken(),
-			GetClusterEndpoint:         cli.GetCluster(),
-			ListHostsEndpoint:          cli.ListHosts(),
-			GetHostEndpoint:            cli.GetHost(),
-			RemoveHostEndpoint:         cli.RemoveHost(),
-			ListDatabasesEndpoint:      cli.ListDatabases(),
-			CreateDatabaseEndpoint:     cli.CreateDatabase(),
-			GetDatabaseEndpoint:        cli.GetDatabase(),
-			UpdateDatabaseEndpoint:     cli.UpdateDatabase(),
-			DeleteDatabaseEndpoint:     cli.DeleteDatabase(),
-			BackupDatabaseNodeEndpoint: cli.BackupDatabaseNode(),
-			ListDatabaseTasksEndpoint:  cli.ListDatabaseTasks(),
-			GetDatabaseTaskEndpoint:    cli.GetDatabaseTask(),
-			GetDatabaseTaskLogEndpoint: cli.GetDatabaseTaskLog(),
-			RestoreDatabaseEndpoint:    cli.RestoreDatabase(),
-			GetVersionEndpoint:         cli.GetVersion(),
-			RestartInstanceEndpoint:    cli.RestartInstance(),
-			CancelDatabaseTaskEndpoint: cli.CancelDatabaseTask(),
+			InitClusterEndpoint:            cli.InitCluster(),
+			JoinClusterEndpoint:            cli.JoinCluster(),
+			GetJoinTokenEndpoint:           cli.GetJoinToken(),
+			GetClusterEndpoint:             cli.GetCluster(),
+			ListHostsEndpoint:              cli.ListHosts(),
+			GetHostEndpoint:                cli.GetHost(),
+			RemoveHostEndpoint:             cli.RemoveHost(),
+			ListDatabasesEndpoint:          cli.ListDatabases(),
+			CreateDatabaseEndpoint:         cli.CreateDatabase(),
+			GetDatabaseEndpoint:            cli.GetDatabase(),
+			UpdateDatabaseEndpoint:         cli.UpdateDatabase(),
+			DeleteDatabaseEndpoint:         cli.DeleteDatabase(),
+			BackupDatabaseNodeEndpoint:     cli.BackupDatabaseNode(),
+			ListDatabaseTasksEndpoint:      cli.ListDatabaseTasks(),
+			GetDatabaseTaskEndpoint:        cli.GetDatabaseTask(),
+			GetDatabaseTaskLogEndpoint:     cli.GetDatabaseTaskLog(),
+			RestoreDatabaseEndpoint:        cli.RestoreDatabase(),
+			GetVersionEndpoint:             cli.GetVersion(),
+			RestartInstanceEndpoint:        cli.RestartInstance(),
+			CancelDatabaseTaskEndpoint:     cli.CancelDatabaseTask(),
+			SwitchoverDatabaseNodeEndpoint: cli.SwitchoverDatabaseNode(),
 		},
 	}, nil
 }
@@ -185,6 +186,11 @@ func (c *SingleServerClient) WaitForTask(ctx context.Context, req *api.GetDataba
 }
 func (c *SingleServerClient) CancelDatabaseTask(ctx context.Context, req *api.CancelDatabaseTaskPayload) (*api.Task, error) {
 	resp, err := c.api.CancelDatabaseTask(ctx, req)
+	return resp, translateErr(err)
+}
+
+func (c *SingleServerClient) SwitchoverDatabaseNode(ctx context.Context, req *api.SwitchoverDatabaseNodePayload) (*api.SwitchoverDatabaseNodeResponse, error) {
+	resp, err := c.api.SwitchoverDatabaseNode(ctx, req)
 	return resp, translateErr(err)
 }
 

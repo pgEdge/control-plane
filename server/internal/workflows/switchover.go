@@ -21,18 +21,12 @@ type SelectSwitchoverCandidateInput struct {
 }
 
 type SwitchoverInput struct {
-	DatabaseID string
-	NodeName   string
-	// Optional list of instances for the node (helps selection & validation)
-	Instances []*activities.InstanceHost
-	// Optional: if caller knows candidate instance & host they can pass these to avoid extra lookups
+	DatabaseID          string
+	NodeName            string
+	Instances           []*activities.InstanceHost
 	CandidateInstanceID string
-	CandidateHostID     string
-	// Optional: if caller knows leader host ahead of time (host / queue id)
-	NodeHostID     string
-	NodeInstanceID string
-	ScheduledAt    time.Time
-	TaskID         uuid.UUID // set by Service when starting the workflow
+	ScheduledAt         time.Time
+	TaskID              uuid.UUID
 }
 
 type SwitchoverOutput struct{}
@@ -45,12 +39,28 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 		"node_name", in.NodeName,
 	)
 	logger.Info("starting switchover workflow")
+	var leaderHostID string
+	var leaderInstanceID string
 
 	// cleanup on cancellation
 	defer func() {
 		if errors.Is(ctx.Err(), workflow.Canceled) {
 			logger.Warn("workflow cancelled; running cleanup")
 			cleanupCtx := workflow.NewDisconnectedContext(ctx)
+			if in != nil && in.TaskID != uuid.Nil {
+				if leaderHostID != "" && leaderInstanceID != "" {
+					cancelIn := &activities.CancelSwitchoverInput{
+						DatabaseID:       in.DatabaseID,
+						LeaderInstanceID: leaderInstanceID,
+						TaskID:           in.TaskID,
+					}
+					if _, err := w.Activities.ExecuteCancelSwitchover(cleanupCtx, leaderHostID, cancelIn).Get(cleanupCtx); err != nil {
+						logger.Warn("cancel switchover activity failed", "err", err)
+					} else {
+						logger.Info("cancel switchover activity dispatched")
+					}
+				}
+			}
 			w.cancelTask(cleanupCtx, in.DatabaseID, in.TaskID, logger)
 		}
 	}()
@@ -76,9 +86,12 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 		return nil, handleError(fmt.Errorf("failed to mark task running: %w", err))
 	}
 
-	instanceToQuery := in.NodeInstanceID
-	if instanceToQuery == "" && len(in.Instances) > 0 && in.Instances[0] != nil {
+	// determine an instance id to query for primary resolution (use first provided instance)
+	var instanceToQuery string
+	var getPrimaryQueue string
+	if len(in.Instances) > 0 && in.Instances[0] != nil {
 		instanceToQuery = in.Instances[0].InstanceID
+		getPrimaryQueue = in.Instances[0].HostID
 	}
 	if instanceToQuery == "" {
 		return nil, handleError(fmt.Errorf("no instance id available to resolve primary for node %s", in.NodeName))
@@ -90,24 +103,17 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 		InstanceID: instanceToQuery,
 	}
 
-	// If caller provided NodeHostID prefer it as the target queue for the GetPrimaryInstance activity,
-	// otherwise let the activity run on the default queue.
-	getPrimaryQueue := in.NodeHostID
 	getPrimaryOut, err := w.Activities.ExecuteGetPrimaryInstance(ctx, getPrimaryQueue, getPrimaryIn).Get(ctx)
 	if err != nil {
 		return nil, handleError(fmt.Errorf("failed to get primary instance: %w", err))
 	}
-	leaderInstanceID := getPrimaryOut.PrimaryInstanceID
+	leaderInstanceID = getPrimaryOut.PrimaryInstanceID
 
-	leaderHostID := in.NodeHostID
-
-	if leaderHostID == "" {
-		// fallback: search provided Instances slice for the leader instance id
-		for _, inst := range in.Instances {
-			if inst != nil && inst.InstanceID == leaderInstanceID {
-				leaderHostID = inst.HostID
-				break
-			}
+	// Resolve leaderHostID by scanning provided Instances
+	for _, inst := range in.Instances {
+		if inst != nil && inst.InstanceID == leaderInstanceID {
+			leaderHostID = inst.HostID
+			break
 		}
 	}
 	if leaderHostID == "" {
@@ -117,8 +123,6 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 	logger.Info("primary resolved", "leader_instance", leaderInstanceID, "leader_host", leaderHostID)
 
 	candidateID := in.CandidateInstanceID
-	candidateHostID := in.CandidateHostID
-
 	if candidateID == "" {
 		selIn := &activities.SelectSwitchoverCandidateInput{
 			DatabaseID:      in.DatabaseID,
@@ -136,16 +140,7 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 		candidateID = selOut.CandidateInstanceID
 	}
 
-	if candidateHostID == "" && candidateID != "" {
-		for _, inst := range in.Instances {
-			if inst != nil && inst.InstanceID == candidateID {
-				candidateHostID = inst.HostID
-				break
-			}
-		}
-	}
-
-	logger.Info("candidate chosen", "candidate_instance", candidateID, "candidate_host", candidateHostID)
+	logger.Info("candidate chosen", "candidate_instance", candidateID)
 
 	if candidateID == leaderInstanceID {
 		logger.Info("candidate is already the leader; skipping switchover", "candidate", candidateID)

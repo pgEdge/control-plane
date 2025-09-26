@@ -650,30 +650,6 @@ func (c *Client) Readiness(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) Switchover(ctx context.Context, switchover *Switchover) error {
-	data, err := json.Marshal(switchover)
-	if err != nil {
-		return fmt.Errorf("failed to marshal switchover: %w", err)
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint("switchover"), bytes.NewReader(data))
-	if err != nil {
-		return fmt.Errorf("failed to create POST /switchover request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to call patroni switchover: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if !successful(resp) {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("patroni switchover failed: %d %s", resp.StatusCode, body)
-	}
-	return nil
-}
-
 func successful(resp *http.Response) bool {
 	return resp.StatusCode >= 200 && resp.StatusCode < 300
 }

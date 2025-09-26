@@ -138,10 +138,52 @@ func (a *Activities) PerformSwitchover(ctx context.Context, input *PerformSwitch
 		swReq.ScheduledAt = &input.ScheduledAt
 	}
 
-	if err := pClient.Switchover(ctx, swReq); err != nil {
-		return nil, fmt.Errorf("patroni switchover call failed: %w", err)
+	if err := pClient.ScheduleSwitchover(ctx, swReq); err != nil {
+		return nil, fmt.Errorf("patroni scheduled switchover call failed: %w", err)
 	}
 
-	logger.Info("patroni switchover request sent")
+	logger.Info("patroni scheduled switchover request sent")
 	return &PerformSwitchoverOutput{}, nil
+}
+
+type CancelSwitchoverInput struct {
+	DatabaseID       string    `json:"database_id"`
+	LeaderInstanceID string    `json:"leader_instance_id"`
+	TaskID           uuid.UUID `json:"task_id"`
+}
+
+type CancelSwitchoverOutput struct{}
+
+func (a *Activities) ExecuteCancelSwitchover(ctx workflow.Context, hostID string, input *CancelSwitchoverInput) workflow.Future[*CancelSwitchoverOutput] {
+	opts := workflow.ActivityOptions{
+		Queue: utils.HostQueue(hostID),
+		RetryOptions: workflow.RetryOptions{
+			MaxAttempts: 1,
+		},
+	}
+	return workflow.ExecuteActivity[*CancelSwitchoverOutput](ctx, opts, a.CancelSwitchover, input)
+}
+
+func (a *Activities) CancelSwitchover(ctx context.Context, input *CancelSwitchoverInput) (*CancelSwitchoverOutput, error) {
+	logger := activity.Logger(ctx)
+	logger = logger.With("database_id", input.DatabaseID, "task_id", input.TaskID.String())
+
+	orch, err := do.Invoke[database.Orchestrator](a.Injector)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get orchestrator: %w", err)
+	}
+
+	connInfo, err := orch.GetInstanceConnectionInfo(ctx, input.DatabaseID, input.LeaderInstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance connection info for leader: %w", err)
+	}
+
+	pClient := patroni.NewClient(connInfo.PatroniURL(), nil)
+
+	if err := pClient.CancelSwitchover(ctx); err != nil {
+		return nil, fmt.Errorf("patroni cancel switchover call failed: %w", err)
+	}
+
+	logger.Info("patroni cancel switchover request sent")
+	return &CancelSwitchoverOutput{}, nil
 }
