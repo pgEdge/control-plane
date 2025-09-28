@@ -248,7 +248,10 @@ func (s *PreInitHandlers) GetClient() (res *http.Client, err error) {
 		return nil, fmt.Errorf("failed to read CA Cert: %w", err)
 	}
 	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
+	ok := caCertPool.AppendCertsFromPEM(caCert)
+	if !ok {
+		return nil, fmt.Errorf("failed to use CA cert")
+	}
 
 	return &http.Client{
 		Transport: &http.Transport{

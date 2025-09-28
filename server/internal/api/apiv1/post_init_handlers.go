@@ -70,7 +70,7 @@ func (s *PostInitHandlers) GetJoinToken(ctx context.Context) (*api.ClusterJoinTo
 
 func GetServerURL(cfg config.Config) url.URL {
 	scheme := "http"
-	if cfg.HTTP.ServerCert != "" {
+	if cfg.HTTP.ServerCert != "" && cfg.HTTP.ServerKey != "" {
 		scheme = "https"
 	}
 	return url.URL{
