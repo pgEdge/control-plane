@@ -22,6 +22,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/version"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
+	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
 var _ api.Service = (*PostInitHandlers)(nil)
@@ -411,6 +412,114 @@ func (s *PostInitHandlers) BackupDatabaseNode(ctx context.Context, req *api.Back
 	}, nil
 }
 
+func (s *PostInitHandlers) SwitchoverDatabaseNode(ctx context.Context, req *api.SwitchoverDatabaseNodePayload) (*api.SwitchoverDatabaseNodeResponse, error) {
+	databaseID, err := dbIdentToString(req.DatabaseID)
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := s.dbSvc.GetDatabase(ctx, databaseID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	if !hasPrimaryInstance(db.Instances) {
+		return nil, ErrNoPrimaryInstance
+	}
+
+	if !database.DatabaseStateModifiable(db.State) {
+		return nil, ErrDatabaseNotModifiable
+	}
+
+	node, err := db.Spec.Node(req.NodeName)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	instances := make([]*activities.InstanceHost, len(node.HostIDs))
+	for i, hostID := range node.HostIDs {
+		instances[i] = &activities.InstanceHost{
+			InstanceID: database.InstanceIDFor(hostID, db.DatabaseID, node.Name),
+			HostID:     hostID,
+		}
+	}
+
+	input := &workflows.SwitchoverInput{
+		DatabaseID: databaseID,
+		NodeName:   req.NodeName,
+		Instances:  instances,
+	}
+
+	if req.CandidateInstanceID != nil && string(*req.CandidateInstanceID) != "" {
+		cand := string(*req.CandidateInstanceID)
+		storedInst, err := s.dbSvc.GetInstance(ctx, databaseID, cand)
+		if err != nil {
+			return nil, apiErr(err)
+		}
+
+		if storedInst.NodeName != req.NodeName {
+			return nil, makeInvalidInputErr(fmt.Errorf("candidate instance %s does not belong to node %s", cand, req.NodeName))
+		}
+
+		if storedInst.State != database.InstanceStateAvailable {
+			return nil, makeInvalidInputErr(fmt.Errorf("candidate instance %s is not available (state=%s)", cand, storedInst.State))
+		}
+
+		input.CandidateInstanceID = cand
+	}
+
+	if req.ScheduledAt != nil && *req.ScheduledAt != "" {
+		tm, err := time.Parse(time.RFC3339, *req.ScheduledAt)
+		if err != nil {
+			return nil, makeInvalidInputErr(fmt.Errorf("invalid scheduled_at value: %w", err))
+		}
+		now := time.Now().UTC()
+		if !tm.After(now) {
+			return nil, makeInvalidInputErr(fmt.Errorf("scheduled_at must be in the future"))
+		}
+		input.ScheduledAt = tm.UTC()
+
+		s.logger.Info().
+			Str("database_id", databaseID).
+			Str("scheduled_at", input.ScheduledAt.String()).
+			Msg("parsed scheduled_at")
+	}
+
+	opts := task.TaskListOptions{
+		Type:     task.TypeSwitchover,
+		NodeName: string(req.NodeName),
+		Statuses: []task.Status{
+			task.StatusPending,
+			task.StatusRunning,
+			task.StatusCanceling,
+		},
+		Limit: 1,
+	}
+
+	activeTasks, err := s.taskSvc.GetTasks(ctx, databaseID, opts)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+	if len(activeTasks) > 0 {
+		return nil, apiErr(fmt.Errorf("switchover already in progress for database %s node %s", databaseID, req.NodeName))
+	}
+
+	t, err := s.workflowSvc.SwitchoverDatabaseNode(ctx, input)
+	if err != nil {
+		return nil, apiErr(fmt.Errorf("failed to start switchover workflow: %w", err))
+	}
+
+	s.logger.Info().
+		Str("database_id", databaseID).
+		Str("node_name", req.NodeName).
+		Str("task_id", t.TaskID.String()).
+		Msg("switchover workflow initiated")
+
+	return &api.SwitchoverDatabaseNodeResponse{
+		Task: taskToAPI(t),
+	}, nil
+}
+
 func (s *PostInitHandlers) ListDatabaseTasks(ctx context.Context, req *api.ListDatabaseTasksPayload) (*api.ListDatabaseTasksResponse, error) {
 	databaseID, err := dbIdentToString(req.DatabaseID)
 	if err != nil {
@@ -784,4 +893,13 @@ func IsInstanceAvailable(inst *database.Instance) bool {
 		// InstanceStateUnknown and InstanceStateStopped.
 		return false
 	}
+}
+
+func hasPrimaryInstance(instances []*database.Instance) bool {
+	for _, inst := range instances {
+		if IsInstanceAvailable(inst) && inst.Status.IsPrimary() {
+			return true
+		}
+	}
+	return false
 }

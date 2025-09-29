@@ -68,6 +68,16 @@ type BackupDatabaseNodeRequestBody struct {
 	BackupOptions map[string]string `form:"backup_options,omitempty" json:"backup_options,omitempty" xml:"backup_options,omitempty"`
 }
 
+// SwitchoverDatabaseNodeRequestBody is the type of the "control-plane" service
+// "switchover-database-node" endpoint HTTP request body.
+type SwitchoverDatabaseNodeRequestBody struct {
+	// Optional instance_id for the replica candidate.
+	CandidateInstanceID *string `form:"candidate_instance_id,omitempty" json:"candidate_instance_id,omitempty" xml:"candidate_instance_id,omitempty"`
+	// Optional scheduled time (ISO8601) for the switchover. If absent switchover
+	// happens immediately.
+	ScheduledAt *string `form:"scheduled_at,omitempty" json:"scheduled_at,omitempty" xml:"scheduled_at,omitempty"`
+}
+
 // RestoreDatabaseRequestBody is the type of the "control-plane" service
 // "restore-database" endpoint HTTP request body.
 type RestoreDatabaseRequestBody struct {
@@ -207,6 +217,13 @@ type DeleteDatabaseResponseBody struct {
 // "backup-database-node" endpoint HTTP response body.
 type BackupDatabaseNodeResponseBody struct {
 	// The task that will backup this database node.
+	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
+}
+
+// SwitchoverDatabaseNodeResponseBody is the type of the "control-plane"
+// service "switchover-database-node" endpoint HTTP response body.
+type SwitchoverDatabaseNodeResponseBody struct {
+	// The task that will perform the switchover.
 	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
 }
 
@@ -886,6 +903,66 @@ type BackupDatabaseNodeNotFoundResponseBody struct {
 // service "backup-database-node" endpoint HTTP response body for the
 // "server_error" error.
 type BackupDatabaseNodeServerErrorResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SwitchoverDatabaseNodeClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "switchover-database-node" endpoint HTTP response
+// body for the "cluster_not_initialized" error.
+type SwitchoverDatabaseNodeClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SwitchoverDatabaseNodeDatabaseNotModifiableResponseBody is the type of the
+// "control-plane" service "switchover-database-node" endpoint HTTP response
+// body for the "database_not_modifiable" error.
+type SwitchoverDatabaseNodeDatabaseNotModifiableResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SwitchoverDatabaseNodeOperationAlreadyInProgressResponseBody is the type of
+// the "control-plane" service "switchover-database-node" endpoint HTTP
+// response body for the "operation_already_in_progress" error.
+type SwitchoverDatabaseNodeOperationAlreadyInProgressResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SwitchoverDatabaseNodeInvalidInputResponseBody is the type of the
+// "control-plane" service "switchover-database-node" endpoint HTTP response
+// body for the "invalid_input" error.
+type SwitchoverDatabaseNodeInvalidInputResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SwitchoverDatabaseNodeNotFoundResponseBody is the type of the
+// "control-plane" service "switchover-database-node" endpoint HTTP response
+// body for the "not_found" error.
+type SwitchoverDatabaseNodeNotFoundResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// SwitchoverDatabaseNodeServerErrorResponseBody is the type of the
+// "control-plane" service "switchover-database-node" endpoint HTTP response
+// body for the "server_error" error.
+type SwitchoverDatabaseNodeServerErrorResponseBody struct {
 	// The name of the error.
 	Name string `form:"name" json:"name" xml:"name"`
 	// The error message.
@@ -2540,6 +2617,17 @@ func NewBackupDatabaseNodeResponseBody(res *controlplane.BackupDatabaseNodeRespo
 	return body
 }
 
+// NewSwitchoverDatabaseNodeResponseBody builds the HTTP response body from the
+// result of the "switchover-database-node" endpoint of the "control-plane"
+// service.
+func NewSwitchoverDatabaseNodeResponseBody(res *controlplane.SwitchoverDatabaseNodeResponse) *SwitchoverDatabaseNodeResponseBody {
+	body := &SwitchoverDatabaseNodeResponseBody{}
+	if res.Task != nil {
+		body.Task = marshalControlplaneTaskToTaskResponseBody(res.Task)
+	}
+	return body
+}
+
 // NewListDatabaseTasksResponseBody builds the HTTP response body from the
 // result of the "list-database-tasks" endpoint of the "control-plane" service.
 func NewListDatabaseTasksResponseBody(res *controlplane.ListDatabaseTasksResponse) *ListDatabaseTasksResponseBody {
@@ -3235,6 +3323,72 @@ func NewBackupDatabaseNodeServerErrorResponseBody(res *controlplane.APIError) *B
 	return body
 }
 
+// NewSwitchoverDatabaseNodeClusterNotInitializedResponseBody builds the HTTP
+// response body from the result of the "switchover-database-node" endpoint of
+// the "control-plane" service.
+func NewSwitchoverDatabaseNodeClusterNotInitializedResponseBody(res *controlplane.APIError) *SwitchoverDatabaseNodeClusterNotInitializedResponseBody {
+	body := &SwitchoverDatabaseNodeClusterNotInitializedResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewSwitchoverDatabaseNodeDatabaseNotModifiableResponseBody builds the HTTP
+// response body from the result of the "switchover-database-node" endpoint of
+// the "control-plane" service.
+func NewSwitchoverDatabaseNodeDatabaseNotModifiableResponseBody(res *controlplane.APIError) *SwitchoverDatabaseNodeDatabaseNotModifiableResponseBody {
+	body := &SwitchoverDatabaseNodeDatabaseNotModifiableResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewSwitchoverDatabaseNodeOperationAlreadyInProgressResponseBody builds the
+// HTTP response body from the result of the "switchover-database-node"
+// endpoint of the "control-plane" service.
+func NewSwitchoverDatabaseNodeOperationAlreadyInProgressResponseBody(res *controlplane.APIError) *SwitchoverDatabaseNodeOperationAlreadyInProgressResponseBody {
+	body := &SwitchoverDatabaseNodeOperationAlreadyInProgressResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewSwitchoverDatabaseNodeInvalidInputResponseBody builds the HTTP response
+// body from the result of the "switchover-database-node" endpoint of the
+// "control-plane" service.
+func NewSwitchoverDatabaseNodeInvalidInputResponseBody(res *controlplane.APIError) *SwitchoverDatabaseNodeInvalidInputResponseBody {
+	body := &SwitchoverDatabaseNodeInvalidInputResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewSwitchoverDatabaseNodeNotFoundResponseBody builds the HTTP response body
+// from the result of the "switchover-database-node" endpoint of the
+// "control-plane" service.
+func NewSwitchoverDatabaseNodeNotFoundResponseBody(res *controlplane.APIError) *SwitchoverDatabaseNodeNotFoundResponseBody {
+	body := &SwitchoverDatabaseNodeNotFoundResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewSwitchoverDatabaseNodeServerErrorResponseBody builds the HTTP response
+// body from the result of the "switchover-database-node" endpoint of the
+// "control-plane" service.
+func NewSwitchoverDatabaseNodeServerErrorResponseBody(res *controlplane.APIError) *SwitchoverDatabaseNodeServerErrorResponseBody {
+	body := &SwitchoverDatabaseNodeServerErrorResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewListDatabaseTasksClusterNotInitializedResponseBody builds the HTTP
 // response body from the result of the "list-database-tasks" endpoint of the
 // "control-plane" service.
@@ -3725,6 +3879,19 @@ func NewBackupDatabaseNodePayload(body *BackupDatabaseNodeRequestBody, databaseI
 	return res
 }
 
+// NewSwitchoverDatabaseNodePayload builds a control-plane service
+// switchover-database-node endpoint payload.
+func NewSwitchoverDatabaseNodePayload(body *SwitchoverDatabaseNodeRequestBody, databaseID string, nodeName string) *controlplane.SwitchoverDatabaseNodePayload {
+	v := &controlplane.SwitchoverDatabaseNodePayload{
+		CandidateInstanceID: body.CandidateInstanceID,
+		ScheduledAt:         body.ScheduledAt,
+	}
+	v.DatabaseID = controlplane.Identifier(databaseID)
+	v.NodeName = nodeName
+
+	return v
+}
+
 // NewListDatabaseTasksPayload builds a control-plane service
 // list-database-tasks endpoint payload.
 func NewListDatabaseTasksPayload(databaseID string, afterTaskID *string, limit *int, sortOrder *string) *controlplane.ListDatabaseTasksPayload {
@@ -3953,6 +4120,15 @@ func ValidateBackupDatabaseNodeRequestBody(body *BackupDatabaseNodeRequestBody) 
 		if !(*body.Type == "full" || *body.Type == "diff" || *body.Type == "incr") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"full", "diff", "incr"}))
 		}
+	}
+	return
+}
+
+// ValidateSwitchoverDatabaseNodeRequestBody runs the validations defined on
+// Switchover-Database-NodeRequestBody
+func ValidateSwitchoverDatabaseNodeRequestBody(body *SwitchoverDatabaseNodeRequestBody) (err error) {
+	if body.ScheduledAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.scheduled_at", *body.ScheduledAt, goa.FormatDateTime))
 	}
 	return
 }

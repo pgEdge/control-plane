@@ -44,6 +44,8 @@ type Service interface {
 	DeleteDatabase(context.Context, *DeleteDatabasePayload) (res *DeleteDatabaseResponse, err error)
 	// Initiates a backup for a database node.
 	BackupDatabaseNode(context.Context, *BackupDatabaseNodePayload) (res *BackupDatabaseNodeResponse, err error)
+	// Performs a planned switchover for a node's primary to a replica candidate.
+	SwitchoverDatabaseNode(context.Context, *SwitchoverDatabaseNodePayload) (res *SwitchoverDatabaseNodeResponse, err error)
 	// Lists all tasks for a database.
 	ListDatabaseTasks(context.Context, *ListDatabaseTasksPayload) (res *ListDatabaseTasksResponse, err error)
 	// Returns information about a particular task.
@@ -80,7 +82,7 @@ const ServiceName = "control-plane"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [23]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "delete-database", "backup-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "restore-database", "get-version", "restart-instance", "stop-instance", "start-instance", "cancel-database-task"}
+var MethodNames = [24]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "delete-database", "backup-database-node", "switchover-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "restore-database", "get-version", "restart-instance", "stop-instance", "start-instance", "cancel-database-task"}
 
 // A Control Plane API error.
 type APIError struct {
@@ -773,6 +775,27 @@ type SwarmOpts struct {
 	ExtraNetworks []*ExtraNetworkSpec
 	// Arbitrary labels to apply to the Docker Swarm service
 	ExtraLabels map[string]string
+}
+
+// SwitchoverDatabaseNodePayload is the payload type of the control-plane
+// service switchover-database-node method.
+type SwitchoverDatabaseNodePayload struct {
+	// ID of the database to operate on.
+	DatabaseID Identifier
+	// Name of the node to operate on.
+	NodeName string
+	// Optional instance_id for the replica candidate.
+	CandidateInstanceID *string
+	// Optional scheduled time (ISO8601) for the switchover. If absent switchover
+	// happens immediately.
+	ScheduledAt *string
+}
+
+// SwitchoverDatabaseNodeResponse is the result type of the control-plane
+// service switchover-database-node method.
+type SwitchoverDatabaseNodeResponse struct {
+	// The task that will perform the switchover.
+	Task *Task
 }
 
 // Task is the result type of the control-plane service get-database-task

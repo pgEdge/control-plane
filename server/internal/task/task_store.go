@@ -56,6 +56,11 @@ type TaskListOptions struct {
 	Limit       int
 	AfterTaskID uuid.UUID
 	SortOrder   SortOrder
+
+	// Optional filters (applied client-side by helper methods)
+	Type     Type
+	NodeName string
+	Statuses []Status
 }
 
 func (s *TaskStore) GetAllByDatabaseID(databaseID string, options TaskListOptions) storage.GetMultipleOp[*StoredTask] {

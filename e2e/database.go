@@ -381,3 +381,18 @@ func (f *DatabaseFixture) VerifySpockReplication(ctx context.Context, t testing.
 		}
 	}
 }
+
+func (d *DatabaseFixture) SwitchoverDatabaseNode(ctx context.Context, req *controlplane.SwitchoverDatabaseNodePayload) error {
+
+	resp, err := d.client.SwitchoverDatabaseNode(ctx, req)
+	if err != nil {
+		return fmt.Errorf("failed to call switchover api: %w", err)
+	}
+
+	if err := d.waitForTask(ctx, resp.Task); err != nil {
+		return err
+	}
+
+	// refresh local db state
+	return d.Refresh(ctx)
+}

@@ -301,3 +301,12 @@ func (f *TestFixture) CleanupS3Backups(t testing.TB, hostID, databaseID string) 
 		t.Fatal(err)
 	}
 }
+
+func (f *TestFixture) APIBaseURL() string {
+	ids := f.HostIDs()
+	if len(ids) == 0 {
+		return ""
+	}
+	h := f.config.Hosts[ids[0]]
+	return fmt.Sprintf("http://%s:%d", h.ExternalIP, h.Port)
+}

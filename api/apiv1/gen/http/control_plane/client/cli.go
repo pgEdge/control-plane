@@ -385,6 +385,54 @@ func BuildBackupDatabaseNodePayload(controlPlaneBackupDatabaseNodeBody string, c
 	return res, nil
 }
 
+// BuildSwitchoverDatabaseNodePayload builds the payload for the control-plane
+// switchover-database-node endpoint from CLI flags.
+func BuildSwitchoverDatabaseNodePayload(controlPlaneSwitchoverDatabaseNodeBody string, controlPlaneSwitchoverDatabaseNodeDatabaseID string, controlPlaneSwitchoverDatabaseNodeNodeName string) (*controlplane.SwitchoverDatabaseNodePayload, error) {
+	var err error
+	var body SwitchoverDatabaseNodeRequestBody
+	{
+		err = json.Unmarshal([]byte(controlPlaneSwitchoverDatabaseNodeBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"candidate_instance_id\": \"68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi\",\n      \"scheduled_at\": \"2025-09-20T22:00:00+05:30\"\n   }'")
+		}
+		if body.ScheduledAt != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("body.scheduled_at", *body.ScheduledAt, goa.FormatDateTime))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var databaseID string
+	{
+		databaseID = controlPlaneSwitchoverDatabaseNodeDatabaseID
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var nodeName string
+	{
+		nodeName = controlPlaneSwitchoverDatabaseNodeNodeName
+		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "n[0-9]+"))
+		if err != nil {
+			return nil, err
+		}
+	}
+	v := &controlplane.SwitchoverDatabaseNodePayload{
+		CandidateInstanceID: body.CandidateInstanceID,
+		ScheduledAt:         body.ScheduledAt,
+	}
+	v.DatabaseID = controlplane.Identifier(databaseID)
+	v.NodeName = nodeName
+
+	return v, nil
+}
+
 // BuildListDatabaseTasksPayload builds the payload for the control-plane
 // list-database-tasks endpoint from CLI flags.
 func BuildListDatabaseTasksPayload(controlPlaneListDatabaseTasksDatabaseID string, controlPlaneListDatabaseTasksAfterTaskID string, controlPlaneListDatabaseTasksLimit string, controlPlaneListDatabaseTasksSortOrder string) (*controlplane.ListDatabaseTasksPayload, error) {

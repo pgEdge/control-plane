@@ -347,7 +347,43 @@ var _ = g.Service("control-plane", func() {
 			g.Meta("openapi:tag:Database")
 		})
 	})
+	g.Method("switchover-database-node", func() {
+		g.Description("Performs a planned switchover for a node's primary to a replica candidate.")
+		g.Meta("openapi:summary", "Switchover database node")
+		g.Payload(func() {
+			g.Attribute("database_id", Identifier, func() {
+				g.Description("ID of the database to operate on.")
+				g.Example("my-app")
+			})
+			g.Attribute("node_name", g.String, func() {
+				g.Description("Name of the node to operate on.")
+				g.Pattern(nodeNamePattern)
+				g.Example("n1")
+			})
+			g.Attribute("candidate_instance_id", g.String, func() {
+				g.Description("Optional instance_id for the replica candidate.")
+				g.Example("68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi")
+			})
+			g.Attribute("scheduled_at", g.String, func() {
+				g.Description("Optional scheduled time (ISO8601) for the switchover. If absent switchover happens immediately.")
+				g.Format(g.FormatDateTime)
+				g.Example("2025-09-20T22:00:00+05:30")
+			})
 
+			g.Required("database_id", "node_name")
+		})
+		g.Result(SwitchoverDatabaseNodeResponse)
+		g.Error("cluster_not_initialized")
+		g.Error("database_not_modifiable")
+		g.Error("invalid_input")
+		g.Error("not_found")
+		g.Error("operation_already_in_progress")
+
+		g.HTTP(func() {
+			g.POST("/v1/databases/{database_id}/nodes/{node_name}/switchover")
+			g.Meta("openapi:tag:Database")
+		})
+	})
 	g.Method("list-database-tasks", func() {
 		g.Description("Lists all tasks for a database.")
 		g.Meta("openapi:summary", "List database tasks")

@@ -28,6 +28,7 @@ func (w *Workflows) Register(work *worker.Worker) error {
 		work.RegisterWorkflow(w.RestartInstance),
 		work.RegisterWorkflow(w.StartInstance),
 		work.RegisterWorkflow(w.StopInstance),
+		work.RegisterWorkflow(w.Switchover),
 		work.RegisterWorkflow(w.UpdateDatabase),
 		work.RegisterWorkflow(w.ValidateSpec),
 	}

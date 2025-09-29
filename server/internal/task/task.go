@@ -26,6 +26,7 @@ const (
 	TypeRestartInstance Type = "restart_instance"
 	TypeStopInstance    Type = "stop_instance"
 	TypeStartInstance   Type = "start_instance"
+	TypeSwitchover      Type = "switchover"
 )
 
 type Status string

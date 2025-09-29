@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -67,19 +68,11 @@ func (s *Service) GetTask(ctx context.Context, databaseID string, taskID uuid.UU
 }
 
 func (s *Service) GetTasks(ctx context.Context, databaseID string, options TaskListOptions) ([]*Task, error) {
-	stored, err := s.Store.Task.GetAllByDatabaseID(databaseID, options).Exec(ctx)
-	if errors.Is(err, storage.ErrNotFound) {
-		return nil, ErrTaskNotFound
-	} else if err != nil {
-		return nil, fmt.Errorf("failed to get tasks: %w", err)
+	if options.Type == "" && options.NodeName == "" && len(options.Statuses) == 0 {
+		return s.getTasks(ctx, databaseID, options)
 	}
 
-	tasks := make([]*Task, len(stored))
-	for i, s := range stored {
-		tasks[i] = s.Task
-	}
-
-	return tasks, nil
+	return s.getTasksFiltered(ctx, databaseID, options)
 }
 
 func (s *Service) DeleteTask(ctx context.Context, databaseID string, taskID uuid.UUID) error {
@@ -177,4 +170,96 @@ func (s *Service) DeleteAllTaskLogs(ctx context.Context, databaseID string) erro
 		return fmt.Errorf("failed to delete task logs: %w", err)
 	}
 	return nil
+}
+
+func (s *Service) getTasks(ctx context.Context, databaseID string, options TaskListOptions) ([]*Task, error) {
+	stored, err := s.Store.Task.GetAllByDatabaseID(databaseID, options).Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return []*Task{}, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get tasks: %w", err)
+	}
+	tasks := make([]*Task, 0, len(stored))
+	for _, st := range stored {
+		if st != nil && st.Task != nil {
+			tasks = append(tasks, st.Task)
+		}
+	}
+	return tasks, nil
+}
+
+func (s *Service) getTasksFiltered(ctx context.Context, databaseID string, options TaskListOptions) ([]*Task, error) {
+	perPage := perPageFor(options)
+	tasks := make([]*Task, 0)
+	if options.Limit > 0 {
+		tasks = make([]*Task, 0, options.Limit)
+	}
+
+	after := options.AfterTaskID
+	for {
+		pageOpts := options
+		pageOpts.Limit = perPage
+		pageOpts.AfterTaskID = after
+
+		stored, err := s.Store.Task.GetAllByDatabaseID(databaseID, pageOpts).Exec(ctx)
+		if errors.Is(err, storage.ErrNotFound) {
+			break
+		} else if err != nil {
+			return nil, fmt.Errorf("failed to list tasks (paged): %w", err)
+		}
+		if len(stored) == 0 {
+			break
+		}
+
+		for _, st := range stored {
+			t := st.Task
+			if !matchesFilters(t, options) {
+				continue
+			}
+			tasks = append(tasks, t)
+			if options.Limit > 0 && len(tasks) >= options.Limit {
+				if len(tasks) > options.Limit {
+					tasks = tasks[:options.Limit]
+				}
+				return tasks, nil
+			}
+		}
+
+		last := stored[len(stored)-1]
+		if last == nil || last.Task == nil {
+			break
+		}
+		after = last.Task.TaskID
+
+		if len(stored) < perPage {
+			break
+		}
+	}
+
+	return tasks, nil
+}
+
+func perPageFor(options TaskListOptions) int {
+	const defaultPageSize = 100
+	if options.Limit > 0 && options.Limit < defaultPageSize {
+		return options.Limit
+	}
+	if options.Limit > 0 {
+		return options.Limit
+	}
+	return defaultPageSize
+}
+
+func matchesFilters(task *Task, opts TaskListOptions) bool {
+	if opts.Type != "" && task.Type != opts.Type {
+		return false
+	}
+	if !slices.Contains(opts.Statuses, task.Status) {
+		return false
+	}
+	if opts.NodeName != "" && (task == nil || task.NodeName != opts.NodeName) {
+		return false
+	}
+
+	return true
 }
