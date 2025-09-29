@@ -310,6 +310,7 @@ func generatePatroniConfig(
 				LoopWait:     utils.PointerTo(10),
 				RetryTimeout: utils.PointerTo(10),
 			},
+			InitDB: utils.PointerTo([]string{"data-checksums"}),
 		},
 		Etcd3: &patroni.Etcd{
 			Hosts:    &etcdHosts,
@@ -334,12 +335,15 @@ func generatePatroniConfig(
 			Mode: utils.PointerTo(patroni.WatchdogModeOff),
 		},
 		Postgresql: &patroni.PostgreSQL{
-			ConnectAddress: utils.PointerTo(fmt.Sprintf("%s:5432", instanceHostname)),
-			DataDir:        utils.PointerTo("/opt/pgedge/data/pgdata"),
-			Parameters:     &parameters,
-			Listen:         utils.PointerTo("*:5432"),
-			Callbacks:      &patroni.Callbacks{},
-			BaseBackup:     baseBackup,
+			ConnectAddress:                         utils.PointerTo(fmt.Sprintf("%s:5432", instanceHostname)),
+			DataDir:                                utils.PointerTo("/opt/pgedge/data/pgdata"),
+			Parameters:                             &parameters,
+			Listen:                                 utils.PointerTo("*:5432"),
+			Callbacks:                              &patroni.Callbacks{},
+			BaseBackup:                             baseBackup,
+			UsePgRewind:                            utils.PointerTo(true),
+			RemoveDataDirectoryOnRewindFailure:     utils.PointerTo(true),
+			RemoveDataDirectoryOnDivergedTimelines: utils.PointerTo(true),
 			Authentication: &patroni.Authentication{
 				Superuser: &patroni.User{
 					Username:    utils.PointerTo("pgedge"),

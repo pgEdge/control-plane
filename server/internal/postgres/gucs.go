@@ -18,6 +18,7 @@ func DefaultGUCs() map[string]any {
 		"hot_standby_feedback":         "on",
 		"track_io_timing":              "on",
 		"shared_preload_libraries":     "pg_stat_statements,snowflake,spock",
+		"wal_log_hints":                "on",
 	}
 }
 
