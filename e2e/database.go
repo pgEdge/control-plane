@@ -326,7 +326,11 @@ func (d *DatabaseFixture) waitForTask(ctx context.Context, task *controlplane.Ta
 		return fmt.Errorf("failed to wait for task: %w", err)
 	}
 	if task.Status != client.TaskStatusCompleted {
-		return fmt.Errorf("task status is '%s' instead of 'completed', error=%v", task.Status, task.Error)
+		var taskError string
+		if task.Error != nil {
+			taskError = *task.Error
+		}
+		return fmt.Errorf("task status is '%s' instead of 'completed', error=%s", task.Status, taskError)
 	}
 
 	return nil
