@@ -15,6 +15,16 @@ type NodeResources struct {
 	InstanceResources []*database.InstanceResources
 }
 
+func (n *NodeResources) primaryInstance() *database.InstanceResources {
+	for _, instance := range n.InstanceResources {
+		if instance.InstanceID() == n.PrimaryInstanceID {
+			return instance
+		}
+	}
+
+	return nil
+}
+
 func addNodeResource(states []*resource.State, resource *database.NodeResource) error {
 	// Add the node resource to the last state
 	err := states[len(states)-1].AddResource(resource)

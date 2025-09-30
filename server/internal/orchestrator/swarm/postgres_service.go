@@ -54,6 +54,7 @@ func (s *PostgresService) Executor() resource.Executor {
 func (s *PostgresService) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
 		PostgresServiceSpecResourceIdentifier(s.Instance.InstanceID),
+		SwitchoverResourceIdentifier(s.Instance.InstanceID),
 	}
 }
 

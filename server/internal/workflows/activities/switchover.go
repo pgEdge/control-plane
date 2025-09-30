@@ -138,7 +138,7 @@ func (a *Activities) PerformSwitchover(ctx context.Context, input *PerformSwitch
 		swReq.ScheduledAt = &input.ScheduledAt
 	}
 
-	if err := pClient.ScheduleSwitchover(ctx, swReq); err != nil {
+	if err := pClient.ScheduleSwitchover(ctx, swReq, false); err != nil {
 		return nil, fmt.Errorf("patroni scheduled switchover call failed: %w", err)
 	}
 

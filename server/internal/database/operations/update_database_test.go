@@ -9,6 +9,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/database/operations"
+	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -369,6 +370,14 @@ func TestUpdateDatabase(t *testing.T) {
 								},
 							}),
 						},
+						{
+							Type: resource.EventTypeCreate,
+							Resource: makeResourceData(t, &database.SwitchoverResource{
+								HostID:     n1Instance1.HostID(),
+								InstanceID: n1Instance1.InstanceID(),
+								TargetRole: patroni.InstanceRolePrimary,
+							}),
+						},
 					},
 					{
 						{
@@ -647,6 +656,14 @@ func TestUpdateDatabase(t *testing.T) {
 								},
 							}),
 						},
+						{
+							Type: resource.EventTypeCreate,
+							Resource: makeResourceData(t, &database.SwitchoverResource{
+								HostID:     n1Instance1.HostID(),
+								InstanceID: n1Instance1.InstanceID(),
+								TargetRole: patroni.InstanceRolePrimary,
+							}),
+						},
 					},
 					{
 						{
@@ -695,6 +712,14 @@ func TestUpdateDatabase(t *testing.T) {
 									n2Instance1.InstanceID(),
 									n2Instance2.InstanceID(),
 								},
+							}),
+						},
+						{
+							Type: resource.EventTypeCreate,
+							Resource: makeResourceData(t, &database.SwitchoverResource{
+								HostID:     n2Instance1.HostID(),
+								InstanceID: n2Instance1.InstanceID(),
+								TargetRole: patroni.InstanceRolePrimary,
 							}),
 						},
 					},
@@ -792,6 +817,22 @@ func TestUpdateDatabase(t *testing.T) {
 									n2Instance1.InstanceID(),
 									n2Instance2.InstanceID(),
 								},
+							}),
+						},
+						{
+							Type: resource.EventTypeCreate,
+							Resource: makeResourceData(t, &database.SwitchoverResource{
+								HostID:     n1Instance1.HostID(),
+								InstanceID: n1Instance1.InstanceID(),
+								TargetRole: patroni.InstanceRolePrimary,
+							}),
+						},
+						{
+							Type: resource.EventTypeCreate,
+							Resource: makeResourceData(t, &database.SwitchoverResource{
+								HostID:     n2Instance1.HostID(),
+								InstanceID: n2Instance1.InstanceID(),
+								TargetRole: patroni.InstanceRolePrimary,
 							}),
 						},
 					},

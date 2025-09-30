@@ -6,6 +6,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/database/operations"
+	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/stretchr/testify/assert"
 )
@@ -93,6 +94,11 @@ func TestRestoreDatabase(t *testing.T) {
 			&database.SubscriptionResource{
 				SubscriberNode: "n2",
 				ProviderNode:   "n1",
+			},
+			&database.SwitchoverResource{
+				HostID:     n1Instance1.HostID(),
+				InstanceID: n1Instance1.InstanceID(),
+				TargetRole: patroni.InstanceRolePrimary,
 			},
 		},
 		slices.Concat(
@@ -362,6 +368,14 @@ func TestRestoreDatabase(t *testing.T) {
 							Type:     resource.EventTypeDelete,
 							Resource: makeResourceData(t, makeMonitorResource(n1Instance2)),
 						},
+						{
+							Type: resource.EventTypeDelete,
+							Resource: makeResourceData(t, &database.SwitchoverResource{
+								HostID:     n1Instance1.HostID(),
+								InstanceID: n1Instance1.InstanceID(),
+								TargetRole: patroni.InstanceRolePrimary,
+							}),
+						},
 					},
 					{
 						{
@@ -458,6 +472,16 @@ func TestRestoreDatabase(t *testing.T) {
 					},
 				},
 				{
+					{
+						{
+							Type: resource.EventTypeCreate,
+							Resource: makeResourceData(t, &database.SwitchoverResource{
+								HostID:     n1Instance1.HostID(),
+								InstanceID: n1Instance1.InstanceID(),
+								TargetRole: patroni.InstanceRolePrimary,
+							}),
+						},
+					},
 					{
 						{
 							Type: resource.EventTypeCreate,
