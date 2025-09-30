@@ -17,6 +17,8 @@ func TestCancelDatabaseTask(t *testing.T) {
 	testCancelDB(t)
 }
 func testCancelDB(t *testing.T) {
+	t.Parallel()
+
 	dbID := uuid.NewString()
 	host1 := fixture.HostIDs()[0]
 

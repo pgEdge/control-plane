@@ -222,6 +222,7 @@ type PostgreSQL struct {
 	ReplicaMethod                          *map[string]string `json:"replica_method,omitempty"`
 	PrePromote                             *string            `json:"pre_promote,omitempty"`
 	BeforeStop                             *string            `json:"before_stop,omitempty"`
+	BaseBackup                             *[]any             `json:"basebackup,omitempty"`
 }
 
 type RestAPIAuthentication struct {

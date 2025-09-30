@@ -139,6 +139,11 @@ func (c *PatroniConfig) Create(ctx context.Context, rc *resource.Context) error 
 		endpoints = append(endpoints, member.GetClientURLs()...)
 	}
 
+	enableFastBasebackup, err := c.isNewNode(rc)
+	if err != nil {
+		return err
+	}
+
 	config, err := generatePatroniConfig(
 		c.Spec,
 		c.InstanceHostname,
@@ -148,6 +153,7 @@ func (c *PatroniConfig) Create(ctx context.Context, rc *resource.Context) error 
 		etcdCreds,
 		c.BridgeNetworkInfo,
 		network,
+		enableFastBasebackup,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to generate patroni config: %w", err)
@@ -194,6 +200,18 @@ func (c *PatroniConfig) Delete(ctx context.Context, rc *resource.Context) error 
 	return nil
 }
 
+func (c *PatroniConfig) isNewNode(rc *resource.Context) (bool, error) {
+	_, err := resource.FromContext[*database.NodeResource](rc, database.NodeResourceIdentifier(c.Spec.NodeName))
+	switch {
+	case errors.Is(err, resource.ErrNotFound):
+		return true, nil
+	case err != nil:
+		return false, fmt.Errorf("failed to check if node already exists: %w", err)
+	default:
+		return false, nil
+	}
+}
+
 func generatePatroniConfig(
 	spec *database.InstanceSpec,
 	instanceHostname string,
@@ -203,6 +221,7 @@ func generatePatroniConfig(
 	etcdCreds *EtcdCreds,
 	bridgeInfo *docker.NetworkInfo,
 	dbNetworkInfo *Network,
+	enableFastBasebackup bool,
 ) (*patroni.Config, error) {
 	memoryBytes := spec.MemoryBytes
 	if memoryBytes == 0 {
@@ -259,6 +278,17 @@ func generatePatroniConfig(
 		etcdHosts[i] = u.Host
 	}
 
+	var baseBackup *[]any
+	if enableFastBasebackup {
+		// Causes basebackup to request an immediate checkpoint. The tradeoff
+		// is that the checkpoint operation can disrupt clients. We enable it
+		// by default for new nodes because the primary shouldn't have any
+		// clients outside the control plane.
+		baseBackup = &[]any{
+			map[string]string{"checkpoint": "fast"},
+		}
+	}
+
 	cfg := &patroni.Config{
 		Name:      utils.PointerTo(spec.InstanceID),
 		Namespace: utils.PointerTo(patroni.Namespace()),
@@ -309,6 +339,7 @@ func generatePatroniConfig(
 			Parameters:     &parameters,
 			Listen:         utils.PointerTo("*:5432"),
 			Callbacks:      &patroni.Callbacks{},
+			BaseBackup:     baseBackup,
 			Authentication: &patroni.Authentication{
 				Superuser: &patroni.User{
 					Username:    utils.PointerTo("pgedge"),

@@ -6,7 +6,7 @@ executors:
     machine:
       image: ubuntu-2404:2024.11.1
       docker_layer_caching: true
-    resource_class: large
+    resource_class: xlarge
 commands:
   use_mod_cache:
     steps:
@@ -54,7 +54,7 @@ jobs:
           name: Run e2e tests with Docker Compose
           command: |
             make ci-compose-detached
-            make test-e2e-ci
+            make test-e2e-ci E2E_PARALLEL=4
       - run:
           name: Ensure Docker Compose is stopped
           command: make ci-compose-down
