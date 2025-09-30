@@ -310,3 +310,19 @@ func (f *TestFixture) APIBaseURL() string {
 	h := f.config.Hosts[ids[0]]
 	return fmt.Sprintf("http://%s:%d", h.ExternalIP, h.Port)
 }
+
+func tLog(t testing.TB, args ...any) {
+	t.Helper()
+
+	prefix := fmt.Sprintf("[%s]", t.Name())
+	all := append([]any{prefix}, args...)
+	t.Log(all...)
+}
+
+func tLogf(t testing.TB, format string, args ...any) {
+	t.Helper()
+
+	prefix := fmt.Sprintf("[%s] ", t.Name())
+	format = prefix + format
+	t.Logf(format, args...)
+}
