@@ -118,9 +118,14 @@ var defaultDockerSwarm = DockerSwarm{
 }
 
 type HTTP struct {
-	Enabled  bool   `koanf:"enabled"`
-	BindAddr string `koanf:"bind_addr"`
-	Port     int    `koanf:"port"`
+	Enabled    bool   `koanf:"enabled"`
+	BindAddr   string `koanf:"bind_addr"`
+	Port       int    `koanf:"port"`
+	CACert     string `koanf:"ca_cert"`
+	ServerCert string `koanf:"server_cert"`
+	ServerKey  string `koanf:"server_key"`
+	ClientCert string `koanf:"client_cert"`
+	ClientKey  string `koanf:"client_key"`
 }
 
 func (h HTTP) validate() []error {

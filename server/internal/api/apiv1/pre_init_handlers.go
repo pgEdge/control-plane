@@ -2,10 +2,13 @@ package apiv1
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 
 	goahttp "goa.design/goa/v3/http"
 
@@ -51,11 +54,7 @@ func (s *PreInitHandlers) InitCluster(ctx context.Context) (*api.ClusterJoinToke
 		return nil, apiErr(err)
 	}
 
-	// TODO: Https support
-	serverURL := url.URL{
-		Scheme: "http",
-		Host:   fmt.Sprintf("%s:%d", s.cfg.IPv4Address, s.cfg.HTTP.Port),
-	}
+	serverURL := GetServerURL(s.cfg)
 
 	return &api.ClusterJoinToken{
 		Token:     token,
@@ -69,9 +68,15 @@ func (s *PreInitHandlers) JoinCluster(ctx context.Context, token *api.ClusterJoi
 		return ErrInvalidServerURL
 	}
 
+	http_client, err := s.GetClient()
+
+	if err != nil {
+		return err
+	}
+
 	enc := goahttp.RequestEncoder
-	dec := goahttp.ResponseDecoder
-	c := client.NewClient(serverURL.Scheme, serverURL.Host, http.DefaultClient, enc, dec, false)
+	dec := goahttp.ResponseDecoder //make our own
+	c := client.NewClient(serverURL.Scheme, serverURL.Host, http_client, enc, dec, false)
 	cli := &api.Client{
 		GetJoinOptionsEndpoint: c.GetJoinOptions(),
 	}
@@ -230,4 +235,35 @@ func (s *PreInitHandlers) StartInstance(ctx context.Context, req *api.StartInsta
 
 func (s *PreInitHandlers) CancelDatabaseTask(ctx context.Context, req *api.CancelDatabaseTaskPayload) (*api.Task, error) {
 	return nil, ErrUninitialized
+}
+
+func (s *PreInitHandlers) GetClient() (res *http.Client, err error) {
+	if s.cfg.HTTP.ClientCert == "" {
+		return http.DefaultClient, nil
+	}
+
+	cert, err := tls.LoadX509KeyPair(s.cfg.HTTP.ClientCert, s.cfg.HTTP.ClientKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load key pair: %w", err)
+	}
+
+	caCert, err := os.ReadFile(s.cfg.HTTP.CACert)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read CA Cert: %w", err)
+	}
+	caCertPool := x509.NewCertPool()
+	ok := caCertPool.AppendCertsFromPEM(caCert)
+	if !ok {
+		return nil, fmt.Errorf("failed to use CA cert")
+	}
+
+	return &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs:      caCertPool,
+				Certificates: []tls.Certificate{cert},
+				MinVersion:   tls.VersionTLS13,
+			},
+		},
+	}, nil
 }

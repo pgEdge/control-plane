@@ -62,15 +62,23 @@ func (s *PostInitHandlers) GetJoinToken(ctx context.Context) (*api.ClusterJoinTo
 	if err != nil {
 		return nil, apiErr(err)
 	}
-	// TODO: Https support
-	serverURL := url.URL{
-		Scheme: "http",
-		Host:   fmt.Sprintf("%s:%d", s.cfg.IPv4Address, s.cfg.HTTP.Port),
-	}
+	serverURL := GetServerURL(s.cfg)
 	return &api.ClusterJoinToken{
 		Token:     token,
 		ServerURL: serverURL.String(),
 	}, nil
+}
+
+func GetServerURL(cfg config.Config) url.URL {
+	scheme := "http"
+	if cfg.HTTP.ServerCert != "" && cfg.HTTP.ServerKey != "" {
+		scheme = "https"
+	}
+	return url.URL{
+		Scheme: scheme,
+		Host:   fmt.Sprintf("%s:%d", cfg.IPv4Address, cfg.HTTP.Port),
+	}
+
 }
 
 func (s *PostInitHandlers) GetJoinOptions(ctx context.Context, req *api.ClusterJoinRequest) (*api.ClusterJoinOptions, error) {
