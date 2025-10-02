@@ -30,6 +30,7 @@ type Client struct {
 	DeleteDatabaseEndpoint         goa.Endpoint
 	BackupDatabaseNodeEndpoint     goa.Endpoint
 	SwitchoverDatabaseNodeEndpoint goa.Endpoint
+	FailoverDatabaseNodeEndpoint   goa.Endpoint
 	ListDatabaseTasksEndpoint      goa.Endpoint
 	GetDatabaseTaskEndpoint        goa.Endpoint
 	GetDatabaseTaskLogEndpoint     goa.Endpoint
@@ -42,7 +43,7 @@ type Client struct {
 }
 
 // NewClient initializes a "control-plane" service client given the endpoints.
-func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluster, listHosts, getHost, removeHost, listDatabases, createDatabase, getDatabase, updateDatabase, deleteDatabase, backupDatabaseNode, switchoverDatabaseNode, listDatabaseTasks, getDatabaseTask, getDatabaseTaskLog, restoreDatabase, getVersion, restartInstance, stopInstance, startInstance, cancelDatabaseTask goa.Endpoint) *Client {
+func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluster, listHosts, getHost, removeHost, listDatabases, createDatabase, getDatabase, updateDatabase, deleteDatabase, backupDatabaseNode, switchoverDatabaseNode, failoverDatabaseNode, listDatabaseTasks, getDatabaseTask, getDatabaseTaskLog, restoreDatabase, getVersion, restartInstance, stopInstance, startInstance, cancelDatabaseTask goa.Endpoint) *Client {
 	return &Client{
 		InitClusterEndpoint:            initCluster,
 		JoinClusterEndpoint:            joinCluster,
@@ -59,6 +60,7 @@ func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluste
 		DeleteDatabaseEndpoint:         deleteDatabase,
 		BackupDatabaseNodeEndpoint:     backupDatabaseNode,
 		SwitchoverDatabaseNodeEndpoint: switchoverDatabaseNode,
+		FailoverDatabaseNodeEndpoint:   failoverDatabaseNode,
 		ListDatabaseTasksEndpoint:      listDatabaseTasks,
 		GetDatabaseTaskEndpoint:        getDatabaseTask,
 		GetDatabaseTaskLogEndpoint:     getDatabaseTaskLog,
@@ -306,6 +308,25 @@ func (c *Client) SwitchoverDatabaseNode(ctx context.Context, p *SwitchoverDataba
 		return
 	}
 	return ires.(*SwitchoverDatabaseNodeResponse), nil
+}
+
+// FailoverDatabaseNode calls the "failover-database-node" endpoint of the
+// "control-plane" service.
+// FailoverDatabaseNode may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "database_not_modifiable" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
+//   - "operation_already_in_progress" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) FailoverDatabaseNode(ctx context.Context, p *FailoverDatabaseNodeRequest) (res *FailoverDatabaseNodeResponse, err error) {
+	var ires any
+	ires, err = c.FailoverDatabaseNodeEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*FailoverDatabaseNodeResponse), nil
 }
 
 // ListDatabaseTasks calls the "list-database-tasks" endpoint of the

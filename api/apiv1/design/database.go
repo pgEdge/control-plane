@@ -1048,6 +1048,47 @@ var SwitchoverDatabaseNodeResponse = g.Type("SwitchoverDatabaseNodeResponse", fu
 		},
 	})
 })
+
+var FailoverDatabaseNodeRequest = g.Type("FailoverDatabaseNodeRequest", func() {
+	g.Attribute("database_id", Identifier, func() {
+		g.Description("ID of the database to perform the failover for.")
+		g.Example("my-app")
+	})
+	g.Attribute("node_name", g.String, func() {
+		g.Description("Name of the node to initiate the failover from.")
+		g.Pattern(nodeNamePattern)
+		g.Example("n1")
+	})
+	g.Attribute("candidate_instance_id", g.String, func() {
+		g.Description("Optional instance_id of the replica to promote. If omitted, a candidate will be selected.")
+		g.Example("68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi")
+	})
+	g.Attribute("skip_validation", g.Boolean, func() {
+		g.Description("If true, skip the health validations that prevent running failover on a healthy cluster.")
+		g.Default(false)
+	})
+
+	g.Required("database_id", "node_name")
+})
+
+var FailoverDatabaseNodeResponse = g.Type("FailoverDatabaseNodeResponse", func() {
+	g.Attribute("task", Task, func() {
+		g.Description("The task that will perform the failover.")
+	})
+
+	g.Required("task")
+
+	g.Example(map[string]any{
+		"task": map[string]any{
+			"created_at":  "2025-06-18T17:54:28Z",
+			"database_id": "storefront",
+			"status":      "pending",
+			"task_id":     "0197842d-9082-7496-b787-77bd2e11809f",
+			"type":        "failover",
+		},
+	})
+})
+
 var RestoreDatabaseRequest = g.Type("RestoreDatabaseRequest", func() {
 	g.Attribute("restore_config", RestoreConfigSpec, func() {
 		g.Description("Configuration for the restore process.")

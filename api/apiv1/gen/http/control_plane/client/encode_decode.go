@@ -1943,6 +1943,189 @@ func DecodeSwitchoverDatabaseNodeResponse(decoder func(*http.Response) goahttp.D
 	}
 }
 
+// BuildFailoverDatabaseNodeRequest instantiates a HTTP request object with
+// method and path set to call the "control-plane" service
+// "failover-database-node" endpoint
+func (c *Client) BuildFailoverDatabaseNodeRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		databaseID string
+		nodeName   string
+	)
+	{
+		p, ok := v.(*controlplane.FailoverDatabaseNodeRequest)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("control-plane", "failover-database-node", "*controlplane.FailoverDatabaseNodeRequest", v)
+		}
+		databaseID = string(p.DatabaseID)
+		nodeName = p.NodeName
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: FailoverDatabaseNodeControlPlanePath(databaseID, nodeName)}
+	req, err := http.NewRequest("POST", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("control-plane", "failover-database-node", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeFailoverDatabaseNodeRequest returns an encoder for requests sent to
+// the control-plane failover-database-node server.
+func EncodeFailoverDatabaseNodeRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.FailoverDatabaseNodeRequest)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "failover-database-node", "*controlplane.FailoverDatabaseNodeRequest", v)
+		}
+		body := NewFailoverDatabaseNodeRequestBody(p)
+		if err := encoder(req).Encode(&body); err != nil {
+			return goahttp.ErrEncodingError("control-plane", "failover-database-node", err)
+		}
+		return nil
+	}
+}
+
+// DecodeFailoverDatabaseNodeResponse returns a decoder for responses returned
+// by the control-plane failover-database-node endpoint. restoreBody controls
+// whether the response body should be restored after having been read.
+// DecodeFailoverDatabaseNodeResponse may return the following errors:
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "database_not_modifiable" (type *controlplane.APIError): http.StatusConflict
+//   - "operation_already_in_progress" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
+//   - error: internal error
+func DecodeFailoverDatabaseNodeResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body FailoverDatabaseNodeResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "failover-database-node", err)
+			}
+			err = ValidateFailoverDatabaseNodeResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "failover-database-node", err)
+			}
+			res := NewFailoverDatabaseNodeResponseOK(&body)
+			return res, nil
+		case http.StatusConflict:
+			en := resp.Header.Get("goa-error")
+			switch en {
+			case "cluster_not_initialized":
+				var (
+					body FailoverDatabaseNodeClusterNotInitializedResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "failover-database-node", err)
+				}
+				err = ValidateFailoverDatabaseNodeClusterNotInitializedResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "failover-database-node", err)
+				}
+				return nil, NewFailoverDatabaseNodeClusterNotInitialized(&body)
+			case "database_not_modifiable":
+				var (
+					body FailoverDatabaseNodeDatabaseNotModifiableResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "failover-database-node", err)
+				}
+				err = ValidateFailoverDatabaseNodeDatabaseNotModifiableResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "failover-database-node", err)
+				}
+				return nil, NewFailoverDatabaseNodeDatabaseNotModifiable(&body)
+			case "operation_already_in_progress":
+				var (
+					body FailoverDatabaseNodeOperationAlreadyInProgressResponseBody
+					err  error
+				)
+				err = decoder(resp).Decode(&body)
+				if err != nil {
+					return nil, goahttp.ErrDecodingError("control-plane", "failover-database-node", err)
+				}
+				err = ValidateFailoverDatabaseNodeOperationAlreadyInProgressResponseBody(&body)
+				if err != nil {
+					return nil, goahttp.ErrValidationError("control-plane", "failover-database-node", err)
+				}
+				return nil, NewFailoverDatabaseNodeOperationAlreadyInProgress(&body)
+			default:
+				body, _ := io.ReadAll(resp.Body)
+				return nil, goahttp.ErrInvalidResponse("control-plane", "failover-database-node", resp.StatusCode, string(body))
+			}
+		case http.StatusBadRequest:
+			var (
+				body FailoverDatabaseNodeInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "failover-database-node", err)
+			}
+			err = ValidateFailoverDatabaseNodeInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "failover-database-node", err)
+			}
+			return nil, NewFailoverDatabaseNodeInvalidInput(&body)
+		case http.StatusNotFound:
+			var (
+				body FailoverDatabaseNodeNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "failover-database-node", err)
+			}
+			err = ValidateFailoverDatabaseNodeNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "failover-database-node", err)
+			}
+			return nil, NewFailoverDatabaseNodeNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body FailoverDatabaseNodeServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "failover-database-node", err)
+			}
+			err = ValidateFailoverDatabaseNodeServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "failover-database-node", err)
+			}
+			return nil, NewFailoverDatabaseNodeServerError(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("control-plane", "failover-database-node", resp.StatusCode, string(body))
+		}
+	}
+}
+
 // BuildListDatabaseTasksRequest instantiates a HTTP request object with method
 // and path set to call the "control-plane" service "list-database-tasks"
 // endpoint

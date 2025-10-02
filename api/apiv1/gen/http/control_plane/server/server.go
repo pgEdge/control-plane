@@ -35,6 +35,7 @@ type Server struct {
 	DeleteDatabase         http.Handler
 	BackupDatabaseNode     http.Handler
 	SwitchoverDatabaseNode http.Handler
+	FailoverDatabaseNode   http.Handler
 	ListDatabaseTasks      http.Handler
 	GetDatabaseTask        http.Handler
 	GetDatabaseTaskLog     http.Handler
@@ -94,6 +95,7 @@ func New(
 			{"DeleteDatabase", "DELETE", "/v1/databases/{database_id}"},
 			{"BackupDatabaseNode", "POST", "/v1/databases/{database_id}/nodes/{node_name}/backups"},
 			{"SwitchoverDatabaseNode", "POST", "/v1/databases/{database_id}/nodes/{node_name}/switchover"},
+			{"FailoverDatabaseNode", "POST", "/v1/databases/{database_id}/nodes/{node_name}/failover"},
 			{"ListDatabaseTasks", "GET", "/v1/databases/{database_id}/tasks"},
 			{"GetDatabaseTask", "GET", "/v1/databases/{database_id}/tasks/{task_id}"},
 			{"GetDatabaseTaskLog", "GET", "/v1/databases/{database_id}/tasks/{task_id}/log"},
@@ -120,6 +122,7 @@ func New(
 		DeleteDatabase:         NewDeleteDatabaseHandler(e.DeleteDatabase, mux, decoder, encoder, errhandler, formatter),
 		BackupDatabaseNode:     NewBackupDatabaseNodeHandler(e.BackupDatabaseNode, mux, decoder, encoder, errhandler, formatter),
 		SwitchoverDatabaseNode: NewSwitchoverDatabaseNodeHandler(e.SwitchoverDatabaseNode, mux, decoder, encoder, errhandler, formatter),
+		FailoverDatabaseNode:   NewFailoverDatabaseNodeHandler(e.FailoverDatabaseNode, mux, decoder, encoder, errhandler, formatter),
 		ListDatabaseTasks:      NewListDatabaseTasksHandler(e.ListDatabaseTasks, mux, decoder, encoder, errhandler, formatter),
 		GetDatabaseTask:        NewGetDatabaseTaskHandler(e.GetDatabaseTask, mux, decoder, encoder, errhandler, formatter),
 		GetDatabaseTaskLog:     NewGetDatabaseTaskLogHandler(e.GetDatabaseTaskLog, mux, decoder, encoder, errhandler, formatter),
@@ -153,6 +156,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.DeleteDatabase = m(s.DeleteDatabase)
 	s.BackupDatabaseNode = m(s.BackupDatabaseNode)
 	s.SwitchoverDatabaseNode = m(s.SwitchoverDatabaseNode)
+	s.FailoverDatabaseNode = m(s.FailoverDatabaseNode)
 	s.ListDatabaseTasks = m(s.ListDatabaseTasks)
 	s.GetDatabaseTask = m(s.GetDatabaseTask)
 	s.GetDatabaseTaskLog = m(s.GetDatabaseTaskLog)
@@ -184,6 +188,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountDeleteDatabaseHandler(mux, h.DeleteDatabase)
 	MountBackupDatabaseNodeHandler(mux, h.BackupDatabaseNode)
 	MountSwitchoverDatabaseNodeHandler(mux, h.SwitchoverDatabaseNode)
+	MountFailoverDatabaseNodeHandler(mux, h.FailoverDatabaseNode)
 	MountListDatabaseTasksHandler(mux, h.ListDatabaseTasks)
 	MountGetDatabaseTaskHandler(mux, h.GetDatabaseTask)
 	MountGetDatabaseTaskLogHandler(mux, h.GetDatabaseTaskLog)
@@ -912,6 +917,58 @@ func NewSwitchoverDatabaseNodeHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "switchover-database-node")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			errhandler(ctx, w, err)
+		}
+	})
+}
+
+// MountFailoverDatabaseNodeHandler configures the mux to serve the
+// "control-plane" service "failover-database-node" endpoint.
+func MountFailoverDatabaseNodeHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/v1/databases/{database_id}/nodes/{node_name}/failover", f)
+}
+
+// NewFailoverDatabaseNodeHandler creates a HTTP handler which loads the HTTP
+// request and calls the "control-plane" service "failover-database-node"
+// endpoint.
+func NewFailoverDatabaseNodeHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeFailoverDatabaseNodeRequest(mux, decoder)
+		encodeResponse = EncodeFailoverDatabaseNodeResponse(encoder)
+		encodeError    = EncodeFailoverDatabaseNodeError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "failover-database-node")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
 		payload, err := decodeRequest(r)
 		if err != nil {

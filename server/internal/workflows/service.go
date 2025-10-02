@@ -371,3 +371,24 @@ func (s *Service) SwitchoverDatabaseNode(ctx context.Context, input *SwitchoverI
 
 	return t, nil
 }
+
+func (s *Service) FailoverDatabaseNode(ctx context.Context, input *FailoverInput) (*task.Task, error) {
+	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		DatabaseID: input.DatabaseID,
+		InstanceID: input.CandidateInstanceID,
+		NodeName:   input.NodeName,
+		Type:       task.TypeFailover,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new task: %w", err)
+	}
+
+	input.TaskID = t.TaskID
+
+	err = s.createWorkflow(ctx, t, s.workflows.Failover, input)
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}

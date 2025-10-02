@@ -3,7 +3,6 @@ package workflows
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
@@ -13,53 +12,38 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
-type SwitchoverInput struct {
+type FailoverInput struct {
 	DatabaseID          string
 	NodeName            string
 	Instances           []*activities.InstanceHost
 	CandidateInstanceID string
-	ScheduledAt         time.Time
+	SkipValidation      bool
 	TaskID              uuid.UUID
 }
 
-type SwitchoverOutput struct{}
+type FailoverOutput struct{}
 
-func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*SwitchoverOutput, error) {
-
+func (w *Workflows) Failover(ctx workflow.Context, in *FailoverInput) (*FailoverOutput, error) {
 	logger := workflow.Logger(ctx).With(
 		"database_id", in.DatabaseID,
 		"task_id", in.TaskID.String(),
 		"node_name", in.NodeName,
 	)
-	logger.Info("starting switchover workflow")
+	logger.Info("starting failover workflow")
+
 	var leaderHostID string
 	var leaderInstanceID string
 
-	// cleanup on cancellation
 	defer func() {
 		if errors.Is(ctx.Err(), workflow.Canceled) {
 			logger.Warn("workflow cancelled; running cleanup")
 			cleanupCtx := workflow.NewDisconnectedContext(ctx)
-			if in != nil && in.TaskID != uuid.Nil {
-				if leaderHostID != "" && leaderInstanceID != "" {
-					cancelIn := &activities.CancelSwitchoverInput{
-						DatabaseID:       in.DatabaseID,
-						LeaderInstanceID: leaderInstanceID,
-						TaskID:           in.TaskID,
-					}
-					if _, err := w.Activities.ExecuteCancelSwitchover(cleanupCtx, leaderHostID, cancelIn).Get(cleanupCtx); err != nil {
-						logger.Warn("cancel switchover activity failed", "err", err)
-					} else {
-						logger.Info("cancel switchover activity dispatched")
-					}
-				}
-			}
 			w.cancelTask(cleanupCtx, in.DatabaseID, in.TaskID, logger)
 		}
 	}()
 
 	handleError := func(cause error) error {
-		logger.With("error", cause).Error("switchover failed")
+		logger.With("error", cause).Error("failover failed")
 		updateTaskInput := &activities.UpdateTaskInput{
 			DatabaseID:    in.DatabaseID,
 			TaskID:        in.TaskID,
@@ -69,7 +53,6 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 		return cause
 	}
 
-	// mark task as running
 	startUpdate := &activities.UpdateTaskInput{
 		DatabaseID:    in.DatabaseID,
 		TaskID:        in.TaskID,
@@ -115,6 +98,23 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 
 	logger.Info("primary resolved", "leader_instance", leaderInstanceID, "leader_host", leaderHostID)
 
+	// If skipValidation is false, check cluster health and refuse if healthy.
+	if !in.SkipValidation {
+		// Call activity to check cluster health on the leader host queue.
+		checkIn := &activities.CheckClusterHealthInput{
+			DatabaseID: in.DatabaseID,
+			InstanceID: leaderInstanceID,
+		}
+		checkOut, err := w.Activities.ExecuteCheckClusterHealth(ctx, leaderHostID, checkIn).Get(ctx)
+		if err != nil {
+			return nil, handleError(fmt.Errorf("failed to check cluster health: %w", err))
+		}
+		if checkOut != nil && checkOut.Healthy {
+			return nil, handleError(fmt.Errorf("cluster is healthy; refuse failover unless skip_validation is true"))
+		}
+	}
+
+	// Determine candidate
 	candidateID := in.CandidateInstanceID
 	if candidateID == "" {
 		selIn := &activities.SelectCandidateInput{
@@ -136,28 +136,27 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 	logger.Info("candidate chosen", "candidate_instance", candidateID)
 
 	if candidateID == leaderInstanceID {
-		logger.Info("candidate is already the leader; skipping switchover", "candidate", candidateID)
+		logger.Info("candidate is already the leader; skipping failover", "candidate", candidateID)
 		completeUpdate := &activities.UpdateTaskInput{
 			DatabaseID:    in.DatabaseID,
 			TaskID:        in.TaskID,
 			UpdateOptions: task.UpdateComplete(),
 		}
 		_, _ = w.Activities.ExecuteUpdateTask(ctx, completeUpdate).Get(ctx)
-		return &SwitchoverOutput{}, nil
+		return &FailoverOutput{}, nil
 	}
 
-	performIn := &activities.PerformSwitchoverInput{
+	// Dispatch perform failover activity on leader host queue
+	performIn := &activities.PerformFailoverInput{
 		DatabaseID:          in.DatabaseID,
 		LeaderInstanceID:    leaderInstanceID,
 		CandidateInstanceID: candidateID,
-		ScheduledAt:         in.ScheduledAt,
 		TaskID:              in.TaskID,
 	}
 
-	logger.Info("dispatching perform switchover activity", "target_host_queue", utils.HostQueue(leaderHostID))
-
-	if _, err := w.Activities.ExecutePerformSwitchover(ctx, leaderHostID, performIn).Get(ctx); err != nil {
-		return nil, handleError(fmt.Errorf("perform switchover activity failed: %w", err))
+	logger.Info("dispatching perform failover activity", "target_host_queue", utils.HostQueue(leaderHostID))
+	if _, err := w.Activities.ExecutePerformFailover(ctx, leaderHostID, performIn).Get(ctx); err != nil {
+		return nil, handleError(fmt.Errorf("perform failover activity failed: %w", err))
 	}
 
 	completeUpdate := &activities.UpdateTaskInput{
@@ -169,6 +168,6 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 		return nil, handleError(fmt.Errorf("failed to mark task complete: %w", err))
 	}
 
-	logger.Info("switchover workflow completed successfully")
-	return &SwitchoverOutput{}, nil
+	logger.Info("failover workflow completed successfully")
+	return &FailoverOutput{}, nil
 }

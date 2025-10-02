@@ -12,7 +12,6 @@ import (
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
-	"github.com/pgEdge/control-plane/server/internal/monitor"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
@@ -20,72 +19,6 @@ import (
 type InstanceHost struct {
 	InstanceID string `json:"instance_id"`
 	HostID     string `json:"host_id"`
-}
-type SelectSwitchoverCandidateInput struct {
-	DatabaseID      string          `json:"database_id"`
-	NodeName        string          `json:"node_name"`
-	ExcludeInstance string          `json:"exclude_instance"`
-	Instances       []*InstanceHost `json:"instances,omitempty"` // optional
-}
-
-type SelectSwitchoverCandidateOutput struct {
-	CandidateInstanceID string `json:"candidate_instance_id"`
-	CandidateHostID     string `json:"candidate_host_id,omitempty"`
-}
-
-func (a *Activities) ExecuteSelectSwitchoverCandidate(ctx workflow.Context, input *SelectSwitchoverCandidateInput) workflow.Future[*SelectSwitchoverCandidateOutput] {
-	opts := workflow.ActivityOptions{
-		Queue: utils.ClusterQueue(),
-		RetryOptions: workflow.RetryOptions{
-			MaxAttempts: 1,
-		},
-	}
-	return workflow.ExecuteActivity[*SelectSwitchoverCandidateOutput](ctx, opts, a.SelectSwitchoverCandidate, input)
-}
-
-func (a *Activities) SelectSwitchoverCandidate(ctx context.Context, input *SelectSwitchoverCandidateInput) (*SelectSwitchoverCandidateOutput, error) {
-	if input == nil {
-		return nil, fmt.Errorf("SelectSwitchoverCandidate: input is nil")
-	}
-
-	makeOutput := func(inst *InstanceHost) *SelectSwitchoverCandidateOutput {
-		if inst == nil {
-			return nil
-		}
-		return &SelectSwitchoverCandidateOutput{
-			CandidateInstanceID: inst.InstanceID,
-			CandidateHostID:     inst.HostID,
-		}
-	}
-
-	monitorStore, err := do.Invoke[*monitor.Store](a.Injector)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize monitor service: %w", err)
-	}
-
-	if len(input.Instances) > 0 {
-		if monitorStore.InstanceMonitor != nil {
-			for _, inst := range input.Instances {
-				if inst == nil || inst.InstanceID == input.ExcludeInstance {
-					continue
-				}
-
-				stored, err := monitorStore.InstanceMonitor.GetByKey(inst.HostID, inst.InstanceID).Exec(ctx)
-				if err == nil && stored != nil {
-					return makeOutput(inst), nil
-				}
-			}
-		}
-
-		for _, inst := range input.Instances {
-			if inst == nil || inst.InstanceID == input.ExcludeInstance {
-				continue
-			}
-			return makeOutput(inst), nil
-		}
-	}
-
-	return nil, fmt.Errorf("SelectSwitchoverCandidate: no eligible candidate found for database=%s node=%s", input.DatabaseID, input.NodeName)
 }
 
 type PerformSwitchoverInput struct {

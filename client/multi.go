@@ -272,6 +272,14 @@ func (c *MultiServerClient) SwitchoverDatabaseNode(ctx context.Context, req *api
 	return server.SwitchoverDatabaseNode(ctx, req)
 }
 
+func (c *MultiServerClient) FailoverDatabaseNode(ctx context.Context, req *api.FailoverDatabaseNodeRequest) (res *api.FailoverDatabaseNodeResponse, err error) {
+	server, err := c.liveServer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return server.FailoverDatabaseNode(ctx, req)
+}
+
 func (c *MultiServerClient) WaitForTask(ctx context.Context, req *api.GetDatabaseTaskPayload) (*api.Task, error) {
 	server, err := c.liveServer(ctx)
 	if err != nil {

@@ -433,6 +433,54 @@ func BuildSwitchoverDatabaseNodePayload(controlPlaneSwitchoverDatabaseNodeBody s
 	return v, nil
 }
 
+// BuildFailoverDatabaseNodePayload builds the payload for the control-plane
+// failover-database-node endpoint from CLI flags.
+func BuildFailoverDatabaseNodePayload(controlPlaneFailoverDatabaseNodeBody string, controlPlaneFailoverDatabaseNodeDatabaseID string, controlPlaneFailoverDatabaseNodeNodeName string) (*controlplane.FailoverDatabaseNodeRequest, error) {
+	var err error
+	var body FailoverDatabaseNodeRequestBody
+	{
+		err = json.Unmarshal([]byte(controlPlaneFailoverDatabaseNodeBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"candidate_instance_id\": \"68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi\",\n      \"skip_validation\": true\n   }'")
+		}
+	}
+	var databaseID string
+	{
+		databaseID = controlPlaneFailoverDatabaseNodeDatabaseID
+		if utf8.RuneCountInString(databaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 1, true))
+		}
+		if utf8.RuneCountInString(databaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var nodeName string
+	{
+		nodeName = controlPlaneFailoverDatabaseNodeNodeName
+		err = goa.MergeErrors(err, goa.ValidatePattern("node_name", nodeName, "n[0-9]+"))
+		if err != nil {
+			return nil, err
+		}
+	}
+	v := &controlplane.FailoverDatabaseNodeRequest{
+		CandidateInstanceID: body.CandidateInstanceID,
+		SkipValidation:      body.SkipValidation,
+	}
+	{
+		var zero bool
+		if v.SkipValidation == zero {
+			v.SkipValidation = false
+		}
+	}
+	v.DatabaseID = controlplane.Identifier(databaseID)
+	v.NodeName = nodeName
+
+	return v, nil
+}
+
 // BuildListDatabaseTasksPayload builds the payload for the control-plane
 // list-database-tasks endpoint from CLI flags.
 func BuildListDatabaseTasksPayload(controlPlaneListDatabaseTasksDatabaseID string, controlPlaneListDatabaseTasksAfterTaskID string, controlPlaneListDatabaseTasksLimit string, controlPlaneListDatabaseTasksSortOrder string) (*controlplane.ListDatabaseTasksPayload, error) {
