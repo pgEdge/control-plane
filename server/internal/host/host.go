@@ -39,6 +39,7 @@ type Host struct {
 	ID                      string
 	Orchestrator            config.Orchestrator
 	Cohort                  *Cohort
+	DataDir                 string
 	Hostname                string
 	IPv4Address             string
 	CPUs                    int
@@ -90,6 +91,7 @@ func fromStorage(host *StoredHost, status *StoredHostStatus) (*Host, error) {
 		ID:                      host.ID,
 		Orchestrator:            host.Orchestrator,
 		Cohort:                  cohort,
+		DataDir:                 host.DataDir,
 		Hostname:                host.Hostname,
 		IPv4Address:             host.IPv4Address,
 		CPUs:                    host.CPUs,
@@ -137,6 +139,7 @@ func toStorage(host *Host) *StoredHost {
 		ID:                      host.ID,
 		Orchestrator:            host.Orchestrator,
 		Cohort:                  cohort,
+		DataDir:                 host.DataDir,
 		Hostname:                host.Hostname,
 		IPv4Address:             host.IPv4Address,
 		CPUs:                    host.CPUs,

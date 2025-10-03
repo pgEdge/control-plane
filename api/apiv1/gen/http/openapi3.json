@@ -37,6 +37,7 @@
                         "type": "swarm"
                       },
                       "cpus": 16,
+                      "data_dir": "/data",
                       "default_pgedge_version": {
                         "postgres_version": "17.6",
                         "spock_version": "5"
@@ -74,6 +75,7 @@
                         "type": "swarm"
                       },
                       "cpus": 16,
+                      "data_dir": "/data",
                       "default_pgedge_version": {
                         "postgres_version": "17.6",
                         "spock_version": "5"
@@ -111,6 +113,7 @@
                         "type": "swarm"
                       },
                       "cpus": 16,
+                      "data_dir": "/data",
                       "default_pgedge_version": {
                         "postgres_version": "17.6",
                         "spock_version": "5"
@@ -3431,6 +3434,7 @@
                         "type": "swarm"
                       },
                       "cpus": 16,
+                      "data_dir": "/data",
                       "default_pgedge_version": {
                         "postgres_version": "17.6",
                         "spock_version": "5"
@@ -3468,6 +3472,7 @@
                         "type": "swarm"
                       },
                       "cpus": 16,
+                      "data_dir": "/data",
                       "default_pgedge_version": {
                         "postgres_version": "17.6",
                         "spock_version": "5"
@@ -3505,6 +3510,7 @@
                         "type": "swarm"
                       },
                       "cpus": 16,
+                      "data_dir": "/data",
                       "default_pgedge_version": {
                         "postgres_version": "17.6",
                         "spock_version": "5"
@@ -3545,6 +3551,7 @@
                       "type": "swarm"
                     },
                     "cpus": 16,
+                    "data_dir": "/data",
                     "default_pgedge_version": {
                       "postgres_version": "17.6",
                       "spock_version": "5"
@@ -3582,6 +3589,7 @@
                       "type": "swarm"
                     },
                     "cpus": 16,
+                    "data_dir": "/data",
                     "default_pgedge_version": {
                       "postgres_version": "17.6",
                       "spock_version": "5"
@@ -3619,6 +3627,7 @@
                       "type": "swarm"
                     },
                     "cpus": 16,
+                    "data_dir": "/data",
                     "default_pgedge_version": {
                       "postgres_version": "17.6",
                       "spock_version": "5"
@@ -3808,6 +3817,7 @@
                     "type": "swarm"
                   },
                   "cpus": 4,
+                  "data_dir": "/data",
                   "default_pgedge_version": {
                     "postgres_version": "17.6",
                     "spock_version": "5"
@@ -4472,6 +4482,7 @@
                   "type": "swarm"
                 },
                 "cpus": 16,
+                "data_dir": "/data",
                 "default_pgedge_version": {
                   "postgres_version": "17.6",
                   "spock_version": "5"
@@ -4509,6 +4520,7 @@
                   "type": "swarm"
                 },
                 "cpus": 16,
+                "data_dir": "/data",
                 "default_pgedge_version": {
                   "postgres_version": "17.6",
                   "spock_version": "5"
@@ -4546,6 +4558,7 @@
                   "type": "swarm"
                 },
                 "cpus": 16,
+                "data_dir": "/data",
                 "default_pgedge_version": {
                   "postgres_version": "17.6",
                   "spock_version": "5"
@@ -4605,6 +4618,7 @@
                 "type": "swarm"
               },
               "cpus": 16,
+              "data_dir": "/data",
               "default_pgedge_version": {
                 "postgres_version": "17.6",
                 "spock_version": "5"
@@ -4642,6 +4656,7 @@
                 "type": "swarm"
               },
               "cpus": 16,
+              "data_dir": "/data",
               "default_pgedge_version": {
                 "postgres_version": "17.6",
                 "spock_version": "5"
@@ -4679,6 +4694,7 @@
                 "type": "swarm"
               },
               "cpus": 16,
+              "data_dir": "/data",
               "default_pgedge_version": {
                 "postgres_version": "17.6",
                 "spock_version": "5"
@@ -8264,6 +8280,11 @@
             "example": 4,
             "format": "int64"
           },
+          "data_dir": {
+            "type": "string",
+            "description": "The data directory for the host.",
+            "example": "/data"
+          },
           "default_pgedge_version": {
             "$ref": "#/components/schemas/PgEdgeVersion"
           },
@@ -8328,6 +8349,7 @@
             "type": "swarm"
           },
           "cpus": 4,
+          "data_dir": "/data",
           "default_pgedge_version": {
             "postgres_version": "17.6",
             "spock_version": "5"
@@ -8383,6 +8405,7 @@
         "required": [
           "id",
           "orchestrator",
+          "data_dir",
           "hostname",
           "ipv4_address",
           "status"

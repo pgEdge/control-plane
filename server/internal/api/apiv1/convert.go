@@ -46,6 +46,7 @@ func hostToAPI(h *host.Host) *api.Host {
 	}
 	return &api.Host{
 		Orchestrator: string(h.Orchestrator),
+		DataDir:      h.DataDir,
 		Hostname:     h.Hostname,
 		Ipv4Address:  h.IPv4Address,
 		Cpus:         utils.NillablePointerTo(h.CPUs),

@@ -2649,6 +2649,7 @@ func marshalControlplaneHostToHostResponseBody(v *controlplane.Host) *HostRespon
 	res := &HostResponseBody{
 		ID:           string(v.ID),
 		Orchestrator: v.Orchestrator,
+		DataDir:      v.DataDir,
 		Hostname:     v.Hostname,
 		Ipv4Address:  v.Ipv4Address,
 		Cpus:         v.Cpus,
@@ -2752,6 +2753,7 @@ func marshalControlplaneHostToHostResponse(v *controlplane.Host) *HostResponse {
 	res := &HostResponse{
 		ID:           string(v.ID),
 		Orchestrator: v.Orchestrator,
+		DataDir:      v.DataDir,
 		Hostname:     v.Hostname,
 		Ipv4Address:  v.Ipv4Address,
 		Cpus:         v.Cpus,

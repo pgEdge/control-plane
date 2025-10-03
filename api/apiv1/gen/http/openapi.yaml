@@ -1076,6 +1076,7 @@ paths:
                         required:
                             - id
                             - orchestrator
+                            - data_dir
                             - hostname
                             - ipv4_address
                             - status
@@ -1575,6 +1576,7 @@ definitions:
                         member_id: lah4bsznw6kc0hp7biylmmmll
                         type: swarm
                       cpus: 16
+                      data_dir: /data
                       default_pgedge_version:
                         postgres_version: "17.6"
                         spock_version: "5"
@@ -1600,6 +1602,7 @@ definitions:
                         member_id: cb88u9jael2psnepep5iuzb4r
                         type: swarm
                       cpus: 16
+                      data_dir: /data
                       default_pgedge_version:
                         postgres_version: "17.6"
                         spock_version: "5"
@@ -1625,6 +1628,7 @@ definitions:
                         member_id: u7u9i3nhqunxc4wj577l6ecb0
                         type: swarm
                       cpus: 16
+                      data_dir: /data
                       default_pgedge_version:
                         postgres_version: "17.6"
                         spock_version: "5"
@@ -1666,6 +1670,7 @@ definitions:
                     member_id: lah4bsznw6kc0hp7biylmmmll
                     type: swarm
                   cpus: 16
+                  data_dir: /data
                   default_pgedge_version:
                     postgres_version: "17.6"
                     spock_version: "5"
@@ -1691,6 +1696,7 @@ definitions:
                     member_id: cb88u9jael2psnepep5iuzb4r
                     type: swarm
                   cpus: 16
+                  data_dir: /data
                   default_pgedge_version:
                     postgres_version: "17.6"
                     spock_version: "5"
@@ -1716,6 +1722,7 @@ definitions:
                     member_id: u7u9i3nhqunxc4wj577l6ecb0
                     type: swarm
                   cpus: 16
+                  data_dir: /data
                   default_pgedge_version:
                     postgres_version: "17.6"
                     spock_version: "5"
@@ -3155,6 +3162,10 @@ definitions:
                 description: The number of CPUs on this host.
                 example: 4
                 format: int64
+            data_dir:
+                type: string
+                description: The data directory for the host.
+                example: /data
             default_pgedge_version:
                 $ref: '#/definitions/PgEdgeVersion'
             hostname:
@@ -3199,6 +3210,7 @@ definitions:
                 member_id: lah4bsznw6kc0hp7biylmmmll
                 type: swarm
             cpus: 4
+            data_dir: /data
             default_pgedge_version:
                 postgres_version: "17.6"
                 spock_version: "5"
@@ -3229,6 +3241,7 @@ definitions:
         required:
             - id
             - orchestrator
+            - data_dir
             - hostname
             - ipv4_address
             - status

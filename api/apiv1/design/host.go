@@ -85,6 +85,10 @@ var Host = g.Type("Host", func() {
 		g.Description("The orchestrator used by this host.")
 		g.Example("swarm")
 	})
+	g.Attribute("data_dir", g.String, func() {
+		g.Description("The data directory for the host.")
+		g.Example("/data")
+	})
 	g.Attribute("cohort", HostCohort, func() {
 		g.Description("The cohort that this host belongs to.")
 	})
@@ -118,6 +122,7 @@ var Host = g.Type("Host", func() {
 	g.Required(
 		"id",
 		"orchestrator",
+		"data_dir",
 		"hostname",
 		"ipv4_address",
 		"status",
@@ -142,6 +147,7 @@ var HostsExample = []map[string]any{
 		"ipv4_address": "10.24.34.2",
 		"memory":       "16GB",
 		"orchestrator": "swarm",
+		"data_dir":     "/data",
 		"status": map[string]any{
 			"components": map[string]any{},
 			"state":      "healthy",
@@ -179,6 +185,7 @@ var HostsExample = []map[string]any{
 		"ipv4_address": "10.24.35.2",
 		"memory":       "16GB",
 		"orchestrator": "swarm",
+		"data_dir":     "/data",
 		"status": map[string]any{
 			"components": map[string]any{},
 			"state":      "healthy",
@@ -216,6 +223,7 @@ var HostsExample = []map[string]any{
 		"ipv4_address": "10.24.36.2",
 		"memory":       "16GB",
 		"orchestrator": "swarm",
+		"data_dir":     "/data",
 		"status": map[string]any{
 			"components": map[string]any{},
 			"state":      "healthy",

@@ -19,6 +19,7 @@ type StoredHost struct {
 	ID                      string              `json:"id"`
 	Orchestrator            config.Orchestrator `json:"type"`
 	Cohort                  *StoredCohort       `json:"stored_cohort,omitempty"`
+	DataDir                 string              `json:"data_dir"`
 	Hostname                string              `json:"hostname"`
 	IPv4Address             string              `json:"ipv4_address"`
 	CPUs                    int                 `json:"cpus"`

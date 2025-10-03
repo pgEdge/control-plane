@@ -145,6 +145,8 @@ type GetHostResponseBody struct {
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// The orchestrator used by this host.
 	Orchestrator *string `form:"orchestrator,omitempty" json:"orchestrator,omitempty" xml:"orchestrator,omitempty"`
+	// The data directory for the host.
+	DataDir *string `form:"data_dir,omitempty" json:"data_dir,omitempty" xml:"data_dir,omitempty"`
 	// The cohort that this host belongs to.
 	Cohort *HostCohortResponseBody `form:"cohort,omitempty" json:"cohort,omitempty" xml:"cohort,omitempty"`
 	// The hostname of this host.
@@ -1343,6 +1345,8 @@ type HostResponseBody struct {
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// The orchestrator used by this host.
 	Orchestrator *string `form:"orchestrator,omitempty" json:"orchestrator,omitempty" xml:"orchestrator,omitempty"`
+	// The data directory for the host.
+	DataDir *string `form:"data_dir,omitempty" json:"data_dir,omitempty" xml:"data_dir,omitempty"`
 	// The cohort that this host belongs to.
 	Cohort *HostCohortResponseBody `form:"cohort,omitempty" json:"cohort,omitempty" xml:"cohort,omitempty"`
 	// The hostname of this host.
@@ -1406,6 +1410,8 @@ type HostResponse struct {
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
 	// The orchestrator used by this host.
 	Orchestrator *string `form:"orchestrator,omitempty" json:"orchestrator,omitempty" xml:"orchestrator,omitempty"`
+	// The data directory for the host.
+	DataDir *string `form:"data_dir,omitempty" json:"data_dir,omitempty" xml:"data_dir,omitempty"`
 	// The cohort that this host belongs to.
 	Cohort *HostCohortResponse `form:"cohort,omitempty" json:"cohort,omitempty" xml:"cohort,omitempty"`
 	// The hostname of this host.
@@ -2742,6 +2748,7 @@ func NewGetHostHostOK(body *GetHostResponseBody) *controlplane.Host {
 	v := &controlplane.Host{
 		ID:           controlplane.Identifier(*body.ID),
 		Orchestrator: *body.Orchestrator,
+		DataDir:      *body.DataDir,
 		Hostname:     *body.Hostname,
 		Ipv4Address:  *body.Ipv4Address,
 		Cpus:         body.Cpus,
@@ -3968,6 +3975,9 @@ func ValidateGetHostResponseBody(body *GetHostResponseBody) (err error) {
 	}
 	if body.Orchestrator == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("orchestrator", "body"))
+	}
+	if body.DataDir == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("data_dir", "body"))
 	}
 	if body.Hostname == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("hostname", "body"))
@@ -5557,6 +5567,9 @@ func ValidateHostResponseBody(body *HostResponseBody) (err error) {
 	if body.Orchestrator == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("orchestrator", "body"))
 	}
+	if body.DataDir == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("data_dir", "body"))
+	}
 	if body.Hostname == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("hostname", "body"))
 	}
@@ -5673,6 +5686,9 @@ func ValidateHostResponse(body *HostResponse) (err error) {
 	}
 	if body.Orchestrator == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("orchestrator", "body"))
+	}
+	if body.DataDir == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("data_dir", "body"))
 	}
 	if body.Hostname == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("hostname", "body"))
