@@ -375,6 +375,16 @@ func (s *State) AddResource(resources ...Resource) error {
 	return nil
 }
 
+func (s *State) HasResources(identifiers ...Identifier) bool {
+	for _, identifier := range identifiers {
+		_, ok := s.Get(identifier)
+		if !ok {
+			return false
+		}
+	}
+	return true
+}
+
 func FromState[T Resource](state *State, identifier Identifier) (T, error) {
 	var zero T
 	data, ok := state.Get(identifier)

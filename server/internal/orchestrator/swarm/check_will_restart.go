@@ -34,49 +34,52 @@ type CheckWillRestart struct {
 	WillRestart bool   `json:"will_restart"`
 }
 
-func (s *CheckWillRestart) ResourceVersion() string {
+func (c *CheckWillRestart) ResourceVersion() string {
 	return "1"
 }
 
-func (s *CheckWillRestart) DiffIgnore() []string {
+func (c *CheckWillRestart) DiffIgnore() []string {
 	return []string{"/will_restart"}
 }
 
-func (s *CheckWillRestart) Executor() resource.Executor {
+func (c *CheckWillRestart) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeCohort,
-		ID:   s.CohortID,
+		ID:   c.CohortID,
 	}
 }
 
-func (s *CheckWillRestart) Identifier() resource.Identifier {
-	return CheckWillRestartIdentifier(s.InstanceID)
+func (c *CheckWillRestart) Identifier() resource.Identifier {
+	return CheckWillRestartIdentifier(c.InstanceID)
 }
 
-func (s *CheckWillRestart) Dependencies() []resource.Identifier {
+func (c *CheckWillRestart) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
-		PostgresServiceSpecResourceIdentifier(s.InstanceID),
+		PostgresServiceSpecResourceIdentifier(c.InstanceID),
 	}
 }
 
-func (s *CheckWillRestart) Refresh(ctx context.Context, rc *resource.Context) error {
+func (c *CheckWillRestart) Refresh(ctx context.Context, rc *resource.Context) error {
+	if !rc.State.HasResources(c.Dependencies()...) {
+		return resource.ErrNotFound
+	}
 	return nil
 }
 
-func (s *CheckWillRestart) Create(ctx context.Context, rc *resource.Context) error {
+func (c *CheckWillRestart) Create(ctx context.Context, rc *resource.Context) error {
 	client, err := do.Invoke[*docker.Docker](rc.Injector)
 	if err != nil {
 		return err
 	}
 
-	desired, err := resource.FromContext[*PostgresServiceSpecResource](rc, PostgresServiceSpecResourceIdentifier(s.InstanceID))
+	desired, err := resource.FromContext[*PostgresServiceSpecResource](rc, PostgresServiceSpecResourceIdentifier(c.InstanceID))
 	if err != nil {
 		return fmt.Errorf("failed to get desired service spec from state: %w", err)
 	}
 
 	current, err := client.ServiceInspectByLabels(ctx, map[string]string{
 		"pgedge.component":   "postgres",
-		"pgedge.instance.id": s.InstanceID,
+		"pgedge.instance.id": c.InstanceID,
 	})
 	if errors.Is(err, docker.ErrNotFound) {
 		return nil
@@ -86,26 +89,26 @@ func (s *CheckWillRestart) Create(ctx context.Context, rc *resource.Context) err
 
 	// It's safe to modify the desired value. It's deserialized from JSON each
 	// time it's retrieved from the state.
-	desiredTask := s.normalizeTaskDefaults(desired.Spec.TaskTemplate)
-	currentTask, err := s.normalizeCurrentTask(ctx, client, current.Spec.TaskTemplate)
+	desiredTask := c.normalizeTaskDefaults(desired.Spec.TaskTemplate)
+	currentTask, err := c.normalizeCurrentTask(ctx, client, current.Spec.TaskTemplate)
 	if err != nil {
 		return err
 	}
 
-	s.WillRestart = !reflect.DeepEqual(currentTask, desiredTask)
+	c.WillRestart = !reflect.DeepEqual(currentTask, desiredTask)
 
 	return nil
 }
 
-func (s *CheckWillRestart) Update(ctx context.Context, rc *resource.Context) error {
-	return s.Create(ctx, rc)
+func (c *CheckWillRestart) Update(ctx context.Context, rc *resource.Context) error {
+	return c.Create(ctx, rc)
 }
 
-func (s *CheckWillRestart) Delete(ctx context.Context, rc *resource.Context) error {
+func (c *CheckWillRestart) Delete(ctx context.Context, rc *resource.Context) error {
 	return nil
 }
 
-func (s *CheckWillRestart) normalizeTaskDefaults(spec swarm.TaskSpec) swarm.TaskSpec {
+func (c *CheckWillRestart) normalizeTaskDefaults(spec swarm.TaskSpec) swarm.TaskSpec {
 	if spec.ContainerSpec.StopGracePeriod == nil {
 		spec.ContainerSpec.StopGracePeriod = utils.PointerTo(10 * time.Second)
 	}
@@ -122,7 +125,7 @@ func (s *CheckWillRestart) normalizeTaskDefaults(spec swarm.TaskSpec) swarm.Task
 	return spec
 }
 
-func (s *CheckWillRestart) normalizeCurrentTask(ctx context.Context, client *docker.Docker, current swarm.TaskSpec) (swarm.TaskSpec, error) {
+func (c *CheckWillRestart) normalizeCurrentTask(ctx context.Context, client *docker.Docker, current swarm.TaskSpec) (swarm.TaskSpec, error) {
 	for i, n := range current.Networks {
 		nw, err := client.NetworkInspect(ctx, n.Target, network.InspectOptions{})
 		if err != nil {
@@ -140,5 +143,5 @@ func (s *CheckWillRestart) normalizeCurrentTask(ctx context.Context, client *doc
 		current.Networks[i] = normalized
 	}
 
-	return s.normalizeTaskDefaults(current), nil
+	return c.normalizeTaskDefaults(current), nil
 }

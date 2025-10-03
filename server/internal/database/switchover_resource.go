@@ -56,6 +56,9 @@ func (s *SwitchoverResource) Dependencies() []resource.Identifier {
 }
 
 func (s *SwitchoverResource) Refresh(ctx context.Context, rc *resource.Context) error {
+	if !rc.State.HasResources(s.Dependencies()...) {
+		return resource.ErrNotFound
+	}
 	return nil
 }
 
