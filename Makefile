@@ -10,6 +10,8 @@ E2E_FIXTURE ?=
 E2E_PARALLEL ?=
 E2E_RUN ?=
 E2E_SKIP_CLEANUP ?= 0
+E2E_DEBUG ?= 0
+E2E_DEBUG_DIR ?=
 
 buildx_builder=$(if $(CI),"control-plane-ci","control-plane")
 buildx_config=$(if $(CI),"./buildkit.ci.toml","./buildkit.toml")
@@ -24,7 +26,9 @@ e2e_args=-tags=e2e_test -count=1 -timeout=20m ./e2e/... \
 	$(if $(E2E_RUN),-run $(E2E_RUN)) \
 	-args \
 	$(if $(E2E_FIXTURE),-fixture $(E2E_FIXTURE)) \
-	$(if $(filter 1,$(E2E_SKIP_CLEANUP)),-skip-cleanup)
+	$(if $(filter 1,$(E2E_SKIP_CLEANUP)),-skip-cleanup) \
+	$(if $(filter 1,$(E2E_DEBUG)),-debug) \
+	$(if $(E2E_DEBUG_DIR),-debug-dir $(E2E_DEBUG_DIR))
 
 ###########
 # testing #

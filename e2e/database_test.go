@@ -28,13 +28,17 @@ func NewDatabaseFixture(
 	config TestConfig,
 	client *client.MultiServerClient,
 	req *controlplane.CreateDatabaseRequest,
+	debug bool,
+	debugDir string,
 ) (*DatabaseFixture, error) {
 	db := &DatabaseFixture{
 		config: config,
 		client: client,
 	}
 	if err := db.create(ctx, req); err != nil {
-		return nil, err
+		// We still return the database fixture here so that we can clean it up
+		// if it failed during creation.
+		return db, err
 	}
 	return db, nil
 }

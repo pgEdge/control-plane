@@ -134,6 +134,20 @@ make test-e2e E2E_RUN=TestPosixBackupRestore
 make test-e2e E2E_RUN=TestPosixBackupRestore E2E_SKIP_CLEANUP=1
 ```
 
+- `E2E_DEBUG`: Setting this to 1 will make the tests output debug information
+  for failed tests to `./e2e/debug`:
+
+```sh
+make test-e2e E2E_DEBUG=1
+```
+
+- `E2E_DEBUG_DIR`: Allows you to override the directory used by the `E2E_DEBUG`
+  feature:
+
+```sh
+make test-e2e E2E_DEBUG=1 E2E_DEBUG_DIR=/tmp/e2e-debug
+```
+
 ### Writing new tests
 
 The `e2e` package contains several helpers that make it easier to interact with

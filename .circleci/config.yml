@@ -54,7 +54,16 @@ jobs:
           name: Run e2e tests with Docker Compose
           command: |
             make ci-compose-detached
-            make test-e2e-ci E2E_PARALLEL=4
+            make test-e2e-ci E2E_PARALLEL=4 E2E_DEBUG=1
+      - run:
+          name: Archive debug output
+          command: |
+            if [[ -d ./e2e/debug ]]; then
+              tar -czf e2e-debug.tar.gz -C e2e debug
+            fi
+          when: on_fail
+      - store_artifacts:
+          path: e2e-debug.tar.gz
       - run:
           name: Ensure Docker Compose is stopped
           command: make ci-compose-down
