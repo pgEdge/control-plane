@@ -170,7 +170,11 @@ func (l *LoadTest) Run(t *testing.T) {
 			tLogf(t, "expecting %d rows for table '%s'", expected, loader.TableName)
 
 			for _, instance := range db.Instances {
-				tLogf(t, "validating table '%s' on instance '%s'", loader.TableName, instance.ID)
+				var role string
+				if instance.Postgres != nil && instance.Postgres.Role != nil {
+					role = *instance.Postgres.Role
+				}
+				tLogf(t, "validating table '%s' on instance '%s' (role=%s)", loader.TableName, instance.ID, role)
 
 				opts := ConnectionOptions{
 					InstanceID: instance.ID,
