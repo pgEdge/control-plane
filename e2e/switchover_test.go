@@ -50,7 +50,11 @@ func TestSwitchoverScenarios(t *testing.T) {
 	getPrimaryInstanceID := func() string {
 		inst := db.GetInstance(And(WithNode("n1"), WithRole("primary")))
 		if inst == nil {
-			t.Fatalf("no primary instance found for node n1")
+			// It's possible for our API to return a database with no primary
+			// during the switchover process. We update the instance status on
+			// a 5-second interval, and those instances can update at different
+			// times.
+			return ""
 		}
 		return inst.ID
 	}
@@ -66,11 +70,10 @@ func TestSwitchoverScenarios(t *testing.T) {
 	}, 60*time.Second)
 
 	// Returns a non-primary instance that's ready/available, or "" if none found within timeout.
-	waitForReadyReplica := func(timeout time.Duration) string {
+	waitForReadyReplica := func(curPrimary string, timeout time.Duration) string {
 		deadline := time.Now().Add(timeout)
 		for time.Now().Before(deadline) {
 			db.Refresh(ctx)
-			curPrimary := getPrimaryInstanceID()
 			var states []string
 			for _, inst := range db.Instances {
 				if inst.NodeName != "n1" {
@@ -99,7 +102,7 @@ func TestSwitchoverScenarios(t *testing.T) {
 		deadline := time.Now().Add(timeout)
 		for time.Now().Before(deadline) {
 			db.Refresh(ctx)
-			if p := getPrimaryInstanceID(); p != orig {
+			if p := getPrimaryInstanceID(); p != "" && p != orig {
 				return true
 			}
 			time.Sleep(1 * time.Second)
@@ -121,6 +124,8 @@ func TestSwitchoverScenarios(t *testing.T) {
 
 	t.Run("automatic candidate selection (no candidate specified)", func(t *testing.T) {
 		origPrimary := getPrimaryInstanceID()
+		require.NotEmpty(t, origPrimary, "database has no primary instance")
+
 		t.Logf("[auto] original primary: %s", origPrimary)
 
 		err := db.SwitchoverDatabaseNode(ctx, &controlplane.SwitchoverDatabaseNodePayload{
@@ -142,8 +147,9 @@ func TestSwitchoverScenarios(t *testing.T) {
 
 	t.Run("switchover to a specific candidate", func(t *testing.T) {
 		currentPrimary := getPrimaryInstanceID()
+		require.NotEmpty(t, currentPrimary, "database has no primary instance")
 
-		candidateInst := waitForReadyReplica(60 * time.Second)
+		candidateInst := waitForReadyReplica(currentPrimary, 60*time.Second)
 		require.NotEmpty(t, candidateInst, "[specific] no ready replica available to switchover to")
 		require.NotEqual(t, currentPrimary, candidateInst, "[specific] picked primary as candidate unexpectedly")
 		t.Logf("[specific] current primary: %s, candidate (ready): %s", currentPrimary, candidateInst)
@@ -170,7 +176,9 @@ func TestSwitchoverScenarios(t *testing.T) {
 		time.Sleep(10 * time.Second)
 
 		origPrimary := getPrimaryInstanceID()
-		candidate := waitForReadyReplica(90 * time.Second)
+		require.NotEmpty(t, origPrimary, "database has no primary instance")
+
+		candidate := waitForReadyReplica(origPrimary, 90*time.Second)
 		require.NotEmpty(t, candidate)
 		require.NotEqual(t, origPrimary, candidate)
 
