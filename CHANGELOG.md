@@ -1,4 +1,28 @@
 # Changelog
+
+## v0.4.0 - 2025-10-06
+### Added
+- Introduced stop-instance and start-instance APIs to allow users to manually trigger a stop/start of a specific Postgres instance.
+- Added support for adding new database nodes with zero downtime.
+- Added stopped state for instances
+- Added switchover support via the control plane API
+- Added a "cancel database task" API endpoint
+- Added validation to update-database to reject requests that update the database name.
+- Added support for mTLS to the Control Plane API via user-managed certificates.
+- Implemented the "get host" and "get cluster" endpoints.
+### Changed
+- Switched to the new images from github.com/pgEdge/postgres-images.
+- Added the postgres minor version to the `postgres_version` fields in the database and host APIs.
+- Changed the database creation behavior so that the first host in `host_ids` gets the primary instance for a node.
+- Database update process so that nodes are processed one at a time. Within a node, replicas are always updated before the primary.
+- Added automated switchovers before and after an instance is restarted as part of an update.
+- Added validation to the update database API to reject requests that update the Postgres major version.
+- Changed MQTT interface in client library to take an endpoint. This removes the need to generate unique client IDs per server. Callers are responsible for calling `Connect()` and `Disconnect()` on the endpoint.
+- Enable fast basebackup for new nodes. This noticeably speeds up the creation process for a node with replicas.
+- Changed patroni configuration to use pg_rewind for faster recovery after a switchover.
+### Fixed
+- Fixed join cluster timeouts when requests were submitted to a member other than the raft leader.
+
 ## v0.3.0 - 2025-08-19
 ### Added
 - Added ability to override 'database modifiable state' check via `force` parameters on several endpoints.
@@ -10,7 +34,9 @@
 - Fixed error in restore database workflow when the request is submitted to a host that is not running the target instance.
 - Fixed client-side validation errors from missing enum values in our generated client code.
 - Fixed timing issue where a new database operation could not be started immediately after the task was marked as completed.
-- Fixed a bug in the restore database workflow where, sometimes, the restore would start before Postgres had finished shutting down.## v0.2.0 - 2025-07-22
+- Fixed a bug in the restore database workflow where, sometimes, the restore would start before Postgres had finished shutting down.
+
+## v0.2.0 - 2025-07-22
 ### Added
 - Tasks and task logs for every database operation.
 - `parent_id`, `node_name`, `host_id`, and `instance_id` fields to task API entities.
@@ -41,6 +67,8 @@
 ### Fixed
 - Delay when resuming workflows after a restart.
 - Database operation errors when instance IPs change after restarting.
-- Method to determine default IPv4 address to always return IPv4.## v0.1.0 - 2025-05-28
+- Method to determine default IPv4 address to always return IPv4.
+
+## v0.1.0 - 2025-05-28
 ### Added
 - Release process to publish Docker images for the Control Plane server.
