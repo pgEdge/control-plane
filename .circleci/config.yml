@@ -59,6 +59,7 @@ jobs:
           name: Archive debug output
           command: |
             if [[ -d ./e2e/debug ]]; then
+              sudo journalctl -u docker.service > ./e2e/debug/docker-service.log
               tar -czf e2e-debug.tar.gz -C e2e debug
             fi
           when: on_fail
