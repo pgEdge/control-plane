@@ -228,32 +228,22 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 		return fmt.Errorf("failed to initialize embedded etcd config: %w", err)
 	}
 
-	lg, err := newZapLogger(e.logger, e.cfg.EmbeddedEtcd.ClientLogLevel, "etcd_peer_client")
+	// TODO: this appears to be a bug in Etcd. Only the raft leader can promote
+	// a member, so non-leader members forward the promotion request to the
+	// leader. The forwarded request goes over HTTP instead of gRPC and it
+	// appears to lose some auth information. We can work around it by
+	// explicitly connecting to the raft leader.
+	client, err := e.leaderClient(ctx, options.Peer.ClientURL)
 	if err != nil {
-		return fmt.Errorf("failed to initialize etcd peer client logger: %w", err)
-	}
-
-	tlsConfig, err := e.clientTLSConfig()
-	if err != nil {
-		return fmt.Errorf("failed to initialize etcd client TLS config: %w", err)
-	}
-
-	client, err := clientv3.New(clientv3.Config{
-		Logger:    lg,
-		Endpoints: []string{options.Peer.ClientURL},
-		TLS:       tlsConfig,
-		Username:  hostUsername(e.cfg.HostID),
-		Password:  e.cfg.HostID,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to initialize etcd peer client: %w", err)
+		return err
 	}
 
 	// This operation can fail if we're joining multiple members to the cluster
 	// simultaneously. The max learners per cluster will be configurable in Etcd
-	// 3.6, but in 3.5 it's hardcoded 1 learner per cluster. There's also a on
-	// the number of unhealthy (which could just be starting up) members that's
-	// calculated based on the cluster size. This is done to protect the quorum.
+	// 3.6, but in 3.5 it's hardcoded 1 learner per cluster. There's also a
+	// limit on the number of unhealthy (which could just be starting up)
+	// members that's calculated based on the cluster size. This is done to
+	// protect the quorum.
 	err = utils.Retry(5, time.Second, func() error {
 		// We always add as a learner first to minimize disruptions
 		_, err = client.MemberAddAsLearner(ctx, []string{e.AsPeer().PeerURL})
@@ -299,6 +289,10 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 		return fmt.Errorf("failed to promote this etcd server: %w", err)
 	}
 
+	if err := client.Close(); err != nil {
+		return fmt.Errorf("failed to close initialization client: %w", err)
+	}
+
 	client, err = e.GetClient()
 	if err != nil {
 		return fmt.Errorf("failed to get internal etcd client: %w", err)
@@ -314,6 +308,66 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 	e.initialized <- struct{}{}
 
 	return nil
+}
+
+func (e *EmbeddedEtcd) leaderClient(ctx context.Context, initialEndpoint string) (*clientv3.Client, error) {
+	lg, err := newZapLogger(e.logger, e.cfg.EmbeddedEtcd.ClientLogLevel, "etcd_peer_client")
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize etcd peer client logger: %w", err)
+	}
+
+	tlsConfig, err := e.clientTLSConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize etcd client TLS config: %w", err)
+	}
+
+	client, err := clientv3.New(clientv3.Config{
+		Logger:    lg,
+		Endpoints: []string{initialEndpoint},
+		TLS:       tlsConfig,
+		Username:  hostUsername(e.cfg.HostID),
+		Password:  e.cfg.HostID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create initial etcd peer client: %w", err)
+	}
+
+	status, err := client.Status(ctx, initialEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get initial endpoint status: %w", err)
+	}
+
+	if status.Header.MemberId == status.Leader {
+		return client, nil
+	}
+
+	// We're going to get a new client to the leader member, so this client
+	// won't be needed anymore.
+	defer client.Close()
+
+	members, err := client.MemberList(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list cluster members: %w", err)
+	}
+
+	for _, member := range members.Members {
+		if member.ID == status.Leader {
+			leaderClient, err := clientv3.New(clientv3.Config{
+				Logger:    lg,
+				Endpoints: member.ClientURLs,
+				TLS:       tlsConfig,
+				Username:  hostUsername(e.cfg.HostID),
+				Password:  e.cfg.HostID,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to create etcd peer client to leader: %w", err)
+			}
+
+			return leaderClient, nil
+		}
+	}
+
+	return nil, fmt.Errorf("failed to find cluster leader '%d'", status.Leader)
 }
 
 func (e *EmbeddedEtcd) Initialized() <-chan struct{} {

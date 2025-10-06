@@ -5,6 +5,7 @@ package etcd_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -339,5 +340,89 @@ func TestEmbeddedEtcd(t *testing.T) {
 		// Attempting to remove another member should produce a minimum size err
 		err = serverA.RemovePeer(ctx, cfgB.HostID)
 		assert.ErrorIs(t, err, etcd.ErrMinimumClusterSize)
+	})
+
+	t.Run("join cluster from follower", func(t *testing.T) {
+		logger := testutils.Logger(t)
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+		defer cancel()
+
+		// Initialize the cluster
+		cfgA := config.Config{
+			HostID:      uuid.NewString(),
+			DataDir:     storagetest.TempDir(t),
+			StorageType: config.StorageTypeEmbeddedEtcd,
+			IPv4Address: "127.0.0.1",
+			Hostname:    "localhost",
+			EmbeddedEtcd: config.EmbeddedEtcd{
+				ClientPort: storagetest.GetFreePort(t),
+				PeerPort:   storagetest.GetFreePort(t),
+			},
+		}
+		serverA := etcd.NewEmbeddedEtcd(cfgA, logger)
+		assert.NoError(t, serverA.Start(ctx))
+		t.Cleanup(func() {
+			serverA.Shutdown()
+		})
+
+		cfgB := config.Config{
+			HostID:      uuid.NewString(),
+			DataDir:     storagetest.TempDir(t),
+			StorageType: config.StorageTypeEmbeddedEtcd,
+			IPv4Address: "127.0.0.1",
+			Hostname:    "localhost",
+			EmbeddedEtcd: config.EmbeddedEtcd{
+				ClientPort: storagetest.GetFreePort(t),
+				PeerPort:   storagetest.GetFreePort(t),
+			},
+		}
+		serverB := etcd.NewEmbeddedEtcd(cfgB, logger)
+
+		cfgC := config.Config{
+			HostID:      uuid.NewString(),
+			DataDir:     storagetest.TempDir(t),
+			StorageType: config.StorageTypeEmbeddedEtcd,
+			IPv4Address: "127.0.0.1",
+			Hostname:    "localhost",
+			EmbeddedEtcd: config.EmbeddedEtcd{
+				ClientPort: storagetest.GetFreePort(t),
+				PeerPort:   storagetest.GetFreePort(t),
+			},
+		}
+		serverC := etcd.NewEmbeddedEtcd(cfgC, logger)
+
+		// Join server B
+		serverBCreds, err := serverA.AddPeerUser(ctx, etcd.HostCredentialOptions{
+			HostID:      cfgB.HostID,
+			Hostname:    cfgB.Hostname,
+			IPv4Address: cfgB.IPv4Address,
+		})
+		assert.NoError(t, err)
+		err = serverB.Join(ctx, etcd.JoinOptions{
+			Peer:        serverA.AsPeer(),
+			Credentials: serverBCreds,
+		})
+		assert.NoError(t, err)
+		t.Cleanup(func() {
+			serverB.Shutdown()
+		})
+
+		// At this point, server A is the raft leader and Server B is a
+		// follower. Joining server C to server B exercises the leaderClient
+		// function.
+		serverCCreds, err := serverB.AddPeerUser(ctx, etcd.HostCredentialOptions{
+			HostID:      cfgC.HostID,
+			Hostname:    cfgC.Hostname,
+			IPv4Address: cfgC.IPv4Address,
+		})
+		assert.NoError(t, err)
+		err = serverC.Join(ctx, etcd.JoinOptions{
+			Peer:        serverB.AsPeer(),
+			Credentials: serverCCreds,
+		})
+		assert.NoError(t, err)
+		t.Cleanup(func() {
+			serverC.Shutdown()
+		})
 	})
 }
