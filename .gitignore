@@ -13,3 +13,4 @@ hack/apis
 dist
 control-plane
 !docker/control-plane
+e2e/debug

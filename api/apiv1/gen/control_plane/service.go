@@ -485,6 +485,8 @@ type Host struct {
 	ID Identifier
 	// The orchestrator used by this host.
 	Orchestrator string
+	// The data directory for the host.
+	DataDir string
 	// The cohort that this host belongs to.
 	Cohort *HostCohort
 	// The hostname of this host.

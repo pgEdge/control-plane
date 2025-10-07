@@ -3220,6 +3220,7 @@ func unmarshalHostResponseBodyToControlplaneHost(v *HostResponseBody) *controlpl
 	res := &controlplane.Host{
 		ID:           controlplane.Identifier(*v.ID),
 		Orchestrator: *v.Orchestrator,
+		DataDir:      *v.DataDir,
 		Hostname:     *v.Hostname,
 		Ipv4Address:  *v.Ipv4Address,
 		Cpus:         v.Cpus,
@@ -3319,6 +3320,7 @@ func unmarshalHostResponseToControlplaneHost(v *HostResponse) *controlplane.Host
 	res := &controlplane.Host{
 		ID:           controlplane.Identifier(*v.ID),
 		Orchestrator: *v.Orchestrator,
+		DataDir:      *v.DataDir,
 		Hostname:     *v.Hostname,
 		Ipv4Address:  *v.Ipv4Address,
 		Cpus:         v.Cpus,

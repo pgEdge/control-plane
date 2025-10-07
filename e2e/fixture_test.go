@@ -107,9 +107,11 @@ type TestFixture struct {
 	Client      *client.MultiServerClient
 	config      TestConfig
 	skipCleanup bool
+	debug       bool
+	debugDir    string
 }
 
-func NewTestFixture(ctx context.Context, config TestConfig, skipCleanup bool) (*TestFixture, error) {
+func NewTestFixture(ctx context.Context, config TestConfig, skipCleanup bool, debug bool, debugDir string) (*TestFixture, error) {
 	servers := make([]client.ServerConfig, 0, len(config.Hosts))
 	for host, cfg := range config.Hosts {
 		server := client.NewHTTPServerConfig(host, &url.URL{
@@ -138,6 +140,8 @@ func NewTestFixture(ctx context.Context, config TestConfig, skipCleanup bool) (*
 		Client:      cli,
 		config:      config,
 		skipCleanup: skipCleanup,
+		debug:       debug,
+		debugDir:    debugDir,
 	}, nil
 }
 
@@ -150,12 +154,17 @@ func (f *TestFixture) HostIDs() []string {
 }
 
 func (f *TestFixture) NewDatabaseFixture(ctx context.Context, t testing.TB, req *controlplane.CreateDatabaseRequest) *DatabaseFixture {
-	db, err := NewDatabaseFixture(ctx, f.config, f.Client, req)
-	if err != nil {
-		t.Fatal(err)
-		return nil
-	}
+	var db *DatabaseFixture
+
 	t.Cleanup(func() {
+		if db == nil || db.Database == nil {
+			return
+		}
+
+		if t.Failed() && f.debug {
+			debugWriteDatabaseInfo(t, f.debugDir, string(db.ID))
+		}
+
 		if f.skipCleanup {
 			t.Logf("skipping cleanup for database %s", db.ID)
 			return
@@ -171,6 +180,13 @@ func (f *TestFixture) NewDatabaseFixture(ctx context.Context, t testing.TB, req 
 			t.Logf("failed to cleanup database %s: %s", db.ID, err)
 		}
 	})
+
+	var err error
+	db, err = NewDatabaseFixture(ctx, f.config, f.Client, req, f.debug, f.debugDir)
+	if err != nil {
+		t.Fatal(err)
+		return nil
+	}
 
 	return db
 }

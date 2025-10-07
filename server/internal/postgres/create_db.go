@@ -310,7 +310,19 @@ func AdvanceReplicationSlotToLSN(databaseName, providerNode, subscriberNode stri
 	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
 
 	return Statement{
-		SQL: "SELECT pg_replication_slot_advance(@slot_name, @lsn);",
+		SQL: `
+			WITH current AS (
+				SELECT confirmed_flush_lsn
+				FROM pg_replication_slots
+				WHERE slot_name = @slot_name
+			)
+			SELECT CASE
+				WHEN @lsn > confirmed_flush_lsn
+				THEN (pg_replication_slot_advance(@slot_name, @lsn)).end_lsn
+				ELSE confirmed_flush_lsn
+			END AS new_lsn
+			FROM current;
+		`,
 		Args: pgx.NamedArgs{
 			"slot_name": slotName,
 			"lsn":       targetLSN,

@@ -145,6 +145,8 @@ type GetHostResponseBody struct {
 	ID string `form:"id" json:"id" xml:"id"`
 	// The orchestrator used by this host.
 	Orchestrator string `form:"orchestrator" json:"orchestrator" xml:"orchestrator"`
+	// The data directory for the host.
+	DataDir string `form:"data_dir" json:"data_dir" xml:"data_dir"`
 	// The cohort that this host belongs to.
 	Cohort *HostCohortResponseBody `form:"cohort,omitempty" json:"cohort,omitempty" xml:"cohort,omitempty"`
 	// The hostname of this host.
@@ -1343,6 +1345,8 @@ type HostResponseBody struct {
 	ID string `form:"id" json:"id" xml:"id"`
 	// The orchestrator used by this host.
 	Orchestrator string `form:"orchestrator" json:"orchestrator" xml:"orchestrator"`
+	// The data directory for the host.
+	DataDir string `form:"data_dir" json:"data_dir" xml:"data_dir"`
 	// The cohort that this host belongs to.
 	Cohort *HostCohortResponseBody `form:"cohort,omitempty" json:"cohort,omitempty" xml:"cohort,omitempty"`
 	// The hostname of this host.
@@ -1406,6 +1410,8 @@ type HostResponse struct {
 	ID string `form:"id" json:"id" xml:"id"`
 	// The orchestrator used by this host.
 	Orchestrator string `form:"orchestrator" json:"orchestrator" xml:"orchestrator"`
+	// The data directory for the host.
+	DataDir string `form:"data_dir" json:"data_dir" xml:"data_dir"`
 	// The cohort that this host belongs to.
 	Cohort *HostCohortResponse `form:"cohort,omitempty" json:"cohort,omitempty" xml:"cohort,omitempty"`
 	// The hostname of this host.
@@ -2510,6 +2516,7 @@ func NewGetHostResponseBody(res *controlplane.Host) *GetHostResponseBody {
 	body := &GetHostResponseBody{
 		ID:           string(res.ID),
 		Orchestrator: res.Orchestrator,
+		DataDir:      res.DataDir,
 		Hostname:     res.Hostname,
 		Ipv4Address:  res.Ipv4Address,
 		Cpus:         res.Cpus,

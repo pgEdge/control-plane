@@ -41,6 +41,7 @@ func (s *Service) UpdateHost(ctx context.Context) error {
 	host := &Host{
 		ID:           s.cfg.HostID,
 		Orchestrator: s.cfg.Orchestrator,
+		DataDir:      s.cfg.DataDir,
 		Hostname:     s.cfg.Hostname,
 		IPv4Address:  s.cfg.IPv4Address,
 		// CPUs:         resources.CPUs,
