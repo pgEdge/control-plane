@@ -30,6 +30,7 @@ type Client interface {
 	RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (*api.Task, error)
 	CancelDatabaseTask(ctx context.Context, req *api.CancelDatabaseTaskPayload) (res *api.Task, err error)
 	SwitchoverDatabaseNode(ctx context.Context, req *api.SwitchoverDatabaseNodePayload) (*api.SwitchoverDatabaseNodeResponse, error)
+	FailoverDatabaseNode(ctx context.Context, req *api.FailoverDatabaseNodeRequest) (*api.FailoverDatabaseNodeResponse, error)
 	// Helper methods
 
 	WaitForTask(ctx context.Context, req *api.GetDatabaseTaskPayload) (*api.Task, error)

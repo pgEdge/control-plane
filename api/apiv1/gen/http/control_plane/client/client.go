@@ -77,6 +77,10 @@ type Client struct {
 	// switchover-database-node endpoint.
 	SwitchoverDatabaseNodeDoer goahttp.Doer
 
+	// FailoverDatabaseNode Doer is the HTTP client used to make requests to the
+	// failover-database-node endpoint.
+	FailoverDatabaseNodeDoer goahttp.Doer
+
 	// ListDatabaseTasks Doer is the HTTP client used to make requests to the
 	// list-database-tasks endpoint.
 	ListDatabaseTasksDoer goahttp.Doer
@@ -149,6 +153,7 @@ func NewClient(
 		DeleteDatabaseDoer:         doer,
 		BackupDatabaseNodeDoer:     doer,
 		SwitchoverDatabaseNodeDoer: doer,
+		FailoverDatabaseNodeDoer:   doer,
 		ListDatabaseTasksDoer:      doer,
 		GetDatabaseTaskDoer:        doer,
 		GetDatabaseTaskLogDoer:     doer,
@@ -481,6 +486,30 @@ func (c *Client) SwitchoverDatabaseNode() goa.Endpoint {
 		resp, err := c.SwitchoverDatabaseNodeDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("control-plane", "switchover-database-node", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// FailoverDatabaseNode returns an endpoint that makes HTTP requests to the
+// control-plane service failover-database-node server.
+func (c *Client) FailoverDatabaseNode() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeFailoverDatabaseNodeRequest(c.encoder)
+		decodeResponse = DecodeFailoverDatabaseNodeResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildFailoverDatabaseNodeRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.FailoverDatabaseNodeDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "failover-database-node", err)
 		}
 		return decodeResponse(resp)
 	}

@@ -78,6 +78,17 @@ type SwitchoverDatabaseNodeRequestBody struct {
 	ScheduledAt *string `form:"scheduled_at,omitempty" json:"scheduled_at,omitempty" xml:"scheduled_at,omitempty"`
 }
 
+// FailoverDatabaseNodeRequestBody is the type of the "control-plane" service
+// "failover-database-node" endpoint HTTP request body.
+type FailoverDatabaseNodeRequestBody struct {
+	// Optional instance_id of the replica to promote. If omitted, a candidate will
+	// be selected.
+	CandidateInstanceID *string `form:"candidate_instance_id,omitempty" json:"candidate_instance_id,omitempty" xml:"candidate_instance_id,omitempty"`
+	// If true, skip the health validations that prevent running failover on a
+	// healthy cluster.
+	SkipValidation *bool `form:"skip_validation,omitempty" json:"skip_validation,omitempty" xml:"skip_validation,omitempty"`
+}
+
 // RestoreDatabaseRequestBody is the type of the "control-plane" service
 // "restore-database" endpoint HTTP request body.
 type RestoreDatabaseRequestBody struct {
@@ -226,6 +237,13 @@ type BackupDatabaseNodeResponseBody struct {
 // service "switchover-database-node" endpoint HTTP response body.
 type SwitchoverDatabaseNodeResponseBody struct {
 	// The task that will perform the switchover.
+	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
+}
+
+// FailoverDatabaseNodeResponseBody is the type of the "control-plane" service
+// "failover-database-node" endpoint HTTP response body.
+type FailoverDatabaseNodeResponseBody struct {
+	// The task that will perform the failover.
 	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
 }
 
@@ -965,6 +983,66 @@ type SwitchoverDatabaseNodeNotFoundResponseBody struct {
 // "control-plane" service "switchover-database-node" endpoint HTTP response
 // body for the "server_error" error.
 type SwitchoverDatabaseNodeServerErrorResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// FailoverDatabaseNodeClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "failover-database-node" endpoint HTTP response body
+// for the "cluster_not_initialized" error.
+type FailoverDatabaseNodeClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// FailoverDatabaseNodeDatabaseNotModifiableResponseBody is the type of the
+// "control-plane" service "failover-database-node" endpoint HTTP response body
+// for the "database_not_modifiable" error.
+type FailoverDatabaseNodeDatabaseNotModifiableResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// FailoverDatabaseNodeOperationAlreadyInProgressResponseBody is the type of
+// the "control-plane" service "failover-database-node" endpoint HTTP response
+// body for the "operation_already_in_progress" error.
+type FailoverDatabaseNodeOperationAlreadyInProgressResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// FailoverDatabaseNodeInvalidInputResponseBody is the type of the
+// "control-plane" service "failover-database-node" endpoint HTTP response body
+// for the "invalid_input" error.
+type FailoverDatabaseNodeInvalidInputResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// FailoverDatabaseNodeNotFoundResponseBody is the type of the "control-plane"
+// service "failover-database-node" endpoint HTTP response body for the
+// "not_found" error.
+type FailoverDatabaseNodeNotFoundResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// FailoverDatabaseNodeServerErrorResponseBody is the type of the
+// "control-plane" service "failover-database-node" endpoint HTTP response body
+// for the "server_error" error.
+type FailoverDatabaseNodeServerErrorResponseBody struct {
 	// The name of the error.
 	Name string `form:"name" json:"name" xml:"name"`
 	// The error message.
@@ -2635,6 +2713,17 @@ func NewSwitchoverDatabaseNodeResponseBody(res *controlplane.SwitchoverDatabaseN
 	return body
 }
 
+// NewFailoverDatabaseNodeResponseBody builds the HTTP response body from the
+// result of the "failover-database-node" endpoint of the "control-plane"
+// service.
+func NewFailoverDatabaseNodeResponseBody(res *controlplane.FailoverDatabaseNodeResponse) *FailoverDatabaseNodeResponseBody {
+	body := &FailoverDatabaseNodeResponseBody{}
+	if res.Task != nil {
+		body.Task = marshalControlplaneTaskToTaskResponseBody(res.Task)
+	}
+	return body
+}
+
 // NewListDatabaseTasksResponseBody builds the HTTP response body from the
 // result of the "list-database-tasks" endpoint of the "control-plane" service.
 func NewListDatabaseTasksResponseBody(res *controlplane.ListDatabaseTasksResponse) *ListDatabaseTasksResponseBody {
@@ -3396,6 +3485,72 @@ func NewSwitchoverDatabaseNodeServerErrorResponseBody(res *controlplane.APIError
 	return body
 }
 
+// NewFailoverDatabaseNodeClusterNotInitializedResponseBody builds the HTTP
+// response body from the result of the "failover-database-node" endpoint of
+// the "control-plane" service.
+func NewFailoverDatabaseNodeClusterNotInitializedResponseBody(res *controlplane.APIError) *FailoverDatabaseNodeClusterNotInitializedResponseBody {
+	body := &FailoverDatabaseNodeClusterNotInitializedResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewFailoverDatabaseNodeDatabaseNotModifiableResponseBody builds the HTTP
+// response body from the result of the "failover-database-node" endpoint of
+// the "control-plane" service.
+func NewFailoverDatabaseNodeDatabaseNotModifiableResponseBody(res *controlplane.APIError) *FailoverDatabaseNodeDatabaseNotModifiableResponseBody {
+	body := &FailoverDatabaseNodeDatabaseNotModifiableResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewFailoverDatabaseNodeOperationAlreadyInProgressResponseBody builds the
+// HTTP response body from the result of the "failover-database-node" endpoint
+// of the "control-plane" service.
+func NewFailoverDatabaseNodeOperationAlreadyInProgressResponseBody(res *controlplane.APIError) *FailoverDatabaseNodeOperationAlreadyInProgressResponseBody {
+	body := &FailoverDatabaseNodeOperationAlreadyInProgressResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewFailoverDatabaseNodeInvalidInputResponseBody builds the HTTP response
+// body from the result of the "failover-database-node" endpoint of the
+// "control-plane" service.
+func NewFailoverDatabaseNodeInvalidInputResponseBody(res *controlplane.APIError) *FailoverDatabaseNodeInvalidInputResponseBody {
+	body := &FailoverDatabaseNodeInvalidInputResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewFailoverDatabaseNodeNotFoundResponseBody builds the HTTP response body
+// from the result of the "failover-database-node" endpoint of the
+// "control-plane" service.
+func NewFailoverDatabaseNodeNotFoundResponseBody(res *controlplane.APIError) *FailoverDatabaseNodeNotFoundResponseBody {
+	body := &FailoverDatabaseNodeNotFoundResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewFailoverDatabaseNodeServerErrorResponseBody builds the HTTP response body
+// from the result of the "failover-database-node" endpoint of the
+// "control-plane" service.
+func NewFailoverDatabaseNodeServerErrorResponseBody(res *controlplane.APIError) *FailoverDatabaseNodeServerErrorResponseBody {
+	body := &FailoverDatabaseNodeServerErrorResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewListDatabaseTasksClusterNotInitializedResponseBody builds the HTTP
 // response body from the result of the "list-database-tasks" endpoint of the
 // "control-plane" service.
@@ -3892,6 +4047,24 @@ func NewSwitchoverDatabaseNodePayload(body *SwitchoverDatabaseNodeRequestBody, d
 	v := &controlplane.SwitchoverDatabaseNodePayload{
 		CandidateInstanceID: body.CandidateInstanceID,
 		ScheduledAt:         body.ScheduledAt,
+	}
+	v.DatabaseID = controlplane.Identifier(databaseID)
+	v.NodeName = nodeName
+
+	return v
+}
+
+// NewFailoverDatabaseNodeRequest builds a control-plane service
+// failover-database-node endpoint payload.
+func NewFailoverDatabaseNodeRequest(body *FailoverDatabaseNodeRequestBody, databaseID string, nodeName string) *controlplane.FailoverDatabaseNodeRequest {
+	v := &controlplane.FailoverDatabaseNodeRequest{
+		CandidateInstanceID: body.CandidateInstanceID,
+	}
+	if body.SkipValidation != nil {
+		v.SkipValidation = *body.SkipValidation
+	}
+	if body.SkipValidation == nil {
+		v.SkipValidation = false
 	}
 	v.DatabaseID = controlplane.Identifier(databaseID)
 	v.NodeName = nodeName

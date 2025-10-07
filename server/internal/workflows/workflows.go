@@ -20,6 +20,7 @@ func (w *Workflows) Register(work *worker.Worker) error {
 	}
 	errs := []error{
 		work.RegisterWorkflow(w.CreatePgBackRestBackup),
+		work.RegisterWorkflow(w.Failover),
 		work.RegisterWorkflow(w.DeleteDatabase),
 		work.RegisterWorkflow(w.PgBackRestRestore),
 		work.RegisterWorkflow(w.PlanRestore),

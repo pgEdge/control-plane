@@ -30,6 +30,7 @@ type Endpoints struct {
 	DeleteDatabase         goa.Endpoint
 	BackupDatabaseNode     goa.Endpoint
 	SwitchoverDatabaseNode goa.Endpoint
+	FailoverDatabaseNode   goa.Endpoint
 	ListDatabaseTasks      goa.Endpoint
 	GetDatabaseTask        goa.Endpoint
 	GetDatabaseTaskLog     goa.Endpoint
@@ -59,6 +60,7 @@ func NewEndpoints(s Service) *Endpoints {
 		DeleteDatabase:         NewDeleteDatabaseEndpoint(s),
 		BackupDatabaseNode:     NewBackupDatabaseNodeEndpoint(s),
 		SwitchoverDatabaseNode: NewSwitchoverDatabaseNodeEndpoint(s),
+		FailoverDatabaseNode:   NewFailoverDatabaseNodeEndpoint(s),
 		ListDatabaseTasks:      NewListDatabaseTasksEndpoint(s),
 		GetDatabaseTask:        NewGetDatabaseTaskEndpoint(s),
 		GetDatabaseTaskLog:     NewGetDatabaseTaskLogEndpoint(s),
@@ -89,6 +91,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.DeleteDatabase = m(e.DeleteDatabase)
 	e.BackupDatabaseNode = m(e.BackupDatabaseNode)
 	e.SwitchoverDatabaseNode = m(e.SwitchoverDatabaseNode)
+	e.FailoverDatabaseNode = m(e.FailoverDatabaseNode)
 	e.ListDatabaseTasks = m(e.ListDatabaseTasks)
 	e.GetDatabaseTask = m(e.GetDatabaseTask)
 	e.GetDatabaseTaskLog = m(e.GetDatabaseTaskLog)
@@ -237,6 +240,15 @@ func NewSwitchoverDatabaseNodeEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*SwitchoverDatabaseNodePayload)
 		return s.SwitchoverDatabaseNode(ctx, p)
+	}
+}
+
+// NewFailoverDatabaseNodeEndpoint returns an endpoint function that calls the
+// method "failover-database-node" of service "control-plane".
+func NewFailoverDatabaseNodeEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*FailoverDatabaseNodeRequest)
+		return s.FailoverDatabaseNode(ctx, p)
 	}
 }
 

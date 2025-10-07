@@ -404,3 +404,18 @@ func (d *DatabaseFixture) SwitchoverDatabaseNode(ctx context.Context, req *contr
 	// refresh local db state
 	return d.Refresh(ctx)
 }
+
+func (d *DatabaseFixture) FailoverDatabaseNode(ctx context.Context, req *controlplane.FailoverDatabaseNodeRequest) error {
+
+	resp, err := d.client.FailoverDatabaseNode(ctx, req)
+	if err != nil {
+		return fmt.Errorf("failed to call failover api: %w", err)
+	}
+
+	if err := d.waitForTask(ctx, resp.Task); err != nil {
+		return err
+	}
+
+	// refresh local db state
+	return d.Refresh(ctx)
+}

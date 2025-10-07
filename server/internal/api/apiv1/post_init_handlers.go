@@ -528,6 +528,95 @@ func (s *PostInitHandlers) SwitchoverDatabaseNode(ctx context.Context, req *api.
 	}, nil
 }
 
+func (s *PostInitHandlers) FailoverDatabaseNode(ctx context.Context, req *api.FailoverDatabaseNodeRequest) (*api.FailoverDatabaseNodeResponse, error) {
+
+	databaseID, err := dbIdentToString(req.DatabaseID)
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := s.dbSvc.GetDatabase(ctx, databaseID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	if !hasPrimaryInstance(db.Instances) {
+		return nil, ErrNoPrimaryInstance
+	}
+
+	if !database.DatabaseStateModifiable(db.State) {
+		return nil, ErrDatabaseNotModifiable
+	}
+
+	node, err := db.Spec.Node(req.NodeName)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	instances := make([]*activities.InstanceHost, len(node.HostIDs))
+	for i, hostID := range node.HostIDs {
+		instances[i] = &activities.InstanceHost{
+			InstanceID: database.InstanceIDFor(hostID, db.DatabaseID, node.Name),
+			HostID:     hostID,
+		}
+	}
+
+	input := &workflows.FailoverInput{
+		DatabaseID:     databaseID,
+		NodeName:       req.NodeName,
+		Instances:      instances,
+		SkipValidation: req.SkipValidation,
+	}
+
+	if req.CandidateInstanceID != nil && string(*req.CandidateInstanceID) != "" {
+		cand := string(*req.CandidateInstanceID)
+		storedInst, err := s.dbSvc.GetInstance(ctx, databaseID, cand)
+		if err != nil {
+			return nil, apiErr(err)
+		}
+
+		if storedInst.NodeName != req.NodeName {
+			return nil, makeInvalidInputErr(fmt.Errorf("candidate instance %s does not belong to node %s", cand, req.NodeName))
+		}
+
+		if storedInst.State != database.InstanceStateAvailable {
+			return nil, makeInvalidInputErr(fmt.Errorf("candidate instance %s is not available (state=%s)", cand, storedInst.State))
+		}
+
+		input.CandidateInstanceID = cand
+	}
+
+	opts := task.TaskListOptions{
+		Type:     task.TypeFailover,
+		NodeName: string(req.NodeName),
+		Statuses: []task.Status{
+			task.StatusPending,
+			task.StatusRunning,
+			task.StatusCanceling,
+		},
+		Limit: 1,
+	}
+
+	activeTasks, err := s.taskSvc.GetTasks(ctx, databaseID, opts)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+	if len(activeTasks) > 0 {
+		return nil, apiErr(fmt.Errorf("failover already in progress for database %s node %s", databaseID, req.NodeName))
+	}
+
+	t, err := s.workflowSvc.FailoverDatabaseNode(ctx, input)
+	if err != nil {
+		// map errors to API errors similar to other handlers, e.g. operation already in progress etc.
+		return nil, apiErr(err)
+	}
+
+	resp := &api.FailoverDatabaseNodeResponse{
+		Task: taskToAPI(t),
+	}
+	return resp, nil
+}
+
 func (s *PostInitHandlers) ListDatabaseTasks(ctx context.Context, req *api.ListDatabaseTasksPayload) (*api.ListDatabaseTasksResponse, error) {
 	databaseID, err := dbIdentToString(req.DatabaseID)
 	if err != nil {

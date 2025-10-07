@@ -86,6 +86,11 @@ func SwitchoverDatabaseNodeControlPlanePath(databaseID string, nodeName string) 
 	return fmt.Sprintf("/v1/databases/%v/nodes/%v/switchover", databaseID, nodeName)
 }
 
+// FailoverDatabaseNodeControlPlanePath returns the URL path to the control-plane service failover-database-node HTTP endpoint.
+func FailoverDatabaseNodeControlPlanePath(databaseID string, nodeName string) string {
+	return fmt.Sprintf("/v1/databases/%v/nodes/%v/failover", databaseID, nodeName)
+}
+
 // ListDatabaseTasksControlPlanePath returns the URL path to the control-plane service list-database-tasks HTTP endpoint.
 func ListDatabaseTasksControlPlanePath(databaseID string) string {
 	return fmt.Sprintf("/v1/databases/%v/tasks", databaseID)

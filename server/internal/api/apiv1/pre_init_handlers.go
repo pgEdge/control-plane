@@ -205,6 +205,10 @@ func (s *PreInitHandlers) SwitchoverDatabaseNode(ctx context.Context, req *api.S
 	return nil, ErrUninitialized
 }
 
+func (s *PreInitHandlers) FailoverDatabaseNode(ctx context.Context, req *api.FailoverDatabaseNodeRequest) (*api.FailoverDatabaseNodeResponse, error) {
+	return nil, ErrUninitialized
+}
+
 func (s *PreInitHandlers) ListDatabaseTasks(ctx context.Context, req *api.ListDatabaseTasksPayload) (*api.ListDatabaseTasksResponse, error) {
 	return nil, ErrUninitialized
 }

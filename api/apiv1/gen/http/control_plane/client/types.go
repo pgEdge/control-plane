@@ -78,6 +78,17 @@ type SwitchoverDatabaseNodeRequestBody struct {
 	ScheduledAt *string `form:"scheduled_at,omitempty" json:"scheduled_at,omitempty" xml:"scheduled_at,omitempty"`
 }
 
+// FailoverDatabaseNodeRequestBody is the type of the "control-plane" service
+// "failover-database-node" endpoint HTTP request body.
+type FailoverDatabaseNodeRequestBody struct {
+	// Optional instance_id of the replica to promote. If omitted, a candidate will
+	// be selected.
+	CandidateInstanceID *string `form:"candidate_instance_id,omitempty" json:"candidate_instance_id,omitempty" xml:"candidate_instance_id,omitempty"`
+	// If true, skip the health validations that prevent running failover on a
+	// healthy cluster.
+	SkipValidation bool `form:"skip_validation" json:"skip_validation" xml:"skip_validation"`
+}
+
 // RestoreDatabaseRequestBody is the type of the "control-plane" service
 // "restore-database" endpoint HTTP request body.
 type RestoreDatabaseRequestBody struct {
@@ -226,6 +237,13 @@ type BackupDatabaseNodeResponseBody struct {
 // service "switchover-database-node" endpoint HTTP response body.
 type SwitchoverDatabaseNodeResponseBody struct {
 	// The task that will perform the switchover.
+	Task *TaskResponseBody `form:"task,omitempty" json:"task,omitempty" xml:"task,omitempty"`
+}
+
+// FailoverDatabaseNodeResponseBody is the type of the "control-plane" service
+// "failover-database-node" endpoint HTTP response body.
+type FailoverDatabaseNodeResponseBody struct {
+	// The task that will perform the failover.
 	Task *TaskResponseBody `form:"task,omitempty" json:"task,omitempty" xml:"task,omitempty"`
 }
 
@@ -965,6 +983,66 @@ type SwitchoverDatabaseNodeNotFoundResponseBody struct {
 // "control-plane" service "switchover-database-node" endpoint HTTP response
 // body for the "server_error" error.
 type SwitchoverDatabaseNodeServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// FailoverDatabaseNodeClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "failover-database-node" endpoint HTTP response body
+// for the "cluster_not_initialized" error.
+type FailoverDatabaseNodeClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// FailoverDatabaseNodeDatabaseNotModifiableResponseBody is the type of the
+// "control-plane" service "failover-database-node" endpoint HTTP response body
+// for the "database_not_modifiable" error.
+type FailoverDatabaseNodeDatabaseNotModifiableResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// FailoverDatabaseNodeOperationAlreadyInProgressResponseBody is the type of
+// the "control-plane" service "failover-database-node" endpoint HTTP response
+// body for the "operation_already_in_progress" error.
+type FailoverDatabaseNodeOperationAlreadyInProgressResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// FailoverDatabaseNodeInvalidInputResponseBody is the type of the
+// "control-plane" service "failover-database-node" endpoint HTTP response body
+// for the "invalid_input" error.
+type FailoverDatabaseNodeInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// FailoverDatabaseNodeNotFoundResponseBody is the type of the "control-plane"
+// service "failover-database-node" endpoint HTTP response body for the
+// "not_found" error.
+type FailoverDatabaseNodeNotFoundResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// FailoverDatabaseNodeServerErrorResponseBody is the type of the
+// "control-plane" service "failover-database-node" endpoint HTTP response body
+// for the "server_error" error.
+type FailoverDatabaseNodeServerErrorResponseBody struct {
 	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// The error message.
@@ -2504,6 +2582,23 @@ func NewSwitchoverDatabaseNodeRequestBody(p *controlplane.SwitchoverDatabaseNode
 	return body
 }
 
+// NewFailoverDatabaseNodeRequestBody builds the HTTP request body from the
+// payload of the "failover-database-node" endpoint of the "control-plane"
+// service.
+func NewFailoverDatabaseNodeRequestBody(p *controlplane.FailoverDatabaseNodeRequest) *FailoverDatabaseNodeRequestBody {
+	body := &FailoverDatabaseNodeRequestBody{
+		CandidateInstanceID: p.CandidateInstanceID,
+		SkipValidation:      p.SkipValidation,
+	}
+	{
+		var zero bool
+		if body.SkipValidation == zero {
+			body.SkipValidation = false
+		}
+	}
+	return body
+}
+
 // NewRestoreDatabaseRequestBody builds the HTTP request body from the payload
 // of the "restore-database" endpoint of the "control-plane" service.
 func NewRestoreDatabaseRequestBody(p *controlplane.RestoreDatabasePayload) *RestoreDatabaseRequestBody {
@@ -3333,6 +3428,81 @@ func NewSwitchoverDatabaseNodeServerError(body *SwitchoverDatabaseNodeServerErro
 	return v
 }
 
+// NewFailoverDatabaseNodeResponseOK builds a "control-plane" service
+// "failover-database-node" endpoint result from a HTTP "OK" response.
+func NewFailoverDatabaseNodeResponseOK(body *FailoverDatabaseNodeResponseBody) *controlplane.FailoverDatabaseNodeResponse {
+	v := &controlplane.FailoverDatabaseNodeResponse{}
+	v.Task = unmarshalTaskResponseBodyToControlplaneTask(body.Task)
+
+	return v
+}
+
+// NewFailoverDatabaseNodeClusterNotInitialized builds a control-plane service
+// failover-database-node endpoint cluster_not_initialized error.
+func NewFailoverDatabaseNodeClusterNotInitialized(body *FailoverDatabaseNodeClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewFailoverDatabaseNodeDatabaseNotModifiable builds a control-plane service
+// failover-database-node endpoint database_not_modifiable error.
+func NewFailoverDatabaseNodeDatabaseNotModifiable(body *FailoverDatabaseNodeDatabaseNotModifiableResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewFailoverDatabaseNodeOperationAlreadyInProgress builds a control-plane
+// service failover-database-node endpoint operation_already_in_progress error.
+func NewFailoverDatabaseNodeOperationAlreadyInProgress(body *FailoverDatabaseNodeOperationAlreadyInProgressResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewFailoverDatabaseNodeInvalidInput builds a control-plane service
+// failover-database-node endpoint invalid_input error.
+func NewFailoverDatabaseNodeInvalidInput(body *FailoverDatabaseNodeInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewFailoverDatabaseNodeNotFound builds a control-plane service
+// failover-database-node endpoint not_found error.
+func NewFailoverDatabaseNodeNotFound(body *FailoverDatabaseNodeNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewFailoverDatabaseNodeServerError builds a control-plane service
+// failover-database-node endpoint server_error error.
+func NewFailoverDatabaseNodeServerError(body *FailoverDatabaseNodeServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
 // NewListDatabaseTasksResponseOK builds a "control-plane" service
 // "list-database-tasks" endpoint result from a HTTP "OK" response.
 func NewListDatabaseTasksResponseOK(body *ListDatabaseTasksResponseBody) *controlplane.ListDatabaseTasksResponse {
@@ -4101,6 +4271,20 @@ func ValidateBackupDatabaseNodeResponseBody(body *BackupDatabaseNodeResponseBody
 // ValidateSwitchoverDatabaseNodeResponseBody runs the validations defined on
 // Switchover-Database-NodeResponseBody
 func ValidateSwitchoverDatabaseNodeResponseBody(body *SwitchoverDatabaseNodeResponseBody) (err error) {
+	if body.Task == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
+	}
+	if body.Task != nil {
+		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateFailoverDatabaseNodeResponseBody runs the validations defined on
+// Failover-Database-NodeResponseBody
+func ValidateFailoverDatabaseNodeResponseBody(body *FailoverDatabaseNodeResponseBody) (err error) {
 	if body.Task == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
 	}
@@ -5082,6 +5266,81 @@ func ValidateSwitchoverDatabaseNodeNotFoundResponseBody(body *SwitchoverDatabase
 // ValidateSwitchoverDatabaseNodeServerErrorResponseBody runs the validations
 // defined on switchover-database-node_server_error_response_body
 func ValidateSwitchoverDatabaseNodeServerErrorResponseBody(body *SwitchoverDatabaseNodeServerErrorResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateFailoverDatabaseNodeClusterNotInitializedResponseBody runs the
+// validations defined on
+// failover-database-node_cluster_not_initialized_response_body
+func ValidateFailoverDatabaseNodeClusterNotInitializedResponseBody(body *FailoverDatabaseNodeClusterNotInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateFailoverDatabaseNodeDatabaseNotModifiableResponseBody runs the
+// validations defined on
+// failover-database-node_database_not_modifiable_response_body
+func ValidateFailoverDatabaseNodeDatabaseNotModifiableResponseBody(body *FailoverDatabaseNodeDatabaseNotModifiableResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateFailoverDatabaseNodeOperationAlreadyInProgressResponseBody runs the
+// validations defined on
+// failover-database-node_operation_already_in_progress_response_body
+func ValidateFailoverDatabaseNodeOperationAlreadyInProgressResponseBody(body *FailoverDatabaseNodeOperationAlreadyInProgressResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateFailoverDatabaseNodeInvalidInputResponseBody runs the validations
+// defined on failover-database-node_invalid_input_response_body
+func ValidateFailoverDatabaseNodeInvalidInputResponseBody(body *FailoverDatabaseNodeInvalidInputResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateFailoverDatabaseNodeNotFoundResponseBody runs the validations
+// defined on failover-database-node_not_found_response_body
+func ValidateFailoverDatabaseNodeNotFoundResponseBody(body *FailoverDatabaseNodeNotFoundResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateFailoverDatabaseNodeServerErrorResponseBody runs the validations
+// defined on failover-database-node_server_error_response_body
+func ValidateFailoverDatabaseNodeServerErrorResponseBody(body *FailoverDatabaseNodeServerErrorResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}

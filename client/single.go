@@ -62,6 +62,7 @@ func NewSingleServerClient(server ServerConfig) (*SingleServerClient, error) {
 			RestartInstanceEndpoint:        cli.RestartInstance(),
 			CancelDatabaseTaskEndpoint:     cli.CancelDatabaseTask(),
 			SwitchoverDatabaseNodeEndpoint: cli.SwitchoverDatabaseNode(),
+			FailoverDatabaseNodeEndpoint:   cli.FailoverDatabaseNode(),
 		},
 	}, nil
 }
@@ -191,6 +192,11 @@ func (c *SingleServerClient) CancelDatabaseTask(ctx context.Context, req *api.Ca
 
 func (c *SingleServerClient) SwitchoverDatabaseNode(ctx context.Context, req *api.SwitchoverDatabaseNodePayload) (*api.SwitchoverDatabaseNodeResponse, error) {
 	resp, err := c.api.SwitchoverDatabaseNode(ctx, req)
+	return resp, translateErr(err)
+}
+
+func (c *SingleServerClient) FailoverDatabaseNode(ctx context.Context, req *api.FailoverDatabaseNodeRequest) (*api.FailoverDatabaseNodeResponse, error) {
+	resp, err := c.api.FailoverDatabaseNode(ctx, req)
 	return resp, translateErr(err)
 }
 

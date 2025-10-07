@@ -46,6 +46,8 @@ type Service interface {
 	BackupDatabaseNode(context.Context, *BackupDatabaseNodePayload) (res *BackupDatabaseNodeResponse, err error)
 	// Performs a planned switchover for a node's primary to a replica candidate.
 	SwitchoverDatabaseNode(context.Context, *SwitchoverDatabaseNodePayload) (res *SwitchoverDatabaseNodeResponse, err error)
+	// Performs a failover for a node to a replica candidate.
+	FailoverDatabaseNode(context.Context, *FailoverDatabaseNodeRequest) (res *FailoverDatabaseNodeResponse, err error)
 	// Lists all tasks for a database.
 	ListDatabaseTasks(context.Context, *ListDatabaseTasksPayload) (res *ListDatabaseTasksResponse, err error)
 	// Returns information about a particular task.
@@ -82,7 +84,7 @@ const ServiceName = "control-plane"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [24]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "delete-database", "backup-database-node", "switchover-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "restore-database", "get-version", "restart-instance", "stop-instance", "start-instance", "cancel-database-task"}
+var MethodNames = [25]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "delete-database", "backup-database-node", "switchover-database-node", "failover-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "restore-database", "get-version", "restart-instance", "stop-instance", "start-instance", "cancel-database-task"}
 
 // A Control Plane API error.
 type APIError struct {
@@ -441,6 +443,28 @@ type ExtraVolumesSpec struct {
 	HostPath string
 	// The path inside the container where the volume will be mounted.
 	DestinationPath string
+}
+
+// FailoverDatabaseNodeRequest is the payload type of the control-plane service
+// failover-database-node method.
+type FailoverDatabaseNodeRequest struct {
+	// ID of the database to perform the failover for.
+	DatabaseID Identifier
+	// Name of the node to initiate the failover from.
+	NodeName string
+	// Optional instance_id of the replica to promote. If omitted, a candidate will
+	// be selected.
+	CandidateInstanceID *string
+	// If true, skip the health validations that prevent running failover on a
+	// healthy cluster.
+	SkipValidation bool
+}
+
+// FailoverDatabaseNodeResponse is the result type of the control-plane service
+// failover-database-node method.
+type FailoverDatabaseNodeResponse struct {
+	// The task that will perform the failover.
+	Task *Task
 }
 
 // GetDatabasePayload is the payload type of the control-plane service

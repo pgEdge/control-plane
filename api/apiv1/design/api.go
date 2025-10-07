@@ -384,6 +384,25 @@ var _ = g.Service("control-plane", func() {
 			g.Meta("openapi:tag:Database")
 		})
 	})
+
+	g.Method("failover-database-node", func() {
+		g.Description("Performs a failover for a node to a replica candidate.")
+		g.Meta("openapi:summary", "Failover database node")
+		g.Payload(FailoverDatabaseNodeRequest)
+		g.Result(FailoverDatabaseNodeResponse)
+
+		g.Error("cluster_not_initialized")
+		g.Error("database_not_modifiable")
+		g.Error("invalid_input")
+		g.Error("not_found")
+		g.Error("operation_already_in_progress")
+
+		g.HTTP(func() {
+			g.POST("/v1/databases/{database_id}/nodes/{node_name}/failover")
+			g.Meta("openapi:tag:Database")
+		})
+	})
+
 	g.Method("list-database-tasks", func() {
 		g.Description("Lists all tasks for a database.")
 		g.Meta("openapi:summary", "List database tasks")
