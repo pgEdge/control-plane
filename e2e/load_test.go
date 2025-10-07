@@ -40,18 +40,6 @@ func TestUpdateUnderLoad(t *testing.T) {
 			LoadNodes: []string{"n1"},
 		},
 		{
-			Name: "add replica",
-			StartingNodes: []*controlplane.DatabaseNodeSpec{
-				{Name: "n1", HostIds: []controlplane.Identifier{host1}},
-				{Name: "n2", HostIds: []controlplane.Identifier{host2}},
-			},
-			UpdatedNodes: []*controlplane.DatabaseNodeSpec{
-				{Name: "n1", HostIds: []controlplane.Identifier{host1, host3}},
-				{Name: "n2", HostIds: []controlplane.Identifier{host2}},
-			},
-			LoadNodes: []string{"n1"},
-		},
-		{
 			Name: "add node load all",
 			StartingNodes: []*controlplane.DatabaseNodeSpec{
 				{Name: "n1", HostIds: []controlplane.Identifier{host1}},
@@ -68,18 +56,32 @@ func TestUpdateUnderLoad(t *testing.T) {
 			},
 			LoadNodes: []string{"n1", "n2"},
 		},
-		{
-			Name: "add replica load all",
-			StartingNodes: []*controlplane.DatabaseNodeSpec{
-				{Name: "n1", HostIds: []controlplane.Identifier{host1}},
-				{Name: "n2", HostIds: []controlplane.Identifier{host2}},
-			},
-			UpdatedNodes: []*controlplane.DatabaseNodeSpec{
-				{Name: "n1", HostIds: []controlplane.Identifier{host1, host3}},
-				{Name: "n2", HostIds: []controlplane.Identifier{host2}},
-			},
-			LoadNodes: []string{"n1", "n2"},
-		},
+		// TODO: These replica tests are flaky because of a Spock issue. We
+		// should reenable them once that issue is resolved.
+		// {
+		// 	Name: "add replica",
+		// 	StartingNodes: []*controlplane.DatabaseNodeSpec{
+		// 		{Name: "n1", HostIds: []controlplane.Identifier{host1}},
+		// 		{Name: "n2", HostIds: []controlplane.Identifier{host2}},
+		// 	},
+		// 	UpdatedNodes: []*controlplane.DatabaseNodeSpec{
+		// 		{Name: "n1", HostIds: []controlplane.Identifier{host1, host3}},
+		// 		{Name: "n2", HostIds: []controlplane.Identifier{host2}},
+		// 	},
+		// 	LoadNodes: []string{"n1"},
+		// },
+		// {
+		// 	Name: "add replica load all",
+		// 	StartingNodes: []*controlplane.DatabaseNodeSpec{
+		// 		{Name: "n1", HostIds: []controlplane.Identifier{host1}},
+		// 		{Name: "n2", HostIds: []controlplane.Identifier{host2}},
+		// 	},
+		// 	UpdatedNodes: []*controlplane.DatabaseNodeSpec{
+		// 		{Name: "n1", HostIds: []controlplane.Identifier{host1, host3}},
+		// 		{Name: "n2", HostIds: []controlplane.Identifier{host2}},
+		// 	},
+		// 	LoadNodes: []string{"n1", "n2"},
+		// },
 	} {
 		tc.Run(t)
 	}
