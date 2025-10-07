@@ -13,6 +13,7 @@ E2E_SKIP_CLEANUP ?= 0
 E2E_DEBUG ?= 0
 E2E_DEBUG_DIR ?=
 
+docker_swarm_state=$(shell docker info --format '{{.Swarm.LocalNodeState}}')
 buildx_builder=$(if $(CI),"control-plane-ci","control-plane")
 buildx_config=$(if $(CI),"./buildkit.ci.toml","./buildkit.toml")
 docker_compose_dev=WORKSPACE_DIR=$(shell pwd) \
@@ -191,20 +192,31 @@ dev-build:
 		-o docker/control-plane-dev/control-plane \
 		$(shell pwd)/server
 
-.PHONY: docker-swarm-mode
-docker-swarm-mode:
-	@if [ "$$(docker info --format '{{.Swarm.LocalNodeState}}')" != "active" ]; then \
-		echo "Docker is not in swarm mode, running 'docker swarm init'..."; \
-		docker swarm init; \
-	fi
+.PHONY: docker-swarm-init
+docker-swarm-init:
+ifneq ($(docker_swarm_state),active)
+	@echo "Docker is not in swarm mode, running 'docker swarm init'..."
+	docker swarm init
+else
+	@echo "Docker is already in swarm mode"
+endif
+
+.PHONY: docker-swarm-leave
+docker-swarm-leave:
+ifeq ($(docker_swarm_state),active)
+	@echo "Docker is in swarm mode, running 'docker swarm leave --force'..."
+	docker swarm leave --force
+else
+	@echo "Docker Swarm is already inactive"
+endif
 
 .PHONY: dev-watch
-dev-watch: dev-build docker-swarm-mode
+dev-watch: dev-build docker-swarm-init
 	$(docker_compose_dev) build
 	$(docker_compose_dev) up --watch
 
 .PHONY: dev-detached
-dev-detached: dev-build docker-swarm-mode
+dev-detached: dev-build docker-swarm-init
 	$(docker_compose_dev) build
 	$(docker_compose_dev) up --detach --wait --wait-timeout 30
 
@@ -241,7 +253,7 @@ ci-compose-build:
 		$(shell pwd)/server
 
 .PHONY: ci-compose-detached
-ci-compose-detached: ci-compose-build docker-swarm-mode
+ci-compose-detached: ci-compose-build docker-swarm-init
 	$(docker_compose_ci) build
 	$(docker_compose_ci) up --detach --wait --wait-timeout 30
 
