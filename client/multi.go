@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
-	"time"
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 )
@@ -68,9 +66,8 @@ func (c *MultiServerClient) InitCluster(ctx context.Context) (res *api.ClusterJo
 		return joinToken, nil
 	}
 
-	var server *SingleServerClient
 	if joinToken == nil {
-		server = uninitialized[0]
+		server := uninitialized[0]
 		tok, err := server.InitCluster(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize cluster: %w", err)
@@ -86,28 +83,7 @@ func (c *MultiServerClient) InitCluster(ctx context.Context) (res *api.ClusterJo
 		}
 	}
 
-	// Poll server.ListHosts for 10s until all hosts appear in the output
-	timeout := time.After(10 * time.Second)
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-timeout:
-			return nil, fmt.Errorf("timed out waiting for hosts to appear in cluster")
-		case <-ticker.C:
-			log.Print("checking if all hosts have joined the cluster")
-			hosts, err := server.ListHosts(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("failed to wait for hosts to appear in cluster: %w", err)
-			}
-			if len(hosts) == len(c.servers) {
-				return joinToken, nil
-			}
-
-			log.Printf("not all hosts have joined the cluster. found hosts: %v", hosts)
-		}
-	}
+	return joinToken, nil
 }
 
 func (c *MultiServerClient) JoinCluster(ctx context.Context, req *api.ClusterJoinToken) (err error) {
