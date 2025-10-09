@@ -15,14 +15,14 @@ import (
 type Service struct {
 	injector        *do.Injector
 	handlers        *dynamicHandlers
-	handlersReadyCh chan struct{}
+	handlersReadyCh chan error
 }
 
 func NewService(i *do.Injector) *Service {
 	return &Service{
 		injector:        i,
 		handlers:        &dynamicHandlers{},
-		handlersReadyCh: make(chan struct{}, 1),
+		handlersReadyCh: make(chan error, 1),
 	}
 }
 
@@ -54,9 +54,16 @@ func (s *Service) UsePostInitHandlers() error {
 	}
 	s.handlers.updateImpl(postInitHandlers)
 
-	s.handlersReadyCh <- struct{}{}
+	close(s.handlersReadyCh)
 
 	return nil
+}
+
+// HandleInitializationError takes an error that occurred during initialization
+// and propagates it to the handlers so that it can be returned to clients that
+// are waiting on a join or init cluster response.
+func (s *Service) HandleInitializationError(err error) {
+	s.handlersReadyCh <- err
 }
 
 // dynamicHandlers is a container that makes it easy to swap handler

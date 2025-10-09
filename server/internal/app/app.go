@@ -104,54 +104,59 @@ func (a *App) runPreInitialization(ctx context.Context) error {
 }
 
 func (a *App) runInitialized(ctx context.Context) error {
-	if err := a.api.ServePostInit(ctx); err != nil {
-		return fmt.Errorf("failed to serve post-init API: %w", err)
+	handleError := func(err error) error {
+		a.api.HandleInitializationError(err)
+		return err
 	}
 
 	certSvc, err := do.Invoke[*certificates.Service](a.i)
 	if err != nil {
-		return fmt.Errorf("failed to initialize certificate service: %w", err)
+		return handleError(fmt.Errorf("failed to initialize certificate service: %w", err))
 	}
 	if err := certSvc.Start(ctx); err != nil {
-		return fmt.Errorf("failed to start certificate service: %w", err)
+		return handleError(fmt.Errorf("failed to start certificate service: %w", err))
 	}
 
 	hostSvc, err := do.Invoke[*host.Service](a.i)
 	if err != nil {
-		return fmt.Errorf("failed to initialize host service: %w", err)
+		return handleError(fmt.Errorf("failed to initialize host service: %w", err))
 	}
 	if err := hostSvc.UpdateHost(ctx); err != nil {
-		return fmt.Errorf("failed to update host: %w", err)
+		return handleError(fmt.Errorf("failed to update host: %w", err))
 	}
 
 	hostTicker, err := do.Invoke[*host.UpdateTicker](a.i)
 	if err != nil {
-		return fmt.Errorf("failed to initialize host ticker: %w", err)
+		return handleError(fmt.Errorf("failed to initialize host ticker: %w", err))
 	}
 	hostTicker.Start(ctx)
 
 	monitorSvc, err := do.Invoke[*monitor.Service](a.i)
 	if err != nil {
-		return fmt.Errorf("failed to initialize monitor service: %w", err)
+		return handleError(fmt.Errorf("failed to initialize monitor service: %w", err))
 	}
 	if err := monitorSvc.Start(ctx); err != nil {
-		return fmt.Errorf("failed to start monitor service: %w", err)
+		return handleError(fmt.Errorf("failed to start monitor service: %w", err))
 	}
 
 	schedulerSvc, err := do.Invoke[*scheduler.Service](a.i)
 	if err != nil {
-		return fmt.Errorf("failed to initialize scheduler service: %w", err)
+		return handleError(fmt.Errorf("failed to initialize scheduler service: %w", err))
 	}
 	if err := schedulerSvc.Start(ctx); err != nil {
-		return fmt.Errorf("failed to start scheduler service: %w", err)
+		return handleError(fmt.Errorf("failed to start scheduler service: %w", err))
 	}
 
 	worker, err := do.Invoke[*workflows.Worker](a.i)
 	if err != nil {
-		return fmt.Errorf("failed to initialize worker: %w", err)
+		return handleError(fmt.Errorf("failed to initialize worker: %w", err))
 	}
 	if err := worker.Start(ctx); err != nil {
-		return fmt.Errorf("failed to start worker: %w", err)
+		return handleError(fmt.Errorf("failed to start worker: %w", err))
+	}
+
+	if err := a.api.ServePostInit(ctx); err != nil {
+		return handleError(fmt.Errorf("failed to serve post-init API: %w", err))
 	}
 
 	select {

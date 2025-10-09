@@ -91,6 +91,13 @@ func (s *Server) ServePostInit(ctx context.Context) error {
 	return nil
 }
 
+// HandleInitializationError takes an error that occurred during initialization
+// and propagates it to the handlers so that it can be returned to clients that
+// are waiting on a join or init cluster response.
+func (s *Server) HandleInitializationError(err error) {
+	s.v1Svc.HandleInitializationError(err)
+}
+
 func (s *Server) serve(ctx context.Context) {
 	if s.started {
 		return
