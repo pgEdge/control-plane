@@ -29,7 +29,7 @@ func (a *Activities) ResolveExecutor(state *resource.State, executor resource.Ex
 	case resource.ExecutorTypeHost:
 		return utils.HostQueue(executor.ID), nil
 	case resource.ExecutorTypeCohort:
-		return utils.CohortQueue(executor.ID), nil
+		return utils.CohortQueue(), nil
 	case resource.ExecutorTypeCluster:
 		return utils.ClusterQueue(), nil
 	case resource.ExecutorTypeNode:
