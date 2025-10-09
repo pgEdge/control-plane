@@ -131,7 +131,7 @@ goreleaser-build:
 		-f dist/control-plane_$(CONTROL_PLANE_VERSION:v%=%)_linux_arm64.tar.gz \
 		control-plane_linux_arm64_v8.0
 
-goreleaser-test-publish:
+goreleaser-test-release:
 	GORELEASER_CURRENT_TAG=$(CONTROL_PLANE_VERSION) \
 	$(goreleaser) release --skip=publish --snapshot --clean
 
