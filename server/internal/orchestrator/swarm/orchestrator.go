@@ -77,8 +77,8 @@ func NewOrchestrator(
 		return nil, fmt.Errorf("failed to extract bridge network info: %w", err)
 	}
 
-	if info.Swarm.Cluster == nil {
-		return nil, fmt.Errorf("docker is not in swarm mode")
+	if info.Swarm.LocalNodeState != swarm.LocalNodeStateActive {
+		return nil, fmt.Errorf("docker swarm mode is not active - current state: %s", info.Swarm.LocalNodeState)
 	}
 
 	dbNetworkPrefix, err := netip.ParsePrefix(cfg.DockerSwarm.DatabaseNetworksCIDR)
@@ -98,7 +98,6 @@ func NewOrchestrator(
 		bridgeNetwork:    bridgeInfo,
 		cpus:             info.NCPU,
 		memBytes:         uint64(info.MemTotal),
-		swarmID:          info.Swarm.Cluster.ID,
 		swarmNodeID:      info.Swarm.NodeID,
 		controlAvailable: info.Swarm.ControlAvailable,
 	}, nil
@@ -439,7 +438,7 @@ func (o *Orchestrator) WorkerQueues() ([]workflow.Queue, error) {
 		utils.HostQueue(o.cfg.HostID),
 	}
 	if o.controlAvailable {
-		queues = append(queues, utils.CohortQueue(o.swarmID))
+		queues = append(queues, utils.CohortQueue())
 	}
 	return queues, nil
 }
