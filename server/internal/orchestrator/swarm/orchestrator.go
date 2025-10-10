@@ -49,7 +49,6 @@ type Orchestrator struct {
 	bridgeNetwork      *docker.NetworkInfo
 	cpus               int
 	memBytes           uint64
-	swarmID            string
 	swarmNodeID        string
 	controlAvailable   bool
 }
@@ -108,7 +107,6 @@ func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
 	h.MemBytes = o.memBytes
 	h.Cohort = &host.Cohort{
 		Type:             host.CohortTypeSwarm,
-		CohortID:         o.swarmID,
 		MemberID:         o.swarmNodeID,
 		ControlAvailable: o.controlAvailable,
 	}
@@ -152,7 +150,6 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 	// instance will output this same network. They'll get deduplicated when we
 	// add them to the state.
 	databaseNetwork := &Network{
-		CohortID:  o.swarmID,
 		Scope:     "swarm",
 		Driver:    OverlayDriver,
 		Name:      fmt.Sprintf("%s-database", spec.DatabaseID),
@@ -245,7 +242,6 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 	}
 	checkWillRestart := &CheckWillRestart{
 		InstanceID: spec.InstanceID,
-		CohortID:   o.swarmID,
 	}
 	switchover := &Switchover{
 		HostID:     spec.HostID,
@@ -253,7 +249,6 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 	}
 	service := &PostgresService{
 		Instance:    spec,
-		CohortID:    o.swarmID,
 		ServiceName: instanceHostname,
 	}
 

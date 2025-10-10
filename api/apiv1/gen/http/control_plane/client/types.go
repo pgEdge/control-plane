@@ -1447,8 +1447,6 @@ type HostResponseBody struct {
 type HostCohortResponseBody struct {
 	// The type of cohort that the host belongs to.
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The cohort ID that the host belongs to.
-	CohortID *string `form:"cohort_id,omitempty" json:"cohort_id,omitempty" xml:"cohort_id,omitempty"`
 	// The member ID of the host within the cohort.
 	MemberID *string `form:"member_id,omitempty" json:"member_id,omitempty" xml:"member_id,omitempty"`
 	// Indicates if the host is a control node in the cohort.
@@ -1512,8 +1510,6 @@ type HostResponse struct {
 type HostCohortResponse struct {
 	// The type of cohort that the host belongs to.
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The cohort ID that the host belongs to.
-	CohortID *string `form:"cohort_id,omitempty" json:"cohort_id,omitempty" xml:"cohort_id,omitempty"`
 	// The member ID of the host within the cohort.
 	MemberID *string `form:"member_id,omitempty" json:"member_id,omitempty" xml:"member_id,omitempty"`
 	// Indicates if the host is a control node in the cohort.
@@ -5882,9 +5878,6 @@ func ValidateHostCohortResponseBody(body *HostCohortResponseBody) (err error) {
 	if body.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
-	if body.CohortID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("cohort_id", "body"))
-	}
 	if body.MemberID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("member_id", "body"))
 	}
@@ -6000,9 +5993,6 @@ func ValidateHostResponse(body *HostResponse) (err error) {
 func ValidateHostCohortResponse(body *HostCohortResponse) (err error) {
 	if body.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.CohortID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("cohort_id", "body"))
 	}
 	if body.MemberID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("member_id", "body"))

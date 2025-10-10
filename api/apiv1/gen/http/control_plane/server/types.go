@@ -1447,8 +1447,6 @@ type HostResponseBody struct {
 type HostCohortResponseBody struct {
 	// The type of cohort that the host belongs to.
 	Type string `form:"type" json:"type" xml:"type"`
-	// The cohort ID that the host belongs to.
-	CohortID string `form:"cohort_id" json:"cohort_id" xml:"cohort_id"`
 	// The member ID of the host within the cohort.
 	MemberID string `form:"member_id" json:"member_id" xml:"member_id"`
 	// Indicates if the host is a control node in the cohort.
@@ -1512,8 +1510,6 @@ type HostResponse struct {
 type HostCohortResponse struct {
 	// The type of cohort that the host belongs to.
 	Type string `form:"type" json:"type" xml:"type"`
-	// The cohort ID that the host belongs to.
-	CohortID string `form:"cohort_id" json:"cohort_id" xml:"cohort_id"`
 	// The member ID of the host within the cohort.
 	MemberID string `form:"member_id" json:"member_id" xml:"member_id"`
 	// Indicates if the host is a control node in the cohort.

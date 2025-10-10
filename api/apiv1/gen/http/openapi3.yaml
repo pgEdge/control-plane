@@ -2623,7 +2623,6 @@ paths:
                 $ref: '#/components/schemas/Host'
               example:
                 cohort:
-                  cohort_id: pps1n11hqijn9rbee4cjil453
                   control_available: true
                   member_id: lah4bsznw6kc0hp7biylmmmll
                   type: swarm
@@ -5626,7 +5625,6 @@ components:
               spock_version: "5"
       example:
         cohort:
-          cohort_id: pps1n11hqijn9rbee4cjil453
           control_available: true
           member_id: lah4bsznw6kc0hp7biylmmmll
           type: swarm
@@ -5673,10 +5671,6 @@ components:
     HostCohort:
       type: object
       properties:
-        cohort_id:
-          type: string
-          description: The cohort ID that the host belongs to.
-          example: pps1n11hqijn9rbee4cjil453
         control_available:
           type: boolean
           description: Indicates if the host is a control node in the cohort.
@@ -5690,13 +5684,11 @@ components:
           description: The type of cohort that the host belongs to.
           example: swarm
       example:
-        cohort_id: pps1n11hqijn9rbee4cjil453
         control_available: true
         member_id: lah4bsznw6kc0hp7biylmmmll
         type: swarm
       required:
         - type
-        - cohort_id
         - member_id
         - control_available
     HostStatus:

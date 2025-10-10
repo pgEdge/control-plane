@@ -3434,7 +3434,6 @@ func unmarshalHostCohortResponseBodyToControlplaneHostCohort(v *HostCohortRespon
 	}
 	res := &controlplane.HostCohort{
 		Type:             *v.Type,
-		CohortID:         *v.CohortID,
 		MemberID:         *v.MemberID,
 		ControlAvailable: *v.ControlAvailable,
 	}
@@ -3534,7 +3533,6 @@ func unmarshalHostCohortResponseToControlplaneHostCohort(v *HostCohortResponse) 
 	}
 	res := &controlplane.HostCohort{
 		Type:             *v.Type,
-		CohortID:         *v.CohortID,
 		MemberID:         *v.MemberID,
 		ControlAvailable: *v.ControlAvailable,
 	}

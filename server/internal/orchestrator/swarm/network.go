@@ -30,7 +30,6 @@ type Allocator struct {
 }
 
 type Network struct {
-	CohortID  string       `json:"cohort_id"`
 	Scope     string       `json:"scope"`
 	Driver    string       `json:"driver"`
 	Allocator Allocator    `json:"allocator"`
@@ -59,17 +58,8 @@ func (n *Network) Identifier() resource.Identifier {
 func (n *Network) Executor() resource.Executor {
 	return resource.Executor{
 		Type: resource.ExecutorTypeCohort,
-		ID:   n.CohortID,
 	}
 }
-
-// func (n *Network) ID() string {
-// 	return n.Name
-// }
-
-// func (n *Network) Type() string {
-// 	return "swarm.network"
-// }
 
 func (n *Network) Dependencies() []resource.Identifier {
 	return nil
