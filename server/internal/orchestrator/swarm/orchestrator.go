@@ -429,11 +429,11 @@ func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID
 
 func (o *Orchestrator) WorkerQueues() ([]workflow.Queue, error) {
 	queues := []workflow.Queue{
-		utils.ClusterQueue(),
+		utils.AnyQueue(),
 		utils.HostQueue(o.cfg.HostID),
 	}
 	if o.controlAvailable {
-		queues = append(queues, utils.CohortQueue())
+		queues = append(queues, utils.ManagerQueue())
 	}
 	return queues, nil
 }

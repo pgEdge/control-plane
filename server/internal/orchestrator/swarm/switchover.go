@@ -35,10 +35,7 @@ func (s *Switchover) DiffIgnore() []string {
 }
 
 func (s *Switchover) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeHost,
-		ID:   s.HostID,
-	}
+	return resource.HostExecutor(s.HostID)
 }
 
 func (s *Switchover) Identifier() resource.Identifier {

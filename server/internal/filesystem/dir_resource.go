@@ -45,10 +45,7 @@ func (d *DirResource) DiffIgnore() []string {
 }
 
 func (d *DirResource) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeHost,
-		ID:   d.HostID,
-	}
+	return resource.HostExecutor(d.HostID)
 }
 
 func (d *DirResource) Identifier() resource.Identifier {

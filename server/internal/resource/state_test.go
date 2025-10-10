@@ -501,10 +501,7 @@ func (r *testResource) DiffIgnore() []string {
 }
 
 func (r *testResource) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeHost,
-		ID:   "test",
-	}
+	return resource.HostExecutor("test")
 }
 
 func (r *testResource) Identifier() resource.Identifier {

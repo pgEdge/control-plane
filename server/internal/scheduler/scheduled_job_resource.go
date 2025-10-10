@@ -47,9 +47,7 @@ func (r *ScheduledJobResource) DiffIgnore() []string {
 }
 
 func (r *ScheduledJobResource) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeCluster,
-	}
+	return resource.AnyExecutor()
 }
 
 func (r *ScheduledJobResource) Identifier() resource.Identifier {

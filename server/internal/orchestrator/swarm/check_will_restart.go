@@ -42,9 +42,7 @@ func (c *CheckWillRestart) DiffIgnore() []string {
 }
 
 func (c *CheckWillRestart) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeCohort,
-	}
+	return resource.ManagerExecutor()
 }
 
 func (c *CheckWillRestart) Identifier() resource.Identifier {

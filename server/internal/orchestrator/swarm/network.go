@@ -56,9 +56,7 @@ func (n *Network) Identifier() resource.Identifier {
 }
 
 func (n *Network) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeCohort,
-	}
+	return resource.ManagerExecutor()
 }
 
 func (n *Network) Dependencies() []resource.Identifier {

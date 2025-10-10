@@ -58,10 +58,7 @@ func (c *EtcdCreds) DiffIgnore() []string {
 }
 
 func (c *EtcdCreds) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeHost,
-		ID:   c.HostID,
-	}
+	return resource.HostExecutor(c.HostID)
 }
 
 func (c *EtcdCreds) Identifier() resource.Identifier {

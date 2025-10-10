@@ -38,9 +38,7 @@ func (p *PatroniMember) DiffIgnore() []string {
 }
 
 func (p *PatroniMember) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeCluster,
-	}
+	return resource.AnyExecutor()
 }
 
 func (p *PatroniMember) Identifier() resource.Identifier {

@@ -44,9 +44,7 @@ func (s *PostgresService) Identifier() resource.Identifier {
 }
 
 func (s *PostgresService) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeCohort,
-	}
+	return resource.ManagerExecutor()
 }
 
 func (s *PostgresService) Dependencies() []resource.Identifier {

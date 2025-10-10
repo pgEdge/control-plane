@@ -40,10 +40,7 @@ func (s *SubscriptionResource) DiffIgnore() []string {
 }
 
 func (s *SubscriptionResource) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeNode,
-		ID:   s.SubscriberNode,
-	}
+	return resource.PrimaryExecutor(s.SubscriberNode)
 }
 
 func (s *SubscriptionResource) Identifier() resource.Identifier {
