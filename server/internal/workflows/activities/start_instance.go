@@ -35,7 +35,7 @@ func (a *Activities) ExecuteStartInstance(
 	}
 
 	if input.Cohort != nil {
-		options.Queue = utils.CohortQueue(input.Cohort.CohortID)
+		options.Queue = utils.CohortQueue()
 	} else {
 		options.Queue = utils.HostQueue(input.HostID)
 	}

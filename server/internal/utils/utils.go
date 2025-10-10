@@ -144,8 +144,8 @@ func HostQueue(hostID string) workflow.Queue {
 	return core.Queue(path.Join("host", hostID))
 }
 
-func CohortQueue(cohortID string) workflow.Queue {
-	return core.Queue(path.Join("cohort", cohortID))
+func CohortQueue() workflow.Queue {
+	return core.Queue("cohort")
 }
 
 func ClusterQueue() workflow.Queue {
