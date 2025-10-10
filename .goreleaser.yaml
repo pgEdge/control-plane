@@ -39,3 +39,4 @@ release:
     ```
   extra_files:
     - glob: LICENSE.md
+    - glob: api/apiv1/gen/http/openapi*.yaml
