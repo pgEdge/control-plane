@@ -75,6 +75,7 @@ func (s *Service) UpdateHost(ctx context.Context) error {
 
 func (s *Service) UpdateHostStatus(ctx context.Context) error {
 	status := &HostStatus{
+		HostID:    s.cfg.HostID,
 		UpdatedAt: time.Now(),
 		State:     HostStateHealthy,
 		Components: map[string]common.ComponentStatus{

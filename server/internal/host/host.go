@@ -17,6 +17,7 @@ const (
 )
 
 type HostStatus struct {
+	HostID     string
 	UpdatedAt  time.Time
 	State      HostState
 	Components map[string]common.ComponentStatus
@@ -148,6 +149,7 @@ func toStorage(host *Host) *StoredHost {
 
 func statusToStorage(status *HostStatus) *StoredHostStatus {
 	return &StoredHostStatus{
+		HostID:     status.HostID,
 		UpdatedAt:  status.UpdatedAt,
 		State:      status.State,
 		Components: status.Components,
