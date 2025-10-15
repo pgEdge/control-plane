@@ -55,12 +55,7 @@ func newRootCmd(i *do.Injector) *cobra.Command {
 				config.NewPFlagSource(cmd.Flags()),
 			)
 
-			cfg, err := config.LoadSources(sources...)
-			if err != nil {
-				return fmt.Errorf("failed to load configs: %w", err)
-			}
-
-			config.Provide(i, cfg)
+			config.Provide(i, sources...)
 			api.Provide(i)
 			certificates.Provide(i)
 			database.Provide(i)
