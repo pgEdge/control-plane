@@ -17,6 +17,21 @@ import (
 	goa "goa.design/goa/v3/pkg"
 )
 
+// BuildInitClusterPayload builds the payload for the control-plane
+// init-cluster endpoint from CLI flags.
+func BuildInitClusterPayload(controlPlaneInitClusterClusterID string) (*controlplane.InitClusterRequest, error) {
+	var clusterID *string
+	{
+		if controlPlaneInitClusterClusterID != "" {
+			clusterID = &controlPlaneInitClusterClusterID
+		}
+	}
+	v := &controlplane.InitClusterRequest{}
+	v.ClusterID = clusterID
+
+	return v, nil
+}
+
 // BuildJoinClusterPayload builds the payload for the control-plane
 // join-cluster endpoint from CLI flags.
 func BuildJoinClusterPayload(controlPlaneJoinClusterBody string) (*controlplane.ClusterJoinToken, error) {
@@ -441,7 +456,7 @@ func BuildFailoverDatabaseNodePayload(controlPlaneFailoverDatabaseNodeBody strin
 	{
 		err = json.Unmarshal([]byte(controlPlaneFailoverDatabaseNodeBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"candidate_instance_id\": \"68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi\",\n      \"skip_validation\": true\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"candidate_instance_id\": \"68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi\",\n      \"skip_validation\": false\n   }'")
 		}
 	}
 	var databaseID string

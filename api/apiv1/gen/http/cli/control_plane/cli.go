@@ -28,7 +28,7 @@ func UsageCommands() string {
 
 // UsageExamples produces an example of a valid invocation of the CLI tool.
 func UsageExamples() string {
-	return os.Args[0] + ` control-plane init-cluster` + "\n" +
+	return os.Args[0] + ` control-plane init-cluster --cluster-id "Et harum cum possimus minima exercitationem."` + "\n" +
 		""
 }
 
@@ -44,7 +44,8 @@ func ParseEndpoint(
 	var (
 		controlPlaneFlags = flag.NewFlagSet("control-plane", flag.ContinueOnError)
 
-		controlPlaneInitClusterFlags = flag.NewFlagSet("init-cluster", flag.ExitOnError)
+		controlPlaneInitClusterFlags         = flag.NewFlagSet("init-cluster", flag.ExitOnError)
+		controlPlaneInitClusterClusterIDFlag = controlPlaneInitClusterFlags.String("cluster-id", "", "")
 
 		controlPlaneJoinClusterFlags    = flag.NewFlagSet("join-cluster", flag.ExitOnError)
 		controlPlaneJoinClusterBodyFlag = controlPlaneJoinClusterFlags.String("body", "REQUIRED", "")
@@ -302,6 +303,7 @@ func ParseEndpoint(
 			switch epn {
 			case "init-cluster":
 				endpoint = c.InitCluster()
+				data, err = controlplanec.BuildInitClusterPayload(*controlPlaneInitClusterClusterIDFlag)
 			case "join-cluster":
 				endpoint = c.JoinCluster()
 				data, err = controlplanec.BuildJoinClusterPayload(*controlPlaneJoinClusterBodyFlag)
@@ -418,12 +420,13 @@ Additional help:
 `, os.Args[0])
 }
 func controlPlaneInitClusterUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane init-cluster
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane init-cluster -cluster-id STRING
 
 Initializes a new cluster.
+    -cluster-id STRING: 
 
 Example:
-    %[1]s control-plane init-cluster
+    %[1]s control-plane init-cluster --cluster-id "Et harum cum possimus minima exercitationem."
 `, os.Args[0])
 }
 
@@ -723,7 +726,7 @@ Performs a failover for a node to a replica candidate.
 Example:
     %[1]s control-plane failover-database-node --body '{
       "candidate_instance_id": "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi",
-      "skip_validation": true
+      "skip_validation": false
    }' --database-id "my-app" --node-name "n1"
 `, os.Args[0])
 }

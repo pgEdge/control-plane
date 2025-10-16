@@ -175,10 +175,15 @@ func NewClient(
 // control-plane service init-cluster server.
 func (c *Client) InitCluster() goa.Endpoint {
 	var (
+		encodeRequest  = EncodeInitClusterRequest(c.encoder)
 		decodeResponse = DecodeInitClusterResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
 		req, err := c.BuildInitClusterRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
 		if err != nil {
 			return nil, err
 		}

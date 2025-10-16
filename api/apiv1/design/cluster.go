@@ -33,6 +33,13 @@ var Cluster = g.Type("Cluster", func() {
 	g.Required("id", "tenant_id", "status", "hosts")
 })
 
+var InitClusterRequest = g.Type("InitClusterRequest", func() {
+	g.Description("Request to initialize a cluster")
+	g.Attribute("cluster_id", g.String, func() {
+		g.Description("Optional id for the cluster, omit for default generated id")
+	})
+})
+
 var ClusterJoinToken = g.Type("ClusterJoinToken", func() {
 	g.Attribute("token", g.String, func() {
 		g.Description("Token to join an existing cluster.")
