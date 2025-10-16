@@ -2772,6 +2772,8 @@ func marshalControlplaneClusterPeerToClusterPeerResponseBody(v *controlplane.Clu
 // *controlplane.ClusterCredentials.
 func marshalControlplaneClusterCredentialsToClusterCredentialsResponseBody(v *controlplane.ClusterCredentials) *ClusterCredentialsResponseBody {
 	res := &ClusterCredentialsResponseBody{
+		Username:   v.Username,
+		Password:   v.Password,
 		CaCert:     v.CaCert,
 		ClientCert: v.ClientCert,
 		ClientKey:  v.ClientKey,

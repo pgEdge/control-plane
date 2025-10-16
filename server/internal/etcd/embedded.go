@@ -52,11 +52,11 @@ type EmbeddedEtcd struct {
 	client      *clientv3.Client
 	etcd        *embed.Etcd
 	logger      zerolog.Logger
-	cfg         config.Config
+	cfg         *config.Manager
 	initialized chan struct{}
 }
 
-func NewEmbeddedEtcd(cfg config.Config, logger zerolog.Logger) *EmbeddedEtcd {
+func NewEmbeddedEtcd(cfg *config.Manager, logger zerolog.Logger) *EmbeddedEtcd {
 	return &EmbeddedEtcd{
 		cfg:         cfg,
 		logger:      logger,
@@ -97,21 +97,23 @@ func (e *EmbeddedEtcd) CertService() *certificates.Service {
 }
 
 func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
-	cfg, err := initializationConfig(e.cfg, e.logger)
+	appCfg := e.cfg.Config()
+
+	etcdCfg, err := initializationConfig(appCfg, e.logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize embedded etcd config: %w", err)
 	}
-	etcd, err := startEmbedded(ctx, cfg)
+	etcd, err := startEmbedded(ctx, etcdCfg)
 	if err != nil {
 		return fmt.Errorf("failed to start etcd for initialization: %w", err)
 	}
-	client, err := clientForEmbedded(e.cfg, e.logger, etcd)
+	client, err := clientForEmbedded(appCfg, e.logger, etcd)
 	if err != nil {
 		return fmt.Errorf("failed to get etcd client for initialization: %w", err)
 	}
 	// Initialize the certificate authority
-	certStore := certificates.NewStore(client, e.cfg.EtcdKeyRoot)
-	certSvc := certificates.NewService(e.cfg, certStore)
+	certStore := certificates.NewStore(client, appCfg.EtcdKeyRoot)
+	certSvc := certificates.NewService(appCfg, certStore)
 	if err := certSvc.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start certificate service: %w", err)
 	}
@@ -133,9 +135,9 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 	}
 
 	creds, err := createEtcdHostCredentials(ctx, client, certSvc, HostCredentialOptions{
-		HostID:      e.cfg.HostID,
-		Hostname:    e.cfg.Hostname,
-		IPv4Address: e.cfg.IPv4Address,
+		HostID:      appCfg.HostID,
+		Hostname:    appCfg.Hostname,
+		IPv4Address: appCfg.IPv4Address,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create etcd host credentials: %w", err)
@@ -182,11 +184,13 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 }
 
 func (e *EmbeddedEtcd) start(ctx context.Context) error {
-	cfg, err := embedConfig(e.cfg, e.logger)
+	appCfg := e.cfg.Config()
+
+	etcdCfg, err := embedConfig(appCfg, e.logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize embedded etcd config: %w", err)
 	}
-	etcd, err := startEmbedded(ctx, cfg)
+	etcd, err := startEmbedded(ctx, etcdCfg)
 	if err != nil {
 		return fmt.Errorf("failed to start etcd: %w", err)
 	}
@@ -197,8 +201,8 @@ func (e *EmbeddedEtcd) start(ctx context.Context) error {
 		return fmt.Errorf("failed to get internal etcd client: %w", err)
 	}
 
-	certStore := certificates.NewStore(client, e.cfg.EtcdKeyRoot)
-	certSvc := certificates.NewService(e.cfg, certStore)
+	certStore := certificates.NewStore(client, appCfg.EtcdKeyRoot)
+	certSvc := certificates.NewService(appCfg, certStore)
 	if err := certSvc.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start certificate service: %w", err)
 	}
@@ -223,7 +227,9 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 		return err
 	}
 
-	cfg, err := embedConfig(e.cfg, e.logger)
+	appCfg := e.cfg.Config()
+
+	etcdCfg, err := embedConfig(appCfg, e.logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize embedded etcd config: %w", err)
 	}
@@ -275,17 +281,17 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 		}
 		peers = append(peers, fmt.Sprintf("%s=%s", m.Name, m.PeerURLs[0]))
 	}
-	cfg.InitialCluster = strings.Join(peers, ",")
-	cfg.ClusterState = embed.ClusterStateFlagExisting
+	etcdCfg.InitialCluster = strings.Join(peers, ",")
+	etcdCfg.ClusterState = embed.ClusterStateFlagExisting
 
-	etcd, err := startEmbedded(ctx, cfg)
+	etcd, err := startEmbedded(ctx, etcdCfg)
 	if err != nil {
 		return err
 	}
 	e.etcd = etcd
 
 	e.logger.Info().Msg("etcd started as learner")
-	if err := e.PromoteWhenReady(ctx, client, e.cfg.HostID); err != nil {
+	if err := e.PromoteWhenReady(ctx, client, appCfg.HostID); err != nil {
 		return fmt.Errorf("failed to promote this etcd server: %w", err)
 	}
 
@@ -298,8 +304,8 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 		return fmt.Errorf("failed to get internal etcd client: %w", err)
 	}
 
-	certStore := certificates.NewStore(client, e.cfg.EtcdKeyRoot)
-	certSvc := certificates.NewService(e.cfg, certStore)
+	certStore := certificates.NewStore(client, appCfg.EtcdKeyRoot)
+	certSvc := certificates.NewService(appCfg, certStore)
 	if err := certSvc.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start certificate service: %w", err)
 	}
@@ -311,7 +317,9 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 }
 
 func (e *EmbeddedEtcd) leaderClient(ctx context.Context, initialEndpoint string) (*clientv3.Client, error) {
-	lg, err := newZapLogger(e.logger, e.cfg.EmbeddedEtcd.ClientLogLevel, "etcd_peer_client")
+	appCfg := e.cfg.Config()
+
+	lg, err := newZapLogger(e.logger, appCfg.EmbeddedEtcd.ClientLogLevel, "etcd_peer_client")
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize etcd peer client logger: %w", err)
 	}
@@ -325,8 +333,8 @@ func (e *EmbeddedEtcd) leaderClient(ctx context.Context, initialEndpoint string)
 		Logger:    lg,
 		Endpoints: []string{initialEndpoint},
 		TLS:       tlsConfig,
-		Username:  hostUsername(e.cfg.HostID),
-		Password:  e.cfg.HostID,
+		Username:  appCfg.EtcdUsername,
+		Password:  appCfg.EtcdPassword,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create initial etcd peer client: %w", err)
@@ -356,8 +364,8 @@ func (e *EmbeddedEtcd) leaderClient(ctx context.Context, initialEndpoint string)
 				Logger:    lg,
 				Endpoints: member.ClientURLs,
 				TLS:       tlsConfig,
-				Username:  hostUsername(e.cfg.HostID),
-				Password:  e.cfg.HostID,
+				Username:  appCfg.EtcdUsername,
+				Password:  appCfg.EtcdPassword,
 			})
 			if err != nil {
 				return nil, fmt.Errorf("failed to create etcd peer client to leader: %w", err)
@@ -393,17 +401,19 @@ func (e *EmbeddedEtcd) Error() <-chan error {
 }
 
 func (e *EmbeddedEtcd) ClientEndpoint() string {
-	return fmt.Sprintf("https://%s:%d", e.cfg.IPv4Address, e.cfg.EmbeddedEtcd.ClientPort)
+	appCfg := e.cfg.Config()
+	return fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, appCfg.EmbeddedEtcd.ClientPort)
 }
 
 func (e *EmbeddedEtcd) DataDir() string {
-	return filepath.Join(e.cfg.DataDir, "etcd")
+	return filepath.Join(e.cfg.Config().DataDir, "etcd")
 }
 
 func (e *EmbeddedEtcd) AsPeer() Peer {
+	appCfg := e.cfg.Config()
 	return Peer{
-		Name:      e.cfg.HostID,
-		PeerURL:   fmt.Sprintf("https://%s:%d", e.cfg.IPv4Address, e.cfg.EmbeddedEtcd.PeerPort),
+		Name:      appCfg.HostID,
+		PeerURL:   fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, appCfg.EmbeddedEtcd.PeerPort),
 		ClientURL: e.ClientEndpoint(),
 	}
 }
@@ -446,14 +456,15 @@ func (e *EmbeddedEtcd) VerifyJoinToken(in string) error {
 }
 
 func (e *EmbeddedEtcd) clientTLSConfig() (*tls.Config, error) {
+	appCfg := e.cfg.Config()
 	clientCert, err := tls.LoadX509KeyPair(
-		filepath.Join(e.cfg.DataDir, "certificates", "etcd-user.crt"),
-		filepath.Join(e.cfg.DataDir, "certificates", "etcd-user.key"),
+		filepath.Join(appCfg.DataDir, "certificates", "etcd-user.crt"),
+		filepath.Join(appCfg.DataDir, "certificates", "etcd-user.key"),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read client cert: %w", err)
 	}
-	rootCA, err := os.ReadFile(filepath.Join(e.cfg.DataDir, "certificates", "ca.crt"))
+	rootCA, err := os.ReadFile(filepath.Join(appCfg.DataDir, "certificates", "ca.crt"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read CA cert: %w", err)
 	}
@@ -473,7 +484,9 @@ func (e *EmbeddedEtcd) GetClient() (*clientv3.Client, error) {
 		return e.client, nil
 	}
 
-	lg, err := newZapLogger(e.logger, e.cfg.EmbeddedEtcd.ClientLogLevel, "etcd_client")
+	appCfg := e.cfg.Config()
+
+	lg, err := newZapLogger(e.logger, appCfg.EmbeddedEtcd.ClientLogLevel, "etcd_client")
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize etcd client logger: %w", err)
 	}
@@ -487,8 +500,8 @@ func (e *EmbeddedEtcd) GetClient() (*clientv3.Client, error) {
 		Logger:             lg,
 		Endpoints:          e.etcd.Server.Cluster().ClientURLs(),
 		TLS:                tlsConfig,
-		Username:           hostUsername(e.cfg.HostID),
-		Password:           e.cfg.HostID,
+		Username:           appCfg.EtcdUsername,
+		Password:           appCfg.EtcdPassword,
 		MaxCallSendMsgSize: 10 * 1024 * 1024, // 10MB
 		MaxCallRecvMsgSize: 10 * 1024 * 1024, // 10MB
 	})
@@ -601,10 +614,19 @@ func (e *EmbeddedEtcd) writeCredentials(creds *HostCredentials) error {
 			},
 		},
 	}
-	err := certs.Create(context.Background(), afero.NewOsFs(), e.cfg.DataDir, e.cfg.DatabaseOwnerUID)
+	appCfg := e.cfg.Config()
+	err := certs.Create(context.Background(), afero.NewOsFs(), appCfg.DataDir, 0)
 	if err != nil {
 		return fmt.Errorf("failed to write credentials: %w", err)
 	}
+
+	generatedCfg := e.cfg.GeneratedConfig()
+	generatedCfg.EtcdUsername = creds.Username
+	generatedCfg.EtcdPassword = creds.Password
+	if err := e.cfg.UpdateGeneratedConfig(generatedCfg); err != nil {
+		return fmt.Errorf("failed to update generated config: %w", err)
+	}
+
 	return nil
 }
 
@@ -871,6 +893,8 @@ type HostCredentialOptions struct {
 }
 
 type HostCredentials struct {
+	Username   string
+	Password   string
 	CaCert     []byte
 	ClientCert []byte
 	ClientKey  []byte
@@ -889,11 +913,13 @@ func createEtcdHostCredentials(
 	opts HostCredentialOptions,
 ) (*HostCredentials, error) {
 	username := hostUsername(opts.HostID)
+	password, err := utils.RandomString(16)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate random password: %w", err)
+	}
 
 	// Create a user for the peer host
-	// TODO: patroni doesn't support CN auth, so we need a password. Replace this
-	// with something random
-	err := createUserIfNotExists(ctx, client, username, opts.HostID, "root")
+	err = createUserIfNotExists(ctx, client, username, password, "root")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create host user: %w", err)
 	}
@@ -915,6 +941,8 @@ func createEtcdHostCredentials(
 	}
 
 	return &HostCredentials{
+		Username:   username,
+		Password:   password,
 		CaCert:     certSvc.CACert(),
 		ClientCert: clientPrincipal.CertPEM,
 		ClientKey:  clientPrincipal.KeyPEM,

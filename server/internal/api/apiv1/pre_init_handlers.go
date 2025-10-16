@@ -123,6 +123,8 @@ func (s *PreInitHandlers) JoinCluster(ctx context.Context, token *api.ClusterJoi
 			ClientURL: opts.Peer.ClientURL,
 		},
 		Credentials: &etcd.HostCredentials{
+			Username:   opts.Credentials.Username,
+			Password:   opts.Credentials.Password,
 			CaCert:     caCert,
 			ClientCert: clientCert,
 			ClientKey:  clientKey,

@@ -1399,6 +1399,10 @@ type ClusterPeerResponseBody struct {
 // ClusterCredentialsResponseBody is used to define fields on response body
 // types.
 type ClusterCredentialsResponseBody struct {
+	// The Etcd username for the new host.
+	Username string `form:"username" json:"username" xml:"username"`
+	// The Etcd password for the new host.
+	Password string `form:"password" json:"password" xml:"password"`
 	// The base64-encoded CA certificate for the cluster.
 	CaCert string `form:"ca_cert" json:"ca_cert" xml:"ca_cert"`
 	// The base64-encoded etcd client certificate for the new cluster member.

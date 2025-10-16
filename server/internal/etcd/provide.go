@@ -27,7 +27,7 @@ func provideClient(i *do.Injector) {
 
 func provideEmbeddedEtcd(i *do.Injector) {
 	do.Provide(i, func(i *do.Injector) (*EmbeddedEtcd, error) {
-		cfg, err := do.Invoke[config.Config](i)
+		cfg, err := do.Invoke[*config.Manager](i)
 		if err != nil {
 			return nil, err
 		}

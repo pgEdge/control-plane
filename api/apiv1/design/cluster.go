@@ -92,6 +92,14 @@ var ClusterPeer = g.Type("ClusterPeer", func() {
 })
 
 var ClusterCredentials = g.Type("ClusterCredentials", func() {
+	g.Attribute("username", g.String, func() {
+		g.Description("The Etcd username for the new host.")
+		g.Example("host-2")
+	})
+	g.Attribute("password", g.String, func() {
+		g.Description("The Etcd password for the new host.")
+		g.Example("a78v2x866zirk4o737gjdssfi")
+	})
 	g.Attribute("ca_cert", g.String, func() {
 		g.Description("The base64-encoded CA certificate for the cluster.")
 		g.Example("ZGE4NDdkMzMtM2FiYi00YzE2LTkzOGQtNDRkODU2ZDFlZWZlCg==")
@@ -113,7 +121,15 @@ var ClusterCredentials = g.Type("ClusterCredentials", func() {
 		g.Example("NWRhNzY1ZGUtNzJkMi00OTU3LTk4ODUtOWRiZThjOGE5MGQ3Cg==")
 	})
 
-	g.Required("ca_cert", "client_cert", "client_key", "server_cert", "server_key")
+	g.Required(
+		"username",
+		"password",
+		"ca_cert",
+		"client_cert",
+		"client_key",
+		"server_cert",
+		"server_key",
+	)
 })
 
 var ClusterJoinOptions = g.Type("ClusterJoinOptions", func() {
