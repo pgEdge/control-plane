@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/google/uuid"
+	"github.com/pgEdge/control-plane/server/internal/cluster"
 	goahttp "goa.design/goa/v3/http"
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
@@ -24,6 +26,7 @@ var _ api.Service = (*PreInitHandlers)(nil)
 type PreInitHandlers struct {
 	cfg             config.Config
 	etcd            *etcd.EmbeddedEtcd
+	clusterSvc      *cluster.Service
 	handlersReadyCh <-chan error
 }
 
@@ -44,12 +47,21 @@ func (s *PreInitHandlers) waitForHandlersReady() error {
 	return nil
 }
 
-func (s *PreInitHandlers) InitCluster(ctx context.Context) (*api.ClusterJoinToken, error) {
+func (s *PreInitHandlers) InitCluster(ctx context.Context, req *api.InitClusterRequest) (*api.ClusterJoinToken, error) {
 	if err := s.etcd.Start(ctx); err != nil {
 		return nil, apiErr(err)
 	}
 
 	if err := s.waitForHandlersReady(); err != nil {
+		return nil, apiErr(err)
+	}
+
+	clusterID := uuid.NewString()
+	if req.ClusterID != nil {
+		clusterID = *req.ClusterID
+	}
+	fmt.Printf(">>>>> Cluster ID: %s\n", clusterID)
+	if err := s.clusterSvc.Create(ctx, clusterID); err != nil {
 		return nil, apiErr(err)
 	}
 

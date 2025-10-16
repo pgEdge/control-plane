@@ -763,7 +763,7 @@ func (s *PostInitHandlers) GetVersion(context.Context) (res *api.VersionInfo, er
 	}, nil
 }
 
-func (s *PostInitHandlers) InitCluster(ctx context.Context) (*api.ClusterJoinToken, error) {
+func (s *PostInitHandlers) InitCluster(ctx context.Context, req *api.InitClusterRequest) (*api.ClusterJoinToken, error) {
 	return nil, ErrAlreadyInitialized
 }
 
