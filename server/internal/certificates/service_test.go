@@ -16,10 +16,7 @@ func TestService(t *testing.T) {
 		etcd := storagetest.NewEtcdTestServer(t)
 		client := etcd.Client(t)
 		store := certificates.NewStore(client, uuid.NewString())
-		cfg := config.Config{
-			ClusterID: uuid.NewString(),
-		}
-		service := certificates.NewService(cfg, store)
+		service := certificates.NewService(config.Config{}, store)
 
 		ctx := context.Background()
 		assert.NoError(t, service.Start(ctx))
@@ -34,7 +31,7 @@ func TestService(t *testing.T) {
 		assert.NoError(t, service.Verify(principal.CertPEM))
 
 		// Simulate restoring the service from the stored CA on the next startup
-		restored := certificates.NewService(cfg, store)
+		restored := certificates.NewService(config.Config{}, store)
 		assert.NoError(t, restored.Start(ctx))
 
 		// Verify that the restored service has the same CA
