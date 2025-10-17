@@ -26,7 +26,6 @@ var _ api.Service = (*PreInitHandlers)(nil)
 type PreInitHandlers struct {
 	cfg             config.Config
 	etcd            *etcd.EmbeddedEtcd
-	clusterSvc      *cluster.Service
 	handlersReadyCh <-chan error
 }
 
@@ -52,16 +51,23 @@ func (s *PreInitHandlers) InitCluster(ctx context.Context, req *api.InitClusterR
 		return nil, apiErr(err)
 	}
 
-	if err := s.waitForHandlersReady(); err != nil {
+	etcdClient, err := s.etcd.GetClient()
+	if err != nil {
 		return nil, apiErr(err)
 	}
+	clusterStore := cluster.NewStore(etcdClient, "")
 
-	clusterID := uuid.NewString()
+	clusterID := uuid.NewString() // default to uuid unless specified in request
 	if req.ClusterID != nil {
 		clusterID = *req.ClusterID
 	}
-	fmt.Printf(">>>>> Cluster ID: %s\n", clusterID)
-	if err := s.clusterSvc.Create(ctx, clusterID); err != nil {
+	if err := clusterStore.Cluster.
+		Create(&cluster.StoredCluster{ID: clusterID}).
+		Exec(ctx); err != nil {
+		return nil, apiErr(err)
+	}
+
+	if err := s.waitForHandlersReady(); err != nil {
 		return nil, apiErr(err)
 	}
 

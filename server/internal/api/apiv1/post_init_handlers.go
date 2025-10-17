@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/pgEdge/control-plane/server/internal/cluster"
 	"github.com/rs/zerolog"
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
@@ -35,6 +36,7 @@ type PostInitHandlers struct {
 	dbSvc       *database.Service
 	taskSvc     *task.Service
 	workflowSvc *workflows.Service
+	clusterSvc  *cluster.Service
 }
 
 func NewPostInitHandlers(
@@ -45,6 +47,7 @@ func NewPostInitHandlers(
 	dbSvc *database.Service,
 	taskSvc *task.Service,
 	workflowSvc *workflows.Service,
+	clusterSvc *cluster.Service,
 ) *PostInitHandlers {
 	return &PostInitHandlers{
 		cfg:         cfg,
@@ -54,6 +57,7 @@ func NewPostInitHandlers(
 		dbSvc:       dbSvc,
 		taskSvc:     taskSvc,
 		workflowSvc: workflowSvc,
+		clusterSvc:  clusterSvc,
 	}
 }
 
@@ -134,8 +138,12 @@ func (s *PostInitHandlers) GetCluster(ctx context.Context) (*api.Cluster, error)
 		apiHosts[idx] = hostToAPI(h)
 	}
 
+	storedCluster, err := s.clusterSvc.Get(ctx)
+	if err != nil {
+		return nil, apiErr(err)
+	}
 	cluster := &api.Cluster{
-		ID:       api.Identifier(s.cfg.ClusterID),
+		ID:       api.Identifier(storedCluster.ID),
 		TenantID: api.Identifier(s.cfg.TenantID),
 		Hosts:    apiHosts,
 		Status:   &api.ClusterStatus{State: "available"},

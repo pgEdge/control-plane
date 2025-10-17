@@ -3,6 +3,7 @@ package apiv1
 import (
 	"fmt"
 
+	"github.com/pgEdge/control-plane/server/internal/cluster"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 
@@ -64,8 +65,12 @@ func providePostInitHandlers(i *do.Injector) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get workflow service: %w", err)
 		}
+		clusterSvc, err := do.Invoke[*cluster.Service](i)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get cluster service: %w", err)
+		}
 
-		return NewPostInitHandlers(cfg, logger, etcdClient, hostSvc, dbSvc, taskSvc, workflowSvc), nil
+		return NewPostInitHandlers(cfg, logger, etcdClient, hostSvc, dbSvc, taskSvc, workflowSvc, clusterSvc), nil
 	})
 }
 

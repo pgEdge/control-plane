@@ -35,7 +35,6 @@ func (s *ClusterStore) Get() storage.GetOp[*StoredCluster] {
 }
 
 func (s *ClusterStore) Create(item *StoredCluster) storage.PutOp[*StoredCluster] {
-	fmt.Printf(">>>>> in cluster_store.Create\n")
 	key := s.Key()
 	return storage.NewCreateOp(s.client, key, item)
 }

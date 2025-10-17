@@ -1,8 +1,6 @@
 package cluster
 
 import (
-	"fmt"
-
 	"github.com/samber/do"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
@@ -15,22 +13,16 @@ func Provide(i *do.Injector) {
 }
 
 func provideService(i *do.Injector) {
-	fmt.Printf(">>>>> in cluster provideService\n")
 	do.Provide(i, func(i *do.Injector) (*Service, error) {
-		//cfg, err := do.Invoke[config.Config](i)
-		//if err != nil {
-		//	return nil, err
-		//}
 		store, err := do.Invoke[*Store](i)
 		if err != nil {
 			return nil, err
 		}
-		return NewService( /*cfg,*/ store), nil
+		return NewService(store), nil
 	})
 }
 
 func provideStore(i *do.Injector) {
-	fmt.Printf(">>>>> in cluster provideStore\n")
 	do.Provide(i, func(i *do.Injector) (*Store, error) {
 		cfg, err := do.Invoke[config.Config](i)
 		if err != nil {
