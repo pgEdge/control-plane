@@ -8,8 +8,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pgEdge/control-plane/server/internal/utils"
 	"github.com/rs/zerolog"
+
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 func validateRequiredID(name, value string) error {
@@ -33,8 +34,8 @@ func validateOptionalID(name, value string) error {
 }
 
 type Logging struct {
-	Level  string `koanf:"level"`
-	Pretty bool   `koanf:"pretty"`
+	Level  string `koanf:"level" json:"level,omitempty"`
+	Pretty bool   `koanf:"pretty" json:"pretty,omitempty"`
 }
 
 func (l Logging) validate() []error {
@@ -50,12 +51,12 @@ var loggingDefault = Logging{
 }
 
 type MQTT struct {
-	Enabled   bool   `koanf:"enabled"`
-	BrokerURL string `koanf:"broker_url"`
-	Topic     string `koanf:"topic"`
-	ClientID  string `koanf:"client_id"`
-	Username  string `koanf:"username"`
-	Password  string `koanf:"password"`
+	Enabled   bool   `koanf:"enabled" json:"enabled,omitempty"`
+	BrokerURL string `koanf:"broker_url" json:"broker_url,omitempty"`
+	Topic     string `koanf:"topic" json:"topic,omitempty"`
+	ClientID  string `koanf:"client_id" json:"client_id,omitempty"`
+	Username  string `koanf:"username" json:"username,omitempty"`
+	Password  string `koanf:"password" json:"password,omitempty"`
 }
 
 func (m MQTT) validate() []error {
@@ -69,24 +70,15 @@ func (m MQTT) validate() []error {
 	if m.Topic == "" {
 		errs = append(errs, errors.New("topic: cannot be empty"))
 	}
-	// if m.ClientID == "" {
-	// 	errs = append(errs, errors.New("client_id: cannot be empty"))
-	// }
-	// if m.Username == "" {
-	// 	errs = append(errs, errors.New("username: cannot be empty"))
-	// }
-	// if m.Password == "" {
-	// 	errs = append(errs, errors.New("password: cannot be empty"))
-	// }
 	return errs
 }
 
 type DockerSwarm struct {
-	ImageRepositoryHost        string `koanf:"image_repository_host"`
-	BridgeNetworksCIDR         string `koanf:"bridge_networks_cidr"`
-	BridgeNetworksSubnetBits   int    `koanf:"bridge_networks_subnet_bits"`
-	DatabaseNetworksCIDR       string `koanf:"database_networks_cidr"`
-	DatabaseNetworksSubnetBits int    `koanf:"database_networks_subnet_bits"`
+	ImageRepositoryHost        string `koanf:"image_repository_host" json:"image_repository_host,omitempty"`
+	BridgeNetworksCIDR         string `koanf:"bridge_networks_cidr" json:"bridge_networks_cidr,omitempty"`
+	BridgeNetworksSubnetBits   int    `koanf:"bridge_networks_subnet_bits" json:"bridge_networks_subnet_bits,omitempty"`
+	DatabaseNetworksCIDR       string `koanf:"database_networks_cidr" json:"database_networks_cidr,omitempty"`
+	DatabaseNetworksSubnetBits int    `koanf:"database_networks_subnet_bits" json:"database_networks_subnet_bits,omitempty"`
 }
 
 func (d DockerSwarm) validate() []error {
@@ -118,14 +110,14 @@ var defaultDockerSwarm = DockerSwarm{
 }
 
 type HTTP struct {
-	Enabled    bool   `koanf:"enabled"`
-	BindAddr   string `koanf:"bind_addr"`
-	Port       int    `koanf:"port"`
-	CACert     string `koanf:"ca_cert"`
-	ServerCert string `koanf:"server_cert"`
-	ServerKey  string `koanf:"server_key"`
-	ClientCert string `koanf:"client_cert"`
-	ClientKey  string `koanf:"client_key"`
+	Enabled    bool   `koanf:"enabled" json:"enabled,omitempty"`
+	BindAddr   string `koanf:"bind_addr" json:"bind_addr,omitempty"`
+	Port       int    `koanf:"port" json:"port,omitempty"`
+	CACert     string `koanf:"ca_cert" json:"ca_cert,omitempty"`
+	ServerCert string `koanf:"server_cert" json:"server_cert,omitempty"`
+	ServerKey  string `koanf:"server_key" json:"server_key,omitempty"`
+	ClientCert string `koanf:"client_cert" json:"client_cert,omitempty"`
+	ClientKey  string `koanf:"client_key" json:"client_key,omitempty"`
 }
 
 func (h HTTP) validate() []error {
@@ -149,10 +141,10 @@ var httpDefault = HTTP{
 }
 
 type EmbeddedEtcd struct {
-	ClientLogLevel string `koanf:"client_log_level"`
-	ServerLogLevel string `koanf:"server_log_level"`
-	PeerPort       int    `koanf:"peer_port"`
-	ClientPort     int    `koanf:"client_port"`
+	ClientLogLevel string `koanf:"client_log_level" json:"client_log_level,omitempty"`
+	ServerLogLevel string `koanf:"server_log_level" json:"server_log_level,omitempty"`
+	PeerPort       int    `koanf:"peer_port" json:"peer_port,omitempty"`
+	ClientPort     int    `koanf:"client_port" json:"client_port,omitempty"`
 }
 
 func (e EmbeddedEtcd) validate() []error {
@@ -174,8 +166,8 @@ var embeddedEtcdDefault = EmbeddedEtcd{
 }
 
 type RemoteEtcd struct {
-	LogLevel  string   `koanf:"log_level"`
-	Endpoints []string `koanf:"endpoints"`
+	LogLevel  string   `koanf:"log_level" json:"log_level,omitempty"`
+	Endpoints []string `koanf:"endpoints" json:"endpoints,omitempty"`
 }
 
 func (r RemoteEtcd) validate() []error {
@@ -203,26 +195,26 @@ const (
 )
 
 type Config struct {
-	TenantID               string       `koanf:"tenant_id"`
-	ClusterID              string       `koanf:"cluster_id"`
-	HostID                 string       `koanf:"host_id"`
-	Orchestrator           Orchestrator `koanf:"orchestrator"`
-	DataDir                string       `koanf:"data_dir"`
-	StorageType            StorageType  `koanf:"storage_type"`
-	IPv4Address            string       `koanf:"ipv4_address"`
-	Hostname               string       `koanf:"hostname"`
-	StopGracePeriodSeconds int64        `koanf:"stop_grace_period_seconds"`
-	MQTT                   MQTT         `koanf:"mqtt"`
-	HTTP                   HTTP         `koanf:"http"`
-	Logging                Logging      `koanf:"logging"`
-	EtcdKeyRoot            string       `koanf:"etcd_key_root"`
-	EmbeddedEtcd           EmbeddedEtcd `koanf:"embedded_etcd"`
-	RemoteEtcd             RemoteEtcd   `koanf:"remote_etcd"`
-	TraefikEnabled         bool         `koanf:"traefik_enabled"`
-	VectorEnabled          bool         `koanf:"vector_enabled"`
-	DockerSwarm            DockerSwarm  `koanf:"docker_swarm"`
-	DatabaseOwnerUID       int          `koanf:"database_owner_uid"`
-	ProfilingEnabled       bool         `koanf:"profiling_enabled"`
+	TenantID               string       `koanf:"tenant_id" json:"tenant_id,omitempty"`
+	ClusterID              string       `koanf:"cluster_id" json:"cluster_id,omitempty"`
+	HostID                 string       `koanf:"host_id" json:"host_id,omitempty"`
+	Orchestrator           Orchestrator `koanf:"orchestrator" json:"orchestrator,omitempty"`
+	DataDir                string       `koanf:"data_dir" json:"data_dir,omitempty"`
+	StorageType            StorageType  `koanf:"storage_type" json:"storage_type,omitempty"`
+	IPv4Address            string       `koanf:"ipv4_address" json:"ipv4_address,omitempty"`
+	Hostname               string       `koanf:"hostname" json:"hostname,omitempty"`
+	StopGracePeriodSeconds int64        `koanf:"stop_grace_period_seconds" json:"stop_grace_period_seconds,omitempty"`
+	MQTT                   MQTT         `koanf:"mqtt" json:"mqtt,omitzero"`
+	HTTP                   HTTP         `koanf:"http" json:"http,omitzero"`
+	Logging                Logging      `koanf:"logging" json:"logging,omitzero"`
+	EtcdKeyRoot            string       `koanf:"etcd_key_root" json:"etcd_key_root,omitempty"`
+	EmbeddedEtcd           EmbeddedEtcd `koanf:"embedded_etcd" json:"embedded_etcd,omitzero"`
+	RemoteEtcd             RemoteEtcd   `koanf:"remote_etcd" json:"remote_etcd,omitzero"`
+	TraefikEnabled         bool         `koanf:"traefik_enabled" json:"traefik_enabled,omitempty"`
+	VectorEnabled          bool         `koanf:"vector_enabled" json:"vector_enabled,omitempty"`
+	DockerSwarm            DockerSwarm  `koanf:"docker_swarm" json:"docker_swarm,omitzero"`
+	DatabaseOwnerUID       int          `koanf:"database_owner_uid" json:"database_owner_uid,omitempty"`
+	ProfilingEnabled       bool         `koanf:"profiling_enabled" json:"profiling_enabled,omitempty"`
 }
 
 func (c Config) Validate() error {
@@ -277,7 +269,7 @@ func (c Config) Validate() error {
 	return errors.Join(errs...)
 }
 
-func defaultConfig() (Config, error) {
+func DefaultConfig() (Config, error) {
 	ipv4Address, err := getOutboundIP()
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to determine default ipv4_address: %w", err)
