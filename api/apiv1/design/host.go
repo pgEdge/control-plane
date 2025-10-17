@@ -58,10 +58,6 @@ var HostCohort = g.Type("HostCohort", func() {
 		g.Description("The type of cohort that the host belongs to.")
 		g.Example("swarm")
 	})
-	g.Attribute("cohort_id", g.String, func() {
-		g.Description("The cohort ID that the host belongs to.")
-		g.Example("pps1n11hqijn9rbee4cjil453")
-	})
 	g.Attribute("member_id", g.String, func() {
 		g.Description("The member ID of the host within the cohort.")
 		g.Example("lah4bsznw6kc0hp7biylmmmll")
@@ -71,7 +67,7 @@ var HostCohort = g.Type("HostCohort", func() {
 		g.Example(true)
 	})
 
-	g.Required("type", "cohort_id", "member_id", "control_available")
+	g.Required("type", "member_id", "control_available")
 })
 
 var Host = g.Type("Host", func() {

@@ -36,10 +36,7 @@ func (p *PgBackRestStanza) DiffIgnore() []string {
 }
 
 func (p *PgBackRestStanza) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeNode,
-		ID:   p.NodeName,
-	}
+	return resource.PrimaryExecutor(p.NodeName)
 }
 
 func (p *PgBackRestStanza) Identifier() resource.Identifier {

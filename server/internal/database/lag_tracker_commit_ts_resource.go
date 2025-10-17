@@ -47,10 +47,7 @@ func (r *LagTrackerCommitTimestampResource) DiffIgnore() []string {
 }
 
 func (r *LagTrackerCommitTimestampResource) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeNode,
-		ID:   r.ReceiverNode,
-	}
+	return resource.PrimaryExecutor(r.ReceiverNode)
 }
 
 func (r *LagTrackerCommitTimestampResource) Identifier() resource.Identifier {

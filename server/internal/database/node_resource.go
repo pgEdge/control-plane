@@ -35,9 +35,7 @@ func (n *NodeResource) DiffIgnore() []string {
 }
 
 func (n *NodeResource) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeCluster,
-	}
+	return resource.AnyExecutor()
 }
 
 func (n *NodeResource) Identifier() resource.Identifier {

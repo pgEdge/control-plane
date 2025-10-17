@@ -35,10 +35,7 @@ func (r *ReplicationSlotAdvanceFromCTSResource) DiffIgnore() []string { return n
 
 // Execute on the provider node (the slot exists there).
 func (r *ReplicationSlotAdvanceFromCTSResource) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeNode,
-		ID:   r.ProviderNode,
-	}
+	return resource.PrimaryExecutor(r.ProviderNode)
 }
 
 func (r *ReplicationSlotAdvanceFromCTSResource) Identifier() resource.Identifier {

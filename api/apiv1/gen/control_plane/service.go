@@ -532,8 +532,6 @@ type Host struct {
 type HostCohort struct {
 	// The type of cohort that the host belongs to.
 	Type string
-	// The cohort ID that the host belongs to.
-	CohortID string
 	// The member ID of the host within the cohort.
 	MemberID string
 	// Indicates if the host is a control node in the cohort.

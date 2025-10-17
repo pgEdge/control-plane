@@ -9,7 +9,6 @@ import (
 
 type StoredCohort struct {
 	Type             CohortType `json:"type"`
-	CohortID         string     `json:"cohort_id"`
 	MemberID         string     `json:"member_id"`
 	ControlAvailable bool       `json:"control_available"`
 }

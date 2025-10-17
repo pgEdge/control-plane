@@ -56,10 +56,7 @@ func (c *PostgresCerts) DiffIgnore() []string {
 }
 
 func (c *PostgresCerts) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeHost,
-		ID:   c.HostID,
-	}
+	return resource.HostExecutor(c.HostID)
 }
 
 func (c *PostgresCerts) Identifier() resource.Identifier {

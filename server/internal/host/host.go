@@ -30,7 +30,6 @@ const (
 
 type Cohort struct {
 	Type             CohortType
-	CohortID         string
 	MemberID         string
 	ControlAvailable bool
 }
@@ -82,7 +81,6 @@ func fromStorage(host *StoredHost, status *StoredHostStatus) (*Host, error) {
 	if host.Cohort != nil {
 		cohort = &Cohort{
 			Type:             host.Cohort.Type,
-			CohortID:         host.Cohort.CohortID,
 			MemberID:         host.Cohort.MemberID,
 			ControlAvailable: host.Cohort.ControlAvailable,
 		}
@@ -119,7 +117,6 @@ func toStorage(host *Host) *StoredHost {
 	if host.Cohort != nil {
 		cohort = &StoredCohort{
 			Type:             host.Cohort.Type,
-			CohortID:         host.Cohort.CohortID,
 			MemberID:         host.Cohort.MemberID,
 			ControlAvailable: host.Cohort.ControlAvailable,
 		}

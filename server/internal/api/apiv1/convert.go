@@ -32,7 +32,6 @@ func hostToAPI(h *host.Host) *api.Host {
 	if h.Cohort != nil {
 		cohort = &api.HostCohort{
 			Type:             string(h.Cohort.Type),
-			CohortID:         h.Cohort.CohortID,
 			MemberID:         h.Cohort.MemberID,
 			ControlAvailable: h.Cohort.ControlAvailable,
 		}

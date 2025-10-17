@@ -50,10 +50,7 @@ func (r *InstanceResource) DiffIgnore() []string {
 }
 
 func (r *InstanceResource) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeHost,
-		ID:   r.Spec.HostID,
-	}
+	return resource.HostExecutor(r.Spec.HostID)
 }
 
 func (r *InstanceResource) Identifier() resource.Identifier {

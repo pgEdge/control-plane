@@ -127,9 +127,7 @@ type orchestratorResource struct {
 }
 
 func (r *orchestratorResource) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeCluster,
-	}
+	return resource.AnyExecutor()
 }
 
 func (r *orchestratorResource) Identifier() resource.Identifier {

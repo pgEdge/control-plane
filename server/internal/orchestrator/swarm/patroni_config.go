@@ -55,10 +55,7 @@ func (c *PatroniConfig) DiffIgnore() []string {
 }
 
 func (c *PatroniConfig) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeHost,
-		ID:   c.Spec.HostID,
-	}
+	return resource.HostExecutor(c.Spec.HostID)
 }
 
 func (c *PatroniConfig) Identifier() resource.Identifier {

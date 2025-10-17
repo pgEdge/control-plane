@@ -34,10 +34,7 @@ func (r *ReplicationSlotCreateResource) DiffIgnore() []string {
 }
 
 func (r *ReplicationSlotCreateResource) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeNode,
-		ID:   r.ProviderNode,
-	}
+	return resource.PrimaryExecutor(r.ProviderNode)
 }
 
 func (r *ReplicationSlotCreateResource) Identifier() resource.Identifier {
