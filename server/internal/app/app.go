@@ -99,6 +99,7 @@ func (a *App) runPreInitialization(ctx context.Context) error {
 		return a.Shutdown(err)
 	case <-a.etcd.Initialized():
 		a.logger.Info().Msg("etcd initialized")
+		config.UpdateInjectedConfig(a.i)
 		return a.runInitialized(ctx)
 	}
 }

@@ -207,6 +207,8 @@ type Config struct {
 	MQTT                   MQTT         `koanf:"mqtt" json:"mqtt,omitzero"`
 	HTTP                   HTTP         `koanf:"http" json:"http,omitzero"`
 	Logging                Logging      `koanf:"logging" json:"logging,omitzero"`
+	EtcdUsername           string       `koanf:"etcd_username" json:"etcd_username,omitempty"`
+	EtcdPassword           string       `koanf:"etcd_password" json:"etcd_password,omitempty"`
 	EtcdKeyRoot            string       `koanf:"etcd_key_root" json:"etcd_key_root,omitempty"`
 	EmbeddedEtcd           EmbeddedEtcd `koanf:"embedded_etcd" json:"embedded_etcd,omitzero"`
 	RemoteEtcd             RemoteEtcd   `koanf:"remote_etcd" json:"remote_etcd,omitzero"`

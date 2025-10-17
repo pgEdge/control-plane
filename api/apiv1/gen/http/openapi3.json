@@ -4862,6 +4862,11 @@
             "description": "The base64-encoded etcd client key for the new cluster member.",
             "example": "Y2FlNjhmODQtYjE1Ni00YWYyLWFhMWEtM2FhNzI2MmVhYTM0Cg=="
           },
+          "password": {
+            "type": "string",
+            "description": "The Etcd password for the new host.",
+            "example": "a78v2x866zirk4o737gjdssfi"
+          },
           "server_cert": {
             "type": "string",
             "description": "The base64-encoded etcd server certificate for the new cluster member.",
@@ -4871,16 +4876,25 @@
             "type": "string",
             "description": "The base64-encoded etcd server key for the new cluster member.",
             "example": "NWRhNzY1ZGUtNzJkMi00OTU3LTk4ODUtOWRiZThjOGE5MGQ3Cg=="
+          },
+          "username": {
+            "type": "string",
+            "description": "The Etcd username for the new host.",
+            "example": "host-2"
           }
         },
         "example": {
           "ca_cert": "ZGE4NDdkMzMtM2FiYi00YzE2LTkzOGQtNDRkODU2ZDFlZWZlCg==",
           "client_cert": "NWM0MGMyZTAtYjAyYS00NzkxLTk0YjAtMjMyN2EyZGQ4ZDc3Cg==",
           "client_key": "Y2FlNjhmODQtYjE1Ni00YWYyLWFhMWEtM2FhNzI2MmVhYTM0Cg==",
+          "password": "a78v2x866zirk4o737gjdssfi",
           "server_cert": "Nzc1OGQyY2UtZjdjOC00YmE4LTk2ZmQtOWE3MjVmYmY3NDdiCg==",
-          "server_key": "NWRhNzY1ZGUtNzJkMi00OTU3LTk4ODUtOWRiZThjOGE5MGQ3Cg=="
+          "server_key": "NWRhNzY1ZGUtNzJkMi00OTU3LTk4ODUtOWRiZThjOGE5MGQ3Cg==",
+          "username": "host-2"
         },
         "required": [
+          "username",
+          "password",
           "ca_cert",
           "client_cert",
           "client_key",
@@ -4903,8 +4917,10 @@
             "ca_cert": "ZGE4NDdkMzMtM2FiYi00YzE2LTkzOGQtNDRkODU2ZDFlZWZlCg==",
             "client_cert": "NWM0MGMyZTAtYjAyYS00NzkxLTk0YjAtMjMyN2EyZGQ4ZDc3Cg==",
             "client_key": "Y2FlNjhmODQtYjE1Ni00YWYyLWFhMWEtM2FhNzI2MmVhYTM0Cg==",
+            "password": "a78v2x866zirk4o737gjdssfi",
             "server_cert": "Nzc1OGQyY2UtZjdjOC00YmE4LTk2ZmQtOWE3MjVmYmY3NDdiCg==",
-            "server_key": "NWRhNzY1ZGUtNzJkMi00OTU3LTk4ODUtOWRiZThjOGE5MGQ3Cg=="
+            "server_key": "NWRhNzY1ZGUtNzJkMi00OTU3LTk4ODUtOWRiZThjOGE5MGQ3Cg==",
+            "username": "host-2"
           },
           "peer": {
             "client_url": "http://192.168.1.1:2379",

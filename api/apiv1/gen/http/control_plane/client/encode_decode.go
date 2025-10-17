@@ -3376,6 +3376,8 @@ func unmarshalClusterPeerResponseBodyToControlplaneClusterPeer(v *ClusterPeerRes
 // *ClusterCredentialsResponseBody.
 func unmarshalClusterCredentialsResponseBodyToControlplaneClusterCredentials(v *ClusterCredentialsResponseBody) *controlplane.ClusterCredentials {
 	res := &controlplane.ClusterCredentials{
+		Username:   *v.Username,
+		Password:   *v.Password,
 		CaCert:     *v.CaCert,
 		ClientCert: *v.ClientCert,
 		ClientKey:  *v.ClientKey,

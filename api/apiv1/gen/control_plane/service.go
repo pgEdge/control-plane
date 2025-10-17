@@ -214,6 +214,10 @@ type Cluster struct {
 }
 
 type ClusterCredentials struct {
+	// The Etcd username for the new host.
+	Username string
+	// The Etcd password for the new host.
+	Password string
 	// The base64-encoded CA certificate for the cluster.
 	CaCert string
 	// The base64-encoded etcd client certificate for the new cluster member.

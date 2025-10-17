@@ -405,10 +405,14 @@ use-compose
 # static aliases #
 ##################
 
+_host_1_data="${_cp_dir}/docker/control-plane-dev/data/host-1"
+_host_1_certs="${_host_1_data}/certificates"
+_host_1_cfg="${_host_1_data}/generated.config.json"
+
 alias cp-etcdctl="etcdctl \
 	--endpoints=https://localhost:2379 \
-	--cacert '${_cp_dir}/docker/control-plane-dev/data/host-1/certificates/ca.crt' \
-	--cert '${_cp_dir}/docker/control-plane-dev/data/host-1/certificates/etcd-user.crt' \
-	--key '${_cp_dir}/docker/control-plane-dev/data/host-1/certificates/etcd-user.key' \
-	--user host-host-1 \
-	--password host-1"
+	--cacert '${_host_1_certs}/ca.crt' \
+	--cert '${_host_1_certs}/etcd-user.crt' \
+	--key '${_host_1_certs}/etcd-user.key' \
+	--user \$(jq -r '.etcd_username' '${_host_1_cfg}') \
+	--password \$(jq -r '.etcd_password' '${_host_1_cfg}')"

@@ -1,3 +1,5 @@
+//go:build etcd_lifecycle_test
+
 package etcd_test
 
 import (
@@ -75,7 +77,7 @@ func testCluster(t testing.TB) (*etcd.EmbeddedEtcd, *etcd.EmbeddedEtcd, *etcd.Em
 	ctx := context.Background()
 	cfgA := config.Config{
 		HostID:      uuid.NewString(),
-		DataDir:     storagetest.TempDir(t),
+		DataDir:     t.TempDir(),
 		StorageType: config.StorageTypeEmbeddedEtcd,
 		IPv4Address: "127.0.0.1",
 		Hostname:    "localhost",
@@ -84,7 +86,7 @@ func testCluster(t testing.TB) (*etcd.EmbeddedEtcd, *etcd.EmbeddedEtcd, *etcd.Em
 			PeerPort:   storagetest.GetFreePort(t),
 		},
 	}
-	serverA := etcd.NewEmbeddedEtcd(cfgA, logger)
+	serverA := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgA), logger)
 	err := serverA.Start(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -96,7 +98,7 @@ func testCluster(t testing.TB) (*etcd.EmbeddedEtcd, *etcd.EmbeddedEtcd, *etcd.Em
 
 	cfgB := config.Config{
 		HostID:      uuid.NewString(),
-		DataDir:     storagetest.TempDir(t),
+		DataDir:     t.TempDir(),
 		StorageType: config.StorageTypeEmbeddedEtcd,
 		IPv4Address: "127.0.0.1",
 		Hostname:    "localhost",
@@ -105,11 +107,11 @@ func testCluster(t testing.TB) (*etcd.EmbeddedEtcd, *etcd.EmbeddedEtcd, *etcd.Em
 			PeerPort:   storagetest.GetFreePort(t),
 		},
 	}
-	serverB := etcd.NewEmbeddedEtcd(cfgB, logger)
+	serverB := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgB), logger)
 
 	cfgC := config.Config{
 		HostID:      uuid.NewString(),
-		DataDir:     storagetest.TempDir(t),
+		DataDir:     t.TempDir(),
 		StorageType: config.StorageTypeEmbeddedEtcd,
 		IPv4Address: "127.0.0.1",
 		Hostname:    "localhost",
@@ -118,7 +120,7 @@ func testCluster(t testing.TB) (*etcd.EmbeddedEtcd, *etcd.EmbeddedEtcd, *etcd.Em
 			PeerPort:   storagetest.GetFreePort(t),
 		},
 	}
-	serverC := etcd.NewEmbeddedEtcd(cfgC, logger)
+	serverC := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgC), logger)
 
 	serverBCreds, err := serverA.AddPeerUser(ctx, etcd.HostCredentialOptions{
 		HostID:      cfgB.HostID,

@@ -1399,6 +1399,10 @@ type ClusterPeerResponseBody struct {
 // ClusterCredentialsResponseBody is used to define fields on response body
 // types.
 type ClusterCredentialsResponseBody struct {
+	// The Etcd username for the new host.
+	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	// The Etcd password for the new host.
+	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
 	// The base64-encoded CA certificate for the cluster.
 	CaCert *string `form:"ca_cert,omitempty" json:"ca_cert,omitempty" xml:"ca_cert,omitempty"`
 	// The base64-encoded etcd client certificate for the new cluster member.
@@ -5782,6 +5786,12 @@ func ValidateClusterPeerResponseBody(body *ClusterPeerResponseBody) (err error) 
 // ValidateClusterCredentialsResponseBody runs the validations defined on
 // ClusterCredentialsResponseBody
 func ValidateClusterCredentialsResponseBody(body *ClusterCredentialsResponseBody) (err error) {
+	if body.Username == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
+	}
+	if body.Password == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("password", "body"))
+	}
 	if body.CaCert == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("ca_cert", "body"))
 	}

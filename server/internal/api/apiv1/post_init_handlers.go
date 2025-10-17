@@ -109,6 +109,8 @@ func (s *PostInitHandlers) GetJoinOptions(ctx context.Context, req *api.ClusterJ
 			ClientURL: peer.ClientURL,
 		},
 		Credentials: &api.ClusterCredentials{
+			Username:   creds.Username,
+			Password:   creds.Password,
 			CaCert:     base64.StdEncoding.EncodeToString(creds.CaCert),
 			ClientCert: base64.StdEncoding.EncodeToString(creds.ClientCert),
 			ClientKey:  base64.StdEncoding.EncodeToString(creds.ClientKey),

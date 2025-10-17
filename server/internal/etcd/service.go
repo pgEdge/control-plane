@@ -10,14 +10,15 @@ import (
 )
 
 type Service struct {
-	cfg      config.Config
+	cfg      *config.Manager
 	logger   zerolog.Logger
 	embedded *EmbeddedEtcd
 	client   *clientv3.Client
 }
 
-func NewService(cfg config.Config, logger zerolog.Logger) (*Service, error) {
-	switch cfg.StorageType {
+func NewService(cfg *config.Manager, logger zerolog.Logger) (*Service, error) {
+	appCfg := cfg.Config()
+	switch appCfg.StorageType {
 	case config.StorageTypeEmbeddedEtcd:
 		return &Service{
 			cfg:      cfg,
@@ -25,7 +26,7 @@ func NewService(cfg config.Config, logger zerolog.Logger) (*Service, error) {
 			embedded: NewEmbeddedEtcd(cfg, logger),
 		}, nil
 	case config.StorageTypeRemoteEtcd:
-		client, err := NewRemoteClient(cfg, logger)
+		client, err := NewRemoteClient(appCfg, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -35,6 +36,6 @@ func NewService(cfg config.Config, logger zerolog.Logger) (*Service, error) {
 			client: client,
 		}, nil
 	default:
-		return nil, fmt.Errorf("unrecognized storage type %q", cfg.StorageType)
+		return nil, fmt.Errorf("unrecognized storage type %q", appCfg.StorageType)
 	}
 }
