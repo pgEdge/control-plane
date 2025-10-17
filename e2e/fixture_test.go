@@ -130,8 +130,6 @@ func NewTestFixture(ctx context.Context, config TestConfig, skipCleanup bool, de
 
 	// Ensure that the cluster is initialized
 	_, err = cli.InitCluster(ctx)
-	c, _ := cli.GetCluster(ctx)
-	c.ID
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize cluster: %w", err)
 	}
