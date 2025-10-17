@@ -68,7 +68,7 @@ func NewSingleServerClient(server ServerConfig) (*SingleServerClient, error) {
 }
 
 func (c *SingleServerClient) InitCluster(ctx context.Context) (*api.ClusterJoinToken, error) {
-	resp, err := c.api.InitCluster(ctx, nil)
+	resp, err := c.api.InitCluster(ctx, &api.InitClusterRequest{})
 	return resp, translateErr(err)
 }
 
