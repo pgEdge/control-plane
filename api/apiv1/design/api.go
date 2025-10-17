@@ -19,7 +19,6 @@ var _ = g.API("control-plane", func() {
 		})
 	})
 	g.Meta("openapi:operationId", "{method}")
-	g.Meta("openapi:operationId", "{method}")
 	g.Meta("openapi:json:indent", "  ")
 
 	// Common errors
