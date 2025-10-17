@@ -1,8 +1,6 @@
 package cluster
 
 import (
-	"fmt"
-
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/storage"
