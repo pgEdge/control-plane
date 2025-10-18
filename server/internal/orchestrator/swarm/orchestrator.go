@@ -31,6 +31,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
+	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/scheduler"
 	"github.com/pgEdge/control-plane/server/internal/utils"
@@ -369,13 +370,83 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert restore resource to resource data: %w", err)
 	}
-	resources.Instance.OrchestratorDependencies = append(
-		resources.Instance.OrchestratorDependencies,
-		restoreResource.Identifier,
-	)
-	resources.Resources = append(resources.Resources, restoreResource)
+
+	if resources != nil && resources.Instance != nil {
+		resources.Instance.OrchestratorDependencies = append(
+			resources.Instance.OrchestratorDependencies,
+			restoreResource.Identifier,
+		)
+		resources.Resources = append(resources.Resources, restoreResource)
+	}
+
+	if spec.RestoreConfig != nil {
+		spockBackup := &database.SpockRepsetBackupResource{
+			InstanceID: spec.InstanceID,
+			HostID:     spec.HostID,
+		}
+		if resources != nil && resources.Instance != nil {
+			resources.Instance.SpockRepsetBackup = spockBackup
+		}
+	}
 
 	return resources, nil
+}
+
+func (o *Orchestrator) CaptureSpockRepsetBackupFromInstance(ctx context.Context, instanceID, dbName string) (string, string, error) {
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	execSQL := func(sql string) (string, error) {
+		var out bytes.Buffer
+		cmd := postgres.PsqlCmdSQL(dbName, sql).StringSlice()
+		if err := PostgresContainerExec(ctx, &out, o.docker, instanceID, cmd); err != nil {
+			return strings.TrimSpace(out.String()), fmt.Errorf("psql exec failed: %w (out=%q)", err, out.String())
+		}
+		return strings.TrimSpace(out.String()), nil
+	}
+
+	hasSetIDOut, err := execSQL(postgres.DetectSpockHasSetID().SQL)
+	if err != nil {
+		return "", "", fmt.Errorf("detect set_id: %w", err)
+	}
+	hasSetID := (strings.ToLower(strings.TrimSpace(hasSetIDOut)) == "t" ||
+		strings.ToLower(strings.TrimSpace(hasSetIDOut)) == "true" ||
+		strings.TrimSpace(hasSetIDOut) == "1")
+
+	hasSetReloidOut, err := execSQL(postgres.DetectSpockHasSetReloid().SQL)
+	if err != nil {
+		return "", "", fmt.Errorf("detect set_reloid: %w", err)
+	}
+	hasSetReloid := (strings.ToLower(strings.TrimSpace(hasSetReloidOut)) == "t" ||
+		strings.ToLower(strings.TrimSpace(hasSetReloidOut)) == "true" ||
+		strings.TrimSpace(hasSetReloidOut) == "1")
+
+	repsetsSQL := postgres.RepsetsSQL(hasSetID)
+	rstTablesSQL := postgres.RstTablesSQL(hasSetReloid)
+
+	rsOut, err := execSQL(repsetsSQL)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to capture spock.replication_set: %w (out=%q)", err, rsOut)
+	}
+	rstOut, err := execSQL(rstTablesSQL)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to capture spock.replication_set_table: %w (out=%q)", err, rstOut)
+	}
+
+	repsetsJSON := strings.TrimSpace(rsOut)
+	rstTablesJSON := strings.TrimSpace(rstOut)
+	if repsetsJSON == "" {
+		repsetsJSON = "[]"
+	}
+	if rstTablesJSON == "" {
+		rstTablesJSON = "[]"
+	}
+	return repsetsJSON, rstTablesJSON, nil
+}
+
+func (o *Orchestrator) CaptureSpockRepsetBackup(ctx context.Context, instanceID string) (string, string, error) {
+	return o.CaptureSpockRepsetBackupFromInstance(ctx, instanceID, "postgres")
 }
 
 func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*database.ConnectionInfo, error) {

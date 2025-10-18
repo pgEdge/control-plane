@@ -126,14 +126,21 @@ func TestPosixBackupRestore(t *testing.T) {
 
 	t.Log("Validating restored data")
 
-	// Validate that our data is restored
+	// After restore: insert additional data into the restored DB and verify all rows are present.
+	db.WithConnection(ctx, opts, t, func(conn *pgx.Conn) {
+		// insert an extra row into the restored DB
+		_, err := conn.Exec(ctx, "INSERT INTO foo (id, val) VALUES ($1, $2)", 3, "baz")
+		require.NoError(t, err)
+	})
+
+	// Validate that original rows + new row are present (expect 3)
 	db.WithConnection(ctx, opts, t, func(conn *pgx.Conn) {
 		var count int
 
 		row := conn.QueryRow(ctx, "SELECT COUNT(*) FROM foo")
 		require.NoError(t, row.Scan(&count))
 
-		assert.Equal(t, 2, count)
+		assert.Equal(t, 3, count)
 	})
 }
 

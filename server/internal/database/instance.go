@@ -126,7 +126,7 @@ func storedToInstance(instance *StoredInstance, status *StoredInstanceStatus) *I
 	return out
 }
 
-func storedToInstances(storedInstances []*StoredInstance, storedStatuses []*StoredInstanceStatus) []*Instance {
+func storedToInstances(storedInstances []*StoredInstance, storedStatuses []*StoredInstanceStatus, nodeName string) []*Instance {
 	statusesByID := make(map[string]*StoredInstanceStatus, len(storedStatuses))
 	for _, s := range storedStatuses {
 		statusesByID[s.InstanceID] = s
@@ -134,6 +134,9 @@ func storedToInstances(storedInstances []*StoredInstance, storedStatuses []*Stor
 
 	instances := make([]*Instance, len(storedInstances))
 	for idx, stored := range storedInstances {
+		if nodeName != "" && stored.NodeName != nodeName {
+			continue
+		}
 		status := statusesByID[stored.InstanceID]
 		instance := storedToInstance(stored, status)
 		instances[idx] = instance

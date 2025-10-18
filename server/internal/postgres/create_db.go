@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -345,4 +346,242 @@ func EnableSubscription(providerNode, subscriberNode string, disabled bool) Cond
 			},
 		},
 	}
+}
+
+func RepsetCreateIfNotExists(name string, replicateInsert, replicateUpdate, replicateDelete, replicateTruncate bool) Statement {
+	return Statement{
+		SQL: `
+INSERT INTO spock.replication_set (set_nodeid, set_name, replicate_insert, replicate_update, replicate_delete, replicate_truncate)
+SELECT
+    n.node_id,
+    @name::name,
+    @replicate_insert::boolean,
+    @replicate_update::boolean,
+    @replicate_delete::boolean,
+    @replicate_truncate::boolean
+FROM spock.node n
+WHERE NOT EXISTS (
+    SELECT 1 FROM spock.replication_set rs WHERE rs.set_name = @name
+)
+LIMIT 1;
+`,
+		Args: pgx.NamedArgs{
+			"name":               name,
+			"replicate_insert":   replicateInsert,
+			"replicate_update":   replicateUpdate,
+			"replicate_delete":   replicateDelete,
+			"replicate_truncate": replicateTruncate,
+		},
+	}
+}
+
+func RepsetAddTableIfNotExists(repsetName, relation string) Statement {
+	return Statement{
+		SQL: `
+SELECT spock.repset_add_table(
+    rs.set_id,
+    @relation::regclass,
+    false,
+    NULL,
+    NULL
+)
+FROM spock.replication_set rs
+WHERE rs.set_name = @repset_name
+  AND NOT EXISTS (
+    SELECT 1
+    FROM spock.replication_set_table rst
+    WHERE rst.set_id = rs.set_id
+      AND rst.set_reloid = (@relation::regclass)::oid
+)
+LIMIT 1;
+`,
+		Args: pgx.NamedArgs{
+			"repset_name": repsetName,
+			"relation":    relation,
+		},
+	}
+}
+
+func RepsetAddAllTables(repsetName string, schemas []string) Statement {
+	quoted := make([]string, 0, len(schemas))
+	for _, s := range schemas {
+		qs := strings.ReplaceAll(s, `'`, `''`)
+		quoted = append(quoted, fmt.Sprintf("'%s'", qs))
+	}
+	schemaArrayLiteral := fmt.Sprintf("ARRAY[%s]::text[]", strings.Join(quoted, ","))
+	sql := fmt.Sprintf("SELECT spock.repset_add_all_tables('%s', %s);", strings.ReplaceAll(repsetName, `'`, `''`), schemaArrayLiteral)
+
+	return Statement{
+		SQL: sql,
+	}
+}
+
+func RepsetAddTableWithOptions(repsetName, relation string, attList []string, rowFilter *string) *Statement {
+	if len(attList) == 0 && rowFilter == nil {
+		return nil
+	}
+
+	sql := `
+SELECT spock.repset_add_table(
+    rs.set_id,
+    @relation::regclass,
+    false,
+    @att_array::text[],
+    @row_filter::text
+)
+FROM spock.replication_set rs
+WHERE rs.set_name = @repset_name
+  AND NOT EXISTS (
+    SELECT 1
+    FROM spock.replication_set_table rst
+    WHERE rst.set_id = rs.set_id
+      AND rst.set_reloid = (@relation::regclass)::oid
+)
+LIMIT 1;
+`
+	var attArg any = nil
+	if len(attList) > 0 {
+		attArg = attList
+	}
+	var rfArg any = nil
+	if rowFilter != nil {
+		rfArg = *rowFilter
+	}
+
+	return &Statement{
+		SQL: sql,
+		Args: pgx.NamedArgs{
+			"repset_name": repsetName,
+			"relation":    relation,
+			"att_array":   attArg,
+			"row_filter":  rfArg,
+		},
+	}
+}
+
+func SetGUCsForRestore() Statement {
+	return Statement{
+		SQL: `
+SET log_statement = 'none';
+SET spock.enable_ddl_replication = off;
+`,
+	}
+}
+
+func RestoreGUCsAfterRestore() Statement {
+	return Statement{
+		SQL: `
+SET spock.enable_ddl_replication = on;
+SET log_statement = 'all';
+`,
+	}
+}
+
+func RepsetsSQL(hasSetID bool) string {
+	if hasSetID {
+		return `
+SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
+FROM (
+  SELECT set_id, set_name, replicate_insert, replicate_update, replicate_delete, replicate_truncate
+  FROM spock.replication_set
+  ORDER BY set_name
+) t;
+`
+	}
+	// older schema
+	return `
+SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
+FROM (
+  SELECT repsetid, repsetname, replicate_insert, replicate_update, replicate_delete, replicate_truncate
+  FROM spock.replication_set
+  ORDER BY repsetname
+) t;
+`
+}
+
+func RstTablesSQL(hasSetReloid bool) string {
+	if hasSetReloid {
+		return `
+SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
+FROM (
+  SELECT
+    rs.set_name AS set_name,
+    rst.set_reloid::regclass::text AS table_name,
+    rst.set_att_list,
+    rst.set_row_filter
+  FROM spock.replication_set_table rst
+  LEFT JOIN spock.replication_set rs ON rst.set_id = rs.set_id
+  WHERE EXISTS (
+    SELECT 1
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.oid = rst.set_reloid
+      AND c.relkind IN ('r','v')
+  )
+  ORDER BY rs.set_name, rst.set_reloid::regclass::text
+) t;
+`
+	}
+	// older schema
+	return `
+SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
+FROM (
+  SELECT
+    rset.repsetname AS set_name,
+    rst.tableoid::regclass::text AS table_name,
+    rst.set_att_list,
+    rst.set_row_filter
+  FROM spock.replication_set_table rst
+  LEFT JOIN spock.replication_set rset ON rst.repsetid = rset.repsetid
+  WHERE EXISTS (
+    SELECT 1 FROM pg_class c WHERE c.oid = rst.tableoid AND c.relkind IN ('r','v')
+  )
+  ORDER BY rset.repsetname, rst.tableoid::regclass::text
+) t;
+`
+}
+
+func DetectSpockHasSetID() Query[string] {
+	return Query[string]{
+		SQL: `
+SELECT EXISTS (
+  SELECT 1
+  FROM information_schema.columns
+  WHERE table_schema = 'spock'
+    AND table_name = 'replication_set'
+    AND column_name = 'set_id'
+);
+`,
+	}
+}
+
+// DetectSpockHasSetReloid returns a query that checks whether spock.replication_set_table has column 'set_reloid'.
+// Returns "t" if true, "f" otherwise.
+func DetectSpockHasSetReloid() Query[string] {
+	return Query[string]{
+		SQL: `
+SELECT EXISTS (
+  SELECT 1
+  FROM information_schema.columns
+  WHERE table_schema = 'spock'
+    AND table_name = 'replication_set_table'
+    AND column_name = 'set_reloid'
+);
+`,
+	}
+}
+
+type PsqlCommand struct {
+	DBName string
+	SQL    string
+}
+
+func (p PsqlCommand) StringSlice() []string {
+	return []string{
+		"psql", "-X", "-q", "-v", "ON_ERROR_STOP=1", "-t", "-A", "-d", p.DBName, "-c", p.SQL,
+	}
+}
+
+func PsqlCmdSQL(dbName, sql string) PsqlCommand {
+	return PsqlCommand{DBName: dbName, SQL: sql}
 }

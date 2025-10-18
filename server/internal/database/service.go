@@ -289,7 +289,26 @@ func (s *Service) GetInstances(ctx context.Context, databaseID string) ([]*Insta
 		return nil, fmt.Errorf("failed to get stored instance statuses: %w", err)
 	}
 
-	instances := storedToInstances(storedInstances, storedStatuses)
+	instances := storedToInstances(storedInstances, storedStatuses, "")
+
+	return instances, nil
+}
+
+func (s *Service) GetNodeInstances(ctx context.Context, databaseID, nodeName string) ([]*Instance, error) {
+	storedInstances, err := s.store.Instance.
+		GetByDatabaseID(databaseID).
+		Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stored instances: %w", err)
+	}
+	storedStatuses, err := s.store.InstanceStatus.
+		GetByDatabaseID(databaseID).
+		Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stored instance statuses: %w", err)
+	}
+
+	instances := storedToInstances(storedInstances, storedStatuses, nodeName)
 
 	return instances, nil
 }
@@ -331,7 +350,7 @@ func (s *Service) GetAllInstances(ctx context.Context) ([]*Instance, error) {
 		return nil, fmt.Errorf("failed to get stored instance statuses: %w", err)
 	}
 
-	instances := storedToInstances(storedInstances, storedStatuses)
+	instances := storedToInstances(storedInstances, storedStatuses, "")
 
 	return instances, nil
 }

@@ -3,9 +3,11 @@ package database
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -31,11 +33,12 @@ func InstanceResourceIdentifier(instanceID string) resource.Identifier {
 }
 
 type InstanceResource struct {
-	Spec                     *InstanceSpec         `json:"spec"`
-	InstanceHostname         string                `json:"instance_hostname"`
-	PrimaryInstanceID        string                `json:"primary_instance_id"`
-	OrchestratorDependencies []resource.Identifier `json:"dependencies"`
-	ConnectionInfo           *ConnectionInfo       `json:"connection_info"`
+	Spec                     *InstanceSpec              `json:"spec"`
+	InstanceHostname         string                     `json:"instance_hostname"`
+	PrimaryInstanceID        string                     `json:"primary_instance_id"`
+	OrchestratorDependencies []resource.Identifier      `json:"dependencies"`
+	ConnectionInfo           *ConnectionInfo            `json:"connection_info"`
+	SpockRepsetBackup        *SpockRepsetBackupResource `json:"spock_repset_backup,omitempty"`
 }
 
 func (r *InstanceResource) ResourceVersion() string {
@@ -285,6 +288,13 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 		return r.recordError(ctx, rc, err)
 	}
 
+	// attempt to apply it now that the database and spock extension are initialized.
+	if applyErr := r.ApplySpockRepsetBackup(ctx, rc); applyErr != nil {
+		_ = r.updateInstanceState(ctx, rc, &InstanceUpdateOptions{
+			State: InstanceStateAvailable,
+			Error: fmt.Sprintf("spock repset apply warning: %v", applyErr),
+		})
+	}
 	return nil
 }
 
@@ -418,4 +428,234 @@ func (r *InstanceResource) isFirstTimeSetup(rc *resource.Context) (bool, error) 
 	}
 
 	return false, nil
+}
+
+// ApplySpockRepsetBackup applies an in-memory Spock repset backup (if present).
+func (r *InstanceResource) ApplySpockRepsetBackup(ctx context.Context, rc *resource.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+
+	logger, err := do.Invoke[zerolog.Logger](rc.Injector)
+	if err != nil {
+		return fmt.Errorf("failed to get logger: %w", err)
+	}
+
+	// Connect to restored DB
+	conn, err := r.Connection(ctx, rc, r.Spec.DatabaseName)
+	if err != nil {
+		logger.Warn().Err(err).Msg("failed to connect to restored database to apply spock backup")
+		return fmt.Errorf("connect to restored db: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	// Prepare session for restore and ensure GUCs are restored afterward
+	if err := postgres.SetGUCsForRestore().Exec(ctx, conn); err != nil {
+		logger.Warn().Err(err).Msg("failed to set GUCs for restore (continuing)")
+	}
+	defer func() {
+		if err := postgres.RestoreGUCsAfterRestore().Exec(ctx, conn); err != nil {
+			logger.Warn().Err(err).Msg("failed to restore GUCs after restore")
+		}
+	}()
+
+	// Load payload (if present)
+	payload := r.getInMemorySpockPayload()
+
+	appliedSets, appliedTables := 0, 0
+	if len(payload) > 0 {
+		top, err := r.parsePayload(payload)
+		if err != nil {
+			logger.Error().Err(err).Msg("failed to parse spock repset payload")
+			return err
+		}
+
+		repSets, err := r.extract(top, "replication_sets", "replicationSets", "repsets")
+		if err != nil {
+			logger.Error().Err(err).Msg("failed to extract replication_sets from payload")
+			return err
+		}
+		repSetTables, err := r.extract(top, "replication_set_tables", "replicationSetTables", "replication_set_table", "repset_tables")
+		if err != nil {
+			logger.Error().Err(err).Msg("failed to extract replication_set_tables from payload")
+			return err
+		}
+
+		appliedSets = r.applyRepSets(ctx, conn, &logger, repSets)
+		appliedTables = r.applyRepSetTables(ctx, conn, &logger, repSetTables)
+	} else {
+		logger.Info().Msg("no in-memory spock repset payload found; still running default-set fallback")
+	}
+
+	// Ensure default sets include public schema tables (idempotent)
+	if err := postgres.RepsetAddAllTables("default", []string{"public"}).Exec(ctx, conn); err != nil {
+		logger.Warn().Err(err).Msg("spock.repset_add_all_tables('default') failed")
+	} else {
+		logger.Info().Msg("ensured spock.repset_add_all_tables('default') applied")
+	}
+	if err := postgres.RepsetAddAllTables("default_insert_only", []string{"public"}).Exec(ctx, conn); err != nil {
+		logger.Warn().Err(err).Msg("spock.repset_add_all_tables('default_insert_only') failed")
+	} else {
+		logger.Info().Msg("ensured spock.repset_add_all_tables('default_insert_only') applied")
+	}
+
+	logger.Info().Int("repsets_applied", appliedSets).Int("tables_applied", appliedTables).Msg("completed applying spock repset backup (in-memory)")
+	return nil
+}
+
+func (r *InstanceResource) getInMemorySpockPayload() json.RawMessage {
+	if r.SpockRepsetBackup != nil && len(r.SpockRepsetBackup.Payload) > 0 {
+		return r.SpockRepsetBackup.Payload
+	}
+	return nil
+}
+
+func (r *InstanceResource) parsePayload(payload json.RawMessage) (map[string]json.RawMessage, error) {
+	var resp map[string]json.RawMessage
+	if err := json.Unmarshal(payload, &resp); err != nil {
+		return nil, fmt.Errorf("unmarshal top-level payload: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *InstanceResource) extract(top map[string]json.RawMessage, keys ...string) ([]map[string]any, error) {
+	for _, k := range keys {
+		if raw, ok := top[k]; ok && len(raw) > 0 {
+			var arr []map[string]any
+			if err := json.Unmarshal(raw, &arr); err != nil {
+				return nil, fmt.Errorf("unmarshal key %q: %w", k, err)
+			}
+			return arr, nil
+		}
+	}
+
+	return []map[string]any{}, nil
+}
+
+func (r *InstanceResource) applyRepSets(ctx context.Context, conn *pgx.Conn, logger *zerolog.Logger, repSets []map[string]any) int {
+	count := 0
+	for _, item := range repSets {
+		name := r.getString(item, "set_name", "setName", "repsetname", "name")
+		if name == "" {
+			continue
+		}
+		// skip defaults
+		if name == "default" || name == "default_insert_only" || name == "ddl_sql" {
+			continue
+		}
+		repInsert := r.parseBool(item["replicate_insert"], true)
+		repUpdate := r.parseBool(item["replicate_update"], true)
+		repDelete := r.parseBool(item["replicate_delete"], true)
+		repTrunc := r.parseBool(item["replicate_truncate"], true)
+
+		if err := postgres.RepsetCreateIfNotExists(name, repInsert, repUpdate, repDelete, repTrunc).Exec(ctx, conn); err != nil {
+			logger.Warn().Err(err).Str("repset", name).Msg("failed to create spock repset (continuing)")
+			continue
+		}
+		count++
+		logger.Info().Str("repset", name).Msg("ensured spock repset exists")
+	}
+	return count
+}
+
+func (r *InstanceResource) applyRepSetTables(ctx context.Context, conn *pgx.Conn, logger *zerolog.Logger, repSetTables []map[string]any) int {
+	count := 0
+	for _, item := range repSetTables {
+		setName := r.getString(item, "set_name", "setName", "repsetname", "set")
+		if setName == "" {
+			continue
+		}
+
+		// determine relation: prefer table_name/tableName; else schema+table
+		relation := r.getString(item, "table_name", "tableName")
+		if relation == "" {
+			schema := r.getString(item, "schema")
+			tbl := r.getString(item, "table", "relname")
+			if schema != "" && tbl != "" {
+				relation = fmt.Sprintf("%s.%s", strings.TrimSpace(schema), strings.TrimSpace(tbl))
+			}
+		}
+		if relation == "" {
+			continue
+		}
+
+		attList := r.getStringSlice(item["set_att_list"])
+		var rowFilter *string
+		if rf := r.getString(item, "set_row_filter", "row_filter"); rf != "" {
+			rowFilter = &rf
+		}
+
+		// try options helper first
+		if len(attList) > 0 || rowFilter != nil {
+			if stmtWithOpts := postgres.RepsetAddTableWithOptions(setName, relation, attList, rowFilter); stmtWithOpts != nil {
+				if err := stmtWithOpts.Exec(ctx, conn); err != nil {
+					logger.Warn().Err(err).Str("repset", setName).Str("relation", relation).Msg("failed to add table (with options) to spock repset (continuing)")
+					continue
+				}
+				count++
+				logger.Info().Str("repset", setName).Str("relation", relation).Msg("added table to spock repset (with options)")
+				continue
+			}
+		}
+
+		// fallback simple add
+		if err := postgres.RepsetAddTableIfNotExists(setName, relation).Exec(ctx, conn); err != nil {
+			logger.Warn().Err(err).Str("repset", setName).Str("relation", relation).Msg("failed to add table to spock repset (continuing)")
+			continue
+		}
+		count++
+		logger.Info().Str("repset", setName).Str("relation", relation).Msg("added table to spock repset")
+	}
+	return count
+}
+
+func (r *InstanceResource) parseBool(v any, def bool) bool {
+	if v == nil {
+		return def
+	}
+	switch t := v.(type) {
+	case bool:
+		return t
+	case string:
+		s := strings.ToLower(strings.TrimSpace(t))
+		return s == "true" || s == "t" || s == "1"
+	default:
+		s := strings.ToLower(strings.TrimSpace(fmt.Sprintf("%v", t)))
+		return s == "true" || s == "t" || s == "1"
+	}
+}
+
+func (r *InstanceResource) getString(m map[string]any, keys ...string) string {
+	for _, k := range keys {
+		if v, ok := m[k]; ok && v != nil {
+			if s := strings.TrimSpace(fmt.Sprintf("%v", v)); s != "" {
+				return s
+			}
+		}
+	}
+	return ""
+}
+
+func (r *InstanceResource) getStringSlice(v any) []string {
+	if v == nil {
+		return nil
+	}
+	switch vv := v.(type) {
+	case []any:
+		out := make([]string, 0, len(vv))
+		for _, e := range vv {
+			out = append(out, fmt.Sprintf("%v", e))
+		}
+		return out
+	case string:
+		parts := strings.Split(vv, ",")
+		out := make([]string, 0, len(parts))
+		for _, p := range parts {
+			if s := strings.TrimSpace(p); s != "" {
+				out = append(out, s)
+			}
+		}
+		return out
+	default:
+		return []string{fmt.Sprintf("%v", vv)}
+	}
 }

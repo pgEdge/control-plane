@@ -18,6 +18,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	"github.com/spf13/afero"
+
+	"github.com/pgEdge/control-plane/server/internal/database"
 )
 
 var _ resource.Resource = (*PgBackRestRestore)(nil)
@@ -118,6 +120,14 @@ func (p *PgBackRestRestore) Create(ctx context.Context, rc *resource.Context) er
 	err = p.startPostgres(ctx, dockerClient, svcResource)
 	if err != nil {
 		return handleError(err)
+	}
+
+	if instRes, err := resource.FromContext[*database.InstanceResource](rc, database.InstanceResourceIdentifier(p.InstanceID)); err == nil && instRes != nil {
+		if applyErr := instRes.ApplySpockRepsetBackup(ctx, rc); applyErr != nil {
+			logger.Warn().Err(applyErr).Str("instance_id", p.InstanceID).Msg("spock repset apply failed (non-fatal)")
+		}
+	} else {
+		logger.Info().Str("instance_id", p.InstanceID).Msg("no instance resource found in state to apply spock repset backup")
 	}
 
 	err = p.completeTask(ctx, taskSvc, t)
