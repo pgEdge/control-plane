@@ -46,9 +46,22 @@ func UpdateDatabase(
 	if err != nil {
 		return nil, err
 	}
-
-	// Updates are always performed first to guarantee that any existing node
-	// is available to be a source node.
+	for _, n := range adds {
+		if n.SourceNode == "" {
+			continue
+		}
+		if n.SourceNode == n.NodeName {
+			return nil, database.ErrInvalidSourceNode
+		}
+		ident := database.NodeResourceIdentifier(n.SourceNode)
+		if _, err := resource.FromState[*database.NodeResource](start, ident); err != nil {
+			if errors.Is(err, resource.ErrNotFound) {
+				return nil, database.ErrInvalidSourceNode
+			}
+			return nil, err
+		}
+	}
+	// Updates first to ensure an existing node is available as a source.
 	var states []*resource.State
 	if len(updates) > 0 {
 		u, err := update(updates)
@@ -56,6 +69,17 @@ func UpdateDatabase(
 			return nil, err
 		}
 		states = append(states, u...)
+	}
+
+	// Auto-select source node for adds if not provided:
+	// Pick the first existing node (from updates) as default.
+	if len(adds) > 0 && len(updates) > 0 {
+		defaultSource := updates[0].NodeName
+		for _, n := range adds {
+			if n.SourceNode == "" {
+				n.SourceNode = defaultSource
+			}
+		}
 	}
 
 	if len(adds) > 0 {
@@ -74,15 +98,11 @@ func UpdateDatabase(
 		}
 	}
 
-	// The states produced by the *Nodes functions are just diffs. Here's where
-	// we create a sequence of incremental updates by iteratively applying those
-	// diffs.
+	// Build incremental states by applying diffs in sequence.
 	prev := start
 	for i, state := range states {
-		// Clone the previous state and apply our diff on top of it
 		curr := prev.Clone()
 		curr.Merge(state)
-		// Write the updated state back to our states slice.
 		states[i] = curr
 		prev = curr
 	}
@@ -97,7 +117,6 @@ func UpdateDatabase(
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate plans: %w", err)
 	}
-
 	return plans, nil
 }
 
