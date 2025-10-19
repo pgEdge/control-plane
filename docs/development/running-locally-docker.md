@@ -1,4 +1,4 @@
-# Running a local Control Plane cluster in Docker
+# Running the Control Plane locally
 
 The `docker/control-plane-dev` directory contains configuration for a three-host
 Control Plane cluster that runs in Docker via Docker Compose.

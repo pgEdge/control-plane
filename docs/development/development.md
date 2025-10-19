@@ -1,4 +1,4 @@
-# Developing the pgEdge Control Plane
+# Development Process
 
 - [Developing the pgEdge Control Plane](#developing-the-pgedge-control-plane)
   - [Running the Control Plane locally](#running-the-control-plane-locally)

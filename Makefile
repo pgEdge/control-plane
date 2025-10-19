@@ -260,3 +260,11 @@ ci-compose-detached: ci-compose-build docker-swarm-init
 .PHONY: ci-compose-down
 ci-compose-down:
 	$(docker_compose_ci) down
+
+#################################
+# 		  documentation 	    #
+#################################
+.PHONY: docs
+docs:
+	docker build -t control-plane-docs ./docs
+	docker run --rm -it -p 8000:8000 -v ${PWD}:/docs control-plane-docs
