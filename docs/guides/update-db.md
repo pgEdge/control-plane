@@ -1,9 +1,9 @@
 # Updating a database
 
 To update a database, submit a `POST` request to the
-`/v1/databases/{database_id}` endpoint of any host in the cluster. 
+`/v1/databases/{database_id}` endpoint of any host in the cluster with the updated spec for the database.
 
-For example, this update request adds a new node on `host-4` would for the existing `example` database:
+For example, this update request adds a new node on `host-4` for the existing `example` database:
 
 === "curl"
 
@@ -30,6 +30,11 @@ For example, this update request adds a new node on `host-4` would for the exist
             }
         }'
     ```
+
+By default, the pgEdge Control Plane performs a zero downtime add node operation when adding a distributed node, loading existing database data and structure from the first node. You can control which node is used for this by specifying the `source_node` property on the node you are adding.
+
+Alternatively, you can use pgBackRest to bootstrap the new node via a restore. See [Creating a new node from a backup](./backup-restore.md#creating-a-new-node-from-a-backup).
+
 
 !!! tip
 
