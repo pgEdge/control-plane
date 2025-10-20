@@ -87,6 +87,19 @@ func EncodeInitClusterError(encoder func(context.Context, http.ResponseWriter) g
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusConflict)
 			return enc.Encode(body)
+		case "operation_not_supported":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewInitClusterOperationNotSupportedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
 		case "server_error":
 			var res *controlplane.APIError
 			errors.As(v, &res)
@@ -2786,13 +2799,28 @@ func EncodeCancelDatabaseTaskError(encoder func(context.Context, http.ResponseWr
 	}
 }
 
-// marshalControlplaneClusterPeerToClusterPeerResponseBody builds a value of
-// type *ClusterPeerResponseBody from a value of type *controlplane.ClusterPeer.
-func marshalControlplaneClusterPeerToClusterPeerResponseBody(v *controlplane.ClusterPeer) *ClusterPeerResponseBody {
-	res := &ClusterPeerResponseBody{
-		Name:      v.Name,
-		PeerURL:   v.PeerURL,
-		ClientURL: v.ClientURL,
+// marshalControlplaneEtcdClusterMemberToEtcdClusterMemberResponseBody builds a
+// value of type *EtcdClusterMemberResponseBody from a value of type
+// *controlplane.EtcdClusterMember.
+func marshalControlplaneEtcdClusterMemberToEtcdClusterMemberResponseBody(v *controlplane.EtcdClusterMember) *EtcdClusterMemberResponseBody {
+	res := &EtcdClusterMemberResponseBody{
+		Name: v.Name,
+	}
+	if v.PeerUrls != nil {
+		res.PeerUrls = make([]string, len(v.PeerUrls))
+		for i, val := range v.PeerUrls {
+			res.PeerUrls[i] = val
+		}
+	} else {
+		res.PeerUrls = []string{}
+	}
+	if v.ClientUrls != nil {
+		res.ClientUrls = make([]string, len(v.ClientUrls))
+		for i, val := range v.ClientUrls {
+			res.ClientUrls[i] = val
+		}
+	} else {
+		res.ClientUrls = []string{}
 	}
 
 	return res

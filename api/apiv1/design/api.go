@@ -30,6 +30,7 @@ var _ = g.API("control-plane", func() {
 	g.Error("not_found", APIError)
 	g.Error("operation_already_in_progress", APIError)
 	g.Error("server_error", APIError)
+	g.Error("operation_not_supported", APIError)
 	g.HTTP(func() {
 		g.Response("cluster_already_initialized", http.StatusConflict)
 		g.Response("cluster_not_initialized", http.StatusConflict)
@@ -39,6 +40,7 @@ var _ = g.API("control-plane", func() {
 		g.Response("not_found", http.StatusNotFound)
 		g.Response("operation_already_in_progress", http.StatusConflict)
 		g.Response("server_error", http.StatusInternalServerError)
+		g.Response("operation_not_supported", http.StatusBadRequest)
 	})
 })
 
@@ -70,6 +72,7 @@ var _ = g.Service("control-plane", func() {
 		g.Payload(InitClusterRequest)
 		g.Result(ClusterJoinToken)
 		g.Error("cluster_already_initialized")
+		g.Error("operation_not_supported")
 
 		g.HTTP(func() {
 			g.GET("/v1/cluster/init")

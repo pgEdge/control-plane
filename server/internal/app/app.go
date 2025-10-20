@@ -29,7 +29,7 @@ type App struct {
 	i      *do.Injector
 	cfg    config.Config
 	logger zerolog.Logger
-	etcd   *etcd.EmbeddedEtcd
+	etcd   etcd.Etcd
 	api    *api.Server
 }
 
@@ -60,7 +60,7 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	grpclog.SetLoggerV2(grpcLogger)
 
-	embeddedEtcd, err := do.Invoke[*etcd.EmbeddedEtcd](a.i)
+	e, err := do.Invoke[etcd.Etcd](a.i)
 	if err != nil {
 		return fmt.Errorf("failed to initialize etcd: %w", err)
 	}
@@ -69,7 +69,7 @@ func (a *App) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to initialize api server: %w", err)
 	}
 
-	a.etcd = embeddedEtcd
+	a.etcd = e
 	a.api = apiServer
 
 	initialized, err := a.etcd.IsInitialized()

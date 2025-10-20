@@ -19,12 +19,12 @@ type Orchestrator interface {
 
 type Service struct {
 	cfg          config.Config
-	etcd         *etcd.EmbeddedEtcd
+	etcd         etcd.Etcd
 	store        *Store
 	orchestrator Orchestrator
 }
 
-func NewService(cfg config.Config, etcd *etcd.EmbeddedEtcd, store *Store, orchestrator Orchestrator) *Service {
+func NewService(cfg config.Config, etcd etcd.Etcd, store *Store, orchestrator Orchestrator) *Service {
 	return &Service{
 		cfg:          cfg,
 		etcd:         etcd,

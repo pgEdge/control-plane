@@ -175,10 +175,11 @@ func (r RemoteEtcd) validate() []error {
 	if _, err := zerolog.ParseLevel(r.LogLevel); err != nil {
 		errs = append(errs, fmt.Errorf("log_level: invalid log level %q: %w", r.LogLevel, err))
 	}
-	if len(r.Endpoints) == 0 {
-		errs = append(errs, errors.New("endpoints: cannot be empty"))
-	}
 	return errs
+}
+
+var remoteEtcdDefault = RemoteEtcd{
+	LogLevel: "fatal",
 }
 
 type Orchestrator string
@@ -285,6 +286,7 @@ func DefaultConfig() (Config, error) {
 		HTTP:                   httpDefault,
 		StopGracePeriodSeconds: 30,
 		EmbeddedEtcd:           embeddedEtcdDefault,
+		RemoteEtcd:             remoteEtcdDefault,
 		DockerSwarm:            defaultDockerSwarm,
 		DatabaseOwnerUID:       26,
 	}, nil

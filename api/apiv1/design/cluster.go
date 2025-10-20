@@ -75,27 +75,29 @@ var ClusterJoinRequest = g.Type("ClusterJoinRequest", func() {
 		g.Description("The IPv4 address of the host that's joining the cluster.")
 		g.Example("10.1.0.113")
 	})
+	g.Attribute("embedded_etcd_enabled", g.Boolean, func() {
+		g.Description("True if the joining member is configured to run an embedded an etcd server.")
+		g.Example(true)
+	})
 
-	g.Required("token", "host_id", "hostname", "ipv4_address")
+	g.Required("embedded_etcd_enabled", "token", "host_id", "hostname", "ipv4_address")
 })
 
-var ClusterPeer = g.Type("ClusterPeer", func() {
+var EtcdClusterMember = g.Type("EtcdClusterMember", func() {
 	g.Attribute("name", g.String, func() {
 		g.Description("The name of the Etcd cluster member.")
 		g.Example("host-1")
 	})
-	g.Attribute("peer_url", g.String, func() {
-		g.Format(g.FormatURI)
+	g.Attribute("peer_urls", g.ArrayOf(g.String), func() {
 		g.Description("The Etcd peer endpoint for this cluster member.")
-		g.Example("http://192.168.1.1:2380")
+		g.Example([]string{"http://192.168.1.1:2380"})
 	})
-	g.Attribute("client_url", g.String, func() {
-		g.Format(g.FormatURI)
+	g.Attribute("client_urls", g.ArrayOf(g.String), func() {
 		g.Description("The Etcd client endpoint for this cluster member.")
-		g.Example("http://192.168.1.1:2379")
+		g.Example([]string{"http://192.168.1.1:2379"})
 	})
 
-	g.Required("name", "peer_url", "client_url")
+	g.Required("name", "peer_urls", "client_urls")
 })
 
 var ClusterCredentials = g.Type("ClusterCredentials", func() {
@@ -140,12 +142,12 @@ var ClusterCredentials = g.Type("ClusterCredentials", func() {
 })
 
 var ClusterJoinOptions = g.Type("ClusterJoinOptions", func() {
-	g.Attribute("peer", ClusterPeer, func() {
-		g.Description("Information about this cluster member")
+	g.Attribute("leader", EtcdClusterMember, func() {
+		g.Description("Connection information for the etcd cluster leader")
 	})
 	g.Attribute("credentials", ClusterCredentials, func() {
 		g.Description("Credentials for the new host joining the cluster.")
 	})
 
-	g.Required("peer", "credentials")
+	g.Required("leader", "credentials")
 })

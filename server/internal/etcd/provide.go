@@ -1,6 +1,8 @@
 package etcd
 
 import (
+	"fmt"
+
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -10,14 +12,14 @@ import (
 )
 
 func Provide(i *do.Injector) {
-	provideEmbeddedEtcd(i)
+	provideEtcd(i)
 	provideClient(i)
 	provideGrpcLogger(i)
 }
 
 func provideClient(i *do.Injector) {
 	do.Provide(i, func(i *do.Injector) (*clientv3.Client, error) {
-		etcd, err := do.Invoke[*EmbeddedEtcd](i)
+		etcd, err := do.Invoke[Etcd](i)
 		if err != nil {
 			return nil, err
 		}
@@ -25,8 +27,8 @@ func provideClient(i *do.Injector) {
 	})
 }
 
-func provideEmbeddedEtcd(i *do.Injector) {
-	do.Provide(i, func(i *do.Injector) (*EmbeddedEtcd, error) {
+func provideEtcd(i *do.Injector) {
+	do.Provide(i, func(i *do.Injector) (Etcd, error) {
 		cfg, err := do.Invoke[*config.Manager](i)
 		if err != nil {
 			return nil, err
@@ -35,7 +37,15 @@ func provideEmbeddedEtcd(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		return NewEmbeddedEtcd(cfg, logger), nil
+
+		switch storageType := cfg.Config().StorageType; storageType {
+		case config.StorageTypeEmbeddedEtcd:
+			return NewEmbeddedEtcd(cfg, logger), nil
+		case config.StorageTypeRemoteEtcd:
+			return NewRemoteEtcd(cfg, logger), nil
+		default:
+			return nil, fmt.Errorf("invalid storage type: %s", storageType)
+		}
 	})
 }
 

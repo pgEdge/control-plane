@@ -76,7 +76,7 @@ func BuildGetJoinOptionsPayload(controlPlaneGetJoinOptionsBody string) (*control
 	{
 		err = json.Unmarshal([]byte(controlPlaneGetJoinOptionsBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"host_id\": \"host-1\",\n      \"hostname\": \"ip-10-1-0-113.ec2.internal\",\n      \"ipv4_address\": \"10.1.0.113\",\n      \"token\": \"PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"embedded_etcd_enabled\": true,\n      \"host_id\": \"host-1\",\n      \"hostname\": \"ip-10-1-0-113.ec2.internal\",\n      \"ipv4_address\": \"10.1.0.113\",\n      \"token\": \"PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd\"\n   }'")
 		}
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.token", body.Token, "^PGEDGE-[\\w]{64}-[\\w]{32}$"))
 		if utf8.RuneCountInString(body.HostID) < 1 {
@@ -97,10 +97,11 @@ func BuildGetJoinOptionsPayload(controlPlaneGetJoinOptionsBody string) (*control
 		}
 	}
 	v := &controlplane.ClusterJoinRequest{
-		Token:       body.Token,
-		HostID:      controlplane.Identifier(body.HostID),
-		Hostname:    body.Hostname,
-		Ipv4Address: body.Ipv4Address,
+		Token:               body.Token,
+		HostID:              controlplane.Identifier(body.HostID),
+		Hostname:            body.Hostname,
+		Ipv4Address:         body.Ipv4Address,
+		EmbeddedEtcdEnabled: body.EmbeddedEtcdEnabled,
 	}
 
 	return v, nil

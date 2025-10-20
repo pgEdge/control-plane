@@ -22,6 +22,7 @@ const (
 	errOperationAlreadyInProgress = "operation_already_in_progress"
 	errServerError                = "server_error"
 	errDatabaseAlreadyExists      = "database_already_exists"
+	errOperationNotSupported      = "operation_not_supported"
 )
 
 var (
@@ -38,6 +39,7 @@ var (
 	ErrDatabaseAlreadyExists      = newAPIError(errDatabaseAlreadyExists, "a database already exists with the given ID")
 	ErrHostNotFound               = newAPIError(errNotFound, "no host found with the given ID")
 	ErrNoPrimaryInstance          = newAPIError(errNotFound, "no primary instance found for the given node")
+	ErrOperationNotSupported      = newAPIError(errOperationNotSupported, "operation not supported by this control plane server")
 )
 
 func apiErr(err error) error {
@@ -71,10 +73,10 @@ func apiErr(err error) error {
 		return makeInvalidInputErr(err)
 	case errors.Is(err, etcd.ErrCannotRemoveSelf):
 		return makeInvalidInputErr(err)
-	case errors.Is(err, etcd.ErrMemberNotFound):
-		return makeNotFoundErr(err)
 	case errors.Is(err, etcd.ErrMinimumClusterSize):
 		return makeInvalidInputErr(err)
+	case errors.Is(err, etcd.ErrOperationNotSupported):
+		return ErrOperationNotSupported
 	default:
 		return newAPIError(errServerError, err.Error())
 	}
@@ -82,10 +84,6 @@ func apiErr(err error) error {
 
 func makeInvalidInputErr(err error) error {
 	return newAPIError(errInvalidInput, err.Error())
-}
-
-func makeNotFoundErr(err error) error {
-	return newAPIError(errNotFound, err.Error())
 }
 
 func newAPIError(name, message string) *api.APIError {

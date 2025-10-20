@@ -35,6 +35,8 @@ type GetJoinOptionsRequestBody struct {
 	Hostname string `form:"hostname" json:"hostname" xml:"hostname"`
 	// The IPv4 address of the host that's joining the cluster.
 	Ipv4Address string `form:"ipv4_address" json:"ipv4_address" xml:"ipv4_address"`
+	// True if the joining member is configured to run an embedded an etcd server.
+	EmbeddedEtcdEnabled bool `form:"embedded_etcd_enabled" json:"embedded_etcd_enabled" xml:"embedded_etcd_enabled"`
 }
 
 // CreateDatabaseRequestBody is the type of the "control-plane" service
@@ -126,8 +128,8 @@ type GetJoinTokenResponseBody struct {
 // GetJoinOptionsResponseBody is the type of the "control-plane" service
 // "get-join-options" endpoint HTTP response body.
 type GetJoinOptionsResponseBody struct {
-	// Information about this cluster member
-	Peer *ClusterPeerResponseBody `form:"peer,omitempty" json:"peer,omitempty" xml:"peer,omitempty"`
+	// Connection information for the etcd cluster leader
+	Leader *EtcdClusterMemberResponseBody `form:"leader,omitempty" json:"leader,omitempty" xml:"leader,omitempty"`
 	// Credentials for the new host joining the cluster.
 	Credentials *ClusterCredentialsResponseBody `form:"credentials,omitempty" json:"credentials,omitempty" xml:"credentials,omitempty"`
 }
@@ -374,6 +376,16 @@ type CancelDatabaseTaskResponseBody struct {
 // "control-plane" service "init-cluster" endpoint HTTP response body for the
 // "cluster_already_initialized" error.
 type InitClusterClusterAlreadyInitializedResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// InitClusterOperationNotSupportedResponseBody is the type of the
+// "control-plane" service "init-cluster" endpoint HTTP response body for the
+// "operation_not_supported" error.
+type InitClusterOperationNotSupportedResponseBody struct {
 	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// The error message.
@@ -1329,14 +1341,15 @@ type CancelDatabaseTaskServerErrorResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// ClusterPeerResponseBody is used to define fields on response body types.
-type ClusterPeerResponseBody struct {
+// EtcdClusterMemberResponseBody is used to define fields on response body
+// types.
+type EtcdClusterMemberResponseBody struct {
 	// The name of the Etcd cluster member.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// The Etcd peer endpoint for this cluster member.
-	PeerURL *string `form:"peer_url,omitempty" json:"peer_url,omitempty" xml:"peer_url,omitempty"`
+	PeerUrls []string `form:"peer_urls,omitempty" json:"peer_urls,omitempty" xml:"peer_urls,omitempty"`
 	// The Etcd client endpoint for this cluster member.
-	ClientURL *string `form:"client_url,omitempty" json:"client_url,omitempty" xml:"client_url,omitempty"`
+	ClientUrls []string `form:"client_urls,omitempty" json:"client_urls,omitempty" xml:"client_urls,omitempty"`
 }
 
 // ClusterCredentialsResponseBody is used to define fields on response body
@@ -2385,10 +2398,11 @@ func NewJoinClusterRequestBody(p *controlplane.ClusterJoinToken) *JoinClusterReq
 // of the "get-join-options" endpoint of the "control-plane" service.
 func NewGetJoinOptionsRequestBody(p *controlplane.ClusterJoinRequest) *GetJoinOptionsRequestBody {
 	body := &GetJoinOptionsRequestBody{
-		Token:       p.Token,
-		HostID:      string(p.HostID),
-		Hostname:    p.Hostname,
-		Ipv4Address: p.Ipv4Address,
+		Token:               p.Token,
+		HostID:              string(p.HostID),
+		Hostname:            p.Hostname,
+		Ipv4Address:         p.Ipv4Address,
+		EmbeddedEtcdEnabled: p.EmbeddedEtcdEnabled,
 	}
 	return body
 }
@@ -2526,6 +2540,17 @@ func NewInitClusterClusterAlreadyInitialized(body *InitClusterClusterAlreadyInit
 	return v
 }
 
+// NewInitClusterOperationNotSupported builds a control-plane service
+// init-cluster endpoint operation_not_supported error.
+func NewInitClusterOperationNotSupported(body *InitClusterOperationNotSupportedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
 // NewInitClusterServerError builds a control-plane service init-cluster
 // endpoint server_error error.
 func NewInitClusterServerError(body *InitClusterServerErrorResponseBody) *controlplane.APIError {
@@ -2607,7 +2632,7 @@ func NewGetJoinTokenServerError(body *GetJoinTokenServerErrorResponseBody) *cont
 // "get-join-options" endpoint result from a HTTP "OK" response.
 func NewGetJoinOptionsClusterJoinOptionsOK(body *GetJoinOptionsResponseBody) *controlplane.ClusterJoinOptions {
 	v := &controlplane.ClusterJoinOptions{}
-	v.Peer = unmarshalClusterPeerResponseBodyToControlplaneClusterPeer(body.Peer)
+	v.Leader = unmarshalEtcdClusterMemberResponseBodyToControlplaneEtcdClusterMember(body.Leader)
 	v.Credentials = unmarshalClusterCredentialsResponseBodyToControlplaneClusterCredentials(body.Credentials)
 
 	return v
@@ -3916,14 +3941,14 @@ func ValidateGetJoinTokenResponseBody(body *GetJoinTokenResponseBody) (err error
 // ValidateGetJoinOptionsResponseBody runs the validations defined on
 // Get-Join-OptionsResponseBody
 func ValidateGetJoinOptionsResponseBody(body *GetJoinOptionsResponseBody) (err error) {
-	if body.Peer == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("peer", "body"))
+	if body.Leader == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("leader", "body"))
 	}
 	if body.Credentials == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("credentials", "body"))
 	}
-	if body.Peer != nil {
-		if err2 := ValidateClusterPeerResponseBody(body.Peer); err2 != nil {
+	if body.Leader != nil {
+		if err2 := ValidateEtcdClusterMemberResponseBody(body.Leader); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -4377,6 +4402,18 @@ func ValidateCancelDatabaseTaskResponseBody(body *CancelDatabaseTaskResponseBody
 // ValidateInitClusterClusterAlreadyInitializedResponseBody runs the
 // validations defined on init-cluster_cluster_already_initialized_response_body
 func ValidateInitClusterClusterAlreadyInitializedResponseBody(body *InitClusterClusterAlreadyInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateInitClusterOperationNotSupportedResponseBody runs the validations
+// defined on init-cluster_operation_not_supported_response_body
+func ValidateInitClusterOperationNotSupportedResponseBody(body *InitClusterOperationNotSupportedResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
@@ -5554,23 +5591,17 @@ func ValidateCancelDatabaseTaskServerErrorResponseBody(body *CancelDatabaseTaskS
 	return
 }
 
-// ValidateClusterPeerResponseBody runs the validations defined on
-// ClusterPeerResponseBody
-func ValidateClusterPeerResponseBody(body *ClusterPeerResponseBody) (err error) {
+// ValidateEtcdClusterMemberResponseBody runs the validations defined on
+// EtcdClusterMemberResponseBody
+func ValidateEtcdClusterMemberResponseBody(body *EtcdClusterMemberResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.PeerURL == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("peer_url", "body"))
+	if body.PeerUrls == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("peer_urls", "body"))
 	}
-	if body.ClientURL == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("client_url", "body"))
-	}
-	if body.PeerURL != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.peer_url", *body.PeerURL, goa.FormatURI))
-	}
-	if body.ClientURL != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.client_url", *body.ClientURL, goa.FormatURI))
+	if body.ClientUrls == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("client_urls", "body"))
 	}
 	return
 }

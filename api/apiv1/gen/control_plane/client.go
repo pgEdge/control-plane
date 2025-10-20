@@ -76,6 +76,7 @@ func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluste
 // InitCluster calls the "init-cluster" endpoint of the "control-plane" service.
 // InitCluster may return the following errors:
 //   - "cluster_already_initialized" (type *goa.ServiceError)
+//   - "operation_not_supported" (type *goa.ServiceError)
 //   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) InitCluster(ctx context.Context, p *InitClusterRequest) (res *ClusterJoinToken, err error) {
