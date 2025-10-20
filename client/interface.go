@@ -9,7 +9,7 @@ import (
 type Client interface {
 	// API methods
 
-	InitCluster(ctx context.Context) (*api.ClusterJoinToken, error)
+	InitCluster(ctx context.Context, req *api.InitClusterRequest) (*api.ClusterJoinToken, error)
 	JoinCluster(ctx context.Context, req *api.ClusterJoinToken) error
 	GetJoinToken(ctx context.Context) (*api.ClusterJoinToken, error)
 	GetCluster(ctx context.Context) (*api.Cluster, error)

@@ -113,7 +113,7 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 	}
 	// Initialize the certificate authority
 	certStore := certificates.NewStore(client, appCfg.EtcdKeyRoot)
-	certSvc := certificates.NewService(appCfg, certStore)
+	certSvc := certificates.NewService(certStore)
 	if err := certSvc.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start certificate service: %w", err)
 	}
@@ -202,7 +202,7 @@ func (e *EmbeddedEtcd) start(ctx context.Context) error {
 	}
 
 	certStore := certificates.NewStore(client, appCfg.EtcdKeyRoot)
-	certSvc := certificates.NewService(appCfg, certStore)
+	certSvc := certificates.NewService(certStore)
 	if err := certSvc.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start certificate service: %w", err)
 	}
@@ -305,7 +305,7 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 	}
 
 	certStore := certificates.NewStore(client, appCfg.EtcdKeyRoot)
-	certSvc := certificates.NewService(appCfg, certStore)
+	certSvc := certificates.NewService(certStore)
 	if err := certSvc.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start certificate service: %w", err)
 	}

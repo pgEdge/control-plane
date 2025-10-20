@@ -28,7 +28,7 @@ func UsageCommands() string {
 
 // UsageExamples produces an example of a valid invocation of the CLI tool.
 func UsageExamples() string {
-	return os.Args[0] + ` control-plane init-cluster --cluster-id "Et harum cum possimus minima exercitationem."` + "\n" +
+	return os.Args[0] + ` control-plane init-cluster --cluster-id "9"` + "\n" +
 		""
 }
 
@@ -426,7 +426,7 @@ Initializes a new cluster.
     -cluster-id STRING: 
 
 Example:
-    %[1]s control-plane init-cluster --cluster-id "Et harum cum possimus minima exercitationem."
+    %[1]s control-plane init-cluster --cluster-id "9"
 `, os.Args[0])
 }
 

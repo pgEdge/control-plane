@@ -3918,7 +3918,10 @@ func NewCancelDatabaseTaskServerErrorResponseBody(res *controlplane.APIError) *C
 // payload.
 func NewInitClusterRequest(clusterID *string) *controlplane.InitClusterRequest {
 	v := &controlplane.InitClusterRequest{}
-	v.ClusterID = clusterID
+	if clusterID != nil {
+		tmpclusterID := controlplane.Identifier(*clusterID)
+		v.ClusterID = &tmpclusterID
+	}
 
 	return v
 }

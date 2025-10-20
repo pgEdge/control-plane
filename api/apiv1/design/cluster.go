@@ -35,7 +35,7 @@ var Cluster = g.Type("Cluster", func() {
 
 var InitClusterRequest = g.Type("InitClusterRequest", func() {
 	g.Description("Request to initialize a cluster")
-	g.Attribute("cluster_id", g.String, func() {
+	g.Attribute("cluster_id", Identifier, func() {
 		g.Description("Optional id for the cluster, omit for default generated id")
 	})
 })

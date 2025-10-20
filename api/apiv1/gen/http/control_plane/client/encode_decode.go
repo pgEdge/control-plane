@@ -46,7 +46,7 @@ func EncodeInitClusterRequest(encoder func(*http.Request) goahttp.Encoder) func(
 		}
 		values := req.URL.Query()
 		if p.ClusterID != nil {
-			values.Add("cluster_id", *p.ClusterID)
+			values.Add("cluster_id", string(*p.ClusterID))
 		}
 		req.URL.RawQuery = values.Encode()
 		return nil

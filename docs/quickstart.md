@@ -59,7 +59,6 @@ with the Control Plane.
 
 ```sh
 docker run --detach \
-    --env PGEDGE_CLUSTER_ID=quickstart \
     --env PGEDGE_HOST_ID=host-1 \
     --env PGEDGE_DATA_DIR=${HOME}/pgedge/control-plane \
     --volume ${HOME}/pgedge/control-plane:${HOME}/pgedge/control-plane \

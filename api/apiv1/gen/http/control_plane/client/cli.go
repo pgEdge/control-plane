@@ -20,14 +20,27 @@ import (
 // BuildInitClusterPayload builds the payload for the control-plane
 // init-cluster endpoint from CLI flags.
 func BuildInitClusterPayload(controlPlaneInitClusterClusterID string) (*controlplane.InitClusterRequest, error) {
+	var err error
 	var clusterID *string
 	{
 		if controlPlaneInitClusterClusterID != "" {
 			clusterID = &controlPlaneInitClusterClusterID
+			if utf8.RuneCountInString(*clusterID) < 1 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("cluster_id", *clusterID, utf8.RuneCountInString(*clusterID), 1, true))
+			}
+			if utf8.RuneCountInString(*clusterID) > 63 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("cluster_id", *clusterID, utf8.RuneCountInString(*clusterID), 63, false))
+			}
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	v := &controlplane.InitClusterRequest{}
-	v.ClusterID = clusterID
+	if clusterID != nil {
+		tmpclusterID := controlplane.Identifier(*clusterID)
+		v.ClusterID = &tmpclusterID
+	}
 
 	return v, nil
 }

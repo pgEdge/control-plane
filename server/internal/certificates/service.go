@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
@@ -23,14 +22,12 @@ var (
 )
 
 type Service struct {
-	cfg   config.Config
 	ca    *RootCA
 	store *Store
 }
 
-func NewService(cfg config.Config, store *Store) *Service {
+func NewService(store *Store) *Service {
 	return &Service{
-		cfg:   cfg,
 		store: store,
 	}
 }

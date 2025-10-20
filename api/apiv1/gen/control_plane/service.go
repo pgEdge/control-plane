@@ -559,7 +559,7 @@ type Identifier string
 // init-cluster method.
 type InitClusterRequest struct {
 	// Optional id for the cluster, omit for default generated id
-	ClusterID *string
+	ClusterID *Identifier
 }
 
 // An instance of pgEdge Postgres running on a host.

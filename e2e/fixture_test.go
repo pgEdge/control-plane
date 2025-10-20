@@ -17,6 +17,7 @@ import (
 
 	"github.com/google/uuid"
 
+	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	controlplane "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	"github.com/pgEdge/control-plane/client"
 )
@@ -129,7 +130,7 @@ func NewTestFixture(ctx context.Context, config TestConfig, skipCleanup bool, de
 	log.Print("initializing cluster")
 
 	// Ensure that the cluster is initialized
-	_, err = cli.InitCluster(ctx)
+	_, err = cli.InitCluster(ctx, &api.InitClusterRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize cluster: %w", err)
 	}

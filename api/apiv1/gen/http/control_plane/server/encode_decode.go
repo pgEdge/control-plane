@@ -39,10 +39,24 @@ func DecodeInitClusterRequest(mux goahttp.Muxer, decoder func(*http.Request) goa
 	return func(r *http.Request) (any, error) {
 		var (
 			clusterID *string
+			err       error
 		)
 		clusterIDRaw := r.URL.Query().Get("cluster_id")
 		if clusterIDRaw != "" {
 			clusterID = &clusterIDRaw
+		}
+		if clusterID != nil {
+			if utf8.RuneCountInString(*clusterID) < 1 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("cluster_id", *clusterID, utf8.RuneCountInString(*clusterID), 1, true))
+			}
+		}
+		if clusterID != nil {
+			if utf8.RuneCountInString(*clusterID) > 63 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("cluster_id", *clusterID, utf8.RuneCountInString(*clusterID), 63, false))
+			}
+		}
+		if err != nil {
+			return nil, err
 		}
 		payload := NewInitClusterRequest(clusterID)
 

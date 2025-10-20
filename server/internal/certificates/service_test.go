@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/certificates"
-	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/storage/storagetest"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +15,7 @@ func TestService(t *testing.T) {
 		etcd := storagetest.NewEtcdTestServer(t)
 		client := etcd.Client(t)
 		store := certificates.NewStore(client, uuid.NewString())
-		service := certificates.NewService(config.Config{}, store)
+		service := certificates.NewService(store)
 
 		ctx := context.Background()
 		assert.NoError(t, service.Start(ctx))
@@ -31,7 +30,7 @@ func TestService(t *testing.T) {
 		assert.NoError(t, service.Verify(principal.CertPEM))
 
 		// Simulate restoring the service from the stored CA on the next startup
-		restored := certificates.NewService(config.Config{}, store)
+		restored := certificates.NewService(store)
 		assert.NoError(t, restored.Start(ctx))
 
 		// Verify that the restored service has the same CA

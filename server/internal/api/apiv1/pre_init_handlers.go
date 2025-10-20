@@ -57,12 +57,15 @@ func (s *PreInitHandlers) InitCluster(ctx context.Context, req *api.InitClusterR
 	}
 	clusterStore := cluster.NewStore(etcdClient, s.cfg.EtcdKeyRoot)
 
-	clusterID := uuid.NewString() // default to uuid unless specified in request
+	id := uuid.NewString() // default to uuid unless specified in request
 	if req.ClusterID != nil {
-		clusterID = *req.ClusterID
+		id, err = identToString(*req.ClusterID, []string{"cluster_id"})
+		if err != nil {
+			return nil, apiErr(err)
+		}
 	}
 	if err := clusterStore.Cluster.
-		Create(&cluster.StoredCluster{ID: clusterID}).
+		Create(&cluster.StoredCluster{ID: id}).
 		Exec(ctx); err != nil {
 		return nil, apiErr(err)
 	}
