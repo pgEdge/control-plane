@@ -1,15 +1,9 @@
 # Development Process
 
-- [Developing the pgEdge Control Plane](#developing-the-pgedge-control-plane)
-  - [Running the Control Plane locally](#running-the-control-plane-locally)
-  - [Pull requests](#pull-requests)
-  - [Building pre-release Control Plane images](#building-pre-release-control-plane-images)
-  - [Release process](#release-process)
-
 ## Running the Control Plane locally
 
 We use Docker Compose to run the control plane for development. Please see the
-["Running a local Control Plane cluster in Docker"](./running-locally-docker.md)
+["Running the Control Plane locally"](./running-locally.md)
 document for the full set of instructions.
 
 ## Pull requests

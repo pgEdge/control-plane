@@ -1,50 +1,16 @@
 # Automated end-to-end tests
 
-> [!NOTE]
-> The end-to-end tests and this document are a work in progress. The
-> contents of this document reflect the current state of these tests. We will
-> add more sections as we add new functionality.
-
 This document describes the API-driven end-to-end tests for the Control Plane.
 These tests can be run against any set of Control Plane instances, including the
 ones we run through Docker Compose. We also have "test fixtures", which are
 Control Plane instances running on virtual machines.
 
-- [Automated end-to-end tests](#automated-end-to-end-tests)
-  - [End-to-end tests](#end-to-end-tests)
-    - [Running the tests against Docker compose](#running-the-tests-against-docker-compose)
-    - [Running the tests against a test fixture](#running-the-tests-against-a-test-fixture)
-    - [Additional test options](#additional-test-options)
-    - [Writing new tests](#writing-new-tests)
-  - [Test fixtures](#test-fixtures)
-    - [Common prerequisites](#common-prerequisites)
-      - [Project-level tools](#project-level-tools)
-      - [`pipx`](#pipx)
-      - [Ansible](#ansible)
-    - [Lima test fixtures](#lima-test-fixtures)
-      - [Prerequisites](#prerequisites)
-        - [Lima](#lima)
-        - [`socket_vmnet` (only needed for x86\_64 emulation)](#socket_vmnet-only-needed-for-x86_64-emulation)
-      - [Lima test fixture targets](#lima-test-fixture-targets)
-      - [Deploying new code changes](#deploying-new-code-changes)
-      - [Testing published releases](#testing-published-releases)
-      - [Simulating global deployments](#simulating-global-deployments)
-      - [Emulating x86\_64 with Lima](#emulating-x86_64-with-lima)
-      - [Stopping and starting hosts](#stopping-and-starting-hosts)
-      - [Cleanup](#cleanup)
-        - [Tearing down the Control Plane](#tearing-down-the-control-plane)
-        - [Tearing down the virtual machines](#tearing-down-the-virtual-machines)
-    - [EC2 test fixtures](#ec2-test-fixtures)
-      - [EC2 test fixture targets](#ec2-test-fixture-targets)
-      - [Deploying new code changes](#deploying-new-code-changes-1)
-      - [Testing published releases](#testing-published-releases-1)
-      - [Deploying arm64 instances on EC2](#deploying-arm64-instances-on-ec2)
-      - [Stopping and starting hosts](#stopping-and-starting-hosts-1)
-      - [Cleanup](#cleanup-1)
-        - [Tearing down the Control Plane](#tearing-down-the-control-plane-1)
-        - [Tearing down the virtual machines](#tearing-down-the-virtual-machines-1)
-    - [Custom test fixtures](#custom-test-fixtures)
+!!! note
 
+    The end-to-end tests and this document are a work in progress. The
+    contents of this document reflect the current state of these tests. We will
+    add more sections as we add new functionality.
+    
 ## End-to-end tests
 
 The end-to-end (E2E) tests live in the top-level `e2e` package. By default,

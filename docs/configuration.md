@@ -1,9 +1,12 @@
+---
+hide:
+  - toc
+---
 # Configuration reference
 
-The Control Plane server can be configured with a JSON-formatted configuration
+The pgEdge Control Plane server can be configured with a JSON-formatted configuration
 file, environment variables, or a combination of both. If you're using a
-configuration file, you can provide it to the Control Plane server command with
-the `-c` or `--config` parameter.
+configuration file, you can provide it to the pgEdge Control Plane server command with the `-c` or `--config` parameter.
 
 This reference uses a JSON-path like syntax to denote nested properties, e.g.
 `property.sub_property`.

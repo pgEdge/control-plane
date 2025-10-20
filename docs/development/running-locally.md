@@ -3,19 +3,6 @@
 The `docker/control-plane-dev` directory contains configuration for a three-host
 Control Plane cluster that runs in Docker via Docker Compose.
 
-- [Running a local Control Plane cluster in Docker](#running-a-local-control-plane-cluster-in-docker)
-  - [Prerequisites](#prerequisites)
-    - [Docker Desktop](#docker-desktop)
-      - [Configuration](#configuration)
-    - [Restish](#restish)
-  - [Running the Control Plane](#running-the-control-plane)
-  - [Interact with the Control Plane API](#interact-with-the-control-plane-api)
-  - [Resetting each Control Plane instance](#resetting-each-control-plane-instance)
-  - [Development workflow](#development-workflow)
-    - [Rebuilding the `control-plane` binary](#rebuilding-the-control-plane-binary)
-    - [Debugging](#debugging)
-  - [API documentation](#api-documentation)
-
 ## Prerequisites
 
 ### Docker Desktop
