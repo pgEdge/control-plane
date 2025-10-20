@@ -67,7 +67,6 @@ nav:
   - Installation: installation.md
   - Configuration: configuration.md
   - User Guide:
-    - Initialization: guides/initialization.md
     - Creating a Database: guides/create-db.md
     - Connecting to a Database: guides/connecting.md
     - Updating a Database: guides/update-db.md
