@@ -10,10 +10,11 @@ func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*PatroniConfig](registry, ResourceTypePatroniConfig)
 	resource.RegisterResourceType[*PostgresCerts](registry, ResourceTypePostgresCerts)
 	resource.RegisterResourceType[*PgBackRestConfig](registry, ResourceTypePgBackRestConfig)
-	resource.RegisterResourceType[*PgBackRestRestore](registry, ResourceTypePgBackRestRestore)
+	resource.RegisterResourceType[*PgBackRestRestore](registry, ResourceTypeScaleService)
 	resource.RegisterResourceType[*PgBackRestStanza](registry, ResourceTypePgBackRestStanza)
 	resource.RegisterResourceType[*PatroniCluster](registry, ResourceTypePatroniCluster)
 	resource.RegisterResourceType[*PatroniMember](registry, ResourceTypePatroniMember)
 	resource.RegisterResourceType[*CheckWillRestart](registry, ResourceTypeCheckWillRestart)
 	resource.RegisterResourceType[*Switchover](registry, ResourceTypeSwitchover)
+	resource.RegisterResourceType[*ScaleService](registry, ResourceTypeScaleService)
 }
