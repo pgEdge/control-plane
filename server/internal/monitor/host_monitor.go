@@ -36,7 +36,6 @@ func (m *HostMonitor) Stop() {
 }
 
 func (m *HostMonitor) checkStatus(ctx context.Context) error {
-	m.monitor.logger.Debug().Msg("Calling updateHostStatus from host moniter's get status")
 	return m.svc.UpdateHostStatus(ctx)
 
 }
