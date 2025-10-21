@@ -1,0 +1,40 @@
+{
+  "id": "storefront",
+  "spec": {
+    "database_name": "storefront",
+    "database_users": [
+      {
+        "username": "admin",
+        "password": "password",
+        "db_owner": true,
+        "attributes": ["SUPERUSER", "LOGIN"]
+      }
+    ],
+    "orchestrator_opts": {
+      "swarm": {
+        "extra_volumes": [
+          {
+            "host_path": "/tmp/backups",
+            "destination_path": "/backups"
+          }
+        ]
+      }
+    },
+    "nodes": [
+      { "name": "n1", "host_ids": ["host-1"] },
+      {
+        "name": "n2",
+        "host_ids": ["host-2"],
+        "restore_config": {
+          "repository": {
+            "type": "posix",
+            "base_path": "/backups"
+          },
+          "source_database_id": "storefront",
+          "source_database_name": "storefront",
+          "source_node_name": "n1"
+        }
+      }
+    ]
+  }
+}

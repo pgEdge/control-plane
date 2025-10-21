@@ -84,6 +84,9 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 		errs = append(errs, validateRestoreConfig(spec.RestoreConfig, []string{"restore_config"})...)
 	}
 
+	// Validate cross-node source_node references
+	errs = append(errs, validateSourceNodeRefs(spec)...)
+
 	return errors.Join(errs...)
 }
 
@@ -118,6 +121,37 @@ func validateNode(node *api.DatabaseNodeSpec, path []string) []error {
 	if node.RestoreConfig != nil {
 		restoreConfigPath := appendPath(path, "restore_config")
 		errs = append(errs, validateRestoreConfig(node.RestoreConfig, restoreConfigPath)...)
+	}
+
+	return errs
+}
+
+// validateSourceNodeRefs ensures any provided source_node is valid.
+func validateSourceNodeRefs(spec *api.DatabaseSpec) []error {
+	var errs []error
+
+	// Collect all node names for membership checks.
+	allNames := make(ds.Set[string], len(spec.Nodes))
+	for _, n := range spec.Nodes {
+		allNames.Add(n.Name)
+	}
+
+	for _, n := range spec.Nodes {
+		src := utils.FromPointer(n.SourceNode)
+		if src == "" {
+			continue
+		}
+
+		// Self-reference → invalid
+		if src == n.Name {
+			errs = append(errs, newValidationError(errors.New("invalid source node"), nil))
+			continue
+		}
+
+		// Unknown reference → "source node dont exist"
+		if !allNames.Has(src) {
+			errs = append(errs, newValidationError(errors.New("invalid source node"), nil))
+		}
 	}
 
 	return errs

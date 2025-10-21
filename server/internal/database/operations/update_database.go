@@ -46,21 +46,7 @@ func UpdateDatabase(
 	if err != nil {
 		return nil, err
 	}
-	for _, n := range adds {
-		if n.SourceNode == "" {
-			continue
-		}
-		if n.SourceNode == n.NodeName {
-			return nil, database.ErrInvalidSourceNode
-		}
-		ident := database.NodeResourceIdentifier(n.SourceNode)
-		if _, err := resource.FromState[*database.NodeResource](start, ident); err != nil {
-			if errors.Is(err, resource.ErrNotFound) {
-				return nil, database.ErrInvalidSourceNode
-			}
-			return nil, err
-		}
-	}
+
 	// Updates first to ensure an existing node is available as a source.
 	var states []*resource.State
 	if len(updates) > 0 {
