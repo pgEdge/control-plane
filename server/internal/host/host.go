@@ -108,6 +108,7 @@ func fromStorage(host *StoredHost, status *StoredHostStatus) (*Host, error) {
 	// heartbeats.
 	if time.Since(out.Status.UpdatedAt) > 2*UpdateStatusInterval {
 		out.Status.State = HostStateUnreachable
+		out.Status.Components = nil //Clear stale component statuses
 	}
 
 	return out, nil
