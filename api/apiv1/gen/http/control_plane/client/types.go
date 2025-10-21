@@ -325,82 +325,22 @@ type GetVersionResponseBody struct {
 // RestartInstanceResponseBody is the type of the "control-plane" service
 // "restart-instance" endpoint HTTP response body.
 type RestartInstanceResponseBody struct {
-	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
-	// The database ID of the task.
-	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
-	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
-	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-	// The unique ID of the task.
-	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
-	// The time when the task was created.
-	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
-	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
-	// The type of the task.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The status of the task.
-	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	// Task representing the restart operation
+	Task *TaskResponseBody `form:"task,omitempty" json:"task,omitempty" xml:"task,omitempty"`
 }
 
 // StopInstanceResponseBody is the type of the "control-plane" service
 // "stop-instance" endpoint HTTP response body.
 type StopInstanceResponseBody struct {
-	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
-	// The database ID of the task.
-	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
-	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
-	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-	// The unique ID of the task.
-	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
-	// The time when the task was created.
-	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
-	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
-	// The type of the task.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The status of the task.
-	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	// Task representing the stop operation
+	Task *TaskResponseBody `form:"task,omitempty" json:"task,omitempty" xml:"task,omitempty"`
 }
 
 // StartInstanceResponseBody is the type of the "control-plane" service
 // "start-instance" endpoint HTTP response body.
 type StartInstanceResponseBody struct {
-	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
-	// The database ID of the task.
-	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
-	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
-	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-	// The unique ID of the task.
-	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
-	// The time when the task was created.
-	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
-	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
-	// The type of the task.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The status of the task.
-	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	// Task representing the start operation
+	Task *TaskResponseBody `form:"task,omitempty" json:"task,omitempty" xml:"task,omitempty"`
 }
 
 // CancelDatabaseTaskResponseBody is the type of the "control-plane" service
@@ -3735,22 +3675,11 @@ func NewGetVersionServerError(body *GetVersionServerErrorResponseBody) *controlp
 	return v
 }
 
-// NewRestartInstanceTaskOK builds a "control-plane" service "restart-instance"
-// endpoint result from a HTTP "OK" response.
-func NewRestartInstanceTaskOK(body *RestartInstanceResponseBody) *controlplane.Task {
-	v := &controlplane.Task{
-		ParentID:    body.ParentID,
-		DatabaseID:  *body.DatabaseID,
-		NodeName:    body.NodeName,
-		InstanceID:  body.InstanceID,
-		HostID:      body.HostID,
-		TaskID:      *body.TaskID,
-		CreatedAt:   *body.CreatedAt,
-		CompletedAt: body.CompletedAt,
-		Type:        *body.Type,
-		Status:      *body.Status,
-		Error:       body.Error,
-	}
+// NewRestartInstanceResponseOK builds a "control-plane" service
+// "restart-instance" endpoint result from a HTTP "OK" response.
+func NewRestartInstanceResponseOK(body *RestartInstanceResponseBody) *controlplane.RestartInstanceResponse {
+	v := &controlplane.RestartInstanceResponse{}
+	v.Task = unmarshalTaskResponseBodyToControlplaneTask(body.Task)
 
 	return v
 }
@@ -3799,22 +3728,11 @@ func NewRestartInstanceServerError(body *RestartInstanceServerErrorResponseBody)
 	return v
 }
 
-// NewStopInstanceTaskOK builds a "control-plane" service "stop-instance"
+// NewStopInstanceResponseOK builds a "control-plane" service "stop-instance"
 // endpoint result from a HTTP "OK" response.
-func NewStopInstanceTaskOK(body *StopInstanceResponseBody) *controlplane.Task {
-	v := &controlplane.Task{
-		ParentID:    body.ParentID,
-		DatabaseID:  *body.DatabaseID,
-		NodeName:    body.NodeName,
-		InstanceID:  body.InstanceID,
-		HostID:      body.HostID,
-		TaskID:      *body.TaskID,
-		CreatedAt:   *body.CreatedAt,
-		CompletedAt: body.CompletedAt,
-		Type:        *body.Type,
-		Status:      *body.Status,
-		Error:       body.Error,
-	}
+func NewStopInstanceResponseOK(body *StopInstanceResponseBody) *controlplane.StopInstanceResponse {
+	v := &controlplane.StopInstanceResponse{}
+	v.Task = unmarshalTaskResponseBodyToControlplaneTask(body.Task)
 
 	return v
 }
@@ -3863,22 +3781,11 @@ func NewStopInstanceServerError(body *StopInstanceServerErrorResponseBody) *cont
 	return v
 }
 
-// NewStartInstanceTaskOK builds a "control-plane" service "start-instance"
+// NewStartInstanceResponseOK builds a "control-plane" service "start-instance"
 // endpoint result from a HTTP "OK" response.
-func NewStartInstanceTaskOK(body *StartInstanceResponseBody) *controlplane.Task {
-	v := &controlplane.Task{
-		ParentID:    body.ParentID,
-		DatabaseID:  *body.DatabaseID,
-		NodeName:    body.NodeName,
-		InstanceID:  body.InstanceID,
-		HostID:      body.HostID,
-		TaskID:      *body.TaskID,
-		CreatedAt:   *body.CreatedAt,
-		CompletedAt: body.CompletedAt,
-		Type:        *body.Type,
-		Status:      *body.Status,
-		Error:       body.Error,
-	}
+func NewStartInstanceResponseOK(body *StartInstanceResponseBody) *controlplane.StartInstanceResponse {
+	v := &controlplane.StartInstanceResponse{}
+	v.Task = unmarshalTaskResponseBodyToControlplaneTask(body.Task)
 
 	return v
 }
@@ -4392,36 +4299,12 @@ func ValidateGetVersionResponseBody(body *GetVersionResponseBody) (err error) {
 // ValidateRestartInstanceResponseBody runs the validations defined on
 // Restart-InstanceResponseBody
 func ValidateRestartInstanceResponseBody(body *RestartInstanceResponseBody) (err error) {
-	if body.DatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	if body.Task == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
 	}
-	if body.TaskID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
-	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
-	}
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ParentID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
-	}
-	if body.TaskID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.CompletedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
-	}
-	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
+	if body.Task != nil {
+		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -4430,36 +4313,12 @@ func ValidateRestartInstanceResponseBody(body *RestartInstanceResponseBody) (err
 // ValidateStopInstanceResponseBody runs the validations defined on
 // Stop-InstanceResponseBody
 func ValidateStopInstanceResponseBody(body *StopInstanceResponseBody) (err error) {
-	if body.DatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	if body.Task == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
 	}
-	if body.TaskID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
-	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
-	}
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ParentID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
-	}
-	if body.TaskID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.CompletedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
-	}
-	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
+	if body.Task != nil {
+		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -4468,36 +4327,12 @@ func ValidateStopInstanceResponseBody(body *StopInstanceResponseBody) (err error
 // ValidateStartInstanceResponseBody runs the validations defined on
 // Start-InstanceResponseBody
 func ValidateStartInstanceResponseBody(body *StartInstanceResponseBody) (err error) {
-	if body.DatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	if body.Task == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
 	}
-	if body.TaskID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
-	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
-	}
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ParentID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
-	}
-	if body.TaskID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.CompletedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
-	}
-	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
+	if body.Task != nil {
+		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return

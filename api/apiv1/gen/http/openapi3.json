@@ -1805,18 +1805,20 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Task"
+                  "$ref": "#/components/schemas/RestartInstanceResponse"
                 },
                 "examples": {
                   "default": {
                     "summary": "default",
                     "value": {
-                      "created_at": "2025-06-18T16:52:05Z",
-                      "database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
-                      "instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
-                      "status": "pending",
-                      "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
-                      "type": "restart_instance"
+                      "task": {
+                        "created_at": "2025-06-18T16:52:05Z",
+                        "database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
+                        "instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
+                        "status": "pending",
+                        "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
+                        "type": "restart_instance"
+                      }
                     }
                   }
                 }
@@ -1939,18 +1941,20 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Task"
+                  "$ref": "#/components/schemas/StartInstanceResponse"
                 },
                 "examples": {
                   "default": {
                     "summary": "default",
                     "value": {
-                      "created_at": "2025-06-18T16:52:05Z",
-                      "database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
-                      "instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
-                      "status": "pending",
-                      "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
-                      "type": "start_instance"
+                      "task": {
+                        "created_at": "2025-06-18T16:52:05Z",
+                        "database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
+                        "instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
+                        "status": "pending",
+                        "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
+                        "type": "start_instance"
+                      }
                     }
                   }
                 }
@@ -2073,18 +2077,20 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Task"
+                  "$ref": "#/components/schemas/StopInstanceResponse"
                 },
                 "examples": {
                   "default": {
                     "summary": "default",
                     "value": {
-                      "created_at": "2025-06-18T16:52:05Z",
-                      "database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
-                      "instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
-                      "status": "pending",
-                      "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
-                      "type": "stop_instance"
+                      "task": {
+                        "created_at": "2025-06-18T16:52:05Z",
+                        "database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
+                        "instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
+                        "status": "pending",
+                        "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
+                        "type": "stop_instance"
+                      }
                     }
                   }
                 }
@@ -9059,6 +9065,28 @@
           "spock_version"
         ]
       },
+      "RestartInstanceResponse": {
+        "type": "object",
+        "properties": {
+          "task": {
+            "$ref": "#/components/schemas/Task"
+          }
+        },
+        "description": "Response containing the restart task",
+        "example": {
+          "task": {
+            "completed_at": "2025-06-18T16:52:35Z",
+            "created_at": "2025-06-18T16:52:05Z",
+            "database_id": "storefront",
+            "status": "completed",
+            "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
+            "type": "create"
+          }
+        },
+        "required": [
+          "task"
+        ]
+      },
       "RestartOptions": {
         "type": "object",
         "properties": {
@@ -9575,6 +9603,50 @@
         },
         "required": [
           "type"
+        ]
+      },
+      "StartInstanceResponse": {
+        "type": "object",
+        "properties": {
+          "task": {
+            "$ref": "#/components/schemas/Task"
+          }
+        },
+        "description": "Response containing the start task",
+        "example": {
+          "task": {
+            "completed_at": "2025-06-18T16:52:35Z",
+            "created_at": "2025-06-18T16:52:05Z",
+            "database_id": "storefront",
+            "status": "completed",
+            "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
+            "type": "create"
+          }
+        },
+        "required": [
+          "task"
+        ]
+      },
+      "StopInstanceResponse": {
+        "type": "object",
+        "properties": {
+          "task": {
+            "$ref": "#/components/schemas/Task"
+          }
+        },
+        "description": "Response containing the stop task",
+        "example": {
+          "task": {
+            "completed_at": "2025-06-18T16:52:35Z",
+            "created_at": "2025-06-18T16:52:05Z",
+            "database_id": "storefront",
+            "status": "completed",
+            "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
+            "type": "create"
+          }
+        },
+        "required": [
+          "task"
         ]
       },
       "SwarmOpts": {

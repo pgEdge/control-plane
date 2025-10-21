@@ -2901,7 +2901,7 @@ func DecodeRestartInstanceResponse(decoder func(*http.Response) goahttp.Decoder,
 			if err != nil {
 				return nil, goahttp.ErrValidationError("control-plane", "restart-instance", err)
 			}
-			res := NewRestartInstanceTaskOK(&body)
+			res := NewRestartInstanceResponseOK(&body)
 			return res, nil
 		case http.StatusConflict:
 			var (
@@ -3045,7 +3045,7 @@ func DecodeStopInstanceResponse(decoder func(*http.Response) goahttp.Decoder, re
 			if err != nil {
 				return nil, goahttp.ErrValidationError("control-plane", "stop-instance", err)
 			}
-			res := NewStopInstanceTaskOK(&body)
+			res := NewStopInstanceResponseOK(&body)
 			return res, nil
 		case http.StatusConflict:
 			var (
@@ -3189,7 +3189,7 @@ func DecodeStartInstanceResponse(decoder func(*http.Response) goahttp.Decoder, r
 			if err != nil {
 				return nil, goahttp.ErrValidationError("control-plane", "start-instance", err)
 			}
-			res := NewStartInstanceTaskOK(&body)
+			res := NewStartInstanceResponseOK(&body)
 			return res, nil
 		case http.StatusConflict:
 			var (

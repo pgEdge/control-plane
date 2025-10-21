@@ -325,82 +325,22 @@ type GetVersionResponseBody struct {
 // RestartInstanceResponseBody is the type of the "control-plane" service
 // "restart-instance" endpoint HTTP response body.
 type RestartInstanceResponseBody struct {
-	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
-	// The database ID of the task.
-	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
-	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
-	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-	// The unique ID of the task.
-	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
-	// The time when the task was created.
-	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
-	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
-	// The type of the task.
-	Type string `form:"type" json:"type" xml:"type"`
-	// The status of the task.
-	Status string `form:"status" json:"status" xml:"status"`
-	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	// Task representing the restart operation
+	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
 }
 
 // StopInstanceResponseBody is the type of the "control-plane" service
 // "stop-instance" endpoint HTTP response body.
 type StopInstanceResponseBody struct {
-	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
-	// The database ID of the task.
-	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
-	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
-	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-	// The unique ID of the task.
-	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
-	// The time when the task was created.
-	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
-	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
-	// The type of the task.
-	Type string `form:"type" json:"type" xml:"type"`
-	// The status of the task.
-	Status string `form:"status" json:"status" xml:"status"`
-	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	// Task representing the stop operation
+	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
 }
 
 // StartInstanceResponseBody is the type of the "control-plane" service
 // "start-instance" endpoint HTTP response body.
 type StartInstanceResponseBody struct {
-	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
-	// The database ID of the task.
-	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
-	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
-	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-	// The unique ID of the task.
-	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
-	// The time when the task was created.
-	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
-	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
-	// The type of the task.
-	Type string `form:"type" json:"type" xml:"type"`
-	// The status of the task.
-	Status string `form:"status" json:"status" xml:"status"`
-	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	// Task representing the start operation
+	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
 }
 
 // CancelDatabaseTaskResponseBody is the type of the "control-plane" service
@@ -2759,57 +2699,30 @@ func NewGetVersionResponseBody(res *controlplane.VersionInfo) *GetVersionRespons
 
 // NewRestartInstanceResponseBody builds the HTTP response body from the result
 // of the "restart-instance" endpoint of the "control-plane" service.
-func NewRestartInstanceResponseBody(res *controlplane.Task) *RestartInstanceResponseBody {
-	body := &RestartInstanceResponseBody{
-		ParentID:    res.ParentID,
-		DatabaseID:  res.DatabaseID,
-		NodeName:    res.NodeName,
-		InstanceID:  res.InstanceID,
-		HostID:      res.HostID,
-		TaskID:      res.TaskID,
-		CreatedAt:   res.CreatedAt,
-		CompletedAt: res.CompletedAt,
-		Type:        res.Type,
-		Status:      res.Status,
-		Error:       res.Error,
+func NewRestartInstanceResponseBody(res *controlplane.RestartInstanceResponse) *RestartInstanceResponseBody {
+	body := &RestartInstanceResponseBody{}
+	if res.Task != nil {
+		body.Task = marshalControlplaneTaskToTaskResponseBody(res.Task)
 	}
 	return body
 }
 
 // NewStopInstanceResponseBody builds the HTTP response body from the result of
 // the "stop-instance" endpoint of the "control-plane" service.
-func NewStopInstanceResponseBody(res *controlplane.Task) *StopInstanceResponseBody {
-	body := &StopInstanceResponseBody{
-		ParentID:    res.ParentID,
-		DatabaseID:  res.DatabaseID,
-		NodeName:    res.NodeName,
-		InstanceID:  res.InstanceID,
-		HostID:      res.HostID,
-		TaskID:      res.TaskID,
-		CreatedAt:   res.CreatedAt,
-		CompletedAt: res.CompletedAt,
-		Type:        res.Type,
-		Status:      res.Status,
-		Error:       res.Error,
+func NewStopInstanceResponseBody(res *controlplane.StopInstanceResponse) *StopInstanceResponseBody {
+	body := &StopInstanceResponseBody{}
+	if res.Task != nil {
+		body.Task = marshalControlplaneTaskToTaskResponseBody(res.Task)
 	}
 	return body
 }
 
 // NewStartInstanceResponseBody builds the HTTP response body from the result
 // of the "start-instance" endpoint of the "control-plane" service.
-func NewStartInstanceResponseBody(res *controlplane.Task) *StartInstanceResponseBody {
-	body := &StartInstanceResponseBody{
-		ParentID:    res.ParentID,
-		DatabaseID:  res.DatabaseID,
-		NodeName:    res.NodeName,
-		InstanceID:  res.InstanceID,
-		HostID:      res.HostID,
-		TaskID:      res.TaskID,
-		CreatedAt:   res.CreatedAt,
-		CompletedAt: res.CompletedAt,
-		Type:        res.Type,
-		Status:      res.Status,
-		Error:       res.Error,
+func NewStartInstanceResponseBody(res *controlplane.StartInstanceResponse) *StartInstanceResponseBody {
+	body := &StartInstanceResponseBody{}
+	if res.Task != nil {
+		body.Task = marshalControlplaneTaskToTaskResponseBody(res.Task)
 	}
 	return body
 }

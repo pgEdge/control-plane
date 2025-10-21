@@ -796,7 +796,7 @@ func (s *PostInitHandlers) ValidateSpec(ctx context.Context, spec *database.Spec
 	return nil
 }
 
-func (s *PostInitHandlers) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (*api.Task, error) {
+func (s *PostInitHandlers) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (*api.RestartInstanceResponse, error) {
 	if req == nil {
 		return nil, makeInvalidInputErr(errors.New("request cannot be nil"))
 	}
@@ -834,10 +834,10 @@ func (s *PostInitHandlers) RestartInstance(ctx context.Context, req *api.Restart
 		Str("task_id", t.TaskID.String()).
 		Msg("restart instance workflow initiated")
 
-	return taskToAPI(t), nil
+	return &api.RestartInstanceResponse{Task: taskToAPI(t)}, nil
 }
 
-func (s *PostInitHandlers) StopInstance(ctx context.Context, req *api.StopInstancePayload) (*api.Task, error) {
+func (s *PostInitHandlers) StopInstance(ctx context.Context, req *api.StopInstancePayload) (*api.StopInstanceResponse, error) {
 	if req == nil {
 		return nil, makeInvalidInputErr(errors.New("request cannot be nil"))
 	}
@@ -887,10 +887,10 @@ func (s *PostInitHandlers) StopInstance(ctx context.Context, req *api.StopInstan
 		Str("task_id", t.TaskID.String()).
 		Msg("stop instance workflow initiated")
 
-	return taskToAPI(t), nil
+	return &api.StopInstanceResponse{Task: taskToAPI(t)}, nil
 }
 
-func (s *PostInitHandlers) StartInstance(ctx context.Context, req *api.StartInstancePayload) (*api.Task, error) {
+func (s *PostInitHandlers) StartInstance(ctx context.Context, req *api.StartInstancePayload) (*api.StartInstanceResponse, error) {
 	if req == nil {
 		return nil, makeInvalidInputErr(errors.New("request cannot be nil"))
 	}
@@ -939,7 +939,7 @@ func (s *PostInitHandlers) StartInstance(ctx context.Context, req *api.StartInst
 		Str("task_id", t.TaskID.String()).
 		Msg("start instance workflow initiated")
 
-	return taskToAPI(t), nil
+	return &api.StartInstanceResponse{Task: taskToAPI(t)}, nil
 }
 
 func (s *PostInitHandlers) CancelDatabaseTask(ctx context.Context, req *api.CancelDatabaseTaskPayload) (*api.Task, error) {

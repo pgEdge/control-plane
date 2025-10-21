@@ -61,11 +61,11 @@ type Service interface {
 	GetVersion(context.Context) (res *VersionInfo, err error)
 	// Restarts a specific instance within a database. Supports immediate or
 	// scheduled restarts.
-	RestartInstance(context.Context, *RestartInstancePayload) (res *Task, err error)
+	RestartInstance(context.Context, *RestartInstancePayload) (res *RestartInstanceResponse, err error)
 	// Stops a specific instance within a database. Supports immediate stops.
-	StopInstance(context.Context, *StopInstancePayload) (res *Task, err error)
+	StopInstance(context.Context, *StopInstancePayload) (res *StopInstanceResponse, err error)
 	// Starts a specific instance within a database. Supports immediate starts
-	StartInstance(context.Context, *StartInstancePayload) (res *Task, err error)
+	StartInstance(context.Context, *StartInstancePayload) (res *StartInstanceResponse, err error)
 	// Cancels a running or pending task for a database.
 	CancelDatabaseTask(context.Context, *CancelDatabaseTaskPayload) (res *Task, err error)
 }
@@ -693,6 +693,12 @@ type RestartInstancePayload struct {
 	RestartOptions *RestartOptions
 }
 
+// Returns a task representing the restart operation.
+type RestartInstanceResponse struct {
+	// Task representing the restart operation
+	Task *Task
+}
+
 // Options for restarting a Postgres instance.
 type RestartOptions struct {
 	// The time at which the restart is scheduled.
@@ -796,6 +802,12 @@ type StartInstancePayload struct {
 	Force bool
 }
 
+// Returns a task representing the start operation.
+type StartInstanceResponse struct {
+	// Task representing the start operation
+	Task *Task
+}
+
 // StopInstancePayload is the payload type of the control-plane service
 // stop-instance method.
 type StopInstancePayload struct {
@@ -805,6 +817,12 @@ type StopInstancePayload struct {
 	InstanceID Identifier
 	// Force stopping an instance even if database in an unmodifiable state
 	Force bool
+}
+
+// Returns a task representing the stop operation.
+type StopInstanceResponse struct {
+	// Task representing the stop operation
+	Task *Task
 }
 
 // Docker Swarm-specific options.

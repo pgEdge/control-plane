@@ -2305,7 +2305,7 @@ func EncodeGetVersionError(encoder func(context.Context, http.ResponseWriter) go
 // the control-plane restart-instance endpoint.
 func EncodeRestartInstanceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*controlplane.Task)
+		res, _ := v.(*controlplane.RestartInstanceResponse)
 		enc := encoder(ctx, w)
 		body := NewRestartInstanceResponseBody(res)
 		w.WriteHeader(http.StatusOK)
@@ -2439,7 +2439,7 @@ func EncodeRestartInstanceError(encoder func(context.Context, http.ResponseWrite
 // control-plane stop-instance endpoint.
 func EncodeStopInstanceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*controlplane.Task)
+		res, _ := v.(*controlplane.StopInstanceResponse)
 		enc := encoder(ctx, w)
 		body := NewStopInstanceResponseBody(res)
 		w.WriteHeader(http.StatusOK)
@@ -2564,7 +2564,7 @@ func EncodeStopInstanceError(encoder func(context.Context, http.ResponseWriter) 
 // control-plane start-instance endpoint.
 func EncodeStartInstanceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*controlplane.Task)
+		res, _ := v.(*controlplane.StartInstanceResponse)
 		enc := encoder(ctx, w)
 		body := NewStartInstanceResponseBody(res)
 		w.WriteHeader(http.StatusOK)

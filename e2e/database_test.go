@@ -184,7 +184,7 @@ func (d *DatabaseFixture) RestartInstance(ctx context.Context, options RestartIn
 		return fmt.Errorf("failed to restart instance: %w", err)
 	}
 
-	if err := d.waitForTask(ctx, resp); err != nil {
+	if err := d.waitForTask(ctx, resp.Task); err != nil {
 		return err
 	}
 
