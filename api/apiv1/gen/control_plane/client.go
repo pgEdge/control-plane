@@ -78,9 +78,9 @@ func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluste
 //   - "cluster_already_initialized" (type *goa.ServiceError)
 //   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
-func (c *Client) InitCluster(ctx context.Context) (res *ClusterJoinToken, err error) {
+func (c *Client) InitCluster(ctx context.Context, p *InitClusterRequest) (res *ClusterJoinToken, err error) {
 	var ires any
-	ires, err = c.InitClusterEndpoint(ctx, nil)
+	ires, err = c.InitClusterEndpoint(ctx, p)
 	if err != nil {
 		return
 	}

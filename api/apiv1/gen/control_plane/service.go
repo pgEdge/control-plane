@@ -17,7 +17,7 @@ import (
 // Service is the control-plane service interface.
 type Service interface {
 	// Initializes a new cluster.
-	InitCluster(context.Context) (res *ClusterJoinToken, err error)
+	InitCluster(context.Context, *InitClusterRequest) (res *ClusterJoinToken, err error)
 	// Joins this host to an existing cluster.
 	JoinCluster(context.Context, *ClusterJoinToken) (err error)
 	// Gets the join token for this cluster.
@@ -554,6 +554,13 @@ type HostStatus struct {
 // lower-cased letters and hyphens, start and end with a letter or number, and
 // not contain consecutive hyphens.
 type Identifier string
+
+// InitClusterRequest is the payload type of the control-plane service
+// init-cluster method.
+type InitClusterRequest struct {
+	// Optional id for the cluster, omit for default generated id
+	ClusterID *Identifier
+}
 
 // An instance of pgEdge Postgres running on a host.
 type Instance struct {

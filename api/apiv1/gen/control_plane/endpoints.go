@@ -107,7 +107,8 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 // "init-cluster" of service "control-plane".
 func NewInitClusterEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		return s.InitCluster(ctx)
+		p := req.(*InitClusterRequest)
+		return s.InitCluster(ctx, p)
 	}
 }
 

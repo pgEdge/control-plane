@@ -33,6 +33,37 @@ func EncodeInitClusterResponse(encoder func(context.Context, http.ResponseWriter
 	}
 }
 
+// DecodeInitClusterRequest returns a decoder for requests sent to the
+// control-plane init-cluster endpoint.
+func DecodeInitClusterRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (any, error) {
+	return func(r *http.Request) (any, error) {
+		var (
+			clusterID *string
+			err       error
+		)
+		clusterIDRaw := r.URL.Query().Get("cluster_id")
+		if clusterIDRaw != "" {
+			clusterID = &clusterIDRaw
+		}
+		if clusterID != nil {
+			if utf8.RuneCountInString(*clusterID) < 1 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("cluster_id", *clusterID, utf8.RuneCountInString(*clusterID), 1, true))
+			}
+		}
+		if clusterID != nil {
+			if utf8.RuneCountInString(*clusterID) > 63 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("cluster_id", *clusterID, utf8.RuneCountInString(*clusterID), 63, false))
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewInitClusterRequest(clusterID)
+
+		return payload, nil
+	}
+}
+
 // EncodeInitClusterError returns an encoder for errors returned by the
 // init-cluster control-plane endpoint.
 func EncodeInitClusterError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {

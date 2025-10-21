@@ -14,7 +14,6 @@ func TestManager(t *testing.T) {
 		data := t.TempDir()
 		user := config.Config{
 			StopGracePeriodSeconds: 60,
-			ClusterID:              "test-cluster",
 			HostID:                 "test-host",
 			DataDir:                data,
 		}
@@ -41,7 +40,6 @@ func TestManager(t *testing.T) {
 			// This value is in both the user-specified config and the generated
 			// config, but the user-specified config takes precedence.
 			StopGracePeriodSeconds: 60,
-			ClusterID:              "test-cluster",
 			HostID:                 "test-host",
 			DataDir:                data,
 			// This value comes from the generated config
@@ -55,8 +53,7 @@ func TestManager(t *testing.T) {
 
 	t.Run("invalid user-specified config", func(t *testing.T) {
 		user := config.Config{
-			ClusterID: "test-cluster",
-			HostID:    "test-host",
+			HostID: "test-host",
 		}
 
 		manager := config.NewManager(structSource(t, user))

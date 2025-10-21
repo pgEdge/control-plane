@@ -1,4 +1,4 @@
-package certificates
+package cluster
 
 import (
 	"github.com/samber/do"

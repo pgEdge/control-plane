@@ -4,7 +4,6 @@ services:
       context: .
     command: run
     environment:
-      - PGEDGE_CLUSTER_ID=control-plane-dev
       - PGEDGE_HOST_ID=host-1
       - PGEDGE_DATA_DIR=/tmp/host-1
     healthcheck:

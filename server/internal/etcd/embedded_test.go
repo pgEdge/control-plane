@@ -20,7 +20,6 @@ func TestEmbeddedEtcd(t *testing.T) {
 	t.Run("standalone", func(t *testing.T) {
 		ctx := context.Background()
 		cfg := config.Config{
-			ClusterID:   "test",
 			HostID:      uuid.NewString(),
 			DataDir:     t.TempDir(),
 			StorageType: config.StorageTypeEmbeddedEtcd,
@@ -82,7 +81,6 @@ func TestEmbeddedEtcd(t *testing.T) {
 	t.Run("cluster - leader and follower", func(t *testing.T) {
 		ctx := context.Background()
 		cfgA := config.Config{
-			ClusterID:   "test",
 			HostID:      uuid.NewString(),
 			DataDir:     t.TempDir(),
 			StorageType: config.StorageTypeEmbeddedEtcd,
@@ -110,7 +108,6 @@ func TestEmbeddedEtcd(t *testing.T) {
 		require.NoError(t, err)
 
 		cfgB := config.Config{
-			ClusterID:   "test",
 			HostID:      uuid.NewString(),
 			DataDir:     t.TempDir(),
 			StorageType: config.StorageTypeEmbeddedEtcd,
@@ -196,7 +193,6 @@ func TestEmbeddedEtcd(t *testing.T) {
 
 		// Initialize the cluster
 		cfgA := config.Config{
-			ClusterID:   "test",
 			HostID:      uuid.NewString(),
 			DataDir:     t.TempDir(),
 			StorageType: config.StorageTypeEmbeddedEtcd,
@@ -214,7 +210,6 @@ func TestEmbeddedEtcd(t *testing.T) {
 		})
 
 		cfgB := config.Config{
-			ClusterID:   "test",
 			HostID:      uuid.NewString(),
 			DataDir:     t.TempDir(),
 			StorageType: config.StorageTypeEmbeddedEtcd,
@@ -228,7 +223,6 @@ func TestEmbeddedEtcd(t *testing.T) {
 		serverB := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgB), logger)
 
 		cfgC := config.Config{
-			ClusterID:   "test",
 			HostID:      uuid.NewString(),
 			DataDir:     t.TempDir(),
 			StorageType: config.StorageTypeEmbeddedEtcd,
@@ -355,7 +349,6 @@ func TestEmbeddedEtcd(t *testing.T) {
 
 		// Initialize the cluster
 		cfgA := config.Config{
-			ClusterID:   "test",
 			HostID:      uuid.NewString(),
 			DataDir:     t.TempDir(),
 			StorageType: config.StorageTypeEmbeddedEtcd,
@@ -373,7 +366,6 @@ func TestEmbeddedEtcd(t *testing.T) {
 		})
 
 		cfgB := config.Config{
-			ClusterID:   "test",
 			HostID:      uuid.NewString(),
 			DataDir:     t.TempDir(),
 			StorageType: config.StorageTypeEmbeddedEtcd,
@@ -387,7 +379,6 @@ func TestEmbeddedEtcd(t *testing.T) {
 		serverB := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgB), logger)
 
 		cfgC := config.Config{
-			ClusterID:   "test",
 			HostID:      uuid.NewString(),
 			DataDir:     t.TempDir(),
 			StorageType: config.StorageTypeEmbeddedEtcd,

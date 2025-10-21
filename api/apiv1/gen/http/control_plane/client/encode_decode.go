@@ -36,6 +36,23 @@ func (c *Client) BuildInitClusterRequest(ctx context.Context, v any) (*http.Requ
 	return req, nil
 }
 
+// EncodeInitClusterRequest returns an encoder for requests sent to the
+// control-plane init-cluster server.
+func EncodeInitClusterRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.InitClusterRequest)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "init-cluster", "*controlplane.InitClusterRequest", v)
+		}
+		values := req.URL.Query()
+		if p.ClusterID != nil {
+			values.Add("cluster_id", string(*p.ClusterID))
+		}
+		req.URL.RawQuery = values.Encode()
+		return nil
+	}
+}
+
 // DecodeInitClusterResponse returns a decoder for responses returned by the
 // control-plane init-cluster endpoint. restoreBody controls whether the
 // response body should be restored after having been read.

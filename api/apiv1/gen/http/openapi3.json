@@ -146,7 +146,7 @@
                   ],
                   "id": "production",
                   "status": {
-                    "state": "error"
+                    "state": "available"
                   },
                   "tenant_id": "engineering"
                 }
@@ -192,6 +192,33 @@
         "summary": "Initialize cluster",
         "description": "Initializes a new cluster.",
         "operationId": "init-cluster",
+        "parameters": [
+          {
+            "name": "cluster_id",
+            "in": "query",
+            "description": "Optional id for the cluster, omit for default generated id",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string",
+              "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+              "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+              "minLength": 1,
+              "maxLength": 63
+            },
+            "examples": {
+              "Human-readable": {
+                "summary": "Human-readable",
+                "description": "Identifiers can be human-readable for ease of use.",
+                "value": "production"
+              },
+              "UUID": {
+                "summary": "UUID",
+                "description": "UUIDs are valid Identifiers.",
+                "value": "76f9b8c0-4958-11f0-a489-3bb29577c696"
+              }
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK response.",
@@ -2328,7 +2355,7 @@
               },
               "example": {
                 "candidate_instance_id": "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi",
-                "skip_validation": true
+                "skip_validation": false
               }
             }
           }
@@ -3958,7 +3985,25 @@
                   "orchestrator": "swarm",
                   "status": {
                     "components": {
-                      "Praesentium est pariatur praesentium repellendus.": {
+                      "Cum possimus minima.": {
+                        "details": {
+                          "alarms": [
+                            "3: NOSPACE"
+                          ]
+                        },
+                        "error": "failed to connect to etcd",
+                        "healthy": false
+                      },
+                      "Et et.": {
+                        "details": {
+                          "alarms": [
+                            "3: NOSPACE"
+                          ]
+                        },
+                        "error": "failed to connect to etcd",
+                        "healthy": false
+                      },
+                      "Pariatur praesentium.": {
                         "details": {
                           "alarms": [
                             "3: NOSPACE"
@@ -3972,6 +4017,10 @@
                     "updated_at": "2021-07-01T12:34:56Z"
                   },
                   "supported_pgedge_versions": [
+                    {
+                      "postgres_version": "17.6",
+                      "spock_version": "5"
+                    },
                     {
                       "postgres_version": "17.6",
                       "spock_version": "5"
@@ -8295,6 +8344,22 @@
           "components"
         ]
       },
+      "InitClusterRequest": {
+        "type": "object",
+        "properties": {
+          "cluster_id": {
+            "type": "string",
+            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+            "minLength": 1,
+            "maxLength": 63
+          }
+        },
+        "description": "Request to initialize a cluster",
+        "example": {
+          "cluster_id": "76f9b8c0-4958-11f0-a489-3bb29577c696"
+        }
+      },
       "Instance": {
         "type": "object",
         "properties": {
@@ -8694,8 +8759,8 @@
           "node_name": "n1",
           "postgres": {
             "patroni_paused": false,
-            "patroni_state": "initializing new cluster",
-            "pending_restart": false,
+            "patroni_state": "start failed",
+            "pending_restart": true,
             "role": "primary",
             "version": "17.5"
           },
@@ -8751,15 +8816,15 @@
               "ipv4_address": "10.24.34.2",
               "port": 5432
             },
-            "created_at": "1983-10-12T19:38:17Z",
+            "created_at": "1970-05-09T09:01:54Z",
             "error": "failed to get patroni status: connection refused",
             "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
             "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
             "node_name": "n1",
             "postgres": {
               "patroni_paused": false,
-              "patroni_state": "initializing new cluster",
-              "pending_restart": false,
+              "patroni_state": "start failed",
+              "pending_restart": true,
               "role": "primary",
               "version": "17.5"
             },
@@ -8789,9 +8854,9 @@
               ],
               "version": "4.10.0"
             },
-            "state": "failed",
-            "status_updated_at": "1985-06-18T06:34:56Z",
-            "updated_at": "1990-09-21T21:08:47Z"
+            "state": "modifying",
+            "status_updated_at": "1999-06-10T09:06:13Z",
+            "updated_at": "2004-02-18T08:39:55Z"
           },
           {
             "connection_info": {
@@ -8799,15 +8864,15 @@
               "ipv4_address": "10.24.34.2",
               "port": 5432
             },
-            "created_at": "1983-10-12T19:38:17Z",
+            "created_at": "1970-05-09T09:01:54Z",
             "error": "failed to get patroni status: connection refused",
             "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
             "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
             "node_name": "n1",
             "postgres": {
               "patroni_paused": false,
-              "patroni_state": "initializing new cluster",
-              "pending_restart": false,
+              "patroni_state": "start failed",
+              "pending_restart": true,
               "role": "primary",
               "version": "17.5"
             },
@@ -8837,9 +8902,9 @@
               ],
               "version": "4.10.0"
             },
-            "state": "failed",
-            "status_updated_at": "1985-06-18T06:34:56Z",
-            "updated_at": "1990-09-21T21:08:47Z"
+            "state": "modifying",
+            "status_updated_at": "1999-06-10T09:06:13Z",
+            "updated_at": "2004-02-18T08:39:55Z"
           },
           {
             "connection_info": {
@@ -8847,15 +8912,15 @@
               "ipv4_address": "10.24.34.2",
               "port": 5432
             },
-            "created_at": "1983-10-12T19:38:17Z",
+            "created_at": "1970-05-09T09:01:54Z",
             "error": "failed to get patroni status: connection refused",
             "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
             "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
             "node_name": "n1",
             "postgres": {
               "patroni_paused": false,
-              "patroni_state": "initializing new cluster",
-              "pending_restart": false,
+              "patroni_state": "start failed",
+              "pending_restart": true,
               "role": "primary",
               "version": "17.5"
             },
@@ -8885,9 +8950,9 @@
               ],
               "version": "4.10.0"
             },
-            "state": "failed",
-            "status_updated_at": "1985-06-18T06:34:56Z",
-            "updated_at": "1990-09-21T21:08:47Z"
+            "state": "modifying",
+            "status_updated_at": "1999-06-10T09:06:13Z",
+            "updated_at": "2004-02-18T08:39:55Z"
           }
         ]
       },

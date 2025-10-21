@@ -66,11 +66,15 @@ var _ = g.Service("control-plane", func() {
 	g.Method("init-cluster", func() {
 		g.Description("Initializes a new cluster.")
 		g.Meta("openapi:summary", "Initialize cluster")
+
+		g.Payload(InitClusterRequest)
 		g.Result(ClusterJoinToken)
 		g.Error("cluster_already_initialized")
 
 		g.HTTP(func() {
 			g.GET("/v1/cluster/init")
+
+			g.Param("cluster_id")
 
 			g.Meta("openapi:tag:Cluster")
 		})

@@ -3914,6 +3914,18 @@ func NewCancelDatabaseTaskServerErrorResponseBody(res *controlplane.APIError) *C
 	return body
 }
 
+// NewInitClusterRequest builds a control-plane service init-cluster endpoint
+// payload.
+func NewInitClusterRequest(clusterID *string) *controlplane.InitClusterRequest {
+	v := &controlplane.InitClusterRequest{}
+	if clusterID != nil {
+		tmpclusterID := controlplane.Identifier(*clusterID)
+		v.ClusterID = &tmpclusterID
+	}
+
+	return v
+}
+
 // NewJoinClusterClusterJoinToken builds a control-plane service join-cluster
 // endpoint payload.
 func NewJoinClusterClusterJoinToken(body *JoinClusterRequestBody) *controlplane.ClusterJoinToken {

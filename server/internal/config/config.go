@@ -196,7 +196,6 @@ const (
 
 type Config struct {
 	TenantID               string       `koanf:"tenant_id" json:"tenant_id,omitempty"`
-	ClusterID              string       `koanf:"cluster_id" json:"cluster_id,omitempty"`
 	HostID                 string       `koanf:"host_id" json:"host_id,omitempty"`
 	Orchestrator           Orchestrator `koanf:"orchestrator" json:"orchestrator,omitempty"`
 	DataDir                string       `koanf:"data_dir" json:"data_dir,omitempty"`
@@ -221,9 +220,6 @@ type Config struct {
 
 func (c Config) Validate() error {
 	var errs []error
-	if err := validateRequiredID("cluster_id", c.ClusterID); err != nil {
-		errs = append(errs, err)
-	}
 	if err := validateRequiredID("host_id", c.HostID); err != nil {
 		errs = append(errs, err)
 	}

@@ -46,7 +46,7 @@ func (c *MultiServerClient) Server(hostID string) (*SingleServerClient, error) {
 	return server, nil
 }
 
-func (c *MultiServerClient) InitCluster(ctx context.Context) (res *api.ClusterJoinToken, err error) {
+func (c *MultiServerClient) InitCluster(ctx context.Context, req *api.InitClusterRequest) (res *api.ClusterJoinToken, err error) {
 	var uninitialized []*SingleServerClient
 	var joinToken *api.ClusterJoinToken
 
@@ -68,7 +68,7 @@ func (c *MultiServerClient) InitCluster(ctx context.Context) (res *api.ClusterJo
 
 	if joinToken == nil {
 		server := uninitialized[0]
-		tok, err := server.InitCluster(ctx)
+		tok, err := server.InitCluster(ctx, req)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize cluster: %w", err)
 		}
