@@ -148,13 +148,13 @@ func (c *Client) GetCluster(ctx context.Context) (res *Cluster, err error) {
 //   - "cluster_not_initialized" (type *goa.ServiceError)
 //   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
-func (c *Client) ListHosts(ctx context.Context) (res []*Host, err error) {
+func (c *Client) ListHosts(ctx context.Context) (res *ListHostsResponse, err error) {
 	var ires any
 	ires, err = c.ListHostsEndpoint(ctx, nil)
 	if err != nil {
 		return
 	}
-	return ires.([]*Host), nil
+	return ires.(*ListHostsResponse), nil
 }
 
 // GetHost calls the "get-host" endpoint of the "control-plane" service.

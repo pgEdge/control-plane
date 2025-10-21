@@ -87,7 +87,7 @@ func (c *SingleServerClient) GetCluster(ctx context.Context) (*api.Cluster, erro
 	return resp, translateErr(err)
 }
 
-func (c *SingleServerClient) ListHosts(ctx context.Context) ([]*api.Host, error) {
+func (c *SingleServerClient) ListHosts(ctx context.Context) (*api.ListHostsResponse, error) {
 	resp, err := c.api.ListHosts(ctx)
 	return resp, translateErr(err)
 }

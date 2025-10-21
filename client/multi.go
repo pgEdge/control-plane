@@ -113,7 +113,7 @@ func (c *MultiServerClient) GetCluster(ctx context.Context) (res *api.Cluster, e
 	return server.GetCluster(ctx)
 }
 
-func (c *MultiServerClient) ListHosts(ctx context.Context) (res []*api.Host, err error) {
+func (c *MultiServerClient) ListHosts(ctx context.Context) (res *api.ListHostsResponse, err error) {
 	server, err := c.liveServer(ctx)
 	if err != nil {
 		return nil, err

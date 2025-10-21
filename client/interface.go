@@ -13,7 +13,7 @@ type Client interface {
 	JoinCluster(ctx context.Context, req *api.ClusterJoinToken) error
 	GetJoinToken(ctx context.Context) (*api.ClusterJoinToken, error)
 	GetCluster(ctx context.Context) (*api.Cluster, error)
-	ListHosts(ctx context.Context) ([]*api.Host, error)
+	ListHosts(ctx context.Context) (*api.ListHostsResponse, error)
 	GetHost(ctx context.Context, req *api.GetHostPayload) (*api.Host, error)
 	RemoveHost(ctx context.Context, req *api.RemoveHostPayload) error
 	ListDatabases(ctx context.Context) (*api.ListDatabasesResponse, error)

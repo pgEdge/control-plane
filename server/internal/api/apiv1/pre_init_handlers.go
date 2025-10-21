@@ -194,7 +194,7 @@ func (s *PreInitHandlers) GetCluster(ctx context.Context) (*api.Cluster, error) 
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitHandlers) ListHosts(ctx context.Context) ([]*api.Host, error) {
+func (s *PreInitHandlers) ListHosts(ctx context.Context) (*api.ListHostsResponse, error) {
 	return nil, ErrUninitialized
 }
 

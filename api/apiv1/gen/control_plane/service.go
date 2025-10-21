@@ -27,7 +27,7 @@ type Service interface {
 	// Returns information about the cluster.
 	GetCluster(context.Context) (res *Cluster, err error)
 	// Lists all hosts within the cluster.
-	ListHosts(context.Context) (res []*Host, err error)
+	ListHosts(context.Context) (res *ListHostsResponse, err error)
 	// Returns information about a particular host in the cluster.
 	GetHost(context.Context, *GetHostPayload) (res *Host, err error)
 	// Removes a host from the cluster.
@@ -210,7 +210,7 @@ type Cluster struct {
 	// Current status of the cluster.
 	Status *ClusterStatus
 	// All of the hosts in the cluster.
-	Hosts []*Host
+	Hosts *ListHostsResponse
 }
 
 type ClusterCredentials struct {
@@ -654,6 +654,13 @@ type ListDatabaseTasksResponse struct {
 // list-databases method.
 type ListDatabasesResponse struct {
 	Databases DatabaseCollection
+}
+
+// ListHostsResponse is the result type of the control-plane service list-hosts
+// method.
+type ListHostsResponse struct {
+	// List of hosts in the cluster
+	Hosts []*Host
 }
 
 // Options specific to the selected orchestrator.

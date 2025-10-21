@@ -4,6 +4,12 @@ import (
 	g "goa.design/goa/v3/dsl"
 )
 
+var ListHostsResponse = g.Type("ListHostsResponse", func() {
+	g.Description("Response containing the list of hosts")
+	g.Attribute("hosts", g.ArrayOf(Host), "List of hosts in the cluster")
+	g.Required("hosts")
+})
+
 var ComponentStatus = g.Type("ComponentStatus", func() {
 	g.Attribute("healthy", g.Boolean, func() {
 		g.Description("Indicates if the component is healthy.")
@@ -125,118 +131,120 @@ var Host = g.Type("Host", func() {
 	)
 })
 
-var HostsExample = []map[string]any{
-	{
-		"cohort": map[string]any{
-			"cohort_id":         "zdjfu3tfxg1cihv3146ro3hy2",
-			"control_available": true,
-			"member_id":         "lah4bsznw6kc0hp7biylmmmll",
-			"type":              "swarm",
-		},
-		"cpus": 16,
-		"default_pgedge_version": map[string]any{
-			"postgres_version": "17.6",
-			"spock_version":    "5",
-		},
-		"hostname":     "i-0123456789abcdef.ec2.internal",
-		"id":           "us-east-1",
-		"ipv4_address": "10.24.34.2",
-		"memory":       "16GB",
-		"orchestrator": "swarm",
-		"data_dir":     "/data",
-		"status": map[string]any{
-			"components": map[string]any{},
-			"state":      "healthy",
-			"updated_at": "2025-06-17T00:00:00Z",
-		},
-		"supported_pgedge_versions": []map[string]any{
-			{
+var ListHostsResponseExample = map[string]any{
+	"hosts": []map[string]any{
+		{
+			"cohort": map[string]any{
+				"cohort_id":         "zdjfu3tfxg1cihv3146ro3hy2",
+				"control_available": true,
+				"member_id":         "lah4bsznw6kc0hp7biylmmmll",
+				"type":              "swarm",
+			},
+			"cpus": 16,
+			"default_pgedge_version": map[string]any{
 				"postgres_version": "17.6",
 				"spock_version":    "5",
 			},
-			{
-				"postgres_version": "17.5",
-				"spock_version":    "5",
+			"hostname":     "i-0123456789abcdef.ec2.internal",
+			"id":           "us-east-1",
+			"ipv4_address": "10.24.34.2",
+			"memory":       "16GB",
+			"orchestrator": "swarm",
+			"data_dir":     "/data",
+			"status": map[string]any{
+				"components": map[string]any{},
+				"state":      "healthy",
+				"updated_at": "2025-06-17T00:00:00Z",
 			},
-			{
-				"postgres_version": "16.10",
-				"spock_version":    "5",
+			"supported_pgedge_versions": []map[string]any{
+				{
+					"postgres_version": "17.6",
+					"spock_version":    "5",
+				},
+				{
+					"postgres_version": "17.5",
+					"spock_version":    "5",
+				},
+				{
+					"postgres_version": "16.10",
+					"spock_version":    "5",
+				},
 			},
 		},
-	},
-	{
-		"cohort": map[string]any{
-			"cohort_id":         "zdjfu3tfxg1cihv3146ro3hy2",
-			"control_available": true,
-			"member_id":         "cb88u9jael2psnepep5iuzb4r",
-			"type":              "swarm",
-		},
-		"cpus": 16,
-		"default_pgedge_version": map[string]any{
-			"postgres_version": "17.6",
-			"spock_version":    "5",
-		},
-		"hostname":     "i-058731542fee493f.ec2.internal",
-		"id":           "ap-south-1",
-		"ipv4_address": "10.24.35.2",
-		"memory":       "16GB",
-		"orchestrator": "swarm",
-		"data_dir":     "/data",
-		"status": map[string]any{
-			"components": map[string]any{},
-			"state":      "healthy",
-			"updated_at": "2025-06-17T00:00:00Z",
-		},
-		"supported_pgedge_versions": []map[string]any{
-			{
+		{
+			"cohort": map[string]any{
+				"cohort_id":         "zdjfu3tfxg1cihv3146ro3hy2",
+				"control_available": true,
+				"member_id":         "cb88u9jael2psnepep5iuzb4r",
+				"type":              "swarm",
+			},
+			"cpus": 16,
+			"default_pgedge_version": map[string]any{
 				"postgres_version": "17.6",
 				"spock_version":    "5",
 			},
-			{
-				"postgres_version": "17.5",
-				"spock_version":    "5",
+			"hostname":     "i-058731542fee493f.ec2.internal",
+			"id":           "ap-south-1",
+			"ipv4_address": "10.24.35.2",
+			"memory":       "16GB",
+			"orchestrator": "swarm",
+			"data_dir":     "/data",
+			"status": map[string]any{
+				"components": map[string]any{},
+				"state":      "healthy",
+				"updated_at": "2025-06-17T00:00:00Z",
 			},
-			{
-				"postgres_version": "16.10",
-				"spock_version":    "5",
+			"supported_pgedge_versions": []map[string]any{
+				{
+					"postgres_version": "17.6",
+					"spock_version":    "5",
+				},
+				{
+					"postgres_version": "17.5",
+					"spock_version":    "5",
+				},
+				{
+					"postgres_version": "16.10",
+					"spock_version":    "5",
+				},
 			},
 		},
-	},
-	{
-		"cohort": map[string]any{
-			"cohort_id":         "zdjfu3tfxg1cihv3146ro3hy2",
-			"control_available": true,
-			"member_id":         "u7u9i3nhqunxc4wj577l6ecb0",
-			"type":              "swarm",
-		},
-		"cpus": 16,
-		"default_pgedge_version": map[string]any{
-			"postgres_version": "17.6",
-			"spock_version":    "5",
-		},
-		"hostname":     "i-494027b7b53f6a23.ec2.internal",
-		"id":           "eu-central-1",
-		"ipv4_address": "10.24.36.2",
-		"memory":       "16GB",
-		"orchestrator": "swarm",
-		"data_dir":     "/data",
-		"status": map[string]any{
-			"components": map[string]any{},
-			"state":      "healthy",
-			"updated_at": "2025-06-17T00:00:00Z",
-		},
-		"supported_pgedge_versions": []map[string]any{
-			{
+		{
+			"cohort": map[string]any{
+				"cohort_id":         "zdjfu3tfxg1cihv3146ro3hy2",
+				"control_available": true,
+				"member_id":         "u7u9i3nhqunxc4wj577l6ecb0",
+				"type":              "swarm",
+			},
+			"cpus": 16,
+			"default_pgedge_version": map[string]any{
 				"postgres_version": "17.6",
 				"spock_version":    "5",
 			},
-			{
-				"postgres_version": "17.5",
-				"spock_version":    "5",
+			"hostname":     "i-494027b7b53f6a23.ec2.internal",
+			"id":           "eu-central-1",
+			"ipv4_address": "10.24.36.2",
+			"memory":       "16GB",
+			"orchestrator": "swarm",
+			"data_dir":     "/data",
+			"status": map[string]any{
+				"components": map[string]any{},
+				"state":      "healthy",
+				"updated_at": "2025-06-17T00:00:00Z",
 			},
-			{
-				"postgres_version": "16.10",
-				"spock_version":    "5",
+			"supported_pgedge_versions": []map[string]any{
+				{
+					"postgres_version": "17.6",
+					"spock_version":    "5",
+				},
+				{
+					"postgres_version": "17.5",
+					"spock_version":    "5",
+				},
+				{
+					"postgres_version": "16.10",
+					"spock_version":    "5",
+				},
 			},
 		},
 	},

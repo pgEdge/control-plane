@@ -145,14 +145,14 @@ func (s *PostInitHandlers) GetCluster(ctx context.Context) (*api.Cluster, error)
 	cluster := &api.Cluster{
 		ID:       api.Identifier(storedCluster.ID),
 		TenantID: api.Identifier(s.cfg.TenantID),
-		Hosts:    apiHosts,
+		Hosts:    &api.ListHostsResponse{Hosts: apiHosts},
 		Status:   &api.ClusterStatus{State: "available"},
 	}
 
 	return cluster, nil
 }
 
-func (s *PostInitHandlers) ListHosts(ctx context.Context) ([]*api.Host, error) {
+func (s *PostInitHandlers) ListHosts(ctx context.Context) (*api.ListHostsResponse, error) {
 	hosts, err := s.hostSvc.GetAllHosts(ctx)
 	if err != nil {
 		return nil, apiErr(err)
@@ -162,7 +162,7 @@ func (s *PostInitHandlers) ListHosts(ctx context.Context) ([]*api.Host, error) {
 	for idx, h := range hosts {
 		apiHosts[idx] = hostToAPI(h)
 	}
-	return apiHosts, nil
+	return &api.ListHostsResponse{Hosts: apiHosts}, nil
 }
 
 func (s *PostInitHandlers) GetHost(ctx context.Context, req *api.GetHostPayload) (*api.Host, error) {

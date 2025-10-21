@@ -136,8 +136,8 @@ var _ = g.Service("control-plane", func() {
 	g.Method("list-hosts", func() {
 		g.Description("Lists all hosts within the cluster.")
 		g.Meta("openapi:summary", "List hosts")
-		g.Result(g.ArrayOf(Host), func() {
-			g.Example(HostsExample)
+		g.Result(ListHostsResponse, func() {
+			g.Example(ListHostsResponseExample)
 		})
 		g.Error("cluster_not_initialized")
 
@@ -147,7 +147,6 @@ var _ = g.Service("control-plane", func() {
 			g.Meta("openapi:tag:Host")
 		})
 	})
-
 	g.Method("get-host", func() {
 		g.Description("Returns information about a particular host in the cluster.")
 		g.Meta("openapi:summary", "Get host")
