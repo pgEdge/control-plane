@@ -58,7 +58,6 @@ services:
     image: ghcr.io/pgedge/control-plane
     command: run
     environment:
-      - PGEDGE_CLUSTER_ID=production
       - PGEDGE_HOST_ID=us-east-1
       - PGEDGE_DATA_DIR=/data/pgedge/control-plane
     volumes:
@@ -74,7 +73,6 @@ services:
     image: ghcr.io/pgedge/control-plane
     command: run
     environment:
-      - PGEDGE_CLUSTER_ID=production
       - PGEDGE_HOST_ID=eu-central-1
       - PGEDGE_DATA_DIR=/data/pgedge/control-plane
     volumes:
@@ -90,7 +88,6 @@ services:
     image: ghcr.io/pgedge/control-plane
     command: run
     environment:
-      - PGEDGE_CLUSTER_ID=production
       - PGEDGE_HOST_ID=ap-south-1
       - PGEDGE_DATA_DIR=/data/pgedge/control-plane
     volumes:
