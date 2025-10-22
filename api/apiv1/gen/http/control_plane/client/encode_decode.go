@@ -3409,19 +3409,6 @@ func unmarshalClusterStatusResponseBodyToControlplaneClusterStatus(v *ClusterSta
 	return res
 }
 
-// unmarshalListHostsResponseResponseBodyToControlplaneListHostsResponse builds
-// a value of type *controlplane.ListHostsResponse from a value of type
-// *ListHostsResponseResponseBody.
-func unmarshalListHostsResponseResponseBodyToControlplaneListHostsResponse(v *ListHostsResponseResponseBody) *controlplane.ListHostsResponse {
-	res := &controlplane.ListHostsResponse{}
-	res.Hosts = make([]*controlplane.Host, len(v.Hosts))
-	for i, val := range v.Hosts {
-		res.Hosts[i] = unmarshalHostResponseBodyToControlplaneHost(val)
-	}
-
-	return res
-}
-
 // unmarshalHostResponseBodyToControlplaneHost builds a value of type
 // *controlplane.Host from a value of type *HostResponseBody.
 func unmarshalHostResponseBodyToControlplaneHost(v *HostResponseBody) *controlplane.Host {

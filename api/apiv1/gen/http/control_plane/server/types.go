@@ -142,7 +142,7 @@ type GetClusterResponseBody struct {
 	// Current status of the cluster.
 	Status *ClusterStatusResponseBody `form:"status" json:"status" xml:"status"`
 	// All of the hosts in the cluster.
-	Hosts *ListHostsResponseResponseBody `form:"hosts" json:"hosts" xml:"hosts"`
+	Hosts []*HostResponseBody `form:"hosts" json:"hosts" xml:"hosts"`
 }
 
 // ListHostsResponseBody is the type of the "control-plane" service
@@ -1364,13 +1364,6 @@ type ClusterStatusResponseBody struct {
 	State string `form:"state" json:"state" xml:"state"`
 }
 
-// ListHostsResponseResponseBody is used to define fields on response body
-// types.
-type ListHostsResponseResponseBody struct {
-	// List of hosts in the cluster
-	Hosts []*HostResponseBody `form:"hosts" json:"hosts" xml:"hosts"`
-}
-
 // HostResponseBody is used to define fields on response body types.
 type HostResponseBody struct {
 	// Unique identifier for the host.
@@ -2455,7 +2448,12 @@ func NewGetClusterResponseBody(res *controlplane.Cluster) *GetClusterResponseBod
 		body.Status = marshalControlplaneClusterStatusToClusterStatusResponseBody(res.Status)
 	}
 	if res.Hosts != nil {
-		body.Hosts = marshalControlplaneListHostsResponseToListHostsResponseResponseBody(res.Hosts)
+		body.Hosts = make([]*HostResponseBody, len(res.Hosts))
+		for i, val := range res.Hosts {
+			body.Hosts[i] = marshalControlplaneHostToHostResponseBody(val)
+		}
+	} else {
+		body.Hosts = []*HostResponseBody{}
 	}
 	return body
 }

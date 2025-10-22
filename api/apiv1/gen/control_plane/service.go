@@ -210,7 +210,7 @@ type Cluster struct {
 	// Current status of the cluster.
 	Status *ClusterStatus
 	// All of the hosts in the cluster.
-	Hosts *ListHostsResponse
+	Hosts []*Host
 }
 
 type ClusterCredentials struct {

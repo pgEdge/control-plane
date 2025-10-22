@@ -2826,23 +2826,6 @@ func marshalControlplaneClusterStatusToClusterStatusResponseBody(v *controlplane
 	return res
 }
 
-// marshalControlplaneListHostsResponseToListHostsResponseResponseBody builds a
-// value of type *ListHostsResponseResponseBody from a value of type
-// *controlplane.ListHostsResponse.
-func marshalControlplaneListHostsResponseToListHostsResponseResponseBody(v *controlplane.ListHostsResponse) *ListHostsResponseResponseBody {
-	res := &ListHostsResponseResponseBody{}
-	if v.Hosts != nil {
-		res.Hosts = make([]*HostResponseBody, len(v.Hosts))
-		for i, val := range v.Hosts {
-			res.Hosts[i] = marshalControlplaneHostToHostResponseBody(val)
-		}
-	} else {
-		res.Hosts = []*HostResponseBody{}
-	}
-
-	return res
-}
-
 // marshalControlplaneHostToHostResponseBody builds a value of type
 // *HostResponseBody from a value of type *controlplane.Host.
 func marshalControlplaneHostToHostResponseBody(v *controlplane.Host) *HostResponseBody {

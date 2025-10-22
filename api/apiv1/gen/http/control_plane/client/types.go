@@ -142,7 +142,7 @@ type GetClusterResponseBody struct {
 	// Current status of the cluster.
 	Status *ClusterStatusResponseBody `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// All of the hosts in the cluster.
-	Hosts *ListHostsResponseResponseBody `form:"hosts,omitempty" json:"hosts,omitempty" xml:"hosts,omitempty"`
+	Hosts []*HostResponseBody `form:"hosts,omitempty" json:"hosts,omitempty" xml:"hosts,omitempty"`
 }
 
 // ListHostsResponseBody is the type of the "control-plane" service
@@ -1362,13 +1362,6 @@ type ClusterCredentialsResponseBody struct {
 type ClusterStatusResponseBody struct {
 	// The current state of the cluster.
 	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
-}
-
-// ListHostsResponseResponseBody is used to define fields on response body
-// types.
-type ListHostsResponseResponseBody struct {
-	// List of hosts in the cluster
-	Hosts []*HostResponseBody `form:"hosts,omitempty" json:"hosts,omitempty" xml:"hosts,omitempty"`
 }
 
 // HostResponseBody is used to define fields on response body types.
@@ -2661,7 +2654,10 @@ func NewGetClusterClusterOK(body *GetClusterResponseBody) *controlplane.Cluster 
 		TenantID: controlplane.Identifier(*body.TenantID),
 	}
 	v.Status = unmarshalClusterStatusResponseBodyToControlplaneClusterStatus(body.Status)
-	v.Hosts = unmarshalListHostsResponseResponseBodyToControlplaneListHostsResponse(body.Hosts)
+	v.Hosts = make([]*controlplane.Host, len(body.Hosts))
+	for i, val := range body.Hosts {
+		v.Hosts[i] = unmarshalHostResponseBodyToControlplaneHost(val)
+	}
 
 	return v
 }
@@ -3979,9 +3975,11 @@ func ValidateGetClusterResponseBody(body *GetClusterResponseBody) (err error) {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if body.Hosts != nil {
-		if err2 := ValidateListHostsResponseResponseBody(body.Hosts); err2 != nil {
-			err = goa.MergeErrors(err, err2)
+	for _, e := range body.Hosts {
+		if e != nil {
+			if err2 := ValidateHostResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
 		}
 	}
 	return
@@ -5613,22 +5611,6 @@ func ValidateClusterStatusResponseBody(body *ClusterStatusResponseBody) (err err
 	if body.State != nil {
 		if !(*body.State == "available" || *body.State == "error") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"available", "error"}))
-		}
-	}
-	return
-}
-
-// ValidateListHostsResponseResponseBody runs the validations defined on
-// ListHostsResponseResponseBody
-func ValidateListHostsResponseResponseBody(body *ListHostsResponseResponseBody) (err error) {
-	if body.Hosts == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("hosts", "body"))
-	}
-	for _, e := range body.Hosts {
-		if e != nil {
-			if err2 := ValidateHostResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
 		}
 	}
 	return
