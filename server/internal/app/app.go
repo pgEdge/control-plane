@@ -117,7 +117,6 @@ func (a *App) runInitialized(ctx context.Context) error {
 	if err := certSvc.Start(ctx); err != nil {
 		return handleError(fmt.Errorf("failed to start certificate service: %w", err))
 	}
-
 	hostSvc, err := do.Invoke[*host.Service](a.i)
 	if err != nil {
 		return handleError(fmt.Errorf("failed to initialize host service: %w", err))
@@ -125,13 +124,11 @@ func (a *App) runInitialized(ctx context.Context) error {
 	if err := hostSvc.UpdateHost(ctx); err != nil {
 		return handleError(fmt.Errorf("failed to update host: %w", err))
 	}
-
 	hostTicker, err := do.Invoke[*host.UpdateTicker](a.i)
 	if err != nil {
 		return handleError(fmt.Errorf("failed to initialize host ticker: %w", err))
 	}
 	hostTicker.Start(ctx)
-
 	monitorSvc, err := do.Invoke[*monitor.Service](a.i)
 	if err != nil {
 		return handleError(fmt.Errorf("failed to initialize monitor service: %w", err))

@@ -8,6 +8,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/host"
 )
 
 func Provide(i *do.Injector) {
@@ -41,7 +42,11 @@ func provideService(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		return NewService(cfg, logger, dbSvc, certSvc, dbOrch, store), nil
+		hostSvc, err := do.Invoke[*host.Service](i)
+		if err != nil {
+			return nil, err
+		}
+		return NewService(cfg, logger, dbSvc, certSvc, dbOrch, store, hostSvc), nil
 	})
 }
 
