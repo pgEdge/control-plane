@@ -194,7 +194,7 @@ func (s *PreInitHandlers) GetCluster(ctx context.Context) (*api.Cluster, error) 
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitHandlers) ListHosts(ctx context.Context) ([]*api.Host, error) {
+func (s *PreInitHandlers) ListHosts(ctx context.Context) (*api.ListHostsResponse, error) {
 	return nil, ErrUninitialized
 }
 
@@ -254,15 +254,15 @@ func (s *PreInitHandlers) RestoreDatabase(ctx context.Context, req *api.RestoreD
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitHandlers) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (res *api.Task, err error) {
+func (s *PreInitHandlers) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (res *api.RestartInstanceResponse, err error) {
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitHandlers) StopInstance(ctx context.Context, req *api.StopInstancePayload) (res *api.Task, err error) {
+func (s *PreInitHandlers) StopInstance(ctx context.Context, req *api.StopInstancePayload) (res *api.StopInstanceResponse, err error) {
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitHandlers) StartInstance(ctx context.Context, req *api.StartInstancePayload) (res *api.Task, err error) {
+func (s *PreInitHandlers) StartInstance(ctx context.Context, req *api.StartInstancePayload) (res *api.StartInstanceResponse, err error) {
 	return nil, ErrUninitialized
 }
 

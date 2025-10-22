@@ -148,13 +148,13 @@ func (c *Client) GetCluster(ctx context.Context) (res *Cluster, err error) {
 //   - "cluster_not_initialized" (type *goa.ServiceError)
 //   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
-func (c *Client) ListHosts(ctx context.Context) (res []*Host, err error) {
+func (c *Client) ListHosts(ctx context.Context) (res *ListHostsResponse, err error) {
 	var ires any
 	ires, err = c.ListHostsEndpoint(ctx, nil)
 	if err != nil {
 		return
 	}
-	return ires.([]*Host), nil
+	return ires.(*ListHostsResponse), nil
 }
 
 // GetHost calls the "get-host" endpoint of the "control-plane" service.
@@ -421,13 +421,13 @@ func (c *Client) GetVersion(ctx context.Context) (res *VersionInfo, err error) {
 //   - "restart_failed" (type *goa.ServiceError): Restart operation could not be completed.
 //   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
-func (c *Client) RestartInstance(ctx context.Context, p *RestartInstancePayload) (res *Task, err error) {
+func (c *Client) RestartInstance(ctx context.Context, p *RestartInstancePayload) (res *RestartInstanceResponse, err error) {
 	var ires any
 	ires, err = c.RestartInstanceEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*Task), nil
+	return ires.(*RestartInstanceResponse), nil
 }
 
 // StopInstance calls the "stop-instance" endpoint of the "control-plane"
@@ -439,13 +439,13 @@ func (c *Client) RestartInstance(ctx context.Context, p *RestartInstancePayload)
 //   - "stop_failed" (type *goa.ServiceError): Stop operation could not be completed.
 //   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
-func (c *Client) StopInstance(ctx context.Context, p *StopInstancePayload) (res *Task, err error) {
+func (c *Client) StopInstance(ctx context.Context, p *StopInstancePayload) (res *StopInstanceResponse, err error) {
 	var ires any
 	ires, err = c.StopInstanceEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*Task), nil
+	return ires.(*StopInstanceResponse), nil
 }
 
 // StartInstance calls the "start-instance" endpoint of the "control-plane"
@@ -457,13 +457,13 @@ func (c *Client) StopInstance(ctx context.Context, p *StopInstancePayload) (res 
 //   - "start_failed" (type *goa.ServiceError): Start operation could not be completed.
 //   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
-func (c *Client) StartInstance(ctx context.Context, p *StartInstancePayload) (res *Task, err error) {
+func (c *Client) StartInstance(ctx context.Context, p *StartInstancePayload) (res *StartInstanceResponse, err error) {
 	var ires any
 	ires, err = c.StartInstanceEndpoint(ctx, p)
 	if err != nil {
 		return
 	}
-	return ires.(*Task), nil
+	return ires.(*StartInstanceResponse), nil
 }
 
 // CancelDatabaseTask calls the "cancel-database-task" endpoint of the

@@ -726,7 +726,7 @@ Performs a failover for a node to a replica candidate.
 Example:
     %[1]s control-plane failover-database-node --body '{
       "candidate_instance_id": "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi",
-      "skip_validation": false
+      "skip_validation": true
    }' --database-id "my-app" --node-name "n1"
 `, os.Args[0])
 }

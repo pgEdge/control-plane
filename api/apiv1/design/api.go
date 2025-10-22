@@ -136,8 +136,8 @@ var _ = g.Service("control-plane", func() {
 	g.Method("list-hosts", func() {
 		g.Description("Lists all hosts within the cluster.")
 		g.Meta("openapi:summary", "List hosts")
-		g.Result(g.ArrayOf(Host), func() {
-			g.Example(HostsExample)
+		g.Result(ListHostsResponse, func() {
+			g.Example(ListHostsResponseExample)
 		})
 		g.Error("cluster_not_initialized")
 
@@ -147,7 +147,6 @@ var _ = g.Service("control-plane", func() {
 			g.Meta("openapi:tag:Host")
 		})
 	})
-
 	g.Method("get-host", func() {
 		g.Description("Returns information about a particular host in the cluster.")
 		g.Meta("openapi:summary", "Get host")
@@ -577,15 +576,17 @@ var _ = g.Service("control-plane", func() {
 			g.Required("database_id", "instance_id")
 		})
 
-		g.Result(Task, func() {
+		g.Result(RestartInstanceResponse, func() {
 			g.Description("Returns a task representing the restart operation.")
 			g.Example(map[string]any{
-				"created_at":  "2025-06-18T16:52:05Z",
-				"database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
-				"instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
-				"status":      "pending",
-				"task_id":     "019783f4-75f4-71e7-85a3-c9b96b345d77",
-				"type":        "restart_instance",
+				"task": map[string]any{
+					"created_at":  "2025-06-18T16:52:05Z",
+					"database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
+					"instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
+					"status":      "pending",
+					"task_id":     "019783f4-75f4-71e7-85a3-c9b96b345d77",
+					"type":        "restart_instance",
+				},
 			})
 		})
 		g.Error("cluster_not_initialized", func() {
@@ -629,15 +630,17 @@ var _ = g.Service("control-plane", func() {
 			g.Required("database_id", "instance_id")
 		})
 
-		g.Result(Task, func() {
+		g.Result(StopInstanceResponse, func() {
 			g.Description("Returns a task representing the stop operation.")
 			g.Example(map[string]any{
-				"created_at":  "2025-06-18T16:52:05Z",
-				"database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
-				"instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
-				"status":      "pending",
-				"task_id":     "019783f4-75f4-71e7-85a3-c9b96b345d77",
-				"type":        "stop_instance",
+				"task": map[string]any{
+					"created_at":  "2025-06-18T16:52:05Z",
+					"database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
+					"instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
+					"status":      "pending",
+					"task_id":     "019783f4-75f4-71e7-85a3-c9b96b345d77",
+					"type":        "stop_instance",
+				},
 			})
 		})
 		g.Error("cluster_not_initialized", func() {
@@ -682,15 +685,17 @@ var _ = g.Service("control-plane", func() {
 			g.Required("database_id", "instance_id")
 		})
 
-		g.Result(Task, func() {
+		g.Result(StartInstanceResponse, func() {
 			g.Description("Returns a task representing the start operation.")
 			g.Example(map[string]any{
-				"created_at":  "2025-06-18T16:52:05Z",
-				"database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
-				"instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
-				"status":      "pending",
-				"task_id":     "019783f4-75f4-71e7-85a3-c9b96b345d77",
-				"type":        "start_instance",
+				"task": map[string]any{
+					"created_at":  "2025-06-18T16:52:05Z",
+					"database_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493",
+					"instance_id": "f2f1cae9-6f37-4609-aa98-d0991bff3493-n1-689qacsi",
+					"status":      "pending",
+					"task_id":     "019783f4-75f4-71e7-85a3-c9b96b345d77",
+					"type":        "start_instance",
+				},
 			})
 		})
 		g.Error("cluster_not_initialized", func() {
@@ -709,7 +714,6 @@ var _ = g.Service("control-plane", func() {
 		g.HTTP(func() {
 			g.POST("/v1/databases/{database_id}/instances/{instance_id}/start-instance")
 			g.Param("force")
-
 			g.Meta("openapi:tag:Database")
 		})
 	})

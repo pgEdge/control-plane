@@ -469,7 +469,7 @@ func BuildFailoverDatabaseNodePayload(controlPlaneFailoverDatabaseNodeBody strin
 	{
 		err = json.Unmarshal([]byte(controlPlaneFailoverDatabaseNodeBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"candidate_instance_id\": \"68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi\",\n      \"skip_validation\": false\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"candidate_instance_id\": \"68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi\",\n      \"skip_validation\": true\n   }'")
 		}
 	}
 	var databaseID string

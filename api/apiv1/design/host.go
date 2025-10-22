@@ -4,6 +4,12 @@ import (
 	g "goa.design/goa/v3/dsl"
 )
 
+var ListHostsResponse = g.Type("ListHostsResponse", func() {
+	g.Description("Response containing the list of hosts")
+	g.Attribute("hosts", g.ArrayOf(Host), "List of hosts in the cluster")
+	g.Required("hosts")
+})
+
 var ComponentStatus = g.Type("ComponentStatus", func() {
 	g.Attribute("healthy", g.Boolean, func() {
 		g.Description("Indicates if the component is healthy.")
@@ -125,7 +131,7 @@ var Host = g.Type("Host", func() {
 	)
 })
 
-var HostsExample = []map[string]any{
+var HostsArrayExample = []map[string]any{
 	{
 		"cohort": map[string]any{
 			"cohort_id":         "zdjfu3tfxg1cihv3146ro3hy2",
@@ -240,4 +246,8 @@ var HostsExample = []map[string]any{
 			},
 		},
 	},
+}
+
+var ListHostsResponseExample = map[string]any{
+	"hosts": HostsArrayExample,
 }

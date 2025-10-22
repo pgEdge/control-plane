@@ -407,7 +407,7 @@ func EncodeGetClusterError(encoder func(context.Context, http.ResponseWriter) go
 // control-plane list-hosts endpoint.
 func EncodeListHostsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.([]*controlplane.Host)
+		res, _ := v.(*controlplane.ListHostsResponse)
 		enc := encoder(ctx, w)
 		body := NewListHostsResponseBody(res)
 		w.WriteHeader(http.StatusOK)
@@ -2305,7 +2305,7 @@ func EncodeGetVersionError(encoder func(context.Context, http.ResponseWriter) go
 // the control-plane restart-instance endpoint.
 func EncodeRestartInstanceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*controlplane.Task)
+		res, _ := v.(*controlplane.RestartInstanceResponse)
 		enc := encoder(ctx, w)
 		body := NewRestartInstanceResponseBody(res)
 		w.WriteHeader(http.StatusOK)
@@ -2439,7 +2439,7 @@ func EncodeRestartInstanceError(encoder func(context.Context, http.ResponseWrite
 // control-plane stop-instance endpoint.
 func EncodeStopInstanceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*controlplane.Task)
+		res, _ := v.(*controlplane.StopInstanceResponse)
 		enc := encoder(ctx, w)
 		body := NewStopInstanceResponseBody(res)
 		w.WriteHeader(http.StatusOK)
@@ -2564,7 +2564,7 @@ func EncodeStopInstanceError(encoder func(context.Context, http.ResponseWriter) 
 // control-plane start-instance endpoint.
 func EncodeStartInstanceResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		res, _ := v.(*controlplane.Task)
+		res, _ := v.(*controlplane.StartInstanceResponse)
 		enc := encoder(ctx, w)
 		body := NewStartInstanceResponseBody(res)
 		w.WriteHeader(http.StatusOK)
@@ -2922,108 +2922,6 @@ func marshalControlplanePgEdgeVersionToPgEdgeVersionResponseBody(v *controlplane
 		return nil
 	}
 	res := &PgEdgeVersionResponseBody{
-		PostgresVersion: v.PostgresVersion,
-		SpockVersion:    v.SpockVersion,
-	}
-
-	return res
-}
-
-// marshalControlplaneHostToHostResponse builds a value of type *HostResponse
-// from a value of type *controlplane.Host.
-func marshalControlplaneHostToHostResponse(v *controlplane.Host) *HostResponse {
-	res := &HostResponse{
-		ID:           string(v.ID),
-		Orchestrator: v.Orchestrator,
-		DataDir:      v.DataDir,
-		Hostname:     v.Hostname,
-		Ipv4Address:  v.Ipv4Address,
-		Cpus:         v.Cpus,
-		Memory:       v.Memory,
-	}
-	if v.Cohort != nil {
-		res.Cohort = marshalControlplaneHostCohortToHostCohortResponse(v.Cohort)
-	}
-	if v.Status != nil {
-		res.Status = marshalControlplaneHostStatusToHostStatusResponse(v.Status)
-	}
-	if v.DefaultPgedgeVersion != nil {
-		res.DefaultPgedgeVersion = marshalControlplanePgEdgeVersionToPgEdgeVersionResponse(v.DefaultPgedgeVersion)
-	}
-	if v.SupportedPgedgeVersions != nil {
-		res.SupportedPgedgeVersions = make([]*PgEdgeVersionResponse, len(v.SupportedPgedgeVersions))
-		for i, val := range v.SupportedPgedgeVersions {
-			res.SupportedPgedgeVersions[i] = marshalControlplanePgEdgeVersionToPgEdgeVersionResponse(val)
-		}
-	}
-
-	return res
-}
-
-// marshalControlplaneHostCohortToHostCohortResponse builds a value of type
-// *HostCohortResponse from a value of type *controlplane.HostCohort.
-func marshalControlplaneHostCohortToHostCohortResponse(v *controlplane.HostCohort) *HostCohortResponse {
-	if v == nil {
-		return nil
-	}
-	res := &HostCohortResponse{
-		Type:             v.Type,
-		MemberID:         v.MemberID,
-		ControlAvailable: v.ControlAvailable,
-	}
-
-	return res
-}
-
-// marshalControlplaneHostStatusToHostStatusResponse builds a value of type
-// *HostStatusResponse from a value of type *controlplane.HostStatus.
-func marshalControlplaneHostStatusToHostStatusResponse(v *controlplane.HostStatus) *HostStatusResponse {
-	res := &HostStatusResponse{
-		State:     v.State,
-		UpdatedAt: v.UpdatedAt,
-	}
-	if v.Components != nil {
-		res.Components = make(map[string]*ComponentStatusResponse, len(v.Components))
-		for key, val := range v.Components {
-			tk := key
-			if val == nil {
-				res.Components[tk] = nil
-				continue
-			}
-			res.Components[tk] = marshalControlplaneComponentStatusToComponentStatusResponse(val)
-		}
-	}
-
-	return res
-}
-
-// marshalControlplaneComponentStatusToComponentStatusResponse builds a value
-// of type *ComponentStatusResponse from a value of type
-// *controlplane.ComponentStatus.
-func marshalControlplaneComponentStatusToComponentStatusResponse(v *controlplane.ComponentStatus) *ComponentStatusResponse {
-	res := &ComponentStatusResponse{
-		Healthy: v.Healthy,
-		Error:   v.Error,
-	}
-	if v.Details != nil {
-		res.Details = make(map[string]any, len(v.Details))
-		for key, val := range v.Details {
-			tk := key
-			tv := val
-			res.Details[tk] = tv
-		}
-	}
-
-	return res
-}
-
-// marshalControlplanePgEdgeVersionToPgEdgeVersionResponse builds a value of
-// type *PgEdgeVersionResponse from a value of type *controlplane.PgEdgeVersion.
-func marshalControlplanePgEdgeVersionToPgEdgeVersionResponse(v *controlplane.PgEdgeVersion) *PgEdgeVersionResponse {
-	if v == nil {
-		return nil
-	}
-	res := &PgEdgeVersionResponse{
 		PostgresVersion: v.PostgresVersion,
 		SpockVersion:    v.SpockVersion,
 	}

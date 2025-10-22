@@ -27,7 +27,7 @@ var Cluster = g.Type("Cluster", func() {
 	})
 	g.Attribute("hosts", g.ArrayOf(Host), func() {
 		g.Description("All of the hosts in the cluster.")
-		g.Example(HostsExample)
+		g.Example(HostsArrayExample)
 	})
 
 	g.Required("id", "tenant_id", "status", "hosts")
