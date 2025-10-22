@@ -63,6 +63,7 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 	errs = append(errs, validateCPUs(spec.Cpus, []string{"cpus"})...)
 	errs = append(errs, validateMemory(spec.Memory, []string{"memory"})...)
 
+	// Track node-name uniqueness and prepare set for cross-node checks.
 	seenNodeNames := make(ds.Set[string], len(spec.Nodes))
 	for i, node := range spec.Nodes {
 		nodePath := []string{"nodes", arrayIndexPath(i)}
@@ -71,10 +72,23 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 			err := errors.New("node names must be unique within a database")
 			errs = append(errs, newValidationError(err, nodePath))
 		}
-
 		seenNodeNames.Add(node.Name)
 
+		// Per-node validation (includes self-ref and restore vs source_node conflict)
 		errs = append(errs, validateNode(node, nodePath)...)
+	}
+
+	// Cross-node existence check for source_node
+	for i, node := range spec.Nodes {
+		src := utils.FromPointer(node.SourceNode)
+		if src == "" {
+			continue
+		}
+		if !seenNodeNames.Has(src) {
+			// Attach error to the specific field path
+			errs = append(errs, newValidationError(errors.New("invalid source node"),
+				[]string{"nodes", arrayIndexPath(i), "source_node"}))
+		}
 	}
 
 	if spec.BackupConfig != nil {
@@ -83,9 +97,6 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 	if spec.RestoreConfig != nil {
 		errs = append(errs, validateRestoreConfig(spec.RestoreConfig, []string{"restore_config"})...)
 	}
-
-	// Validate cross-node source_node references
-	errs = append(errs, validateSourceNodeRefs(spec)...)
 
 	return errors.Join(errs...)
 }
@@ -110,8 +121,21 @@ func validateNode(node *api.DatabaseNodeSpec, path []string) []error {
 			err := errors.New("host IDs must be unique within a node")
 			errs = append(errs, newValidationError(err, hostPath))
 		}
-
 		seenHostIDs.Add(hostID)
+	}
+
+	// source_node + restore_config validation (field-level)
+	src := utils.FromPointer(node.SourceNode)
+	srcPath := appendPath(path, "source_node")
+
+	// If restore_config is provided, source_node must be empty
+	if node.RestoreConfig != nil && src != "" {
+		errs = append(errs, newValidationError(errors.New("invalid source node"), srcPath))
+	} else if src != "" {
+		// Self-reference is invalid
+		if src == node.Name {
+			errs = append(errs, newValidationError(errors.New("invalid source node"), srcPath))
+		}
 	}
 
 	if node.BackupConfig != nil {
@@ -121,37 +145,6 @@ func validateNode(node *api.DatabaseNodeSpec, path []string) []error {
 	if node.RestoreConfig != nil {
 		restoreConfigPath := appendPath(path, "restore_config")
 		errs = append(errs, validateRestoreConfig(node.RestoreConfig, restoreConfigPath)...)
-	}
-
-	return errs
-}
-
-// validateSourceNodeRefs ensures any provided source_node is valid.
-func validateSourceNodeRefs(spec *api.DatabaseSpec) []error {
-	var errs []error
-
-	// Collect all node names for membership checks.
-	allNames := make(ds.Set[string], len(spec.Nodes))
-	for _, n := range spec.Nodes {
-		allNames.Add(n.Name)
-	}
-
-	for _, n := range spec.Nodes {
-		src := utils.FromPointer(n.SourceNode)
-		if src == "" {
-			continue
-		}
-
-		// Self-reference → invalid
-		if src == n.Name {
-			errs = append(errs, newValidationError(errors.New("invalid source node"), nil))
-			continue
-		}
-
-		// Unknown reference → "source node dont exist"
-		if !allNames.Has(src) {
-			errs = append(errs, newValidationError(errors.New("invalid source node"), nil))
-		}
 	}
 
 	return errs
@@ -374,6 +367,5 @@ func validateIdentifier(ident string, path []string) error {
 	if err := utils.ValidateID(ident); err != nil {
 		return newValidationError(err, path)
 	}
-
 	return nil
 }

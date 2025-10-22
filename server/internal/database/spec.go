@@ -467,9 +467,10 @@ func (s *InstanceSpec) Clone() *InstanceSpec {
 }
 
 type NodeInstances struct {
-	NodeName   string          `json:"node_name"`
-	SourceNode string          `json:"source_node"`
-	Instances  []*InstanceSpec `json:"instances"`
+	NodeName      string          `json:"node_name"`
+	SourceNode    string          `json:"source_node"`
+	Instances     []*InstanceSpec `json:"instances"`
+	RestoreConfig *RestoreConfig  `json:"restore_config"`
 }
 
 func (n *NodeInstances) InstanceIDs() []string {
@@ -528,9 +529,10 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		}
 
 		nodes[nodeIdx] = &NodeInstances{
-			NodeName:   node.Name,
-			SourceNode: node.SourceNode,
-			Instances:  instances,
+			NodeName:      node.Name,
+			SourceNode:    node.SourceNode,
+			Instances:     instances,
+			RestoreConfig: node.RestoreConfig,
 		}
 	}
 	return nodes, nil

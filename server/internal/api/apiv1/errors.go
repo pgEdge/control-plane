@@ -38,8 +38,6 @@ var (
 	ErrDatabaseAlreadyExists      = newAPIError(errDatabaseAlreadyExists, "a database already exists with the given ID")
 	ErrHostNotFound               = newAPIError(errNotFound, "no host found with the given ID")
 	ErrNoPrimaryInstance          = newAPIError(errNotFound, "no primary instance found for the given node")
-	ErrInvalidSourceNode          = newAPIError(errNotFound, "invalid source node")
-	ErrInvalidSourceNodeRef       = newAPIError(errNotFound, "invalid source_node")
 )
 
 func apiErr(err error) error {
@@ -76,8 +74,6 @@ func apiErr(err error) error {
 	case errors.Is(err, etcd.ErrMemberNotFound):
 		return makeNotFoundErr(err)
 	case errors.Is(err, etcd.ErrMinimumClusterSize):
-		return makeInvalidInputErr(err)
-	case errors.Is(err, database.ErrInvalidSourceNode):
 		return makeInvalidInputErr(err)
 	default:
 		return newAPIError(errServerError, err.Error())

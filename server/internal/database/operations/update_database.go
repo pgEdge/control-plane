@@ -47,6 +47,14 @@ func UpdateDatabase(
 		return nil, err
 	}
 
+	// Reject Source/Restore conflicts at the operations layer too.
+	// (Catches programmatic callers that bypass API validation.)
+	for _, n := range nodes {
+		if n.RestoreConfig != nil && n.SourceNode != "" {
+			return nil, database.ErrInvalidSourceNode
+		}
+	}
+
 	// Updates first to ensure an existing node is available as a source.
 	var states []*resource.State
 	if len(updates) > 0 {
@@ -57,12 +65,15 @@ func UpdateDatabase(
 		states = append(states, u...)
 	}
 
-	// Auto-select source node for adds if not provided:
-	// Pick the first existing node (from updates) as default.
-	if len(adds) > 0 && len(updates) > 0 {
-		defaultSource := updates[0].NodeName
+	// Auto-select source node ONLY when both SourceNode and RestoreConfig are empty.
+	// If no existing nodes (fresh cluster), skip auto-select (don’t error).
+	if len(adds) > 0 {
+		var defaultSource string
+		if len(updates) > 0 {
+			defaultSource = updates[0].NodeName
+		}
 		for _, n := range adds {
-			if n.SourceNode == "" {
+			if n.SourceNode == "" && n.RestoreConfig == nil && defaultSource != "" {
 				n.SourceNode = defaultSource
 			}
 		}
