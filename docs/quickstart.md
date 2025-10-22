@@ -3,7 +3,7 @@
 This quickstart guide demonstrates how to run the pgEdge Control Plane and an
 example three node distributed Postgres database to a single host, such as your laptop.
 
-Thisconfiguration is intended to demonstrate basic usage of the Control Plane and its API.
+This configuration is intended to demonstrate basic usage of the Control Plane and its API.
 
 ## Prerequisites
 
@@ -99,7 +99,7 @@ Thisconfiguration is intended to demonstrate basic usage of the Control Plane an
             }'
         ```
 
-    This will create a three node distributed Postgres database to a single with one instance per node and an `admin` database user. The creation process is asynchronous, meaning the server responds when the process has started rather than when it has finished.
+    This will create a three node distributed Postgres database to a single host with one instance per node and an `admin` database user. The creation process is asynchronous, meaning the server responds when the process has started rather than when it has finished.
     
     To track the progress of this task, fetch the database and inspect the `state`
     field:
@@ -166,21 +166,21 @@ docker exec -it <container ID> psql -U admin example
 
 1. Create a table on the first node:
 
-```sh
-PGPASSWORD=password psql -h localhost -p 6432 -U admin example -c "create table example (id int primary key, data text);"
-```
+    ```sh
+    PGPASSWORD=password psql -h localhost -p 6432 -U admin example -c "create table example (id int primary key, data text);"
+    ```
 
 2. Insert a row into our new table on the second node:
 
-```sh
-PGPASSWORD=password psql -h localhost -p 6433 -U admin example -c "insert into example (id, data) values (1, 'Hello, pgEdge!');"
-```
+    ```sh
+    PGPASSWORD=password psql -h localhost -p 6433 -U admin example -c "insert into example (id, data) values (1, 'Hello, pgEdge!');"
+    ```
 
 3. See that the new row has replicated back to the first node:
 
-```sh
-PGPASSWORD=password psql -h localhost -p 6432 -U admin example -c "select * from example;"
-```
+    ```sh
+    PGPASSWORD=password psql -h localhost -p 6432 -U admin example -c "select * from example;"
+    ```
 
 ## Load the Northwind example dataset
 
@@ -204,16 +204,20 @@ PGPASSWORD=password psql -h localhost -p 6433 -U admin example -c "select * from
 In order to stop the Control Plane and remove all resources it created, first
 delete any databases that you've created
 
-```sh
-curl -X DELETE http://localhost:3000/v1/databases/example
-```
+=== "curl"
+
+    ```sh
+    curl -X DELETE http://localhost:3000/v1/databases/example
+    ```
 
 Similar to the creation process, the deletion process is asynchronous. You can
 track the progress of the delete by using the "list databases" endpoint:
 
-```sh
-curl http://localhost:3000/v1/databases
-```
+=== "curl"
+
+    ```sh
+    curl http://localhost:3000/v1/databases
+    ```
 
 The database will disappear from this response once the deletion is complete.
 
