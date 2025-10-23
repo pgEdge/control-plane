@@ -75,7 +75,7 @@ func (r *LagTrackerCommitTimestampResource) Refresh(ctx context.Context, rc *res
 	}
 	defer conn.Close(ctx)
 
-	ts, err := postgres.LagTrackerCommitTimestamp(r.OriginNode, r.ReceiverNode).Row(ctx, conn)
+	ts, err := postgres.LagTrackerCommitTimestamp(r.OriginNode, r.ReceiverNode).Scalar(ctx, conn)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			r.CommitTimestamp = nil

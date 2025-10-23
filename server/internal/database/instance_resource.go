@@ -198,7 +198,14 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 		return err
 	}
 
+	var spockSets []postgres.ReplicationSet
+	var spockTables []postgres.ReplicationSetTable
 	if r.Spec.RestoreConfig != nil && firstTimeSetup {
+		spockSets, spockTables, err = r.backupReplicationSets(ctx, tlsCfg)
+		if err != nil {
+			return err
+		}
+
 		err = r.renameDB(ctx, tlsCfg)
 		if err != nil {
 			return fmt.Errorf("failed to rename database %q: %w", r.Spec.DatabaseName, err)
@@ -229,7 +236,7 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 	}
 	defer tx.Rollback(ctx)
 
-	enabled, err := postgres.IsSpockEnabled().Row(ctx, tx)
+	enabled, err := postgres.IsSpockEnabled().Scalar(ctx, tx)
 	if err != nil {
 		return fmt.Errorf("failed to check if spock is enabled: %w", err)
 	}
@@ -247,6 +254,11 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 	).Exec(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to initialize pgedge extensions: %w", err)
+	}
+	if len(spockSets) > 0 || len(spockTables) > 0 {
+		if err := postgres.RestoreReplicationSets(spockSets, spockTables).Exec(ctx, conn); err != nil {
+			return fmt.Errorf("failed to restore spock metadata: %w", err)
+		}
 	}
 	roleStatements, err := postgres.CreateBuiltInRoles(postgres.BuiltinRoleOptions{
 		PGVersion: r.Spec.PgEdgeVersion.PostgresVersion.String(),
@@ -418,4 +430,30 @@ func (r *InstanceResource) isFirstTimeSetup(rc *resource.Context) (bool, error) 
 	}
 
 	return false, nil
+}
+
+func (r *InstanceResource) backupReplicationSets(
+	ctx context.Context,
+	tlsCfg *tls.Config,
+) ([]postgres.ReplicationSet, []postgres.ReplicationSetTable, error) {
+	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
+		DSN: r.ConnectionInfo.AdminDSN(r.Spec.DatabaseName),
+		TLS: tlsCfg,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to connect to database %q: %w", r.Spec.DatabaseName, err)
+	}
+	defer conn.Close(ctx)
+
+	sets, err := postgres.GetReplicationSets().Structs(ctx, conn)
+	if err != nil {
+		return nil, nil, fmt.Errorf("spock backup failed to get replication sets: %w", err)
+	}
+
+	tabs, err := postgres.GetReplicationSetTables().Structs(ctx, conn)
+	if err != nil {
+		return nil, nil, fmt.Errorf("spock backup failed to get replication set tables: %w", err)
+	}
+
+	return sets, tabs, nil
 }

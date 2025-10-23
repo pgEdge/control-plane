@@ -134,6 +134,8 @@ func TestPosixBackupRestore(t *testing.T) {
 		require.NoError(t, row.Scan(&count))
 
 		assert.Equal(t, 2, count)
+
+		assertInDefaultRepSet(t, ctx, conn)
 	})
 }
 
@@ -247,6 +249,8 @@ func TestS3BackupRestore(t *testing.T) {
 		require.NoError(t, row.Scan(&count))
 
 		assert.Equal(t, 2, count)
+
+		assertInDefaultRepSet(t, ctx, conn)
 	})
 }
 
@@ -379,6 +383,8 @@ func TestS3AddNodeFromBackup(t *testing.T) {
 		require.NoError(t, row.Scan(&count))
 
 		assert.Equal(t, 2, count)
+
+		assertInDefaultRepSet(t, ctx, conn)
 	})
 }
 
@@ -501,5 +507,23 @@ func TestS3CreateDBFromBackup(t *testing.T) {
 		require.NoError(t, row.Scan(&count))
 
 		assert.Equal(t, 2, count)
+
+		assertInDefaultRepSet(t, ctx, conn)
 	})
+}
+
+func assertInDefaultRepSet(t *testing.T, ctx context.Context, conn *pgx.Conn) {
+	t.Helper()
+	var exists bool
+	err := conn.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM spock.replication_set s
+			JOIN spock.replication_set_table t ON t.set_id = s.set_id
+			WHERE s.set_name = 'default'
+			  AND t.set_reloid = 'public.foo'::regclass
+		);
+	`).Scan(&exists)
+	require.NoError(t, err, "failed to query spock.replication_set/_table")
+	assert.True(t, exists, "expected 'public.foo' to be in spock replication set 'default'")
 }

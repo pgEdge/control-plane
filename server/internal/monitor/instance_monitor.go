@@ -147,25 +147,25 @@ func (m *InstanceMonitor) populateFromDbConn(
 	}
 	defer conn.Close(ctx)
 
-	pgVersion, err := postgres.GetPostgresVersion().Row(ctx, conn)
+	pgVersion, err := postgres.GetPostgresVersion().Scalar(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to query postgres version: %w", err)
 	}
 	status.PostgresVersion = utils.PointerTo(pgVersion)
 
-	spockVersion, err := postgres.GetSpockVersion().Row(ctx, conn)
+	spockVersion, err := postgres.GetSpockVersion().Scalar(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to query spock version: %w", err)
 	}
 	status.SpockVersion = utils.PointerTo(spockVersion)
 
-	spockReadOnly, err := postgres.GetSpockReadOnly().Row(ctx, conn)
+	spockReadOnly, err := postgres.GetSpockReadOnly().Scalar(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to query spock read-only status: %w", err)
 	}
 	status.ReadOnly = utils.PointerTo(spockReadOnly)
 
-	subStatuses, err := postgres.GetSubscriptionStatuses().Rows(ctx, conn)
+	subStatuses, err := postgres.GetSubscriptionStatuses().Scalars(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to query subscription statuses: %w", err)
 	}

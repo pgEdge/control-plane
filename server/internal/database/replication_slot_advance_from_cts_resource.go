@@ -85,7 +85,7 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *
 			provider.Spec.DatabaseName,
 			r.ProviderNode,
 			r.SubscriberNode).
-		Row(ctx, conn)
+		Scalar(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to query current replication slot lsn: %w", err)
 	}
@@ -96,7 +96,7 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *
 			r.ProviderNode,
 			r.SubscriberNode,
 			commitTS).
-		Row(ctx, conn)
+		Scalar(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to query target replication slot lsn: %w", err)
 	}

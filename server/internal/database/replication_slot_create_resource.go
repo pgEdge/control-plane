@@ -61,7 +61,7 @@ func (r *ReplicationSlotCreateResource) Refresh(ctx context.Context, rc *resourc
 
 	needsCreate, err := postgres.
 		ReplicationSlotNeedsCreate(r.DatabaseName, r.ProviderNode, r.SubscriberNode).
-		Row(ctx, conn)
+		Scalar(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to check if replication slot exists: %w", err)
 	}
