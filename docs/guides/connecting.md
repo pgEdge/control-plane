@@ -42,16 +42,12 @@ wiki](https://wiki.postgresql.org/wiki/List_of_drivers).
 To use this feature, include a comma-separated list of hosts in your connection
 string. For example:
 
-```
-host=host-1,host-2,host-3 port=5432,6432 user=admin password=password dbname=example
-```
+`host=host-1,host-2,host-3 port=5432,6432 user=admin password=password dbname=example`
 
 If the port for each database instance is the same, you can specify one port to
 use for all hosts, like in this `psql` example:
 
-```
-PGPASSWORD=password psql 'host=host-1,host-2,host-3 port=5432 user=admin dbname=example'
-```
+`PGPASSWORD=password psql 'host=host-1,host-2,host-3 port=5432 user=admin dbname=example`
 
 By default, the driver will attempt to connect to hosts in the order they're
 specified. Consider the latency between each host and your client when you order
@@ -65,16 +61,13 @@ instances or to only consider read replicas.
 
 Similar to multiple hosts, this feature is supported by `libpq` and many other open-source drivers and clients.
 
-This connection string uses the hosts from the [read replicas](./read-replicas.md) example above to connect to the closest primary instance only:
+This connection string uses the hosts from the [read replicas](./read-replicas.md) example to connect to the closest primary instance only:
 
-```
-host=us-east-1a,us-east-1c,u-central-1a,eu-central-1b,ap-south-2a,ap-south-2c port=5432 user=admin password=password dbname=example target_session_attrs=read-write
-```
+`host=us-east-1a,us-east-1c,u-central-1a,eu-central-1b,ap-south-2a,ap-south-2c port=5432 user=admin password=password dbname=example target_session_attrs=read-write`
 
 This connection string only considers connections to the read replicas:
 
-```
-host=us-east-1a,us-east-1c,u-central-1a,eu-central-1b,ap-south-2a,ap-south-2c port=5432 user=admin password=password dbname=example target_session_attrs=read-only
-```
+`host=us-east-1a,us-east-1c,u-central-1a,eu-central-1b,ap-south-2a,ap-south-2c port=5432 user=admin password=password dbname=example target_session_attrs=read-only`
+
 
 See [the PostgreSQL documentation](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-PARAMKEYWORDS) for detailed descriptions of all connection parameters and their possible values.

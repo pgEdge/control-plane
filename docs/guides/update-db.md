@@ -31,10 +31,37 @@ For example, this update request adds a new node on `host-4` for the existing `e
         }'
     ```
 
-By default, the pgEdge Control Plane performs a zero downtime add node operation when adding a distributed node, loading existing database data and structure from the first node. You can control which node is used for this by specifying the `source_node` property on the node you are adding.
+By default, the Control Plane performs a zero downtime add node operation when adding a distributed node, loading existing database data and structure from the first node in the database (`n1` in the example above). 
+
+You can control which node is used to load data by specifying the `source_node` property on the node you are adding:
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases/example \
+        -H 'Content-Type:application/json' \
+        --data '{
+            "spec": {
+                "database_name": "example",
+                "database_users": [
+                    {
+                        "username": "admin",
+                        "db_owner": true,
+                        "attributes": ["SUPERUSER", "LOGIN"]
+                    }
+                ],
+                "port": 5432,
+                "nodes": [
+                    { "name": "n1", "host_ids": ["host-1"] },
+                    { "name": "n2", "host_ids": ["host-2"] },
+                    { "name": "n3", "host_ids": ["host-3"] },
+                    { "name": "n4", "host_ids": ["host-4"], "source_node": "n2" }
+                ]
+            }
+        }'
+    ```
 
 Alternatively, you can use pgBackRest to bootstrap the new node via a restore. See [Creating a new node from a backup](./backup-restore.md#creating-a-new-node-from-a-backup).
-
 
 !!! tip
 

@@ -77,8 +77,7 @@ the response:
     ```
 
 You can also use the task ID from the original response to retrieve logs and
-other details from the creation process. See the [Tasks and Logs
-logs](tasks-logs.md) for more information.
+other details from the creation process. See the [Tasks and Logs](tasks-logs.md) for more information.
 
 There are many other database settings that you can customize when creating or
 updating a database. Settings in the `spec` object will apply to all distributed nodes. You can also apply or override a setting on a specific node by setting it in the node's object in `spec.nodes[]`.
@@ -119,7 +118,7 @@ curl -X POST http://host-3:3000/v1/databases \
 
 !!! warning
 
-        The pgEdge Control Plane is designed to ensure that configuration is applied during database operations. It is not recommended to apply configuration directly to underlying components, including Postgres. You should instead use the Control Plane to manage Postgres configuration for consistency reasons.
+    The pgEdge Control Plane is designed to ensure that configuration is applied during database operations. It is not recommended to apply configuration directly to underlying components, including Postgres, since those changes may be overwritten or reverted. You should instead use the Control Plane to manage Postgres configuration for consistency reasons. 
 
 Refer to the [API Reference](../api/reference.md) for details on all
 available settings.

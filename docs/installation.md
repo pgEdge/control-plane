@@ -23,7 +23,7 @@ The Control Plane server should run on each Swarm node. We recommend using
 "placement constraints" in your stack definition to deploy each control plane
 instance onto a specific Swarm node. 
 
-You can run the following comamnd on one of the Swarm nodes to get the node ID for each node in the Docker Swarm cluster. The node with an asterisk (`*`) next to its ID is the node you're running the command on.
+You can run the following command on one of the Swarm nodes to get the node ID for each node in the Docker Swarm cluster. The node with an asterisk (`*`) next to its ID is the node you're running the command on.
 
 ```sh
 docker node ls
