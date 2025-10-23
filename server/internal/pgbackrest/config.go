@@ -279,7 +279,7 @@ func writeGCSRepo(idx int, repo *Repository, contents map[string]string) {
 	contents[repoKey(idx, "gcs-bucket")] = repo.GCSBucket
 	contents[repoKey(idx, "gcs-endpoint")] = repo.GCSEndpoint
 	if repo.GCSKey != "" {
-		contents[repoKey(idx, "gcs-key-type")] = "shared"
+		contents[repoKey(idx, "gcs-key-type")] = "service"
 		contents[repoKey(idx, "gcs-key")] = repo.GCSKey
 	} else {
 		contents[repoKey(idx, "gcs-key-type")] = "auto"
@@ -294,9 +294,11 @@ func writeAzureRepo(idx int, repo *Repository, contents map[string]string) {
 	if repo.AzureKey != "" {
 		contents[repoKey(idx, "azure-key-type")] = "shared"
 		contents[repoKey(idx, "azure-key")] = repo.AzureKey
-	} else {
-		contents[repoKey(idx, "azure-key-type")] = "auto"
 	}
+	// Pending: support for "auto" hasn't been added to pgbackrest yet
+	// else {
+	//	contents[repoKey(idx, "azure-key-type")] = "auto"
+	//}
 }
 
 var repoPrefixRegex = regexp.MustCompile(`^repo\d+-`)
