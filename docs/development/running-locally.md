@@ -1,20 +1,7 @@
-# Running a local Control Plane cluster in Docker
+# Running the Control Plane locally
 
 The `docker/control-plane-dev` directory contains configuration for a three-host
 Control Plane cluster that runs in Docker via Docker Compose.
-
-- [Running a local Control Plane cluster in Docker](#running-a-local-control-plane-cluster-in-docker)
-  - [Prerequisites](#prerequisites)
-    - [Docker Desktop](#docker-desktop)
-      - [Configuration](#configuration)
-    - [Restish](#restish)
-  - [Running the Control Plane](#running-the-control-plane)
-  - [Interact with the Control Plane API](#interact-with-the-control-plane-api)
-  - [Resetting each Control Plane instance](#resetting-each-control-plane-instance)
-  - [Development workflow](#development-workflow)
-    - [Rebuilding the `control-plane` binary](#rebuilding-the-control-plane-binary)
-    - [Debugging](#debugging)
-  - [API documentation](#api-documentation)
 
 ## Prerequisites
 
@@ -60,7 +47,7 @@ After you've added this line, you can run `exec zsh` to reload the configuration
 in your current shell session. It will automatically apply to any new sessions.
 
 After installation, modify the Restish configuration file to add entries for the
-local Control Plane instances. On MacOS, this file will be
+local Control Plane servers. On MacOS, this file will be
 `~/Library/Application Support/restish/apis.json`. See
 [the configuration page](https://rest.sh/#/configuration) to find the
 configuration file location for non-MacOS systems.
