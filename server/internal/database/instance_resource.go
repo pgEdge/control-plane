@@ -201,15 +201,16 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 	var spockSets []postgres.ReplicationSet
 	var spockTables []postgres.ReplicationSetTable
 	if r.Spec.RestoreConfig != nil && firstTimeSetup {
+		err = r.renameDB(ctx, tlsCfg)
+		if err != nil {
+			return fmt.Errorf("failed to rename database %q: %w", r.Spec.DatabaseName, err)
+		}
+
 		spockSets, spockTables, err = r.backupReplicationSets(ctx, tlsCfg)
 		if err != nil {
 			return err
 		}
 
-		err = r.renameDB(ctx, tlsCfg)
-		if err != nil {
-			return fmt.Errorf("failed to rename database %q: %w", r.Spec.DatabaseName, err)
-		}
 		err = r.dropSpock(ctx, tlsCfg)
 		if err != nil {
 			return fmt.Errorf("failed to drop spock: %w", err)
