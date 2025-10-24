@@ -43,7 +43,7 @@ type Query[T any] struct {
 	Args pgx.NamedArgs
 }
 
-func (q Query[T]) Row(ctx context.Context, conn Executor) (T, error) {
+func (q Query[T]) Scalar(ctx context.Context, conn Executor) (T, error) {
 	var result T
 	row := conn.QueryRow(ctx, q.SQL, q.Args)
 	if err := row.Scan(&result); err != nil {
@@ -52,7 +52,7 @@ func (q Query[T]) Row(ctx context.Context, conn Executor) (T, error) {
 	return result, nil
 }
 
-func (q Query[T]) Rows(ctx context.Context, conn Executor) ([]T, error) {
+func (q Query[T]) Scalars(ctx context.Context, conn Executor) ([]T, error) {
 	rows, err := conn.Query(ctx, q.SQL, q.Args)
 	if err != nil {
 		return nil, err
@@ -75,6 +75,15 @@ func (q Query[T]) Rows(ctx context.Context, conn Executor) ([]T, error) {
 	return results, nil
 }
 
+func (q Query[T]) Structs(ctx context.Context, conn Executor) ([]T, error) {
+	rows, err := conn.Query(ctx, q.SQL, q.Args)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return pgx.CollectRows(rows, pgx.RowToStructByName[T])
+}
+
 type ConditionalStatement struct {
 	If   Query[bool]
 	Then IStatement
@@ -82,7 +91,7 @@ type ConditionalStatement struct {
 }
 
 func (s ConditionalStatement) Exec(ctx context.Context, conn Executor) error {
-	condition, err := s.If.Row(ctx, conn)
+	condition, err := s.If.Scalar(ctx, conn)
 	if err != nil {
 		return err
 	}
