@@ -52,11 +52,11 @@ instances in a cluster: a database is composed of one or more nodes, and each no
 
 ## Hosts
 
-Hosts are the underlying compute resources used to run database instances. One Control Plane instance should be deployed to each host that will run databases. For this reason, each Control Plane instance is identified by a host ID.
+Hosts are the underlying compute resources used to run database instances. One Control Plane server should be deployed to each host that will run databases. For this reason, each Control Plane server is identified by a host ID.
 
 ## Cluster
 
-A Cluster represents a collection of hosts that are joined together to provide a unified API for managing databases. Connecting the Control Plane instance on each host into a cluster enables coordination and orchestration of resources, allowing databases to be deployed, replicated, and managed across hosts.
+A Cluster represents a collection of hosts that are joined together to provide a unified API for managing databases. Connecting the Control Plane server on each host into a cluster enables coordination and orchestration of resources, allowing databases to be deployed, replicated, and managed across hosts.
 
 ## Databases
 

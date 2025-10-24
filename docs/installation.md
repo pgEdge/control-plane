@@ -33,7 +33,7 @@ docker node ls
 
 This example demonstrates a [Docker Swarm
 stack](https://docs.docker.com/engine/swarm/stack-deploy/) that deploys three
-Control Plane instances to a three node Docker Swarm cluster, where each
+Control Plane servers to a three node Docker Swarm cluster, where each
 [host](concepts.md#hosts) is named after the AWS region that the host runs
 in.
 
@@ -119,7 +119,7 @@ Once the pgEdge Control Plane server is deployed, you must initialize the Contro
 
 ## Initializing a Control Plane cluster
 
-Each Control Plane server instance starts in an uninitialized state until it's added to a cluster. In a typical configuration, you will submit a request to one Control Plane instance to initialize a new cluster, then submit requests to all other instances to join them to the new cluster.
+Each Control Plane server instance starts in an uninitialized state until it's added to a cluster. In a typical configuration, you will submit a request to one Control Plane server to initialize a new cluster, then submit requests to all other servers to join them to the new cluster.
 
 For example, the steps to initialize a three-host cluster would look like:
 

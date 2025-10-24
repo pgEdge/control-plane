@@ -4,7 +4,7 @@ The **pgEdge Control Plane** is a distributed application designed to simplify t
 
 In its default configuration, it uses an embedded [etcd](https://etcd.io/) server to store configuration and coordinate database operations with other instances.
 
-You interact with the Control Plane via an [HTTP API](api/reference.md). Once you've initialized a Control Plane cluster, you can submit requests to any Control Plane instance in the cluster to create and manage Postgres databases.
+You interact with the Control Plane via an [HTTP API](api/reference.md). Once you've initialized a Control Plane cluster, you can submit requests to the API of any Control Plane server in the cluster to create and manage Postgres databases.
 
 Most Control Plane API operations, such as database modifications, are
 idempotent. If an operation fails, you can safely retry the operation after

@@ -47,7 +47,7 @@ After you've added this line, you can run `exec zsh` to reload the configuration
 in your current shell session. It will automatically apply to any new sessions.
 
 After installation, modify the Restish configuration file to add entries for the
-local Control Plane instances. On MacOS, this file will be
+local Control Plane servers. On MacOS, this file will be
 `~/Library/Application Support/restish/apis.json`. See
 [the configuration page](https://rest.sh/#/configuration) to find the
 configuration file location for non-MacOS systems.

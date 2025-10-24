@@ -1,9 +1,9 @@
 # Automated end-to-end tests
 
 This document describes the API-driven end-to-end tests for the Control Plane.
-These tests can be run against any set of Control Plane instances, including the
+These tests can be run against any set of Control Plane servers, including the
 ones we run through Docker Compose. We also have "test fixtures", which are
-Control Plane instances running on virtual machines.
+Control Plane servers running on virtual machines.
 
 !!! note
 
@@ -234,7 +234,7 @@ cat e2e/fixtures/outputs/lima.test_config.yaml
 ```
 
 You can use the `external_ip` for each host in that file to interact with its
-Control Plane instance. For example:
+Control Plane server. For example:
 
 ```sh
 curl http://192.168.105.2:3000/v1/version
@@ -386,7 +386,7 @@ cat e2e/fixtures/outputs/ec2.test_config.yaml
 ```
 
 You can use the `external_ip` for each host in that file to interact with its
-Control Plane instance. For example:
+Control Plane server. For example:
 
 ```sh
 curl http://3.133.148.76:3000/v1/version
