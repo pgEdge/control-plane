@@ -100,6 +100,18 @@ func DefaultTestConfig() TestConfig {
 				ExternalIP: "127.0.0.1",
 				Port:       3002,
 			},
+			"host-4": {
+				ExternalIP: "127.0.0.1",
+				Port:       3003,
+			},
+			"host-5": {
+				ExternalIP: "127.0.0.1",
+				Port:       3004,
+			},
+			"host-6": {
+				ExternalIP: "127.0.0.1",
+				Port:       3005,
+			},
 		},
 	}
 }
@@ -259,17 +271,6 @@ func (f *TestFixture) S3BackupRepository() *controlplane.BackupRepositorySpec {
 
 func (f *TestFixture) S3RestoreRepository() *controlplane.RestoreRepositorySpec {
 	return f.config.S3.RestoreRepository()
-}
-
-func (f *TestFixture) OneNodePerHost() []*controlplane.DatabaseNodeSpec {
-	nodes := make([]*controlplane.DatabaseNodeSpec, len(f.config.Hosts))
-	for i, host := range f.HostIDs() {
-		nodes[i] = &controlplane.DatabaseNodeSpec{
-			Name:    fmt.Sprintf("n%d", i+1),
-			HostIds: []controlplane.Identifier{controlplane.Identifier(host)},
-		}
-	}
-	return nodes
 }
 
 func (f *TestFixture) LatestPosixBackup(t testing.TB, hostID, tmpDir, databaseID string) string {

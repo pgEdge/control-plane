@@ -56,7 +56,7 @@ jobs:
             # Reset docker swarm
             make docker-swarm-leave
             make ci-compose-detached
-            make test-e2e-ci E2E_PARALLEL=4 E2E_DEBUG=1
+            make test-e2e-ci E2E_PARALLEL=4 E2E_DEBUG=1 E2E_FIXTURE=ci
       - run:
           name: Archive debug output
           command: |

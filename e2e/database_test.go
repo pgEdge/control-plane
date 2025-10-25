@@ -6,7 +6,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
@@ -207,6 +209,7 @@ func (d *DatabaseFixture) Refresh(ctx context.Context) error {
 type ConnectionOptions struct {
 	Matcher    InstanceMatcher
 	InstanceID string
+	Instance   *controlplane.Instance
 	Username   string
 	Password   string
 }
@@ -214,6 +217,8 @@ type ConnectionOptions struct {
 func (d *DatabaseFixture) ConnectToInstance(ctx context.Context, opts ConnectionOptions) (*pgx.Conn, error) {
 	var instance *controlplane.Instance
 	switch {
+	case opts.Instance != nil:
+		instance = opts.Instance
 	case opts.InstanceID != "":
 		instance = d.GetInstance(WithID(opts.InstanceID))
 	case opts.Matcher != nil:
@@ -321,6 +326,19 @@ func (d *DatabaseFixture) GetInstance(matcher InstanceMatcher) *controlplane.Ins
 	return nil
 }
 
+func (d *DatabaseFixture) GetInstances(matcher InstanceMatcher) iter.Seq[*controlplane.Instance] {
+	return func(yield func(*controlplane.Instance) bool) {
+		for _, inst := range d.Instances {
+			if !matcher(inst) {
+				continue
+			}
+			if !yield(inst) {
+				return
+			}
+		}
+	}
+}
+
 func (d *DatabaseFixture) waitForTask(ctx context.Context, task *controlplane.Task) error {
 	task, err := d.client.WaitForTask(ctx, &controlplane.GetDatabaseTaskPayload{
 		DatabaseID: d.ID,
@@ -418,4 +436,34 @@ func (d *DatabaseFixture) FailoverDatabaseNode(ctx context.Context, req *control
 
 	// refresh local db state
 	return d.Refresh(ctx)
+}
+
+func WaitForReplication(ctx context.Context, t testing.TB, conn *pgx.Conn) {
+	t.Helper()
+
+	lagSQL := `
+		SELECT NOT EXISTS (
+			SELECT 1
+			FROM spock.lag_tracker
+			WHERE replication_lag_bytes > 0
+		);`
+
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			t.Fatal(ctx.Err())
+		case <-ticker.C:
+			var finished bool
+
+			err := conn.QueryRow(ctx, lagSQL).Scan(&finished)
+			require.NoError(t, err)
+
+			if finished {
+				return
+			}
+		}
+	}
 }
