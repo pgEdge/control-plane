@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -164,7 +166,31 @@ func encodeJSON(val any) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(raw), nil
+	com, err := compress(raw)
+	if err != nil {
+		return "", err
+	}
+
+	return string(com), nil
+}
+
+const compressionThreshold = 2048 // 2KiB
+
+func compress(in []byte) ([]byte, error) {
+	if len(in) < compressionThreshold {
+		// Don't compress if the data is below our threshold.
+		return in, nil
+	}
+	var b bytes.Buffer
+	gw := gzip.NewWriter(&b)
+	if _, err := gw.Write(in); err != nil {
+		return nil, fmt.Errorf("failed to compress data: %w", err)
+	}
+	if err := gw.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close gzip writer: %w", err)
+	}
+
+	return b.Bytes(), nil
 }
 
 func putOps[V Value](
