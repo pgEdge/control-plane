@@ -119,7 +119,7 @@ in a variety of places:
 
 Endpoints that are unimplemented will return a "not implemented" error.
 
-# Resetting your dev environment
+## Resetting your dev environment
 
 To reset your dev environment to its initial state, run:
 
@@ -197,3 +197,52 @@ This uses the OpenAPI spec from the `api/apiv1/gen` directory and generates the
 documentation on the client side. When you regenerate the OpenAPI spec, for
 example by running `make -C api generate`, you only need to refresh the page to
 see the updates.
+
+## Optional development tools
+
+### `dev-env.zsh` script
+
+If you use `zsh`, you may be interested in the `dev-env.zsh` script which adds
+some helpful functions and aliases to your shell. There's also an optional Oh My
+Zsh plugin as well as a theme that uses the plugin. See the `hack/dev-env.md`
+file for installation and usage instructions.
+
+### Bruno
+
+[Bruno](https://www.usebruno.com/) is an open source API client that makes it
+easy to share canned requests via Git. This repository includes a Bruno
+collection called `test-scenarios` that we use to share manual test scenarios.
+
+The `test-scenarios` collection and each of the test scenarios within have their
+own documentation that you can view either in the source files or within the
+Bruno client.
+
+We recommend using the standalone Bruno API client rather than the VSCode
+extension because we make extensive use of the developer console. If you're
+using MacOS, you can install Bruno through HomeBrew:
+
+```
+brew install bruno
+```
+
+#### `wait_for_task` helper
+
+If you're adding a new request that triggers an asynchronous operation, like
+creating a database, you can use the `wait_for_task` helper by adding a
+pre-request variable to your request:
+
+```
+wait_for_task: true
+```
+
+This helper will print the task logs to the Bruno client's development console
+and block until the task is completed, failed, or canceled. See the requests in
+the `local-backup-and-restore` scenario for examples.
+
+#### When should I add to the test scenarios?
+
+These scenarios are an optional tool that are meant to make it easier for you to
+develop and test changes. They can also be helpful for reviewers who need to
+test your changes. Consider adding new requests or scenarios if you find
+yourself repeating the same sequence of requests during development, and those
+requests aren't already covered by an existing scenarios.

@@ -1,0 +1,23 @@
+meta {
+  name: Delete storefront-clone database
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{host_1_url}}/v1/databases/:database_id
+  body: none
+  auth: none
+}
+
+params:query {
+  ~force: 
+}
+
+params:path {
+  database_id: storefront-clone
+}
+
+vars:pre-request {
+  wait_for_task: true
+}

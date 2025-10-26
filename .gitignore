@@ -7,6 +7,9 @@ vagrant-ssh.cfg
 .terraform
 *.tar.gz
 hack/apis
+bruno/test-scenarios/**/repos
+bruno/test-scenarios/environments
+!bruno/test-scenarios/environments/compose.bru
 
 # build artifacts
 *-results.xml
