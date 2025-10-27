@@ -86,7 +86,7 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 		}
 		if !seenNodeNames.Has(src) {
 			// Attach error to the specific field path
-			errs = append(errs, newValidationError(errors.New("invalid source node"),
+			errs = append(errs, newValidationError(errors.New("source node does not exist"),
 				[]string{"nodes", arrayIndexPath(i), "source_node"}))
 		}
 	}
@@ -130,11 +130,11 @@ func validateNode(node *api.DatabaseNodeSpec, path []string) []error {
 
 	// If restore_config is provided, source_node must be empty
 	if node.RestoreConfig != nil && src != "" {
-		errs = append(errs, newValidationError(errors.New("invalid source node"), srcPath))
+		errs = append(errs, newValidationError(errors.New("specify either source_node or restore_config, not both"), srcPath))
 	} else if src != "" {
 		// Self-reference is invalid
 		if src == node.Name {
-			errs = append(errs, newValidationError(errors.New("invalid source node"), srcPath))
+			errs = append(errs, newValidationError(errors.New("a node cannot use itself as a source node"), srcPath))
 		}
 	}
 
