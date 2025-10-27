@@ -192,6 +192,47 @@ the same example above, the initialization steps would be:
     After initializing the cluster, you can submit requests to any host in the
     cluster.
 
+## Upgrading a Control Plane cluster
+
+We publish a new Docker image whenever we release a new version of the Control
+Plane. You can "pin" to a specific version by including a version in the `image`
+fields in your service spec, such as `ghcr.io/pgedge/control-plane:v0.5.0`. If
+you do not include a version, Docker will pull the
+`ghcr.io/pgedge/control-plane:latest` tag by default. We recommend pinning the
+version in production environments so that upgrades are explicit and
+predictable.
+
+### Upgrading with a pinned version
+
+To upgrade from a pinned version:
+
+1. Modify the `image` fields in your spec to reference the new version, such as
+   updating `ghcr.io/pgedge/control-plane:v0.4.0` to
+   `ghcr.io/pgedge/control-plane:v0.5.0`
+2. Re-run `docker stack deploy -c control-plane.yaml control-plane` as in the
+   [Deploying the stack](#deploying-the-stack) section
+
+### Upgrading with the `latest` tag
+
+By default, `docker stack deploy` will always query the registry for updates
+unless you've specified a different `--resolve-image` option. So, updating with
+the `latest` tag is a single step:
+
+1. Re-run `docker stack deploy -c control-plane.yaml control-plane` as in the
+   [Deploying the stack](#deploying-the-stack) section
+
+### How to check the current version
+
+If you're not sure which version you're running, such as when you're using the
+`latest` tag, you can check the version of a particular Control Plane server
+with the `/v1/version` API endpoint:
+
+=== "curl"
+
+    ```sh
+    curl http://host-1:3000/v1/version
+    ```
+
 ## Configuration
 
 Additional configuration settings are supported when deploying the pgEdge Control Plane. See the [configuration reference](./configuration.md) for descriptions of all configuration settings.
