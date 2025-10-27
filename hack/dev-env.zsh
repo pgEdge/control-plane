@@ -71,7 +71,7 @@ _use-test-config() {
 
 _choose-instance() {
 	local instance_choice=$(restish host-1 list-databases \
-		| jq -c '.databases[] | { database_id: .id } + (.instances[])' \
+		| jq -c '.databases[]? | { database_id: .id } + (.instances[]?)' \
 		| sk --preview 'echo {} | jq')
 
 	if [[ -z "${instance_choice}" ]]; then
@@ -85,7 +85,7 @@ _choose-instance() {
 
 _choose-user() {
 	local user_choice=$(<<<"$1" \
-		jq -c '.spec.database_users[]' \
+		jq -c '[.spec.database_users[]?, {"username": "pgedge"}][]' \
 		| sk --preview 'echo {} | jq')
 
 	if [[ -z "${user_choice}" ]]; then
@@ -270,8 +270,8 @@ cp-psql() {
 		database_id=$(<<<"${instance}" jq -r '.database_id')
 	else
 		database_id=$(restish host-1 list-databases \
-			| jq --arg instance_id "${instance_id}" -r '.databases[]
-				| { database_id: .id } + (.instances[])
+			| jq --arg instance_id "${instance_id}" -r '.databases[]?
+				| { database_id: .id } + (.instances[]?)
 				| select(.id == $instance_id)
 				| .database_id')
 
@@ -370,7 +370,7 @@ cp-docker-exec() {
 		host_id=$(<<<"${instance_choice}" jq -r '.host_id')
 	else
 		host_id=$(restish host-1 list-databases \
-			| jq --arg instance_id "${instance_id}" -r '.databases[].instances[]
+			| jq --arg instance_id "${instance_id}" -r '.databases[]?.instances[]?
 				| select(.id == $instance_id)
 				| .host_id')
 
