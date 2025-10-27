@@ -135,6 +135,8 @@ func CreatePgEdgeSuperuserRole(opts BuiltinRoleOptions) (Statements, error) {
 		roles = pg16PgedgeSuperuserRoles()
 	case strings.HasPrefix(opts.PGVersion, "17"):
 		roles = pg17PgedgeSuperuserRoles()
+	case strings.HasPrefix(opts.PGVersion, "18"):
+		roles = pg18PgedgeSuperuserRoles()
 	default:
 		return nil, fmt.Errorf("no superuser template for PostgreSQL version: %s", opts.PGVersion)
 	}
@@ -267,5 +269,22 @@ func pg17PgedgeSuperuserRoles() string {
 		"pg_use_reserved_connections",
 		"pg_create_subscription",
 		"pg_maintain",
+	}, ", ")
+}
+
+func pg18PgedgeSuperuserRoles() string {
+	return strings.Join([]string{
+		"pg_read_all_data",
+		"pg_write_all_data",
+		"pg_read_all_settings",
+		"pg_read_all_stats",
+		"pg_stat_scan_tables",
+		"pg_monitor",
+		"pg_signal_backend",
+		"pg_checkpoint",
+		"pg_use_reserved_connections",
+		"pg_create_subscription",
+		"pg_maintain",
+		"pg_signal_autovacuum_worker",
 	}, ", ")
 }
