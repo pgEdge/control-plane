@@ -1,0 +1,56 @@
+meta {
+  name: Create database from backup
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{host_1_url}}/v1/databases
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "storefront-clone",
+    "spec": {
+      "database_name": "storefront_clone",
+      "database_users": [
+        {
+          "username": "admin",
+          "password": "password",
+          "db_owner": true,
+          "attributes": ["SUPERUSER", "LOGIN"]
+        }
+      ],
+      "orchestrator_opts": {
+        "swarm": {
+          "extra_volumes": [
+            {
+              "host_path": "{{backups_dir}}",
+              "destination_path": "/backups"
+            }
+          ]
+        }
+      },
+      "restore_config": {
+        "source_database_id": "storefront",
+        "source_node_name": "n1",
+        "source_database_name": "storefront",
+        "repository": {
+          "id": "{{repository_id}}",
+          "type": "posix",
+          "base_path": "/backups"
+        }
+      },
+      "nodes": [
+        { "name": "n1", "host_ids": ["host-1"] },
+        { "name": "n2", "host_ids": ["host-2"] }
+      ]
+    }
+  }
+}
+
+vars:pre-request {
+  wait_for_task: true
+}

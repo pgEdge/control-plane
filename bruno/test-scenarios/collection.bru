@@ -1,0 +1,79 @@
+meta {
+  name: test-scenarios
+}
+
+script:post-response {
+  async function waitForTask(databaseId, taskId) {
+    const baseUrl = bru.getFolderVar("host_1_url") || bru.getEnvVar("host_1_url");
+    const method = "GET";
+    const logsUrl = `${baseUrl}/v1/databases/${databaseId}/tasks/${taskId}/log`;
+    const finished = new Set(["completed", "failed", "canceled"]);
+  
+    let status;
+    let afterEntryId;
+  
+    while (!finished.has(status)) {
+      await bru.sleep(1000);
+  
+      try {
+        let url = logsUrl;
+        if (afterEntryId) {
+          url = `${url}?after_entry_id=${afterEntryId}`;
+        }
+  
+        const res = await bru.sendRequest({ method, url });
+  
+        for (const entry of res.data.entries) {
+          console.log(`[${entry.timestamp}] ${entry.message}`);
+        }
+  
+        if (status != res.data.task_status) {
+          console.log(`task ${taskId} status: ${res.data.task_status}`);
+        }
+  
+        status = res.data.task_status;
+  
+        if (res.data.last_entry_id) {
+          afterEntryId = res.data.last_entry_id;
+        }
+      } catch (err) {
+        console.error(err);
+        break;
+      }
+    }
+    
+    if (status === "failed") {
+      try {
+        const res = await bru.sendRequest({
+          method: "GET",
+          url: `${baseUrl}/v1/databases/${databaseId}/tasks/${taskId}`,
+        });
+        console.error(`task ${taskId} error: ${res.data.error}`);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }
+  
+  const shouldWait = bru.getRequestVar("wait_for_task");
+  
+  if (shouldWait === "true") {
+    const databaseId = res.body?.task?.database_id;
+    const taskId = res.body?.task?.task_id;
+  
+    if (databaseId && taskId) {
+      await waitForTask(databaseId, taskId);
+    } 
+  }
+  
+}
+
+docs {
+  # Test scenarios
+  
+  This collection contains sequences of requests to aid manual testing.
+  
+  ## `wait_for_task` helper
+  
+  If you add a `wait_for_task` pre-request variable to your request with the value `true`, the post-response script in this collection will print task logs to the development console and block until the task has completed, failed, or been canceled. See the requests in the `local-backup-and-restore` directory for examples.
+}

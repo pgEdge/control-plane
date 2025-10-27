@@ -1,0 +1,35 @@
+meta {
+  name: add-remove-node
+}
+
+docs {
+  # Add and remove node scenarios
+  
+  This directory contains a sequence of requests to exercise the add and remove node functionality. Both of the add node requests use Spock's "zero downtime add node" feature.
+  
+  ## Usage examples
+  
+  ### Add a node with default source node
+  
+  1. Submit the "Create database" request
+  2. Connect to the `storefront` database with `psql` and add a table
+  3. Submit the "Add node with default source node" request
+  4. Connect to the new node with `psql` and validate that the data is correct
+  5. Submit the "Delete database" request to clean up the database
+  
+  ### Add a node with an explicit source node
+  
+  1. Submit the "Create database" request
+  2. Connect to `n2` of the `storefront` database with `psql`, enable repair mode, and add a table
+  3. Submit the "Add node with explicit source node" request
+  4. Connect to the new node with `psql` and validate that the data is correct
+  5. Submit the "Delete database" request to clean up the database
+  
+  ### Remove a node
+  
+  1. Submit the "Create database" request
+  2. Submit either of the "Add node" requests
+  3. Submit the "Remove node" request
+  4. Submit the "Delete database" request to clean up the database
+  
+}

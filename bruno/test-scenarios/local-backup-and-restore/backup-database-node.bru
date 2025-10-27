@@ -1,0 +1,26 @@
+meta {
+  name: Backup database node
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{host_1_url}}/v1/databases/:database_id/nodes/:node_name/backups
+  body: json
+  auth: none
+}
+
+params:path {
+  database_id: storefront
+  node_name: n1
+}
+
+body:json {
+  {
+    "type": "full"
+  }
+}
+
+vars:pre-request {
+  wait_for_task: true
+}

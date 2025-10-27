@@ -1,0 +1,52 @@
+meta {
+  name: Add node source node precedence
+  type: http
+  seq: 6
+}
+
+docs {
+  The source node should take precedence over the database-level `restore_config`.
+}
+
+post {
+  url: {{host_1_url}}/v1/databases/:database_id
+  body: json
+  auth: none
+}
+
+params:path {
+  database_id: storefront
+}
+
+body:json {
+  {
+    "spec": {
+      "database_name": "storefront",
+      "database_users": [
+        {
+          "username": "admin",
+          "db_owner": true,
+          "attributes": ["SUPERUSER", "LOGIN"]
+        }
+      ],
+      "restore_config": {
+        "source_database_id": "storefront",
+        "source_node_name": "n1",
+        "source_database_name": "storefront",
+        "repository": {
+          "type": "posix",
+          "base_path": "/tmp"
+        }
+      },
+      "nodes": [
+        { "name": "n1", "host_ids": ["host-1"] },
+        { "name": "n2", "host_ids": ["host-2"] },
+        { "name": "n3", "host_ids": ["host-3"], "source_node": "n1" }
+      ]
+    }
+  }
+}
+
+vars:pre-request {
+  wait_for_task: true
+}
