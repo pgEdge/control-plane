@@ -198,7 +198,10 @@ use-compose() {
 	_update-restish-config \
 		http://localhost:3000 \
 		http://localhost:3001 \
-		http://localhost:3002
+		http://localhost:3002 \
+		http://localhost:3003 \
+		http://localhost:3004 \
+		http://localhost:3005 \
 }
 
 use-lima() {
@@ -416,3 +419,9 @@ alias cp-etcdctl="etcdctl \
 	--key '${_host_1_certs}/etcd-user.key' \
 	--user \$(jq -r '.etcd_username' '${_host_1_cfg}') \
 	--password \$(jq -r '.etcd_password' '${_host_1_cfg}')"
+
+alias cp-docker-compose="WORKSPACE_DIR=${_cp_dir} \
+	DEBUG=\${DEBUG:-0} \
+	LOG_LEVEL=\${LOG_LEVEL:-info} \
+	DEV_IMAGE_REPO=\${DEV_IMAGE_REPO:-ghcr.io/pgedge} \
+	docker compose -f ./docker/control-plane-dev/docker-compose.yaml"

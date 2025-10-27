@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	kjson "github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/providers/file"
@@ -12,9 +13,10 @@ import (
 )
 
 type Manager struct {
-	sources   []*Source
-	config    Config
-	generated Config
+	sources     []*Source
+	config      Config
+	generated   Config
+	generatedMu sync.Mutex
 }
 
 func NewManager(sources ...*Source) *Manager {
@@ -79,10 +81,16 @@ func (m *Manager) Load() error {
 }
 
 func (m *Manager) GeneratedConfig() Config {
+	m.generatedMu.Lock()
+	defer m.generatedMu.Unlock()
+
 	return m.generated
 }
 
 func (m *Manager) UpdateGeneratedConfig(config Config) error {
+	m.generatedMu.Lock()
+	defer m.generatedMu.Unlock()
+
 	k := koanf.New(".")
 	if err := LoadStruct(k, config); err != nil {
 		return err

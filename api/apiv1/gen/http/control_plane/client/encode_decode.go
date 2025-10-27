@@ -57,6 +57,7 @@ func EncodeInitClusterRequest(encoder func(*http.Request) goahttp.Encoder) func(
 // response body should be restored after having been read.
 // DecodeInitClusterResponse may return the following errors:
 //   - "cluster_already_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "operation_not_supported" (type *controlplane.APIError): http.StatusBadRequest
 //   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeInitClusterResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
@@ -103,6 +104,20 @@ func DecodeInitClusterResponse(decoder func(*http.Response) goahttp.Decoder, res
 				return nil, goahttp.ErrValidationError("control-plane", "init-cluster", err)
 			}
 			return nil, NewInitClusterClusterAlreadyInitialized(&body)
+		case http.StatusBadRequest:
+			var (
+				body InitClusterOperationNotSupportedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "init-cluster", err)
+			}
+			err = ValidateInitClusterOperationNotSupportedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "init-cluster", err)
+			}
+			return nil, NewInitClusterOperationNotSupported(&body)
 		case http.StatusInternalServerError:
 			var (
 				body InitClusterServerErrorResponseBody
@@ -3369,13 +3384,20 @@ func DecodeCancelDatabaseTaskResponse(decoder func(*http.Response) goahttp.Decod
 	}
 }
 
-// unmarshalClusterPeerResponseBodyToControlplaneClusterPeer builds a value of
-// type *controlplane.ClusterPeer from a value of type *ClusterPeerResponseBody.
-func unmarshalClusterPeerResponseBodyToControlplaneClusterPeer(v *ClusterPeerResponseBody) *controlplane.ClusterPeer {
-	res := &controlplane.ClusterPeer{
-		Name:      *v.Name,
-		PeerURL:   *v.PeerURL,
-		ClientURL: *v.ClientURL,
+// unmarshalEtcdClusterMemberResponseBodyToControlplaneEtcdClusterMember builds
+// a value of type *controlplane.EtcdClusterMember from a value of type
+// *EtcdClusterMemberResponseBody.
+func unmarshalEtcdClusterMemberResponseBodyToControlplaneEtcdClusterMember(v *EtcdClusterMemberResponseBody) *controlplane.EtcdClusterMember {
+	res := &controlplane.EtcdClusterMember{
+		Name: *v.Name,
+	}
+	res.PeerUrls = make([]string, len(v.PeerUrls))
+	for i, val := range v.PeerUrls {
+		res.PeerUrls[i] = val
+	}
+	res.ClientUrls = make([]string, len(v.ClientUrls))
+	for i, val := range v.ClientUrls {
+		res.ClientUrls[i] = val
 	}
 
 	return res

@@ -43,3 +43,16 @@ services:
       interval: 2s
       timeout: 1s
       retries: 30
+  host-4:
+    extends:
+      service: host-1
+    environment:
+      - PGEDGE_HOST_ID=host-4
+      - PGEDGE_DATA_DIR=/tmp/host-4
+      - PGEDGE_HTTP__PORT=3003
+      - PGEDGE_STORAGE_TYPE=remote_etcd
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3003/v1/version"]
+      interval: 2s
+      timeout: 1s
+      retries: 30

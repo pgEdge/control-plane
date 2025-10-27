@@ -462,6 +462,7 @@ Internal endpoint for other cluster members seeking to join this cluster.
 
 Example:
     %[1]s control-plane get-join-options --body '{
+      "embedded_etcd_enabled": true,
       "host_id": "host-1",
       "hostname": "ip-10-1-0-113.ec2.internal",
       "ipv4_address": "10.1.0.113",

@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/pgEdge/control-plane/server/internal/cluster"
 	"github.com/rs/zerolog"
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
+	"github.com/pgEdge/control-plane/server/internal/cluster"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
@@ -31,7 +31,7 @@ var _ api.Service = (*PostInitHandlers)(nil)
 type PostInitHandlers struct {
 	cfg         config.Config
 	logger      zerolog.Logger
-	etcd        *etcd.EmbeddedEtcd
+	etcd        etcd.Etcd
 	hostSvc     *host.Service
 	dbSvc       *database.Service
 	taskSvc     *task.Service
@@ -42,7 +42,7 @@ type PostInitHandlers struct {
 func NewPostInitHandlers(
 	cfg config.Config,
 	logger zerolog.Logger,
-	etcd *etcd.EmbeddedEtcd,
+	etcd etcd.Etcd,
 	hostSvc *host.Service,
 	dbSvc *database.Service,
 	taskSvc *task.Service,
@@ -95,22 +95,26 @@ func (s *PostInitHandlers) GetJoinOptions(ctx context.Context, req *api.ClusterJ
 		return nil, apiErr(err)
 	}
 
-	creds, err := s.etcd.AddPeerUser(ctx, etcd.HostCredentialOptions{
-		HostID:      hostID,
-		Hostname:    req.Hostname,
-		IPv4Address: req.Ipv4Address,
+	creds, err := s.etcd.AddHost(ctx, etcd.HostCredentialOptions{
+		HostID:              hostID,
+		Hostname:            req.Hostname,
+		IPv4Address:         req.Ipv4Address,
+		EmbeddedEtcdEnabled: req.EmbeddedEtcdEnabled,
 	})
 	if err != nil {
 		return nil, apiErr(err)
 	}
 
-	peer := s.etcd.AsPeer()
+	leader, err := s.etcd.Leader(ctx)
+	if err != nil {
+		return nil, apiErr(err)
+	}
 
 	return &api.ClusterJoinOptions{
-		Peer: &api.ClusterPeer{
-			Name:      peer.Name,
-			PeerURL:   peer.PeerURL,
-			ClientURL: peer.ClientURL,
+		Leader: &api.EtcdClusterMember{
+			Name:       leader.Name,
+			PeerUrls:   leader.PeerURLs,
+			ClientUrls: leader.ClientURLs,
 		},
 		Credentials: &api.ClusterCredentials{
 			Username:   creds.Username,
@@ -198,9 +202,7 @@ func (s *PostInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPa
 	if count != 0 {
 		return makeInvalidInputErr(errors.New("cannot remove host with running instances"))
 	}
-	// TODO: When we add support for remote etcd, this will become conditional.
-	// We'll need to keep track of which hosts are part of the etcd cluster.
-	err = s.etcd.RemovePeer(ctx, hostID)
+	err = s.etcd.RemoveHost(ctx, hostID)
 	if err != nil {
 		return apiErr(err)
 	}

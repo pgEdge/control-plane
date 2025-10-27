@@ -146,7 +146,8 @@ func TestS3BackupRestore(t *testing.T) {
 		t.Skip("s3 not enabled for this fixture")
 	}
 
-	host1 := fixture.HostIDs()[0]
+	hostIDs := fixture.HostIDs()
+	host1 := hostIDs[0]
 	dbID := uuid.NewString()
 
 	t.Cleanup(func() {
@@ -170,8 +171,12 @@ func TestS3BackupRestore(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port:  pointerTo(0),
-			Nodes: fixture.OneNodePerHost(),
+			Port: pointerTo(0),
+			Nodes: []*controlplane.DatabaseNodeSpec{
+				{Name: "n1", HostIds: []controlplane.Identifier{controlplane.Identifier(hostIDs[0])}},
+				{Name: "n2", HostIds: []controlplane.Identifier{controlplane.Identifier(hostIDs[1])}},
+				{Name: "n3", HostIds: []controlplane.Identifier{controlplane.Identifier(hostIDs[2])}},
+			},
 			BackupConfig: &controlplane.BackupConfigSpec{
 				Repositories: []*controlplane.BackupRepositorySpec{
 					fixture.S3BackupRepository(),

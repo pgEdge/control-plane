@@ -120,3 +120,8 @@ func (s Set[T]) ToSortedSlice(cmp func(a T, b T) int) []T {
 
 	return slice
 }
+
+// SetDifference (a-b) returns the set of elements that are in a, but not b.
+func SetDifference[T comparable](a, b []T) Set[T] {
+	return NewSet(a...).Difference(NewSet(b...))
+}

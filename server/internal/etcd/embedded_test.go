@@ -5,9 +5,9 @@ package etcd_test
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
@@ -17,8 +17,10 @@ import (
 )
 
 func TestEmbeddedEtcd(t *testing.T) {
+	t.Parallel()
+
 	t.Run("standalone", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		cfg := config.Config{
 			HostID:      uuid.NewString(),
 			DataDir:     t.TempDir(),
@@ -125,17 +127,21 @@ func TestEmbeddedEtcd(t *testing.T) {
 		require.NotNil(t, serverB)
 
 		// Generate credentials for server B
-		creds, err := serverA.AddPeerUser(ctx, etcd.HostCredentialOptions{
-			HostID:      cfgB.HostID,
-			Hostname:    cfgB.Hostname,
-			IPv4Address: cfgB.IPv4Address,
+		creds, err := serverA.AddHost(ctx, etcd.HostCredentialOptions{
+			HostID:              cfgB.HostID,
+			Hostname:            cfgB.Hostname,
+			IPv4Address:         cfgB.IPv4Address,
+			EmbeddedEtcdEnabled: true,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, creds)
 
+		leader, err := serverA.Leader(ctx)
+		require.NoError(t, err)
+
 		// Start server B
 		err = serverB.Join(ctx, etcd.JoinOptions{
-			Peer:        serverA.AsPeer(),
+			Leader:      leader,
 			Credentials: creds,
 		})
 		require.NoError(t, err)
@@ -182,6 +188,14 @@ func TestEmbeddedEtcd(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, int64(1), resp.Count)
 		require.Equal(t, "qux", string(resp.Kvs[0].Value))
+
+		// Assert that server B returns the same leader as A
+		leaderA, err := serverA.Leader(ctx)
+		require.NoError(t, err)
+		leaderB, err := serverB.Leader(ctx)
+		require.NoError(t, err)
+
+		assert.Equal(t, leaderA, leaderB)
 
 		require.NoError(t, serverA.Shutdown())
 		require.NoError(t, serverB.Shutdown())
@@ -235,15 +249,19 @@ func TestEmbeddedEtcd(t *testing.T) {
 		}
 		serverC := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgC), logger)
 
+		leader, err := serverA.Leader(ctx)
+		require.NoError(t, err)
+
 		// Join server B
-		serverBCreds, err := serverA.AddPeerUser(ctx, etcd.HostCredentialOptions{
-			HostID:      cfgB.HostID,
-			Hostname:    cfgB.Hostname,
-			IPv4Address: cfgB.IPv4Address,
+		serverBCreds, err := serverA.AddHost(ctx, etcd.HostCredentialOptions{
+			HostID:              cfgB.HostID,
+			Hostname:            cfgB.Hostname,
+			IPv4Address:         cfgB.IPv4Address,
+			EmbeddedEtcdEnabled: true,
 		})
 		require.NoError(t, err)
 		err = serverB.Join(ctx, etcd.JoinOptions{
-			Peer:        serverA.AsPeer(),
+			Leader:      leader,
 			Credentials: serverBCreds,
 		})
 		require.NoError(t, err)
@@ -252,14 +270,15 @@ func TestEmbeddedEtcd(t *testing.T) {
 		})
 
 		// Join server C
-		serverCCreds, err := serverA.AddPeerUser(ctx, etcd.HostCredentialOptions{
-			HostID:      cfgC.HostID,
-			Hostname:    cfgC.Hostname,
-			IPv4Address: cfgC.IPv4Address,
+		serverCCreds, err := serverA.AddHost(ctx, etcd.HostCredentialOptions{
+			HostID:              cfgC.HostID,
+			Hostname:            cfgC.Hostname,
+			IPv4Address:         cfgC.IPv4Address,
+			EmbeddedEtcdEnabled: true,
 		})
 		require.NoError(t, err)
 		err = serverC.Join(ctx, etcd.JoinOptions{
-			Peer:        serverA.AsPeer(),
+			Leader:      leader,
 			Credentials: serverCCreds,
 		})
 		require.NoError(t, err)
@@ -307,16 +326,16 @@ func TestEmbeddedEtcd(t *testing.T) {
 		require.Equal(t, int64(1), resp.Count)
 		require.Equal(t, "bar", string(resp.Kvs[0].Value))
 
-		// Removing a non-existent peer should produce a not found error
-		err = serverA.RemovePeer(ctx, uuid.NewString())
-		require.ErrorIs(t, err, etcd.ErrMemberNotFound)
+		// Removing a non-existent peer should not produce an error
+		err = serverA.RemoveHost(ctx, uuid.NewString())
+		require.NoError(t, err)
 
 		// A cluster member cannot remove itself
-		err = serverA.RemovePeer(ctx, cfgA.HostID)
+		err = serverA.RemoveHost(ctx, cfgA.HostID)
 		require.ErrorIs(t, err, etcd.ErrCannotRemoveSelf)
 
 		// Remove server C
-		err = serverA.RemovePeer(ctx, cfgC.HostID)
+		err = serverA.RemoveHost(ctx, cfgC.HostID)
 		require.NoError(t, err)
 
 		// Validate that the cluster member is removed
@@ -338,92 +357,8 @@ func TestEmbeddedEtcd(t *testing.T) {
 		}
 
 		// Attempting to remove another member should produce a minimum size err
-		err = serverA.RemovePeer(ctx, cfgB.HostID)
+		err = serverA.RemoveHost(ctx, cfgB.HostID)
 		require.ErrorIs(t, err, etcd.ErrMinimumClusterSize)
-	})
-
-	t.Run("join cluster from follower", func(t *testing.T) {
-		logger := testutils.Logger(t)
-		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
-		defer cancel()
-
-		// Initialize the cluster
-		cfgA := config.Config{
-			HostID:      uuid.NewString(),
-			DataDir:     t.TempDir(),
-			StorageType: config.StorageTypeEmbeddedEtcd,
-			IPv4Address: "127.0.0.1",
-			Hostname:    "localhost",
-			EmbeddedEtcd: config.EmbeddedEtcd{
-				ClientPort: storagetest.GetFreePort(t),
-				PeerPort:   storagetest.GetFreePort(t),
-			},
-		}
-		serverA := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgA), logger)
-		require.NoError(t, serverA.Start(ctx))
-		t.Cleanup(func() {
-			serverA.Shutdown()
-		})
-
-		cfgB := config.Config{
-			HostID:      uuid.NewString(),
-			DataDir:     t.TempDir(),
-			StorageType: config.StorageTypeEmbeddedEtcd,
-			IPv4Address: "127.0.0.1",
-			Hostname:    "localhost",
-			EmbeddedEtcd: config.EmbeddedEtcd{
-				ClientPort: storagetest.GetFreePort(t),
-				PeerPort:   storagetest.GetFreePort(t),
-			},
-		}
-		serverB := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgB), logger)
-
-		cfgC := config.Config{
-			HostID:      uuid.NewString(),
-			DataDir:     t.TempDir(),
-			StorageType: config.StorageTypeEmbeddedEtcd,
-			IPv4Address: "127.0.0.1",
-			Hostname:    "localhost",
-			EmbeddedEtcd: config.EmbeddedEtcd{
-				ClientPort: storagetest.GetFreePort(t),
-				PeerPort:   storagetest.GetFreePort(t),
-			},
-		}
-		serverC := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgC), logger)
-
-		// Join server B
-		serverBCreds, err := serverA.AddPeerUser(ctx, etcd.HostCredentialOptions{
-			HostID:      cfgB.HostID,
-			Hostname:    cfgB.Hostname,
-			IPv4Address: cfgB.IPv4Address,
-		})
-		require.NoError(t, err)
-		err = serverB.Join(ctx, etcd.JoinOptions{
-			Peer:        serverA.AsPeer(),
-			Credentials: serverBCreds,
-		})
-		require.NoError(t, err)
-		t.Cleanup(func() {
-			serverB.Shutdown()
-		})
-
-		// At this point, server A is the raft leader and Server B is a
-		// follower. Joining server C to server B exercises the leaderClient
-		// function.
-		serverCCreds, err := serverB.AddPeerUser(ctx, etcd.HostCredentialOptions{
-			HostID:      cfgC.HostID,
-			Hostname:    cfgC.Hostname,
-			IPv4Address: cfgC.IPv4Address,
-		})
-		require.NoError(t, err)
-		err = serverC.Join(ctx, etcd.JoinOptions{
-			Peer:        serverB.AsPeer(),
-			Credentials: serverCCreds,
-		})
-		require.NoError(t, err)
-		t.Cleanup(func() {
-			serverC.Shutdown()
-		})
 	})
 }
 

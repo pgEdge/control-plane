@@ -35,6 +35,8 @@ type GetJoinOptionsRequestBody struct {
 	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
 	// The IPv4 address of the host that's joining the cluster.
 	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
+	// True if the joining member is configured to run an embedded an etcd server.
+	EmbeddedEtcdEnabled *bool `form:"embedded_etcd_enabled,omitempty" json:"embedded_etcd_enabled,omitempty" xml:"embedded_etcd_enabled,omitempty"`
 }
 
 // CreateDatabaseRequestBody is the type of the "control-plane" service
@@ -126,8 +128,8 @@ type GetJoinTokenResponseBody struct {
 // GetJoinOptionsResponseBody is the type of the "control-plane" service
 // "get-join-options" endpoint HTTP response body.
 type GetJoinOptionsResponseBody struct {
-	// Information about this cluster member
-	Peer *ClusterPeerResponseBody `form:"peer" json:"peer" xml:"peer"`
+	// Connection information for the etcd cluster leader
+	Leader *EtcdClusterMemberResponseBody `form:"leader" json:"leader" xml:"leader"`
 	// Credentials for the new host joining the cluster.
 	Credentials *ClusterCredentialsResponseBody `form:"credentials" json:"credentials" xml:"credentials"`
 }
@@ -374,6 +376,16 @@ type CancelDatabaseTaskResponseBody struct {
 // "control-plane" service "init-cluster" endpoint HTTP response body for the
 // "cluster_already_initialized" error.
 type InitClusterClusterAlreadyInitializedResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// InitClusterOperationNotSupportedResponseBody is the type of the
+// "control-plane" service "init-cluster" endpoint HTTP response body for the
+// "operation_not_supported" error.
+type InitClusterOperationNotSupportedResponseBody struct {
 	// The name of the error.
 	Name string `form:"name" json:"name" xml:"name"`
 	// The error message.
@@ -1329,14 +1341,15 @@ type CancelDatabaseTaskServerErrorResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
-// ClusterPeerResponseBody is used to define fields on response body types.
-type ClusterPeerResponseBody struct {
+// EtcdClusterMemberResponseBody is used to define fields on response body
+// types.
+type EtcdClusterMemberResponseBody struct {
 	// The name of the Etcd cluster member.
 	Name string `form:"name" json:"name" xml:"name"`
 	// The Etcd peer endpoint for this cluster member.
-	PeerURL string `form:"peer_url" json:"peer_url" xml:"peer_url"`
+	PeerUrls []string `form:"peer_urls" json:"peer_urls" xml:"peer_urls"`
 	// The Etcd client endpoint for this cluster member.
-	ClientURL string `form:"client_url" json:"client_url" xml:"client_url"`
+	ClientUrls []string `form:"client_urls" json:"client_urls" xml:"client_urls"`
 }
 
 // ClusterCredentialsResponseBody is used to define fields on response body
@@ -2428,8 +2441,8 @@ func NewGetJoinTokenResponseBody(res *controlplane.ClusterJoinToken) *GetJoinTok
 // of the "get-join-options" endpoint of the "control-plane" service.
 func NewGetJoinOptionsResponseBody(res *controlplane.ClusterJoinOptions) *GetJoinOptionsResponseBody {
 	body := &GetJoinOptionsResponseBody{}
-	if res.Peer != nil {
-		body.Peer = marshalControlplaneClusterPeerToClusterPeerResponseBody(res.Peer)
+	if res.Leader != nil {
+		body.Leader = marshalControlplaneEtcdClusterMemberToEtcdClusterMemberResponseBody(res.Leader)
 	}
 	if res.Credentials != nil {
 		body.Credentials = marshalControlplaneClusterCredentialsToClusterCredentialsResponseBody(res.Credentials)
@@ -2749,6 +2762,17 @@ func NewCancelDatabaseTaskResponseBody(res *controlplane.Task) *CancelDatabaseTa
 // service.
 func NewInitClusterClusterAlreadyInitializedResponseBody(res *controlplane.APIError) *InitClusterClusterAlreadyInitializedResponseBody {
 	body := &InitClusterClusterAlreadyInitializedResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewInitClusterOperationNotSupportedResponseBody builds the HTTP response
+// body from the result of the "init-cluster" endpoint of the "control-plane"
+// service.
+func NewInitClusterOperationNotSupportedResponseBody(res *controlplane.APIError) *InitClusterOperationNotSupportedResponseBody {
+	body := &InitClusterOperationNotSupportedResponseBody{
 		Name:    res.Name,
 		Message: res.Message,
 	}
@@ -3799,10 +3823,11 @@ func NewJoinClusterClusterJoinToken(body *JoinClusterRequestBody) *controlplane.
 // get-join-options endpoint payload.
 func NewGetJoinOptionsClusterJoinRequest(body *GetJoinOptionsRequestBody) *controlplane.ClusterJoinRequest {
 	v := &controlplane.ClusterJoinRequest{
-		Token:       *body.Token,
-		HostID:      controlplane.Identifier(*body.HostID),
-		Hostname:    *body.Hostname,
-		Ipv4Address: *body.Ipv4Address,
+		Token:               *body.Token,
+		HostID:              controlplane.Identifier(*body.HostID),
+		Hostname:            *body.Hostname,
+		Ipv4Address:         *body.Ipv4Address,
+		EmbeddedEtcdEnabled: *body.EmbeddedEtcdEnabled,
 	}
 
 	return v
@@ -4061,6 +4086,9 @@ func ValidateJoinClusterRequestBody(body *JoinClusterRequestBody) (err error) {
 // ValidateGetJoinOptionsRequestBody runs the validations defined on
 // Get-Join-OptionsRequestBody
 func ValidateGetJoinOptionsRequestBody(body *GetJoinOptionsRequestBody) (err error) {
+	if body.EmbeddedEtcdEnabled == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("embedded_etcd_enabled", "body"))
+	}
 	if body.Token == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("token", "body"))
 	}

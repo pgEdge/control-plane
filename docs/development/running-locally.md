@@ -1,14 +1,13 @@
 # Running the Control Plane locally
 
-The `docker/control-plane-dev` directory contains configuration for a three-host
+The `docker/control-plane-dev` directory contains configuration for a six-host
 Control Plane cluster that runs in Docker via Docker Compose.
 
 ## Prerequisites
 
 ### Docker Desktop
 
-On MacOS, Docker Desktop can be obtained through the Kandji Self Service App or
-from the [official download page](https://www.docker.com/products/docker-desktop/).
+On MacOS, Docker Desktop can be obtained from the [official download page](https://www.docker.com/products/docker-desktop/).
 
 #### Configuration
 
@@ -81,6 +80,33 @@ configuration file location for non-MacOS systems.
       }
     },
     "tls": {}
+  },
+  "control-plane-local-4": {
+    "base": "http://localhost:3003",
+    "profiles": {
+      "default": {
+        
+      }
+    },
+    "tls": {}
+  },
+  "control-plane-local-5": {
+    "base": "http://localhost:3004",
+    "profiles": {
+      "default": {
+        
+      }
+    },
+    "tls": {}
+  },
+  "control-plane-local-6": {
+    "base": "http://localhost:3005",
+    "profiles": {
+      "default": {
+        
+      }
+    },
+    "tls": {}
   }
 }
 ```
@@ -107,7 +133,32 @@ initialize a new cluster and create a new database:
 restish control-plane-local-1 init-cluster
 restish control-plane-local-2 join-cluster "$(restish control-plane-local-1 get-join-token)"
 restish control-plane-local-3 join-cluster "$(restish control-plane-local-1 get-join-token)"
-restish control-plane-local-1 create-database '{"spec":{"database_name":"my_app","database_users":[{"username":"admin","password":"password","attributes":["SUPERUSER","LOGIN"]},{"username":"app","password":"password","attributes":["LOGIN"],"roles":["pgedge_application"]}],"nodes":[{"name":"n1","host_ids":["host-1"]},{"name":"n2","host_ids":["host-2"]},{"name":"n3","host_ids":["host-3"]}]}}'
+restish control-plane-local-4 join-cluster "$(restish control-plane-local-1 get-join-token)"
+restish control-plane-local-5 join-cluster "$(restish control-plane-local-1 get-join-token)"
+restish control-plane-local-6 join-cluster "$(restish control-plane-local-1 get-join-token)"
+restish control-plane-local-1 create-database '{
+  "spec": {
+    "database_name": "my_app",
+    "database_users": [
+      {
+        "username": "admin",
+        "password": "password",
+        "attributes": ["SUPERUSER", "LOGIN"]
+      },
+      {
+        "username": "app",
+        "password": "password",
+        "attributes": ["LOGIN"],
+        "roles": ["pgedge_application"]
+      }
+    ],
+    "nodes": [
+      { "name": "n1", "host_ids": ["host-1", "host-4"] },
+      { "name": "n2", "host_ids": ["host-2", "host-5"] },
+      { "name": "n3", "host_ids": ["host-3", "host-6"] }
+    ]
+  }
+}'
 ```
 
 The API is under active development. You can find the current set of endpoints

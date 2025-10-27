@@ -60,6 +60,54 @@ services:
       interval: 2s
       timeout: 1s
       retries: 30
+  host-4:
+    extends:
+      service: host-1
+    environment:
+      - DEBUG=0
+      - PGEDGE_HOST_ID=host-4
+      - PGEDGE_DATA_DIR=${WORKSPACE_DIR}/docker/control-plane-dev/data/host-4
+      - PGEDGE_HTTP__PORT=3003
+      - PGEDGE_STORAGE_TYPE=remote_etcd
+      - PGEDGE_LOGGING__LEVEL=${LOG_LEVEL:-info}
+      - PGEDGE_DOCKER_SWARM__IMAGE_REPOSITORY_HOST=${DEV_IMAGE_REPO:-ghcr.io/pgedge}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3003/v1/version"]
+      interval: 2s
+      timeout: 1s
+      retries: 30
+  host-5:
+    extends:
+      service: host-1
+    environment:
+      - DEBUG=0
+      - PGEDGE_HOST_ID=host-5
+      - PGEDGE_DATA_DIR=${WORKSPACE_DIR}/docker/control-plane-dev/data/host-5
+      - PGEDGE_HTTP__PORT=3004
+      - PGEDGE_STORAGE_TYPE=remote_etcd
+      - PGEDGE_LOGGING__LEVEL=${LOG_LEVEL:-info}
+      - PGEDGE_DOCKER_SWARM__IMAGE_REPOSITORY_HOST=${DEV_IMAGE_REPO:-ghcr.io/pgedge}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3004/v1/version"]
+      interval: 2s
+      timeout: 1s
+      retries: 30
+  host-6:
+    extends:
+      service: host-1
+    environment:
+      - DEBUG=0
+      - PGEDGE_HOST_ID=host-6
+      - PGEDGE_DATA_DIR=${WORKSPACE_DIR}/docker/control-plane-dev/data/host-6
+      - PGEDGE_HTTP__PORT=3005
+      - PGEDGE_STORAGE_TYPE=remote_etcd
+      - PGEDGE_LOGGING__LEVEL=${LOG_LEVEL:-info}
+      - PGEDGE_DOCKER_SWARM__IMAGE_REPOSITORY_HOST=${DEV_IMAGE_REPO:-ghcr.io/pgedge}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3005/v1/version"]
+      interval: 2s
+      timeout: 1s
+      retries: 30
   api-docs:
     image: redocly/redoc
     ports:

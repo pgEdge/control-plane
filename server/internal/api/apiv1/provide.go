@@ -27,11 +27,11 @@ func providePreInitHandlers(i *do.Injector) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get config: %w", err)
 		}
-		etcdServer, err := do.Invoke[*etcd.EmbeddedEtcd](i)
+		e, err := do.Invoke[etcd.Etcd](i)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get embedded etcd: %w", err)
 		}
-		return NewPreInitHandlers(cfg, etcdServer), nil
+		return NewPreInitHandlers(cfg, e), nil
 	})
 }
 
@@ -45,7 +45,7 @@ func providePostInitHandlers(i *do.Injector) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get logger: %w", err)
 		}
-		etcdClient, err := do.Invoke[*etcd.EmbeddedEtcd](i)
+		e, err := do.Invoke[etcd.Etcd](i)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get embedded etcd: %w", err)
 		}
@@ -70,7 +70,7 @@ func providePostInitHandlers(i *do.Injector) {
 			return nil, fmt.Errorf("failed to get cluster service: %w", err)
 		}
 
-		return NewPostInitHandlers(cfg, logger, etcdClient, hostSvc, dbSvc, taskSvc, workflowSvc, clusterSvc), nil
+		return NewPostInitHandlers(cfg, logger, e, hostSvc, dbSvc, taskSvc, workflowSvc, clusterSvc), nil
 	})
 }
 

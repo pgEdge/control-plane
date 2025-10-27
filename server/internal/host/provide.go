@@ -37,7 +37,7 @@ func provideService(i *do.Injector) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get config: %w", err)
 		}
-		embeddedEtcd, err := do.Invoke[*etcd.EmbeddedEtcd](i)
+		embeddedEtcd, err := do.Invoke[etcd.Etcd](i)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get embedded etcd: %w", err)
 		}

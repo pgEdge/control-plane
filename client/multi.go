@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 )
@@ -67,13 +68,18 @@ func (c *MultiServerClient) InitCluster(ctx context.Context, req *api.InitCluste
 	}
 
 	if joinToken == nil {
-		server := uninitialized[0]
-		tok, err := server.InitCluster(ctx, req)
-		if err != nil {
-			return nil, fmt.Errorf("failed to initialize cluster: %w", err)
+		for i, server := range uninitialized {
+			tok, err := server.InitCluster(ctx, req)
+			if errors.Is(err, ErrOperationNotSupported) {
+				continue
+			} else if err != nil {
+				return nil, fmt.Errorf("failed to initialize cluster: %w", err)
+			}
+
+			joinToken = tok
+			uninitialized = slices.Delete(uninitialized, i, i+1)
+			break
 		}
-		joinToken = tok
-		uninitialized = uninitialized[1:]
 	}
 
 	for _, server := range uninitialized {

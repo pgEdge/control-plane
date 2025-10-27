@@ -233,8 +233,8 @@ type ClusterCredentials struct {
 // ClusterJoinOptions is the result type of the control-plane service
 // get-join-options method.
 type ClusterJoinOptions struct {
-	// Information about this cluster member
-	Peer *ClusterPeer
+	// Connection information for the etcd cluster leader
+	Leader *EtcdClusterMember
 	// Credentials for the new host joining the cluster.
 	Credentials *ClusterCredentials
 }
@@ -250,6 +250,8 @@ type ClusterJoinRequest struct {
 	Hostname string
 	// The IPv4 address of the host that's joining the cluster.
 	Ipv4Address string
+	// True if the joining member is configured to run an embedded an etcd server.
+	EmbeddedEtcdEnabled bool
 }
 
 // ClusterJoinToken is the result type of the control-plane service
@@ -259,15 +261,6 @@ type ClusterJoinToken struct {
 	Token string
 	// Existing server to join
 	ServerURL string
-}
-
-type ClusterPeer struct {
-	// The name of the Etcd cluster member.
-	Name string
-	// The Etcd peer endpoint for this cluster member.
-	PeerURL string
-	// The Etcd client endpoint for this cluster member.
-	ClientURL string
 }
 
 type ClusterStatus struct {
@@ -429,6 +422,15 @@ type DeleteDatabasePayload struct {
 type DeleteDatabaseResponse struct {
 	// The task that will delete this database.
 	Task *Task
+}
+
+type EtcdClusterMember struct {
+	// The name of the Etcd cluster member.
+	Name string
+	// The Etcd peer endpoint for this cluster member.
+	PeerUrls []string
+	// The Etcd client endpoint for this cluster member.
+	ClientUrls []string
 }
 
 // Describes an additional Docker network to attach the container to.
@@ -973,6 +975,11 @@ func MakeServerError(err error) *goa.ServiceError {
 // MakeClusterAlreadyInitialized builds a goa.ServiceError from an error.
 func MakeClusterAlreadyInitialized(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "cluster_already_initialized", false, false, false)
+}
+
+// MakeOperationNotSupported builds a goa.ServiceError from an error.
+func MakeOperationNotSupported(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "operation_not_supported", false, false, false)
 }
 
 // MakeInvalidJoinToken builds a goa.ServiceError from an error.

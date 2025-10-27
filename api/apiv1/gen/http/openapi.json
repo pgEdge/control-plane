@@ -92,6 +92,16 @@
               ]
             }
           },
+          "400": {
+            "description": "Bad Request response.",
+            "schema": {
+              "$ref": "#/definitions/APIError",
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          },
           "409": {
             "description": "Conflict response.",
             "schema": {

@@ -11,11 +11,11 @@ import (
 	"os"
 
 	"github.com/google/uuid"
-	"github.com/pgEdge/control-plane/server/internal/cluster"
 	goahttp "goa.design/goa/v3/http"
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	"github.com/pgEdge/control-plane/api/apiv1/gen/http/control_plane/client"
+	"github.com/pgEdge/control-plane/server/internal/cluster"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/version"
@@ -25,11 +25,11 @@ var _ api.Service = (*PreInitHandlers)(nil)
 
 type PreInitHandlers struct {
 	cfg             config.Config
-	etcd            *etcd.EmbeddedEtcd
+	etcd            etcd.Etcd
 	handlersReadyCh <-chan error
 }
 
-func NewPreInitHandlers(cfg config.Config, etcdServer *etcd.EmbeddedEtcd) *PreInitHandlers {
+func NewPreInitHandlers(cfg config.Config, etcdServer etcd.Etcd) *PreInitHandlers {
 	return &PreInitHandlers{
 		cfg:  cfg,
 		etcd: etcdServer,
@@ -107,10 +107,11 @@ func (s *PreInitHandlers) JoinCluster(ctx context.Context, token *api.ClusterJoi
 	}
 
 	opts, err := cli.GetJoinOptions(ctx, &api.ClusterJoinRequest{
-		HostID:      api.Identifier(s.cfg.HostID),
-		Hostname:    s.cfg.Hostname,
-		Ipv4Address: s.cfg.IPv4Address,
-		Token:       token.Token,
+		HostID:              api.Identifier(s.cfg.HostID),
+		Hostname:            s.cfg.Hostname,
+		Ipv4Address:         s.cfg.IPv4Address,
+		Token:               token.Token,
+		EmbeddedEtcdEnabled: s.cfg.StorageType == config.StorageTypeEmbeddedEtcd,
 	})
 	if err != nil {
 		return apiErr(err)
@@ -138,10 +139,10 @@ func (s *PreInitHandlers) JoinCluster(ctx context.Context, token *api.ClusterJoi
 	}
 
 	err = s.etcd.Join(ctx, etcd.JoinOptions{
-		Peer: etcd.Peer{
-			Name:      opts.Peer.Name,
-			PeerURL:   opts.Peer.PeerURL,
-			ClientURL: opts.Peer.ClientURL,
+		Leader: &etcd.ClusterMember{
+			Name:       opts.Leader.Name,
+			PeerURLs:   opts.Leader.PeerUrls,
+			ClientURLs: opts.Leader.ClientUrls,
 		},
 		Credentials: &etcd.HostCredentials{
 			Username:   opts.Credentials.Username,

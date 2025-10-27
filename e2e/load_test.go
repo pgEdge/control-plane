@@ -294,29 +294,5 @@ func (l *Loader) workload(ctx context.Context, t testing.TB, conn *pgx.Conn) {
 func (l *Loader) waitForReplication(ctx context.Context, t testing.TB, conn *pgx.Conn) {
 	tLogf(t, "%s loader: got stop signal. waiting for replication catch up with writes.", l.TableName)
 
-	lagSQL := `
-		SELECT NOT EXISTS (
-			SELECT 1
-			FROM spock.lag_tracker
-			WHERE replication_lag_bytes > 0
-		);`
-
-	ticker := time.NewTicker(500 * time.Millisecond)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			var finished bool
-
-			err := conn.QueryRow(ctx, lagSQL).Scan(&finished)
-			require.NoError(t, err)
-
-			if finished {
-				return
-			}
-		}
-	}
+	WaitForReplication(ctx, t, conn)
 }
