@@ -80,17 +80,34 @@ For more details, see the [Docker Swarm documentation](https://docs.docker.com/e
 
 Once your swarm is setup, the Control Plane server should be deployed onto every node in your Docker Swarm cluster using a stack definition file.
 
+We recommend using "placement constraints" in your stack definition to deploy the Control Plane server onto specific Swarm nodes.
+
 ### Creating the stack definition file
 
-The following stack definition file will deploy a single Control Plane server to all hosts in the swarm cluster.
+You can run the following command on one of the Swarm nodes to get the node ID for each node in the Docker Swarm cluster. The node with an asterisk (*) next to its ID is the node you're running the command on.
+
+``` sh
+docker node ls
+```
+
+The output will look like this:
+
+```sh
+ID                            HOSTNAME         STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+vzou89zyd4n3xz6p6jvoohqxx *   host-1           Ready     Active         Leader           28.3.3
+5sa7m11ub62t1n22feuhg0mbp     host-2           Ready     Active         Reachable        28.3.3
+our0m7sn7gjops9klp7j1nvu7     host-3           Ready     Active         Reachable        28.3.3
+```
+
+Given that output, the following stack definition file will deploy a single Control Plane server to each node, where each [host](concepts.md#hosts) is named sequentally (`host-1`, `host-2`, and `host-3`).
 
 ```yaml
 services:
-  server:
+  host-1:
     image: ghcr.io/pgedge/control-plane:v0.4.0
     command: run
     environment:
-      - PGEDGE_HOST_ID={{.Node.ID}}
+      - PGEDGE_HOST_ID=host-1
       - PGEDGE_DATA_DIR=/data/pgedge/control-plane
     volumes:
       - /data/pgedge/control-plane:/data/pgedge/control-plane
@@ -98,14 +115,56 @@ services:
     networks:
       - host
     deploy:
-      mode: global
+      placement:
+        constraints:
+          - node.id==vzou89zyd4n3xz6p6jvoohqxx
+  host-2:
+    image: ghcr.io/pgedge/control-plane:v0.4.0
+    command: run
+    environment:
+      - PGEDGE_HOST_ID=host-2
+      - PGEDGE_DATA_DIR=/data/pgedge/control-plane
+    volumes:
+      - /data/pgedge/control-plane:/data/pgedge/control-plane
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - host
+    deploy:
+      placement:
+        constraints:
+          - node.id==5sa7m11ub62t1n22feuhg0mbp
+  host-3:
+    image: ghcr.io/pgedge/control-plane:v0.4.0
+    command: run
+    environment:
+      - PGEDGE_HOST_ID=host-3
+      - PGEDGE_DATA_DIR=/data/pgedge/control-plane
+    volumes:
+      - /data/pgedge/control-plane:/data/pgedge/control-plane
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - host
+    deploy:
+      placement:
+        constraints:
+          - node.id==our0m7sn7gjops9klp7j1nvu7
 networks:
   host:
     name: host
     external: true
 ```
 
-This configuration will run one Control Plane container on each Swarm node automatically. As new Swarm nodes are added, the Control Plane server will be automatically deployed to them.
+Placement constraints in Docker Swarm are used to control where services run within your cluster. In the configuration above, each service under deploy specifies a placement constraint:
+
+``` yaml
+    deploy:
+      placement:
+        constraints:
+          - node.id==our0m7sn7gjops9klp7j1nvu7
+```
+
+This tells Docker Swarm to run the service only on the node with the matching node.id. By setting constraints like this, you ensure that each Control Plane container is deployed to a specific host in your cluster.
+
 
 !!! note
 
@@ -119,11 +178,9 @@ This configuration will run one Control Plane container on each Swarm node autom
     The path to the data volume **must be the same** inside the
     container as it is outside the container. The Control Plane provides this path to Docker when it runs database containers, so it needs to be accessible on the host and inside the container.
 
-#### Alternative stack definition
+#### Stack Definition Generator
 
-If you require more granularity when customizing the Control Plane's [configuration options](./configuration.md) on a per-host basis, you can use an alternative stack definition file which uses "placement constraints" to deploy the Control Plane server onto specific Swarm nodes, with differing configuration.
-
-In order to make it easier to generate such a configuration, you can use the generator below to create a stack definition file based on the nodes in your Docker Swarm.
+In order to make it easier to generate the stack definition file, you can use the generator below to create a stack definition file based on the nodes in your Docker Swarm.
 
 First, run the following command from any node within the swarm to list the Node IDs:
 
