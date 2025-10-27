@@ -19,89 +19,96 @@ import (
 var username string = "admin"
 var password string = "password"
 
-// Creates a database with a custom PostgreSQL version.
+// Creates databases with every supported Postgres and Spock version.
 // Performs various validations, such as checking primary and replica node functionality.
 // Uses DatabaseFixture to create the database.
-func TestCreateDbWithCustomPgVersion(t *testing.T) {
-
-	t.Parallel()
-
-	targetPgVersion := "16.10"
-
-	t.Logf("This is a test for custom db creation, going to create for Pg version %s", targetPgVersion)
-
-	// define the cluster topology(nodes structure)
-	totalhost := len(fixture.config.Hosts)
-	nodeCount := 2
-	hostPerNode := 2
-	nodes := createNodesStruct(nodeCount, hostPerNode, t)
-
-	expectedReplicas := totalhost - len(nodes)
-
-	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Minute)
-	defer cancel()
-
-	// Create a new database fixture that provisions a database based on the given
-	// specs and also provides access to useful objects and methods through the
-	// fixture struct
-	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
-		Spec: &controlplane.DatabaseSpec{
-			DatabaseName: "test_db_create",
-			DatabaseUsers: []*controlplane.DatabaseUserSpec{
-				{
-					Username:   username,
-					Password:   pointerTo(password),
-					DbOwner:    pointerTo(true),
-					Attributes: []string{"LOGIN", "SUPERUSER"},
-				},
-			},
-			Port:            pointerTo(0),
-			Cpus:            pointerTo("1000m"),
-			Memory:          pointerTo("1GB"),
-			PostgresVersion: pointerTo(targetPgVersion),
-			SpockVersion:    pointerTo("5"),
-			Nodes:           nodes,
-		},
+func TestCreateDbWithVersions(t *testing.T) {
+	// The supported versions will be the same across all hosts.
+	host, err := fixture.Client.GetHost(t.Context(), &controlplane.GetHostPayload{
+		HostID: controlplane.Identifier(fixture.HostIDs()[0]),
 	})
+	require.NoError(t, err)
 
-	// verification
-	// 1. Validate expected count of primary and replica nodes
-	assert.True(t, len(nodes) == getTotalPrimaryNodes(db),
-		"Found replica count must match expected replica count")
+	for _, version := range host.SupportedPgedgeVersions {
+		name := fmt.Sprintf("postgres %s with spock %s", version.PostgresVersion, version.SpockVersion)
 
-	assert.True(t, expectedReplicas == getTotalReplicaNodes(db),
-		"Found replica count must match expected replica count")
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	// 2. validate primary and replica related functionalities
-	for i := 0; i < len(fixture.config.Hosts); i++ {
-		// verify_primary := true
-		// execute it only for Primary nodes
-		// establish primary node connection, verify pg version and db write functionality etc
-		if *db.Instances[i].Postgres.Role == "primary" {
+			// define the cluster topology(nodes structure)
+			totalhost := len(fixture.config.Hosts)
+			nodeCount := 2
+			hostPerNode := 2
+			nodes := createNodesStruct(nodeCount, hostPerNode, t)
+
+			expectedReplicas := totalhost - len(nodes)
+
+			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Minute)
+			defer cancel()
+
+			// Create a new database fixture that provisions a database based on the given
+			// specs and also provides access to useful objects and methods through the
+			// fixture struct
+			db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
+				Spec: &controlplane.DatabaseSpec{
+					DatabaseName: "test_db_create",
+					DatabaseUsers: []*controlplane.DatabaseUserSpec{
+						{
+							Username:   username,
+							Password:   pointerTo(password),
+							DbOwner:    pointerTo(true),
+							Attributes: []string{"LOGIN", "SUPERUSER"},
+						},
+					},
+					Port:            pointerTo(0),
+					Cpus:            pointerTo("1000m"),
+					Memory:          pointerTo("1GB"),
+					PostgresVersion: pointerTo(version.PostgresVersion),
+					SpockVersion:    pointerTo(version.SpockVersion),
+					Nodes:           nodes,
+				},
+			})
+
 			// verification
-			primaryOpts := ConnectionOptions{
-				Matcher:  And(WithHost(db.Instances[i].HostID), WithRole("primary")),
-				Username: username,
-				Password: password,
-			}
+			// 1. Validate expected count of primary and replica nodes
+			assert.True(t, len(nodes) == getTotalPrimaryNodes(db),
+				"Found replica count must match expected replica count")
 
-			verifyPgVersion(ctx, db, primaryOpts, targetPgVersion, t)
-			verifyPrimaryNodes(ctx, db, primaryOpts, t)
-			// verify_primary = false
-		} else {
-			// verify replicas
-			// establish replica connection, verify pg version, read-only status etc
-			connOpts := ConnectionOptions{
-				Matcher:  And(WithHost(db.Instances[i].HostID), WithRole("replica")),
-				Username: username,
-				Password: password,
+			assert.True(t, expectedReplicas == getTotalReplicaNodes(db),
+				"Found replica count must match expected replica count")
+
+			// 2. validate primary and replica related functionalities
+			for i := 0; i < len(fixture.config.Hosts); i++ {
+				// verify_primary := true
+				// execute it only for Primary nodes
+				// establish primary node connection, verify pg version and db write functionality etc
+				if *db.Instances[i].Postgres.Role == "primary" {
+					// verification
+					primaryOpts := ConnectionOptions{
+						Matcher:  And(WithHost(db.Instances[i].HostID), WithRole("primary")),
+						Username: username,
+						Password: password,
+					}
+
+					verifyPgVersion(ctx, db, primaryOpts, version.PostgresVersion, t)
+					verifyPrimaryNodes(ctx, db, primaryOpts, t)
+					// verify_primary = false
+				} else {
+					// verify replicas
+					// establish replica connection, verify pg version, read-only status etc
+					connOpts := ConnectionOptions{
+						Matcher:  And(WithHost(db.Instances[i].HostID), WithRole("replica")),
+						Username: username,
+						Password: password,
+					}
+					verifyPgVersion(ctx, db, connOpts, version.PostgresVersion, t)
+					verifyReplicasNodes(ctx, db, connOpts, t)
+				}
 			}
-			verifyPgVersion(ctx, db, connOpts, targetPgVersion, t)
-			verifyReplicasNodes(ctx, db, connOpts, t)
-		}
+			// 3. validate replication
+			validateReplication(ctx, db, t)
+		})
 	}
-	// 3. validate replication
-	validateReplication(ctx, db, t)
 }
 
 // TODO: Need to create one common function to be used across all the test cases
@@ -111,7 +118,7 @@ func createNodesStruct(numNodes int, hostsPerNode int, t testing.TB) []*controlp
 	totalHosts := len(fixture.config.Hosts)
 	hostIndex := 0
 
-	t.Logf("Going to create topology for number of nodes %d and total hosts %d\n", numNodes, totalHosts)
+	tLogf(t, "Going to create topology for number of nodes %d and total hosts %d\n", numNodes, totalHosts)
 
 	for i := 1; i <= numNodes && hostIndex < totalHosts; i++ {
 		end := hostIndex + hostsPerNode
@@ -181,7 +188,7 @@ func verifyPrimaryNodes(ctx context.Context, db *DatabaseFixture,
 		if isInRecovery {
 			require.NoError(t, err)
 		}
-		t.Log("Node is PRIMARY (pg_is_in_recovery = false)")
+		tLog(t, "Node is PRIMARY (pg_is_in_recovery = false)")
 
 		// 2. Check WAL generation
 		var walLSN string
@@ -189,7 +196,7 @@ func verifyPrimaryNodes(ctx context.Context, db *DatabaseFixture,
 		if err != nil {
 			require.NoError(t, err)
 		}
-		t.Logf("WAL is being generated, current LSN: %s\n", walLSN)
+		tLogf(t, "WAL is being generated, current LSN: %s\n", walLSN)
 
 		// 3. Insert/Update test (write check)
 		_, err = conn.Exec(ctx, "CREATE TEMP TABLE IF NOT EXISTS test_table(id SERIAL, val TEXT)")
@@ -200,7 +207,7 @@ func verifyPrimaryNodes(ctx context.Context, db *DatabaseFixture,
 		if err != nil {
 			require.NoError(t, err)
 		}
-		t.Log("Insert succeeded, primary allows writes")
+		tLog(t, "Insert succeeded, primary allows writes")
 
 		// 4. Check replication slots and connected hosts rows info
 		rows, err := conn.Query(ctx, "SELECT slot_name, active FROM pg_replication_slots")
@@ -215,7 +222,7 @@ func verifyPrimaryNodes(ctx context.Context, db *DatabaseFixture,
 			if err := rows.Scan(&slotName, &active); err != nil {
 				require.NoError(t, err)
 			}
-			t.Logf("   - Slot: %s, Active: %t\n", slotName, active)
+			tLogf(t, "   - Slot: %s, Active: %t\n", slotName, active)
 		}
 	})
 }
@@ -233,7 +240,7 @@ func verifyReplicasNodes(ctx context.Context, db *DatabaseFixture,
 		if !isInRecovery {
 			t.Fatalf("Expected a replica, but pg_is_in_recovery=false (this is a primary)")
 		}
-		t.Log("Node is REPLICA (pg_is_in_recovery = true)")
+		tLog(t, "Node is REPLICA (pg_is_in_recovery = true)")
 
 		// 2. Check replication source LSNs
 		var receiveLSN, replayLSN string
@@ -242,14 +249,14 @@ func verifyReplicasNodes(ctx context.Context, db *DatabaseFixture,
 		if err != nil {
 			require.NoError(t, err)
 		}
-		t.Logf("WAL received up to: %s, replayed up to: %s\n", receiveLSN, replayLSN)
+		tLogf(t, "WAL received up to: %s, replayed up to: %s\n", receiveLSN, replayLSN)
 
 		// 3. Verify read-only mode (writes should fail)
 		_, err = conn.Exec(ctx, "CREATE TEMP TABLE test_table_replica(id SERIAL, val TEXT)")
 		if err == nil {
 			t.Fatalf("Replica accepted a write")
 		}
-		t.Log("Replica is in read-only mode (writes are not allowed)")
+		tLog(t, "Replica is in read-only mode (writes are not allowed)")
 	})
 }
 
@@ -265,7 +272,7 @@ func verifyPgVersion(ctx context.Context, db *DatabaseFixture,
 		if !strings.Contains(versionStr, expectedVersion) {
 			log.Fatalf("Expected PostgreSQL version %s, but got: %s", expectedVersion, versionStr)
 		}
-		t.Logf("PostgreSQL version validation passed (found %s)\n", expectedVersion)
+		tLogf(t, "PostgreSQL version validation passed (found %s)\n", expectedVersion)
 	})
 }
 
@@ -311,7 +318,7 @@ func validateReplication(ctx context.Context, db *DatabaseFixture, t testing.TB)
 			if rowCount != expectedCount {
 				t.Fatalf("Expected %d rows in foo, but found %d", expectedCount, rowCount)
 			}
-			t.Logf("Data is successfully replicated on %s", db.Instances[i].HostID)
+			tLogf(t, "Data is successfully replicated on %s", db.Instances[i].HostID)
 		})
 	}
 }
