@@ -255,7 +255,7 @@ func TestUpdateDatabase(t *testing.T) {
 			},
 		},
 		{
-			name:    "one node to two nodes",
+			name:    "one node to two nodes with default source node",
 			options: operations.UpdateDatabaseOptions{},
 			start:   singleNodeState,
 			nodes: []*operations.NodeResources{
@@ -301,15 +301,70 @@ func TestUpdateDatabase(t *testing.T) {
 						{
 							Type: resource.EventTypeCreate,
 							Resource: makeResourceData(t, &database.SubscriptionResource{
+								SubscriberNode: "n2",
+								ProviderNode:   "n1",
+								SyncStructure:  true,
+								SyncData:       true,
+							}),
+						},
+					},
+					{
+						{
+							Type: resource.EventTypeCreate,
+							Resource: makeResourceData(t, &database.SyncEventResource{
+								SubscriberNode: "n2",
+								ProviderNode:   "n1",
+								ExtraDependencies: []resource.Identifier{
+									database.SubscriptionResourceIdentifier("n1", "n2"),
+								},
+							}),
+						},
+					},
+					{
+						{
+							Type: resource.EventTypeCreate,
+							Resource: makeResourceData(t, &database.WaitForSyncEventResource{
+								SubscriberNode: "n2",
+								ProviderNode:   "n1",
+							}),
+						},
+					},
+				},
+				{
+					{
+						{
+							Type: resource.EventTypeCreate,
+							Resource: makeResourceData(t, &database.SubscriptionResource{
 								SubscriberNode: "n1",
 								ProviderNode:   "n2",
 							}),
 						},
 						{
-							Type: resource.EventTypeCreate,
+							Type: resource.EventTypeUpdate,
 							Resource: makeResourceData(t, &database.SubscriptionResource{
 								SubscriberNode: "n2",
 								ProviderNode:   "n1",
+							}),
+						},
+					},
+					{
+						{
+							Type: resource.EventTypeDelete,
+							Resource: makeResourceData(t, &database.WaitForSyncEventResource{
+								SubscriberNode: "n2",
+								ProviderNode:   "n1",
+							}),
+						},
+					},
+					{
+						{
+							Type: resource.EventTypeDelete,
+							Resource: makeResourceData(t, &database.SyncEventResource{
+								SubscriberNode: "n2",
+								ProviderNode:   "n1",
+								ExtraDependencies: []resource.Identifier{
+									database.SubscriptionResourceIdentifier("n1", "n2"),
+								},
 							}),
 						},
 					},
