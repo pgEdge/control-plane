@@ -16,12 +16,14 @@ document.querySelectorAll(".yaml-generate").forEach((btn) => {
 
     if (!raw) {
       outputEl.textContent =
-        "⚠️ Please paste the output from `docker node ls --format '{{ .ID }}'`";
+        "⚠️ Please paste the output from `docker node ls --format '{{ .ID }} {{ .ManagerStatus }}'`";
       return;
     }
 
-    const lines = raw.split(/\n+/).filter((l) => l.trim());
-    const nodes = lines.map((id) => id.trim());
+    const nodes = raw.split(/\n+/).
+      filter(l => l.trim()).
+      map(l => l.split(/\s+/)).
+      map(([id, managerStatus]) => ({ id, managerStatus }));
 
     if (nodes.length === 0) {
       outputEl.textContent = "⚠️ No nodes found in input.";
@@ -32,13 +34,24 @@ document.querySelectorAll(".yaml-generate").forEach((btn) => {
 
     nodes.forEach((node, i) => {
       const hostID = `host-${i + 1}`;
+
+      let envVars = [
+        `PGEDGE_HOST_ID=${hostID}`,
+        "PGEDGE_DATA_DIR=/data/pgedge/control-plane",
+      ];
+
+      if (!node.managerStatus) {
+        envVars.push("PGEDGE_ETCD_MODE=client");
+      }
+
+      const environment = envVars.join("\n      - ");
+      
       yaml += `
   ${hostID}:
     image: ghcr.io/pgedge/control-plane:v0.4.0
     command: run
     environment:
-      - PGEDGE_HOST_ID=${hostID}
-      - PGEDGE_DATA_DIR=/data/pgedge/control-plane
+      - ${environment}
     volumes:
       - /data/pgedge/control-plane:/data/pgedge/control-plane
       - /var/run/docker.sock:/var/run/docker.sock
@@ -47,7 +60,7 @@ document.querySelectorAll(".yaml-generate").forEach((btn) => {
     deploy:
       placement:
         constraints:
-          - node.id==${node}`;
+          - node.id==${node.id}`;
     });
 
     yaml += `
