@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/netip"
 	"path/filepath"
 	"strconv"
@@ -360,6 +361,11 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 		return nil, fmt.Errorf("failed to generate instance resources: %w", err)
 	}
 
+	var restoreOptions map[string]string
+	if spec.RestoreConfig != nil && spec.RestoreConfig.RestoreOptions != nil {
+		restoreOptions = maps.Clone(spec.RestoreConfig.RestoreOptions)
+	}
+
 	resources = append(resources,
 		&ScaleService{
 			InstanceID:     spec.InstanceID,
@@ -372,7 +378,7 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 			TaskID:         taskID,
 			DataDirID:      spec.InstanceID + "-data",
 			NodeName:       spec.NodeName,
-			RestoreOptions: spec.RestoreConfig.RestoreOptions,
+			RestoreOptions: restoreOptions,
 		},
 		&ScaleService{
 			InstanceID:     spec.InstanceID,
