@@ -15,17 +15,7 @@ import (
 )
 
 func clientConfig(cfg config.Config, logger zerolog.Logger, endpoints ...string) (clientv3.Config, error) {
-	var level string
-	switch storage := cfg.StorageType; storage {
-	case config.StorageTypeEmbeddedEtcd:
-		level = cfg.EmbeddedEtcd.ClientLogLevel
-	case config.StorageTypeRemoteEtcd:
-		level = cfg.RemoteEtcd.LogLevel
-	default:
-		return clientv3.Config{}, fmt.Errorf("unrecognized storage type: %s", storage)
-	}
-
-	zap, err := newZapLogger(logger, level, "etcd_client")
+	zap, err := newZapLogger(logger, cfg.EtcdClient.LogLevel, "etcd_client")
 	if err != nil {
 		return clientv3.Config{}, fmt.Errorf("failed to initialize etcd client logger: %w", err)
 	}

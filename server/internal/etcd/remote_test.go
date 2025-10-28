@@ -23,10 +23,10 @@ func TestRemoteEtcd(t *testing.T) {
 	cfg := config.Config{
 		HostID:      uuid.NewString(),
 		DataDir:     t.TempDir(),
-		StorageType: config.StorageTypeRemoteEtcd,
+		EtcdMode:    config.EtcdModeClient,
 		IPv4Address: "127.0.0.1",
 		Hostname:    "localhost",
-		RemoteEtcd: config.RemoteEtcd{
+		EtcdClient: config.EtcdClient{
 			LogLevel: "debug",
 		},
 	}
@@ -91,14 +91,12 @@ func testEmbedded(t testing.TB) (*etcd.EmbeddedEtcd, config.Config) {
 	cfg := config.Config{
 		HostID:      uuid.NewString(),
 		DataDir:     t.TempDir(),
-		StorageType: config.StorageTypeEmbeddedEtcd,
+		EtcdMode:    config.EtcdModeServer,
 		IPv4Address: "127.0.0.1",
 		Hostname:    "localhost",
-		EmbeddedEtcd: config.EmbeddedEtcd{
-			ClientLogLevel: "debug",
-			ServerLogLevel: "debug",
-			ClientPort:     storagetest.GetFreePort(t),
-			PeerPort:       storagetest.GetFreePort(t),
+		EtcdServer: config.EtcdServer{
+			ClientPort: storagetest.GetFreePort(t),
+			PeerPort:   storagetest.GetFreePort(t),
 		},
 	}
 	server := etcd.NewEmbeddedEtcd(cfgMgr(t, cfg), testutils.Logger(t))
@@ -118,7 +116,7 @@ func join(t testing.TB, existing, new etcd.Etcd, newCfg config.Config) {
 		HostID:              newCfg.HostID,
 		Hostname:            newCfg.Hostname,
 		IPv4Address:         newCfg.IPv4Address,
-		EmbeddedEtcdEnabled: newCfg.StorageType == config.StorageTypeEmbeddedEtcd,
+		EmbeddedEtcdEnabled: newCfg.EtcdMode == config.EtcdModeServer,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, creds)

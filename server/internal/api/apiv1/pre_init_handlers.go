@@ -111,7 +111,7 @@ func (s *PreInitHandlers) JoinCluster(ctx context.Context, token *api.ClusterJoi
 		Hostname:            s.cfg.Hostname,
 		Ipv4Address:         s.cfg.IPv4Address,
 		Token:               token.Token,
-		EmbeddedEtcdEnabled: s.cfg.StorageType == config.StorageTypeEmbeddedEtcd,
+		EmbeddedEtcdEnabled: s.cfg.EtcdMode == config.EtcdModeServer,
 	})
 	if err != nil {
 		return apiErr(err)

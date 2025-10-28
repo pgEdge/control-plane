@@ -42,7 +42,7 @@ func NewRemoteEtcd(cfg *config.Manager, logger zerolog.Logger) *RemoteEtcd {
 
 func (r *RemoteEtcd) IsInitialized() (bool, error) {
 	// We're initialized if we have a cluster to connect to.
-	return len(r.cfg.Config().RemoteEtcd.Endpoints) > 0, nil
+	return len(r.cfg.Config().EtcdClient.Endpoints) > 0, nil
 }
 
 func (r *RemoteEtcd) Start(ctx context.Context) error {
@@ -124,7 +124,7 @@ func (r *RemoteEtcd) GetClient() (*clientv3.Client, error) {
 	}
 
 	cfg := r.cfg.Config()
-	clientCfg, err := clientConfig(cfg, r.logger, cfg.RemoteEtcd.Endpoints...)
+	clientCfg, err := clientConfig(cfg, r.logger, cfg.EtcdClient.Endpoints...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get client config: %w", err)
 	}
@@ -243,7 +243,7 @@ func (r *RemoteEtcd) updateEndpointsConfig(ctx context.Context, client *clientv3
 	}
 
 	generated := r.cfg.GeneratedConfig()
-	generated.RemoteEtcd.Endpoints = client.Endpoints()
+	generated.EtcdClient.Endpoints = client.Endpoints()
 	if err := r.cfg.UpdateGeneratedConfig(generated); err != nil {
 		return fmt.Errorf("failed to update generated config with client endpoints: %w", err)
 	}

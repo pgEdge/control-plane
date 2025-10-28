@@ -29,7 +29,7 @@ func providePreInitHandlers(i *do.Injector) {
 		}
 		e, err := do.Invoke[etcd.Etcd](i)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get embedded etcd: %w", err)
+			return nil, fmt.Errorf("failed to get etcd: %w", err)
 		}
 		return NewPreInitHandlers(cfg, e), nil
 	})
@@ -47,7 +47,7 @@ func providePostInitHandlers(i *do.Injector) {
 		}
 		e, err := do.Invoke[etcd.Etcd](i)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get embedded etcd: %w", err)
+			return nil, fmt.Errorf("failed to get etcd: %w", err)
 		}
 		hostSvc, err := do.Invoke[*host.Service](i)
 		if err != nil {
