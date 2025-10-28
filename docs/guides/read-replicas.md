@@ -49,3 +49,68 @@ You can identify the primary instance for each node by submitting a `GET` reques
 
 See [High availability client
 connections](./connecting.md#high-availability-client-connections) for ways to connect to the read replicas in a high-availability use case.
+
+---
+
+### Switchover and Failover Operations
+
+Switchover and Failover operations allow the Control Plane to promote a read replica to become the new primary instance for a node.
+
+#### Switchover (Planned Role Change)
+
+A **switchover** is a planned operation that transfers the primary role to a selected read replica while both instances are healthy.  
+This allows maintenance or planned leadership change with zero downtime.
+
+**Example request:**
+
+```sh
+curl -X POST http://host-3:3000/v1/databases/example/switchover \
+  -H 'Content-Type:application/json' \
+  --data '{
+      "node": "n1",
+      "candidate_instance_id": "example-n1-b",
+      "scheduled_at": "2025-09-24T18:46:05Z"
+  }'
+```
+
+If `candidate_instance_id` is omitted, the system automatically selects a healthy replica as the switchover target.  
+You can optionally schedule the switchover to execute at a specific time using the `scheduled_at` field.
+
+**Behavior:**
+
+- If the candidate is already primary, the switchover is skipped.
+
+- Invalid candidate IDs result in a `404 Not Found` error.
+
+- Concurrent switchover attempts are rejected with an `already in progress` message.
+
+
+#### Failover (Planned Primary Replacement)
+
+A **failover** is a planned operation that promotes a selected read replica to become the new primary instance.
+
+**Example request:**
+
+```sh
+curl -X POST http://host-3:3000/v1/databases/example/failover \
+  -H 'Content-Type:application/json' \
+  --data '{
+      "node": "n1",
+      "candidate_instance_id": "example-n1-c",
+      "skip_validation": true
+  }'
+```
+
+If `candidate_instance_id` is omitted, the Control Plane automatically selects the best replica to promote.  
+The optional `skip_validation` flag allows overriding cluster health checks to force failover.
+
+**Behavior:**
+
+- Healthy clusters will reject failover unless `skip_validation: true` is provided.
+
+- If the candidate is already the leader, the failover operation completes without change.
+
+- Invalid candidate IDs result in `404 Not Found` errors.
+
+- Concurrent failover requests are rejected with `failover already in progress` messages.
+
