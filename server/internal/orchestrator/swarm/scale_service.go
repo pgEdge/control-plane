@@ -16,7 +16,7 @@ const ResourceTypeScaleService resource.Type = "swarm.scale_service"
 
 func ScaleServiceResourceIdentifier(instanceID string, direction ScaleDirection) resource.Identifier {
 	return resource.Identifier{
-		ID:   instanceID + string(direction),
+		ID:   instanceID + "-" + string(direction),
 		Type: ResourceTypeScaleService,
 	}
 }
@@ -24,8 +24,8 @@ func ScaleServiceResourceIdentifier(instanceID string, direction ScaleDirection)
 type ScaleDirection string
 
 const (
-	ScaleDirectionUP   ScaleDirection = "UP"
-	ScaleDirectionDOWN ScaleDirection = "DOWN"
+	ScaleDirectionUP   ScaleDirection = "up"
+	ScaleDirectionDOWN ScaleDirection = "down"
 )
 
 type ScaleService struct {
