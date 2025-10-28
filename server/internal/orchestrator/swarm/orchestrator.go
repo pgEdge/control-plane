@@ -381,6 +381,8 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 		},
 	)
 
+	instance.OrchestratorDependencies = append(instance.OrchestratorDependencies, ScaleServiceResourceIdentifier(spec.InstanceID, ScaleDirectionUP))
+
 	instanceResources, err := database.NewInstanceResources(instance, resources)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize instance resources: %w", err)
