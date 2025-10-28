@@ -4,6 +4,9 @@ extra_css:
   - stylesheets/extra.css
   - stylesheets/mkdocsoad.css
 
+extra_javascript:
+  - scripts/generate-stack.js
+
 markdown_extensions:
   - admonition
   - pymdownx.details
