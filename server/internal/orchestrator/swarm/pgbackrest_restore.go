@@ -64,6 +64,7 @@ func (p *PgBackRestRestore) Dependencies() []resource.Identifier {
 		PostgresServiceSpecResourceIdentifier(p.InstanceID),
 		PgBackRestConfigIdentifier(p.InstanceID, PgBackRestConfigTypeRestore),
 		PatroniClusterResourceIdentifier(p.NodeName),
+		ScaleServiceResourceIdentifier(p.InstanceID, ScaleDirectionDOWN),
 	}
 }
 
@@ -111,11 +112,6 @@ func (p *PgBackRestRestore) Create(ctx context.Context, rc *resource.Context) er
 	}
 
 	err = p.streamLogsAndWait(ctx, dockerClient, logger, taskSvc, containerID)
-	if err != nil {
-		return handleError(err)
-	}
-
-	err = p.startPostgres(ctx, dockerClient, svcResource)
 	if err != nil {
 		return handleError(err)
 	}
@@ -184,16 +180,6 @@ func (p *PgBackRestRestore) stopPostgres(
 	patroniCluster, err := resource.FromContext[*PatroniCluster](rc, PatroniClusterResourceIdentifier(p.NodeName))
 	if err != nil {
 		return fmt.Errorf("failed to get patroni cluster resource from state: %w", err)
-	}
-
-	err = dockerClient.ServiceScale(ctx, docker.ServiceScaleOptions{
-		ServiceID:   svcResource.ServiceID,
-		Scale:       0,
-		Wait:        true,
-		WaitTimeout: time.Minute,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to scale down postgres service: %w", err)
 	}
 
 	// This resource exists to make it easy to remove the patroni namespace.
@@ -289,24 +275,6 @@ func (p *PgBackRestRestore) streamLogsAndWait(
 	err = dockerClient.ContainerWait(ctx, containerID, container.WaitConditionNotRunning, 30*time.Second)
 	if err != nil {
 		return fmt.Errorf("error while waiting for pgbackrest restore container: %w", err)
-	}
-
-	return nil
-}
-
-func (p *PgBackRestRestore) startPostgres(
-	ctx context.Context,
-	dockerClient *docker.Docker,
-	svcResource *PostgresService,
-) error {
-	err := dockerClient.ServiceScale(ctx, docker.ServiceScaleOptions{
-		ServiceID:   svcResource.ServiceID,
-		Scale:       1,
-		Wait:        true,
-		WaitTimeout: time.Minute,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to scale up postgres service: %w", err)
 	}
 
 	return nil

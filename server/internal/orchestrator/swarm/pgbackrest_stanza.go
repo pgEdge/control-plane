@@ -14,7 +14,7 @@ import (
 
 var _ resource.Resource = (*PgBackRestStanza)(nil)
 
-var ResourceTypePgBackRestStanza resource.Type = "swarm.pgbackrest_stanza"
+const ResourceTypePgBackRestStanza resource.Type = "swarm.pgbackrest_stanza"
 
 func PgBackRestStanzaIdentifier(nodeName string) resource.Identifier {
 	return resource.Identifier{

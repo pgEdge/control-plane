@@ -16,4 +16,5 @@ func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*PatroniMember](registry, ResourceTypePatroniMember)
 	resource.RegisterResourceType[*CheckWillRestart](registry, ResourceTypeCheckWillRestart)
 	resource.RegisterResourceType[*Switchover](registry, ResourceTypeSwitchover)
+	resource.RegisterResourceType[*ScaleService](registry, ResourceTypeScaleService)
 }
