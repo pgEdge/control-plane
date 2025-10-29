@@ -93,8 +93,27 @@ lint-ci:
 		--output.junit-xml.path lint-results.xml \
 		./...
 
+# Exclude some dependencies from NOTICE.txt generation
+# - github.com/pgEdge/control-plane is our own code
+# - github.com/eclipse/paho.golang is licensed under EDL-1.0 explicitly in # NOTICES.txt.tmpl
+.PHONY: licenses
+licenses:
+	$(go-licenses) check ./...
+	$(go-licenses) report ./... \
+	--ignore github.com/pgEdge/control-plane \
+	--ignore github.com/eclipse/paho.golang \
+	--template=NOTICE.txt.tmpl > NOTICE.txt
+
+.PHONY: licenses-ci
+licenses-ci: licenses
+	@if ! git diff --exit-code NOTICE.txt; then \
+		echo "Please commit the updated NOTICE.txt file via `make licenses`."; \
+		exit 1; \
+	fi
+	@echo "NOTICE.txt is up to date."
+
 .PHONY: ci
-ci: test-ci lint-ci
+ci: test-ci lint-ci licenses-ci
 
 ###############
 # image build #
