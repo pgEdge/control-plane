@@ -98,8 +98,8 @@ lint-ci:
 # - github.com/eclipse/paho.golang is licensed under EDL-1.0 explicitly in # NOTICES.txt.tmpl
 .PHONY: licenses
 licenses:
-	$(go-licenses) check ./...
-	$(go-licenses) report ./... \
+	GOOS=linux $(go-licenses) check ./...
+	GOOS=linux $(go-licenses) report ./... \
 	--ignore github.com/pgEdge/control-plane \
 	--ignore github.com/eclipse/paho.golang \
 	--template=NOTICE.txt.tmpl > NOTICE.txt
