@@ -1,8 +1,8 @@
-# pgEdge Control Plane
+# pgEdge Postgres Control Plane
 
 The pgEdge Control Plane is a distributed application designed to simplify the management and orchestration of Postgres databases. It provides a declarative API for defining, deploying, and updating databases across multiple hosts.
 
-You interact with the Control Plane via an HTTP API. Once you've initialized a Control Plane cluster, you can submit requests to the API of any Control Plane server in the cluster to create and manage Postgres databases.
+You interact with the Control Plane via an HTTP API. Once you've initialized a Control Plane cluster, you can submit requests to the API of any Control Plane server in the cluster to create and manage Postgres databases deployed to your hosts.
 
 ## Table of Contents
 
@@ -10,6 +10,10 @@ You interact with the Control Plane via an HTTP API. Once you've initialized a C
 - [Releases](#releases)
 - [Development](#development)
 - [Documentation](#documentation)
+- [Quick Start](docs/quickstart.md)
+- [Concepts](docs/concepts.md)
+- [Installation](docs/installation.md)
+- [Configuration](docs/configuration.md)
 
 ## Features
 
@@ -69,7 +73,9 @@ For information on interacting with the Control Plane locally as part of a devel
 
 ## Documentation
 
-The documentation for this project uses MkDocs with the Material theme to generate styled static HTML documentation from Markdown files in the docs directory.
+This project includes a documentation site maintained in the [docs](docs/) folder, which covers usage guides, architecture concepts, installation instructions, configuration options, and development workflows. 
+
+It uses MkDocs with the Material theme to generate styled static HTML documentation from Markdown files in the docs directory.
 
 The documentation can be accessed locally at http://localhost:8000 using:
 
