@@ -505,6 +505,14 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 			}
 		}
 
+		// compute effective restore only when not populating from a source node
+		var effectiveRestore *RestoreConfig
+		if node.SourceNode == "" {
+			effectiveRestore = overridableValue(s.RestoreConfig, node.RestoreConfig)
+		} else {
+			effectiveRestore = nil
+		}
+
 		instances := make([]*InstanceSpec, len(node.HostIDs))
 		for hostIdx, hostID := range node.HostIDs {
 			instances[hostIdx] = &InstanceSpec{
@@ -521,7 +529,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				MemoryBytes:      overridableValue(s.MemoryBytes, node.MemoryBytes),
 				DatabaseUsers:    s.DatabaseUsers,
 				BackupConfig:     overridableValue(s.BackupConfig, node.BackupConfig),
-				RestoreConfig:    overridableValue(s.RestoreConfig, node.RestoreConfig),
+				RestoreConfig:    effectiveRestore,
 				PostgreSQLConf:   overridableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
 				ClusterSize:      clusterSize,
 				OrchestratorOpts: overridableValue(s.OrchestratorOpts, node.OrchestratorOpts),
@@ -532,7 +540,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 			NodeName:      node.Name,
 			SourceNode:    node.SourceNode,
 			Instances:     instances,
-			RestoreConfig: node.RestoreConfig,
+			RestoreConfig: effectiveRestore,
 		}
 	}
 	return nodes, nil

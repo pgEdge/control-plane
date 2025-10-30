@@ -70,7 +70,7 @@ func UpdateDatabase(
 	if len(adds) > 0 {
 		var defaultSource string
 		if len(updates) > 0 {
-			defaultSource = updates[0].NodeName
+			//defaultSource = updates[0].NodeName
 		}
 		for _, n := range adds {
 			if n.SourceNode == "" && n.RestoreConfig == nil && defaultSource != "" {
