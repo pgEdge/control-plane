@@ -24,14 +24,17 @@ func TestEmbeddedEtcd(t *testing.T) {
 		cfg := config.Config{
 			HostID:      uuid.NewString(),
 			DataDir:     t.TempDir(),
-			StorageType: config.StorageTypeEmbeddedEtcd,
+			EtcdMode:    config.EtcdModeServer,
 			IPv4Address: "127.0.0.1",
 			Hostname:    "localhost",
-			EmbeddedEtcd: config.EmbeddedEtcd{
-				ClientLogLevel: "debug",
-				ServerLogLevel: "debug",
-				ClientPort:     storagetest.GetFreePort(t),
-				PeerPort:       storagetest.GetFreePort(t),
+			EtcdClient: config.EtcdClient{
+				LogLevel: "debug",
+			},
+			EtcdServer: config.EtcdServer{
+
+				LogLevel:   "debug",
+				ClientPort: storagetest.GetFreePort(t),
+				PeerPort:   storagetest.GetFreePort(t),
 			},
 		}
 
@@ -85,14 +88,16 @@ func TestEmbeddedEtcd(t *testing.T) {
 		cfgA := config.Config{
 			HostID:      uuid.NewString(),
 			DataDir:     t.TempDir(),
-			StorageType: config.StorageTypeEmbeddedEtcd,
+			EtcdMode:    config.EtcdModeServer,
 			IPv4Address: "127.0.0.1",
 			Hostname:    "localhost",
-			EmbeddedEtcd: config.EmbeddedEtcd{
-				ClientLogLevel: "debug",
-				ServerLogLevel: "debug",
-				ClientPort:     storagetest.GetFreePort(t),
-				PeerPort:       storagetest.GetFreePort(t),
+			EtcdClient: config.EtcdClient{
+				LogLevel: "debug",
+			},
+			EtcdServer: config.EtcdServer{
+				LogLevel:   "debug",
+				ClientPort: storagetest.GetFreePort(t),
+				PeerPort:   storagetest.GetFreePort(t),
 			},
 		}
 
@@ -112,14 +117,16 @@ func TestEmbeddedEtcd(t *testing.T) {
 		cfgB := config.Config{
 			HostID:      uuid.NewString(),
 			DataDir:     t.TempDir(),
-			StorageType: config.StorageTypeEmbeddedEtcd,
+			EtcdMode:    config.EtcdModeServer,
 			IPv4Address: "127.0.0.1",
 			Hostname:    "localhost",
-			EmbeddedEtcd: config.EmbeddedEtcd{
-				ClientLogLevel: "debug",
-				ServerLogLevel: "debug",
-				ClientPort:     storagetest.GetFreePort(t),
-				PeerPort:       storagetest.GetFreePort(t),
+			EtcdClient: config.EtcdClient{
+				LogLevel: "debug",
+			},
+			EtcdServer: config.EtcdServer{
+				LogLevel:   "debug",
+				ClientPort: storagetest.GetFreePort(t),
+				PeerPort:   storagetest.GetFreePort(t),
 			},
 		}
 
@@ -209,10 +216,10 @@ func TestEmbeddedEtcd(t *testing.T) {
 		cfgA := config.Config{
 			HostID:      uuid.NewString(),
 			DataDir:     t.TempDir(),
-			StorageType: config.StorageTypeEmbeddedEtcd,
+			EtcdMode:    config.EtcdModeServer,
 			IPv4Address: "127.0.0.1",
 			Hostname:    "localhost",
-			EmbeddedEtcd: config.EmbeddedEtcd{
+			EtcdServer: config.EtcdServer{
 				ClientPort: storagetest.GetFreePort(t),
 				PeerPort:   storagetest.GetFreePort(t),
 			},
@@ -226,10 +233,10 @@ func TestEmbeddedEtcd(t *testing.T) {
 		cfgB := config.Config{
 			HostID:      uuid.NewString(),
 			DataDir:     t.TempDir(),
-			StorageType: config.StorageTypeEmbeddedEtcd,
+			EtcdMode:    config.EtcdModeServer,
 			IPv4Address: "127.0.0.1",
 			Hostname:    "localhost",
-			EmbeddedEtcd: config.EmbeddedEtcd{
+			EtcdServer: config.EtcdServer{
 				ClientPort: storagetest.GetFreePort(t),
 				PeerPort:   storagetest.GetFreePort(t),
 			},
@@ -239,10 +246,10 @@ func TestEmbeddedEtcd(t *testing.T) {
 		cfgC := config.Config{
 			HostID:      uuid.NewString(),
 			DataDir:     t.TempDir(),
-			StorageType: config.StorageTypeEmbeddedEtcd,
+			EtcdMode:    config.EtcdModeServer,
 			IPv4Address: "127.0.0.1",
 			Hostname:    "localhost",
-			EmbeddedEtcd: config.EmbeddedEtcd{
+			EtcdServer: config.EtcdServer{
 				ClientPort: storagetest.GetFreePort(t),
 				PeerPort:   storagetest.GetFreePort(t),
 			},

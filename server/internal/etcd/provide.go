@@ -38,10 +38,10 @@ func provideEtcd(i *do.Injector) {
 			return nil, err
 		}
 
-		switch storageType := cfg.Config().StorageType; storageType {
-		case config.StorageTypeEmbeddedEtcd:
+		switch storageType := cfg.Config().EtcdMode; storageType {
+		case config.EtcdModeServer:
 			return NewEmbeddedEtcd(cfg, logger), nil
-		case config.StorageTypeRemoteEtcd:
+		case config.EtcdModeClient:
 			return NewRemoteEtcd(cfg, logger), nil
 		default:
 			return nil, fmt.Errorf("invalid storage type: %s", storageType)

@@ -303,14 +303,14 @@ func (e *EmbeddedEtcd) Error() <-chan error {
 func (e *EmbeddedEtcd) ClientEndpoints() []string {
 	appCfg := e.cfg.Config()
 	return []string{
-		fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, appCfg.EmbeddedEtcd.ClientPort),
+		fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, appCfg.EtcdServer.ClientPort),
 	}
 }
 
 func (e *EmbeddedEtcd) PeerEndpoints() []string {
 	appCfg := e.cfg.Config()
 	return []string{
-		fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, appCfg.EmbeddedEtcd.PeerPort),
+		fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, appCfg.EtcdServer.PeerPort),
 	}
 }
 
@@ -518,7 +518,7 @@ func (e *EmbeddedEtcd) PromoteWhenReady(ctx context.Context, client *clientv3.Cl
 }
 
 func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error) {
-	lg, err := newZapLogger(logger, cfg.EmbeddedEtcd.ServerLogLevel, "etcd_server")
+	lg, err := newZapLogger(logger, cfg.EtcdServer.LogLevel, "etcd_server")
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize etcd server logger: %w", err)
 	}
@@ -552,8 +552,8 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 		ClientKeyFile:  filepath.Join(cfg.DataDir, "certificates", "etcd-user.key"),
 	}
 
-	clientPort := cfg.EmbeddedEtcd.ClientPort
-	peerPort := cfg.EmbeddedEtcd.PeerPort
+	clientPort := cfg.EtcdServer.ClientPort
+	peerPort := cfg.EtcdServer.PeerPort
 	myIP := cfg.IPv4Address
 	c.ListenClientUrls = []url.URL{
 		{Scheme: "https", Host: fmt.Sprintf("0.0.0.0:%d", clientPort)},
@@ -585,7 +585,7 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 }
 
 func initializationConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error) {
-	lg, err := newZapLogger(logger, cfg.EmbeddedEtcd.ServerLogLevel, "etcd_server")
+	lg, err := newZapLogger(logger, cfg.EtcdServer.LogLevel, "etcd_server")
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize etcd server logger: %w", err)
 	}
@@ -596,8 +596,8 @@ func initializationConfig(cfg config.Config, logger zerolog.Logger) (*embed.Conf
 	c.Dir = filepath.Join(cfg.DataDir, "etcd")
 
 	// Only bind/advertise localhost for initialization
-	clientPort := cfg.EmbeddedEtcd.ClientPort
-	peerPort := cfg.EmbeddedEtcd.PeerPort
+	clientPort := cfg.EtcdServer.ClientPort
+	peerPort := cfg.EtcdServer.PeerPort
 	c.ListenClientUrls = []url.URL{
 		{Scheme: "http", Host: fmt.Sprintf("127.0.0.1:%d", clientPort)},
 	}
@@ -613,7 +613,7 @@ func initializationConfig(cfg config.Config, logger zerolog.Logger) (*embed.Conf
 	c.InitialCluster = fmt.Sprintf(
 		"%s=http://127.0.0.1:%d",
 		cfg.HostID,
-		cfg.EmbeddedEtcd.PeerPort,
+		cfg.EtcdServer.PeerPort,
 	)
 	c.QuotaBackendBytes = quotaBackendBytes
 
@@ -640,7 +640,7 @@ func startEmbedded(ctx context.Context, cfg *embed.Config) (*embed.Etcd, error) 
 }
 
 func clientForEmbedded(cfg config.Config, logger zerolog.Logger, etcd *embed.Etcd) (*clientv3.Client, error) {
-	lg, err := newZapLogger(logger, cfg.EmbeddedEtcd.ClientLogLevel, "etcd_client")
+	lg, err := newZapLogger(logger, cfg.EtcdClient.LogLevel, "etcd_client")
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize etcd client logger: %w", err)
 	}

@@ -140,37 +140,32 @@ var httpDefault = HTTP{
 	Port:     3000,
 }
 
-type EmbeddedEtcd struct {
-	ClientLogLevel string `koanf:"client_log_level" json:"client_log_level,omitempty"`
-	ServerLogLevel string `koanf:"server_log_level" json:"server_log_level,omitempty"`
-	PeerPort       int    `koanf:"peer_port" json:"peer_port,omitempty"`
-	ClientPort     int    `koanf:"client_port" json:"client_port,omitempty"`
+type EtcdServer struct {
+	LogLevel   string `koanf:"log_level" json:"log_level,omitempty"`
+	PeerPort   int    `koanf:"peer_port" json:"peer_port,omitempty"`
+	ClientPort int    `koanf:"client_port" json:"client_port,omitempty"`
 }
 
-func (e EmbeddedEtcd) validate() []error {
+func (e EtcdServer) validate() []error {
 	var errs []error
-	if _, err := zerolog.ParseLevel(e.ClientLogLevel); err != nil {
-		errs = append(errs, fmt.Errorf("client_log_level: invalid log level %q: %w", e.ClientLogLevel, err))
-	}
-	if _, err := zerolog.ParseLevel(e.ServerLogLevel); err != nil {
-		errs = append(errs, fmt.Errorf("server_log_level: invalid log level %q: %w", e.ServerLogLevel, err))
+	if _, err := zerolog.ParseLevel(e.LogLevel); err != nil {
+		errs = append(errs, fmt.Errorf("server_log_level: invalid log level %q: %w", e.LogLevel, err))
 	}
 	return errs
 }
 
-var embeddedEtcdDefault = EmbeddedEtcd{
-	ClientLogLevel: "fatal",
-	ServerLogLevel: "fatal",
-	PeerPort:       2380,
-	ClientPort:     2379,
+var etcdServerDefault = EtcdServer{
+	LogLevel:   "fatal",
+	PeerPort:   2380,
+	ClientPort: 2379,
 }
 
-type RemoteEtcd struct {
+type EtcdClient struct {
 	LogLevel  string   `koanf:"log_level" json:"log_level,omitempty"`
 	Endpoints []string `koanf:"endpoints" json:"endpoints,omitempty"`
 }
 
-func (r RemoteEtcd) validate() []error {
+func (r EtcdClient) validate() []error {
 	var errs []error
 	if _, err := zerolog.ParseLevel(r.LogLevel); err != nil {
 		errs = append(errs, fmt.Errorf("log_level: invalid log level %q: %w", r.LogLevel, err))
@@ -178,7 +173,7 @@ func (r RemoteEtcd) validate() []error {
 	return errs
 }
 
-var remoteEtcdDefault = RemoteEtcd{
+var etcdClientDefault = EtcdClient{
 	LogLevel: "fatal",
 }
 
@@ -188,11 +183,11 @@ const (
 	OrchestratorSwarm Orchestrator = "swarm"
 )
 
-type StorageType string
+type EtcdMode string
 
 const (
-	StorageTypeEmbeddedEtcd StorageType = "embedded_etcd"
-	StorageTypeRemoteEtcd   StorageType = "remote_etcd"
+	EtcdModeServer EtcdMode = "server"
+	EtcdModeClient EtcdMode = "client"
 )
 
 type Config struct {
@@ -200,18 +195,18 @@ type Config struct {
 	HostID                 string       `koanf:"host_id" json:"host_id,omitempty"`
 	Orchestrator           Orchestrator `koanf:"orchestrator" json:"orchestrator,omitempty"`
 	DataDir                string       `koanf:"data_dir" json:"data_dir,omitempty"`
-	StorageType            StorageType  `koanf:"storage_type" json:"storage_type,omitempty"`
 	IPv4Address            string       `koanf:"ipv4_address" json:"ipv4_address,omitempty"`
 	Hostname               string       `koanf:"hostname" json:"hostname,omitempty"`
 	StopGracePeriodSeconds int64        `koanf:"stop_grace_period_seconds" json:"stop_grace_period_seconds,omitempty"`
 	MQTT                   MQTT         `koanf:"mqtt" json:"mqtt,omitzero"`
 	HTTP                   HTTP         `koanf:"http" json:"http,omitzero"`
 	Logging                Logging      `koanf:"logging" json:"logging,omitzero"`
+	EtcdMode               EtcdMode     `koanf:"etcd_mode" json:"etcd_mode,omitempty"`
 	EtcdUsername           string       `koanf:"etcd_username" json:"etcd_username,omitempty"`
 	EtcdPassword           string       `koanf:"etcd_password" json:"etcd_password,omitempty"`
 	EtcdKeyRoot            string       `koanf:"etcd_key_root" json:"etcd_key_root,omitempty"`
-	EmbeddedEtcd           EmbeddedEtcd `koanf:"embedded_etcd" json:"embedded_etcd,omitzero"`
-	RemoteEtcd             RemoteEtcd   `koanf:"remote_etcd" json:"remote_etcd,omitzero"`
+	EtcdServer             EtcdServer   `koanf:"etcd_server" json:"etcd_server,omitzero"`
+	EtcdClient             EtcdClient   `koanf:"etcd_client" json:"etcd_client,omitzero"`
 	TraefikEnabled         bool         `koanf:"traefik_enabled" json:"traefik_enabled,omitempty"`
 	VectorEnabled          bool         `koanf:"vector_enabled" json:"vector_enabled,omitempty"`
 	DockerSwarm            DockerSwarm  `koanf:"docker_swarm" json:"docker_swarm,omitzero"`
@@ -240,7 +235,7 @@ func (c Config) Validate() error {
 		errs = append(errs, fmt.Errorf("mqtt.%w", err))
 	}
 	for _, err := range c.Logging.validate() {
-		errs = append(errs, fmt.Errorf("remote_etcd.%w", err))
+		errs = append(errs, fmt.Errorf("logging.%w", err))
 	}
 	if c.Orchestrator != OrchestratorSwarm {
 		errs = append(errs, fmt.Errorf("orchestrator: unsupported orchestrator %q", c.Orchestrator))
@@ -253,17 +248,17 @@ func (c Config) Validate() error {
 	default:
 		errs = append(errs, fmt.Errorf("host_type: unsupported host type %q", c.Orchestrator))
 	}
-	switch c.StorageType {
-	case StorageTypeEmbeddedEtcd:
-		for _, err := range c.EmbeddedEtcd.validate() {
-			errs = append(errs, fmt.Errorf("embedded_etcd.%w", err))
+	switch c.EtcdMode {
+	case EtcdModeServer:
+		for _, err := range c.EtcdServer.validate() {
+			errs = append(errs, fmt.Errorf("etcd_server.%w", err))
 		}
-	case StorageTypeRemoteEtcd:
-		for _, err := range c.RemoteEtcd.validate() {
-			errs = append(errs, fmt.Errorf("remote_etcd.%w", err))
+	case EtcdModeClient:
+		for _, err := range c.EtcdClient.validate() {
+			errs = append(errs, fmt.Errorf("etcd_client.%w", err))
 		}
 	default:
-		errs = append(errs, fmt.Errorf("storage_type: unsupported storage type %q", c.StorageType))
+		errs = append(errs, fmt.Errorf("storage_type: unsupported storage type %q", c.EtcdMode))
 	}
 	return errors.Join(errs...)
 }
@@ -279,14 +274,14 @@ func DefaultConfig() (Config, error) {
 	}
 	return Config{
 		Orchestrator:           OrchestratorSwarm,
-		StorageType:            StorageTypeEmbeddedEtcd,
+		EtcdMode:               EtcdModeServer,
 		Hostname:               hostname,
 		IPv4Address:            ipv4Address.String(),
 		Logging:                loggingDefault,
 		HTTP:                   httpDefault,
 		StopGracePeriodSeconds: 30,
-		EmbeddedEtcd:           embeddedEtcdDefault,
-		RemoteEtcd:             remoteEtcdDefault,
+		EtcdServer:             etcdServerDefault,
+		EtcdClient:             etcdClientDefault,
 		DockerSwarm:            defaultDockerSwarm,
 		DatabaseOwnerUID:       26,
 	}, nil
