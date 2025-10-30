@@ -276,17 +276,18 @@ func (s *State) planCreates(options PlanOptions, desired *State) (Plan, error) {
 			var event *Event
 
 			currentResource, ok := s.Get(resource.Identifier)
-			if !ok || currentResource.NeedsCreate {
+			switch {
+			case !ok, currentResource.NeedsRecreate:
 				event = &Event{
 					Type:     EventTypeCreate,
 					Resource: resource,
 				}
-			} else if options.ForceUpdate || slices.ContainsFunc(resource.Dependencies, modified.Has) {
+			case options.ForceUpdate || slices.ContainsFunc(resource.Dependencies, modified.Has):
 				event = &Event{
 					Type:     EventTypeUpdate,
 					Resource: resource,
 				}
-			} else {
+			default:
 				differs, err := resource.Differs(currentResource)
 				if err != nil {
 					return nil, fmt.Errorf("failed to compare resource %s: %w", resource.Identifier, err)
