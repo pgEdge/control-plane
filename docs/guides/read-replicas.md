@@ -50,67 +50,110 @@ You can identify the primary instance for each node by submitting a `GET` reques
 See [High availability client
 connections](./connecting.md#high-availability-client-connections) for ways to connect to the read replicas in a high-availability use case.
 
----
 
 ### Switchover and Failover Operations
 
-Switchover and Failover operations allow the Control Plane to promote a read replica to become the new primary instance for a node.
+Switchover and Failover operations allow the Control Plane to promote a read replica to become the new primary instance for a node. These operations rely on [Patroni](https://patroni.readthedocs.io/en/latest/), which manages leader election, failover, and cluster health.
+
+For more information, see [Patroni's REST API: Switchover and Failover](https://patroni.readthedocs.io/en/latest/rest_api.html#switchover-and-failover-endpoints)
+
+In addition to manual control, the system also supports **automatic failover** when Patroni detects a primary outage.
 
 #### Switchover (Planned Role Change)
 
-A **switchover** is a planned operation that transfers the primary role to a selected read replica while both instances are healthy.  
-This allows maintenance or planned leadership change with zero downtime.
+A **switchover** is a planned operation that transfers the primary role to a selected read replica while both instances are healthy. It can be executed immediately or scheduled for a later time.
 
-**Example request:**
+**Checking instance health**
+Before performing a switchover, ensure that the instance is healthy. The patroni_state field in the **postgres** section indicates the current status:
 
-```sh
-curl -X POST http://host-3:3000/v1/databases/example/switchover \
-  -H 'Content-Type:application/json' \
-  --data '{
-      "node": "n1",
-      "candidate_instance_id": "example-n1-b",
-      "scheduled_at": "2025-09-24T18:46:05Z"
-  }'
+=== "curl"
+
+    ```sh
+    curl -X GET http://host-3:3000/v1/databases/example \
+    -H "Content-Type: application/json" 
+    ```
 ```
+    {
+    "id": "example-n1-689qacsi",
+    "node_name": "n1",
+    "postgres": {
+        "patroni_state": "running",
+        "role": "primary",
+        "version": "17.6"
+    },
+    "spock": {
+        "read_only": "off",
+        "subscriptions": [
+        { "name": "sub_n2_n1", "provider_node": "n2", "status": "replicating" },
+        { "name": "sub_n3_n1", "provider_node": "n3", "status": "replicating" }
+        ],
+        "version": "5.0.4"
+    },
+    "state": "available"
+    }
 
-If `candidate_instance_id` is omitted, the system automatically selects a healthy replica as the switchover target.  
-You can optionally schedule the switchover to execute at a specific time using the `scheduled_at` field.
+```
+In this example, **"patroni_state": "running"** confirms that the instance is healthy.
+
+**Executing a switchover**
+When calling the switchover endpoint, you may specify a `candidate_instance_id`. If omitted, Patroni automatically selects a healthy replica as the new primary after the current leader steps down.
+
+For more details, see [Patroni's REST API: Switchover](https://patroni.readthedocs.io/en/latest/rest_api.html#switchover)
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases/example/switchover \
+    -H 'Content-Type:application/json' \
+    --data '{
+        "node": "n1",
+        "candidate_instance_id": "example-n1-b",
+        "scheduled_at": "2025-09-24T18:46:05Z"
+    }'
+    ```
+
+If `candidate_instance_id` is omitted, the system automatically selects a suitable replica.
+The `scheduled_at` field allows the switchover to be delayed until a specific time.
 
 **Behavior:**
 
-- If the candidate is already primary, the switchover is skipped.
+- If the specified `candidate_instance_id` is already primary, the operation is skipped.
 
-- Invalid candidate IDs result in a `404 Not Found` error.
+- An invalid `candidate_instance_id` result in a `404 Not Found` error.
 
 - Concurrent switchover attempts are rejected with an `already in progress` message.
 
 
-#### Failover (Planned Primary Replacement)
+#### Failover (Manual Primary Replacement)
 
-A **failover** is a planned operation that promotes a selected read replica to become the new primary instance.
+A **failover** is used to manually promote a replica to primary. This is typically performed when no healthy synchronous replicas are available (e.g., promoting an asynchronous standby). However, failover is not restricted to unhealthy clusters— it can also be triggered on a healthy cluster if required.
 
-**Example request:**
+For more details, see [Patroni's REST API: Failover](https://patroni.readthedocs.io/en/latest/rest_api.html#failover)
 
-```sh
-curl -X POST http://host-3:3000/v1/databases/example/failover \
-  -H 'Content-Type:application/json' \
-  --data '{
-      "node": "n1",
-      "candidate_instance_id": "example-n1-c",
-      "skip_validation": true
-  }'
-```
+**Executing a failover**
 
-If `candidate_instance_id` is omitted, the Control Plane automatically selects the best replica to promote.  
-The optional `skip_validation` flag allows overriding cluster health checks to force failover.
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases/example/failover \
+    -H 'Content-Type:application/json' \
+    --data '{
+        "node": "n1",
+        "candidate_instance_id": "example-n1-c",
+        "skip_validation": true
+    }'
+    ```
+
+If `candidate_instance_id` is omitted, the Control Plane automatically selects the best available replica for promotion.
+The optional `skip_validation` flag bypasses cluster health checks, allowing a forced failover.
 
 **Behavior:**
 
-- Healthy clusters will reject failover unless `skip_validation: true` is provided.
+- On healthy clusters, failover requests are rejected unless `skip_validation: true` is provided(to prevent accidental failovers).
 
-- If the candidate is already the leader, the failover operation completes without change.
+- If the `candidate_instance_id` is already the primary, the failover operation completes without changes.
 
-- Invalid candidate IDs result in `404 Not Found` errors.
+- An invalid `candidate_instance_id` result in `404 Not Found` errors.
 
-- Concurrent failover requests are rejected with `failover already in progress` messages.
+- Concurrent failover requests are rejected with `failover already in progress` message.
 
