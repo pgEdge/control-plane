@@ -70,6 +70,7 @@ nav:
       - Tasks & Logs: guides/tasks-logs.md
       - Read Replicas: guides/read-replicas.md
       - Deleting a Database: guides/delete-db.md
+      - Migrating a Database: guides/migrate-db.md
   - API:
       - OpenAPI: api/openapi.md
       - API Reference: api/reference.md
