@@ -10,7 +10,6 @@ hack/apis
 bruno/test-scenarios/**/repos
 bruno/test-scenarios/environments
 !bruno/test-scenarios/environments/compose.bru
-.DS_Store  
 
 # build artifacts
 *-results.xml
