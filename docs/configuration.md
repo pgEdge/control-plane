@@ -5,7 +5,7 @@ configuration file, environment variables, or a combination of both. If you're
 using a configuration file, you can provide it to the pgEdge Control Plane
 server command with the `-c` or `--config` parameter.
 
-This reference uses a JSON-path like syntax to denote nested properties; For example:
+This reference uses a JSON-path like syntax to denote nested properties; for example:
 
 `property.sub_property`.
 
