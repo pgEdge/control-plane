@@ -1,9 +1,13 @@
 package storage
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -186,8 +190,30 @@ func decodeKV[V Value](kv *mvccpb.KeyValue) (V, error) {
 
 func decodeJSON[V any](val []byte) (V, error) {
 	var out V
-	if err := json.Unmarshal(val, &out); err != nil {
+	dec, err := decompress(val)
+	if err != nil {
 		return out, err
 	}
+	if err := json.Unmarshal(dec, &out); err != nil {
+		return out, err
+	}
+	return out, nil
+}
+
+func decompress(in []byte) ([]byte, error) {
+	r, err := gzip.NewReader(bytes.NewReader(in))
+	if errors.Is(err, gzip.ErrHeader) {
+		// The gzip.NewReader checks for a valid header. If there is no valid
+		// header, this data is not compressed.
+		return in, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to initialize gzip reader: %w", err)
+	}
+	defer r.Close()
+	out, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decompress data: %w", err)
+	}
+
 	return out, nil
 }

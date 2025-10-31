@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/pgEdge/control-plane/server/internal/cluster"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	"github.com/spf13/cobra"
@@ -55,13 +56,9 @@ func newRootCmd(i *do.Injector) *cobra.Command {
 				config.NewPFlagSource(cmd.Flags()),
 			)
 
-			cfg, err := config.LoadSources(sources...)
-			if err != nil {
-				return fmt.Errorf("failed to load configs: %w", err)
-			}
-
-			config.Provide(i, cfg)
+			config.Provide(i, sources...)
 			api.Provide(i)
+			cluster.Provide(i)
 			certificates.Provide(i)
 			database.Provide(i)
 			docker.Provide(i)

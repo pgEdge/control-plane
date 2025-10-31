@@ -58,10 +58,7 @@ func (c *PgBackRestConfig) DiffIgnore() []string {
 }
 
 func (c *PgBackRestConfig) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeHost,
-		ID:   c.HostID,
-	}
+	return resource.HostExecutor(c.HostID)
 }
 
 func (c *PgBackRestConfig) Identifier() resource.Identifier {

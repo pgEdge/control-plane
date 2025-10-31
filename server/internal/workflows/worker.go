@@ -3,6 +3,7 @@ package workflows
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/cschleiden/go-workflows/backend"
 	"github.com/cschleiden/go-workflows/worker"
@@ -30,6 +31,8 @@ func NewWorker(be backend.Backend, workflows *Workflows, orch Orchestrator) (*Wo
 	opts := worker.DefaultOptions
 	opts.WorkflowQueues = queues
 	opts.ActivityQueues = queues
+	opts.ActivityPollingInterval = 500 * time.Millisecond
+	opts.WorkflowPollingInterval = 500 * time.Millisecond
 	w := worker.New(be, &opts)
 
 	if err := workflows.Register(w); err != nil {

@@ -1,27 +1,13 @@
-# Running a local Control Plane cluster in Docker
+# Running the Control Plane locally
 
-The `docker/control-plane-dev` directory contains configuration for a three-host
+The `docker/control-plane-dev` directory contains configuration for a six-host
 Control Plane cluster that runs in Docker via Docker Compose.
-
-- [Running a local Control Plane cluster in Docker](#running-a-local-control-plane-cluster-in-docker)
-  - [Prerequisites](#prerequisites)
-    - [Docker Desktop](#docker-desktop)
-      - [Configuration](#configuration)
-    - [Restish](#restish)
-  - [Running the Control Plane](#running-the-control-plane)
-  - [Interact with the Control Plane API](#interact-with-the-control-plane-api)
-  - [Resetting each Control Plane instance](#resetting-each-control-plane-instance)
-  - [Development workflow](#development-workflow)
-    - [Rebuilding the `control-plane` binary](#rebuilding-the-control-plane-binary)
-    - [Debugging](#debugging)
-  - [API documentation](#api-documentation)
 
 ## Prerequisites
 
 ### Docker Desktop
 
-On MacOS, Docker Desktop can be obtained through the Kandji Self Service App or
-from the [official download page](https://www.docker.com/products/docker-desktop/).
+On MacOS, Docker Desktop can be obtained from the [official download page](https://www.docker.com/products/docker-desktop/).
 
 #### Configuration
 
@@ -60,7 +46,7 @@ After you've added this line, you can run `exec zsh` to reload the configuration
 in your current shell session. It will automatically apply to any new sessions.
 
 After installation, modify the Restish configuration file to add entries for the
-local Control Plane instances. On MacOS, this file will be
+local Control Plane servers. On MacOS, this file will be
 `~/Library/Application Support/restish/apis.json`. See
 [the configuration page](https://rest.sh/#/configuration) to find the
 configuration file location for non-MacOS systems.
@@ -94,6 +80,33 @@ configuration file location for non-MacOS systems.
       }
     },
     "tls": {}
+  },
+  "control-plane-local-4": {
+    "base": "http://localhost:3003",
+    "profiles": {
+      "default": {
+        
+      }
+    },
+    "tls": {}
+  },
+  "control-plane-local-5": {
+    "base": "http://localhost:3004",
+    "profiles": {
+      "default": {
+        
+      }
+    },
+    "tls": {}
+  },
+  "control-plane-local-6": {
+    "base": "http://localhost:3005",
+    "profiles": {
+      "default": {
+        
+      }
+    },
+    "tls": {}
   }
 }
 ```
@@ -120,7 +133,34 @@ initialize a new cluster and create a new database:
 restish control-plane-local-1 init-cluster
 restish control-plane-local-2 join-cluster "$(restish control-plane-local-1 get-join-token)"
 restish control-plane-local-3 join-cluster "$(restish control-plane-local-1 get-join-token)"
-restish control-plane-local-1 create-database '{"spec":{"database_name":"my_app","database_users":[{"username":"admin","password":"password","attributes":["SUPERUSER","LOGIN"]},{"username":"app","password":"password","attributes":["LOGIN"],"roles":["pgedge_application"]}],"nodes":[{"name":"n1","host_ids":["host-1"]},{"name":"n2","host_ids":["host-2"]},{"name":"n3","host_ids":["host-3"]}]}}'
+restish control-plane-local-4 join-cluster "$(restish control-plane-local-1 get-join-token)"
+restish control-plane-local-5 join-cluster "$(restish control-plane-local-1 get-join-token)"
+restish control-plane-local-6 join-cluster "$(restish control-plane-local-1 get-join-token)"
+restish control-plane-local-1 create-database '{
+  "id": "storefront",
+  "spec": {
+    "database_name": "storefront",
+    "database_users": [
+      {
+        "username": "admin",
+        "password": "password",
+        "db_owner": true,
+        "attributes": ["SUPERUSER", "LOGIN"]
+      },
+      {
+        "username": "app",
+        "password": "password",
+        "attributes": ["LOGIN"],
+        "roles": ["pgedge_application"]
+      }
+    ],
+    "nodes": [
+      { "name": "n1", "host_ids": ["host-1", "host-4"] },
+      { "name": "n2", "host_ids": ["host-2", "host-5"] },
+      { "name": "n3", "host_ids": ["host-3", "host-6"] }
+    ]
+  }
+}'
 ```
 
 The API is under active development. You can find the current set of endpoints
@@ -132,7 +172,7 @@ in a variety of places:
 
 Endpoints that are unimplemented will return a "not implemented" error.
 
-# Resetting your dev environment
+## Resetting your dev environment
 
 To reset your dev environment to its initial state, run:
 
@@ -210,3 +250,52 @@ This uses the OpenAPI spec from the `api/apiv1/gen` directory and generates the
 documentation on the client side. When you regenerate the OpenAPI spec, for
 example by running `make -C api generate`, you only need to refresh the page to
 see the updates.
+
+## Optional development tools
+
+### `dev-env.zsh` script
+
+If you use `zsh`, you may be interested in the `dev-env.zsh` script which adds
+some helpful functions and aliases to your shell. There's also an optional Oh My
+Zsh plugin as well as a theme that uses the plugin. See the `hack/dev-env.md`
+file for installation and usage instructions.
+
+### Bruno
+
+[Bruno](https://www.usebruno.com/) is an open source API client that makes it
+easy to share canned requests via Git. This repository includes a Bruno
+collection called `test-scenarios` that we use to share manual test scenarios.
+
+The `test-scenarios` collection and each of the test scenarios within have their
+own documentation that you can view either in the source files or within the
+Bruno client.
+
+We recommend using the standalone Bruno API client rather than the VSCode
+extension because we make extensive use of the developer console. If you're
+using MacOS, you can install Bruno through HomeBrew:
+
+```
+brew install bruno
+```
+
+#### `wait_for_task` helper
+
+If you're adding a new request that triggers an asynchronous operation, like
+creating a database, you can use the `wait_for_task` helper by adding a
+pre-request variable to your request:
+
+```
+wait_for_task: true
+```
+
+This helper will print the task logs to the Bruno client's development console
+and block until the task is completed, failed, or canceled. See the requests in
+the `local-backup-and-restore` scenario for examples.
+
+#### When should I add to the test scenarios?
+
+These scenarios are an optional tool that are meant to make it easier for you to
+develop and test changes. They can also be helpful for reviewers who need to
+test your changes. Consider adding new requests or scenarios if you find
+yourself repeating the same sequence of requests during development, and those
+requests aren't already covered by an existing scenarios.

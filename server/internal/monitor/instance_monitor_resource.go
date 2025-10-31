@@ -36,10 +36,7 @@ func (m *InstanceMonitorResource) DiffIgnore() []string {
 }
 
 func (m *InstanceMonitorResource) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeHost,
-		ID:   m.HostID,
-	}
+	return resource.HostExecutor(m.HostID)
 }
 
 func (m *InstanceMonitorResource) Identifier() resource.Identifier {

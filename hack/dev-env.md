@@ -101,24 +101,35 @@ This script creates several dynamic aliases:
 cp1-req
 cp2-req
 cp3-req
+# the compose environment has three additional hosts
+cp4-req
+cp5-req
+cp6-req
 
 # aliases for 'restish api sync host-*'
 cp1-api-sync
 cp2-api-sync
 cp3-api-sync
+# the compose environment has three additional hosts
+cp4-api-sync
+cp5-api-sync
+cp6-api-sync
 
-# ssh commands for lima and ec2 environments
+# ssh commands for the lima and ec2 environments
 cp1-ssh
 cp2-ssh
 cp3-ssh
 ```
 
-It also creates a single static alias that only applies to the Docker Compose
-setup:
+It also creates two static aliases that only apply to the Docker Compose
+environment:
 
 ```sh
 # shortcut for etcdctl that connects to host-1 in the Docker Compose setup
 cp-etcdctl
+
+# shortcut for docker compose with the control-plane-dev compose configuration
+cp-docker-compose
 ```
 
 ### Utility functions

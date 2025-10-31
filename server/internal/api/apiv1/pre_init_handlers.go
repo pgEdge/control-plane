@@ -10,10 +10,12 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/google/uuid"
 	goahttp "goa.design/goa/v3/http"
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	"github.com/pgEdge/control-plane/api/apiv1/gen/http/control_plane/client"
+	"github.com/pgEdge/control-plane/server/internal/cluster"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/version"
@@ -23,11 +25,11 @@ var _ api.Service = (*PreInitHandlers)(nil)
 
 type PreInitHandlers struct {
 	cfg             config.Config
-	etcd            *etcd.EmbeddedEtcd
+	etcd            etcd.Etcd
 	handlersReadyCh <-chan error
 }
 
-func NewPreInitHandlers(cfg config.Config, etcdServer *etcd.EmbeddedEtcd) *PreInitHandlers {
+func NewPreInitHandlers(cfg config.Config, etcdServer etcd.Etcd) *PreInitHandlers {
 	return &PreInitHandlers{
 		cfg:  cfg,
 		etcd: etcdServer,
@@ -44,8 +46,27 @@ func (s *PreInitHandlers) waitForHandlersReady() error {
 	return nil
 }
 
-func (s *PreInitHandlers) InitCluster(ctx context.Context) (*api.ClusterJoinToken, error) {
+func (s *PreInitHandlers) InitCluster(ctx context.Context, req *api.InitClusterRequest) (*api.ClusterJoinToken, error) {
 	if err := s.etcd.Start(ctx); err != nil {
+		return nil, apiErr(err)
+	}
+
+	etcdClient, err := s.etcd.GetClient()
+	if err != nil {
+		return nil, apiErr(err)
+	}
+	clusterStore := cluster.NewStore(etcdClient, s.cfg.EtcdKeyRoot)
+
+	id := uuid.NewString() // default to uuid unless specified in request
+	if req.ClusterID != nil {
+		id, err = identToString(*req.ClusterID, []string{"cluster_id"})
+		if err != nil {
+			return nil, apiErr(err)
+		}
+	}
+	if err := clusterStore.Cluster.
+		Create(&cluster.StoredCluster{ID: id}).
+		Exec(ctx); err != nil {
 		return nil, apiErr(err)
 	}
 
@@ -86,10 +107,11 @@ func (s *PreInitHandlers) JoinCluster(ctx context.Context, token *api.ClusterJoi
 	}
 
 	opts, err := cli.GetJoinOptions(ctx, &api.ClusterJoinRequest{
-		HostID:      api.Identifier(s.cfg.HostID),
-		Hostname:    s.cfg.Hostname,
-		Ipv4Address: s.cfg.IPv4Address,
-		Token:       token.Token,
+		HostID:              api.Identifier(s.cfg.HostID),
+		Hostname:            s.cfg.Hostname,
+		Ipv4Address:         s.cfg.IPv4Address,
+		Token:               token.Token,
+		EmbeddedEtcdEnabled: s.cfg.EtcdMode == config.EtcdModeServer,
 	})
 	if err != nil {
 		return apiErr(err)
@@ -117,12 +139,14 @@ func (s *PreInitHandlers) JoinCluster(ctx context.Context, token *api.ClusterJoi
 	}
 
 	err = s.etcd.Join(ctx, etcd.JoinOptions{
-		Peer: etcd.Peer{
-			Name:      opts.Peer.Name,
-			PeerURL:   opts.Peer.PeerURL,
-			ClientURL: opts.Peer.ClientURL,
+		Leader: &etcd.ClusterMember{
+			Name:       opts.Leader.Name,
+			PeerURLs:   opts.Leader.PeerUrls,
+			ClientURLs: opts.Leader.ClientUrls,
 		},
 		Credentials: &etcd.HostCredentials{
+			Username:   opts.Credentials.Username,
+			Password:   opts.Credentials.Password,
 			CaCert:     caCert,
 			ClientCert: clientCert,
 			ClientKey:  clientKey,
@@ -171,7 +195,7 @@ func (s *PreInitHandlers) GetCluster(ctx context.Context) (*api.Cluster, error) 
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitHandlers) ListHosts(ctx context.Context) ([]*api.Host, error) {
+func (s *PreInitHandlers) ListHosts(ctx context.Context) (*api.ListHostsResponse, error) {
 	return nil, ErrUninitialized
 }
 
@@ -231,15 +255,15 @@ func (s *PreInitHandlers) RestoreDatabase(ctx context.Context, req *api.RestoreD
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitHandlers) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (res *api.Task, err error) {
+func (s *PreInitHandlers) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (res *api.RestartInstanceResponse, err error) {
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitHandlers) StopInstance(ctx context.Context, req *api.StopInstancePayload) (res *api.Task, err error) {
+func (s *PreInitHandlers) StopInstance(ctx context.Context, req *api.StopInstancePayload) (res *api.StopInstanceResponse, err error) {
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitHandlers) StartInstance(ctx context.Context, req *api.StartInstancePayload) (res *api.Task, err error) {
+func (s *PreInitHandlers) StartInstance(ctx context.Context, req *api.StartInstancePayload) (res *api.StartInstanceResponse, err error) {
 	return nil, ErrUninitialized
 }
 

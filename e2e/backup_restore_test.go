@@ -134,6 +134,8 @@ func TestPosixBackupRestore(t *testing.T) {
 		require.NoError(t, row.Scan(&count))
 
 		assert.Equal(t, 2, count)
+
+		assertInDefaultRepSet(t, ctx, conn)
 	})
 }
 
@@ -144,7 +146,8 @@ func TestS3BackupRestore(t *testing.T) {
 		t.Skip("s3 not enabled for this fixture")
 	}
 
-	host1 := fixture.HostIDs()[0]
+	hostIDs := fixture.HostIDs()
+	host1 := hostIDs[0]
 	dbID := uuid.NewString()
 
 	t.Cleanup(func() {
@@ -168,8 +171,12 @@ func TestS3BackupRestore(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port:  pointerTo(0),
-			Nodes: fixture.OneNodePerHost(),
+			Port: pointerTo(0),
+			Nodes: []*controlplane.DatabaseNodeSpec{
+				{Name: "n1", HostIds: []controlplane.Identifier{controlplane.Identifier(hostIDs[0])}},
+				{Name: "n2", HostIds: []controlplane.Identifier{controlplane.Identifier(hostIDs[1])}},
+				{Name: "n3", HostIds: []controlplane.Identifier{controlplane.Identifier(hostIDs[2])}},
+			},
 			BackupConfig: &controlplane.BackupConfigSpec{
 				Repositories: []*controlplane.BackupRepositorySpec{
 					fixture.S3BackupRepository(),
@@ -247,6 +254,8 @@ func TestS3BackupRestore(t *testing.T) {
 		require.NoError(t, row.Scan(&count))
 
 		assert.Equal(t, 2, count)
+
+		assertInDefaultRepSet(t, ctx, conn)
 	})
 }
 
@@ -379,6 +388,8 @@ func TestS3AddNodeFromBackup(t *testing.T) {
 		require.NoError(t, row.Scan(&count))
 
 		assert.Equal(t, 2, count)
+
+		assertInDefaultRepSet(t, ctx, conn)
 	})
 }
 
@@ -501,5 +512,23 @@ func TestS3CreateDBFromBackup(t *testing.T) {
 		require.NoError(t, row.Scan(&count))
 
 		assert.Equal(t, 2, count)
+
+		assertInDefaultRepSet(t, ctx, conn)
 	})
+}
+
+func assertInDefaultRepSet(t *testing.T, ctx context.Context, conn *pgx.Conn) {
+	t.Helper()
+	var exists bool
+	err := conn.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM spock.replication_set s
+			JOIN spock.replication_set_table t ON t.set_id = s.set_id
+			WHERE s.set_name = 'default'
+			  AND t.set_reloid = 'public.foo'::regclass
+		);
+	`).Scan(&exists)
+	require.NoError(t, err, "failed to query spock.replication_set/_table")
+	assert.True(t, exists, "expected 'public.foo' to be in spock replication set 'default'")
 }

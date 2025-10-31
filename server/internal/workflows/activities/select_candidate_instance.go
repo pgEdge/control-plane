@@ -24,7 +24,7 @@ type SelectCandidateOutput struct {
 
 func (a *Activities) ExecuteSelectCandidate(ctx workflow.Context, input *SelectCandidateInput) workflow.Future[*SelectCandidateOutput] {
 	opts := workflow.ActivityOptions{
-		Queue: utils.ClusterQueue(),
+		Queue: utils.AnyQueue(),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},

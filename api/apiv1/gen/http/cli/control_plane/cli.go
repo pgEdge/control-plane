@@ -28,7 +28,7 @@ func UsageCommands() string {
 
 // UsageExamples produces an example of a valid invocation of the CLI tool.
 func UsageExamples() string {
-	return os.Args[0] + ` control-plane init-cluster` + "\n" +
+	return os.Args[0] + ` control-plane init-cluster --cluster-id "vf9"` + "\n" +
 		""
 }
 
@@ -44,7 +44,8 @@ func ParseEndpoint(
 	var (
 		controlPlaneFlags = flag.NewFlagSet("control-plane", flag.ContinueOnError)
 
-		controlPlaneInitClusterFlags = flag.NewFlagSet("init-cluster", flag.ExitOnError)
+		controlPlaneInitClusterFlags         = flag.NewFlagSet("init-cluster", flag.ExitOnError)
+		controlPlaneInitClusterClusterIDFlag = controlPlaneInitClusterFlags.String("cluster-id", "", "")
 
 		controlPlaneJoinClusterFlags    = flag.NewFlagSet("join-cluster", flag.ExitOnError)
 		controlPlaneJoinClusterBodyFlag = controlPlaneJoinClusterFlags.String("body", "REQUIRED", "")
@@ -302,6 +303,7 @@ func ParseEndpoint(
 			switch epn {
 			case "init-cluster":
 				endpoint = c.InitCluster()
+				data, err = controlplanec.BuildInitClusterPayload(*controlPlaneInitClusterClusterIDFlag)
 			case "join-cluster":
 				endpoint = c.JoinCluster()
 				data, err = controlplanec.BuildJoinClusterPayload(*controlPlaneJoinClusterBodyFlag)
@@ -418,12 +420,13 @@ Additional help:
 `, os.Args[0])
 }
 func controlPlaneInitClusterUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane init-cluster
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane init-cluster -cluster-id STRING
 
 Initializes a new cluster.
+    -cluster-id STRING: 
 
 Example:
-    %[1]s control-plane init-cluster
+    %[1]s control-plane init-cluster --cluster-id "vf9"
 `, os.Args[0])
 }
 
@@ -459,6 +462,7 @@ Internal endpoint for other cluster members seeking to join this cluster.
 
 Example:
     %[1]s control-plane get-join-options --body '{
+      "embedded_etcd_enabled": true,
       "host_id": "host-1",
       "hostname": "ip-10-1-0-113.ec2.internal",
       "ipv4_address": "10.1.0.113",

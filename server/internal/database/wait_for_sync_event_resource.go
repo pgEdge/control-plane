@@ -36,10 +36,7 @@ func (r *WaitForSyncEventResource) DiffIgnore() []string {
 }
 
 func (r *WaitForSyncEventResource) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeNode,
-		ID:   r.SubscriberNode,
-	}
+	return resource.PrimaryExecutor(r.SubscriberNode)
 }
 
 func (r *WaitForSyncEventResource) Identifier() resource.Identifier {

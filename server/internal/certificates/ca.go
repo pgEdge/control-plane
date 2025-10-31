@@ -13,6 +13,8 @@ import (
 	"fmt"
 	"math/big"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type RootCA struct {
@@ -21,7 +23,7 @@ type RootCA struct {
 	JoinToken string
 }
 
-func CreateRootCA(rootCN string) (*RootCA, error) {
+func CreateRootCA() (*RootCA, error) {
 	// Random 128-bit serial number
 	sn, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 	if err != nil {
@@ -31,7 +33,7 @@ func CreateRootCA(rootCN string) (*RootCA, error) {
 	template := &x509.Certificate{
 		SerialNumber: sn,
 		Subject: pkix.Name{
-			CommonName:   rootCN,
+			CommonName:   uuid.NewString(),
 			Organization: []string{"pgEdge, Inc."},
 		},
 		NotAfter:              time.Now().AddDate(20, 0, 0), // 20 years

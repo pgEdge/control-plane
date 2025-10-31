@@ -56,8 +56,7 @@ func testUpdateAddNode(t *testing.T, nodeCount int, deployReplicas bool) {
 	verifyNewNodePrimary(ctx, t, db, newNodeName, username, password)
 
 	// Step 5: Verify replication
-	opts := ConnectionOptions{Username: username, Password: password}
-	db.VerifySpockReplication(ctx, t, db.Spec.Nodes, opts)
+	db.WaitForReplication(ctx, t, username, password)
 
 	// Step 6: Verify cross-node data
 	verifyCrossNodeReplication(ctx, t, db, username, password)

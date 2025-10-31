@@ -35,8 +35,9 @@
       vars:
         control_plane_image: "{{ external_control_plane_image | default('127.0.0.1:5000/control-plane:latest') }}"
 
-- name: Write test config
+- name: Write test configs
   hosts: localhost
   gather_facts: false
   roles:
     - role: generate_test_config
+    - role: generate_bruno_config

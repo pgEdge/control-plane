@@ -29,7 +29,7 @@ type App struct {
 	i      *do.Injector
 	cfg    config.Config
 	logger zerolog.Logger
-	etcd   *etcd.EmbeddedEtcd
+	etcd   etcd.Etcd
 	api    *api.Server
 }
 
@@ -60,7 +60,7 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	grpclog.SetLoggerV2(grpcLogger)
 
-	embeddedEtcd, err := do.Invoke[*etcd.EmbeddedEtcd](a.i)
+	e, err := do.Invoke[etcd.Etcd](a.i)
 	if err != nil {
 		return fmt.Errorf("failed to initialize etcd: %w", err)
 	}
@@ -69,7 +69,7 @@ func (a *App) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to initialize api server: %w", err)
 	}
 
-	a.etcd = embeddedEtcd
+	a.etcd = e
 	a.api = apiServer
 
 	initialized, err := a.etcd.IsInitialized()
@@ -99,6 +99,7 @@ func (a *App) runPreInitialization(ctx context.Context) error {
 		return a.Shutdown(err)
 	case <-a.etcd.Initialized():
 		a.logger.Info().Msg("etcd initialized")
+		config.UpdateInjectedConfig(a.i)
 		return a.runInitialized(ctx)
 	}
 }
@@ -116,7 +117,6 @@ func (a *App) runInitialized(ctx context.Context) error {
 	if err := certSvc.Start(ctx); err != nil {
 		return handleError(fmt.Errorf("failed to start certificate service: %w", err))
 	}
-
 	hostSvc, err := do.Invoke[*host.Service](a.i)
 	if err != nil {
 		return handleError(fmt.Errorf("failed to initialize host service: %w", err))
@@ -124,13 +124,11 @@ func (a *App) runInitialized(ctx context.Context) error {
 	if err := hostSvc.UpdateHost(ctx); err != nil {
 		return handleError(fmt.Errorf("failed to update host: %w", err))
 	}
-
 	hostTicker, err := do.Invoke[*host.UpdateTicker](a.i)
 	if err != nil {
 		return handleError(fmt.Errorf("failed to initialize host ticker: %w", err))
 	}
 	hostTicker.Start(ctx)
-
 	monitorSvc, err := do.Invoke[*monitor.Service](a.i)
 	if err != nil {
 		return handleError(fmt.Errorf("failed to initialize monitor service: %w", err))

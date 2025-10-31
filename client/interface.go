@@ -9,11 +9,11 @@ import (
 type Client interface {
 	// API methods
 
-	InitCluster(ctx context.Context) (*api.ClusterJoinToken, error)
+	InitCluster(ctx context.Context, req *api.InitClusterRequest) (*api.ClusterJoinToken, error)
 	JoinCluster(ctx context.Context, req *api.ClusterJoinToken) error
 	GetJoinToken(ctx context.Context) (*api.ClusterJoinToken, error)
 	GetCluster(ctx context.Context) (*api.Cluster, error)
-	ListHosts(ctx context.Context) ([]*api.Host, error)
+	ListHosts(ctx context.Context) (*api.ListHostsResponse, error)
 	GetHost(ctx context.Context, req *api.GetHostPayload) (*api.Host, error)
 	RemoveHost(ctx context.Context, req *api.RemoveHostPayload) error
 	ListDatabases(ctx context.Context) (*api.ListDatabasesResponse, error)
@@ -27,7 +27,7 @@ type Client interface {
 	GetDatabaseTaskLog(ctx context.Context, req *api.GetDatabaseTaskLogPayload) (*api.TaskLog, error)
 	RestoreDatabase(ctx context.Context, req *api.RestoreDatabasePayload) (*api.RestoreDatabaseResponse, error)
 	GetVersion(ctx context.Context) (*api.VersionInfo, error)
-	RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (*api.Task, error)
+	RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (*api.RestartInstanceResponse, error)
 	CancelDatabaseTask(ctx context.Context, req *api.CancelDatabaseTaskPayload) (res *api.Task, err error)
 	SwitchoverDatabaseNode(ctx context.Context, req *api.SwitchoverDatabaseNodePayload) (*api.SwitchoverDatabaseNodeResponse, error)
 	FailoverDatabaseNode(ctx context.Context, req *api.FailoverDatabaseNodeRequest) (*api.FailoverDatabaseNodeResponse, error)

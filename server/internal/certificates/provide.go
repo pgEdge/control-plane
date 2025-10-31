@@ -14,15 +14,11 @@ func Provide(i *do.Injector) {
 
 func provideService(i *do.Injector) {
 	do.Provide(i, func(i *do.Injector) (*Service, error) {
-		cfg, err := do.Invoke[config.Config](i)
-		if err != nil {
-			return nil, err
-		}
 		store, err := do.Invoke[*Store](i)
 		if err != nil {
 			return nil, err
 		}
-		return NewService(cfg, store), nil
+		return NewService(store), nil
 	})
 }
 

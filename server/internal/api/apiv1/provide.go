@@ -3,6 +3,7 @@ package apiv1
 import (
 	"fmt"
 
+	"github.com/pgEdge/control-plane/server/internal/cluster"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 
@@ -26,11 +27,11 @@ func providePreInitHandlers(i *do.Injector) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get config: %w", err)
 		}
-		etcdServer, err := do.Invoke[*etcd.EmbeddedEtcd](i)
+		e, err := do.Invoke[etcd.Etcd](i)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get embedded etcd: %w", err)
+			return nil, fmt.Errorf("failed to get etcd: %w", err)
 		}
-		return NewPreInitHandlers(cfg, etcdServer), nil
+		return NewPreInitHandlers(cfg, e), nil
 	})
 }
 
@@ -44,9 +45,9 @@ func providePostInitHandlers(i *do.Injector) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get logger: %w", err)
 		}
-		etcdClient, err := do.Invoke[*etcd.EmbeddedEtcd](i)
+		e, err := do.Invoke[etcd.Etcd](i)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get embedded etcd: %w", err)
+			return nil, fmt.Errorf("failed to get etcd: %w", err)
 		}
 		hostSvc, err := do.Invoke[*host.Service](i)
 		if err != nil {
@@ -64,8 +65,12 @@ func providePostInitHandlers(i *do.Injector) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get workflow service: %w", err)
 		}
+		clusterSvc, err := do.Invoke[*cluster.Service](i)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get cluster service: %w", err)
+		}
 
-		return NewPostInitHandlers(cfg, logger, etcdClient, hostSvc, dbSvc, taskSvc, workflowSvc), nil
+		return NewPostInitHandlers(cfg, logger, e, hostSvc, dbSvc, taskSvc, workflowSvc, clusterSvc), nil
 	})
 }
 

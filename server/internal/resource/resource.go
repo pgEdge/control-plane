@@ -97,14 +97,37 @@ func (e ExecutorType) String() string {
 
 const (
 	ExecutorTypeHost    ExecutorType = "host"
-	ExecutorTypeNode    ExecutorType = "node"
-	ExecutorTypeCluster ExecutorType = "cluster"
-	ExecutorTypeCohort  ExecutorType = "cohort"
+	ExecutorTypePrimary ExecutorType = "primary"
+	ExecutorTypeAny     ExecutorType = "any"
+	ExecutorTypeManager ExecutorType = "manager"
 )
 
+// Executor identifies where a resource's lifecycle methods should be executed.
 type Executor struct {
 	Type ExecutorType `json:"type"`
 	ID   string       `json:"id"`
+}
+
+// HostExecutor will execute resource methods on the given host.
+func HostExecutor(hostID string) Executor {
+	return Executor{Type: ExecutorTypeHost, ID: hostID}
+}
+
+// PrimaryExecutor will execute resource methods on the host that's running the
+// primary instance for the given node.
+func PrimaryExecutor(nodeName string) Executor {
+	return Executor{Type: ExecutorTypePrimary, ID: nodeName}
+}
+
+// AnyExecutor will execute resource methods on any host.
+func AnyExecutor() Executor {
+	return Executor{Type: ExecutorTypeAny}
+}
+
+// ManagerExecutor will execute resource methods on any host with cohort manager
+// capabilities.
+func ManagerExecutor() Executor {
+	return Executor{Type: ExecutorTypeManager}
 }
 
 type Resource interface {

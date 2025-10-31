@@ -30,7 +30,6 @@ func CheckWillRestartIdentifier(instanceID string) resource.Identifier {
 
 type CheckWillRestart struct {
 	InstanceID  string `json:"instance_id"`
-	CohortID    string `json:"cohort_id"`
 	WillRestart bool   `json:"will_restart"`
 }
 
@@ -43,10 +42,7 @@ func (c *CheckWillRestart) DiffIgnore() []string {
 }
 
 func (c *CheckWillRestart) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeCohort,
-		ID:   c.CohortID,
-	}
+	return resource.ManagerExecutor()
 }
 
 func (c *CheckWillRestart) Identifier() resource.Identifier {

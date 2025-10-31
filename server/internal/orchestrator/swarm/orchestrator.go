@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"net/netip"
 	"path/filepath"
 	"strconv"
@@ -49,7 +48,6 @@ type Orchestrator struct {
 	bridgeNetwork      *docker.NetworkInfo
 	cpus               int
 	memBytes           uint64
-	swarmID            string
 	swarmNodeID        string
 	controlAvailable   bool
 }
@@ -108,7 +106,6 @@ func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
 	h.MemBytes = o.memBytes
 	h.Cohort = &host.Cohort{
 		Type:             host.CohortTypeSwarm,
-		CohortID:         o.swarmID,
 		MemberID:         o.swarmNodeID,
 		ControlAvailable: o.controlAvailable,
 	}
@@ -141,9 +138,22 @@ func (o *Orchestrator) PopulateHostStatus(ctx context.Context, status *host.Host
 }
 
 func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*database.InstanceResources, error) {
+	instance, orchestratorResources, err := o.instanceResources(spec)
+	if err != nil {
+		return nil, err
+	}
+
+	resources, err := database.NewInstanceResources(instance, orchestratorResources)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create instance resources: %w", err)
+	}
+	return resources, nil
+}
+
+func (o *Orchestrator) instanceResources(spec *database.InstanceSpec) (*database.InstanceResource, []resource.Resource, error) {
 	images, err := o.versions.GetImages(spec.PgEdgeVersion)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get images: %w", err)
+		return nil, nil, fmt.Errorf("failed to get images: %w", err)
 	}
 
 	instanceHostname := fmt.Sprintf("postgres-%s", spec.InstanceID)
@@ -152,7 +162,6 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 	// instance will output this same network. They'll get deduplicated when we
 	// add them to the state.
 	databaseNetwork := &Network{
-		CohortID:  o.swarmID,
 		Scope:     "swarm",
 		Driver:    OverlayDriver,
 		Name:      fmt.Sprintf("%s-database", spec.DatabaseID),
@@ -245,7 +254,6 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 	}
 	checkWillRestart := &CheckWillRestart{
 		InstanceID: spec.InstanceID,
-		CohortID:   o.swarmID,
 	}
 	switchover := &Switchover{
 		HostID:     spec.HostID,
@@ -253,7 +261,6 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 	}
 	service := &PostgresService{
 		Instance:    spec,
-		CohortID:    o.swarmID,
 		ServiceName: instanceHostname,
 	}
 
@@ -328,12 +335,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		})
 	}
 
-	resources, err := database.NewInstanceResources(instance, orchestratorResources)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create instance resources: %w", err)
-	}
-
-	return resources, nil
+	return instance, orchestratorResources, nil
 }
 
 func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceSpec, taskID uuid.UUID) (*database.InstanceResources, error) {
@@ -353,34 +355,39 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 		spec.PostgreSQLConf["restore_command"] = restoreCmd
 	}
 
-	resources, err := o.GenerateInstanceResources(spec)
+	instance, resources, err := o.instanceResources(spec)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate instance resources: %w", err)
 	}
 
-	var restoreOptions map[string]string
-	if spec.RestoreConfig != nil && spec.RestoreConfig.RestoreOptions != nil {
-		restoreOptions = maps.Clone(spec.RestoreConfig.RestoreOptions)
-	}
-	restoreResource, err := resource.ToResourceData(&PgBackRestRestore{
-		DatabaseID:     spec.DatabaseID,
-		HostID:         spec.HostID,
-		InstanceID:     spec.InstanceID,
-		TaskID:         taskID,
-		DataDirID:      spec.InstanceID + "-data",
-		NodeName:       spec.NodeName,
-		RestoreOptions: restoreOptions,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert restore resource to resource data: %w", err)
-	}
-	resources.Instance.OrchestratorDependencies = append(
-		resources.Instance.OrchestratorDependencies,
-		restoreResource.Identifier,
+	resources = append(resources,
+		&ScaleService{
+			InstanceID:     spec.InstanceID,
+			ScaleDirection: ScaleDirectionDOWN,
+		},
+		&PgBackRestRestore{
+			DatabaseID:     spec.DatabaseID,
+			HostID:         spec.HostID,
+			InstanceID:     spec.InstanceID,
+			TaskID:         taskID,
+			DataDirID:      spec.InstanceID + "-data",
+			NodeName:       spec.NodeName,
+			RestoreOptions: spec.RestoreConfig.RestoreOptions,
+		},
+		&ScaleService{
+			InstanceID:     spec.InstanceID,
+			ScaleDirection: ScaleDirectionUP,
+			Deps:           []resource.Identifier{PgBackRestRestoreResourceIdentifier(spec.InstanceID)},
+		},
 	)
-	resources.Resources = append(resources.Resources, restoreResource)
 
-	return resources, nil
+	instance.OrchestratorDependencies = append(instance.OrchestratorDependencies, ScaleServiceResourceIdentifier(spec.InstanceID, ScaleDirectionUP))
+
+	instanceResources, err := database.NewInstanceResources(instance, resources)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize instance resources: %w", err)
+	}
+	return instanceResources, nil
 }
 
 func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*database.ConnectionInfo, error) {
@@ -434,11 +441,11 @@ func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID
 
 func (o *Orchestrator) WorkerQueues() ([]workflow.Queue, error) {
 	queues := []workflow.Queue{
-		utils.ClusterQueue(),
+		utils.AnyQueue(),
 		utils.HostQueue(o.cfg.HostID),
 	}
 	if o.controlAvailable {
-		queues = append(queues, utils.CohortQueue())
+		queues = append(queues, utils.ManagerQueue())
 	}
 	return queues, nil
 }

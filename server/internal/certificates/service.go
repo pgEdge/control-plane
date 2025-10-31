@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
@@ -23,14 +22,12 @@ var (
 )
 
 type Service struct {
-	cfg   config.Config
 	ca    *RootCA
 	store *Store
 }
 
-func NewService(cfg config.Config, store *Store) *Service {
+func NewService(store *Store) *Service {
 	return &Service{
-		cfg:   cfg,
 		store: store,
 	}
 }
@@ -48,7 +45,7 @@ func (s *Service) Start(ctx context.Context) error {
 	if !errors.Is(err, storage.ErrNotFound) {
 		return fmt.Errorf("failed to fetch CA: %w", err)
 	}
-	ca, err := CreateRootCA(s.cfg.ClusterID)
+	ca, err := CreateRootCA()
 	if err != nil {
 		return fmt.Errorf("failed to create CA: %w", err)
 	}

@@ -14,7 +14,7 @@ import (
 
 var _ resource.Resource = (*PgBackRestStanza)(nil)
 
-var ResourceTypePgBackRestStanza resource.Type = "swarm.pgbackrest_stanza"
+const ResourceTypePgBackRestStanza resource.Type = "swarm.pgbackrest_stanza"
 
 func PgBackRestStanzaIdentifier(nodeName string) resource.Identifier {
 	return resource.Identifier{
@@ -36,10 +36,7 @@ func (p *PgBackRestStanza) DiffIgnore() []string {
 }
 
 func (p *PgBackRestStanza) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeNode,
-		ID:   p.NodeName,
-	}
+	return resource.PrimaryExecutor(p.NodeName)
 }
 
 func (p *PgBackRestStanza) Identifier() resource.Identifier {

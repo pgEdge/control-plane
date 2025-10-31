@@ -1,0 +1,34 @@
+meta {
+  name: Restore database
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{host_1_url}}/v1/databases/:database_id/restore
+  body: json
+  auth: none
+}
+
+params:path {
+  database_id: storefront
+}
+
+body:json {
+  {
+    "restore_config": {
+      "source_database_id": "storefront",
+      "source_node_name": "n1",
+      "source_database_name": "storefront",
+      "repository": {
+        "id": "{{repository_id}}",
+        "type": "posix",
+        "base_path": "/backups"
+      }
+    }
+  }
+}
+
+vars:pre-request {
+  wait_for_task: true
+}

@@ -54,10 +54,7 @@ func (s *PostgresServiceSpecResource) Identifier() resource.Identifier {
 }
 
 func (s *PostgresServiceSpecResource) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeHost,
-		ID:   s.Instance.HostID,
-	}
+	return resource.HostExecutor(s.Instance.HostID)
 }
 
 func (s *PostgresServiceSpecResource) Dependencies() []resource.Identifier {

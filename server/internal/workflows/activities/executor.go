@@ -28,11 +28,11 @@ func (a *Activities) ResolveExecutor(state *resource.State, executor resource.Ex
 	switch executor.Type {
 	case resource.ExecutorTypeHost:
 		return utils.HostQueue(executor.ID), nil
-	case resource.ExecutorTypeCohort:
-		return utils.CohortQueue(), nil
-	case resource.ExecutorTypeCluster:
-		return utils.ClusterQueue(), nil
-	case resource.ExecutorTypeNode:
+	case resource.ExecutorTypeManager:
+		return utils.ManagerQueue(), nil
+	case resource.ExecutorTypeAny:
+		return utils.AnyQueue(), nil
+	case resource.ExecutorTypePrimary:
 		node, err := resource.FromContext[*database.NodeResource](rc, database.NodeResourceIdentifier(executor.ID))
 		if errors.Is(err, resource.ErrNotFound) {
 			return "", ErrExecutorNotFound

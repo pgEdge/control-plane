@@ -10,20 +10,21 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/host"
 )
 
 var _ do.Shutdownable = (*Service)(nil)
 
 type Service struct {
-	appCtx  context.Context
-	cfg     config.Config
-	logger  zerolog.Logger
-	dbSvc   *database.Service
-	certSvc *certificates.Service
-	dbOrch  database.Orchestrator
-	store   *Store
-
-	instances map[string]*InstanceMonitor
+	appCtx      context.Context
+	cfg         config.Config
+	logger      zerolog.Logger
+	dbSvc       *database.Service
+	certSvc     *certificates.Service
+	dbOrch      database.Orchestrator
+	store       *Store
+	hostMoniter *HostMonitor
+	instances   map[string]*InstanceMonitor
 }
 
 func NewService(
@@ -33,15 +34,17 @@ func NewService(
 	certSvc *certificates.Service,
 	dbOrch database.Orchestrator,
 	store *Store,
+	hostSvc *host.Service,
 ) *Service {
 	return &Service{
-		cfg:       cfg,
-		logger:    logger,
-		dbSvc:     dbSvc,
-		certSvc:   certSvc,
-		dbOrch:    dbOrch,
-		store:     store,
-		instances: map[string]*InstanceMonitor{},
+		cfg:         cfg,
+		logger:      logger,
+		dbSvc:       dbSvc,
+		certSvc:     certSvc,
+		dbOrch:      dbOrch,
+		store:       store,
+		instances:   map[string]*InstanceMonitor{},
+		hostMoniter: NewHostMonitor(logger, hostSvc),
 	}
 }
 

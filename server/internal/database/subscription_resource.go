@@ -40,10 +40,7 @@ func (s *SubscriptionResource) DiffIgnore() []string {
 }
 
 func (s *SubscriptionResource) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeNode,
-		ID:   s.SubscriberNode,
-	}
+	return resource.PrimaryExecutor(s.SubscriberNode)
 }
 
 func (s *SubscriptionResource) Identifier() resource.Identifier {
@@ -80,7 +77,7 @@ func (s *SubscriptionResource) Refresh(ctx context.Context, rc *resource.Context
 
 	needsCreate, err := postgres.
 		SubscriptionNeedsCreate(s.ProviderNode, s.SubscriberNode).
-		Row(ctx, conn)
+		Scalar(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to check if subscription needs to be created: %w", err)
 	}
@@ -90,14 +87,14 @@ func (s *SubscriptionResource) Refresh(ctx context.Context, rc *resource.Context
 
 	dsnNeedsUpdate, err := postgres.
 		SubscriptionDsnNeedsUpdate(s.ProviderNode, s.SubscriberNode, providerDSN).
-		Row(ctx, conn)
+		Scalar(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to check if subscription needs to be updated: %w", err)
 	}
 
 	needsEnable, err := postgres.
 		SubscriptionNeedsEnable(s.ProviderNode, s.SubscriberNode, s.Disabled).
-		Row(ctx, conn)
+		Scalar(ctx, conn)
 	if err != nil {
 		return fmt.Errorf("failed to check if subscription needs to be enabled: %w", err)
 	}

@@ -67,8 +67,8 @@ func NewSingleServerClient(server ServerConfig) (*SingleServerClient, error) {
 	}, nil
 }
 
-func (c *SingleServerClient) InitCluster(ctx context.Context) (*api.ClusterJoinToken, error) {
-	resp, err := c.api.InitCluster(ctx)
+func (c *SingleServerClient) InitCluster(ctx context.Context, req *api.InitClusterRequest) (*api.ClusterJoinToken, error) {
+	resp, err := c.api.InitCluster(ctx, req)
 	return resp, translateErr(err)
 }
 
@@ -87,7 +87,7 @@ func (c *SingleServerClient) GetCluster(ctx context.Context) (*api.Cluster, erro
 	return resp, translateErr(err)
 }
 
-func (c *SingleServerClient) ListHosts(ctx context.Context) ([]*api.Host, error) {
+func (c *SingleServerClient) ListHosts(ctx context.Context) (*api.ListHostsResponse, error) {
 	resp, err := c.api.ListHosts(ctx)
 	return resp, translateErr(err)
 }
@@ -157,7 +157,7 @@ func (c *SingleServerClient) GetVersion(ctx context.Context) (*api.VersionInfo, 
 	return resp, translateErr(err)
 }
 
-func (c *SingleServerClient) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (*api.Task, error) {
+func (c *SingleServerClient) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (*api.RestartInstanceResponse, error) {
 	resp, err := c.api.RestartInstance(ctx, req)
 	return resp, translateErr(err)
 }

@@ -18,7 +18,6 @@ import (
 	controlplane "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	controlplaneviews "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane/views"
 	goahttp "goa.design/goa/v3/http"
-	goa "goa.design/goa/v3/pkg"
 )
 
 // BuildInitClusterRequest instantiates a HTTP request object with method and
@@ -36,11 +35,29 @@ func (c *Client) BuildInitClusterRequest(ctx context.Context, v any) (*http.Requ
 	return req, nil
 }
 
+// EncodeInitClusterRequest returns an encoder for requests sent to the
+// control-plane init-cluster server.
+func EncodeInitClusterRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.InitClusterRequest)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "init-cluster", "*controlplane.InitClusterRequest", v)
+		}
+		values := req.URL.Query()
+		if p.ClusterID != nil {
+			values.Add("cluster_id", string(*p.ClusterID))
+		}
+		req.URL.RawQuery = values.Encode()
+		return nil
+	}
+}
+
 // DecodeInitClusterResponse returns a decoder for responses returned by the
 // control-plane init-cluster endpoint. restoreBody controls whether the
 // response body should be restored after having been read.
 // DecodeInitClusterResponse may return the following errors:
 //   - "cluster_already_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "operation_not_supported" (type *controlplane.APIError): http.StatusBadRequest
 //   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeInitClusterResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
@@ -87,6 +104,20 @@ func DecodeInitClusterResponse(decoder func(*http.Response) goahttp.Decoder, res
 				return nil, goahttp.ErrValidationError("control-plane", "init-cluster", err)
 			}
 			return nil, NewInitClusterClusterAlreadyInitialized(&body)
+		case http.StatusBadRequest:
+			var (
+				body InitClusterOperationNotSupportedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "init-cluster", err)
+			}
+			err = ValidateInitClusterOperationNotSupportedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "init-cluster", err)
+			}
+			return nil, NewInitClusterOperationNotSupported(&body)
 		case http.StatusInternalServerError:
 			var (
 				body InitClusterServerErrorResponseBody
@@ -551,17 +582,11 @@ func DecodeListHostsResponse(decoder func(*http.Response) goahttp.Decoder, resto
 			if err != nil {
 				return nil, goahttp.ErrDecodingError("control-plane", "list-hosts", err)
 			}
-			for _, e := range body {
-				if e != nil {
-					if err2 := ValidateHostResponse(e); err2 != nil {
-						err = goa.MergeErrors(err, err2)
-					}
-				}
-			}
+			err = ValidateListHostsResponseBody(&body)
 			if err != nil {
 				return nil, goahttp.ErrValidationError("control-plane", "list-hosts", err)
 			}
-			res := NewListHostsHostOK(body)
+			res := NewListHostsResponseOK(&body)
 			return res, nil
 		case http.StatusConflict:
 			var (
@@ -2891,7 +2916,7 @@ func DecodeRestartInstanceResponse(decoder func(*http.Response) goahttp.Decoder,
 			if err != nil {
 				return nil, goahttp.ErrValidationError("control-plane", "restart-instance", err)
 			}
-			res := NewRestartInstanceTaskOK(&body)
+			res := NewRestartInstanceResponseOK(&body)
 			return res, nil
 		case http.StatusConflict:
 			var (
@@ -3035,7 +3060,7 @@ func DecodeStopInstanceResponse(decoder func(*http.Response) goahttp.Decoder, re
 			if err != nil {
 				return nil, goahttp.ErrValidationError("control-plane", "stop-instance", err)
 			}
-			res := NewStopInstanceTaskOK(&body)
+			res := NewStopInstanceResponseOK(&body)
 			return res, nil
 		case http.StatusConflict:
 			var (
@@ -3179,7 +3204,7 @@ func DecodeStartInstanceResponse(decoder func(*http.Response) goahttp.Decoder, r
 			if err != nil {
 				return nil, goahttp.ErrValidationError("control-plane", "start-instance", err)
 			}
-			res := NewStartInstanceTaskOK(&body)
+			res := NewStartInstanceResponseOK(&body)
 			return res, nil
 		case http.StatusConflict:
 			var (
@@ -3359,13 +3384,20 @@ func DecodeCancelDatabaseTaskResponse(decoder func(*http.Response) goahttp.Decod
 	}
 }
 
-// unmarshalClusterPeerResponseBodyToControlplaneClusterPeer builds a value of
-// type *controlplane.ClusterPeer from a value of type *ClusterPeerResponseBody.
-func unmarshalClusterPeerResponseBodyToControlplaneClusterPeer(v *ClusterPeerResponseBody) *controlplane.ClusterPeer {
-	res := &controlplane.ClusterPeer{
-		Name:      *v.Name,
-		PeerURL:   *v.PeerURL,
-		ClientURL: *v.ClientURL,
+// unmarshalEtcdClusterMemberResponseBodyToControlplaneEtcdClusterMember builds
+// a value of type *controlplane.EtcdClusterMember from a value of type
+// *EtcdClusterMemberResponseBody.
+func unmarshalEtcdClusterMemberResponseBodyToControlplaneEtcdClusterMember(v *EtcdClusterMemberResponseBody) *controlplane.EtcdClusterMember {
+	res := &controlplane.EtcdClusterMember{
+		Name: *v.Name,
+	}
+	res.PeerUrls = make([]string, len(v.PeerUrls))
+	for i, val := range v.PeerUrls {
+		res.PeerUrls[i] = val
+	}
+	res.ClientUrls = make([]string, len(v.ClientUrls))
+	for i, val := range v.ClientUrls {
+		res.ClientUrls[i] = val
 	}
 
 	return res
@@ -3376,6 +3408,8 @@ func unmarshalClusterPeerResponseBodyToControlplaneClusterPeer(v *ClusterPeerRes
 // *ClusterCredentialsResponseBody.
 func unmarshalClusterCredentialsResponseBodyToControlplaneClusterCredentials(v *ClusterCredentialsResponseBody) *controlplane.ClusterCredentials {
 	res := &controlplane.ClusterCredentials{
+		Username:   *v.Username,
+		Password:   *v.Password,
 		CaCert:     *v.CaCert,
 		ClientCert: *v.ClientCert,
 		ClientKey:  *v.ClientKey,
@@ -3434,7 +3468,6 @@ func unmarshalHostCohortResponseBodyToControlplaneHostCohort(v *HostCohortRespon
 	}
 	res := &controlplane.HostCohort{
 		Type:             *v.Type,
-		CohortID:         *v.CohortID,
 		MemberID:         *v.MemberID,
 		ControlAvailable: *v.ControlAvailable,
 	}
@@ -3486,105 +3519,6 @@ func unmarshalComponentStatusResponseBodyToControlplaneComponentStatus(v *Compon
 // of type *controlplane.PgEdgeVersion from a value of type
 // *PgEdgeVersionResponseBody.
 func unmarshalPgEdgeVersionResponseBodyToControlplanePgEdgeVersion(v *PgEdgeVersionResponseBody) *controlplane.PgEdgeVersion {
-	if v == nil {
-		return nil
-	}
-	res := &controlplane.PgEdgeVersion{
-		PostgresVersion: *v.PostgresVersion,
-		SpockVersion:    *v.SpockVersion,
-	}
-
-	return res
-}
-
-// unmarshalHostResponseToControlplaneHost builds a value of type
-// *controlplane.Host from a value of type *HostResponse.
-func unmarshalHostResponseToControlplaneHost(v *HostResponse) *controlplane.Host {
-	res := &controlplane.Host{
-		ID:           controlplane.Identifier(*v.ID),
-		Orchestrator: *v.Orchestrator,
-		DataDir:      *v.DataDir,
-		Hostname:     *v.Hostname,
-		Ipv4Address:  *v.Ipv4Address,
-		Cpus:         v.Cpus,
-		Memory:       v.Memory,
-	}
-	if v.Cohort != nil {
-		res.Cohort = unmarshalHostCohortResponseToControlplaneHostCohort(v.Cohort)
-	}
-	res.Status = unmarshalHostStatusResponseToControlplaneHostStatus(v.Status)
-	if v.DefaultPgedgeVersion != nil {
-		res.DefaultPgedgeVersion = unmarshalPgEdgeVersionResponseToControlplanePgEdgeVersion(v.DefaultPgedgeVersion)
-	}
-	if v.SupportedPgedgeVersions != nil {
-		res.SupportedPgedgeVersions = make([]*controlplane.PgEdgeVersion, len(v.SupportedPgedgeVersions))
-		for i, val := range v.SupportedPgedgeVersions {
-			res.SupportedPgedgeVersions[i] = unmarshalPgEdgeVersionResponseToControlplanePgEdgeVersion(val)
-		}
-	}
-
-	return res
-}
-
-// unmarshalHostCohortResponseToControlplaneHostCohort builds a value of type
-// *controlplane.HostCohort from a value of type *HostCohortResponse.
-func unmarshalHostCohortResponseToControlplaneHostCohort(v *HostCohortResponse) *controlplane.HostCohort {
-	if v == nil {
-		return nil
-	}
-	res := &controlplane.HostCohort{
-		Type:             *v.Type,
-		CohortID:         *v.CohortID,
-		MemberID:         *v.MemberID,
-		ControlAvailable: *v.ControlAvailable,
-	}
-
-	return res
-}
-
-// unmarshalHostStatusResponseToControlplaneHostStatus builds a value of type
-// *controlplane.HostStatus from a value of type *HostStatusResponse.
-func unmarshalHostStatusResponseToControlplaneHostStatus(v *HostStatusResponse) *controlplane.HostStatus {
-	res := &controlplane.HostStatus{
-		State:     *v.State,
-		UpdatedAt: *v.UpdatedAt,
-	}
-	res.Components = make(map[string]*controlplane.ComponentStatus, len(v.Components))
-	for key, val := range v.Components {
-		tk := key
-		if val == nil {
-			res.Components[tk] = nil
-			continue
-		}
-		res.Components[tk] = unmarshalComponentStatusResponseToControlplaneComponentStatus(val)
-	}
-
-	return res
-}
-
-// unmarshalComponentStatusResponseToControlplaneComponentStatus builds a value
-// of type *controlplane.ComponentStatus from a value of type
-// *ComponentStatusResponse.
-func unmarshalComponentStatusResponseToControlplaneComponentStatus(v *ComponentStatusResponse) *controlplane.ComponentStatus {
-	res := &controlplane.ComponentStatus{
-		Healthy: *v.Healthy,
-		Error:   v.Error,
-	}
-	if v.Details != nil {
-		res.Details = make(map[string]any, len(v.Details))
-		for key, val := range v.Details {
-			tk := key
-			tv := val
-			res.Details[tk] = tv
-		}
-	}
-
-	return res
-}
-
-// unmarshalPgEdgeVersionResponseToControlplanePgEdgeVersion builds a value of
-// type *controlplane.PgEdgeVersion from a value of type *PgEdgeVersionResponse.
-func unmarshalPgEdgeVersionResponseToControlplanePgEdgeVersion(v *PgEdgeVersionResponse) *controlplane.PgEdgeVersion {
 	if v == nil {
 		return nil
 	}

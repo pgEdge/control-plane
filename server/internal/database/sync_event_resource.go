@@ -35,10 +35,7 @@ func (r *SyncEventResource) DiffIgnore() []string {
 }
 
 func (r *SyncEventResource) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeNode,
-		ID:   r.ProviderNode,
-	}
+	return resource.PrimaryExecutor(r.ProviderNode)
 }
 
 func (r *SyncEventResource) Identifier() resource.Identifier {
@@ -69,7 +66,7 @@ func (r *SyncEventResource) Refresh(ctx context.Context, rc *resource.Context) e
 	defer providerConn.Close(ctx)
 
 	// Send sync event from provider
-	lsn, err := postgres.SyncEvent().Row(ctx, providerConn)
+	lsn, err := postgres.SyncEvent().Scalar(ctx, providerConn)
 	if err != nil {
 		return fmt.Errorf("failed to send sync event %q from provider: %w", lsn, err)
 	}

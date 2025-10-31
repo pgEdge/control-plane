@@ -17,7 +17,7 @@ import (
 // Service is the control-plane service interface.
 type Service interface {
 	// Initializes a new cluster.
-	InitCluster(context.Context) (res *ClusterJoinToken, err error)
+	InitCluster(context.Context, *InitClusterRequest) (res *ClusterJoinToken, err error)
 	// Joins this host to an existing cluster.
 	JoinCluster(context.Context, *ClusterJoinToken) (err error)
 	// Gets the join token for this cluster.
@@ -27,7 +27,7 @@ type Service interface {
 	// Returns information about the cluster.
 	GetCluster(context.Context) (res *Cluster, err error)
 	// Lists all hosts within the cluster.
-	ListHosts(context.Context) (res []*Host, err error)
+	ListHosts(context.Context) (res *ListHostsResponse, err error)
 	// Returns information about a particular host in the cluster.
 	GetHost(context.Context, *GetHostPayload) (res *Host, err error)
 	// Removes a host from the cluster.
@@ -61,11 +61,11 @@ type Service interface {
 	GetVersion(context.Context) (res *VersionInfo, err error)
 	// Restarts a specific instance within a database. Supports immediate or
 	// scheduled restarts.
-	RestartInstance(context.Context, *RestartInstancePayload) (res *Task, err error)
+	RestartInstance(context.Context, *RestartInstancePayload) (res *RestartInstanceResponse, err error)
 	// Stops a specific instance within a database. Supports immediate stops.
-	StopInstance(context.Context, *StopInstancePayload) (res *Task, err error)
+	StopInstance(context.Context, *StopInstancePayload) (res *StopInstanceResponse, err error)
 	// Starts a specific instance within a database. Supports immediate starts
-	StartInstance(context.Context, *StartInstancePayload) (res *Task, err error)
+	StartInstance(context.Context, *StartInstancePayload) (res *StartInstanceResponse, err error)
 	// Cancels a running or pending task for a database.
 	CancelDatabaseTask(context.Context, *CancelDatabaseTaskPayload) (res *Task, err error)
 }
@@ -214,6 +214,10 @@ type Cluster struct {
 }
 
 type ClusterCredentials struct {
+	// The Etcd username for the new host.
+	Username string
+	// The Etcd password for the new host.
+	Password string
 	// The base64-encoded CA certificate for the cluster.
 	CaCert string
 	// The base64-encoded etcd client certificate for the new cluster member.
@@ -229,8 +233,8 @@ type ClusterCredentials struct {
 // ClusterJoinOptions is the result type of the control-plane service
 // get-join-options method.
 type ClusterJoinOptions struct {
-	// Information about this cluster member
-	Peer *ClusterPeer
+	// Connection information for the etcd cluster leader
+	Leader *EtcdClusterMember
 	// Credentials for the new host joining the cluster.
 	Credentials *ClusterCredentials
 }
@@ -246,6 +250,8 @@ type ClusterJoinRequest struct {
 	Hostname string
 	// The IPv4 address of the host that's joining the cluster.
 	Ipv4Address string
+	// True if the joining member is configured to run an embedded an etcd server.
+	EmbeddedEtcdEnabled bool
 }
 
 // ClusterJoinToken is the result type of the control-plane service
@@ -255,15 +261,6 @@ type ClusterJoinToken struct {
 	Token string
 	// Existing server to join
 	ServerURL string
-}
-
-type ClusterPeer struct {
-	// The name of the Etcd cluster member.
-	Name string
-	// The Etcd peer endpoint for this cluster member.
-	PeerURL string
-	// The Etcd client endpoint for this cluster member.
-	ClientURL string
 }
 
 type ClusterStatus struct {
@@ -427,6 +424,15 @@ type DeleteDatabaseResponse struct {
 	Task *Task
 }
 
+type EtcdClusterMember struct {
+	// The name of the Etcd cluster member.
+	Name string
+	// The Etcd peer endpoint for this cluster member.
+	PeerUrls []string
+	// The Etcd client endpoint for this cluster member.
+	ClientUrls []string
+}
+
 // Describes an additional Docker network to attach the container to.
 type ExtraNetworkSpec struct {
 	// The name or ID of the network to connect to.
@@ -532,8 +538,6 @@ type Host struct {
 type HostCohort struct {
 	// The type of cohort that the host belongs to.
 	Type string
-	// The cohort ID that the host belongs to.
-	CohortID string
 	// The member ID of the host within the cohort.
 	MemberID string
 	// Indicates if the host is a control node in the cohort.
@@ -552,6 +556,13 @@ type HostStatus struct {
 // lower-cased letters and hyphens, start and end with a letter or number, and
 // not contain consecutive hyphens.
 type Identifier string
+
+// InitClusterRequest is the payload type of the control-plane service
+// init-cluster method.
+type InitClusterRequest struct {
+	// Optional id for the cluster, omit for default generated id
+	ClusterID *Identifier
+}
 
 // An instance of pgEdge Postgres running on a host.
 type Instance struct {
@@ -647,6 +658,13 @@ type ListDatabasesResponse struct {
 	Databases DatabaseCollection
 }
 
+// ListHostsResponse is the result type of the control-plane service list-hosts
+// method.
+type ListHostsResponse struct {
+	// List of hosts in the cluster
+	Hosts []*Host
+}
+
 // Options specific to the selected orchestrator.
 type OrchestratorOpts struct {
 	// Swarm-specific configuration.
@@ -675,6 +693,12 @@ type RestartInstancePayload struct {
 	// The ID of the instance to restart.
 	InstanceID     Identifier
 	RestartOptions *RestartOptions
+}
+
+// Returns a task representing the restart operation.
+type RestartInstanceResponse struct {
+	// Task representing the restart operation
+	Task *Task
 }
 
 // Options for restarting a Postgres instance.
@@ -780,6 +804,12 @@ type StartInstancePayload struct {
 	Force bool
 }
 
+// Returns a task representing the start operation.
+type StartInstanceResponse struct {
+	// Task representing the start operation
+	Task *Task
+}
+
 // StopInstancePayload is the payload type of the control-plane service
 // stop-instance method.
 type StopInstancePayload struct {
@@ -789,6 +819,12 @@ type StopInstancePayload struct {
 	InstanceID Identifier
 	// Force stopping an instance even if database in an unmodifiable state
 	Force bool
+}
+
+// Returns a task representing the stop operation.
+type StopInstanceResponse struct {
+	// Task representing the stop operation
+	Task *Task
 }
 
 // Docker Swarm-specific options.
@@ -939,6 +975,11 @@ func MakeServerError(err error) *goa.ServiceError {
 // MakeClusterAlreadyInitialized builds a goa.ServiceError from an error.
 func MakeClusterAlreadyInitialized(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "cluster_already_initialized", false, false, false)
+}
+
+// MakeOperationNotSupported builds a goa.ServiceError from an error.
+func MakeOperationNotSupported(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "operation_not_supported", false, false, false)
 }
 
 // MakeInvalidJoinToken builds a goa.ServiceError from an error.

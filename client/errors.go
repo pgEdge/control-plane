@@ -9,19 +9,6 @@ import (
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 )
 
-var (
-	ErrClusterAlreadyInitialized  = errors.New("cluster_already_initialized")
-	ErrClusterNotInitialized      = errors.New("cluster_not_initialized")
-	ErrDatabaseAlreadyExists      = errors.New("database_already_exists")
-	ErrDatabaseNotModifiable      = errors.New("database_not_modifiable")
-	ErrInvalidInput               = errors.New("invalid_input")
-	ErrInvalidJoinToken           = errors.New("invalid_join_token")
-	ErrNotFound                   = errors.New("not_found")
-	ErrOperationAlreadyInProgress = errors.New("operation_already_in_progress")
-	ErrRestartFailed              = errors.New("restart_failed")
-	ErrServerError                = errors.New("server_error")
-)
-
 const (
 	errorNameClusterAlreadyInitialized  = "cluster_already_initialized"
 	errorNameClusterNotInitialized      = "cluster_not_initialized"
@@ -31,8 +18,23 @@ const (
 	errorNameInvalidJoinToken           = "invalid_join_token"
 	errorNameNotFound                   = "not_found"
 	errorNameOperationAlreadyInProgress = "operation_already_in_progress"
+	errorNameOperationNotSupported      = "operation_not_supported"
 	errorNameRestartFailed              = "restart_failed"
 	errorNameServerError                = "server_error"
+)
+
+var (
+	ErrClusterAlreadyInitialized  = errors.New(errorNameClusterAlreadyInitialized)
+	ErrClusterNotInitialized      = errors.New(errorNameClusterNotInitialized)
+	ErrDatabaseAlreadyExists      = errors.New(errorNameDatabaseAlreadyExists)
+	ErrDatabaseNotModifiable      = errors.New(errorNameDatabaseNotModifiable)
+	ErrInvalidInput               = errors.New(errorNameInvalidInput)
+	ErrInvalidJoinToken           = errors.New(errorNameInvalidJoinToken)
+	ErrNotFound                   = errors.New(errorNameNotFound)
+	ErrOperationAlreadyInProgress = errors.New(errorNameOperationAlreadyInProgress)
+	ErrOperationNotSupported      = errors.New(errorNameOperationNotSupported)
+	ErrRestartFailed              = errors.New(errorNameRestartFailed)
+	ErrServerError                = errors.New(errorNameServerError)
 )
 
 func errorByName(name string) error {
@@ -53,6 +55,8 @@ func errorByName(name string) error {
 		return ErrNotFound
 	case errorNameOperationAlreadyInProgress:
 		return ErrOperationAlreadyInProgress
+	case errorNameOperationNotSupported:
+		return ErrOperationNotSupported
 	case errorNameRestartFailed:
 		return ErrRestartFailed
 	case errorNameServerError:

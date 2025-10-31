@@ -17,6 +17,7 @@ const (
 )
 
 type HostStatus struct {
+	HostID     string
 	UpdatedAt  time.Time
 	State      HostState
 	Components map[string]common.ComponentStatus
@@ -30,7 +31,6 @@ const (
 
 type Cohort struct {
 	Type             CohortType
-	CohortID         string
 	MemberID         string
 	ControlAvailable bool
 }
@@ -82,7 +82,6 @@ func fromStorage(host *StoredHost, status *StoredHostStatus) (*Host, error) {
 	if host.Cohort != nil {
 		cohort = &Cohort{
 			Type:             host.Cohort.Type,
-			CohortID:         host.Cohort.CohortID,
 			MemberID:         host.Cohort.MemberID,
 			ControlAvailable: host.Cohort.ControlAvailable,
 		}
@@ -109,6 +108,7 @@ func fromStorage(host *StoredHost, status *StoredHostStatus) (*Host, error) {
 	// heartbeats.
 	if time.Since(out.Status.UpdatedAt) > 2*UpdateStatusInterval {
 		out.Status.State = HostStateUnreachable
+		out.Status.Components = nil //Clear stale component statuses
 	}
 
 	return out, nil
@@ -119,7 +119,6 @@ func toStorage(host *Host) *StoredHost {
 	if host.Cohort != nil {
 		cohort = &StoredCohort{
 			Type:             host.Cohort.Type,
-			CohortID:         host.Cohort.CohortID,
 			MemberID:         host.Cohort.MemberID,
 			ControlAvailable: host.Cohort.ControlAvailable,
 		}
@@ -151,6 +150,7 @@ func toStorage(host *Host) *StoredHost {
 
 func statusToStorage(status *HostStatus) *StoredHostStatus {
 	return &StoredHostStatus{
+		HostID:     status.HostID,
 		UpdatedAt:  status.UpdatedAt,
 		State:      status.State,
 		Components: status.Components,

@@ -27,10 +27,17 @@ var Cluster = g.Type("Cluster", func() {
 	})
 	g.Attribute("hosts", g.ArrayOf(Host), func() {
 		g.Description("All of the hosts in the cluster.")
-		g.Example(HostsExample)
+		g.Example(HostsArrayExample)
 	})
 
 	g.Required("id", "tenant_id", "status", "hosts")
+})
+
+var InitClusterRequest = g.Type("InitClusterRequest", func() {
+	g.Description("Request to initialize a cluster")
+	g.Attribute("cluster_id", Identifier, func() {
+		g.Description("Optional id for the cluster, omit for default generated id")
+	})
 })
 
 var ClusterJoinToken = g.Type("ClusterJoinToken", func() {
@@ -68,30 +75,40 @@ var ClusterJoinRequest = g.Type("ClusterJoinRequest", func() {
 		g.Description("The IPv4 address of the host that's joining the cluster.")
 		g.Example("10.1.0.113")
 	})
+	g.Attribute("embedded_etcd_enabled", g.Boolean, func() {
+		g.Description("True if the joining member is configured to run an embedded an etcd server.")
+		g.Example(true)
+	})
 
-	g.Required("token", "host_id", "hostname", "ipv4_address")
+	g.Required("embedded_etcd_enabled", "token", "host_id", "hostname", "ipv4_address")
 })
 
-var ClusterPeer = g.Type("ClusterPeer", func() {
+var EtcdClusterMember = g.Type("EtcdClusterMember", func() {
 	g.Attribute("name", g.String, func() {
 		g.Description("The name of the Etcd cluster member.")
 		g.Example("host-1")
 	})
-	g.Attribute("peer_url", g.String, func() {
-		g.Format(g.FormatURI)
+	g.Attribute("peer_urls", g.ArrayOf(g.String), func() {
 		g.Description("The Etcd peer endpoint for this cluster member.")
-		g.Example("http://192.168.1.1:2380")
+		g.Example([]string{"http://192.168.1.1:2380"})
 	})
-	g.Attribute("client_url", g.String, func() {
-		g.Format(g.FormatURI)
+	g.Attribute("client_urls", g.ArrayOf(g.String), func() {
 		g.Description("The Etcd client endpoint for this cluster member.")
-		g.Example("http://192.168.1.1:2379")
+		g.Example([]string{"http://192.168.1.1:2379"})
 	})
 
-	g.Required("name", "peer_url", "client_url")
+	g.Required("name", "peer_urls", "client_urls")
 })
 
 var ClusterCredentials = g.Type("ClusterCredentials", func() {
+	g.Attribute("username", g.String, func() {
+		g.Description("The Etcd username for the new host.")
+		g.Example("host-2")
+	})
+	g.Attribute("password", g.String, func() {
+		g.Description("The Etcd password for the new host.")
+		g.Example("a78v2x866zirk4o737gjdssfi")
+	})
 	g.Attribute("ca_cert", g.String, func() {
 		g.Description("The base64-encoded CA certificate for the cluster.")
 		g.Example("ZGE4NDdkMzMtM2FiYi00YzE2LTkzOGQtNDRkODU2ZDFlZWZlCg==")
@@ -113,16 +130,24 @@ var ClusterCredentials = g.Type("ClusterCredentials", func() {
 		g.Example("NWRhNzY1ZGUtNzJkMi00OTU3LTk4ODUtOWRiZThjOGE5MGQ3Cg==")
 	})
 
-	g.Required("ca_cert", "client_cert", "client_key", "server_cert", "server_key")
+	g.Required(
+		"username",
+		"password",
+		"ca_cert",
+		"client_cert",
+		"client_key",
+		"server_cert",
+		"server_key",
+	)
 })
 
 var ClusterJoinOptions = g.Type("ClusterJoinOptions", func() {
-	g.Attribute("peer", ClusterPeer, func() {
-		g.Description("Information about this cluster member")
+	g.Attribute("leader", EtcdClusterMember, func() {
+		g.Description("Connection information for the etcd cluster leader")
 	})
 	g.Attribute("credentials", ClusterCredentials, func() {
 		g.Description("Credentials for the new host joining the cluster.")
 	})
 
-	g.Required("peer", "credentials")
+	g.Required("leader", "credentials")
 })

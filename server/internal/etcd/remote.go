@@ -4,114 +4,249 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/rs/zerolog"
+	"github.com/samber/do"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
+	"github.com/pgEdge/control-plane/server/internal/certificates"
+	"github.com/pgEdge/control-plane/server/internal/common"
 	"github.com/pgEdge/control-plane/server/internal/config"
 )
 
+var ErrOperationNotSupported = errors.New("operation not supported")
+
+var _ Etcd = (*RemoteEtcd)(nil)
+var _ do.Shutdownable = (*RemoteEtcd)(nil)
+
 type RemoteEtcd struct {
-	client *clientv3.Client
-	logger zerolog.Logger
-	cfg    config.Config
-	errCh  chan error
+	mu          sync.Mutex
+	certSvc     *certificates.Service
+	client      *clientv3.Client
+	logger      zerolog.Logger
+	cfg         *config.Manager
+	initialized chan struct{}
+	err         chan error
 }
 
-// func RegisterRemoteEtcd(i *do.Injector) {
-// 	do.Provide(i, func(i *do.Injector) (*Client, error) {
-// 		mgr, err := do.Invoke[*config.Manager](i)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		logger, err := do.Invoke[zerolog.Logger](i)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		return NewRemoteEtcd(mgr.Config(), logger)
-// 	})
-// }
+func NewRemoteEtcd(cfg *config.Manager, logger zerolog.Logger) *RemoteEtcd {
+	return &RemoteEtcd{
+		cfg:         cfg,
+		logger:      logger,
+		initialized: make(chan struct{}),
+		err:         make(chan error),
+	}
+}
 
-func NewRemoteClient(cfg config.Config, logger zerolog.Logger) (*clientv3.Client, error) {
-	zapLogger, err := newZapLogger(logger, cfg.RemoteEtcd.LogLevel, "etcd_client")
+func (r *RemoteEtcd) IsInitialized() (bool, error) {
+	// We're initialized if we have a cluster to connect to.
+	return len(r.cfg.Config().EtcdClient.Endpoints) > 0, nil
+}
+
+func (r *RemoteEtcd) Start(ctx context.Context) error {
+	initialized, err := r.IsInitialized()
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize etcd client logger: %w", err)
+		return err
+	}
+	if !initialized {
+		return ErrOperationNotSupported
+	}
+
+	return r.start(ctx)
+}
+
+func (r *RemoteEtcd) start(ctx context.Context) error {
+	client, err := r.GetClient()
+	if err != nil {
+		return err
+	}
+	r.certSvc, err = certificateService(ctx, r.cfg.Config(), client)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *RemoteEtcd) Join(ctx context.Context, options JoinOptions) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	initialized, err := r.IsInitialized()
+	if err != nil {
+		return err
+	}
+	if initialized {
+		return errors.New("etcd already initialized - cannot join another cluster")
+	}
+
+	if err := writeHostCredentials(options.Credentials, r.cfg); err != nil {
+		return err
+	}
+
+	clientCfg, err := clientConfig(r.cfg.Config(), r.logger, options.Leader.ClientURLs...)
+	if err != nil {
+		return fmt.Errorf("failed to get initial client config: %w", err)
+	}
+
+	initClient, err := clientv3.New(clientCfg)
+	if err != nil {
+		return fmt.Errorf("failed to get initial client: %w", err)
+	}
+	defer initClient.Close()
+
+	if err := r.updateEndpointsConfig(ctx, initClient); err != nil {
+		return err
+	}
+
+	if err := r.start(ctx); err != nil {
+		return err
+	}
+
+	close(r.initialized)
+
+	return nil
+}
+
+func (r *RemoteEtcd) Initialized() <-chan struct{} {
+	return r.initialized
+}
+
+func (r *RemoteEtcd) Error() <-chan error {
+	return r.err
+}
+
+func (r *RemoteEtcd) GetClient() (*clientv3.Client, error) {
+	if r.client != nil {
+		return r.client, nil
+	}
+
+	cfg := r.cfg.Config()
+	clientCfg, err := clientConfig(cfg, r.logger, cfg.EtcdClient.Endpoints...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get client config: %w", err)
 	}
 
 	// AutoSyncInterval determines how often the client will sync the list of
 	// known endpoints from the cluster. The client will automatically load
 	// balance and failover between endpoints, but syncs are desirable for
 	// permanent membership changes.
-	client, err := clientv3.New(clientv3.Config{
-		Endpoints:        cfg.RemoteEtcd.Endpoints,
-		Logger:           zapLogger,
-		AutoSyncInterval: 5 * time.Minute,
-		DialTimeout:      5 * time.Second,
-	})
+	clientCfg.AutoSyncInterval = 5 * time.Minute
+
+	client, err := clientv3.New(clientCfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize etcd client: %w", err)
+		return nil, fmt.Errorf("failed to get client: %w", err)
 	}
+
+	r.client = client
 
 	return client, nil
 }
 
-func NewRemoteEtcd(cfg config.Config, logger zerolog.Logger) (*RemoteEtcd, error) {
-	zapLogger, err := newZapLogger(logger, cfg.RemoteEtcd.LogLevel, "etcd_client")
+func (r *RemoteEtcd) Leader(ctx context.Context) (*ClusterMember, error) {
+	client, err := r.GetClient()
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize etcd client logger: %w", err)
+		return nil, err
 	}
 
-	// AutoSyncInterval determines how often the client will sync the list of
-	// known endpoints from the cluster. The client will automatically load
-	// balance and failover between endpoints, but syncs are desirable for
-	// permanent membership changes.
-	client, err := clientv3.New(clientv3.Config{
-		Endpoints:        cfg.RemoteEtcd.Endpoints,
-		Logger:           zapLogger,
-		AutoSyncInterval: 5 * time.Minute,
-		DialTimeout:      5 * time.Second,
-	})
+	return GetClusterLeader(ctx, client)
+}
+
+func (r *RemoteEtcd) AddHost(ctx context.Context, opts HostCredentialOptions) (*HostCredentials, error) {
+	client, err := r.GetClient()
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize etcd client: %w", err)
+		return nil, err
 	}
 
-	return &RemoteEtcd{
-		client: client,
-		logger: logger,
-		cfg:    cfg,
-		errCh:  make(chan error, 1),
-	}, nil
+	return CreateHostCredentials(ctx, client, r.certSvc, opts)
 }
 
-func (e *RemoteEtcd) IsInitialized() (bool, error) {
-	return true, nil
-}
+func (r *RemoteEtcd) RemoveHost(ctx context.Context, hostID string) error {
+	if hostID == r.cfg.Config().HostID {
+		return ErrCannotRemoveSelf
+	}
 
-func (e *RemoteEtcd) Start(ctx context.Context) error {
+	client, err := r.GetClient()
+	if err != nil {
+		return err
+	}
+	if err := RemoveHost(ctx, client, r.certSvc, hostID); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (e *RemoteEtcd) Join(ctx context.Context, options JoinOptions) error {
-	return errors.New("join is not supported for remote etcd")
-}
-
-func (e *RemoteEtcd) Shutdown() error {
-	if err := e.client.Close(); err != nil {
-		return fmt.Errorf("error while closing remote etcd client: %w", err)
+func (r *RemoteEtcd) JoinToken() (string, error) {
+	if r.certSvc == nil {
+		return "", errors.New("etcd not initialized")
 	}
+
+	return r.certSvc.JoinToken(), nil
+}
+
+func (r *RemoteEtcd) VerifyJoinToken(in string) error {
+	if r.certSvc == nil {
+		return errors.New("etcd not initialized")
+	}
+
+	return VerifyJoinToken(r.certSvc, in)
+}
+
+func (r *RemoteEtcd) Shutdown() error {
+	if r.client == nil {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// We resync the endpoints before shutdown to capture any membership changes
+	// that happened while the server was up.
+	return errors.Join(
+		r.updateEndpointsConfig(ctx, r.client),
+		r.client.Close(),
+	)
+}
+
+func (r *RemoteEtcd) HealthCheck() common.ComponentStatus {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	alarms, err := r.client.AlarmList(ctx)
+	if err != nil {
+		return common.ComponentStatus{
+			Name:    "etcd",
+			Healthy: false,
+			Error:   err.Error(),
+		}
+	}
+	alarmStrs := make([]string, len(alarms.Alarms))
+	for i, a := range alarms.Alarms {
+		alarmStrs[i] = fmt.Sprintf("%d: %s", a.MemberID, a.Alarm.String())
+	}
+
+	return common.ComponentStatus{
+		Name:    "etcd",
+		Healthy: len(alarmStrs) == 0,
+		Details: map[string]interface{}{
+			"alarms": alarmStrs,
+		},
+	}
+}
+
+func (r *RemoteEtcd) updateEndpointsConfig(ctx context.Context, client *clientv3.Client) error {
+	if err := client.Sync(ctx); err != nil {
+		return fmt.Errorf("failed to sync client endpoints: %w", err)
+	}
+
+	generated := r.cfg.GeneratedConfig()
+	generated.EtcdClient.Endpoints = client.Endpoints()
+	if err := r.cfg.UpdateGeneratedConfig(generated); err != nil {
+		return fmt.Errorf("failed to update generated config with client endpoints: %w", err)
+	}
+
 	return nil
-}
-
-func (e *RemoteEtcd) Error() <-chan error {
-	return e.errCh
-}
-
-func (e *RemoteEtcd) GetClient() (*clientv3.Client, error) {
-	return e.client, nil
-}
-
-// TODO
-func (e *RemoteEtcd) AsPeer() Peer {
-	return Peer{}
 }

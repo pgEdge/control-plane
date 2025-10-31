@@ -2,10 +2,28 @@ package postgres
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 )
+
+type ReplicationSet struct {
+	SetID       uint32
+	SetNodeID   uint32
+	SetName     string
+	RepInsert   bool
+	RepUpdate   bool
+	RepDelete   bool
+	RepTruncate bool
+}
+
+type ReplicationSetTable struct {
+	SetID        uint32
+	SetRelOID    uint32
+	SetAttList   []string
+	SetRowFilter string
+}
 
 func IsSpockEnabled() Query[bool] {
 	return Query[bool]{
@@ -345,4 +363,133 @@ func EnableSubscription(providerNode, subscriberNode string, disabled bool) Cond
 			},
 		},
 	}
+}
+
+func GetReplicationSets() Query[ReplicationSet] {
+	return Query[ReplicationSet]{
+		SQL: `
+		SELECT
+			set_id::oid          AS setid,
+			set_nodeid::oid      AS setnodeid,
+			set_name             AS setname,
+			replicate_insert     AS repinsert,
+			replicate_update     AS repupdate,
+			replicate_delete     AS repdelete,
+			replicate_truncate   AS reptruncate
+		FROM spock.replication_set
+		ORDER BY set_id;
+	`,
+	}
+}
+func GetReplicationSetTables() Query[ReplicationSetTable] {
+	return Query[ReplicationSetTable]{
+		SQL: `
+		SELECT
+			set_id::oid                           AS setid,
+			set_reloid::oid                       AS setreloid,
+			COALESCE(set_att_list, '{}'::text[])  AS setattlist,
+			COALESCE(set_row_filter::text, '')    AS setrowfilter
+		FROM spock.replication_set_table
+		ORDER BY set_id, set_reloid;
+	`,
+	}
+}
+
+// https://docs.pgedge.com/spock_ext/spock_functions/functions/spock_repset_create
+func CreateReplicationSet(r ReplicationSet) Statement {
+	return Statement{
+		SQL: `
+			SELECT
+			CASE
+				WHEN NOT EXISTS (
+					SELECT 1 FROM spock.replication_set WHERE set_name = @set_name::name
+				)
+				THEN spock.repset_create(
+					@set_name::name,
+					@rep_ins::boolean,
+					@rep_upd::boolean,
+					@rep_del::boolean,
+					@rep_trunc::boolean
+				)
+				ELSE (SELECT set_id FROM spock.replication_set WHERE set_name = @set_name::name)
+			END;
+		`,
+		Args: pgx.NamedArgs{
+			"set_name":  r.SetName,
+			"rep_ins":   r.RepInsert,
+			"rep_upd":   r.RepUpdate,
+			"rep_del":   r.RepDelete,
+			"rep_trunc": r.RepTruncate,
+		},
+	}
+}
+
+// https://docs.pgedge.com/spock_ext/spock_functions/functions/spock_repset_add_table
+func AddReplicationSetTable(
+	setName string,
+	relOID uint32,
+	columns []string,
+	rowFilter string,
+	sync bool,
+	includePartitions bool,
+) Statement {
+	var colsArg any
+	if len(columns) == 0 {
+		colsArg = nil
+	} else {
+		colsArg = columns
+	}
+
+	var filterArg any
+	if strings.TrimSpace(rowFilter) == "" {
+		filterArg = nil
+	} else {
+		filterArg = rowFilter
+	}
+
+	return Statement{
+		SQL: `
+			SELECT spock.repset_add_table(
+				@set_name::name,
+				@rel::oid::regclass,
+				@sync::boolean,
+				@cols::text[],
+				@row_filter::text,
+				@include_partitions::boolean
+			);
+		`,
+		Args: pgx.NamedArgs{
+			"set_name":           setName,
+			"rel":                relOID,
+			"cols":               colsArg,
+			"row_filter":         filterArg,
+			"sync":               sync,
+			"include_partitions": includePartitions,
+		},
+	}
+}
+
+func RestoreReplicationSets(sets []ReplicationSet, tabs []ReplicationSetTable) Statements {
+	idToName := make(map[uint32]string, len(sets))
+	stmts := make(Statements, 0, len(sets)+len(tabs))
+
+	for _, s := range sets {
+		idToName[s.SetID] = s.SetName
+		stmts = append(stmts, CreateReplicationSet(s))
+	}
+
+	for _, t := range tabs {
+		if setName := idToName[t.SetID]; setName != "" {
+			stmts = append(stmts, AddReplicationSetTable(
+				setName,
+				t.SetRelOID,
+				t.SetAttList,
+				t.SetRowFilter,
+				false, // synchronize_data on restore default false
+				true,  // include_partitions default true
+			))
+		}
+	}
+
+	return stmts
 }

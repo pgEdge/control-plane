@@ -1,0 +1,5 @@
+vars {
+{% for machine in machines %}
+  {{ machine.name | replace("-", "_") }}_url: http://{{ hostvars[machine.name].external_ip }}:3000
+{% endfor %}
+}

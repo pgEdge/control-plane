@@ -1,0 +1,59 @@
+meta {
+  name: local-backup-and-restore
+}
+
+vars:pre-request {
+  host_1_url: http://localhost:3000
+  repository_id: test-repository
+  backups_dir: This is set by a pre-request script
+}
+
+script:pre-request {
+  const backupsDir = `${bru.cwd()}/local-backup-and-restore/repos`;
+  
+  bru.setVar("backups_dir", backupsDir);
+  
+}
+
+docs {
+  # Local backup and restore scenarios
+  
+  This directory contains a sequence of requests for the local compose setup that exercise backup and restore with a `posix` backup repository. By default, they create the repository in this directory.
+  
+  ## Usage examples
+  
+  NOTE: Running "Add node from backup" after "Restore database" will fail unless you set a different value for `repository_id`. This happens because the system ID for node 2's instance changes during the restore.
+  
+  ### Reverting to an earlier backup
+  
+  1. Submit the "Create database" request
+  2. Connect to the `storefront` database with `psql` and add a table
+  3. Submit the "Backup database node" request
+  4. Connect to the `storefront` database with `psql` and drop the table
+  5. Submit the "Restore database" request
+  6. Connect to the `storefront` database with `psql` and validate that the table was restored
+  7. Submit the "Delete storefront database" request to clean up the database
+  8. Delete the `bruno/test-scenarios/local-backup-and-restore/repos/databases` directory to clean up the local repository
+  
+  ### Creating a new node from a backup
+  
+  1. Submit the "Create database" request
+  2. Connect to the `storefront` database with `psql` and add a table
+  3. Submit the "Backup database node" request
+  4. Submit the "Add node" request
+  5. Connect to the new node with `psql` and validate that the data is correct
+  6. Submit the "Delete storefront database" request to clean up the database
+  7. Delete the `bruno/test-scenarios/local-backup-and-restore/repos/databases` directory to clean up the local repository
+  
+  ### Creating a database from a backup
+  
+  1. Submit the "Create database" request
+  2. Connect to the `storefront` database with `psql` and add a table
+  3. Submit the "Backup database node" request
+  4. Submit the "Create database from backup" request
+  5. Connect to the `storefront-clone` database with `psql` and validate that the data is correct
+  6. Submit the "Delete storefront-clone database" request to clean up the clone database
+  7. Submit the "Delete storefront database" request to clean up the database
+  8. Delete the `bruno/test-scenarios/local-backup-and-restore/repos/databases` directory to clean up the local repository
+  
+}

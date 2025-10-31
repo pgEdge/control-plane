@@ -2,9 +2,6 @@ package etcd
 
 import (
 	"context"
-	"crypto/subtle"
-	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"fmt"
 	"net/url"
@@ -16,10 +13,7 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
-	"github.com/spf13/afero"
-	"go.etcd.io/etcd/api/v3/authpb"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
-	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	"go.etcd.io/etcd/client/pkg/v3/transport"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/server/v3/embed"
@@ -28,23 +22,14 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/common"
 	"github.com/pgEdge/control-plane/server/internal/config"
-	"github.com/pgEdge/control-plane/server/internal/ds"
-	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
-var _ common.HealthCheckable = (*EmbeddedEtcd)(nil)
+var _ Etcd = (*EmbeddedEtcd)(nil)
 var _ do.Shutdownable = (*EmbeddedEtcd)(nil)
 
-var ErrInvalidJoinToken = errors.New("invalid join token")
-var ErrMemberNotFound = errors.New("member not found")
-var ErrCannotRemoveSelf = errors.New("cannot remove self from cluster")
-var ErrMinimumClusterSize = errors.New("cannot remove a member from a cluster with less than three nodes")
-
-type JoinOptions struct {
-	Peer        Peer
-	Credentials *HostCredentials
-}
+// Sets the maximum size of the database. This is the largest suggested maximum.
+const quotaBackendBytes = 8 * 1024 * 1024 * 1024 // 8GB
 
 type EmbeddedEtcd struct {
 	mu          sync.Mutex
@@ -52,27 +37,16 @@ type EmbeddedEtcd struct {
 	client      *clientv3.Client
 	etcd        *embed.Etcd
 	logger      zerolog.Logger
-	cfg         config.Config
+	cfg         *config.Manager
 	initialized chan struct{}
 }
 
-func NewEmbeddedEtcd(cfg config.Config, logger zerolog.Logger) *EmbeddedEtcd {
+func NewEmbeddedEtcd(cfg *config.Manager, logger zerolog.Logger) *EmbeddedEtcd {
 	return &EmbeddedEtcd{
 		cfg:         cfg,
 		logger:      logger,
-		initialized: make(chan struct{}, 1),
+		initialized: make(chan struct{}),
 	}
-}
-
-type Peer struct {
-	Name      string
-	PeerURL   string
-	ClientURL string
-}
-
-type StartOptions struct {
-	JoinPeer     *Peer
-	ClusterToken string
 }
 
 func (e *EmbeddedEtcd) Start(ctx context.Context) error {
@@ -81,7 +55,7 @@ func (e *EmbeddedEtcd) Start(ctx context.Context) error {
 
 	initialized, err := e.IsInitialized()
 	if err != nil {
-		return fmt.Errorf("failed to determine if etcd is already initialized: %w", err)
+		return err
 	}
 	if !initialized {
 		return e.initialize(ctx)
@@ -90,30 +64,26 @@ func (e *EmbeddedEtcd) Start(ctx context.Context) error {
 	return e.start(ctx)
 }
 
-// TODO: This is all tangled up because we need the cert service during etcd
-// initialization. Ideally, we should inject the service into the EmbeddedEtcd.
-func (e *EmbeddedEtcd) CertService() *certificates.Service {
-	return e.certSvc
-}
-
 func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
-	cfg, err := initializationConfig(e.cfg, e.logger)
+	appCfg := e.cfg.Config()
+
+	etcdCfg, err := initializationConfig(appCfg, e.logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize embedded etcd config: %w", err)
 	}
-	etcd, err := startEmbedded(ctx, cfg)
+	etcd, err := startEmbedded(ctx, etcdCfg)
 	if err != nil {
 		return fmt.Errorf("failed to start etcd for initialization: %w", err)
 	}
-	client, err := clientForEmbedded(e.cfg, e.logger, etcd)
+	client, err := clientForEmbedded(appCfg, e.logger, etcd)
 	if err != nil {
 		return fmt.Errorf("failed to get etcd client for initialization: %w", err)
 	}
-	// Initialize the certificate authority
-	certStore := certificates.NewStore(client, e.cfg.EtcdKeyRoot)
-	certSvc := certificates.NewService(e.cfg, certStore)
-	if err := certSvc.Start(ctx); err != nil {
-		return fmt.Errorf("failed to start certificate service: %w", err)
+	// Initialize the certificate authority. We don't persist this instance of
+	// the cert service because this client is temporary.
+	certSvc, err := certificateService(ctx, appCfg, client)
+	if err != nil {
+		return err
 	}
 
 	// create root user/role so that we can enable RBAC:
@@ -121,10 +91,7 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 	if _, err = client.RoleAdd(ctx, "root"); err != nil {
 		return fmt.Errorf("failed to create root role: %w", err)
 	}
-	// TODO: We're not able to use cert auth, so we need secure passwords. This
-	// password can be generated and thrown away, since each host will get its
-	// own user.
-	// Actually, no password might be the most secure option: https://etcd.io/docs/v3.5/op-guide/authentication/rbac/
+	// Setting an empty password makes it so this user cannot be authenticated.
 	if _, err := client.UserAdd(ctx, "root", ""); err != nil {
 		return fmt.Errorf("failed to create root user: %w", err)
 	}
@@ -132,16 +99,17 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 		return fmt.Errorf("failed to grant root role to root user: %w", err)
 	}
 
-	creds, err := createEtcdHostCredentials(ctx, client, certSvc, HostCredentialOptions{
-		HostID:      e.cfg.HostID,
-		Hostname:    e.cfg.Hostname,
-		IPv4Address: e.cfg.IPv4Address,
+	creds, err := CreateHostCredentials(ctx, client, certSvc, HostCredentialOptions{
+		HostID:              appCfg.HostID,
+		Hostname:            appCfg.Hostname,
+		IPv4Address:         appCfg.IPv4Address,
+		EmbeddedEtcdEnabled: true,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create etcd host credentials: %w", err)
 	}
 
-	if err := e.writeCredentials(creds); err != nil {
+	if err := writeHostCredentials(creds, e.cfg); err != nil {
 		return err
 	}
 
@@ -155,7 +123,7 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 	}
 	if _, err := client.MemberUpdate(ctx,
 		members.Members[0].ID,
-		[]string{e.AsPeer().PeerURL},
+		e.PeerEndpoints(),
 	); err != nil {
 		return fmt.Errorf("failed to update peer URL: %w", err)
 	}
@@ -176,17 +144,19 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 		return err
 	}
 
-	e.initialized <- struct{}{}
+	close(e.initialized)
 
 	return nil
 }
 
 func (e *EmbeddedEtcd) start(ctx context.Context) error {
-	cfg, err := embedConfig(e.cfg, e.logger)
+	appCfg := e.cfg.Config()
+
+	etcdCfg, err := embedConfig(appCfg, e.logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize embedded etcd config: %w", err)
 	}
-	etcd, err := startEmbedded(ctx, cfg)
+	etcd, err := startEmbedded(ctx, etcdCfg)
 	if err != nil {
 		return fmt.Errorf("failed to start etcd: %w", err)
 	}
@@ -197,12 +167,10 @@ func (e *EmbeddedEtcd) start(ctx context.Context) error {
 		return fmt.Errorf("failed to get internal etcd client: %w", err)
 	}
 
-	certStore := certificates.NewStore(client, e.cfg.EtcdKeyRoot)
-	certSvc := certificates.NewService(e.cfg, certStore)
-	if err := certSvc.Start(ctx); err != nil {
-		return fmt.Errorf("failed to start certificate service: %w", err)
+	e.certSvc, err = certificateService(ctx, e.cfg.Config(), client)
+	if err != nil {
+		return err
 	}
-	e.certSvc = certSvc
 
 	return nil
 }
@@ -213,29 +181,31 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 
 	initialized, err := e.IsInitialized()
 	if err != nil {
-		return fmt.Errorf("failed to determine if etcd is already initialized: %w", err)
+		return err
 	}
 	if initialized {
 		return errors.New("etcd already initialized - cannot join another cluster")
 	}
 
-	if err := e.writeCredentials(options.Credentials); err != nil {
+	if err := writeHostCredentials(options.Credentials, e.cfg); err != nil {
 		return err
 	}
 
-	cfg, err := embedConfig(e.cfg, e.logger)
+	appCfg := e.cfg.Config()
+
+	etcdCfg, err := embedConfig(appCfg, e.logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize embedded etcd config: %w", err)
 	}
 
-	// TODO: this appears to be a bug in Etcd. Only the raft leader can promote
-	// a member, so non-leader members forward the promotion request to the
-	// leader. The forwarded request goes over HTTP instead of gRPC and it
-	// appears to lose some auth information. We can work around it by
-	// explicitly connecting to the raft leader.
-	client, err := e.leaderClient(ctx, options.Peer.ClientURL)
+	clientCfg, err := clientConfig(e.cfg.Config(), e.logger, options.Leader.ClientURLs...)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get initial client config: %w", err)
+	}
+
+	initClient, err := clientv3.New(clientCfg)
+	if err != nil {
+		return fmt.Errorf("failed to get initial client: %w", err)
 	}
 
 	// This operation can fail if we're joining multiple members to the cluster
@@ -246,7 +216,7 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 	// protect the quorum.
 	err = utils.Retry(5, time.Second, func() error {
 		// We always add as a learner first to minimize disruptions
-		_, err = client.MemberAddAsLearner(ctx, []string{e.AsPeer().PeerURL})
+		_, err = initClient.MemberAddAsLearner(ctx, e.PeerEndpoints())
 		if err != nil {
 			return fmt.Errorf("failed to add this etcd server as learner: %w", err)
 		}
@@ -256,18 +226,18 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 		return err
 	}
 
-	members, err := client.MemberList(ctx)
+	members, err := initClient.MemberList(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list cluster members: %w", err)
 	}
 	// This server will have an empty member name in the members list, so we
 	// add this server to the list separately.
-	self := e.AsPeer()
-	peers := []string{fmt.Sprintf("%s=%s", self.Name, self.PeerURL)}
+	name := e.cfg.Config().HostID
+	peers := []string{fmt.Sprintf("%s=%s", name, e.PeerEndpoints()[0])}
 	for _, m := range members.Members {
 		// Empty name indicates a member that hasn't started, including this
 		// server.
-		if m.Name == "" || m.Name == self.Name {
+		if m.Name == "" || m.Name == name {
 			continue
 		}
 		if len(m.PeerURLs) < 1 {
@@ -275,99 +245,37 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 		}
 		peers = append(peers, fmt.Sprintf("%s=%s", m.Name, m.PeerURLs[0]))
 	}
-	cfg.InitialCluster = strings.Join(peers, ",")
-	cfg.ClusterState = embed.ClusterStateFlagExisting
+	etcdCfg.InitialCluster = strings.Join(peers, ",")
+	etcdCfg.ClusterState = embed.ClusterStateFlagExisting
 
-	etcd, err := startEmbedded(ctx, cfg)
+	etcd, err := startEmbedded(ctx, etcdCfg)
 	if err != nil {
 		return err
 	}
 	e.etcd = etcd
 
 	e.logger.Info().Msg("etcd started as learner")
-	if err := e.PromoteWhenReady(ctx, client, e.cfg.HostID); err != nil {
+	if err := e.PromoteWhenReady(ctx, initClient, appCfg.HostID); err != nil {
 		return fmt.Errorf("failed to promote this etcd server: %w", err)
 	}
 
-	if err := client.Close(); err != nil {
+	if err := initClient.Close(); err != nil {
 		return fmt.Errorf("failed to close initialization client: %w", err)
 	}
 
-	client, err = e.GetClient()
+	client, err := e.GetClient()
 	if err != nil {
-		return fmt.Errorf("failed to get internal etcd client: %w", err)
+		return err
 	}
 
-	certStore := certificates.NewStore(client, e.cfg.EtcdKeyRoot)
-	certSvc := certificates.NewService(e.cfg, certStore)
-	if err := certSvc.Start(ctx); err != nil {
-		return fmt.Errorf("failed to start certificate service: %w", err)
+	e.certSvc, err = certificateService(ctx, appCfg, client)
+	if err != nil {
+		return err
 	}
-	e.certSvc = certSvc
 
-	e.initialized <- struct{}{}
+	close(e.initialized)
 
 	return nil
-}
-
-func (e *EmbeddedEtcd) leaderClient(ctx context.Context, initialEndpoint string) (*clientv3.Client, error) {
-	lg, err := newZapLogger(e.logger, e.cfg.EmbeddedEtcd.ClientLogLevel, "etcd_peer_client")
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize etcd peer client logger: %w", err)
-	}
-
-	tlsConfig, err := e.clientTLSConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize etcd client TLS config: %w", err)
-	}
-
-	client, err := clientv3.New(clientv3.Config{
-		Logger:    lg,
-		Endpoints: []string{initialEndpoint},
-		TLS:       tlsConfig,
-		Username:  hostUsername(e.cfg.HostID),
-		Password:  e.cfg.HostID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create initial etcd peer client: %w", err)
-	}
-
-	status, err := client.Status(ctx, initialEndpoint)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get initial endpoint status: %w", err)
-	}
-
-	if status.Header.MemberId == status.Leader {
-		return client, nil
-	}
-
-	// We're going to get a new client to the leader member, so this client
-	// won't be needed anymore.
-	defer client.Close()
-
-	members, err := client.MemberList(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list cluster members: %w", err)
-	}
-
-	for _, member := range members.Members {
-		if member.ID == status.Leader {
-			leaderClient, err := clientv3.New(clientv3.Config{
-				Logger:    lg,
-				Endpoints: member.ClientURLs,
-				TLS:       tlsConfig,
-				Username:  hostUsername(e.cfg.HostID),
-				Password:  e.cfg.HostID,
-			})
-			if err != nil {
-				return nil, fmt.Errorf("failed to create etcd peer client to leader: %w", err)
-			}
-
-			return leaderClient, nil
-		}
-	}
-
-	return nil, fmt.Errorf("failed to find cluster leader '%d'", status.Leader)
 }
 
 func (e *EmbeddedEtcd) Initialized() <-chan struct{} {
@@ -392,26 +300,37 @@ func (e *EmbeddedEtcd) Error() <-chan error {
 	return e.etcd.Err()
 }
 
-func (e *EmbeddedEtcd) ClientEndpoint() string {
-	return fmt.Sprintf("https://%s:%d", e.cfg.IPv4Address, e.cfg.EmbeddedEtcd.ClientPort)
-}
-
-func (e *EmbeddedEtcd) DataDir() string {
-	return filepath.Join(e.cfg.DataDir, "etcd")
-}
-
-func (e *EmbeddedEtcd) AsPeer() Peer {
-	return Peer{
-		Name:      e.cfg.HostID,
-		PeerURL:   fmt.Sprintf("https://%s:%d", e.cfg.IPv4Address, e.cfg.EmbeddedEtcd.PeerPort),
-		ClientURL: e.ClientEndpoint(),
+func (e *EmbeddedEtcd) ClientEndpoints() []string {
+	appCfg := e.cfg.Config()
+	return []string{
+		fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, appCfg.EtcdServer.ClientPort),
 	}
+}
+
+func (e *EmbeddedEtcd) PeerEndpoints() []string {
+	appCfg := e.cfg.Config()
+	return []string{
+		fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, appCfg.EtcdServer.PeerPort),
+	}
+}
+
+func (e *EmbeddedEtcd) etcdDir() string {
+	return filepath.Join(e.cfg.Config().DataDir, "etcd")
+}
+
+func (e *EmbeddedEtcd) Leader(ctx context.Context) (*ClusterMember, error) {
+	client, err := e.GetClient()
+	if err != nil {
+		return nil, err
+	}
+
+	return GetClusterLeader(ctx, client)
 }
 
 func (e *EmbeddedEtcd) IsInitialized() (bool, error) {
 	// Use the existence of the WAL dir to determine if a server has already
 	// been started with this data directory.
-	walDir := filepath.Join(e.DataDir(), "member", "wal")
+	walDir := filepath.Join(e.etcdDir(), "member", "wal")
 	info, err := os.Stat(walDir)
 	if errors.Is(err, os.ErrNotExist) {
 		return false, nil
@@ -429,43 +348,17 @@ func (e *EmbeddedEtcd) IsInitialized() (bool, error) {
 func (e *EmbeddedEtcd) JoinToken() (string, error) {
 	if e.certSvc == nil {
 		return "", errors.New("etcd not initialized")
-	} else {
-		return e.certSvc.JoinToken(), nil
 	}
+
+	return e.certSvc.JoinToken(), nil
 }
 
 func (e *EmbeddedEtcd) VerifyJoinToken(in string) error {
 	if e.certSvc == nil {
 		return errors.New("etcd not initialized")
 	}
-	token := e.certSvc.JoinToken()
-	if subtle.ConstantTimeCompare([]byte(in), []byte(token)) != 1 {
-		return ErrInvalidJoinToken
-	}
-	return nil
-}
 
-func (e *EmbeddedEtcd) clientTLSConfig() (*tls.Config, error) {
-	clientCert, err := tls.LoadX509KeyPair(
-		filepath.Join(e.cfg.DataDir, "certificates", "etcd-user.crt"),
-		filepath.Join(e.cfg.DataDir, "certificates", "etcd-user.key"),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read client cert: %w", err)
-	}
-	rootCA, err := os.ReadFile(filepath.Join(e.cfg.DataDir, "certificates", "ca.crt"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to read CA cert: %w", err)
-	}
-	certPool := x509.NewCertPool()
-	if ok := certPool.AppendCertsFromPEM(rootCA); !ok {
-		return nil, errors.New("failed to use CA cert")
-	}
-
-	return &tls.Config{
-		RootCAs:      certPool,
-		Certificates: []tls.Certificate{clientCert},
-	}, nil
+	return VerifyJoinToken(e.certSvc, in)
 }
 
 func (e *EmbeddedEtcd) GetClient() (*clientv3.Client, error) {
@@ -473,138 +366,44 @@ func (e *EmbeddedEtcd) GetClient() (*clientv3.Client, error) {
 		return e.client, nil
 	}
 
-	lg, err := newZapLogger(e.logger, e.cfg.EmbeddedEtcd.ClientLogLevel, "etcd_client")
+	cfg := e.cfg.Config()
+	clientCfg, err := clientConfig(cfg, e.logger, e.etcd.Server.Cluster().ClientURLs()...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize etcd client logger: %w", err)
+		return nil, fmt.Errorf("failed to get client config: %w", err)
 	}
 
-	tlsConfig, err := e.clientTLSConfig()
+	client, err := clientv3.New(clientCfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize etcd client TLS config: %w", err)
+		return nil, fmt.Errorf("failed to get client: %w", err)
 	}
 
-	client, err := clientv3.New(clientv3.Config{
-		Logger:             lg,
-		Endpoints:          e.etcd.Server.Cluster().ClientURLs(),
-		TLS:                tlsConfig,
-		Username:           hostUsername(e.cfg.HostID),
-		Password:           e.cfg.HostID,
-		MaxCallSendMsgSize: 10 * 1024 * 1024, // 10MB
-		MaxCallRecvMsgSize: 10 * 1024 * 1024, // 10MB
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize etcd client: %w", err)
-	}
 	e.client = client
 
 	return client, nil
 }
 
-func (e *EmbeddedEtcd) AddPeerUser(ctx context.Context, opts HostCredentialOptions) (*HostCredentials, error) {
+func (e *EmbeddedEtcd) AddHost(ctx context.Context, opts HostCredentialOptions) (*HostCredentials, error) {
 	client, err := e.GetClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get etcd client: %w", err)
 	}
 
-	return createEtcdHostCredentials(ctx, client, e.certSvc, opts)
+	return CreateHostCredentials(ctx, client, e.certSvc, opts)
 }
 
-func (e *EmbeddedEtcd) AddInstanceUser(ctx context.Context, opts InstanceUserOptions) (*InstanceUserCredentials, error) {
-	client, err := e.GetClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get etcd client: %w", err)
-	}
-
-	return CreateInstanceEtcdUser(ctx, client, e.certSvc, opts)
-}
-
-func (e *EmbeddedEtcd) RemovePeer(ctx context.Context, hostID string) error {
-	client, err := e.GetClient()
-	if err != nil {
-		return fmt.Errorf("failed to get etcd client: %w", err)
-	}
-	resp, err := client.MemberList(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get member list: %w", err)
-	}
-	if len(resp.Members) < 3 {
-		return ErrMinimumClusterSize
-	}
-	member, err := findMember(resp.Members, hostID)
-	if err != nil {
-		return fmt.Errorf("failed to get cluster member: %w", err)
-	}
-	status, err := client.Status(ctx, e.ClientEndpoint())
-	if err != nil {
-		return fmt.Errorf("failed to get endpoint status: %w", err)
-	}
-	if status.Header.MemberId == member.ID {
+func (e *EmbeddedEtcd) RemoveHost(ctx context.Context, hostID string) error {
+	if hostID == e.cfg.Config().HostID {
 		return ErrCannotRemoveSelf
 	}
-	err = e.memberRemove(ctx, client, member.ID)
+
+	client, err := e.GetClient()
 	if err != nil {
 		return err
 	}
-	err = removeUserIfExists(ctx, client, hostUsername(hostID))
-	if err != nil {
-		return fmt.Errorf("failed to remove host user: %w", err)
-	}
-	err = e.certSvc.RemoveHostEtcdUser(ctx, hostID)
-	if err != nil {
-		return fmt.Errorf("failed to remove host etcd user principal: %w", err)
-	}
-	err = e.certSvc.RemoveEtcdServer(ctx, hostID)
-	if err != nil {
-		return fmt.Errorf("failed to remove host etcd server principal: %w", err)
+	if err := RemoveHost(ctx, client, e.certSvc, hostID); err != nil {
+		return err
 	}
 
-	return nil
-}
-
-func (e *EmbeddedEtcd) memberRemove(ctx context.Context, client *clientv3.Client, memberID uint64) error {
-	_, err := client.MemberRemove(ctx, memberID)
-	if err != nil {
-		return fmt.Errorf("failed to remove cluster member: %w", err)
-	}
-	return nil
-}
-
-func (e *EmbeddedEtcd) writeCredentials(creds *HostCredentials) error {
-	certs := &filesystem.Directory{
-		Path: "certificates",
-		Mode: 0o700,
-		Children: []filesystem.TreeNode{
-			&filesystem.File{
-				Path:     "ca.crt",
-				Mode:     0o644,
-				Contents: creds.CaCert,
-			},
-			&filesystem.File{
-				Path:     "etcd-server.crt",
-				Mode:     0o644,
-				Contents: creds.ServerCert,
-			},
-			&filesystem.File{
-				Path:     "etcd-server.key",
-				Mode:     0o600,
-				Contents: creds.ServerKey,
-			},
-			&filesystem.File{
-				Path:     "etcd-user.crt",
-				Mode:     0o644,
-				Contents: creds.ClientCert,
-			},
-			&filesystem.File{
-				Path:     "etcd-user.key",
-				Mode:     0o600,
-				Contents: creds.ClientKey,
-			},
-		},
-	}
-	err := certs.Create(context.Background(), afero.NewOsFs(), e.cfg.DataDir, e.cfg.DatabaseOwnerUID)
-	if err != nil {
-		return fmt.Errorf("failed to write credentials: %w", err)
-	}
 	return nil
 }
 
@@ -705,9 +504,9 @@ func (e *EmbeddedEtcd) PromoteWhenReady(ctx context.Context, client *clientv3.Cl
 	if err != nil {
 		return fmt.Errorf("failed to get member list: %w", err)
 	}
-	member, err := findMember(resp.Members, memberName)
-	if err != nil {
-		return err
+	member := findMember(resp.Members, memberName)
+	if member == nil {
+		return fmt.Errorf("member not found: %s", memberName)
 	}
 	return e.promoteWhenReadyHelper(ctx, client, learnerProgress{
 		id:               member.ID,
@@ -718,17 +517,8 @@ func (e *EmbeddedEtcd) PromoteWhenReady(ctx context.Context, client *clientv3.Cl
 	})
 }
 
-func findMember(members []*etcdserverpb.Member, memberName string) (*etcdserverpb.Member, error) {
-	for _, m := range members {
-		if m.Name == memberName {
-			return m, nil
-		}
-	}
-	return nil, fmt.Errorf("%w: %s", ErrMemberNotFound, memberName)
-}
-
 func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error) {
-	lg, err := newZapLogger(logger, cfg.EmbeddedEtcd.ServerLogLevel, "etcd_server")
+	lg, err := newZapLogger(logger, cfg.EtcdServer.LogLevel, "etcd_server")
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize etcd server logger: %w", err)
 	}
@@ -762,8 +552,8 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 		ClientKeyFile:  filepath.Join(cfg.DataDir, "certificates", "etcd-user.key"),
 	}
 
-	clientPort := cfg.EmbeddedEtcd.ClientPort
-	peerPort := cfg.EmbeddedEtcd.PeerPort
+	clientPort := cfg.EtcdServer.ClientPort
+	peerPort := cfg.EtcdServer.PeerPort
 	myIP := cfg.IPv4Address
 	c.ListenClientUrls = []url.URL{
 		{Scheme: "https", Host: fmt.Sprintf("0.0.0.0:%d", clientPort)},
@@ -789,12 +579,13 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 	// workflows.
 	c.MaxTxnOps = 2048
 	c.MaxRequestBytes = 10 * 1024 * 1024 // 10MB
+	c.QuotaBackendBytes = quotaBackendBytes
 
 	return c, nil
 }
 
 func initializationConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error) {
-	lg, err := newZapLogger(logger, cfg.EmbeddedEtcd.ServerLogLevel, "etcd_server")
+	lg, err := newZapLogger(logger, cfg.EtcdServer.LogLevel, "etcd_server")
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize etcd server logger: %w", err)
 	}
@@ -805,8 +596,8 @@ func initializationConfig(cfg config.Config, logger zerolog.Logger) (*embed.Conf
 	c.Dir = filepath.Join(cfg.DataDir, "etcd")
 
 	// Only bind/advertise localhost for initialization
-	clientPort := cfg.EmbeddedEtcd.ClientPort
-	peerPort := cfg.EmbeddedEtcd.PeerPort
+	clientPort := cfg.EtcdServer.ClientPort
+	peerPort := cfg.EtcdServer.PeerPort
 	c.ListenClientUrls = []url.URL{
 		{Scheme: "http", Host: fmt.Sprintf("127.0.0.1:%d", clientPort)},
 	}
@@ -822,8 +613,9 @@ func initializationConfig(cfg config.Config, logger zerolog.Logger) (*embed.Conf
 	c.InitialCluster = fmt.Sprintf(
 		"%s=http://127.0.0.1:%d",
 		cfg.HostID,
-		cfg.EmbeddedEtcd.PeerPort,
+		cfg.EtcdServer.PeerPort,
 	)
+	c.QuotaBackendBytes = quotaBackendBytes
 
 	return c, nil
 }
@@ -848,7 +640,7 @@ func startEmbedded(ctx context.Context, cfg *embed.Config) (*embed.Etcd, error) 
 }
 
 func clientForEmbedded(cfg config.Config, logger zerolog.Logger, etcd *embed.Etcd) (*clientv3.Client, error) {
-	lg, err := newZapLogger(logger, cfg.EmbeddedEtcd.ClientLogLevel, "etcd_client")
+	lg, err := newZapLogger(logger, cfg.EtcdClient.LogLevel, "etcd_client")
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize etcd client logger: %w", err)
 	}
@@ -862,234 +654,4 @@ func clientForEmbedded(cfg config.Config, logger zerolog.Logger, etcd *embed.Etc
 	}
 
 	return client, nil
-}
-
-type HostCredentialOptions struct {
-	HostID      string
-	Hostname    string
-	IPv4Address string
-}
-
-type HostCredentials struct {
-	CaCert     []byte
-	ClientCert []byte
-	ClientKey  []byte
-	ServerCert []byte
-	ServerKey  []byte
-}
-
-func hostUsername(hostID string) string {
-	return fmt.Sprintf("host-%s", hostID)
-}
-
-func createEtcdHostCredentials(
-	ctx context.Context,
-	client *clientv3.Client,
-	certSvc *certificates.Service,
-	opts HostCredentialOptions,
-) (*HostCredentials, error) {
-	username := hostUsername(opts.HostID)
-
-	// Create a user for the peer host
-	// TODO: patroni doesn't support CN auth, so we need a password. Replace this
-	// with something random
-	err := createUserIfNotExists(ctx, client, username, opts.HostID, "root")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create host user: %w", err)
-	}
-
-	// Create a cert for the peer user
-	clientPrincipal, err := certSvc.HostEtcdUser(ctx, opts.HostID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create cert for etcd host user: %w", err)
-	}
-	// Create a cert for the peer server
-	serverPrincipal, err := certSvc.EtcdServer(ctx,
-		opts.HostID,
-		opts.Hostname,
-		[]string{"localhost", opts.Hostname},
-		[]string{"127.0.0.1", opts.IPv4Address},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create cert for etcd server: %w", err)
-	}
-
-	return &HostCredentials{
-		CaCert:     certSvc.CACert(),
-		ClientCert: clientPrincipal.CertPEM,
-		ClientKey:  clientPrincipal.KeyPEM,
-		ServerCert: serverPrincipal.CertPEM,
-		ServerKey:  serverPrincipal.KeyPEM,
-	}, nil
-}
-
-type InstanceUserOptions struct {
-	InstanceID string
-	KeyPrefix  string
-	Password   string
-}
-
-type InstanceUserCredentials struct {
-	Username   string
-	Password   string
-	CaCert     []byte
-	ClientCert []byte
-	ClientKey  []byte
-}
-
-func CreateInstanceEtcdUser(
-	ctx context.Context,
-	client *clientv3.Client,
-	certSvc *certificates.Service,
-	opts InstanceUserOptions,
-) (*InstanceUserCredentials, error) {
-	username := fmt.Sprintf("instance-%s", opts.InstanceID)
-	password := opts.Password
-	if password == "" {
-		pw, err := utils.RandomString(16)
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate random password: %w", err)
-		}
-		password = pw
-	}
-
-	if err := createRoleIfNotExists(ctx, client, username, opts.KeyPrefix); err != nil {
-		return nil, fmt.Errorf("failed to create instance role: %w", err)
-	}
-
-	if err := createUserIfNotExists(ctx, client, username, password, username); err != nil {
-		return nil, fmt.Errorf("failed to create instance user: %w", err)
-	}
-
-	// Create a cert for the instance user. This operation is idempotent.
-	clientPrincipal, err := certSvc.InstanceEtcdUser(ctx, opts.InstanceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create cert for etcd host user: %w", err)
-	}
-
-	return &InstanceUserCredentials{
-		Username:   username,
-		Password:   password,
-		CaCert:     certSvc.CACert(),
-		ClientCert: clientPrincipal.CertPEM,
-		ClientKey:  clientPrincipal.KeyPEM,
-	}, nil
-}
-
-func createRoleIfNotExists(
-	ctx context.Context,
-	client *clientv3.Client,
-	roleName string,
-	keyPrefix string,
-) error {
-	var perms []*authpb.Permission
-	resp, err := client.RoleGet(ctx, roleName)
-	if errors.Is(err, rpctypes.ErrRoleNotFound) {
-		if _, err := client.RoleAdd(ctx, roleName); err != nil {
-			return fmt.Errorf("failed to create role %q: %w", roleName, err)
-		}
-	} else if err != nil {
-		return fmt.Errorf("failed to get role %q: %w", roleName, err)
-	} else {
-		perms = resp.Perm
-	}
-	if keyPrefix == "" {
-		return nil
-	}
-	var hasPerm bool
-	for _, perm := range perms {
-		if string(perm.Key) == keyPrefix {
-			hasPerm = true
-			break
-		}
-	}
-	if hasPerm {
-		return nil
-	}
-	rangeEnd := clientv3.GetPrefixRangeEnd(keyPrefix)
-	permType := clientv3.PermissionType(clientv3.PermReadWrite)
-	if _, err := client.RoleGrantPermission(ctx, roleName, keyPrefix, rangeEnd, permType); err != nil {
-		return fmt.Errorf("failed to grant role permission: %w", err)
-	}
-
-	return nil
-}
-
-func createUserIfNotExists(
-	ctx context.Context,
-	client *clientv3.Client,
-	username string,
-	password string,
-	roleNames ...string,
-) error {
-	var roles []string
-	resp, err := client.UserGet(ctx, username)
-	if errors.Is(err, rpctypes.ErrUserNotFound) {
-		if _, err := client.UserAdd(ctx, username, password); err != nil {
-			return fmt.Errorf("failed to create user: %w", err)
-		}
-	} else if err != nil {
-		return fmt.Errorf("failed to get user %q: %w", username, err)
-	} else {
-		roles = resp.Roles
-	}
-	haveRoles := ds.NewSet(roles...)
-	wantRoles := ds.NewSet(roleNames...)
-	for roleName := range wantRoles.Difference(haveRoles) {
-		if _, err := client.UserGrantRole(ctx, username, roleName); err != nil {
-			return fmt.Errorf("failed to grant role to user: %w", err)
-		}
-	}
-	return nil
-}
-
-func RemoveInstanceEtcdUser(
-	ctx context.Context,
-	client *clientv3.Client,
-	certSvc *certificates.Service,
-	instanceID string,
-) error {
-	username := fmt.Sprintf("instance-%s", instanceID)
-
-	if err := removeUserIfExists(ctx, client, username); err != nil {
-		return fmt.Errorf("failed to create instance user: %w", err)
-	}
-	if err := removeRoleIfExists(ctx, client, username); err != nil {
-		return fmt.Errorf("failed to create instance role: %w", err)
-	}
-	if err := certSvc.RemoveInstanceEtcdUser(ctx, instanceID); err != nil {
-		return fmt.Errorf("failed to remove instance cert: %w", err)
-	}
-
-	return nil
-}
-
-func removeRoleIfExists(
-	ctx context.Context,
-	client *clientv3.Client,
-	roleName string,
-) error {
-	_, err := client.RoleDelete(ctx, roleName)
-	if errors.Is(err, rpctypes.ErrRoleNotFound) {
-		return nil
-	} else if err != nil {
-		return fmt.Errorf("failed to delete role %q: %w", roleName, err)
-	}
-
-	return nil
-}
-
-func removeUserIfExists(
-	ctx context.Context,
-	client *clientv3.Client,
-	username string,
-) error {
-	_, err := client.UserDelete(ctx, username)
-	if errors.Is(err, rpctypes.ErrUserNotFound) {
-		return nil
-	} else if err != nil {
-		return fmt.Errorf("failed to delete user %q: %w", username, err)
-	}
-
-	return nil
 }

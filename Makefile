@@ -152,8 +152,9 @@ endif
 	$(changie) merge
 	$(changie) latest > api/version.txt
 	$(MAKE) -C api generate
+	VERSION=$(VERSION) yq -i '.extra.version = strenv(VERSION)' mkdocs.yml
 	git checkout -b release/$(VERSION)
-	git add api changes CHANGELOG.md
+	git add api changes CHANGELOG.md mkdocs.yml
 	git -c core.pager='' diff --staged
 	git -c core.pager='' diff --staged --compact-summary
 	@echo -n "Are you sure? [y/N] " && read ans && [ $${ans:-N} == y ]
@@ -260,3 +261,11 @@ ci-compose-detached: ci-compose-build docker-swarm-init
 .PHONY: ci-compose-down
 ci-compose-down:
 	$(docker_compose_ci) down
+
+#################################
+# 		  documentation 	    #
+#################################
+.PHONY: docs
+docs:
+	docker build -t control-plane-docs ./docs
+	docker run --rm -it -p 8000:8000 -v ${PWD}:/docs control-plane-docs

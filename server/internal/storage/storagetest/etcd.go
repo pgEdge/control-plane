@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -51,11 +50,7 @@ func (s *EtcdTestServer) Client(t testing.TB) *clientv3.Client {
 func NewEtcdTestServer(t testing.TB) *EtcdTestServer {
 	t.Helper()
 
-	dir := TempDir(t)
-	// dir, err := os.MkdirTemp(os.TempDir(), "etcd-test-server")
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
+	dir := t.TempDir()
 
 	clientPort := GetFreePort(t)
 	clientURL := url.URL{
@@ -153,18 +148,4 @@ func GetFreePort(t testing.TB) int {
 	defer allocatedPortMu.Unlock()
 
 	return getFreePortHelper(t)
-}
-
-func TempDir(t testing.TB) string {
-	t.Helper()
-
-	dir, err := os.MkdirTemp(os.TempDir(), "embedded-etcd")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		os.RemoveAll(dir)
-	})
-
-	return dir
 }

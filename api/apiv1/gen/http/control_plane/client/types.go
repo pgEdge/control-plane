@@ -35,6 +35,8 @@ type GetJoinOptionsRequestBody struct {
 	Hostname string `form:"hostname" json:"hostname" xml:"hostname"`
 	// The IPv4 address of the host that's joining the cluster.
 	Ipv4Address string `form:"ipv4_address" json:"ipv4_address" xml:"ipv4_address"`
+	// True if the joining member is configured to run an embedded an etcd server.
+	EmbeddedEtcdEnabled bool `form:"embedded_etcd_enabled" json:"embedded_etcd_enabled" xml:"embedded_etcd_enabled"`
 }
 
 // CreateDatabaseRequestBody is the type of the "control-plane" service
@@ -126,8 +128,8 @@ type GetJoinTokenResponseBody struct {
 // GetJoinOptionsResponseBody is the type of the "control-plane" service
 // "get-join-options" endpoint HTTP response body.
 type GetJoinOptionsResponseBody struct {
-	// Information about this cluster member
-	Peer *ClusterPeerResponseBody `form:"peer,omitempty" json:"peer,omitempty" xml:"peer,omitempty"`
+	// Connection information for the etcd cluster leader
+	Leader *EtcdClusterMemberResponseBody `form:"leader,omitempty" json:"leader,omitempty" xml:"leader,omitempty"`
 	// Credentials for the new host joining the cluster.
 	Credentials *ClusterCredentialsResponseBody `form:"credentials,omitempty" json:"credentials,omitempty" xml:"credentials,omitempty"`
 }
@@ -147,7 +149,10 @@ type GetClusterResponseBody struct {
 
 // ListHostsResponseBody is the type of the "control-plane" service
 // "list-hosts" endpoint HTTP response body.
-type ListHostsResponseBody []*HostResponse
+type ListHostsResponseBody struct {
+	// List of hosts in the cluster
+	Hosts []*HostResponseBody `form:"hosts,omitempty" json:"hosts,omitempty" xml:"hosts,omitempty"`
+}
 
 // GetHostResponseBody is the type of the "control-plane" service "get-host"
 // endpoint HTTP response body.
@@ -322,82 +327,22 @@ type GetVersionResponseBody struct {
 // RestartInstanceResponseBody is the type of the "control-plane" service
 // "restart-instance" endpoint HTTP response body.
 type RestartInstanceResponseBody struct {
-	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
-	// The database ID of the task.
-	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
-	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
-	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-	// The unique ID of the task.
-	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
-	// The time when the task was created.
-	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
-	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
-	// The type of the task.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The status of the task.
-	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	// Task representing the restart operation
+	Task *TaskResponseBody `form:"task,omitempty" json:"task,omitempty" xml:"task,omitempty"`
 }
 
 // StopInstanceResponseBody is the type of the "control-plane" service
 // "stop-instance" endpoint HTTP response body.
 type StopInstanceResponseBody struct {
-	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
-	// The database ID of the task.
-	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
-	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
-	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-	// The unique ID of the task.
-	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
-	// The time when the task was created.
-	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
-	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
-	// The type of the task.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The status of the task.
-	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	// Task representing the stop operation
+	Task *TaskResponseBody `form:"task,omitempty" json:"task,omitempty" xml:"task,omitempty"`
 }
 
 // StartInstanceResponseBody is the type of the "control-plane" service
 // "start-instance" endpoint HTTP response body.
 type StartInstanceResponseBody struct {
-	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
-	// The database ID of the task.
-	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
-	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
-	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-	// The unique ID of the task.
-	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
-	// The time when the task was created.
-	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
-	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
-	// The type of the task.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The status of the task.
-	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	// Task representing the start operation
+	Task *TaskResponseBody `form:"task,omitempty" json:"task,omitempty" xml:"task,omitempty"`
 }
 
 // CancelDatabaseTaskResponseBody is the type of the "control-plane" service
@@ -431,6 +376,16 @@ type CancelDatabaseTaskResponseBody struct {
 // "control-plane" service "init-cluster" endpoint HTTP response body for the
 // "cluster_already_initialized" error.
 type InitClusterClusterAlreadyInitializedResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// InitClusterOperationNotSupportedResponseBody is the type of the
+// "control-plane" service "init-cluster" endpoint HTTP response body for the
+// "operation_not_supported" error.
+type InitClusterOperationNotSupportedResponseBody struct {
 	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// The error message.
@@ -1386,19 +1341,24 @@ type CancelDatabaseTaskServerErrorResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
-// ClusterPeerResponseBody is used to define fields on response body types.
-type ClusterPeerResponseBody struct {
+// EtcdClusterMemberResponseBody is used to define fields on response body
+// types.
+type EtcdClusterMemberResponseBody struct {
 	// The name of the Etcd cluster member.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// The Etcd peer endpoint for this cluster member.
-	PeerURL *string `form:"peer_url,omitempty" json:"peer_url,omitempty" xml:"peer_url,omitempty"`
+	PeerUrls []string `form:"peer_urls,omitempty" json:"peer_urls,omitempty" xml:"peer_urls,omitempty"`
 	// The Etcd client endpoint for this cluster member.
-	ClientURL *string `form:"client_url,omitempty" json:"client_url,omitempty" xml:"client_url,omitempty"`
+	ClientUrls []string `form:"client_urls,omitempty" json:"client_urls,omitempty" xml:"client_urls,omitempty"`
 }
 
 // ClusterCredentialsResponseBody is used to define fields on response body
 // types.
 type ClusterCredentialsResponseBody struct {
+	// The Etcd username for the new host.
+	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	// The Etcd password for the new host.
+	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
 	// The base64-encoded CA certificate for the cluster.
 	CaCert *string `form:"ca_cert,omitempty" json:"ca_cert,omitempty" xml:"ca_cert,omitempty"`
 	// The base64-encoded etcd client certificate for the new cluster member.
@@ -1447,8 +1407,6 @@ type HostResponseBody struct {
 type HostCohortResponseBody struct {
 	// The type of cohort that the host belongs to.
 	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The cohort ID that the host belongs to.
-	CohortID *string `form:"cohort_id,omitempty" json:"cohort_id,omitempty" xml:"cohort_id,omitempty"`
 	// The member ID of the host within the cohort.
 	MemberID *string `form:"member_id,omitempty" json:"member_id,omitempty" xml:"member_id,omitempty"`
 	// Indicates if the host is a control node in the cohort.
@@ -1476,71 +1434,6 @@ type ComponentStatusResponseBody struct {
 
 // PgEdgeVersionResponseBody is used to define fields on response body types.
 type PgEdgeVersionResponseBody struct {
-	// The Postgres major and minor version.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
-	// The Spock major version.
-	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
-}
-
-// HostResponse is used to define fields on response body types.
-type HostResponse struct {
-	// Unique identifier for the host.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// The orchestrator used by this host.
-	Orchestrator *string `form:"orchestrator,omitempty" json:"orchestrator,omitempty" xml:"orchestrator,omitempty"`
-	// The data directory for the host.
-	DataDir *string `form:"data_dir,omitempty" json:"data_dir,omitempty" xml:"data_dir,omitempty"`
-	// The cohort that this host belongs to.
-	Cohort *HostCohortResponse `form:"cohort,omitempty" json:"cohort,omitempty" xml:"cohort,omitempty"`
-	// The hostname of this host.
-	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
-	// The IPv4 address of this host.
-	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
-	// The number of CPUs on this host.
-	Cpus *int `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
-	// The amount of memory available on this host.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
-	// Current status of the host.
-	Status *HostStatusResponse `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// The default PgEdge version for this host.
-	DefaultPgedgeVersion *PgEdgeVersionResponse `form:"default_pgedge_version,omitempty" json:"default_pgedge_version,omitempty" xml:"default_pgedge_version,omitempty"`
-	// The PgEdge versions supported by this host.
-	SupportedPgedgeVersions []*PgEdgeVersionResponse `form:"supported_pgedge_versions,omitempty" json:"supported_pgedge_versions,omitempty" xml:"supported_pgedge_versions,omitempty"`
-}
-
-// HostCohortResponse is used to define fields on response body types.
-type HostCohortResponse struct {
-	// The type of cohort that the host belongs to.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The cohort ID that the host belongs to.
-	CohortID *string `form:"cohort_id,omitempty" json:"cohort_id,omitempty" xml:"cohort_id,omitempty"`
-	// The member ID of the host within the cohort.
-	MemberID *string `form:"member_id,omitempty" json:"member_id,omitempty" xml:"member_id,omitempty"`
-	// Indicates if the host is a control node in the cohort.
-	ControlAvailable *bool `form:"control_available,omitempty" json:"control_available,omitempty" xml:"control_available,omitempty"`
-}
-
-// HostStatusResponse is used to define fields on response body types.
-type HostStatusResponse struct {
-	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
-	// The last time the host status was updated.
-	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
-	// The status of each component of the host.
-	Components map[string]*ComponentStatusResponse `form:"components,omitempty" json:"components,omitempty" xml:"components,omitempty"`
-}
-
-// ComponentStatusResponse is used to define fields on response body types.
-type ComponentStatusResponse struct {
-	// Indicates if the component is healthy.
-	Healthy *bool `form:"healthy,omitempty" json:"healthy,omitempty" xml:"healthy,omitempty"`
-	// Error message from any errors that occurred during the health check.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
-	// Additional details about the component.
-	Details map[string]any `form:"details,omitempty" json:"details,omitempty" xml:"details,omitempty"`
-}
-
-// PgEdgeVersionResponse is used to define fields on response body types.
-type PgEdgeVersionResponse struct {
 	// The Postgres major and minor version.
 	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
 	// The Spock major version.
@@ -2505,10 +2398,11 @@ func NewJoinClusterRequestBody(p *controlplane.ClusterJoinToken) *JoinClusterReq
 // of the "get-join-options" endpoint of the "control-plane" service.
 func NewGetJoinOptionsRequestBody(p *controlplane.ClusterJoinRequest) *GetJoinOptionsRequestBody {
 	body := &GetJoinOptionsRequestBody{
-		Token:       p.Token,
-		HostID:      string(p.HostID),
-		Hostname:    p.Hostname,
-		Ipv4Address: p.Ipv4Address,
+		Token:               p.Token,
+		HostID:              string(p.HostID),
+		Hostname:            p.Hostname,
+		Ipv4Address:         p.Ipv4Address,
+		EmbeddedEtcdEnabled: p.EmbeddedEtcdEnabled,
 	}
 	return body
 }
@@ -2646,6 +2540,17 @@ func NewInitClusterClusterAlreadyInitialized(body *InitClusterClusterAlreadyInit
 	return v
 }
 
+// NewInitClusterOperationNotSupported builds a control-plane service
+// init-cluster endpoint operation_not_supported error.
+func NewInitClusterOperationNotSupported(body *InitClusterOperationNotSupportedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
 // NewInitClusterServerError builds a control-plane service init-cluster
 // endpoint server_error error.
 func NewInitClusterServerError(body *InitClusterServerErrorResponseBody) *controlplane.APIError {
@@ -2727,7 +2632,7 @@ func NewGetJoinTokenServerError(body *GetJoinTokenServerErrorResponseBody) *cont
 // "get-join-options" endpoint result from a HTTP "OK" response.
 func NewGetJoinOptionsClusterJoinOptionsOK(body *GetJoinOptionsResponseBody) *controlplane.ClusterJoinOptions {
 	v := &controlplane.ClusterJoinOptions{}
-	v.Peer = unmarshalClusterPeerResponseBodyToControlplaneClusterPeer(body.Peer)
+	v.Leader = unmarshalEtcdClusterMemberResponseBodyToControlplaneEtcdClusterMember(body.Leader)
 	v.Credentials = unmarshalClusterCredentialsResponseBodyToControlplaneClusterCredentials(body.Credentials)
 
 	return v
@@ -2804,12 +2709,13 @@ func NewGetClusterServerError(body *GetClusterServerErrorResponseBody) *controlp
 	return v
 }
 
-// NewListHostsHostOK builds a "control-plane" service "list-hosts" endpoint
-// result from a HTTP "OK" response.
-func NewListHostsHostOK(body []*HostResponse) []*controlplane.Host {
-	v := make([]*controlplane.Host, len(body))
-	for i, val := range body {
-		v[i] = unmarshalHostResponseToControlplaneHost(val)
+// NewListHostsResponseOK builds a "control-plane" service "list-hosts"
+// endpoint result from a HTTP "OK" response.
+func NewListHostsResponseOK(body *ListHostsResponseBody) *controlplane.ListHostsResponse {
+	v := &controlplane.ListHostsResponse{}
+	v.Hosts = make([]*controlplane.Host, len(body.Hosts))
+	for i, val := range body.Hosts {
+		v.Hosts[i] = unmarshalHostResponseBodyToControlplaneHost(val)
 	}
 
 	return v
@@ -3790,22 +3696,11 @@ func NewGetVersionServerError(body *GetVersionServerErrorResponseBody) *controlp
 	return v
 }
 
-// NewRestartInstanceTaskOK builds a "control-plane" service "restart-instance"
-// endpoint result from a HTTP "OK" response.
-func NewRestartInstanceTaskOK(body *RestartInstanceResponseBody) *controlplane.Task {
-	v := &controlplane.Task{
-		ParentID:    body.ParentID,
-		DatabaseID:  *body.DatabaseID,
-		NodeName:    body.NodeName,
-		InstanceID:  body.InstanceID,
-		HostID:      body.HostID,
-		TaskID:      *body.TaskID,
-		CreatedAt:   *body.CreatedAt,
-		CompletedAt: body.CompletedAt,
-		Type:        *body.Type,
-		Status:      *body.Status,
-		Error:       body.Error,
-	}
+// NewRestartInstanceResponseOK builds a "control-plane" service
+// "restart-instance" endpoint result from a HTTP "OK" response.
+func NewRestartInstanceResponseOK(body *RestartInstanceResponseBody) *controlplane.RestartInstanceResponse {
+	v := &controlplane.RestartInstanceResponse{}
+	v.Task = unmarshalTaskResponseBodyToControlplaneTask(body.Task)
 
 	return v
 }
@@ -3854,22 +3749,11 @@ func NewRestartInstanceServerError(body *RestartInstanceServerErrorResponseBody)
 	return v
 }
 
-// NewStopInstanceTaskOK builds a "control-plane" service "stop-instance"
+// NewStopInstanceResponseOK builds a "control-plane" service "stop-instance"
 // endpoint result from a HTTP "OK" response.
-func NewStopInstanceTaskOK(body *StopInstanceResponseBody) *controlplane.Task {
-	v := &controlplane.Task{
-		ParentID:    body.ParentID,
-		DatabaseID:  *body.DatabaseID,
-		NodeName:    body.NodeName,
-		InstanceID:  body.InstanceID,
-		HostID:      body.HostID,
-		TaskID:      *body.TaskID,
-		CreatedAt:   *body.CreatedAt,
-		CompletedAt: body.CompletedAt,
-		Type:        *body.Type,
-		Status:      *body.Status,
-		Error:       body.Error,
-	}
+func NewStopInstanceResponseOK(body *StopInstanceResponseBody) *controlplane.StopInstanceResponse {
+	v := &controlplane.StopInstanceResponse{}
+	v.Task = unmarshalTaskResponseBodyToControlplaneTask(body.Task)
 
 	return v
 }
@@ -3918,22 +3802,11 @@ func NewStopInstanceServerError(body *StopInstanceServerErrorResponseBody) *cont
 	return v
 }
 
-// NewStartInstanceTaskOK builds a "control-plane" service "start-instance"
+// NewStartInstanceResponseOK builds a "control-plane" service "start-instance"
 // endpoint result from a HTTP "OK" response.
-func NewStartInstanceTaskOK(body *StartInstanceResponseBody) *controlplane.Task {
-	v := &controlplane.Task{
-		ParentID:    body.ParentID,
-		DatabaseID:  *body.DatabaseID,
-		NodeName:    body.NodeName,
-		InstanceID:  body.InstanceID,
-		HostID:      body.HostID,
-		TaskID:      *body.TaskID,
-		CreatedAt:   *body.CreatedAt,
-		CompletedAt: body.CompletedAt,
-		Type:        *body.Type,
-		Status:      *body.Status,
-		Error:       body.Error,
-	}
+func NewStartInstanceResponseOK(body *StartInstanceResponseBody) *controlplane.StartInstanceResponse {
+	v := &controlplane.StartInstanceResponse{}
+	v.Task = unmarshalTaskResponseBodyToControlplaneTask(body.Task)
 
 	return v
 }
@@ -4068,14 +3941,14 @@ func ValidateGetJoinTokenResponseBody(body *GetJoinTokenResponseBody) (err error
 // ValidateGetJoinOptionsResponseBody runs the validations defined on
 // Get-Join-OptionsResponseBody
 func ValidateGetJoinOptionsResponseBody(body *GetJoinOptionsResponseBody) (err error) {
-	if body.Peer == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("peer", "body"))
+	if body.Leader == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("leader", "body"))
 	}
 	if body.Credentials == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("credentials", "body"))
 	}
-	if body.Peer != nil {
-		if err2 := ValidateClusterPeerResponseBody(body.Peer); err2 != nil {
+	if body.Leader != nil {
+		if err2 := ValidateEtcdClusterMemberResponseBody(body.Leader); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -4126,6 +3999,22 @@ func ValidateGetClusterResponseBody(body *GetClusterResponseBody) (err error) {
 		if err2 := ValidateClusterStatusResponseBody(body.Status); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
+	}
+	for _, e := range body.Hosts {
+		if e != nil {
+			if err2 := ValidateHostResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateListHostsResponseBody runs the validations defined on
+// List-HostsResponseBody
+func ValidateListHostsResponseBody(body *ListHostsResponseBody) (err error) {
+	if body.Hosts == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("hosts", "body"))
 	}
 	for _, e := range body.Hosts {
 		if e != nil {
@@ -4433,36 +4322,12 @@ func ValidateGetVersionResponseBody(body *GetVersionResponseBody) (err error) {
 // ValidateRestartInstanceResponseBody runs the validations defined on
 // Restart-InstanceResponseBody
 func ValidateRestartInstanceResponseBody(body *RestartInstanceResponseBody) (err error) {
-	if body.DatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	if body.Task == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
 	}
-	if body.TaskID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
-	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
-	}
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ParentID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
-	}
-	if body.TaskID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.CompletedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
-	}
-	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
+	if body.Task != nil {
+		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -4471,36 +4336,12 @@ func ValidateRestartInstanceResponseBody(body *RestartInstanceResponseBody) (err
 // ValidateStopInstanceResponseBody runs the validations defined on
 // Stop-InstanceResponseBody
 func ValidateStopInstanceResponseBody(body *StopInstanceResponseBody) (err error) {
-	if body.DatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	if body.Task == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
 	}
-	if body.TaskID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
-	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
-	}
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ParentID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
-	}
-	if body.TaskID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.CompletedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
-	}
-	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
+	if body.Task != nil {
+		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -4509,36 +4350,12 @@ func ValidateStopInstanceResponseBody(body *StopInstanceResponseBody) (err error
 // ValidateStartInstanceResponseBody runs the validations defined on
 // Start-InstanceResponseBody
 func ValidateStartInstanceResponseBody(body *StartInstanceResponseBody) (err error) {
-	if body.DatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	if body.Task == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
 	}
-	if body.TaskID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
-	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
-	}
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ParentID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
-	}
-	if body.TaskID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.CompletedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
-	}
-	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
+	if body.Task != nil {
+		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -4585,6 +4402,18 @@ func ValidateCancelDatabaseTaskResponseBody(body *CancelDatabaseTaskResponseBody
 // ValidateInitClusterClusterAlreadyInitializedResponseBody runs the
 // validations defined on init-cluster_cluster_already_initialized_response_body
 func ValidateInitClusterClusterAlreadyInitializedResponseBody(body *InitClusterClusterAlreadyInitializedResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateInitClusterOperationNotSupportedResponseBody runs the validations
+// defined on init-cluster_operation_not_supported_response_body
+func ValidateInitClusterOperationNotSupportedResponseBody(body *InitClusterOperationNotSupportedResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
@@ -5762,23 +5591,17 @@ func ValidateCancelDatabaseTaskServerErrorResponseBody(body *CancelDatabaseTaskS
 	return
 }
 
-// ValidateClusterPeerResponseBody runs the validations defined on
-// ClusterPeerResponseBody
-func ValidateClusterPeerResponseBody(body *ClusterPeerResponseBody) (err error) {
+// ValidateEtcdClusterMemberResponseBody runs the validations defined on
+// EtcdClusterMemberResponseBody
+func ValidateEtcdClusterMemberResponseBody(body *EtcdClusterMemberResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
-	if body.PeerURL == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("peer_url", "body"))
+	if body.PeerUrls == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("peer_urls", "body"))
 	}
-	if body.ClientURL == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("client_url", "body"))
-	}
-	if body.PeerURL != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.peer_url", *body.PeerURL, goa.FormatURI))
-	}
-	if body.ClientURL != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.client_url", *body.ClientURL, goa.FormatURI))
+	if body.ClientUrls == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("client_urls", "body"))
 	}
 	return
 }
@@ -5786,6 +5609,12 @@ func ValidateClusterPeerResponseBody(body *ClusterPeerResponseBody) (err error) 
 // ValidateClusterCredentialsResponseBody runs the validations defined on
 // ClusterCredentialsResponseBody
 func ValidateClusterCredentialsResponseBody(body *ClusterCredentialsResponseBody) (err error) {
+	if body.Username == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
+	}
+	if body.Password == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("password", "body"))
+	}
 	if body.CaCert == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("ca_cert", "body"))
 	}
@@ -5882,9 +5711,6 @@ func ValidateHostCohortResponseBody(body *HostCohortResponseBody) (err error) {
 	if body.Type == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
 	}
-	if body.CohortID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("cohort_id", "body"))
-	}
 	if body.MemberID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("member_id", "body"))
 	}
@@ -5929,124 +5755,6 @@ func ValidateComponentStatusResponseBody(body *ComponentStatusResponseBody) (err
 // ValidatePgEdgeVersionResponseBody runs the validations defined on
 // PgEdgeVersionResponseBody
 func ValidatePgEdgeVersionResponseBody(body *PgEdgeVersionResponseBody) (err error) {
-	if body.PostgresVersion == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("postgres_version", "body"))
-	}
-	if body.SpockVersion == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("spock_version", "body"))
-	}
-	return
-}
-
-// ValidateHostResponse runs the validations defined on HostResponse
-func ValidateHostResponse(body *HostResponse) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
-	if body.Orchestrator == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("orchestrator", "body"))
-	}
-	if body.DataDir == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("data_dir", "body"))
-	}
-	if body.Hostname == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("hostname", "body"))
-	}
-	if body.Ipv4Address == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("ipv4_address", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
-		}
-	}
-	if body.Cohort != nil {
-		if err2 := ValidateHostCohortResponse(body.Cohort); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Ipv4Address != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
-	}
-	if body.Status != nil {
-		if err2 := ValidateHostStatusResponse(body.Status); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.DefaultPgedgeVersion != nil {
-		if err2 := ValidatePgEdgeVersionResponse(body.DefaultPgedgeVersion); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	for _, e := range body.SupportedPgedgeVersions {
-		if e != nil {
-			if err2 := ValidatePgEdgeVersionResponse(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	return
-}
-
-// ValidateHostCohortResponse runs the validations defined on HostCohortResponse
-func ValidateHostCohortResponse(body *HostCohortResponse) (err error) {
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.CohortID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("cohort_id", "body"))
-	}
-	if body.MemberID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("member_id", "body"))
-	}
-	if body.ControlAvailable == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("control_available", "body"))
-	}
-	return
-}
-
-// ValidateHostStatusResponse runs the validations defined on HostStatusResponse
-func ValidateHostStatusResponse(body *HostStatusResponse) (err error) {
-	if body.State == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
-	}
-	if body.UpdatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("updated_at", "body"))
-	}
-	if body.Components == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("components", "body"))
-	}
-	if body.State != nil {
-		if !(*body.State == "healthy" || *body.State == "unreachable" || *body.State == "degraded" || *body.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"healthy", "unreachable", "degraded", "unknown"}))
-		}
-	}
-	if body.UpdatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
-	}
-	return
-}
-
-// ValidateComponentStatusResponse runs the validations defined on
-// ComponentStatusResponse
-func ValidateComponentStatusResponse(body *ComponentStatusResponse) (err error) {
-	if body.Healthy == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("healthy", "body"))
-	}
-	return
-}
-
-// ValidatePgEdgeVersionResponse runs the validations defined on
-// PgEdgeVersionResponse
-func ValidatePgEdgeVersionResponse(body *PgEdgeVersionResponse) (err error) {
 	if body.PostgresVersion == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("postgres_version", "body"))
 	}
@@ -6181,11 +5889,6 @@ func ValidateInstanceResponseBody(body *InstanceResponseBody) (err error) {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if body.Postgres != nil {
-		if err2 := ValidateInstancePostgresStatusResponseBody(body.Postgres); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	if body.Spock != nil {
 		if err2 := ValidateInstanceSpockStatusResponseBody(body.Spock); err2 != nil {
 			err = goa.MergeErrors(err, err2)
@@ -6199,22 +5902,6 @@ func ValidateInstanceResponseBody(body *InstanceResponseBody) (err error) {
 func ValidateInstanceConnectionInfoResponseBody(body *InstanceConnectionInfoResponseBody) (err error) {
 	if body.Ipv4Address != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
-	}
-	return
-}
-
-// ValidateInstancePostgresStatusResponseBody runs the validations defined on
-// InstancePostgresStatusResponseBody
-func ValidateInstancePostgresStatusResponseBody(body *InstancePostgresStatusResponseBody) (err error) {
-	if body.PatroniState != nil {
-		if !(*body.PatroniState == "stopping" || *body.PatroniState == "stopped" || *body.PatroniState == "stop failed" || *body.PatroniState == "crashed" || *body.PatroniState == "running" || *body.PatroniState == "starting" || *body.PatroniState == "start failed" || *body.PatroniState == "restarting" || *body.PatroniState == "restart failed" || *body.PatroniState == "initializing new cluster" || *body.PatroniState == "initdb failed" || *body.PatroniState == "running custom bootstrap script" || *body.PatroniState == "custom bootstrap failed" || *body.PatroniState == "creating replica" || *body.PatroniState == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.patroni_state", *body.PatroniState, []any{"stopping", "stopped", "stop failed", "crashed", "running", "starting", "start failed", "restarting", "restart failed", "initializing new cluster", "initdb failed", "running custom bootstrap script", "custom bootstrap failed", "creating replica", "unknown"}))
-		}
-	}
-	if body.Role != nil {
-		if !(*body.Role == "replica" || *body.Role == "primary") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.role", *body.Role, []any{"replica", "primary"}))
-		}
 	}
 	return
 }

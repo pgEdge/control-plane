@@ -159,6 +159,8 @@ func (l *LoadTest) Run(t *testing.T) {
 
 		tLog(t, "stopping the loaders")
 
+		db.WaitForReplication(ctx, t, username, password)
+
 		for _, loader := range loaders {
 			loader.Stop()
 		}
@@ -216,9 +218,6 @@ func (l *Loader) Run(ctx context.Context, t testing.TB) {
 
 		// Persist workload until Stop() is called
 		l.workload(ctx, t, conn)
-
-		// Wait for replication to finish
-		l.waitForReplication(ctx, t, conn)
 	})
 }
 
@@ -287,36 +286,6 @@ func (l *Loader) workload(ctx context.Context, t testing.TB, conn *pgx.Conn) {
 		case <-ticker.C:
 			_, err := conn.Exec(ctx, sql)
 			require.NoError(t, err)
-		}
-	}
-}
-
-func (l *Loader) waitForReplication(ctx context.Context, t testing.TB, conn *pgx.Conn) {
-	tLogf(t, "%s loader: got stop signal. waiting for replication catch up with writes.", l.TableName)
-
-	lagSQL := `
-		SELECT NOT EXISTS (
-			SELECT 1
-			FROM spock.lag_tracker
-			WHERE replication_lag_bytes > 0
-		);`
-
-	ticker := time.NewTicker(500 * time.Millisecond)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			var finished bool
-
-			err := conn.QueryRow(ctx, lagSQL).Scan(&finished)
-			require.NoError(t, err)
-
-			if finished {
-				return
-			}
 		}
 	}
 }

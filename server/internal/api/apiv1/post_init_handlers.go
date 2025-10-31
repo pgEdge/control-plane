@@ -13,6 +13,7 @@ import (
 	"github.com/rs/zerolog"
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
+	"github.com/pgEdge/control-plane/server/internal/cluster"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
@@ -30,21 +31,23 @@ var _ api.Service = (*PostInitHandlers)(nil)
 type PostInitHandlers struct {
 	cfg         config.Config
 	logger      zerolog.Logger
-	etcd        *etcd.EmbeddedEtcd
+	etcd        etcd.Etcd
 	hostSvc     *host.Service
 	dbSvc       *database.Service
 	taskSvc     *task.Service
 	workflowSvc *workflows.Service
+	clusterSvc  *cluster.Service
 }
 
 func NewPostInitHandlers(
 	cfg config.Config,
 	logger zerolog.Logger,
-	etcd *etcd.EmbeddedEtcd,
+	etcd etcd.Etcd,
 	hostSvc *host.Service,
 	dbSvc *database.Service,
 	taskSvc *task.Service,
 	workflowSvc *workflows.Service,
+	clusterSvc *cluster.Service,
 ) *PostInitHandlers {
 	return &PostInitHandlers{
 		cfg:         cfg,
@@ -54,6 +57,7 @@ func NewPostInitHandlers(
 		dbSvc:       dbSvc,
 		taskSvc:     taskSvc,
 		workflowSvc: workflowSvc,
+		clusterSvc:  clusterSvc,
 	}
 }
 
@@ -91,24 +95,30 @@ func (s *PostInitHandlers) GetJoinOptions(ctx context.Context, req *api.ClusterJ
 		return nil, apiErr(err)
 	}
 
-	creds, err := s.etcd.AddPeerUser(ctx, etcd.HostCredentialOptions{
-		HostID:      hostID,
-		Hostname:    req.Hostname,
-		IPv4Address: req.Ipv4Address,
+	creds, err := s.etcd.AddHost(ctx, etcd.HostCredentialOptions{
+		HostID:              hostID,
+		Hostname:            req.Hostname,
+		IPv4Address:         req.Ipv4Address,
+		EmbeddedEtcdEnabled: req.EmbeddedEtcdEnabled,
 	})
 	if err != nil {
 		return nil, apiErr(err)
 	}
 
-	peer := s.etcd.AsPeer()
+	leader, err := s.etcd.Leader(ctx)
+	if err != nil {
+		return nil, apiErr(err)
+	}
 
 	return &api.ClusterJoinOptions{
-		Peer: &api.ClusterPeer{
-			Name:      peer.Name,
-			PeerURL:   peer.PeerURL,
-			ClientURL: peer.ClientURL,
+		Leader: &api.EtcdClusterMember{
+			Name:       leader.Name,
+			PeerUrls:   leader.PeerURLs,
+			ClientUrls: leader.ClientURLs,
 		},
 		Credentials: &api.ClusterCredentials{
+			Username:   creds.Username,
+			Password:   creds.Password,
 			CaCert:     base64.StdEncoding.EncodeToString(creds.CaCert),
 			ClientCert: base64.StdEncoding.EncodeToString(creds.ClientCert),
 			ClientKey:  base64.StdEncoding.EncodeToString(creds.ClientKey),
@@ -132,8 +142,12 @@ func (s *PostInitHandlers) GetCluster(ctx context.Context) (*api.Cluster, error)
 		apiHosts[idx] = hostToAPI(h)
 	}
 
+	storedCluster, err := s.clusterSvc.Get(ctx)
+	if err != nil {
+		return nil, apiErr(err)
+	}
 	cluster := &api.Cluster{
-		ID:       api.Identifier(s.cfg.ClusterID),
+		ID:       api.Identifier(storedCluster.ID),
 		TenantID: api.Identifier(s.cfg.TenantID),
 		Hosts:    apiHosts,
 		Status:   &api.ClusterStatus{State: "available"},
@@ -142,7 +156,7 @@ func (s *PostInitHandlers) GetCluster(ctx context.Context) (*api.Cluster, error)
 	return cluster, nil
 }
 
-func (s *PostInitHandlers) ListHosts(ctx context.Context) ([]*api.Host, error) {
+func (s *PostInitHandlers) ListHosts(ctx context.Context) (*api.ListHostsResponse, error) {
 	hosts, err := s.hostSvc.GetAllHosts(ctx)
 	if err != nil {
 		return nil, apiErr(err)
@@ -152,7 +166,7 @@ func (s *PostInitHandlers) ListHosts(ctx context.Context) ([]*api.Host, error) {
 	for idx, h := range hosts {
 		apiHosts[idx] = hostToAPI(h)
 	}
-	return apiHosts, nil
+	return &api.ListHostsResponse{Hosts: apiHosts}, nil
 }
 
 func (s *PostInitHandlers) GetHost(ctx context.Context, req *api.GetHostPayload) (*api.Host, error) {
@@ -188,9 +202,7 @@ func (s *PostInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPa
 	if count != 0 {
 		return makeInvalidInputErr(errors.New("cannot remove host with running instances"))
 	}
-	// TODO: When we add support for remote etcd, this will become conditional.
-	// We'll need to keep track of which hosts are part of the etcd cluster.
-	err = s.etcd.RemovePeer(ctx, hostID)
+	err = s.etcd.RemoveHost(ctx, hostID)
 	if err != nil {
 		return apiErr(err)
 	}
@@ -761,7 +773,7 @@ func (s *PostInitHandlers) GetVersion(context.Context) (res *api.VersionInfo, er
 	}, nil
 }
 
-func (s *PostInitHandlers) InitCluster(ctx context.Context) (*api.ClusterJoinToken, error) {
+func (s *PostInitHandlers) InitCluster(ctx context.Context, req *api.InitClusterRequest) (*api.ClusterJoinToken, error) {
 	return nil, ErrAlreadyInitialized
 }
 
@@ -786,7 +798,7 @@ func (s *PostInitHandlers) ValidateSpec(ctx context.Context, spec *database.Spec
 	return nil
 }
 
-func (s *PostInitHandlers) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (*api.Task, error) {
+func (s *PostInitHandlers) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (*api.RestartInstanceResponse, error) {
 	if req == nil {
 		return nil, makeInvalidInputErr(errors.New("request cannot be nil"))
 	}
@@ -824,10 +836,10 @@ func (s *PostInitHandlers) RestartInstance(ctx context.Context, req *api.Restart
 		Str("task_id", t.TaskID.String()).
 		Msg("restart instance workflow initiated")
 
-	return taskToAPI(t), nil
+	return &api.RestartInstanceResponse{Task: taskToAPI(t)}, nil
 }
 
-func (s *PostInitHandlers) StopInstance(ctx context.Context, req *api.StopInstancePayload) (*api.Task, error) {
+func (s *PostInitHandlers) StopInstance(ctx context.Context, req *api.StopInstancePayload) (*api.StopInstanceResponse, error) {
 	if req == nil {
 		return nil, makeInvalidInputErr(errors.New("request cannot be nil"))
 	}
@@ -877,10 +889,10 @@ func (s *PostInitHandlers) StopInstance(ctx context.Context, req *api.StopInstan
 		Str("task_id", t.TaskID.String()).
 		Msg("stop instance workflow initiated")
 
-	return taskToAPI(t), nil
+	return &api.StopInstanceResponse{Task: taskToAPI(t)}, nil
 }
 
-func (s *PostInitHandlers) StartInstance(ctx context.Context, req *api.StartInstancePayload) (*api.Task, error) {
+func (s *PostInitHandlers) StartInstance(ctx context.Context, req *api.StartInstancePayload) (*api.StartInstanceResponse, error) {
 	if req == nil {
 		return nil, makeInvalidInputErr(errors.New("request cannot be nil"))
 	}
@@ -929,7 +941,7 @@ func (s *PostInitHandlers) StartInstance(ctx context.Context, req *api.StartInst
 		Str("task_id", t.TaskID.String()).
 		Msg("start instance workflow initiated")
 
-	return taskToAPI(t), nil
+	return &api.StartInstanceResponse{Task: taskToAPI(t)}, nil
 }
 
 func (s *PostInitHandlers) CancelDatabaseTask(ctx context.Context, req *api.CancelDatabaseTaskPayload) (*api.Task, error) {

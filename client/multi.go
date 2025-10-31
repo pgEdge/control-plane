@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 )
@@ -46,7 +47,7 @@ func (c *MultiServerClient) Server(hostID string) (*SingleServerClient, error) {
 	return server, nil
 }
 
-func (c *MultiServerClient) InitCluster(ctx context.Context) (res *api.ClusterJoinToken, err error) {
+func (c *MultiServerClient) InitCluster(ctx context.Context, req *api.InitClusterRequest) (res *api.ClusterJoinToken, err error) {
 	var uninitialized []*SingleServerClient
 	var joinToken *api.ClusterJoinToken
 
@@ -67,13 +68,18 @@ func (c *MultiServerClient) InitCluster(ctx context.Context) (res *api.ClusterJo
 	}
 
 	if joinToken == nil {
-		server := uninitialized[0]
-		tok, err := server.InitCluster(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to initialize cluster: %w", err)
+		for i, server := range uninitialized {
+			tok, err := server.InitCluster(ctx, req)
+			if errors.Is(err, ErrOperationNotSupported) {
+				continue
+			} else if err != nil {
+				return nil, fmt.Errorf("failed to initialize cluster: %w", err)
+			}
+
+			joinToken = tok
+			uninitialized = slices.Delete(uninitialized, i, i+1)
+			break
 		}
-		joinToken = tok
-		uninitialized = uninitialized[1:]
 	}
 
 	for _, server := range uninitialized {
@@ -113,7 +119,7 @@ func (c *MultiServerClient) GetCluster(ctx context.Context) (res *api.Cluster, e
 	return server.GetCluster(ctx)
 }
 
-func (c *MultiServerClient) ListHosts(ctx context.Context) (res []*api.Host, err error) {
+func (c *MultiServerClient) ListHosts(ctx context.Context) (res *api.ListHostsResponse, err error) {
 	server, err := c.liveServer(ctx)
 	if err != nil {
 		return nil, err
@@ -225,7 +231,7 @@ func (c *MultiServerClient) GetVersion(ctx context.Context) (res *api.VersionInf
 	return server.GetVersion(ctx)
 }
 
-func (c *MultiServerClient) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (res *api.Task, err error) {
+func (c *MultiServerClient) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (res *api.RestartInstanceResponse, err error) {
 	server, err := c.liveServer(ctx)
 	if err != nil {
 		return nil, err

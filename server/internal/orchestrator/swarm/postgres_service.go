@@ -25,7 +25,6 @@ func PostgresServiceResourceIdentifier(instanceID string) resource.Identifier {
 
 type PostgresService struct {
 	Instance    *database.InstanceSpec `json:"instance"`
-	CohortID    string                 `json:"cohort_id"`
 	ServiceName string                 `json:"service_name"`
 	ServiceID   string                 `json:"service_id"`
 }
@@ -45,10 +44,7 @@ func (s *PostgresService) Identifier() resource.Identifier {
 }
 
 func (s *PostgresService) Executor() resource.Executor {
-	return resource.Executor{
-		Type: resource.ExecutorTypeCohort,
-		ID:   s.CohortID,
-	}
+	return resource.ManagerExecutor()
 }
 
 func (s *PostgresService) Dependencies() []resource.Identifier {

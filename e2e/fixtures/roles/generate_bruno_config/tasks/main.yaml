@@ -1,0 +1,5 @@
+---
+- name: Generate test_config
+  template:
+    src: environment.bru.tmpl
+    dest: ../../bruno/test-scenarios/environments/{{ provider }}.bru

@@ -1,14 +1,15 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
-	"github.com/knadh/koanf/parsers/json"
+	kjson "github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/providers/posflag"
-	"github.com/knadh/koanf/providers/structs"
+	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/knadh/koanf/v2"
 	"github.com/spf13/pflag"
 )
@@ -24,7 +25,7 @@ func NewJsonFileSource(path string) *Source {
 		Provider: func(_ *koanf.Koanf) koanf.Provider {
 			return file.Provider(path)
 		},
-		Parser: json.Parser(),
+		Parser: kjson.Parser(),
 	}
 }
 
@@ -51,40 +52,32 @@ func NewPFlagSource(flagSet *pflag.FlagSet) *Source {
 	}
 }
 
-func newDefaultsSource() (*Source, error) {
-	defaults, err := defaultConfig()
+func NewStructSource(config Config) (*Source, error) {
+	raw, err := json.Marshal(config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal config to json: %w", err)
 	}
+
 	return &Source{
 		Provider: func(k *koanf.Koanf) koanf.Provider {
-			return structs.Provider(defaults, "koanf")
+			return rawbytes.Provider(raw)
 		},
+		Parser: kjson.Parser(),
 	}, nil
 }
 
-func LoadSources(sources ...*Source) (Config, error) {
-	defaults, err := newDefaultsSource()
+func LoadStruct(k *koanf.Koanf, config Config) error {
+	// Not using the structs provider because it merges unset values over top
+	// of set values. Converting to JSON first lets us take advantage of the
+	// omitempty behavior.
+	raw, err := json.Marshal(config)
 	if err != nil {
-		return Config{}, err
-	}
-	sources = append([]*Source{defaults}, sources...)
-
-	k := koanf.New(".")
-	for _, source := range sources {
-		err := k.Load(source.Provider(k), source.Parser, source.Options...)
-		if err != nil {
-			return Config{}, fmt.Errorf("failed to load config: %w", err)
-		}
+		return fmt.Errorf("failed to marshal config to json: %w", err)
 	}
 
-	var config Config
-	if err := k.Unmarshal("", &config); err != nil {
-		return Config{}, fmt.Errorf("failed to unmarshal config: %w", err)
-	}
-	if err := config.Validate(); err != nil {
-		return Config{}, fmt.Errorf("invalid configuration: %w", err)
+	if err := k.Load(rawbytes.Provider(raw), kjson.Parser()); err != nil {
+		return fmt.Errorf("failed to load config from json bytes: %w", err)
 	}
 
-	return config, nil
+	return nil
 }

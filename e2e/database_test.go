@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
@@ -184,7 +185,7 @@ func (d *DatabaseFixture) RestartInstance(ctx context.Context, options RestartIn
 		return fmt.Errorf("failed to restart instance: %w", err)
 	}
 
-	if err := d.waitForTask(ctx, resp); err != nil {
+	if err := d.waitForTask(ctx, resp.Task); err != nil {
 		return err
 	}
 
@@ -207,6 +208,7 @@ func (d *DatabaseFixture) Refresh(ctx context.Context) error {
 type ConnectionOptions struct {
 	Matcher    InstanceMatcher
 	InstanceID string
+	Instance   *controlplane.Instance
 	Username   string
 	Password   string
 }
@@ -214,6 +216,8 @@ type ConnectionOptions struct {
 func (d *DatabaseFixture) ConnectToInstance(ctx context.Context, opts ConnectionOptions) (*pgx.Conn, error) {
 	var instance *controlplane.Instance
 	switch {
+	case opts.Instance != nil:
+		instance = opts.Instance
 	case opts.InstanceID != "":
 		instance = d.GetInstance(WithID(opts.InstanceID))
 	case opts.Matcher != nil:
@@ -321,6 +325,19 @@ func (d *DatabaseFixture) GetInstance(matcher InstanceMatcher) *controlplane.Ins
 	return nil
 }
 
+func (d *DatabaseFixture) GetInstances(matcher InstanceMatcher) iter.Seq[*controlplane.Instance] {
+	return func(yield func(*controlplane.Instance) bool) {
+		for _, inst := range d.Instances {
+			if !matcher(inst) {
+				continue
+			}
+			if !yield(inst) {
+				return
+			}
+		}
+	}
+}
+
 func (d *DatabaseFixture) waitForTask(ctx context.Context, task *controlplane.Task) error {
 	task, err := d.client.WaitForTask(ctx, &controlplane.GetDatabaseTaskPayload{
 		DatabaseID: d.ID,
@@ -340,17 +357,16 @@ func (d *DatabaseFixture) waitForTask(ctx context.Context, task *controlplane.Ta
 	return nil
 }
 
-func (f *DatabaseFixture) VerifySpockReplication(ctx context.Context, t testing.TB, nodes []*controlplane.DatabaseNodeSpec, opts ConnectionOptions) {
-
-	t.Log("Verifying spock nodes are in sync")
+func (f *DatabaseFixture) WaitForReplication(ctx context.Context, t testing.TB, username, password string) {
+	tLog(t, "waiting for replication to catch up on all nodes")
 
 	// Execute sync_event on all primary nodes
 	nodeSyncMap := make(map[string]string)
-	for _, node := range nodes {
+	for _, node := range f.Spec.Nodes {
 		primaryOpts := ConnectionOptions{
 			Matcher:  And(WithNode(node.Name), WithRole("primary")),
-			Username: opts.Username,
-			Password: opts.Password,
+			Username: username,
+			Password: password,
 		}
 
 		f.WithConnection(ctx, primaryOpts, t, func(conn *pgx.Conn) {
@@ -366,23 +382,22 @@ func (f *DatabaseFixture) VerifySpockReplication(ctx context.Context, t testing.
 	}
 
 	// Verify wait_for_sync_event on all other nodes
-	for _, node := range nodes {
-
+	for _, node := range f.Spec.Nodes {
 		primaryOpts := ConnectionOptions{
 			Matcher:  And(WithNode(node.Name), WithRole("primary")),
-			Username: opts.Username,
-			Password: opts.Password,
+			Username: username,
+			Password: password,
 		}
 
-		for _, peerNode := range nodes {
-			if peerNode.Name == node.Name {
+		for peerNode, lsn := range nodeSyncMap {
+			if peerNode == node.Name {
 				continue
 			}
 
 			f.WithConnection(ctx, primaryOpts, t, func(conn *pgx.Conn) {
 				var synced bool
 
-				row := conn.QueryRow(ctx, "CALL spock.wait_for_sync_event(true, $1, $2::pg_lsn, 30);", peerNode.Name, nodeSyncMap[peerNode.Name])
+				row := conn.QueryRow(ctx, "CALL spock.wait_for_sync_event(true, $1, $2::pg_lsn, 30);", peerNode, lsn)
 				require.NoError(t, row.Scan(&synced))
 				assert.True(t, synced)
 			})

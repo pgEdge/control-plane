@@ -71,7 +71,7 @@ _use-test-config() {
 
 _choose-instance() {
 	local instance_choice=$(restish host-1 list-databases \
-		| jq -c '.databases[] | { database_id: .id } + (.instances[])' \
+		| jq -c '.databases[]? | { database_id: .id } + (.instances[]?)' \
 		| sk --preview 'echo {} | jq')
 
 	if [[ -z "${instance_choice}" ]]; then
@@ -85,7 +85,7 @@ _choose-instance() {
 
 _choose-user() {
 	local user_choice=$(<<<"$1" \
-		jq -c '.spec.database_users[]' \
+		jq -c '[.spec.database_users[]?, {"username": "pgedge"}][]' \
 		| sk --preview 'echo {} | jq')
 
 	if [[ -z "${user_choice}" ]]; then
@@ -198,7 +198,10 @@ use-compose() {
 	_update-restish-config \
 		http://localhost:3000 \
 		http://localhost:3001 \
-		http://localhost:3002
+		http://localhost:3002 \
+		http://localhost:3003 \
+		http://localhost:3004 \
+		http://localhost:3005 \
 }
 
 use-lima() {
@@ -270,8 +273,8 @@ cp-psql() {
 		database_id=$(<<<"${instance}" jq -r '.database_id')
 	else
 		database_id=$(restish host-1 list-databases \
-			| jq --arg instance_id "${instance_id}" -r '.databases[]
-				| { database_id: .id } + (.instances[])
+			| jq --arg instance_id "${instance_id}" -r '.databases[]?
+				| { database_id: .id } + (.instances[]?)
 				| select(.id == $instance_id)
 				| .database_id')
 
@@ -370,7 +373,7 @@ cp-docker-exec() {
 		host_id=$(<<<"${instance_choice}" jq -r '.host_id')
 	else
 		host_id=$(restish host-1 list-databases \
-			| jq --arg instance_id "${instance_id}" -r '.databases[].instances[]
+			| jq --arg instance_id "${instance_id}" -r '.databases[]?.instances[]?
 				| select(.id == $instance_id)
 				| .host_id')
 
@@ -405,10 +408,20 @@ use-compose
 # static aliases #
 ##################
 
+_host_1_data="${_cp_dir}/docker/control-plane-dev/data/host-1"
+_host_1_certs="${_host_1_data}/certificates"
+_host_1_cfg="${_host_1_data}/generated.config.json"
+
 alias cp-etcdctl="etcdctl \
 	--endpoints=https://localhost:2379 \
-	--cacert '${_cp_dir}/docker/control-plane-dev/data/host-1/certificates/ca.crt' \
-	--cert '${_cp_dir}/docker/control-plane-dev/data/host-1/certificates/etcd-user.crt' \
-	--key '${_cp_dir}/docker/control-plane-dev/data/host-1/certificates/etcd-user.key' \
-	--user host-host-1 \
-	--password host-1"
+	--cacert '${_host_1_certs}/ca.crt' \
+	--cert '${_host_1_certs}/etcd-user.crt' \
+	--key '${_host_1_certs}/etcd-user.key' \
+	--user \$(jq -r '.etcd_username' '${_host_1_cfg}') \
+	--password \$(jq -r '.etcd_password' '${_host_1_cfg}')"
+
+alias cp-docker-compose="WORKSPACE_DIR=${_cp_dir} \
+	DEBUG=\${DEBUG:-0} \
+	LOG_LEVEL=\${LOG_LEVEL:-info} \
+	DEV_IMAGE_REPO=\${DEV_IMAGE_REPO:-ghcr.io/pgedge} \
+	docker compose -f ./docker/control-plane-dev/docker-compose.yaml"
