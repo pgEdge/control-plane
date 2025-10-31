@@ -299,6 +299,8 @@ func validateReplication(ctx context.Context, db *DatabaseFixture, t testing.TB)
 		require.NoError(t, err)
 	})
 
+	db.WaitForReplication(ctx, t, username, password)
+
 	// verify replicated data on other hosts
 	for i := 0; i < len(db.Instances); i++ {
 		// establish conn info
@@ -309,11 +311,6 @@ func validateReplication(ctx context.Context, db *DatabaseFixture, t testing.TB)
 		}
 		// verify data created at master is available on all hosts
 		db.WithConnection(ctx, connOpts, t, func(conn *pgx.Conn) {
-			waitCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-			defer cancel()
-
-			WaitForReplication(waitCtx, t, conn)
-
 			var rowCount int
 			err := conn.QueryRow(ctx, "SELECT COUNT(*) FROM foo").Scan(&rowCount)
 			require.NoError(t, err)

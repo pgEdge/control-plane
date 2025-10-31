@@ -159,6 +159,8 @@ func (l *LoadTest) Run(t *testing.T) {
 
 		tLog(t, "stopping the loaders")
 
+		db.WaitForReplication(ctx, t, username, password)
+
 		for _, loader := range loaders {
 			loader.Stop()
 		}
@@ -216,9 +218,6 @@ func (l *Loader) Run(ctx context.Context, t testing.TB) {
 
 		// Persist workload until Stop() is called
 		l.workload(ctx, t, conn)
-
-		// Wait for replication to finish
-		l.waitForReplication(ctx, t, conn)
 	})
 }
 
@@ -289,10 +288,4 @@ func (l *Loader) workload(ctx context.Context, t testing.TB, conn *pgx.Conn) {
 			require.NoError(t, err)
 		}
 	}
-}
-
-func (l *Loader) waitForReplication(ctx context.Context, t testing.TB, conn *pgx.Conn) {
-	tLogf(t, "%s loader: got stop signal. waiting for replication catch up with writes.", l.TableName)
-
-	WaitForReplication(ctx, t, conn)
 }

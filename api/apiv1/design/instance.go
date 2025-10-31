@@ -46,26 +46,25 @@ var InstancePostgresStatus = g.Type("InstancePostgresStatus", func() {
 		g.Example("17.5")
 	})
 	g.Attribute("patroni_state", g.String, func() {
-		g.Enum(
-			"stopping",
-			"stopped",
-			"stop failed",
-			"crashed",
-			"running",
-			"starting",
-			"start failed",
-			"restarting",
-			"restart failed",
-			"initializing new cluster",
-			"initdb failed",
-			"running custom bootstrap script",
-			"custom bootstrap failed",
-			"creating replica",
-			"unknown",
-		)
+		g.Example("stopping")
+		g.Example("stopped")
+		g.Example("stop failed")
+		g.Example("crashed")
+		g.Example("running")
+		g.Example("starting")
+		g.Example("start failed")
+		g.Example("restarting")
+		g.Example("restart failed")
+		g.Example("initializing new cluster")
+		g.Example("initdb failed")
+		g.Example("running custom bootstrap script")
+		g.Example("custom bootstrap failed")
+		g.Example("creating replica")
+		g.Example("unknown")
 	})
 	g.Attribute("role", g.String, func() {
-		g.Enum("replica", "primary")
+		g.Example("replica")
+		g.Example("primary")
 	})
 	g.Attribute("pending_restart", g.Boolean, func() {
 		g.Description("True if this instance has a pending restart from a configuration change.")

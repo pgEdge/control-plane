@@ -793,11 +793,6 @@ func ValidateInstanceView(result *InstanceView) (err error) {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if result.Postgres != nil {
-		if err2 := ValidateInstancePostgresStatusView(result.Postgres); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	if result.Spock != nil {
 		if err2 := ValidateInstanceSpockStatusView(result.Spock); err2 != nil {
 			err = goa.MergeErrors(err, err2)
@@ -841,16 +836,7 @@ func ValidateInstanceConnectionInfoView(result *InstanceConnectionInfoView) (err
 // ValidateInstancePostgresStatusView runs the validations defined on
 // InstancePostgresStatusView.
 func ValidateInstancePostgresStatusView(result *InstancePostgresStatusView) (err error) {
-	if result.PatroniState != nil {
-		if !(*result.PatroniState == "stopping" || *result.PatroniState == "stopped" || *result.PatroniState == "stop failed" || *result.PatroniState == "crashed" || *result.PatroniState == "running" || *result.PatroniState == "starting" || *result.PatroniState == "start failed" || *result.PatroniState == "restarting" || *result.PatroniState == "restart failed" || *result.PatroniState == "initializing new cluster" || *result.PatroniState == "initdb failed" || *result.PatroniState == "running custom bootstrap script" || *result.PatroniState == "custom bootstrap failed" || *result.PatroniState == "creating replica" || *result.PatroniState == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.patroni_state", *result.PatroniState, []any{"stopping", "stopped", "stop failed", "crashed", "running", "starting", "start failed", "restarting", "restart failed", "initializing new cluster", "initdb failed", "running custom bootstrap script", "custom bootstrap failed", "creating replica", "unknown"}))
-		}
-	}
-	if result.Role != nil {
-		if !(*result.Role == "replica" || *result.Role == "primary") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.role", *result.Role, []any{"replica", "primary"}))
-		}
-	}
+
 	return
 }
 

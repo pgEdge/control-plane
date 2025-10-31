@@ -5,13 +5,13 @@ package e2e
 import (
 	"context"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
-	controlplane "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	"github.com/stretchr/testify/require"
+
+	controlplane "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 )
 
 func TestSwitchoverScenarios(t *testing.T) {
@@ -133,10 +133,6 @@ func TestSwitchoverScenarios(t *testing.T) {
 			NodeName:   "n1",
 			// no candidate specified => server picks best replica
 		})
-		if err != nil && isTransientRoleDecode(err) {
-			t.Logf("[auto] ignoring transient role decode error: %v", err)
-			err = nil
-		}
 		require.NoError(t, err, "switchover (auto) API call failed")
 
 		require.Truef(t, waitForPrimaryChange(origPrimary, 60*time.Second),
@@ -159,10 +155,6 @@ func TestSwitchoverScenarios(t *testing.T) {
 			NodeName:            "n1",
 			CandidateInstanceID: &candidateInst,
 		})
-		if err != nil && isTransientRoleDecode(err) {
-			t.Logf("[specific] ignoring transient role decode error: %v", err)
-			err = nil
-		}
 		require.NoError(t, err, "switchover (specific) API call failed")
 
 		require.Truef(t, waitForPrimaryIs(candidateInst, 75*time.Second),
@@ -201,10 +193,6 @@ func TestSwitchoverScenarios(t *testing.T) {
 			ScheduledAt:         &scheduledAtStr,
 			CandidateInstanceID: &candidate,
 		})
-		if err != nil && isTransientRoleDecode(err) {
-			t.Logf("[scheduled] ignoring transient role decode error: %v", err)
-			err = nil
-		}
 		require.NoError(t, err, "switchover (scheduled) API call failed")
 
 		// Wait until scheduledAt + 4m (min 5m), computed from *server* time.
@@ -253,26 +241,12 @@ func TestSwitchoverScenarios(t *testing.T) {
 		})
 		if err == nil {
 			t.Log("[concurrent] second request succeeded (first likely completed quickly)")
-		} else if isTransientRoleDecode(err) {
-			t.Logf("[concurrent] ignoring transient role decode error: %v", err)
 		} else {
 			t.Logf("[concurrent] second request returned expected error: %v", err)
 		}
 
 		<-done
 	})
-}
-
-func isTransientRoleDecode(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := err.Error()
-	// This matches errors like:
-	// invalid_enum_value: value of result.role must be one of "replica", "primary" but got value "demoted"
-	return strings.Contains(msg, "invalid_enum_value") &&
-		strings.Contains(msg, "result.role") &&
-		(strings.Contains(msg, "demoted") || strings.Contains(msg, "promoting") || strings.Contains(msg, "draining"))
 }
 
 func waitFor(cond func() bool, timeout time.Duration) bool {

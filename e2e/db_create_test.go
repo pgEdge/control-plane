@@ -214,12 +214,7 @@ func testCreateDB(t *testing.T, nodeCount int, deployReplicas bool) {
 	}
 
 	if nodeCount > 1 {
-
-		opts := ConnectionOptions{
-			Username: username,
-			Password: password,
-		}
-		db.VerifySpockReplication(ctx, t, db.Spec.Nodes, opts)
+		db.WaitForReplication(ctx, t, username, password)
 
 		for _, node := range db.Spec.Nodes {
 

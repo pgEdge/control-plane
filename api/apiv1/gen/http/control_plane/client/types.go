@@ -5889,11 +5889,6 @@ func ValidateInstanceResponseBody(body *InstanceResponseBody) (err error) {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
-	if body.Postgres != nil {
-		if err2 := ValidateInstancePostgresStatusResponseBody(body.Postgres); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	if body.Spock != nil {
 		if err2 := ValidateInstanceSpockStatusResponseBody(body.Spock); err2 != nil {
 			err = goa.MergeErrors(err, err2)
@@ -5907,22 +5902,6 @@ func ValidateInstanceResponseBody(body *InstanceResponseBody) (err error) {
 func ValidateInstanceConnectionInfoResponseBody(body *InstanceConnectionInfoResponseBody) (err error) {
 	if body.Ipv4Address != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
-	}
-	return
-}
-
-// ValidateInstancePostgresStatusResponseBody runs the validations defined on
-// InstancePostgresStatusResponseBody
-func ValidateInstancePostgresStatusResponseBody(body *InstancePostgresStatusResponseBody) (err error) {
-	if body.PatroniState != nil {
-		if !(*body.PatroniState == "stopping" || *body.PatroniState == "stopped" || *body.PatroniState == "stop failed" || *body.PatroniState == "crashed" || *body.PatroniState == "running" || *body.PatroniState == "starting" || *body.PatroniState == "start failed" || *body.PatroniState == "restarting" || *body.PatroniState == "restart failed" || *body.PatroniState == "initializing new cluster" || *body.PatroniState == "initdb failed" || *body.PatroniState == "running custom bootstrap script" || *body.PatroniState == "custom bootstrap failed" || *body.PatroniState == "creating replica" || *body.PatroniState == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.patroni_state", *body.PatroniState, []any{"stopping", "stopped", "stop failed", "crashed", "running", "starting", "start failed", "restarting", "restart failed", "initializing new cluster", "initdb failed", "running custom bootstrap script", "custom bootstrap failed", "creating replica", "unknown"}))
-		}
-	}
-	if body.Role != nil {
-		if !(*body.Role == "replica" || *body.Role == "primary") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.role", *body.Role, []any{"replica", "primary"}))
-		}
 	}
 	return
 }
