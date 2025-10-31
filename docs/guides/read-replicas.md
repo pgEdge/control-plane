@@ -51,7 +51,7 @@ See [High availability client
 connections](./connecting.md#high-availability-client-connections) for ways to connect to the read replicas in a high-availability use case.
 
 
-### Switchover and Failover Operations
+## Switchover and Failover Operations
 
 Switchover and Failover operations allow the Control Plane to promote a read replica to become the new primary instance for a node. These operations rely on [Patroni](https://patroni.readthedocs.io/en/latest/), which manages leader election, failover, and cluster health.
 
@@ -59,12 +59,12 @@ For more information, see [Patroni's REST API: Switchover and Failover](https://
 
 In addition to manual control, the system also supports **automatic failover** when Patroni detects a primary outage.
 
-#### Switchover (Planned Role Change)
+### Switchover (Planned Role Change)
 
-A **switchover** is a planned operation that transfers the primary role to a selected read replica while both instances are healthy. It can be executed immediately or scheduled for a later time.
+A switchover is a planned operation that transfers the primary role to a selected read replica while both instances are healthy. It can be executed immediately or scheduled for a later time.
 
-**Checking instance health**
-Before performing a switchover, ensure that the instance is healthy. The patroni_state field in the **postgres** section indicates the current status:
+#### Checking instance health
+Before performing a switchover, ensure that the instance is healthy. The `patroni_state` field in the `postgres` section indicates the current status:
 
 === "curl"
 
@@ -93,12 +93,12 @@ Before performing a switchover, ensure that the instance is healthy. The patroni
     }
 
 ```
-In this example, **"patroni_state": "running"** confirms that the instance is healthy.
+In this example, `"patroni_state": "running"` confirms that the instance is healthy.
 
-**Executing a switchover**
+#### Executing a switchover
 When calling the switchover endpoint, you may specify a `candidate_instance_id`. If omitted, Patroni automatically selects a healthy replica as the new primary after the current leader steps down.
 
-For more details, see [Patroni's REST API: Switchover](https://patroni.readthedocs.io/en/latest/rest_api.html#switchover)
+This example request demonstrates switchover operation on `example-n1-b`:
 
 === "curl"
 
@@ -112,8 +112,8 @@ For more details, see [Patroni's REST API: Switchover](https://patroni.readthedo
     }'
     ```
 
-If `candidate_instance_id` is omitted, the system automatically selects a suitable replica.
-The `scheduled_at` field allows the switchover to be delayed until a specific time.
+If `candidate_instance_id` is omitted, the system automatically selects a suitable replica for promotion.
+The `scheduled_at` field allows the switchover to be executed at a specific scheduled time.
 
 **Behavior:**
 
@@ -124,13 +124,14 @@ The `scheduled_at` field allows the switchover to be delayed until a specific ti
 - Concurrent switchover attempts are rejected with an `already in progress` message.
 
 
-#### Failover (Manual Primary Replacement)
+### Failover (Manual Primary Replacement)
 
-A **failover** is used to manually promote a replica to primary. This is typically performed when no healthy synchronous replicas are available (e.g., promoting an asynchronous standby). However, failover is not restricted to unhealthy clusters— it can also be triggered on a healthy cluster if required.
+A failover is used to manually promote a replica to primary. This is typically performed when no healthy synchronous replicas are available (e.g., promoting an asynchronous standby). However, failover is not restricted to unhealthy clusters— it can also be triggered on a healthy cluster if required.
 
-For more details, see [Patroni's REST API: Failover](https://patroni.readthedocs.io/en/latest/rest_api.html#failover)
+#### Executing a failover
+When calling the failover endpoint, you may specify a `candidate_instance_id`. If omitted, Control Plane automatically selects a healthy replica to promote as the new primary.
 
-**Executing a failover**
+This example request demonstrates failover operation on `example-n1-c`:
 
 === "curl"
 
