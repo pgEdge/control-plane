@@ -1,7 +1,6 @@
 site_name: pgEdge Control Plane
 extra_css:
   - stylesheets/extra.css
-  - stylesheets/mkdocsoad.css
 extra_javascript:
   - scripts/generate-stack.js
 markdown_extensions:
@@ -22,9 +21,8 @@ plugins:
       j2_comment_start_string: '<#'
       j2_comment_end_string: '#>'
   - search
-  - neoteroi.mkdocsoad:
-      use_pymdownx: true
   - redoc-tag
+  - gh-admonitions
 theme:
   name: material
   custom_dir: docs/overrides
