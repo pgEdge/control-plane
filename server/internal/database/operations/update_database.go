@@ -47,8 +47,8 @@ func UpdateDatabase(
 		return nil, err
 	}
 
-	// Reject Source/Restore conflicts at the operations layer too.
-	// (Catches programmatic callers that bypass API validation.)
+	// Updates are always performed first to guarantee that any existing node
+	// is available to be a source node.
 	for _, n := range nodes {
 		if n.RestoreConfig != nil && n.SourceNode != "" {
 			return nil, database.ErrInvalidSourceNode
@@ -95,7 +95,9 @@ func UpdateDatabase(
 		}
 	}
 
-	// Build incremental states by applying diffs in sequence.
+	// The states produced by the *Nodes functions are just diffs. Here's where
+	// we create a sequence of incremental updates by iteratively applying those
+	// diffs.
 	prev := start
 	for i, state := range states {
 		curr := prev.Clone()
