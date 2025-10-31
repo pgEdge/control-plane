@@ -61,13 +61,20 @@ func TestWholeCluster(t *testing.T) {
 			Username: username,
 			Password: password,
 		}
+
+		var syncLSN string
+
 		db.WithConnection(ctx, writeOpts, t, func(conn *pgx.Conn) {
 			_, err := conn.Exec(ctx, fmt.Sprintf(`CREATE TABLE %s (id INT PRIMARY KEY, data TEXT);`, write.Name))
 			require.NoError(t, err)
 
 			_, err = conn.Exec(ctx, fmt.Sprintf(`INSERT INTO %s (id, data) VALUES (1, 'test');`, write.Name))
 			require.NoError(t, err)
+
+			row := conn.QueryRow(ctx, "SELECT spock.sync_event();")
+			require.NoError(t, row.Scan(&syncLSN))
 		})
+
 		for _, read := range nodes {
 			if read.Name == write.Name {
 				continue
@@ -84,15 +91,16 @@ func TestWholeCluster(t *testing.T) {
 				db.WithConnection(ctx, readOpts, t, func(conn *pgx.Conn) {
 					t.Log("waiting for replication to finish")
 
-					waitCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-					defer cancel()
+					var synced bool
+					row := conn.QueryRow(ctx, "CALL spock.wait_for_sync_event(true, $1, $2::pg_lsn, 30);", write.Name, syncLSN)
 
-					WaitForReplication(waitCtx, t, conn)
+					require.NoError(t, row.Scan(&synced))
+					require.True(t, synced)
 
 					t.Log("selecting test data")
 
 					var actual string
-					row := conn.QueryRow(ctx, fmt.Sprintf(`SELECT data FROM %s WHERE id = 1;`, write.Name))
+					row = conn.QueryRow(ctx, fmt.Sprintf(`SELECT data FROM %s WHERE id = 1;`, write.Name))
 
 					require.NoError(t, row.Scan(&actual))
 					require.Equal(t, "test", actual)
