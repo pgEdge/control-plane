@@ -253,7 +253,7 @@ Once the stack is deployed, the pgEdge Control Plane server will be running on e
 
 ## Initializing the Control Plane
 
-Once the Control Plane server is deployed on all hosts, you can proceed to initializing the Control Plane. 
+Once the Control Plane server is deployed on all hosts, you can initialize the Control Plane. 
 
 Each Control Plane server starts in an uninitialized state until it's added to a Control Plane cluster. In a typical configuration, you will submit a request to one Control Plane server to initialize a new cluster, then submit requests to all other servers to join them to the new cluster.
 
@@ -330,8 +330,8 @@ the same example above, the initialization steps would be:
 ## Upgrading the Control Plane
 
 We publish a new Docker image whenever we release a new version of the Control
-Plane. You can "pin" to a specific version by including a version in the `image`
-fields in your service spec, such as `ghcr.io/pgedge/control-plane:v0.5.0`. 
+Plane. You can *pin* to a specific version by including a version in the `image`
+fields in your service specification, such as `ghcr.io/pgedge/control-plane:v0.5.0`. 
 
 If you do not include a version, Docker will pull the
 `ghcr.io/pgedge/control-plane:latest` tag by default. 
@@ -344,7 +344,7 @@ If you do not include a version, Docker will pull the
 
 To upgrade from a pinned version:
 
-1. Modify the `image` fields in your spec to reference the new version, such as
+1. Modify the `image` fields in your service specification to reference the new version, such as
    updating `ghcr.io/pgedge/control-plane:v0.4.0` to
    `ghcr.io/pgedge/control-plane:v0.5.0`.
 2. Re-run `docker stack deploy -c control-plane.yaml control-plane` as in the
