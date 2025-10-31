@@ -99,7 +99,7 @@ func TestFailoverScenarios(t *testing.T) {
 		deadline := time.Now().Add(timeout)
 		for time.Now().Before(deadline) {
 			db.Refresh(ctx)
-			if p := getPrimaryInstanceID(); p != orig {
+			if p := getPrimaryInstanceID(); p != "" && p != orig {
 				return true
 			}
 			time.Sleep(1 * time.Second)
