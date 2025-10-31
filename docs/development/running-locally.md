@@ -137,12 +137,14 @@ restish control-plane-local-4 join-cluster "$(restish control-plane-local-1 get-
 restish control-plane-local-5 join-cluster "$(restish control-plane-local-1 get-join-token)"
 restish control-plane-local-6 join-cluster "$(restish control-plane-local-1 get-join-token)"
 restish control-plane-local-1 create-database '{
+  "id": "storefront",
   "spec": {
-    "database_name": "my_app",
+    "database_name": "storefront",
     "database_users": [
       {
         "username": "admin",
         "password": "password",
+        "db_owner": true,
         "attributes": ["SUPERUSER", "LOGIN"]
       },
       {

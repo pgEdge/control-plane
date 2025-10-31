@@ -1,12 +1,8 @@
 site_name: pgEdge Control Plane
-
 extra_css:
   - stylesheets/extra.css
-  - stylesheets/mkdocsoad.css
-
 extra_javascript:
   - scripts/generate-stack.js
-
 markdown_extensions:
   - admonition
   - pymdownx.details
@@ -18,20 +14,20 @@ markdown_extensions:
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.superfences:
-
 plugins:
+  - macros:
+      j2_variable_start_string: '<<'
+      j2_variable_end_string: '>>'
+      j2_comment_start_string: '<#'
+      j2_comment_end_string: '#>'
   - search
-  - neoteroi.mkdocsoad:
-      use_pymdownx: true
   - redoc-tag
-  
+  - gh-admonitions
 theme:
   name: material
   custom_dir: docs/overrides
-
   logo_dark_mode: 'img/logo-dark.png'
   logo_light_mode: 'img/logo-light.png'
-
   features:
     - navigation.instant
     - navigation.tracking
@@ -39,30 +35,26 @@ theme:
     - navigation.top
     - toc.follow
     - content.code.copy
-
   palette:
-    - media: "(prefers-color-scheme: light)"
+    - media: '(prefers-color-scheme: light)'
       scheme: default
       primary: white
       accent: cyan
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-
-    - media: "(prefers-color-scheme: dark)"
+    - media: '(prefers-color-scheme: dark)'
       scheme: slate
       primary: black
       accent: cyan
       toggle:
         icon: material/brightness-4
         name: Switch to system preference
-
 extra:
   generator: false
-
+  version: v0.4.0
 copyright: Copyright &copy; 2023 - 2025 pgEdge, Inc
 repo_url: https://github.com/pgEdge/control-plane
-
 nav:
   - Introduction: index.md
   - Concepts: concepts.md
@@ -70,17 +62,17 @@ nav:
   - Installation: installation.md
   - Configuration: configuration.md
   - User Guide:
-    - Creating a Database: guides/create-db.md
-    - Connecting to a Database: guides/connecting.md
-    - Updating a Database: guides/update-db.md
-    - Upgrading a Database: guides/upgrade-db.md
-    - Backup & Restore: guides/backup-restore.md
-    - Tasks & Logs: guides/tasks-logs.md
-    - Read Replicas: guides/read-replicas.md
-    - Deleting a Database: guides/delete-db.md
+      - Creating a Database: guides/create-db.md
+      - Connecting to a Database: guides/connecting.md
+      - Updating a Database: guides/update-db.md
+      - Upgrading a Database: guides/upgrade-db.md
+      - Backup & Restore: guides/backup-restore.md
+      - Tasks & Logs: guides/tasks-logs.md
+      - Read Replicas: guides/read-replicas.md
+      - Deleting a Database: guides/delete-db.md
   - API:
-    - OpenAPI: api/openapi.md
-    - API Reference: api/reference.md
+      - OpenAPI: api/openapi.md
+      - API Reference: api/reference.md
   - Development:
       - Development Process: development/development.md
       - Automated end-to-end tests: development/e2e-tests.md

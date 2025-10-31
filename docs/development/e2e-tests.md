@@ -5,12 +5,11 @@ These tests can be run against any set of Control Plane servers, including the
 ones we run through Docker Compose. We also have "test fixtures", which are
 Control Plane servers running on virtual machines.
 
-!!! note
+> [!NOTE]
+> The end-to-end tests and this document are a work in progress. The contents of
+> this document reflect the current state of these tests. We will add more
+> sections as we add new functionality.
 
-    The end-to-end tests and this document are a work in progress. The
-    contents of this document reflect the current state of these tests. We will
-    add more sections as we add new functionality.
-    
 ## End-to-end tests
 
 The end-to-end (E2E) tests live in the top-level `e2e` package. By default,

@@ -78,5 +78,5 @@ Postgres. If you don't see your desired version in this list, check the
 [releases page](https://github.com/pgEdge/control-plane/releases/latest) to see
 if there is a newer version of the Control Plane. If there is, you can follow
 the [Control Plane cluster upgrade
-instructions](../installation.md#upgrading-a-control-plane-cluster) to upgrade
+instructions](../installation.md#upgrading-the-control-plane) to upgrade
 your Control Plane cluster to the latest version.

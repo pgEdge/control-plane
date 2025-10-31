@@ -152,8 +152,9 @@ endif
 	$(changie) merge
 	$(changie) latest > api/version.txt
 	$(MAKE) -C api generate
+	VERSION=$(VERSION) yq -i '.extra.version = strenv(VERSION)' mkdocs.yml
 	git checkout -b release/$(VERSION)
-	git add api changes CHANGELOG.md
+	git add api changes CHANGELOG.md mkdocs.yml
 	git -c core.pager='' diff --staged
 	git -c core.pager='' diff --staged --compact-summary
 	@echo -n "Are you sure? [y/N] " && read ans && [ $${ans:-N} == y ]
