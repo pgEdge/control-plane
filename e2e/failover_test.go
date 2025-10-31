@@ -8,8 +8,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	controlplane "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	"github.com/stretchr/testify/require"
+
+	controlplane "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 )
 
 // TestFailoverScenarios covers failover flows (immediate) similar to the switchover tests.
@@ -130,10 +131,6 @@ func TestFailoverScenarios(t *testing.T) {
 			SkipValidation: skipTrue,
 			// no candidate specified => server picks best replica
 		})
-		if err != nil && isTransientRoleDecode(err) {
-			t.Logf("[auto] ignoring transient role decode error: %v", err)
-			err = nil
-		}
 		require.NoError(t, err, "failover (auto) API call failed")
 
 		require.Truef(t, waitForPrimaryChange(origPrimary, 60*time.Second),
@@ -158,10 +155,6 @@ func TestFailoverScenarios(t *testing.T) {
 			CandidateInstanceID: &candidateInst,
 			SkipValidation:      skipTrue,
 		})
-		if err != nil && isTransientRoleDecode(err) {
-			t.Logf("[specific] ignoring transient role decode error: %v", err)
-			err = nil
-		}
 		require.NoError(t, err, "failover (specific) API call failed")
 
 		require.Truef(t, waitForPrimaryIs(candidateInst, 75*time.Second),
@@ -202,8 +195,6 @@ func TestFailoverScenarios(t *testing.T) {
 		})
 		if err == nil {
 			t.Log("[concurrent] second request succeeded (first likely completed quickly)")
-		} else if isTransientRoleDecode(err) {
-			t.Logf("[concurrent] ignoring transient role decode error: %v", err)
 		} else {
 			t.Logf("[concurrent] second request returned expected error: %v", err)
 		}
@@ -244,10 +235,6 @@ func TestFailoverScenarios(t *testing.T) {
 			NodeName:       "n1",
 			SkipValidation: skipTrue,
 		})
-		if err != nil && isTransientRoleDecode(err) {
-			t.Logf("[skip-validation] ignoring transient role decode error: %v", err)
-			err = nil
-		}
 		require.NoError(t, err, "failover with skip_validation=true should be accepted")
 		// Wait for some short time to let failover proceed — primary may change
 		_ = waitForPrimaryChange(origPrimary, 75*time.Second)
