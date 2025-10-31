@@ -11,7 +11,7 @@ You can migrate data from another PostgreSQL database into your pgEdge Control P
 
 ## Using pg_dump and pg_restore
 
-The following procedure provides a basic migration overview using the `pg_dumpall`, `pg_dump`, and `pg_restore` commands. For this example, assume the source database server contains a single database named `myapp` and two user roles: `admin` and `app-role`. First, configure a new single-instance Control Plane database with the correct database name and user roles. Then use `pg_dumpall`, `pg_dump`, and `pg_restore` to migrate data and configuration from the source database server into the Control Plane database. Finally, scale up the new database with additional nodes and validate replication. For this example, the source database has been preloaded with the Northwinds sample dataset.
+The following procedure provides a basic migration overview using the `pg_dumpall`, `pg_dump`, and `pg_restore` commands. For this example, assume the source database server contains a single database named `myapp` and two user roles: `admin` and `app_role`. First, configure a new single-instance Control Plane database with the correct database name and user roles. Then use `pg_dumpall`, `pg_dump`, and `pg_restore` to migrate data and configuration from the source database server into the Control Plane database. Finally, scale up the new database with additional nodes and validate replication. For this example, the source database has been preloaded with the Northwinds sample dataset.
 
 1. Create a new Control Plane database running a single instance of PostgreSQL:
 ```sh
@@ -29,7 +29,7 @@ The following procedure provides a basic migration overview using the `pg_dumpal
                        "attributes": ["SUPERUSER", "LOGIN"]
                    },
                    {
-                       "username": "app-role",
+                       "username": "app_role",
                        "password": "password",
                        "db_owner": false,
                        "attributes": ["LOGIN"]
@@ -93,7 +93,7 @@ The following procedure provides a basic migration overview using the `pg_dumpal
                        "attributes": ["SUPERUSER", "LOGIN"]
                    },
                    {
-                       "username": "app-role",
+                       "username": "app_role",
                        "password": "password",
                        "db_owner": false,
                        "attributes": ["LOGIN"]
