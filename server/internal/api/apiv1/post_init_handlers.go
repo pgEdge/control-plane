@@ -307,7 +307,7 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 
 	err = s.dbSvc.PopulateSpecDefaults(ctx, spec)
 	if err != nil {
-		return nil, api.MakeInvalidInput(fmt.Errorf("failed to validate database spec: %w", err))
+		return nil, makeInvalidInputErr(fmt.Errorf("failed to validate database spec: %w", err))
 	}
 
 	err = s.ValidateSpec(ctx, spec)
