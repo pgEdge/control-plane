@@ -1,7 +1,3 @@
----
-hide:
-  - toc
----
 # Configuration Reference
 
 The pgEdge Control Plane server can be configured with a JSON-formatted
@@ -9,8 +5,8 @@ configuration file, environment variables, or a combination of both. If you're
 using a configuration file, you can provide it to the pgEdge Control Plane
 server command with the `-c` or `--config` parameter.
 
-This reference uses a JSON-path like syntax to denote nested properties, for
-example
+This reference uses a JSON-path like syntax to denote nested properties; For example:
+
 `property.sub_property`.
 
 - [Configuration Reference](#configuration-reference)
@@ -22,7 +18,7 @@ example
 | JSON key   | Environment variable | Type   | Description                                                                                                                                                                                                                                                                 | Constraints                                                                                                                                                           |
 | :--------- | :------------------- | :----- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `host_id`  | `PGEDGE_HOST_ID`     | string | A logical identifier for the host that the Control Plane server is running on. This ID must be stable and unique to each Control Plane server instance.                                                                                                                     | Must be 1-63 characters long and contain only lower-cased letters, numbers, and hyphens (`-`). It must also start and end with either a lower-cased letter or number. |
-| `data_dir` | `PGEDGE_DATA_DIR`    | string | A directory path where the Control Plane application data will be stored. This includes the server's internal database and configuration files as well as the data and configuration files for each Postgres database instance that's managed by this Control Plane server. |                                                                                                                                                                       |
+| `data_dir` | `PGEDGE_DATA_DIR`    | string | A directory path where the Control Plane application data will be stored. This includes the server's internal database and configuration files as well as the data and configuration files for each Postgres database instance managed by this Control Plane server. |                                                                                                                                                                       |
 
 ## Optional Settings
 
