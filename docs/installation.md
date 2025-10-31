@@ -15,8 +15,8 @@ Before installing the Control Plane, you must:
       run on this host.
 - Open protocols and ports between hosts. By default, these are:
     - Port `3000` TCP for HTTP communication
-    - Port `2379` TCP for etcd peer communication
-    - Port `2380` TCP for etcd client communication
+    - Port `2379` TCP for Etcd peer communication
+    - Port `2380` TCP for Etcd client communication
     - Port `2377` TCP for communication between manager nodes in Docker Swarm
     - Port `7946` TCP/UDP for overlay network node discovery in Docker Swarm
     - Port `4789` UDP for overlay network traffic in Docker Swarm
@@ -25,7 +25,7 @@ Before installing the Control Plane, you must:
 
 After provisioning hosts that meet the prerequisites, the next step is to provision a Docker Swarm cluster. Docker Swarm is used to deploy the Control Plane server on each host, and will also be used by the Control Plane to deploy Postgres instances across hosts when requested.
 
-To initialize a new Docker Swarm cluster, run the following command on one of your hosts. This host will become the first manager in the swarm.  Use the command:
+To initialize a new Docker Swarm cluster, run the following command on one of your hosts. This host will become the first manager in the swarm. Use the command:
 
 ```sh
 docker swarm init --advertise-addr 192.168.99.100
@@ -40,7 +40,7 @@ To add a worker to this swarm, run the following command:
 To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
 ```
 
-This command will output a `docker swarm join` command with a token. Invoke this command on each of the other hosts to join them to the cluster.  After all hosts have joined the cluster, you can verify the cluster status by running:
+This command will output a `docker swarm join` command with a token. Invoke this command on each of the other hosts to join them to the cluster. After all hosts have joined the cluster, you can verify the cluster status by running:
 
 ```sh
 docker node ls
@@ -80,7 +80,7 @@ For more details, see the [Docker Swarm documentation](https://docs.docker.com/e
 
 ## Deploying the Control Plane
 
-Once your swarm is setup, use a stack definition file to deploy the Control Plane server on every node in your Docker Swarm cluster.  We recommend using "placement constraints" in your stack definition to deploy the Control Plane server onto specific Swarm nodes.
+Once your swarm is setup, use a stack definition file to deploy the Control Plane server on every node in your Docker Swarm cluster. We recommend using "placement constraints" in your stack definition to deploy the Control Plane server onto specific Swarm nodes.
 
 ### Creating the Stack Definition File
 
@@ -173,17 +173,63 @@ This tells Docker Swarm to run the service only on the node with the matching `n
 
     The path to the data volume **must be the same** inside the container as it is outside the container. The Control Plane provides this path to Docker when it runs database containers, so it needs to be accessible on the host and inside the container.
 
+#### Etcd Server vs Client Mode
+
+By default, each Control Plane server also acts as an Etcd server. However, in
+larger clusters or in clusters with an even number of nodes, some Control Plane
+servers should run in "client mode."
+
+Similar to the Docker Swarm configuration, you should configure your Control
+Plane cluster with three Etcd servers for clusters with up to seven hosts. For
+clusters with more than seven hosts, you should have no more than five Etcd
+servers.
+
+We recommend mirroring your Docker Swarm configuration so that the Control Plane
+serves Etcd on each Swarm manager node and is a client on each Swarm worker
+node. Add this environment variable to a Control Plane server's service
+definition to configure the client mode:
+
+```yaml
+      - PGEDGE_ETCD_MODE=client
+```
+
+For example:
+
+```yaml
+  host-4:
+    image: ghcr.io/pgedge/control-plane:v0.4.0
+    command: run
+    environment:
+      - PGEDGE_HOST_ID=host-4
+      - PGEDGE_DATA_DIR=/data/pgedge/control-plane
+      - PGEDGE_ETCD_MODE=client
+    volumes:
+      - /data/pgedge/control-plane:/data/pgedge/control-plane
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - host
+    deploy:
+      placement:
+        constraints:
+          - node.id==g0nw8mhfox4hox1ny2fgk4x6h
+```
+
+!!! tip
+
+    The [Stack Definition Generator](#stack-definition-generator) below can
+    produce this configuration for you.
+
 #### Stack Definition Generator
 
-In order to make it easier to generate the stack definition file, you can use the generator below to create a stack definition file based on the nodes in your Docker Swarm.
+To make it easier to generate the stack definition file, you can use the generator below to create a stack definition file based on the nodes in your Docker Swarm.
 
 First, run the following command from any node within the swarm to list the Node IDs:
 
 ```sh
-docker node ls --format '{{ .ID }}'
+docker node ls --format '{{ .ID }} {{ .ManagerStatus }}'
 ```
 
-Paste the output below and click "Generate Stack". This generator is fully local to this page, and does not transmit any data.
+Paste the output below and click "Generate Stack." This generator is fully local to this page, and doesn't transmit any data.
 
 <textarea id="nodes" rows="8" style="width:100%; font-family:monospace;"></textarea>
 
@@ -207,7 +253,7 @@ Once the stack is deployed, the pgEdge Control Plane server will be running on e
 
 ## Initializing the Control Plane
 
-Once the Control Plane server is deployed on all hosts, you can proceed to initializing the Control Plane. 
+Once the Control Plane server is deployed on all hosts, you can initialize the Control Plane. 
 
 Each Control Plane server starts in an uninitialized state until it's added to a Control Plane cluster. In a typical configuration, you will submit a request to one Control Plane server to initialize a new cluster, then submit requests to all other servers to join them to the new cluster.
 
@@ -284,8 +330,8 @@ the same example above, the initialization steps would be:
 ## Upgrading the Control Plane
 
 We publish a new Docker image whenever we release a new version of the Control
-Plane. You can "pin" to a specific version by including a version in the `image`
-fields in your service spec, such as `ghcr.io/pgedge/control-plane:v0.5.0`. 
+Plane. You can *pin* to a specific version by including a version in the `image`
+fields in your service specification, such as `ghcr.io/pgedge/control-plane:v0.5.0`. 
 
 If you do not include a version, Docker will pull the
 `ghcr.io/pgedge/control-plane:latest` tag by default. 
@@ -298,7 +344,7 @@ If you do not include a version, Docker will pull the
 
 To upgrade from a pinned version:
 
-1. Modify the `image` fields in your spec to reference the new version, such as
+1. Modify the `image` fields in your service specification to reference the new version, such as
    updating `ghcr.io/pgedge/control-plane:v0.4.0` to
    `ghcr.io/pgedge/control-plane:v0.5.0`.
 2. Re-run `docker stack deploy -c control-plane.yaml control-plane` as in the

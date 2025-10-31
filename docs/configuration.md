@@ -1,33 +1,31 @@
----
-hide:
-  - toc
----
-# Configuration reference
+# Configuration Reference
 
-The pgEdge Control Plane server can be configured with a JSON-formatted configuration
-file, environment variables, or a combination of both. If you're using a
-configuration file, you can provide it to the pgEdge Control Plane server command with the `-c` or `--config` parameter.
+The pgEdge Control Plane server can be configured with a JSON-formatted
+configuration file, environment variables, or a combination of both. If you're
+using a configuration file, you can provide it to the pgEdge Control Plane
+server command with the `-c` or `--config` parameter.
 
-This reference uses a JSON-path like syntax to denote nested properties, e.g.
+This reference uses a JSON-path like syntax to denote nested properties; for example:
+
 `property.sub_property`.
 
-- [Configuration reference](#configuration-reference)
-  - [Required settings](#required-settings)
-  - [Optional settings](#optional-settings)
+- [Configuration Reference](#configuration-reference)
+  - [Required Settings](#required-settings)
+  - [Optional Settings](#optional-settings)
 
-## Required settings
+## Required Settings
 
-| JSON key   | Environment variable | Type   | Description                                                                                                                                                                                                                                                                   | Constraints                                                                                                                                                           |
-| :--------- | :------------------- | :----- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `host_id`  | `PGEDGE_HOST_ID`     | string | A logical identifier for the host that the Control Plane server is running on. This ID must be stable and unique to each Control Plane server instance.                                                                                                                       | Must be 1-63 characters long and contain only lower-cased letters, numbers, and hyphens (`-`). It must also start and end with either a lower-cased letter or number. |
-| `data_dir` | `PGEDGE_DATA_DIR`    | string | A directory path where the Control Plane application data will be stored. This includes the server's internal database and configuration files as well as the data and configuration files for each PostgreSQL database instance that's managed by this Control Plane server. |                                                                                                                                                                       |
+| JSON key   | Environment variable | Type   | Description                                                                                                                                                                                                                                                                 | Constraints                                                                                                                                                           |
+| :--------- | :------------------- | :----- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `host_id`  | `PGEDGE_HOST_ID`     | string | A logical identifier for the host that the Control Plane server is running on. This ID must be stable and unique to each Control Plane server instance.                                                                                                                     | Must be 1-63 characters long and contain only lower-cased letters, numbers, and hyphens (`-`). It must also start and end with either a lower-cased letter or number. |
+| `data_dir` | `PGEDGE_DATA_DIR`    | string | A directory path where the Control Plane application data will be stored. This includes the server's internal database and configuration files as well as the data and configuration files for each Postgres database instance managed by this Control Plane server. |                                                                                                                                                                       |
 
-## Optional settings
+## Optional Settings
 
 | JSON key                                     | Environment variable                                 | Type    | Default                | Description                                                                                                       | Constraints                                                                 |
 | :------------------------------------------- | :--------------------------------------------------- | :------ | :--------------------- | :---------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------- |
-| `ipv4_address`                               | `PGEDGE_IPV4_ADDRESS`                                | string  | Automatically detected | Can be used to override the automatically-detected IP address of the host that runs this Control Plane server.    | Must be a valid, stable IPv4 Address.                                       |
-| `hostname`                                   | `PGEDGE_HOSTNAME`                                    | string  | Automatically detected | Can be used to override the automatically-detected hostname of the host that runs this Control Plane server.      | Must be a valid, stable hostname.                                           |
+| `ipv4_address`                               | `PGEDGE_IPV4_ADDRESS`                                | string  | Automatically detected | Can be used to override the automatically detected IP address of the host that runs this Control Plane server.    | Must be a valid, stable IPv4 Address.                                       |
+| `hostname`                                   | `PGEDGE_HOSTNAME`                                    | string  | Automatically detected | Can be used to override the automatically detected hostname of the host that runs this Control Plane server.      | Must be a valid, stable hostname.                                           |
 | `stop_grace_period_seconds`                  | `PGEDGE_STOP_GRACE_PERIOD_SECONDS`                   | int     | `30`                   | Controls the graceful shutdown period of the Control Plane server.                                                |                                                                             |
 | `etcd_mode`                                  | `PGEDGE_ETCD_MODE`                                   | string  | `server`               | Determines whether this Control Plane server acts as an Etcd server or as a client only.                          | Must be one of: `server` or `client`.                                       |
 | `mqtt.enabled`                               | `PGEDGE_MQTT__ENABLED`                               | boolean | `false`                | Exposes the Control Plane API over MQTT in addition to the default HTTP server.                                   |                                                                             |
@@ -43,8 +41,8 @@ This reference uses a JSON-path like syntax to denote nested properties, e.g.
 | `etcd_server.log_level`                      | `PGEDGE_ETCD_SERVER__LOG_LEVEL`                      | string  | `fatal`                | The log level for the embedded Etcd server.                                                                       |                                                                             |
 | `etcd_server.peer_port`                      | `PGEDGE_ETCD_SERVER__PEER_PORT`                      | int     | `2380`                 | The port that the embedded Etcd server will listen on for peer connections.                                       |                                                                             |
 | `etcd_server.client_port`                    | `PGEDGE_ETCD_SERVER__CLIENT_PORT`                    | int     | `2379`                 | The port that the embedded Etcd server will listen on for client connections.                                     |                                                                             |
-| `etcd_client.log_level`                      | `PGEDGE_ETCD_CLIENT__LOG_LEVEL`                      | string  | `fatal`                | The log level for Etcd client operations performed by this Control Plane server.                                                |                                                                             |
-| `docker_swarm.image_repository_host`         | `PGEDGE_DOCKER_SWARM__IMAGE_REPOSITORY_HOST`         | string  | `ghcr.io/pgedge`       | The base URL for pgEdge Docker images.                                                                            |                                                                             |
+| `etcd_client.log_level`                      | `PGEDGE_ETCD_CLIENT__LOG_LEVEL`                      | string  | `fatal`                | The log level for Etcd client operations performed by this Control Plane server.                                  |                                                                             |
+| `docker_swarm.image_repository_host`         | `PGEDGE_DOCKER_SWARM__IMAGE_REPOSITORY_HOST`         | string  | `ghcr.io/pgedge`       | The base URL of pgEdge Docker images.                                                                             |                                                                             |
 | `docker_swarm.database_networks_cidr`        | `PGEDGE_DOCKER_SWARM__DATABASE_NETWORKS_CIDR`        | string  | `10.128.128.0/18`      | The CIDR used to allocate per-database networks.                                                                  | Must not be changed after creating databases.                               |
 | `docker_swarm.database_networks_subnet_bits` | `PGEDGE_DOCKER_SWARM__DATABASE_NETWORKS_SUBNET_BITS` | int     | `26`                   | The subnet size for per-database networks.                                                                        | Must not be changed after creating databases.                               |
-| `database_owner_uid`                         | `PGEDGE_DATABASE_OWNER_UID`                          | int     | `26`                   | The UID to use for database configuration and data.                                                               | Must match the UID that owns the PostgreSQL server processes.               |
+| `database_owner_uid`                         | `PGEDGE_DATABASE_OWNER_UID`                          | int     | `26`                   | The UID to use for database configuration and data.                                                               | Must match the UID that owns the Postgres server processes.                 |
