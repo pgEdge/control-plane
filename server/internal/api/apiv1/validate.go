@@ -72,6 +72,7 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 			err := errors.New("node names must be unique within a database")
 			errs = append(errs, newValidationError(err, nodePath))
 		}
+
 		seenNodeNames.Add(node.Name)
 
 		// Per-node validation (includes self-ref and restore vs source_node conflict)
@@ -121,6 +122,7 @@ func validateNode(node *api.DatabaseNodeSpec, path []string) []error {
 			err := errors.New("host IDs must be unique within a node")
 			errs = append(errs, newValidationError(err, hostPath))
 		}
+
 		seenHostIDs.Add(hostID)
 	}
 
@@ -367,5 +369,6 @@ func validateIdentifier(ident string, path []string) error {
 	if err := utils.ValidateID(ident); err != nil {
 		return newValidationError(err, path)
 	}
+
 	return nil
 }

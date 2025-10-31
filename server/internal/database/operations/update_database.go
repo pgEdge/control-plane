@@ -100,8 +100,10 @@ func UpdateDatabase(
 	// diffs.
 	prev := start
 	for i, state := range states {
+		// Clone the previous state and apply our diff on top of it
 		curr := prev.Clone()
 		curr.Merge(state)
+		// Write the updated state back to our states slice.
 		states[i] = curr
 		prev = curr
 	}
@@ -116,6 +118,7 @@ func UpdateDatabase(
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate plans: %w", err)
 	}
+
 	return plans, nil
 }
 
