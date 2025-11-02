@@ -44,9 +44,9 @@ type ResourceData struct {
 	ResourceVersion string          `json:"resource_version"`
 }
 
-func (r *ResourceData) Differs(other *ResourceData) (bool, error) {
+func (r *ResourceData) Diff(other *ResourceData) (jsondiff.Patch, error) {
 	if r.ResourceVersion != other.ResourceVersion {
-		return true, nil
+		return nil, nil
 	}
 	diff, err := jsondiff.CompareJSON(
 		r.Attributes,
@@ -54,13 +54,9 @@ func (r *ResourceData) Differs(other *ResourceData) (bool, error) {
 		jsondiff.Ignores(r.DiffIgnore...),
 	)
 	if err != nil {
-		return false, fmt.Errorf("failed to compare resource attributes: %w", err)
+		return nil, fmt.Errorf("failed to compare resource attributes: %w", err)
 	}
-	if len(diff) > 0 {
-		return true, nil
-	}
-
-	return false, nil
+	return diff, nil
 }
 
 func (r *ResourceData) Clone() *ResourceData {

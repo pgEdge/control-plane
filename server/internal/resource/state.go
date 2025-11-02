@@ -6,6 +6,7 @@ import (
 	"maps"
 	"slices"
 
+	"github.com/wI2L/jsondiff"
 	"gonum.org/v1/gonum/graph/simple"
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
@@ -20,9 +21,31 @@ const (
 	EventTypeDelete  EventType = "delete"
 )
 
+type EventReason string
+
+const (
+	EventReasonDoesNotExist      EventReason = "does_not_exist"
+	EventReasonNeedsRecreate     EventReason = "needs_recreate"
+	EventReasonHasDiff           EventReason = "has_diff"
+	EventReasonForceUpdate       EventReason = "force_update"
+	EventReasonDependencyUpdated EventReason = "dependency_updated"
+)
+
 type Event struct {
-	Type     EventType     `json:"type"`
-	Resource *ResourceData `json:"resource"`
+	Type     EventType      `json:"type"`
+	Resource *ResourceData  `json:"resource"`
+	Reason   EventReason    `json:"reason,omitempty"`
+	Diff     jsondiff.Patch `json:"diff,omitempty"`
+}
+
+// WithData returns a clone of this event with the given data.
+func (e *Event) WithData(data *ResourceData) *Event {
+	return &Event{
+		Type:     e.Type,
+		Resource: data,
+		Reason:   e.Reason,
+		Diff:     e.Diff,
+	}
 }
 
 type State struct {
@@ -277,25 +300,41 @@ func (s *State) planCreates(options PlanOptions, desired *State) (Plan, error) {
 
 			currentResource, ok := s.Get(resource.Identifier)
 			switch {
-			case !ok, currentResource.NeedsRecreate:
+			case !ok:
 				event = &Event{
 					Type:     EventTypeCreate,
 					Resource: resource,
+					Reason:   EventReasonDoesNotExist,
 				}
-			case options.ForceUpdate || slices.ContainsFunc(resource.Dependencies, modified.Has):
+			case currentResource.NeedsRecreate:
+				event = &Event{
+					Type:     EventTypeCreate,
+					Resource: resource,
+					Reason:   EventReasonNeedsRecreate,
+				}
+			case options.ForceUpdate:
 				event = &Event{
 					Type:     EventTypeUpdate,
 					Resource: resource,
+					Reason:   EventReasonForceUpdate,
+				}
+			case slices.ContainsFunc(resource.Dependencies, modified.Has):
+				event = &Event{
+					Type:     EventTypeUpdate,
+					Resource: resource,
+					Reason:   EventReasonDependencyUpdated,
 				}
 			default:
-				differs, err := resource.Differs(currentResource)
+				diff, err := currentResource.Diff(resource)
 				if err != nil {
 					return nil, fmt.Errorf("failed to compare resource %s: %w", resource.Identifier, err)
 				}
-				if differs {
+				if diff != nil {
 					event = &Event{
 						Type:     EventTypeUpdate,
 						Resource: resource,
+						Reason:   EventReasonHasDiff,
+						Diff:     diff,
 					}
 				}
 			}
