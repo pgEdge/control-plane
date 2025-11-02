@@ -81,6 +81,11 @@ func (w *Workflows) PgBackRestRestore(ctx workflow.Context, input *PgBackRestRes
 		return nil, handleError(fmt.Errorf("failed to execute plan restore: %w", err))
 	}
 
+	err = w.persistPlans(ctx, input.Spec.DatabaseID, input.TaskID, planOutput.Plans)
+	if err != nil {
+		return nil, handleError(err)
+	}
+
 	err = w.applyPlans(ctx, input.Spec.DatabaseID, input.TaskID, current, planOutput.Plans)
 	if err != nil {
 		return nil, handleError(err)

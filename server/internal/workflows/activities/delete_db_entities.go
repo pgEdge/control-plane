@@ -46,7 +46,7 @@ func (a *Activities) DeleteDbEntities(ctx context.Context, input *DeleteDbEntiti
 		return nil, err
 	}
 
-	err = resourceSvc.DeleteState(ctx, input.DatabaseID)
+	err = resourceSvc.DeleteDatabase(ctx, input.DatabaseID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to delete state: %w", err)
 	}
