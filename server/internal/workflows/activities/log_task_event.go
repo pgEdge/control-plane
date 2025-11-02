@@ -35,7 +35,7 @@ func (a *Activities) ExecuteLogTaskEvent(
 
 func (a *Activities) LogTaskEvent(ctx context.Context, input *LogTaskEventInput) (*LogTaskEventOutput, error) {
 	logger := activity.Logger(ctx).With("database_id", input.DatabaseID)
-	logger.Info("updating database state")
+	logger.Debug("logging task event")
 
 	for _, entry := range input.Entries {
 		err := a.TaskSvc.AddLogEntry(ctx, input.DatabaseID, input.TaskID, entry)

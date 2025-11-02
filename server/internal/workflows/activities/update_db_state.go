@@ -34,7 +34,7 @@ func (a *Activities) ExecuteUpdateDbState(
 
 func (a *Activities) UpdateDbState(ctx context.Context, input *UpdateDbStateInput) (*UpdateDbStateOutput, error) {
 	logger := activity.Logger(ctx).With("database_id", input.DatabaseID)
-	logger.Info("updating database state")
+	logger.Debug("updating database state")
 
 	dbSvc, err := do.Invoke[*database.Service](a.Injector)
 	if err != nil {
