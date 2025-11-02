@@ -397,6 +397,45 @@ cp-docker-exec() {
     fi
 }
 
+cp-init() {
+	local host_ids=$(jq -r 'keys 
+		| .[] 
+		| select(contains("host"))' \
+		"${RESTISH_CONFIG_DIR}/apis.json")
+	local host_id
+	local join_token
+	local resp
+	local uninitialized=()
+
+	for host_id in ${(f)host_ids}; do
+		echo "checking if ${host_id} is initialized" >&2
+
+		resp=$(restish ${host_id} --rsh-ignore-status-code get-join-token)
+
+		if [[ $(<<<"${resp}" jq '.token') == "null" ]]; then
+			uninitialized+=(${host_id})
+		elif [[ -z "${join_token}" ]]; then
+			join_token="${resp}"
+		fi
+	done
+
+	if [[ -z "${join_token}" ]]; then
+		echo "initializing cluster from ${uninitialized[1]}" >&2
+
+		# zsh arrays are 1-indexed
+		join_token=$(restish ${uninitialized[1]} init-cluster)
+
+		# delete the first array element
+		uninitialized[1]=()
+	fi
+
+	for host_id in ${uninitialized[@]}; do
+		echo "joining ${host_id} to the cluster" >&2
+
+		restish ${host_id} join-cluster "${join_token}" > /dev/null
+	done
+}
+
 #########
 # setup #
 #########
