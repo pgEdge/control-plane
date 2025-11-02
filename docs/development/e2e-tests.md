@@ -277,7 +277,37 @@ Ansible vars file for each test fixture. The `lima_rocky_global` test fixture
 simulates virtual machines in `us-west-1`, `af-south-1`, and `ap-southeast-4`:
 
 ```sh
-make -C e2e/fixtures setup=lima-hosts VARS_FILE=vars/lima_rocky_global.yaml
+make -C e2e/fixtures setup-lima-hosts LIMA_VARS_FILE=vars/lima_rocky_global.yaml
+```
+
+#### Large cluster
+
+You can deploy a six-host variant of the Lima fixture by using the
+`lima_rocky_large.yaml` vars file:
+
+```sh
+make -C e2e/fixtures deploy-lima-machines LIMA_VARS_FILE=vars/lima_rocky_large.yaml
+make -C e2e/fixtures setup-lima-hosts LIMA_VARS_FILE=vars/lima_rocky_large.yaml
+make goreleaser-build
+make -C e2e/fixtures deploy-lima-control-plane LIMA_VARS_FILE=vars/lima_rocky_large.yaml
+
+# After it's deployed, it's used the same as the normal lima fixture
+make test-e2e E2E_PARALLEL=4 E2E_FIXTURE=lima
+```
+
+#### Huge cluster
+
+You can deploy a twelve-host variant of the Lima fixture by using the
+`lima_rocky_huge.yaml` vars file:
+
+```sh
+make -C e2e/fixtures deploy-lima-machines LIMA_VARS_FILE=vars/lima_rocky_huge.yaml
+make -C e2e/fixtures setup-lima-hosts LIMA_VARS_FILE=vars/lima_rocky_huge.yaml
+make goreleaser-build
+make -C e2e/fixtures deploy-lima-control-plane LIMA_VARS_FILE=vars/lima_rocky_huge.yaml
+
+# After it's deployed, it's used the same as the normal lima fixture
+make test-e2e E2E_PARALLEL=4 E2E_FIXTURE=lima
 ```
 
 #### Emulating x86_64 with Lima
@@ -409,6 +439,36 @@ make goreleaser-build
 
 # Deploy the control-plane
 make -C e2e/fixtures deploy-ec2-control-plane
+```
+
+#### Large cluster
+
+You can deploy a six-host variant of the EC2 fixture by using the
+`ec2_rocky_large.yaml` vars file:
+
+```sh
+make -C e2e/fixtures deploy-ec2-machines EC2_VARS_FILE=vars/ec2_rocky_large.yaml
+make -C e2e/fixtures setup-ec2-hosts EC2_VARS_FILE=vars/ec2_rocky_large.yaml
+make goreleaser-build
+make -C e2e/fixtures deploy-ec2-control-plane EC2_VARS_FILE=vars/ec2_rocky_large.yaml
+
+# After it's deployed, it's used the same as the normal ec2 fixture
+make test-e2e E2E_PARALLEL=4 E2E_FIXTURE=ec2
+```
+
+#### Huge cluster
+
+You can deploy a twelve-host variant of the EC2 fixture by using the
+`ec2_rocky_huge.yaml` vars file:
+
+```sh
+make -C e2e/fixtures deploy-ec2-machines EC2_VARS_FILE=vars/ec2_rocky_huge.yaml
+make -C e2e/fixtures setup-ec2-hosts EC2_VARS_FILE=vars/ec2_rocky_huge.yaml
+make goreleaser-build
+make -C e2e/fixtures deploy-ec2-control-plane EC2_VARS_FILE=vars/ec2_rocky_huge.yaml
+
+# After it's deployed, it's used the same as the normal ec2 fixture
+make test-e2e E2E_PARALLEL=4 E2E_FIXTURE=ec2
 ```
 
 #### Testing published releases

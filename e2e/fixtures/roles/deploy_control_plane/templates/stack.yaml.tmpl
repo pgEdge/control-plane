@@ -8,6 +8,9 @@ services:
       - PGEDGE_IPV4_ADDRESS={{ hostvars[host].peer_ip }}
       - PGEDGE_HOST_ID={{ host }}
       - PGEDGE_DATA_DIR=/data/control-plane
+{% if host in hostvars['localhost'].worker_hosts %}
+      - PGEDGE_ETCD_MODE=client
+{% endif %}
     volumes:
       - /data/control-plane:/data/control-plane
       - /var/run/docker.sock:/var/run/docker.sock
