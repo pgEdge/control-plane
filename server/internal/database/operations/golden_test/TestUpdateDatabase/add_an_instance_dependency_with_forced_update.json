@@ -1,0 +1,124 @@
+[
+  [
+    [
+      {
+        "type": "create",
+        "resource_id": "orchestrator.resource::n1-instance-1-dep-2-id",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "update",
+        "resource_id": "database.instance::n1-instance-1-id",
+        "reason": "dependency_updated",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "update",
+        "resource_id": "database.node::n1",
+        "reason": "dependency_updated",
+        "diff": null
+      },
+      {
+        "type": "update",
+        "resource_id": "monitor.instance::n1-instance-1-id",
+        "reason": "dependency_updated",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "update",
+        "resource_id": "database.subscription::n1n2",
+        "reason": "dependency_updated",
+        "diff": null
+      },
+      {
+        "type": "update",
+        "resource_id": "database.subscription::n2n1",
+        "reason": "dependency_updated",
+        "diff": null
+      }
+    ]
+  ],
+  [
+    [
+      {
+        "type": "update",
+        "resource_id": "orchestrator.resource::n1-instance-1-dep-1-id",
+        "reason": "force_update",
+        "diff": null
+      },
+      {
+        "type": "update",
+        "resource_id": "orchestrator.resource::n1-instance-1-dep-2-id",
+        "reason": "force_update",
+        "diff": null
+      },
+      {
+        "type": "update",
+        "resource_id": "orchestrator.resource::n2-instance-1-dep-1-id",
+        "reason": "force_update",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "update",
+        "resource_id": "database.instance::n1-instance-1-id",
+        "reason": "force_update",
+        "diff": null
+      },
+      {
+        "type": "update",
+        "resource_id": "database.instance::n2-instance-1-id",
+        "reason": "force_update",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "update",
+        "resource_id": "database.node::n1",
+        "reason": "force_update",
+        "diff": null
+      },
+      {
+        "type": "update",
+        "resource_id": "database.node::n2",
+        "reason": "force_update",
+        "diff": null
+      },
+      {
+        "type": "update",
+        "resource_id": "monitor.instance::n1-instance-1-id",
+        "reason": "force_update",
+        "diff": null
+      },
+      {
+        "type": "update",
+        "resource_id": "monitor.instance::n2-instance-1-id",
+        "reason": "force_update",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "update",
+        "resource_id": "database.subscription::n1n2",
+        "reason": "force_update",
+        "diff": null
+      },
+      {
+        "type": "update",
+        "resource_id": "database.subscription::n2n1",
+        "reason": "force_update",
+        "diff": null
+      }
+    ]
+  ]
+]
