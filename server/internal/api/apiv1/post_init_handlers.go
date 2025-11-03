@@ -291,39 +291,15 @@ func (s *PostInitHandlers) GetDatabase(ctx context.Context, req *api.GetDatabase
 }
 
 func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePayload) (*api.UpdateDatabaseResponse, error) {
-	// Get the existing database first so we can compare old vs new specs.
-	databaseID, err := dbIdentToString(req.DatabaseID)
-	if err != nil {
-		return nil, err
-	}
-
-	existing, err := s.dbSvc.GetDatabase(ctx, databaseID)
-	if err != nil {
-		return nil, apiErr(err)
-	}
-
-	// Convert existing DB to API form to get the old *api.DatabaseSpec.
-	existingAPI := databaseToAPI(existing)
-	if existingAPI == nil || existingAPI.Spec == nil {
-		return nil, apiErr(fmt.Errorf("existing database spec is missing"))
-	}
-
-	// New spec comes directly from the request payload.
-	newSpec := req.Request.Spec
-
-	// API-level update validation:
-	// ensure that for any newly added nodes, source_node (if set) refers
-	// only to nodes that exist in the old spec.
-	if err := validateDatabaseUpdate(existingAPI.Spec, newSpec); err != nil {
-		return nil, makeInvalidInputErr(err)
-	}
-
-	// Now convert the new API spec into the internal database.Spec.
 	spec, err := apiToDatabaseSpec(&req.DatabaseID, req.Request.TenantID, req.Request.Spec)
 	if err != nil {
 		return nil, makeInvalidInputErr(err)
 	}
 
+	existing, err := s.dbSvc.GetDatabase(ctx, spec.DatabaseID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
 	// Copy optional fields from the previous spec to the current spec if they
 	// are unset.
 	spec.DefaultOptionalFieldsFrom(existing.Spec)

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
+	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/utils"
@@ -123,7 +124,7 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 	return errors.Join(errs...)
 }
 
-func validateDatabaseUpdate(old *api.DatabaseSpec, new *api.DatabaseSpec) error {
+func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 	var errs []error
 
 	// Collect names of nodes that already exist in the old spec.
@@ -132,34 +133,11 @@ func validateDatabaseUpdate(old *api.DatabaseSpec, new *api.DatabaseSpec) error 
 		existingNodeNames.Add(n.Name)
 	}
 
-	// Determine which nodes are newly added in the new spec.
-	addedNodeNames := make(ds.Set[string], len(new.Nodes))
-	for _, n := range new.Nodes {
-		if !existingNodeNames.Has(n.Name) {
-			addedNodeNames.Add(n.Name)
-		}
-	}
-
-	// Debug: print existing vs new node names.
-	var existingList, addedList []string
-	for name := range existingNodeNames {
-		existingList = append(existingList, name)
-	}
-	for name := range addedNodeNames {
-		addedList = append(addedList, name)
-	}
-	fmt.Printf("validateDatabaseUpdate: existing nodes=%v, new nodes=%v\n", existingList, addedList)
-
-	// Map new node name -> index in new.Nodes so we can build precise error paths.
-	nameToIndex := make(map[string]int, len(new.Nodes))
-	for i, n := range new.Nodes {
-		nameToIndex[n.Name] = i
-	}
-
 	// For each newly added node, ensure its source_node (if any) refers to an existing node.
-	for _, n := range new.Nodes {
-		if !addedNodeNames.Has(n.Name) {
-			continue // only care about newly added nodes
+	for i, n := range new.Nodes {
+		// Only care about newly added nodes (those NOT in existingNodeNames).
+		if existingNodeNames.Has(n.Name) {
+			continue
 		}
 
 		src := utils.FromPointer(n.SourceNode)
@@ -169,8 +147,7 @@ func validateDatabaseUpdate(old *api.DatabaseSpec, new *api.DatabaseSpec) error 
 
 		if !existingNodeNames.Has(src) {
 			// Newly added node is trying to use a new/non-existing node as source.
-			idx := nameToIndex[n.Name]
-			path := []string{"nodes", arrayIndexPath(idx), "source_node"}
+			path := []string{"nodes", arrayIndexPath(i), "source_node"}
 			errs = append(errs, newValidationError(
 				errors.New("source node must refer to an existing node"),
 				path,
