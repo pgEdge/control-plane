@@ -8,6 +8,7 @@ services:
       - PGEDGE_IPV4_ADDRESS={{ hostvars[host].peer_ip }}
       - PGEDGE_HOST_ID={{ host }}
       - PGEDGE_DATA_DIR=/data/control-plane
+      - PGEDGE_DOCKER_SWARM__IMAGE_REPOSITORY_HOST=127.0.0.1:5001/pgedge
 {% if host in hostvars['localhost'].worker_hosts %}
       - PGEDGE_ETCD_MODE=client
 {% endif %}
