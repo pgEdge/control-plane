@@ -2,53 +2,12 @@
 
 The pgEdge Control Plane is designed to simplify the management and orchestration of Postgres databases. It provides a declarative API for defining, deploying, and updating databases across multiple hosts.
 
-This section introduces the core concepts and terminology used throughout the Control Plane documentation to help you understand how databases, nodes, and instances interact within a cluster.
+This section introduces the core concepts and terminology used throughout the Control Plane documentation to help you understand how databases, nodes, instances, and hosts interact within a cluster.
 
-```mermaid
-graph LR;
-    classDef primary stroke:#FFB000
-    classDef replica stroke:#238BB4
-    database::example-.->|logical replication|instance::n1a;
-    database::example-.->|logical replication|instance::n2a;
+![Concepts Diagram](img/concepts-light.png#only-light)
+![Concepts Diagram](img/concepts-dark.png#only-dark)
 
-    subgraph node2["node::n2"]
-        direction TB
-        subgraph host::h4
-            instance::n2a:::primary
-        end
-        subgraph host::h5
-            instance::n2b:::replica
-        end
-        subgraph host::h6
-            instance::n2c:::replica
-        end
-        instance::n2a -.->|physical replication| instance::n2b
-        instance::n2a -.->|physical replication| instance::n2c
-    end
-
-    subgraph node1["node::n1"]
-        direction TB
-        subgraph host::h1
-            
-            instance::n1a:::primary
-        end
-        subgraph host::h2
-            instance::n1b:::replica
-        end
-        subgraph host::h3
-            instance::n1c:::replica
-        end
-
-
-        instance::n1a -.->|physical replication| instance::n1b
-        instance::n1a -.->|physical replication| instance::n1c
-    end
-
-```
-
-
-The above diagram demonstrates the relationship between databases, nodes, and
-instances in a cluster: a database is composed of one or more nodes, and each node is composed of one or more instances.
+The above diagram illustrates the relationship between nodes, hosts, instances, and databases in a distributed cluster: a database consists of multiple nodes, each node contains one or more instances, and each instance runs on a host.
 
 ## Hosts
 
@@ -68,18 +27,15 @@ to the Control Plane API. See [Creating a Database](guides/create-db.md) and
 
 ## Nodes
 
-pgEdge uses an extension, called [Spock](https://github.com/pgEdge/spock), to
-replicate data between Postgres instances using logical replication. In the Control Plane API, nodes refer to Spock nodes. 
+The Control Plane uses an extension, called [Spock](https://github.com/pgEdge/spock), to replicate data between Postgres instances using logical replication. In the Control Plane API, nodes refer to Spock nodes.
 
-Each node is composed of one or more Postgres [instances](#instances), where one instance is a primary and the others are read replicas. Writes can be made to the primary instance of any node in the database.
+Spock monitors changes made in the database on the primary [instance](#instances) of each node and uses logical replication to distribute those changes to other nodes.
 
 ## Instances
 
-Unless clarified, an instance in the Control Plane API refers to Postgres
-instances. For a given node, one instance is created for each host specified in
-the `host_ids` array. 
+Each node is composed of one or more Postgres instances, where one instance is a primary and the others are read replicas. Writes can be made to the primary instance of any node in the database.
 
-When a node which has multiple instances is created, the primary instance for the node will be set to the first host in the `host_ids` array. After the database is created, the primary instance may change due to a failover or switchover operation. 
+When a node which has multiple instances is created, the primary instance for the node will be set to the first host specified for the node in the database spec. After a database is created, the primary instance may change due to a failover or switchover operation. 
 
 ## Orchestrators
 
