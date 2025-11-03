@@ -19,6 +19,7 @@ var (
 	ErrInstanceNotFound      = errors.New("instance not found")
 	ErrInstanceStopped       = errors.New("instance stopped")
 	ErrInvalidDatabaseUpdate = errors.New("invalid database update")
+	ErrInvalidSourceNode     = errors.New("invalid source node")
 )
 
 type Service struct {

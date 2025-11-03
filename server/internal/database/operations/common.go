@@ -13,6 +13,7 @@ type NodeResources struct {
 	SourceNode        string
 	PrimaryInstanceID string
 	InstanceResources []*database.InstanceResources
+	RestoreConfig     *database.RestoreConfig
 }
 
 func (n *NodeResources) primaryInstance() *database.InstanceResources {

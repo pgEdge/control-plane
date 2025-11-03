@@ -184,5 +184,6 @@ func (w *Workflows) getNodeResources(
 		NodeName:          node.NodeName,
 		SourceNode:        node.SourceNode,
 		InstanceResources: resources,
+		RestoreConfig:     node.RestoreConfig,
 	}, nil
 }

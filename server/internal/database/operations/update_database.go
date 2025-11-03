@@ -47,6 +47,12 @@ func UpdateDatabase(
 		return nil, err
 	}
 
+	for _, n := range nodes {
+		if n.RestoreConfig != nil && n.SourceNode != "" {
+			return nil, database.ErrInvalidSourceNode
+		}
+	}
+
 	// Updates are always performed first to guarantee that any existing node
 	// is available to be a source node.
 	var states []*resource.State
@@ -56,6 +62,38 @@ func UpdateDatabase(
 			return nil, err
 		}
 		states = append(states, u...)
+	}
+
+	// Auto-select source node ONLY when both SourceNode and RestoreConfig are empty.
+	// If no existing nodes (fresh cluster), skip auto-select (don’t error).
+	if len(adds) > 0 {
+		var defaultSource string
+		if len(updates) > 0 {
+			defaultSource = updates[0].NodeName
+		}
+		for _, n := range adds {
+			if n.SourceNode == "" && n.RestoreConfig == nil && defaultSource != "" {
+				n.SourceNode = defaultSource
+			}
+		}
+	}
+
+	// New rule: new nodes cannot use other new nodes as their source.
+	// Only existing nodes (updates) are valid source_node values for added nodes.
+	if len(adds) > 0 {
+		newNames := make(map[string]struct{}, len(adds))
+		for _, n := range adds {
+			newNames[n.NodeName] = struct{}{}
+		}
+
+		for _, n := range adds {
+			if n.SourceNode == "" {
+				continue
+			}
+			if _, isNew := newNames[n.SourceNode]; isNew {
+				return nil, database.ErrInvalidSourceNode
+			}
+		}
 	}
 
 	if len(adds) > 0 {
