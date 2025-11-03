@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -29,22 +30,18 @@ func TestCreateDbWithVersions(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	allHostIDs := fixture.HostIDs()
+
 	for _, version := range host.SupportedPgedgeVersions {
 		name := fmt.Sprintf("postgres %s with spock %s", version.PostgresVersion, version.SpockVersion)
 
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			// define the cluster topology(nodes structure)
-			totalhost := len(fixture.config.Hosts)
-			nodeCount := 2
-			hostPerNode := 2
-			nodes := createNodesStruct(nodeCount, hostPerNode, t)
-
-			expectedReplicas := totalhost - len(nodes)
-
 			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Minute)
 			defer cancel()
+
+			tLog(t, "creating the database")
 
 			// Create a new database fixture that provisions a database based on the given
 			// specs and also provides access to useful objects and methods through the
@@ -61,117 +58,65 @@ func TestCreateDbWithVersions(t *testing.T) {
 						},
 					},
 					Port:            pointerTo(0),
-					Cpus:            pointerTo("1000m"),
-					Memory:          pointerTo("1GB"),
 					PostgresVersion: pointerTo(version.PostgresVersion),
 					SpockVersion:    pointerTo(version.SpockVersion),
-					Nodes:           nodes,
+					Nodes: []*controlplane.DatabaseNodeSpec{
+						{
+							Name: "n1",
+							HostIds: []controlplane.Identifier{
+								controlplane.Identifier(allHostIDs[0]),
+								controlplane.Identifier(allHostIDs[1]),
+							},
+						},
+						{
+							Name: "n2",
+							HostIds: []controlplane.Identifier{
+								controlplane.Identifier(allHostIDs[2]),
+							},
+						},
+					},
 				},
 			})
 
+			tLog(t, "database created successfully")
+
+			primaries := slices.Collect(db.GetInstances(WithRole("primary")))
+			replicas := slices.Collect(db.GetInstances(WithRole("replica")))
+
 			// verification
 			// 1. Validate expected count of primary and replica nodes
-			assert.True(t, len(nodes) == getTotalPrimaryNodes(db),
-				"Found replica count must match expected replica count")
-
-			assert.True(t, expectedReplicas == getTotalReplicaNodes(db),
-				"Found replica count must match expected replica count")
+			assert.Len(t, primaries, 2)
+			assert.Len(t, replicas, 1)
 
 			// 2. validate primary and replica related functionalities
-			for i := 0; i < len(fixture.config.Hosts); i++ {
-				// verify_primary := true
-				// execute it only for Primary nodes
-				// establish primary node connection, verify pg version and db write functionality etc
-				if *db.Instances[i].Postgres.Role == "primary" {
-					// verification
-					primaryOpts := ConnectionOptions{
-						Matcher:  And(WithHost(db.Instances[i].HostID), WithRole("primary")),
-						Username: username,
-						Password: password,
-					}
-
-					verifyPgVersion(ctx, db, primaryOpts, version.PostgresVersion, t)
-					verifyPrimaryNodes(ctx, db, primaryOpts, t)
-					// verify_primary = false
-				} else {
-					// verify replicas
-					// establish replica connection, verify pg version, read-only status etc
-					connOpts := ConnectionOptions{
-						Matcher:  And(WithHost(db.Instances[i].HostID), WithRole("replica")),
-						Username: username,
-						Password: password,
-					}
-					verifyPgVersion(ctx, db, connOpts, version.PostgresVersion, t)
-					verifyReplicasNodes(ctx, db, connOpts, t)
+			for _, instance := range primaries {
+				// verification
+				primaryOpts := ConnectionOptions{
+					Instance: instance,
+					Username: username,
+					Password: password,
 				}
+
+				verifyPgVersion(ctx, db, primaryOpts, version.PostgresVersion, t)
+				verifyPrimaryNodes(ctx, db, primaryOpts, t)
 			}
+
+			for _, instance := range replicas {
+				// verify replicas
+				// establish replica connection, verify pg version, read-only status etc
+				connOpts := ConnectionOptions{
+					Instance: instance,
+					Username: username,
+					Password: password,
+				}
+				verifyPgVersion(ctx, db, connOpts, version.PostgresVersion, t)
+				verifyReplicasNodes(ctx, db, connOpts, t)
+			}
+
 			// 3. validate replication
 			validateReplication(ctx, db, t)
 		})
 	}
-}
-
-// TODO: Need to create one common function to be used across all the test cases
-// build spec.Nodes, creates a new node or update existing node
-func createNodesStruct(numNodes int, hostsPerNode int, t testing.TB) []*controlplane.DatabaseNodeSpec {
-	nodes := []*controlplane.DatabaseNodeSpec{}
-	totalHosts := len(fixture.config.Hosts)
-	hostIndex := 0
-
-	tLogf(t, "Going to create topology for number of nodes %d and total hosts %d\n", numNodes, totalHosts)
-
-	for i := 1; i <= numNodes && hostIndex < totalHosts; i++ {
-		end := hostIndex + hostsPerNode
-		if end > totalHosts {
-			end = totalHosts
-		}
-
-		hosts := []controlplane.Identifier{}
-		for j := hostIndex; j < end; j++ {
-			hosts = append(hosts, controlplane.Identifier(fixture.HostIDs()[j]))
-		}
-		nodes = append(nodes, &controlplane.DatabaseNodeSpec{
-			Name:    fmt.Sprintf("n%d", i),
-			HostIds: hosts,
-		})
-
-		hostIndex = end
-	}
-	//take care of leftover hosts
-	if hostIndex < totalHosts {
-		hosts := []controlplane.Identifier{}
-		for j := hostIndex; j < totalHosts; j++ {
-			hosts = append(hosts, controlplane.Identifier(fixture.HostIDs()[j]))
-		}
-		nodes = append(nodes, &controlplane.DatabaseNodeSpec{
-			Name:    fmt.Sprintf("n%d", len(nodes)+1),
-			HostIds: hosts,
-		})
-	}
-
-	return nodes
-}
-
-// validate number of Primary nodes are as expected
-func getTotalPrimaryNodes(db *DatabaseFixture) int {
-	var primarycount int
-	for i := 0; i < len(db.Instances); i++ {
-		if *db.Instances[i].Postgres.Role == "primary" {
-			primarycount++
-		}
-	}
-	return primarycount
-}
-
-// Validate number of Replica nodes are as expected
-func getTotalReplicaNodes(db *DatabaseFixture) int {
-	var replicacount int
-	for i := 0; i < len(db.Instances); i++ {
-		if *db.Instances[i].Postgres.Role == "replica" {
-			replicacount++
-		}
-	}
-	return replicacount
 }
 
 // Verify primary nodes functionality e.g. not in recovery mode,
