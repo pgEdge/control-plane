@@ -19,6 +19,7 @@ archives:
     - LICENSE*
     - README*
     - docs/*.md
+    - NOTICE.txt
 
 sboms:
   - artifacts: archive
