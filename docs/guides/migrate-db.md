@@ -11,7 +11,7 @@ If you have an existing Postgres database deployed on another host, you can crea
 
 ## Using pg_dump and pg_restore
 
-The following procedure provides a basic migration overview using the [`pg_dumpall`](https://www.postgresql.org/docs/current/app-pg-dumpall.html), [`pg_dump`](https://www.postgresql.org/docs/current/app-pgdump.html), and [`pg_restore`](https://www.postgresql.org/docs/current/app-pgrestore.html) commands. For this example, assume the source database server contains a single database named `myapp` and two user roles: `admin` and `app`.
+The following steps provide a basic migration overview using the [`pg_dumpall`](https://www.postgresql.org/docs/current/app-pg-dumpall.html), [`pg_dump`](https://www.postgresql.org/docs/current/app-pgdump.html), and [`pg_restore`](https://www.postgresql.org/docs/current/app-pgrestore.html) commands. For this example, assume the source database server contains a single database named `myapp` and two user roles: `admin` and `app`.
 
 In this approach, we will configure a new single-instance Control Plane database with the correct database name and user roles. Next, we will use `pg_dumpall`, `pg_dump`, and `pg_restore` to migrate data and configuration from the source database server into the Control Plane database. Finally, we will scale up the new database with additional nodes and validate replication.
 
