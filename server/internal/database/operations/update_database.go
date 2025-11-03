@@ -47,15 +47,14 @@ func UpdateDatabase(
 		return nil, err
 	}
 
-	// Updates are always performed first to guarantee that any existing node
-	// is available to be a source node.
 	for _, n := range nodes {
 		if n.RestoreConfig != nil && n.SourceNode != "" {
 			return nil, database.ErrInvalidSourceNode
 		}
 	}
 
-	// Updates first to ensure an existing node is available as a source.
+	// Updates are always performed first to guarantee that any existing node
+	// is available to be a source node.
 	var states []*resource.State
 	if len(updates) > 0 {
 		u, err := update(updates)
