@@ -60,7 +60,7 @@ A Cluster represents a collection of hosts that are joined together to provide a
 
 ## Databases
 
-A database in the Control Plane API is a PostgreSQL database that is optionally replicated between multiple PostgreSQL instances. A database is composed of one or more [nodes](#nodes).
+A database in the Control Plane API is a Postgres database that is optionally replicated between multiple Postgres instances. A database is composed of one or more [nodes](#nodes).
 
 You create and update databases by submitting a "database spec"
 to the Control Plane API. See [Creating a Database](guides/create-db.md) and
@@ -69,13 +69,13 @@ to the Control Plane API. See [Creating a Database](guides/create-db.md) and
 ## Nodes
 
 pgEdge uses an extension, called [Spock](https://github.com/pgEdge/spock), to
-replicate data between PostgreSQL instances using logical replication. In the Control Plane API, nodes refer to Spock nodes. 
+replicate data between Postgres instances using logical replication. In the Control Plane API, nodes refer to Spock nodes. 
 
-Each node is composed of one or more PostgreSQL [instances](#instances), where one instance is a primary and the others are read replicas. Writes can be made to the primary instance of any node in the database.
+Each node is composed of one or more Postgres [instances](#instances), where one instance is a primary and the others are read replicas. Writes can be made to the primary instance of any node in the database.
 
 ## Instances
 
-Unless clarified, Instances in the Control Plane API refers to PostgreSQL
+Unless clarified, an instance in the Control Plane API refers to Postgres
 instances. For a given node, one instance is created for each host specified in
 the `host_ids` array. 
 
