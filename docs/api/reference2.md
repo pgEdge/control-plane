@@ -1,1 +1,0 @@
-[OAD(./api/apiv1/gen/http/openapi3.json)]
