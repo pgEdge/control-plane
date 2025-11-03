@@ -52,7 +52,7 @@ You can learn more about the release process in our [documentation](docs/develop
 
 ## Development
 
-The Control Plane is written in Golang, and includes a Docker Compose setup for ease of local development.
+The Control Plane is written in Golang, and includes a Docker Compose setup for ease of local development. To get started, you'll need to:
 
 1. Install dependencies: Ensure you have Go 1.20+ and Docker installed, with [host networking](https://docs.docker.com/engine/network/drivers/host/#docker-desktop) enabled.
 
@@ -63,13 +63,22 @@ The Control Plane is written in Golang, and includes a Docker Compose setup for 
     cd control-plane
     ```
 
-3. Build and run the Control Plane locally:
+3. Build and run the Control Plane locally using Docker Compose:
 
     ```sh
     make dev-watch
     ```
 
-For information on interacting with the Control Plane locally as part of a development workflow, see [docs/development/running-locally.md](docs/development/running-locally.md).
+
+This development environment will deploy multiple Control Plane servers on your local machine. Each server exposes an HTTP API that you can interact with during local development.
+
+As you make changes to the code, you can rebuild and redeploy the Control Plane servers by running:
+
+```sh
+make dev-build
+```
+
+For step-by-step guidance on using this setup, including interacting with the API, see [Running the Control Plane locally](docs/development/running-locally.md). If you'd like to contribute to this project, review our [Development Process](docs/development/development.md).
 
 ## Documentation
 
