@@ -32,6 +32,12 @@ type UpdateDatabaseOptions struct {
 // - Add new nodes
 // - Populate new nodes
 // - Delete nodes and other extraneous resources
+// UpdateDatabase returns a sequence of plans that will update a database to
+// match the nodes in the `nodes` argument. The plans always use the same order:
+// - Update existing nodes
+// - Add new nodes
+// - Populate new nodes
+// - Delete nodes and other extraneous resources
 func UpdateDatabase(
 	options UpdateDatabaseOptions,
 	start *resource.State,
@@ -75,6 +81,24 @@ func UpdateDatabase(
 		for _, n := range adds {
 			if n.SourceNode == "" && n.RestoreConfig == nil && defaultSource != "" {
 				n.SourceNode = defaultSource
+			}
+		}
+	}
+
+	// New rule: new nodes cannot use other new nodes as their source.
+	// Only existing nodes (updates) are valid source_node values for added nodes.
+	if len(adds) > 0 {
+		newNames := make(map[string]struct{}, len(adds))
+		for _, n := range adds {
+			newNames[n.NodeName] = struct{}{}
+		}
+
+		for _, n := range adds {
+			if n.SourceNode == "" {
+				continue
+			}
+			if _, isNew := newNames[n.SourceNode]; isNew {
+				return nil, database.ErrInvalidSourceNode
 			}
 		}
 	}

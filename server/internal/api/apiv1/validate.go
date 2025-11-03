@@ -65,6 +65,9 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 
 	// Track node-name uniqueness and prepare set for cross-node checks.
 	seenNodeNames := make(ds.Set[string], len(spec.Nodes))
+	// Track nodes that themselves have a source_node (treated as "new" nodes).
+	newNodesWithSource := make(ds.Set[string], len(spec.Nodes))
+
 	for i, node := range spec.Nodes {
 		nodePath := []string{"nodes", arrayIndexPath(i)}
 
@@ -74,6 +77,11 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 		}
 
 		seenNodeNames.Add(node.Name)
+
+		// Mark nodes that declare a source_node as "new" nodes.
+		if utils.FromPointer(node.SourceNode) != "" {
+			newNodesWithSource.Add(node.Name)
+		}
 
 		// Per-node validation (includes self-ref and restore vs source_node conflict)
 		errs = append(errs, validateNode(node, nodePath)...)
@@ -85,10 +93,23 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 		if src == "" {
 			continue
 		}
+
+		srcPath := []string{"nodes", arrayIndexPath(i), "source_node"}
+
 		if !seenNodeNames.Has(src) {
 			// Attach error to the specific field path
 			errs = append(errs, newValidationError(errors.New("source node does not exist"),
-				[]string{"nodes", arrayIndexPath(i), "source_node"}))
+				srcPath))
+			continue
+		}
+
+		// prevent using a "new" node (one that has its own source_node)
+		// as the source for another node.
+		if newNodesWithSource.Has(src) {
+			errs = append(errs, newValidationError(
+				errors.New("source node must refer to an existing node"),
+				srcPath,
+			))
 		}
 	}
 
@@ -97,6 +118,64 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 	}
 	if spec.RestoreConfig != nil {
 		errs = append(errs, validateRestoreConfig(spec.RestoreConfig, []string{"restore_config"})...)
+	}
+
+	return errors.Join(errs...)
+}
+
+func validateDatabaseUpdate(old *api.DatabaseSpec, new *api.DatabaseSpec) error {
+	var errs []error
+
+	// Collect names of nodes that already exist in the old spec.
+	existingNodeNames := make(ds.Set[string], len(old.Nodes))
+	for _, n := range old.Nodes {
+		existingNodeNames.Add(n.Name)
+	}
+
+	// Determine which nodes are newly added in the new spec.
+	addedNodeNames := make(ds.Set[string], len(new.Nodes))
+	for _, n := range new.Nodes {
+		if !existingNodeNames.Has(n.Name) {
+			addedNodeNames.Add(n.Name)
+		}
+	}
+
+	// Debug: print existing vs new node names.
+	var existingList, addedList []string
+	for name := range existingNodeNames {
+		existingList = append(existingList, name)
+	}
+	for name := range addedNodeNames {
+		addedList = append(addedList, name)
+	}
+	fmt.Printf("validateDatabaseUpdate: existing nodes=%v, new nodes=%v\n", existingList, addedList)
+
+	// Map new node name -> index in new.Nodes so we can build precise error paths.
+	nameToIndex := make(map[string]int, len(new.Nodes))
+	for i, n := range new.Nodes {
+		nameToIndex[n.Name] = i
+	}
+
+	// For each newly added node, ensure its source_node (if any) refers to an existing node.
+	for _, n := range new.Nodes {
+		if !addedNodeNames.Has(n.Name) {
+			continue // only care about newly added nodes
+		}
+
+		src := utils.FromPointer(n.SourceNode)
+		if src == "" {
+			continue // no explicit source_node; auto-selector will handle this later
+		}
+
+		if !existingNodeNames.Has(src) {
+			// Newly added node is trying to use a new/non-existing node as source.
+			idx := nameToIndex[n.Name]
+			path := []string{"nodes", arrayIndexPath(idx), "source_node"}
+			errs = append(errs, newValidationError(
+				errors.New("source node must refer to an existing node"),
+				path,
+			))
+		}
 	}
 
 	return errors.Join(errs...)
@@ -132,7 +211,7 @@ func validateNode(node *api.DatabaseNodeSpec, path []string) []error {
 
 	// If restore_config is provided, source_node must be empty
 	if node.RestoreConfig != nil && src != "" {
-		errs = append(errs, newValidationError(errors.New("specify either source_node or restore_config, not both"), srcPath))
+		errs = append(errs, newValidationError(errors.New("specify either source_node or restore_config"), srcPath))
 	} else if src != "" {
 		// Self-reference is invalid
 		if src == node.Name {
