@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
-	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/docker/docker/api/types/swarm"
+	"github.com/samber/do"
+
 	"github.com/pgEdge/control-plane/server/internal/docker"
 	"github.com/pgEdge/control-plane/server/internal/resource"
-	"github.com/samber/do"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 var _ resource.Resource = (*PostgresService)(nil)
@@ -24,9 +27,10 @@ func PostgresServiceResourceIdentifier(instanceID string) resource.Identifier {
 }
 
 type PostgresService struct {
-	Instance    *database.InstanceSpec `json:"instance"`
-	ServiceName string                 `json:"service_name"`
-	ServiceID   string                 `json:"service_id"`
+	InstanceID  string `json:"instance_id"`
+	ServiceName string `json:"service_name"`
+	ServiceID   string `json:"service_id"`
+	NeedsUpdate bool   `json:"needs_update"`
 }
 
 func (s *PostgresService) ResourceVersion() string {
@@ -40,7 +44,7 @@ func (s *PostgresService) DiffIgnore() []string {
 }
 
 func (s *PostgresService) Identifier() resource.Identifier {
-	return PostgresServiceResourceIdentifier(s.Instance.InstanceID)
+	return PostgresServiceResourceIdentifier(s.InstanceID)
 }
 
 func (s *PostgresService) Executor() resource.Executor {
@@ -49,8 +53,9 @@ func (s *PostgresService) Executor() resource.Executor {
 
 func (s *PostgresService) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
-		PostgresServiceSpecResourceIdentifier(s.Instance.InstanceID),
-		SwitchoverResourceIdentifier(s.Instance.InstanceID),
+		PostgresServiceSpecResourceIdentifier(s.InstanceID),
+		SwitchoverResourceIdentifier(s.InstanceID),
+		CheckWillRestartIdentifier(s.InstanceID),
 	}
 }
 
@@ -60,9 +65,21 @@ func (s *PostgresService) Refresh(ctx context.Context, rc *resource.Context) err
 		return err
 	}
 
+	desired, err := resource.FromContext[*PostgresServiceSpecResource](rc, PostgresServiceSpecResourceIdentifier(s.InstanceID))
+	if err != nil {
+		return fmt.Errorf("failed to get desired service spec from state: %w", err)
+	}
+	// This CheckWillRestart resource already does a normalized task diff to
+	// determine if an update would cause a restart. We can reuse the output of
+	// that check in our needsUpdate helper.
+	willRestart, err := resource.FromContext[*CheckWillRestart](rc, CheckWillRestartIdentifier(s.InstanceID))
+	if err != nil {
+		return fmt.Errorf("failed to get 'check will restart' from state: %w", err)
+	}
+
 	resp, err := client.ServiceInspectByLabels(ctx, map[string]string{
 		"pgedge.component":   "postgres",
-		"pgedge.instance.id": s.Instance.InstanceID,
+		"pgedge.instance.id": s.InstanceID,
 	})
 	if errors.Is(err, docker.ErrNotFound) {
 		return resource.ErrNotFound
@@ -71,6 +88,7 @@ func (s *PostgresService) Refresh(ctx context.Context, rc *resource.Context) err
 	}
 	s.ServiceID = resp.ID
 	s.ServiceName = resp.Spec.Name
+	s.NeedsUpdate = s.needsUpdate(resp.Spec, desired.Spec, willRestart.WillRestart)
 
 	return nil
 }
@@ -81,7 +99,7 @@ func (s *PostgresService) Create(ctx context.Context, rc *resource.Context) erro
 		return err
 	}
 
-	specResourceID := PostgresServiceSpecResourceIdentifier(s.Instance.InstanceID)
+	specResourceID := PostgresServiceSpecResourceIdentifier(s.InstanceID)
 	spec, err := resource.FromContext[*PostgresServiceSpecResource](rc, specResourceID)
 	if err != nil {
 		return fmt.Errorf("failed to get postgres service spec from state: %w", err)
@@ -109,7 +127,7 @@ func (s *PostgresService) Update(ctx context.Context, rc *resource.Context) erro
 
 	resp, err := client.ServiceInspectByLabels(ctx, map[string]string{
 		"pgedge.component":   "postgres",
-		"pgedge.instance.id": s.Instance.InstanceID,
+		"pgedge.instance.id": s.InstanceID,
 	})
 	if err != nil && !errors.Is(err, docker.ErrNotFound) {
 		return fmt.Errorf("failed to inspect postgres service: %w", err)
@@ -150,4 +168,19 @@ func (s *PostgresService) Delete(ctx context.Context, rc *resource.Context) erro
 	}
 
 	return nil
+}
+
+func (s *PostgresService) needsUpdate(curr swarm.ServiceSpec, desired swarm.ServiceSpec, willRestart bool) bool {
+	if curr.Mode.Replicated != nil && utils.FromPointer(curr.Mode.Replicated.Replicas) != 1 {
+		// This means that the service is scaled down
+		return true
+	}
+
+	if willRestart {
+		// This means that the task definition differs between the current and
+		// desired specs.
+		return true
+	}
+
+	return !reflect.DeepEqual(curr.EndpointSpec, desired.EndpointSpec) || !reflect.DeepEqual(curr.Annotations, desired.Annotations)
 }

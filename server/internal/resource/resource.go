@@ -35,7 +35,7 @@ func (r Identifier) String() string {
 }
 
 type ResourceData struct {
-	NeedsCreate     bool            `json:"needs_create"`
+	NeedsRecreate   bool            `json:"needs_recreate"`
 	Executor        Executor        `json:"executor"`
 	Identifier      Identifier      `json:"identifier"`
 	Attributes      json.RawMessage `json:"attributes"`
@@ -65,7 +65,7 @@ func (r *ResourceData) Differs(other *ResourceData) (bool, error) {
 
 func (r *ResourceData) Clone() *ResourceData {
 	return &ResourceData{
-		NeedsCreate:     r.NeedsCreate,
+		NeedsRecreate:   r.NeedsRecreate,
 		Executor:        r.Executor,
 		Identifier:      r.Identifier,
 		Attributes:      slices.Clone(r.Attributes),

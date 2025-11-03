@@ -1,0 +1,35 @@
+---
+minio_enabled: true
+provider: lima
+architecture: "{{ ansible_facts['architecture'] }}"
+template: rocky-9
+machines:
+  - name: host-1
+    swarm_manager: true
+  - name: host-2
+    swarm_manager: true
+  - name: host-3
+    swarm_manager: true
+  - name: host-4
+    swarm_manager: true
+  - name: host-5
+    swarm_manager: true
+  - name: host-6
+    swarm_manager: false
+  - name: host-7
+    swarm_manager: false
+  - name: host-8
+    swarm_manager: false
+  - name: host-9
+    swarm_manager: false
+  - name: host-10
+    swarm_manager: false
+  - name: host-11
+    swarm_manager: false
+  - name: host-12
+    swarm_manager: false
+s3_repository:
+  bucket: backups
+  access_key_id: minioadmin
+  secret_access_key: minioadmin
+  region: us-east-1

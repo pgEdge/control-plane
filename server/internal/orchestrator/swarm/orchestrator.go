@@ -260,7 +260,7 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec) (*database
 		InstanceID: spec.InstanceID,
 	}
 	service := &PostgresService{
-		Instance:    spec,
+		InstanceID:  spec.InstanceID,
 		ServiceName: instanceHostname,
 	}
 

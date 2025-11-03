@@ -2,15 +2,11 @@ package swarm
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"time"
 
 	"github.com/docker/docker/api/types/swarm"
-	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
-	"github.com/pgEdge/control-plane/server/internal/docker"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
@@ -70,50 +66,6 @@ func (s *PostgresServiceSpecResource) Dependencies() []resource.Identifier {
 }
 
 func (s *PostgresServiceSpecResource) Refresh(ctx context.Context, rc *resource.Context) error {
-	client, err := do.Invoke[*docker.Docker](rc.Injector)
-	if err != nil {
-		return err
-	}
-	service, err := client.ServiceInspectByLabels(ctx, map[string]string{
-		"pgedge.component":   "postgres",
-		"pgedge.instance.id": s.Instance.InstanceID,
-	})
-	if errors.Is(err, docker.ErrNotFound) {
-		return resource.ErrNotFound
-	}
-
-	serviceMode := &service.Spec.Mode
-	if *serviceMode.Replicated.Replicas == 0 {
-		// Scale up the service
-		err := client.ServiceScale(ctx, docker.ServiceScaleOptions{
-			ServiceID:   service.ID,
-			Scale:       1,
-			Wait:        true,
-			WaitTimeout: time.Minute,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to scale up postgres service: %w", err)
-		}
-
-		dbSvc, err := do.Invoke[*database.Service](rc.Injector)
-		if err != nil {
-			return fmt.Errorf("failed to get database service: %w", err)
-		}
-		err = dbSvc.UpdateInstance(ctx, &database.InstanceUpdateOptions{
-			InstanceID: s.Instance.InstanceID,
-			DatabaseID: s.Instance.DatabaseID,
-			State:      database.InstanceStateAvailable,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to update instance: %w", err)
-		}
-	}
-
-	s.Spec = service.Spec
-	return nil
-}
-
-func (s *PostgresServiceSpecResource) Create(ctx context.Context, rc *resource.Context) error {
 	network, err := resource.FromContext[*Network](rc, NetworkResourceIdentifier(s.DatabaseNetworkName))
 	if err != nil {
 		return fmt.Errorf("failed to get database network from state: %w", err)
@@ -151,9 +103,14 @@ func (s *PostgresServiceSpecResource) Create(ctx context.Context, rc *resource.C
 	return nil
 }
 
-func (s *PostgresServiceSpecResource) Update(ctx context.Context, rc *resource.Context) error {
-	return s.Create(ctx, rc)
+func (s *PostgresServiceSpecResource) Create(ctx context.Context, rc *resource.Context) error {
+	return s.Refresh(ctx, rc)
 }
+
+func (s *PostgresServiceSpecResource) Update(ctx context.Context, rc *resource.Context) error {
+	return s.Refresh(ctx, rc)
+}
+
 func (s *PostgresServiceSpecResource) Delete(ctx context.Context, rc *resource.Context) error {
 	// This is a virtual resource, so there's nothing to delete.
 	return nil

@@ -75,7 +75,7 @@ func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*A
 		Registry: registry,
 	}
 
-	outputEventType := input.Event.Type
+	var needsCreate bool
 
 	ctxWithCancel, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -89,7 +89,7 @@ func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*A
 		case resource.EventTypeRefresh:
 			err := r.Refresh(ctxWithCancel, rc)
 			if errors.Is(err, resource.ErrNotFound) {
-				outputEventType = resource.EventTypeDelete
+				needsCreate = true
 			} else if err != nil {
 				resultCh <- fmt.Errorf("failed to refresh resource %s: %w", r.Identifier().String(), err)
 			}
@@ -131,10 +131,11 @@ func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*A
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare resource for serialization: %w", err)
 	}
+	data.NeedsRecreate = needsCreate
 
 	return &ApplyEventOutput{
 		Event: &resource.Event{
-			Type:     outputEventType,
+			Type:     input.Event.Type,
 			Resource: data,
 		},
 	}, nil

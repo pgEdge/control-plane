@@ -9,3 +9,16 @@
     placement:
       constraints:
         - node.hostname == {{ docker_node_hostname }}
+
+- name: Deploy ghcr pull-through mirror
+  community.docker.docker_swarm_service:
+    name: ghcr-mirror
+    image: registry:2
+    publish:
+      - published_port: 5001
+        target_port: 5000
+    env:
+      - REGISTRY_PROXY_REMOTEURL=https://ghcr.io
+    placement:
+      constraints:
+        - node.hostname == {{ docker_node_hostname }}
