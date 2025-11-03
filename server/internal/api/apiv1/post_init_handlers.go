@@ -300,6 +300,12 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 	if err != nil {
 		return nil, apiErr(err)
 	}
+	// API-level update validation:
+	// ensure that for any newly added nodes, source_node (if set) refers
+	// only to nodes that exist in the old spec.
+	if err := validateDatabaseUpdate(existing.Spec, req.Request.Spec); err != nil {
+		return nil, makeInvalidInputErr(err)
+	}
 	// Copy optional fields from the previous spec to the current spec if they
 	// are unset.
 	spec.DefaultOptionalFieldsFrom(existing.Spec)
