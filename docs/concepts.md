@@ -7,7 +7,7 @@ This section introduces the core concepts and terminology used throughout the Co
 ![Concepts Diagram](img/concepts-light.png#only-light)
 ![Concepts Diagram](img/concepts-dark.png#only-dark)
 
-The above diagram illustrates the relationship between nodes, hosts, instances, and databases in a distributed cluster: a database consists of multiple nodes, each node contains one or more instances, and each instance runs on a host.
+The above diagram illustrates the relationship between nodes, hosts, instances, and databases in a distributed cluster: a database is composed of one or more nodes, each node is made of one or more instances, and each instance runs on a host.
 
 ## Hosts
 
@@ -35,7 +35,7 @@ Spock monitors changes made in the database on the primary [instance](#instances
 
 Each node is composed of one or more Postgres instances, where one instance is a primary and the others are read replicas. Writes can be made to the primary instance of any node in the database.
 
-When a node which has multiple instances is created, the primary instance for the node will be set to the first host specified for the node in the database spec. After a database is created, the primary instance may change due to a failover or switchover operation. 
+When a node which has multiple instances is created, the primary instance for the node will be placed on the first host specified for the node in the database spec. After a database is created, the primary instance may change due to a failover or switchover operation. 
 
 ## Orchestrators
 
