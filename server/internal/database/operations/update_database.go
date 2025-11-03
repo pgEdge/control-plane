@@ -32,12 +32,6 @@ type UpdateDatabaseOptions struct {
 // - Add new nodes
 // - Populate new nodes
 // - Delete nodes and other extraneous resources
-// UpdateDatabase returns a sequence of plans that will update a database to
-// match the nodes in the `nodes` argument. The plans always use the same order:
-// - Update existing nodes
-// - Add new nodes
-// - Populate new nodes
-// - Delete nodes and other extraneous resources
 func UpdateDatabase(
 	options UpdateDatabaseOptions,
 	start *resource.State,
