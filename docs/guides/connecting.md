@@ -25,12 +25,12 @@ information for that specific instance.
     If you have not exposed your database to outside connections, for example, by omitting the `port` field in your database specification, the
     `connection_info` field will be omitted in this API response.
 
-## High-availability client connections
+## High-availability Client Connections
 
 If your application requires high availability, we recommend using a client or
 driver that supports multiple hosts.
 
-The ability to set multiple hosts is a common feature supported by `libpq` (and any drivers or clients that use it), as well as many drivers that do not use `libpq`, such as:
+The ability to set multiple hosts is a common feature supported by [`libpq`](https://www.postgresql.org/docs/current/libpq.html) (and any drivers or clients that use it), as well as many drivers that do not use `libpq`, such as:
 
 - [JDBC driver for Java](https://jdbc.postgresql.org/)
 - [`pgx` for Go](https://github.com/jackc/pgx)
@@ -50,7 +50,7 @@ use for all hosts, like in this `psql` example:
 `PGPASSWORD=password psql 'host=host-1,host-2,host-3 port=5432 user=admin dbname=example`
 
 By default, the driver will attempt to connect to hosts in the order they're
-specified. Consider the latency between each host and your client when you order
+specified. You should consider the latency between each host and your client when you order
 the hosts in the connection string.
 
 Depending on your use case, it's also good practice to set a maximum lifetime on your database connections. This way, your client can return to the lowest-latency host following a failover and recovery. The way that you set connection lifetime will differ between drivers and languages.
