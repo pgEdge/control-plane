@@ -1,4 +1,4 @@
-# Updating a database
+# Updating a Database
 
 To update a database, submit a `POST` request to the
 `/v1/databases/{database_id}` endpoint of any host in the cluster with the updated spec for the database.
@@ -61,14 +61,13 @@ You can control which node is used to load data by specifying the `source_node` 
         }'
     ```
 
-Alternatively, you can use pgBackRest to bootstrap the new node via a restore. See [Creating a new node from a backup](./backup-restore.md#creating-a-new-node-from-a-backup).
+Alternatively, you can use pgBackRest to bootstrap the new node via a restore. See [Creating a New Node from a Backup](./backup-restore.md#creating-a-new-node-from-a-backup).
 
 !!! tip
 
     Secret values, such as database user passwords or cloud credentials, are only needed at creation time. You can omit these values from update requests unless you need to change them. After removing the secret values, you can safely save the request body to a file and even add it to version control alongside other infrastructure-as-code files.
 
-Similar to the creation process, updating a database is also an asynchronous
-process. 
+Similar to the creation process, updating a database is also an asynchronous process. 
 
 You can view the current database status by submitting a `GET` request
 to the `/v1/databases/{database_id}` endpoint. 
