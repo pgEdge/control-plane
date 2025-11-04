@@ -68,7 +68,7 @@ You can find a list of existing nodes in the swarm by running the following comm
 docker node ls
 ```
 
-Nodes with the `Leader` or `Reachable` status under the "MANAGER STATUS" column are managers.
+Nodes with the `Leader` or `Reachable` status under the `MANAGER STATUS` column are managers.
 
 **Best Practices:**
 
@@ -80,7 +80,7 @@ For more details, see the [Docker Swarm documentation](https://docs.docker.com/e
 
 ## Deploying the Control Plane
 
-Once your swarm is setup, use a stack definition file to deploy the Control Plane server on every node in your Docker Swarm cluster. We recommend using "placement constraints" in your stack definition to deploy the Control Plane server onto specific Swarm nodes.
+Once your swarm is setup, use a stack definition file to deploy the Control Plane server on every node in your Docker Swarm cluster. We recommend using placement constraints in your stack definition to deploy the Control Plane server onto specific Swarm nodes.
 
 ### Creating the Stack Definition File
 
@@ -177,7 +177,7 @@ This tells Docker Swarm to run the service only on the node with the matching `n
 
 By default, each Control Plane server also acts as an Etcd server. However, in
 larger clusters or in clusters with an even number of nodes, some Control Plane
-servers should run in "client mode."
+servers should run in client mode.
 
 Similar to the Docker Swarm configuration, you should configure your Control
 Plane cluster with three Etcd servers for clusters with up to seven hosts. For
