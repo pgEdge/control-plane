@@ -295,10 +295,6 @@ request](./create-db.md) to create a database from an existing backup.
         }'
     ```
 
-!!! note
-
-    These `restore_config` fields will not affect existing instances when they're included in an update request. They are only used to create new instances, such as when you add a new node or when you add an instance to an existing node. You can safely remove the `restore_config` fields in an update request to restrict that behavior.
-
 ## Creating a New Node from a Backup
 
 Similar to [creating a new database from a backup](#creating-a-new-database-from-a-backup), you can include a
