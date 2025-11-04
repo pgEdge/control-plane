@@ -1,6 +1,6 @@
 # Read Replicas
 
-A node can consist of one or more instances, where one instance serves as a primary and the others act as read replicas. The Control Plane creates one instance for each host ID in the `host_ids` array for each node. To add read replicas for a node, specify which hosts to deploy them on via the `host_ids` array.
+A node can consist of one or more instances, where one instance serves as a primary and the others act as read replicas. The Control Plane creates one instance for each host ID in the `host_ids` array for each node. To add read replicas for a node, specify the hosts on which to deploy them on via the `host_ids` array.
 
 This example request demonstrates creating a database with read replicas. Each host in this sample cluster is named after the AWS region where it resides:
 
@@ -47,13 +47,13 @@ You can identify the primary instance for each node by submitting a `GET` reques
     curl http://us-east-1a:3000/v1/databases/example
     ```
 
-See [High availability client
-connections](./connecting.md#high-availability-client-connections) for ways to connect to the read replicas in a high-availability use case.
+See [High Availability Client
+Connections](./connecting.md#high-availability-client-connections) for ways to connect to the read replicas in a high-availability use case.
 
 
 ## Switchover and Failover Operations
 
-Switchover and failover operations allow the Control Plane to promote a read replica to become the new primary instance for a node. These operations rely on [Patroni](https://patroni.readthedocs.io/en/latest/), which manages leader election, failover, and cluster health.
+Switchover and failover operations allow the Control Plane to promote a read replica to become the new primary instance for a node. These operations rely on [Patroni](https://patroni.readthedocs.io/en/latest/) to manage leader election, failover, and cluster health.
 
 For more information, see [Patroni's REST API: Switchover and Failover](https://patroni.readthedocs.io/en/latest/rest_api.html#switchover-and-failover-endpoints).
 
@@ -63,7 +63,7 @@ In addition to manual control, the system also supports **automatic failover** w
 
 A switchover is a planned operation that transfers the primary role to a selected read replica while both instances are healthy. It can be executed immediately or scheduled for a later time.
 
-#### Checking instance health
+#### Checking Instance Health
 
 Before performing a switchover, ensure that the instance is healthy. The `patroni_state` field in the `postgres` section indicates the current status:
 
@@ -131,7 +131,7 @@ The `scheduled_at` field allows the switchover to be executed at a specific sche
 
 A failover is used to manually promote a replica to primary. This is typically performed when no healthy synchronous replicas are available (e.g., promoting an asynchronous standby). However, failover is not restricted to unhealthy clusters — it can also be triggered on a healthy cluster if required.
 
-#### Executing a failover
+#### Executing a Failover
 
 When calling the failover endpoint, you may specify a `candidate_instance_id`. If omitted, Control Plane automatically selects a healthy replica to promote as the new primary.
 
