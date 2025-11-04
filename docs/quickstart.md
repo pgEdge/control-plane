@@ -20,13 +20,13 @@ This configuration is intended to demonstrate basic use of the Control Plane and
 
 ## Installation
 
-1.  Enable "Swarm mode" on your Docker daemon:
+1.  Enable [Swarm mode](https://docs.docker.com/engine/swarm/) on your Docker daemon:
 
     ```sh
     docker swarm init
     ```
 
-2.  Create a data directory:
+2.  Create a `data` directory:
 
     ```sh
     mkdir -p ~/pgedge/control-plane
@@ -67,8 +67,8 @@ This configuration is intended to demonstrate basic use of the Control Plane and
         curl http://localhost:3000/v1/cluster/init
         ```
 
-    This will print out a "join token". This is used to initialize a Control Plane
-    cluster across multiple hosts. We won't use it in this guide.
+    This command will return a *join token*. A join token is used to initialize a Control Plane
+    cluster across multiple hosts. We won't use a join token in this guide.
 
 5.  Create a pgEdge database:
 
@@ -121,7 +121,7 @@ This configuration is intended to demonstrate basic use of the Control Plane and
 
 ## Connecting to Each Database Instance
 
-You can use your choice of Postgres client or docker exec to connect to each database instance within your Postgres cluster.
+You can use your choice of Postgres client or `docker exec` to connect to each database instance within your Postgres cluster.
 
 ### Connecting with `psql`
 
@@ -165,19 +165,19 @@ docker exec -it <container ID> psql -U admin example
 1. Create a table on the first node:
 
     ```sh
-    PGPASSWORD=password psql -h localhost -p 6432 -U admin example -c "create table example (id int primary key, data text);"
+    PGPASSWORD=password psql -h localhost -p 6432 -U admin example -c "CREATE TABLE example (id int primary key, data text);"
     ```
 
 2. Insert a row into our new table on the second node:
 
     ```sh
-    PGPASSWORD=password psql -h localhost -p 6433 -U admin example -c "insert into example (id, data) values (1, 'Hello, pgEdge!');"
+    PGPASSWORD=password psql -h localhost -p 6433 -U admin example -c "INSERT INTO example (id, data) VALUES (1, 'Hello, pgEdge!');"
     ```
 
 3. Verify that the new row has replicated back to the first node:
 
     ```sh
-    PGPASSWORD=password psql -h localhost -p 6432 -U admin example -c "select * from example;"
+    PGPASSWORD=password psql -h localhost -p 6432 -U admin example -c "SELECT * FROM example;"
     ```
 
 ## Loading the Northwind Sample Dataset
@@ -192,7 +192,7 @@ curl https://downloads.pgedge.com/platform/examples/northwind/northwind.sql \
 Now, try querying one of the new tables from the other node:
 
 ```sh
-PGPASSWORD=password psql -h localhost -p 6433 -U admin example -c "select * from northwind.shippers"
+PGPASSWORD=password psql -h localhost -p 6433 -U admin example -c "SELECT * FROM northwind.shippers"
 ```
 
 ## Teardown
@@ -206,7 +206,7 @@ To stop the Control Plane and remove all of the resources it created, first dele
     ```
 
 Like the creation process, the deletion process is asynchronous. You can
-track the progress of the `DELETE` by using the "list databases" endpoint:
+track the progress of the `DELETE` by using the `list databases` endpoint:
 
 === "curl"
 
