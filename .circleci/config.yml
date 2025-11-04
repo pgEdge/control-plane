@@ -4,7 +4,7 @@ orbs:
 executors:
   common:
     machine:
-      image: ubuntu-2404:2024.11.1
+      image: ubuntu-2404:2025.09.1
     resource_class: xlarge
 commands:
   use_mod_cache:
