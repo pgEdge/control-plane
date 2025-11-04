@@ -30,7 +30,7 @@ information for that specific instance.
 If your application requires high availability, we recommend using a client or
 driver that supports multiple hosts.
 
-The ability to set multiple hosts is a common feature supported by `libpq` (and any drivers or clients that use it), as well as many drivers that do not use `libpq`, such as:
+The ability to set multiple hosts is a common feature supported by [`libpq`](https://www.postgresql.org/docs/current/libpq.html) (and any drivers or clients that use it), as well as many drivers that do not use `libpq`, such as:
 
 - [JDBC driver for Java](https://jdbc.postgresql.org/)
 - [`pgx` for Go](https://github.com/jackc/pgx)
