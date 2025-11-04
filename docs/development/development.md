@@ -1,12 +1,12 @@
 # Development Process
 
-## Running the Control Plane locally
+## Running the Control Plane Locally
 
 We use Docker Compose to run the control plane for development. Please see the
 ["Running the Control Plane locally"](./running-locally.md)
 document for the full set of instructions.
 
-## Pull requests
+## Pull Requests
 
 Your pull requests should include a changelog entry if they contain a
 user-facing change from the previous release. Examples of user-facing changes
@@ -17,8 +17,8 @@ include:
 - Security-related dependency updates
 - User documentation updates
 
-If your change affects something that wasn't in the previous release, for
-example you've fixed a bug that was added after the last release, you can omit
+If your change affects something that wasn't in the previous release (for
+example, you've fixed a bug that was added after the last release), you can omit
 the changelog entry. Likewise, you can also omit the changelog entry if your PR
 doesn't contain any user-facing changes.
 
@@ -57,7 +57,7 @@ You can now pull these images from `127.0.0.1:5000/control-plane`.
 ## Release process
 
 We use [Semantic Versions](https://semver.org/) to identify Control Plane
-releases, and we use a partially-automated process to tag and publish new
+releases, and a partially-automated process to tag and publish new
 releases. To initiate a new release, run **one** of the following:
 
 ```sh
@@ -78,7 +78,7 @@ This does the following:
 - Stages the Changelog
 
 You'll be shown the changes and prompted to accept them. If you accept the
-changes, the Make recipe will then:
+changes, the make recipe will then:
 
 - Create a commit
 - Push the release branch to the origin
