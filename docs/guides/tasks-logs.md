@@ -4,9 +4,9 @@ The pgEdge Control Plane provides tools to monitor asynchronous operations and a
 
 ## Tasks
 
-Every asynchronous database operation managed by the pgEdge Control Plane produces a Task that you can use to track the progress of that operation.
+Every asynchronous database operation managed by the pgEdge Control Plane produces a *task* that you can use to track the progress of that operation.
 
-### Listing tasks
+### Listing Tasks
 
 To list tasks for a database, submit a `GET` request to the
 `/v1/databases/{database_id}/tasks` endpoint. For example:
@@ -27,7 +27,7 @@ number of tasks:
     curl 'http://host-3:3000/v1/databases/example/tasks?limit=5&after_task_id=404ecbe0-5cda-11f0-900b-a74a79e3bdba&sort_order=asc'
     ```
 
-### Getting a specific task
+### Getting a Specific Task
 
 If you have a task ID, such as one returned when [create a database](./create-db.md), you can fetch details for that task by
 submitting a `GET` request to the `/v1/databases/{database_id}/tasks/{task_id}`
@@ -39,7 +39,7 @@ endpoint. For example:
     curl http://host-3:3000/v1/databases/example/tasks/d3cd2fab-4b1f-4eb9-b614-181c10b07acd
     ```
 
-### Getting task logs
+### Getting Task Logs
 
 You can fetch log messages for a task by submitting a `GET` request to the
 `/v1/databases/{database_id}/tasks/{task_id}/log` endpoint.
@@ -70,7 +70,7 @@ You can also limit your request to only the most recent log entries with the
     curl 'http://host-3:3000/v1/databases/example/tasks/d3cd2fab-4b1f-4eb9-b614-181c10b07acd/log?limit=10'
     ```
 
-## Viewing Postgres logs
+## Viewing Postgres Logs
 
 By default, each database is configured to write log files to the following directory:
 
