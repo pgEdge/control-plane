@@ -1,24 +1,24 @@
 # Development Process
 
-## Running the Control Plane locally
+## Running the Control Plane Locally
 
 We use Docker Compose to run the control plane for development. Please see the
 ["Running the Control Plane locally"](./running-locally.md)
 document for the full set of instructions.
 
-## Pull requests
+## Pull Requests
 
 Your pull requests should include a changelog entry if they contain a
 user-facing change from the previous release. Examples of user-facing changes
 include:
 
-- Features
-- Bug fixes
-- Security-related dependency updates
-- User documentation updates
+- features
+- bug fixes
+- security-related dependency updates
+- user documentation updates
 
-If your change affects something that wasn't in the previous release, for
-example you've fixed a bug that was added after the last release, you can omit
+If your change affects something that wasn't in the previous release (for
+example you've fixed a bug that was added after the last release), you can omit
 the changelog entry. Likewise, you can also omit the changelog entry if your PR
 doesn't contain any user-facing changes.
 
@@ -32,7 +32,7 @@ And follow the interactive prompts. This adds your changelog entry to a new file
 under `changes/unreleased`. We'll automatically combine these files to produce
 the release changelog in the release process described below.
 
-## Building pre-release Control Plane images
+## Building Pre-release Control Plane Images
 
 Make sure your local registry is running with:
 
@@ -54,10 +54,10 @@ make control-plane-images
 
 You can now pull these images from `127.0.0.1:5000/control-plane`.
 
-## Release process
+## Release Process
 
-We use [Semantic Versions](https://semver.org/) to identify Control Plane
-releases, and we use a partially-automated process to tag and publish new
+We use [*semantic versions*](https://semver.org/) to identify Control Plane
+releases, and a partially-automated process to tag and publish new
 releases. To initiate a new release, run **one** of the following:
 
 ```sh
@@ -71,29 +71,29 @@ make minor-release
 make major-release
 ```
 
-This does the following:
+This:
 
-- Creates a release changelog for the new version
-- Creates a release branch named `release/<version>`
-- Stages the Changelog
+- creates a release changelog for the new version.
+- creates a release branch named `release/<version>`.
+- stages the Changelog.
 
 You'll be shown the changes and prompted to accept them. If you accept the
-changes, the Make recipe will then:
+changes, the make recipe will:
 
-- Create a commit
-- Push the release branch to the origin
-- Create and push release-candidate tag, e.g. `v1.0.0-rc.1`
-- Print out a link to open a PR for the release branch
+- create a commit.
+- push the release branch to the origin.
+- create and push release-candidate tag, e.g. `v1.0.0-rc.1`.
+- print out a link to open a PR for the release branch.
 
 The new `v1.0.0-rc.1` tag will trigger a release build in CircleCI. The release
 build will:
 
-- Create a new GitHub release with:
-  -  Platform-specific binaries
-  -  An SBOM
-  -  Checksums for the artifacts
-  -  The release Changelog
-- Build and publish Docker images to `ghcr.io/pgedge/control-plane`
+- create a new GitHub release with:
+  -  platform-specific binaries
+  -  an SBOM
+  -  checksums for the artifacts
+  -  the release Changelog
+- build and publish Docker images to `ghcr.io/pgedge/control-plane`.
 
 Since the tag includes a pre-release marker, `-rc.1`, the GitHub release will be
 marked as a pre-release. At this point, it's ready for quality assurance and
