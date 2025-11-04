@@ -1,9 +1,9 @@
-# Backup & Restore
+# Backup and Restore
 
 The Control Plane uses [pgBackRest](https://pgbackrest.org/) to provide backup
-and restore capabilities for Databases.
+and restore capabilities for databases.
 
-## Configuring pgBackRest for backups
+## Configuring pgBackRest for Backups
 
 To use pgBackRest, you must configure one or more backup repositories for the
 database or node you want to back up. You can configure backup repositories in
@@ -50,7 +50,7 @@ For example, to configure all database nodes to create backups in an S3 bucket:
 
 !!! tip
 
-    If you're running your databases on AWS EC2, you can use [Instance Profiles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html) instead of providing IAM user credentials to the Control Plane API. Similarly, you can use [Service Accounts](https://cloud.google.com/compute/docs/access/service-accounts) if you're running your databases in Google Compute Engine.
+    If you're running your databases on AWS EC2, you can use an [AWS Instance Profile](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html) instead of providing IAM user credentials to the Control Plane API. Similarly, you can use a [Google Service Account](https://cloud.google.com/compute/docs/access/service-accounts) if you're running your databases in Google Compute Engine.
 
 Alternatively, you could also configure a single node to backup to a local NFS share:
 
@@ -104,7 +104,7 @@ Alternatively, you could also configure a single node to backup to a local NFS s
 
     In the above example, our database is running on Docker Swarm, so we also need to tell the Control Plane to mount our local NFS share in the container as an extra volume. Note that the `base_path` we configured for the repository is the `destination_path` for our extra volume.
 
-## Initiating a backup
+## Initiating a Backup
 
 Once we've [configured pgBackRest for our
 database](#configuring-pgbackrest-for-backups), we can initiate a backup by
@@ -126,7 +126,7 @@ contains a task identifier that you can use to fetch logs and status information
 for the backup process. See [Tasks and Logs](./tasks-logs.md) for more
 information about tasks.
 
-## Scheduled backups
+## Scheduled Backups
 
 You can include schedules in your `backup_config` to perform backups on a
 schedule. Schedules are expressed as "cron expressions" and evaluated in UTC.
@@ -187,19 +187,18 @@ backup for every night at midnight as well as an incremental backup every hour:
 You can perform an in-place restore on one or more nodes at a time. For each
 node to be restored, the in-place restore process will:
 
-1. Remove Spock subscriptions to or from the node
-2. Tear down any read replicas for the node
-3. Remove backup configurations for the node
-4. Stop the node's primary instance
-5. Run `pgbackrest restore` with the `--delta` option
-6. Start the node's primary instance
-7. Recreate any read replicas for the node
-8. Recreate Spock subscriptions for the node
+    1. Remove Spock subscriptions to or from the node.
+    2. Tear down any read replicas for the node.
+    3. Remove backup configurations for the node.
+    4. Stop the node's primary instance.
+    5. Run `pgbackrest restore` with the `--delta` option.
+    6. Start the node's primary instance.
+    7. Recreate any read replicas for the node.
+    8. Recreate Spock subscriptions for the node.
 
 !!! important
 
-    The Control Plane removes the backup configuration for each node that's being restored. This is necessary because the instance's system identifier can change with the restore, and pgBackRest will prevent you from reusing a
-    repository when that system identifier changes. Once the restore is complete, you must submit an [update request](./update-db.md) to reenable backups for the node you've restored. When you do, we recommend that you either modify the repository's `base_path` or include the optional `id` property to store the backups in a new location. This will prevent the issue of reusing the same backup repository.
+    The Control Plane removes the backup configuration for each node that's being restored. This is necessary because the instance's system identifier can change with the restore, and pgBackRest will prevent you from reusing a repository when that system identifier changes. Once the restore is complete, you must submit an [update request](./update-db.md) to reenable backups for the node you've restored. When you do, we recommend that you either modify the repository's `base_path` or include the optional `id` property to store the backups in a new location. This will prevent the issue of reusing the same backup repository.
 
 To perform an in-place restore, submit a `POST` request to the
 `/v1/databases/{database_id}/restore` endpoint. 
@@ -254,7 +253,7 @@ point in time:
         }'
     ```
 
-## Creating a new database from a backup
+## Creating a New Database from a Backup
 
 You can use the `spec.restore_config` field in your [create database
 request](./create-db.md) to create a database from an existing backup. 
@@ -298,12 +297,11 @@ request](./create-db.md) to create a database from an existing backup.
 
 !!! note
 
-    These `restore_config` fields will not affect existing instances when they're included in an update request. They are only used to create new instances, such as when you add a new node or when you add an instance to an existing node. You can safely remove the `restore_config` fields in an update request if you don't want that behavior.
+    These `restore_config` fields will not affect existing instances when they're included in an update request. They are only used to create new instances, such as when you add a new node or when you add an instance to an existing node. You can safely remove the `restore_config` fields in an update request to restrict that behavior.
 
-## Creating a new node from a backup
+## Creating a New Node from a Backup
 
-Similar to [creating a new database from a
-backup](#creating-a-new-database-from-a-backup), you can include a
+Similar to [creating a new database from a backup](#creating-a-new-database-from-a-backup), you can include a
 `restore_config` on a specific node to create that node from a backup. 
 
 This example demonstrates adding a new node, `n4`, to an existing database using a backup of `n1` as the source:
