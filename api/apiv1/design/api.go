@@ -574,7 +574,11 @@ var _ = g.Service("control-plane", func() {
 				g.Description("The ID of the instance to restart.")
 				g.Example("68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi")
 			})
-			g.Attribute("restart_options", RestartOptions)
+			g.Attribute("scheduled_at", g.String, func() {
+				g.Format(g.FormatDateTime)
+				g.Description("The time at whcih the restart is scheduled.")
+				g.Example("2025-06-18T16:52:05Z")
+			})
 
 			g.Required("database_id", "instance_id")
 		})
@@ -607,7 +611,11 @@ var _ = g.Service("control-plane", func() {
 
 		g.HTTP(func() {
 			g.POST("/v1/databases/{database_id}/instances/{instance_id}/restart")
-			g.Body("restart_options")
+			g.Param("database_id")
+			g.Param("instance_id")
+			g.Body(func() {
+				g.Attribute("scheduled_at")
+			})
 			g.Meta("openapi:tag:Database")
 		})
 	})

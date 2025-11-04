@@ -817,8 +817,8 @@ func (s *PostInitHandlers) RestartInstance(ctx context.Context, req *api.Restart
 		InstanceID: instanceID,
 	}
 
-	if req.RestartOptions != nil && req.RestartOptions.ScheduledAt != nil {
-		scheduleTime, err := time.Parse(time.RFC3339, *req.RestartOptions.ScheduledAt)
+	if req.ScheduledAt != nil {
+		scheduleTime, err := time.Parse(time.RFC3339, *req.ScheduledAt)
 		if err != nil {
 			return nil, fmt.Errorf("invalid scheduled_at value: %w", err)
 		}

@@ -2871,7 +2871,7 @@ func EncodeRestartInstanceRequest(encoder func(*http.Request) goahttp.Encoder) f
 		if !ok {
 			return goahttp.ErrInvalidType("control-plane", "restart-instance", "*controlplane.RestartInstancePayload", v)
 		}
-		body := NewRestartInstanceRequestBody(p)
+		body := p
 		if err := encoder(req).Encode(&body); err != nil {
 			return goahttp.ErrEncodingError("control-plane", "restart-instance", err)
 		}

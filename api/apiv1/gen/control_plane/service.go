@@ -691,20 +691,15 @@ type RestartInstancePayload struct {
 	// The ID of the database that owns the instance.
 	DatabaseID Identifier
 	// The ID of the instance to restart.
-	InstanceID     Identifier
-	RestartOptions *RestartOptions
+	InstanceID Identifier
+	// The time at whcih the restart is scheduled.
+	ScheduledAt *string
 }
 
 // Returns a task representing the restart operation.
 type RestartInstanceResponse struct {
 	// Task representing the restart operation
 	Task *Task
-}
-
-// Options for restarting a Postgres instance.
-type RestartOptions struct {
-	// The time at which the restart is scheduled.
-	ScheduledAt *string
 }
 
 type RestoreConfigSpec struct {

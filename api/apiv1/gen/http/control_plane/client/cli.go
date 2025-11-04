@@ -728,11 +728,14 @@ func BuildRestoreDatabasePayload(controlPlaneRestoreDatabaseBody string, control
 // restart-instance endpoint from CLI flags.
 func BuildRestartInstancePayload(controlPlaneRestartInstanceBody string, controlPlaneRestartInstanceDatabaseID string, controlPlaneRestartInstanceInstanceID string) (*controlplane.RestartInstancePayload, error) {
 	var err error
-	var body RestartInstanceRequestBody
+	var body struct {
+		// The time at whcih the restart is scheduled.
+		ScheduledAt *string `form:"scheduled_at" json:"scheduled_at" xml:"scheduled_at"`
+	}
 	{
 		err = json.Unmarshal([]byte(controlPlaneRestartInstanceBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"scheduled_at\": \"2025-06-18T03:45:00Z\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"scheduled_at\": \"2025-06-18T16:52:05Z\"\n   }'")
 		}
 	}
 	var databaseID string
@@ -761,16 +764,13 @@ func BuildRestartInstancePayload(controlPlaneRestartInstanceBody string, control
 			return nil, err
 		}
 	}
-	v := &controlplane.RestartOptions{
+	v := &controlplane.RestartInstancePayload{
 		ScheduledAt: body.ScheduledAt,
 	}
-	res := &controlplane.RestartInstancePayload{
-		RestartOptions: v,
-	}
-	res.DatabaseID = controlplane.Identifier(databaseID)
-	res.InstanceID = controlplane.Identifier(instanceID)
+	v.DatabaseID = controlplane.Identifier(databaseID)
+	v.InstanceID = controlplane.Identifier(instanceID)
 
-	return res, nil
+	return v, nil
 }
 
 // BuildStopInstancePayload builds the payload for the control-plane

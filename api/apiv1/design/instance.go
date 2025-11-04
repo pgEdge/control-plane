@@ -187,13 +187,3 @@ var Instance = g.ResultType("Instance", func() {
 
 	g.Required("id", "host_id", "node_name", "created_at", "updated_at", "state")
 })
-
-var RestartOptions = g.Type("RestartOptions", func() {
-	g.Description("Options for restarting a Postgres instance.")
-
-	g.Attribute("scheduled_at", g.String, func() {
-		g.Format(g.FormatDateTime)
-		g.Description("The time at which the restart is scheduled.")
-		g.Example("2025-06-18T03:45:00Z")
-	})
-})

@@ -26,6 +26,7 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 		"database_id", input.DatabaseID,
 		"instance_id", input.InstanceID,
 		"task_id", input.TaskID.String(),
+		"scheduled", input.ScheduledAt,
 	)
 	logger.Info("restarting instance")
 
@@ -71,9 +72,10 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 		return nil, handleError(err)
 	}
 	req := activities.RestartInstanceInput{
-		DatabaseID: input.DatabaseID,
-		InstanceID: input.InstanceID,
-		TaskID:     input.TaskID,
+		DatabaseID:  input.DatabaseID,
+		InstanceID:  input.InstanceID,
+		TaskID:      input.TaskID,
+		ScheduledAt: input.ScheduledAt,
 	}
 	_, err := w.Activities.ExecuteRestartInstance(ctx, input.HostID, &req).Get(ctx)
 	if err != nil {
