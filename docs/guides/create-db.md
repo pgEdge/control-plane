@@ -1,9 +1,9 @@
 # Creating a Database
 
-To create a Database, submit a `POST` request to the `/v1/databases` endpoint of
+To create a database, submit a `POST` request to the `/v1/databases` endpoint of
 any host in the cluster.
 
-For example, this request creates a three node distributed Database with one instance per node and an `admin` database user.
+For example, this request creates a three node distributed database with one instance per node and an `admin` database user.
 
 === "curl"
 
@@ -82,7 +82,7 @@ other details from the creation process. See the [Tasks and Logs](tasks-logs.md)
 There are many other database settings that you can customize when creating or
 updating a database. Settings in the `spec` object will apply to all distributed nodes. You can also apply or override a setting on a specific node by setting it in the node's object in `spec.nodes[]`.
 
-This example request alters the max connections for all nodes and overrides the port just for the `n1` node:
+This example request alters the `max_connections` value for all nodes and overrides the port just for the `n1` node:
 
 ```sh
 curl -X POST http://host-3:3000/v1/databases \
