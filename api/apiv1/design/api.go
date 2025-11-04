@@ -576,7 +576,7 @@ var _ = g.Service("control-plane", func() {
 			})
 			g.Attribute("scheduled_at", g.String, func() {
 				g.Format(g.FormatDateTime)
-				g.Description("The time at whcih the restart is scheduled.")
+				g.Description("The time at which the restart is scheduled.")
 				g.Example("2025-06-18T16:52:05Z")
 			})
 

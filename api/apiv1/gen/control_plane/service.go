@@ -692,7 +692,7 @@ type RestartInstancePayload struct {
 	DatabaseID Identifier
 	// The ID of the instance to restart.
 	InstanceID Identifier
-	// The time at whcih the restart is scheduled.
+	// The time at which the restart is scheduled.
 	ScheduledAt *string
 }
 

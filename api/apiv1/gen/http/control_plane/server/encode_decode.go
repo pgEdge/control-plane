@@ -2332,7 +2332,7 @@ func DecodeRestartInstanceRequest(mux goahttp.Muxer, decoder func(*http.Request)
 	return func(r *http.Request) (any, error) {
 		var (
 			body struct {
-				// The time at whcih the restart is scheduled.
+				// The time at which the restart is scheduled.
 				ScheduledAt *string `form:"scheduled_at" json:"scheduled_at" xml:"scheduled_at"`
 			}
 			err error

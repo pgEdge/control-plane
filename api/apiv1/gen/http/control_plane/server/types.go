@@ -4017,7 +4017,7 @@ func NewRestoreDatabasePayload(body *RestoreDatabaseRequestBody, databaseID stri
 // NewRestartInstancePayload builds a control-plane service restart-instance
 // endpoint payload.
 func NewRestartInstancePayload(body struct {
-	// The time at whcih the restart is scheduled.
+	// The time at which the restart is scheduled.
 	ScheduledAt *string `form:"scheduled_at" json:"scheduled_at" xml:"scheduled_at"`
 }, databaseID string, instanceID string) *controlplane.RestartInstancePayload {
 	v := &controlplane.RestartInstancePayload{

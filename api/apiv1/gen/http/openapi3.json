@@ -1807,7 +1807,7 @@
                 "properties": {
                   "scheduled_at": {
                     "type": "string",
-                    "description": "The time at whcih the restart is scheduled.",
+                    "description": "The time at which the restart is scheduled.",
                     "example": "2025-06-18T16:52:05Z",
                     "format": "date-time"
                   }

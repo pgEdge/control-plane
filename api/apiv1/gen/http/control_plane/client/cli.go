@@ -729,7 +729,7 @@ func BuildRestoreDatabasePayload(controlPlaneRestoreDatabaseBody string, control
 func BuildRestartInstancePayload(controlPlaneRestartInstanceBody string, controlPlaneRestartInstanceDatabaseID string, controlPlaneRestartInstanceInstanceID string) (*controlplane.RestartInstancePayload, error) {
 	var err error
 	var body struct {
-		// The time at whcih the restart is scheduled.
+		// The time at which the restart is scheduled.
 		ScheduledAt *string `form:"scheduled_at" json:"scheduled_at" xml:"scheduled_at"`
 	}
 	{
