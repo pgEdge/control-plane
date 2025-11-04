@@ -171,15 +171,13 @@ func (d *DatabaseFixture) RestoreDatabase(ctx context.Context, options RestoreDa
 }
 
 type RestartInstanceOptions struct {
-	InstanceID     string
-	RestartOptions *controlplane.RestartOptions
+	InstanceID string
 }
 
 func (d *DatabaseFixture) RestartInstance(ctx context.Context, options RestartInstanceOptions) error {
 	resp, err := d.client.RestartInstance(ctx, &controlplane.RestartInstancePayload{
-		DatabaseID:     d.ID,
-		InstanceID:     controlplane.Identifier(options.InstanceID),
-		RestartOptions: options.RestartOptions,
+		DatabaseID: d.ID,
+		InstanceID: controlplane.Identifier(options.InstanceID),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to restart instance: %w", err)

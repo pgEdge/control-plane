@@ -64,6 +64,8 @@ func (a *Activities) RestartInstance(ctx context.Context, input *RestartInstance
 	restartReq := &patroni.Restart{}
 	if !input.ScheduledAt.IsZero() {
 		restartReq.Schedule = &input.ScheduledAt
+		logger = logger.With("scheduled_at", input.ScheduledAt.String())
+		logger.Info("scheduled restart")
 	}
 
 	err = patroniClient.ScheduleRestart(ctx, restartReq)

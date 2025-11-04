@@ -1167,9 +1167,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RestartOptions'
+              type: object
+              properties:
+                scheduled_at:
+                  type: string
+                  description: The time at which the restart is scheduled.
+                  example: "2025-06-18T16:52:05Z"
+                  format: date-time
+              example:
+                scheduled_at: "2025-06-18T16:52:05Z"
             example:
-              scheduled_at: "2025-06-18T03:45:00Z"
+              scheduled_at: "2025-06-18T16:52:05Z"
       responses:
         "200":
           description: OK response.
@@ -6855,17 +6863,6 @@ components:
           type: create
       required:
         - task
-    RestartOptions:
-      type: object
-      properties:
-        scheduled_at:
-          type: string
-          description: The time at which the restart is scheduled.
-          example: "2025-06-18T03:45:00Z"
-          format: date-time
-      description: Options for restarting a Postgres instance.
-      example:
-        scheduled_at: "2025-06-18T03:45:00Z"
     RestoreConfigSpec:
       type: object
       properties:

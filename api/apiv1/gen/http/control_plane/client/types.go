@@ -100,13 +100,6 @@ type RestoreDatabaseRequestBody struct {
 	TargetNodes []string `form:"target_nodes,omitempty" json:"target_nodes,omitempty" xml:"target_nodes,omitempty"`
 }
 
-// RestartInstanceRequestBody is the type of the "control-plane" service
-// "restart-instance" endpoint HTTP request body.
-type RestartInstanceRequestBody struct {
-	// The time at which the restart is scheduled.
-	ScheduledAt *string `form:"scheduled_at,omitempty" json:"scheduled_at,omitempty" xml:"scheduled_at,omitempty"`
-}
-
 // InitClusterResponseBody is the type of the "control-plane" service
 // "init-cluster" endpoint HTTP response body.
 type InitClusterResponseBody struct {
@@ -2505,15 +2498,6 @@ func NewRestoreDatabaseRequestBody(p *controlplane.RestoreDatabasePayload) *Rest
 		for i, val := range p.Request.TargetNodes {
 			body.TargetNodes[i] = val
 		}
-	}
-	return body
-}
-
-// NewRestartInstanceRequestBody builds the HTTP request body from the payload
-// of the "restart-instance" endpoint of the "control-plane" service.
-func NewRestartInstanceRequestBody(p *controlplane.RestartInstancePayload) *RestartInstanceRequestBody {
-	body := &RestartInstanceRequestBody{
-		ScheduledAt: p.RestartOptions.ScheduledAt,
 	}
 	return body
 }

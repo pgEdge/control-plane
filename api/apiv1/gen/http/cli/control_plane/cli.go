@@ -818,7 +818,7 @@ Restarts a specific instance within a database. Supports immediate or scheduled 
 
 Example:
     %[1]s control-plane restart-instance --body '{
-      "scheduled_at": "2025-06-18T03:45:00Z"
+      "scheduled_at": "2025-06-18T16:52:05Z"
    }' --database-id "68f50878-44d2-4524-a823-e31bd478706d" --instance-id "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi"
 `, os.Args[0])
 }
