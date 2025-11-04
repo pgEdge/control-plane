@@ -12,7 +12,7 @@ On MacOS, Docker Desktop can be obtained from the [official download page](https
 #### Configuration
 
 After you've installed Docker Desktop, make sure to change the settings to
-provide adequate [disk space, CPU, and RAM](https://docs.docker.com/desktop/settings-and-maintenance/settings/#resources). For example, my current settings are:
+provide adequate [disk space, CPU, and RAM](https://docs.docker.com/desktop/settings-and-maintenance/settings/#resources). Use the following as a baseline configuration:
 
 - 100% of available CPUs
 - 50% of available RAM
