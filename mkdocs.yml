@@ -52,7 +52,7 @@ theme:
         name: Switch to system preference
 extra:
   generator: false
-  version: v0.4.0
+  version: v0.5.0
 copyright: Copyright &copy; 2023 - 2025 pgEdge, Inc
 repo_url: https://github.com/pgEdge/control-plane
 nav:
