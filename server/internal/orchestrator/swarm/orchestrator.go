@@ -473,14 +473,16 @@ func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, specs []*datab
 			Valid:      true,
 		}
 		if instance.Port != nil {
-			if *instance.Port != 0 && occupiedPorts.Has(*instance.Port) {
-				result.Valid = false
-				result.Errors = append(
-					result.Errors,
-					fmt.Sprintf("port %d allocated to multiple instances on this host", instance.Port),
-				)
+			if *instance.Port != 0 {
+				if occupiedPorts.Has(*instance.Port) {
+					result.Valid = false
+					result.Errors = append(
+						result.Errors,
+						fmt.Sprintf("port %d allocated to multiple instances on this host", *instance.Port),
+					)
+				}
+				occupiedPorts.Add(*instance.Port)
 			}
-			occupiedPorts.Add(*instance.Port)
 		}
 		if err := o.validateInstanceSpec(ctx, instance, result); err != nil {
 			return nil, err
@@ -533,10 +535,28 @@ func (o *Orchestrator) scaleInstance(
 func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.InstanceSpec, result *database.ValidationResult) error {
 	orchestratorOpts := spec.OrchestratorOpts
 
-	// Short-circuit if there's nothing to validate
-	if orchestratorOpts == nil || orchestratorOpts.Swarm == nil ||
-		(len(orchestratorOpts.Swarm.ExtraVolumes) == 0 &&
-			len(orchestratorOpts.Swarm.ExtraNetworks) == 0) {
+	var endpointConfigs map[string]*network.EndpointSettings
+	if orchestratorOpts != nil && orchestratorOpts.Swarm != nil && len(orchestratorOpts.Swarm.ExtraNetworks) > 0 {
+		info, err := ensureNetworks(ctx, o.docker, orchestratorOpts.Swarm.ExtraNetworks)
+		if err != nil {
+			result.Valid = false
+			result.Errors = append(result.Errors, fmt.Sprintf("network validation failed: %v", err))
+			return nil
+		}
+		endpointConfigs = info
+	}
+
+	var mounts []mount.Mount
+	var mountTargets []string
+	if orchestratorOpts != nil && orchestratorOpts.Swarm != nil && len(orchestratorOpts.Swarm.ExtraVolumes) > 0 {
+		for _, vol := range orchestratorOpts.Swarm.ExtraVolumes {
+			mounts = append(mounts, docker.BuildMount(vol.HostPath, vol.DestinationPath, false))
+			mountTargets = append(mountTargets, vol.DestinationPath)
+		}
+	}
+
+	// If there are NO networks, NO mounts, and port is nil/0 → nothing to validate
+	if (len(mounts) == 0) && (len(endpointConfigs) == 0) && (spec.Port == nil || *spec.Port == 0) {
 		return nil
 	}
 
@@ -550,27 +570,13 @@ func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.
 	if err != nil {
 		return fmt.Errorf("image fetch error: %w", err)
 	}
-	var endpointConfigs map[string]*network.EndpointSettings
-	if len(orchestratorOpts.Swarm.ExtraNetworks) > 0 {
-		endpointConfigs, err = ensureNetworks(ctx, o.docker, orchestratorOpts.Swarm.ExtraNetworks)
-		if err != nil {
-			result.Valid = false
-			result.Errors = append(result.Errors, fmt.Sprintf("network validation failed: %v", err))
-			return nil
-		}
-	}
-
-	var mounts []mount.Mount
-	var mountTargets []string
-	for _, vol := range orchestratorOpts.Swarm.ExtraVolumes {
-		mounts = append(mounts, docker.BuildMount(vol.HostPath, vol.DestinationPath, false))
-		mountTargets = append(mountTargets, vol.DestinationPath)
-	}
 
 	cmd := buildVolumeCheckCommand(mountTargets)
 	output, err := o.runValidationContainer(
-		ctx, images.PgEdgeImage,
-		cmd, mounts,
+		ctx,
+		images.PgEdgeImage,
+		cmd,
+		mounts,
 		spec.Port,
 		endpointConfigs,
 	)
@@ -654,24 +660,22 @@ func validationContainerOpts(
 			PortBindings: nat.PortMap{},
 		},
 	}
-	// TODO (PLAT-170): this check prevents users from updating databases that
-	// have a port enabled. Commenting this out is a short-term fix.
-	// if port != nil && *port > 0 {
-	// 	exposedPort := fmt.Sprintf("%d/tcp", *port)
-	// 	portSet := nat.PortSet{
-	// 		nat.Port(exposedPort): struct{}{},
-	// 	}
-	// 	portMap := nat.PortMap{
-	// 		nat.Port(exposedPort): []nat.PortBinding{
-	// 			{
-	// 				HostIP:   "0.0.0.0",
-	// 				HostPort: strconv.Itoa(*port),
-	// 			},
-	// 		},
-	// 	}
-	// 	opts.Config.ExposedPorts = portSet
-	// 	opts.Host.PortBindings = portMap
-	// }
+
+	// PLAT-170: Bind only when a non-zero port is explicitly requested.
+	// The workflow now ensures we validate only changed, non-zero ports.
+	if port != nil && *port > 0 {
+		exposed := nat.Port(fmt.Sprintf("%d/tcp", *port))
+		opts.Config.ExposedPorts = nat.PortSet{exposed: struct{}{}}
+		opts.Host.PortBindings = nat.PortMap{
+			exposed: []nat.PortBinding{
+				{
+					HostIP:   "0.0.0.0",
+					HostPort: strconv.Itoa(*port),
+				},
+			},
+		}
+	}
+
 	if len(endpoints) > 0 {
 		opts.Net = &network.NetworkingConfig{
 			EndpointsConfig: endpoints,
