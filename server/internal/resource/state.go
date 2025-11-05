@@ -138,6 +138,25 @@ func (s *State) Merge(other *State) {
 	}
 }
 
+// MarkPendingDeletion takes an end state and marks all current resources that
+// aren't in the end state with PendingDeletion = true.
+func (s *State) MarkPendingDeletion(end *State) {
+	for t, byType := range s.Resources {
+		endByType, ok := end.Resources[t]
+		if !ok {
+			for _, resource := range byType {
+				resource.PendingDeletion = true
+			}
+			continue
+		}
+		for id, resource := range byType {
+			if _, ok := endByType[id]; !ok {
+				resource.PendingDeletion = true
+			}
+		}
+	}
+}
+
 type node struct {
 	id       int64
 	resource *ResourceData
@@ -306,6 +325,9 @@ func (s *State) planCreates(options PlanOptions, desired *State) (Plan, error) {
 					Resource: resource,
 					Reason:   EventReasonDoesNotExist,
 				}
+			case currentResource.PendingDeletion:
+				// Skip create/update for resources that are pending deletion.
+				continue
 			case currentResource.NeedsRecreate:
 				event = &Event{
 					Type:     EventTypeCreate,

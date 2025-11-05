@@ -42,6 +42,7 @@ type ResourceData struct {
 	Dependencies    []Identifier    `json:"dependencies"`
 	DiffIgnore      []string        `json:"diff_ignore"`
 	ResourceVersion string          `json:"resource_version"`
+	PendingDeletion bool            `json:"pending_deletion"`
 }
 
 func (r *ResourceData) Diff(other *ResourceData) (jsondiff.Patch, error) {
@@ -68,6 +69,7 @@ func (r *ResourceData) Clone() *ResourceData {
 		Dependencies:    slices.Clone(r.Dependencies),
 		DiffIgnore:      slices.Clone(r.DiffIgnore),
 		ResourceVersion: r.ResourceVersion,
+		PendingDeletion: r.PendingDeletion,
 	}
 }
 
