@@ -13,7 +13,7 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
-  - pymdownx.superfences:
+
 plugins:
   - macros:
       j2_variable_start_string: '<<'
