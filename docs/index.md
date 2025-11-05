@@ -1,6 +1,6 @@
 # pgEdge Control Plane
 
-The **pgEdge Control Plane** is a distributed application designed to simplify the management and orchestration of Postgres databases. It provides a declarative API for defining, deploying, and updating databases across multiple hosts.
+The [**pgEdge Control Plane** ](https://github.com/pgedge/control-plane) is a distributed application designed to simplify the management and orchestration of Postgres databases. It provides a declarative API for defining, deploying, and updating databases across multiple hosts.
 
 In its default configuration, it uses an embedded [etcd](https://etcd.io/) server to store configuration and coordinate database operations with other instances.
 
