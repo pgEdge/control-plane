@@ -135,7 +135,10 @@ func (w *Workflows) getInstancesByHost(
 
 func indexInstances(spec *database.Spec) map[string]*database.InstanceSpec {
 	idx := make(map[string]*database.InstanceSpec)
-	nodes, _ := spec.NodeInstances()
+	nodes, err := spec.NodeInstances()
+	if err != nil {
+		return idx
+	}
 	for _, n := range nodes {
 		for _, inst := range n.Instances {
 			nodeName := inst.NodeName
@@ -176,7 +179,7 @@ func onlyPortChanged(nodeName string, cur *database.InstanceSpec, prevIndex map[
 func portNeedsValidation(nodeName string, cur *database.InstanceSpec, prevIndex map[string]*database.InstanceSpec) bool {
 	prev := prevIndex[instKey(nodeName, cur.HostID)]
 	curPort := derefPort(cur.Port)
-	prevPort := derefPort(nil)
+	prevPort := 0
 	if prev != nil {
 		prevPort = derefPort(prev.Port)
 	}

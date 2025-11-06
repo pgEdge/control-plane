@@ -556,7 +556,7 @@ func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.
 	}
 
 	// If there are NO networks, NO mounts, and port is nil/0 → nothing to validate
-	if (len(mounts) == 0) && (len(endpointConfigs) == 0) && (spec.Port == nil || *spec.Port == 0) {
+	if len(mounts) == 0 && len(endpointConfigs) == 0 && (spec.Port == nil || *spec.Port == 0) {
 		return nil
 	}
 
