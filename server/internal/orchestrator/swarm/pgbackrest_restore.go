@@ -101,12 +101,17 @@ func (p *PgBackRestRestore) Create(ctx context.Context, rc *resource.Context) er
 		return handleError(fmt.Errorf("failed to get postgres service resource from state: %w", err))
 	}
 
+	specResource, err := resource.FromContext[*PostgresServiceSpecResource](rc, PostgresServiceSpecResourceIdentifier(p.InstanceID))
+	if err != nil {
+		return handleError(fmt.Errorf("failed to get postgres service spec resource from state: %w", err))
+	}
+
 	err = p.stopPostgres(ctx, rc, dockerClient, fs, svcResource)
 	if err != nil {
 		return handleError(err)
 	}
 
-	containerID, err := p.runRestoreContainer(ctx, dockerClient, svcResource)
+	containerID, err := p.runRestoreContainer(ctx, dockerClient, svcResource, specResource)
 	if err != nil {
 		return handleError(err)
 	}
@@ -204,16 +209,13 @@ func (p *PgBackRestRestore) runRestoreContainer(
 	ctx context.Context,
 	dockerClient *docker.Docker,
 	svcResource *PostgresService,
+	specResource *PostgresServiceSpecResource,
 ) (string, error) {
-	swarmService, err := dockerClient.ServiceInspect(ctx, svcResource.ServiceID)
-	if err != nil {
-		return "", fmt.Errorf("failed to inspect postgres service: %w", err)
-	}
 	var limits swarm.Limit
-	if swarmService.Spec.TaskTemplate.Resources != nil && swarmService.Spec.TaskTemplate.Resources.Limits != nil {
-		limits = *swarmService.Spec.TaskTemplate.Resources.Limits
+	if specResource.Spec.TaskTemplate.Resources != nil && specResource.Spec.TaskTemplate.Resources.Limits != nil {
+		limits = *specResource.Spec.TaskTemplate.Resources.Limits
 	}
-	containerSpec := swarmService.Spec.TaskTemplate.ContainerSpec
+	containerSpec := specResource.Spec.TaskTemplate.ContainerSpec
 	restoreOptions := utils.BuildOptionArgs(p.RestoreOptions)
 	opts := append([]string{"--log-timestamp=n"}, restoreOptions...)
 	containerID, err := dockerClient.ContainerRun(ctx, docker.ContainerRunOptions{
