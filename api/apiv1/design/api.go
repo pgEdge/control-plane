@@ -12,7 +12,7 @@ import (
 var _ = g.API("control-plane", func() {
 	g.Title("pgEdge Control Plane v1 API")
 	g.Version(api.Version)
-	g.Description("Service for creating, modifying, and operating pgEdge databases.")
+	g.Description("A distributed application that provides a declarative API to deploy and manage Postgres databases.")
 	g.Server("control-plane", func() {
 		g.Host("localhost", func() {
 			g.URI("http://localhost:3000")
