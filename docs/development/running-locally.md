@@ -17,8 +17,7 @@ provide adequate [disk space, CPU, and RAM](https://docs.docker.com/desktop/sett
 - 100% of available CPUs
 - 50% of available RAM
 - 60GB of disk space
-  - You can use `docker system df` to monitor available space and increase this
-    as needed.
+    - You can use `docker system df` to monitor available space and increase this as needed.
 
 > [!IMPORTANT]
 > Our Docker Compose configuration uses host networking, so you must also enable
