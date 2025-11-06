@@ -8,6 +8,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/database/operations"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -113,7 +114,6 @@ func TestRestoreDatabase(t *testing.T) {
 		start       *resource.State
 		nodes       []*operations.NodeResources
 		targets     []*operations.NodeRestoreResources
-		expected    []resource.Plan
 		expectedErr string
 	}{
 		{
@@ -124,81 +124,6 @@ func TestRestoreDatabase(t *testing.T) {
 					NodeName:        "n1",
 					PrimaryInstance: n1Instance1,
 					RestoreInstance: n1Instance1WithRestore,
-				},
-			},
-			// The instance is updated after it's created because we've removed
-			// one of its dependencies: the restore resource. In practice, this
-			// will check to see if updates are needed, but will otherwise be a
-			// no-op.
-			expected: []resource.Plan{
-				{
-					{
-						{
-							Type: resource.EventTypeDelete,
-							Resource: makeResourceData(t, &database.NodeResource{
-								Name:              "n1",
-								PrimaryInstanceID: n1Instance1.InstanceID(),
-								InstanceIDs:       []string{n1Instance1.InstanceID()},
-							}),
-						},
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: makeResourceData(t, makeMonitorResource(n1Instance1)),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: makeResourceData(t, n1Instance1.Instance),
-						},
-					},
-				},
-				{
-					{
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: n1Instance1WithRestore.Resources[1],
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: makeResourceData(t, n1Instance1WithRestore.Instance),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: makeResourceData(t, makeMonitorResource(n1Instance1WithRestore)),
-						},
-					},
-				},
-				{
-					{
-						{
-							Type:     resource.EventTypeUpdate,
-							Resource: makeResourceData(t, n1Instance1.Instance),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeUpdate,
-							Resource: makeResourceData(t, makeMonitorResource(n1Instance1)),
-						},
-						{
-							Type: resource.EventTypeCreate,
-							Resource: makeResourceData(t, &database.NodeResource{
-								Name:        "n1",
-								InstanceIDs: []string{n1Instance1.InstanceID()},
-							}),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: n1Instance1WithRestore.Resources[1],
-						},
-					},
 				},
 			},
 		},
@@ -217,111 +142,6 @@ func TestRestoreDatabase(t *testing.T) {
 					NodeName:        "n1",
 					PrimaryInstance: n1Instance1,
 					RestoreInstance: n1Instance1WithRestore,
-				},
-			},
-			expected: []resource.Plan{
-				{
-					{
-						{
-							Type: resource.EventTypeDelete,
-							Resource: makeResourceData(t, &database.SubscriptionResource{
-								SubscriberNode: "n1",
-								ProviderNode:   "n2",
-							}),
-						},
-						{
-							Type: resource.EventTypeDelete,
-							Resource: makeResourceData(t, &database.SubscriptionResource{
-								SubscriberNode: "n2",
-								ProviderNode:   "n1",
-							}),
-						},
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: makeResourceData(t, makeMonitorResource(n1Instance1)),
-						},
-					},
-					{
-						{
-							Type: resource.EventTypeDelete,
-							Resource: makeResourceData(t, &database.NodeResource{
-								Name:              "n1",
-								PrimaryInstanceID: n1Instance1.InstanceID(),
-								InstanceIDs:       []string{n1Instance1.InstanceID()},
-							}),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: makeResourceData(t, n1Instance1.Instance),
-						},
-					},
-				},
-				{
-					{
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: n1Instance1WithRestore.Resources[1],
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: makeResourceData(t, n1Instance1WithRestore.Instance),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: makeResourceData(t, makeMonitorResource(n1Instance1WithRestore)),
-						},
-					},
-				},
-				{
-					{
-						{
-							Type:     resource.EventTypeUpdate,
-							Resource: makeResourceData(t, n1Instance1.Instance),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeUpdate,
-							Resource: makeResourceData(t, makeMonitorResource(n1Instance1)),
-						},
-						{
-							Type: resource.EventTypeCreate,
-							Resource: makeResourceData(t, &database.NodeResource{
-								Name:        "n1",
-								InstanceIDs: []string{n1Instance1.InstanceID()},
-							}),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: n1Instance1WithRestore.Resources[1],
-						},
-					},
-				},
-				{
-					{
-						{
-							Type: resource.EventTypeCreate,
-							Resource: makeResourceData(t, &database.SubscriptionResource{
-								SubscriberNode: "n1",
-								ProviderNode:   "n2",
-							}),
-						},
-						{
-							Type: resource.EventTypeCreate,
-							Resource: makeResourceData(t, &database.SubscriptionResource{
-								SubscriberNode: "n2",
-								ProviderNode:   "n1",
-							}),
-						},
-					},
 				},
 			},
 		},
@@ -343,163 +163,6 @@ func TestRestoreDatabase(t *testing.T) {
 					ReplicaInstances: []*database.InstanceResources{n1Instance2},
 				},
 			},
-			expected: []resource.Plan{
-				{
-					{
-						{
-							Type: resource.EventTypeDelete,
-							Resource: makeResourceData(t, &database.SubscriptionResource{
-								SubscriberNode: "n1",
-								ProviderNode:   "n2",
-							}),
-						},
-						{
-							Type: resource.EventTypeDelete,
-							Resource: makeResourceData(t, &database.SubscriptionResource{
-								SubscriberNode: "n2",
-								ProviderNode:   "n1",
-							}),
-						},
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: makeResourceData(t, makeMonitorResource(n1Instance1)),
-						},
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: makeResourceData(t, makeMonitorResource(n1Instance2)),
-						},
-						{
-							Type: resource.EventTypeDelete,
-							Resource: makeResourceData(t, &database.SwitchoverResource{
-								HostID:     n1Instance1.HostID(),
-								InstanceID: n1Instance1.InstanceID(),
-								TargetRole: patroni.InstanceRolePrimary,
-							}),
-						},
-					},
-					{
-						{
-							Type: resource.EventTypeDelete,
-							Resource: makeResourceData(t, &database.NodeResource{
-								Name:              "n1",
-								PrimaryInstanceID: n1Instance1.InstanceID(),
-								InstanceIDs: []string{
-									n1Instance1.InstanceID(),
-									n1Instance2.InstanceID(),
-								},
-							}),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: makeResourceData(t, n1Instance1.Instance),
-						},
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: makeResourceData(t, n1Instance2.Instance),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: n1Instance2.Resources[0],
-						},
-					},
-				},
-				{
-					{
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: n1Instance1WithRestore.Resources[1],
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: makeResourceData(t, n1Instance1WithRestore.Instance),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: makeResourceData(t, makeMonitorResource(n1Instance1WithRestore)),
-						},
-					},
-				},
-				{
-					{
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: n1Instance2.Resources[0],
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: makeResourceData(t, n1Instance2.Instance),
-						},
-						{
-							Type:     resource.EventTypeUpdate,
-							Resource: makeResourceData(t, n1Instance1.Instance),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeUpdate,
-							Resource: makeResourceData(t, makeMonitorResource(n1Instance1)),
-						},
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: makeResourceData(t, makeMonitorResource(n1Instance2)),
-						},
-						{
-							Type: resource.EventTypeCreate,
-							Resource: makeResourceData(t, &database.NodeResource{
-								Name: "n1",
-								InstanceIDs: []string{
-									n1Instance1.InstanceID(),
-									n1Instance2.InstanceID(),
-								},
-							}),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: n1Instance1WithRestore.Resources[1],
-						},
-					},
-				},
-				{
-					{
-						{
-							Type: resource.EventTypeCreate,
-							Resource: makeResourceData(t, &database.SwitchoverResource{
-								HostID:     n1Instance1.HostID(),
-								InstanceID: n1Instance1.InstanceID(),
-								TargetRole: patroni.InstanceRolePrimary,
-							}),
-						},
-					},
-					{
-						{
-							Type: resource.EventTypeCreate,
-							Resource: makeResourceData(t, &database.SubscriptionResource{
-								SubscriberNode: "n1",
-								ProviderNode:   "n2",
-							}),
-						},
-						{
-							Type: resource.EventTypeCreate,
-							Resource: makeResourceData(t, &database.SubscriptionResource{
-								SubscriberNode: "n2",
-								ProviderNode:   "n1",
-							}),
-						},
-					},
-				},
-			},
 		},
 		{
 			name:  "restore all nodes in two-node db",
@@ -516,173 +179,25 @@ func TestRestoreDatabase(t *testing.T) {
 					RestoreInstance: n2Instance1WithRestore,
 				},
 			},
-			// The nodes are restored simultaneously.
-			expected: []resource.Plan{
-				{
-					{
-						{
-							Type: resource.EventTypeDelete,
-							Resource: makeResourceData(t, &database.SubscriptionResource{
-								SubscriberNode: "n1",
-								ProviderNode:   "n2",
-							}),
-						},
-						{
-							Type: resource.EventTypeDelete,
-							Resource: makeResourceData(t, &database.SubscriptionResource{
-								SubscriberNode: "n2",
-								ProviderNode:   "n1",
-							}),
-						},
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: makeResourceData(t, makeMonitorResource(n1Instance1)),
-						},
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: makeResourceData(t, makeMonitorResource(n2Instance1)),
-						},
-					},
-					{
-						{
-							Type: resource.EventTypeDelete,
-							Resource: makeResourceData(t, &database.NodeResource{
-								Name:              "n1",
-								PrimaryInstanceID: n1Instance1.InstanceID(),
-								InstanceIDs:       []string{n1Instance1.InstanceID()},
-							}),
-						},
-						{
-							Type: resource.EventTypeDelete,
-							Resource: makeResourceData(t, &database.NodeResource{
-								Name:              "n2",
-								PrimaryInstanceID: n2Instance1.InstanceID(),
-								InstanceIDs:       []string{n2Instance1.InstanceID()},
-							}),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: makeResourceData(t, n1Instance1.Instance),
-						},
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: makeResourceData(t, n2Instance1.Instance),
-						},
-					},
-				},
-				{
-					{
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: n1Instance1WithRestore.Resources[1],
-						},
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: n2Instance1WithRestore.Resources[1],
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: makeResourceData(t, n1Instance1WithRestore.Instance),
-						},
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: makeResourceData(t, n2Instance1WithRestore.Instance),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: makeResourceData(t, makeMonitorResource(n1Instance1WithRestore)),
-						},
-						{
-							Type:     resource.EventTypeCreate,
-							Resource: makeResourceData(t, makeMonitorResource(n2Instance1WithRestore)),
-						},
-					},
-				},
-				{
-					{
-						{
-							Type:     resource.EventTypeUpdate,
-							Resource: makeResourceData(t, n1Instance1.Instance),
-						},
-						{
-							Type:     resource.EventTypeUpdate,
-							Resource: makeResourceData(t, n2Instance1.Instance),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeUpdate,
-							Resource: makeResourceData(t, makeMonitorResource(n1Instance1)),
-						},
-						{
-							Type:     resource.EventTypeUpdate,
-							Resource: makeResourceData(t, makeMonitorResource(n2Instance1)),
-						},
-						{
-							Type: resource.EventTypeCreate,
-							Resource: makeResourceData(t, &database.NodeResource{
-								Name:        "n1",
-								InstanceIDs: []string{n1Instance1.InstanceID()},
-							}),
-						},
-						{
-							Type: resource.EventTypeCreate,
-							Resource: makeResourceData(t, &database.NodeResource{
-								Name:        "n2",
-								InstanceIDs: []string{n2Instance1.InstanceID()},
-							}),
-						},
-					},
-					{
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: n1Instance1WithRestore.Resources[1],
-						},
-						{
-							Type:     resource.EventTypeDelete,
-							Resource: n2Instance1WithRestore.Resources[1],
-						},
-					},
-				},
-				{
-					{
-						{
-							Type: resource.EventTypeCreate,
-							Resource: makeResourceData(t, &database.SubscriptionResource{
-								SubscriberNode: "n1",
-								ProviderNode:   "n2",
-							}),
-						},
-						{
-							Type: resource.EventTypeCreate,
-							Resource: makeResourceData(t, &database.SubscriptionResource{
-								SubscriberNode: "n2",
-								ProviderNode:   "n1",
-							}),
-						},
-					},
-				},
-			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			out, err := operations.RestoreDatabase(
+			plans, err := operations.RestoreDatabase(
 				tc.start,
 				tc.nodes,
 				tc.targets,
 			)
 			if tc.expectedErr != "" {
-				assert.Nil(t, out)
+				assert.Nil(t, plans)
 				assert.ErrorContains(t, err, tc.expectedErr)
 			} else {
 				assert.NoError(t, err)
-				assertPlansEqual(t, tc.expected, out)
+
+				actual := resource.SummarizePlans(plans)
+				golden := &testutils.GoldenTest[[]resource.PlanSummary]{
+					Compare: assertPlansEqual,
+				}
+				golden.Run(t, actual, update)
 			}
 		})
 	}

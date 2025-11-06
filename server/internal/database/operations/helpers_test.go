@@ -37,17 +37,6 @@ func makeMonitorResource(instance *database.InstanceResources) *monitor.Instance
 	}
 }
 
-func makeResourceData(t testing.TB, r resource.Resource) *resource.ResourceData {
-	t.Helper()
-
-	d, err := resource.ToResourceData(r)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return d
-}
-
 func makeState(t testing.TB, resources []resource.Resource, data []*resource.ResourceData) *resource.State {
 	t.Helper()
 
@@ -95,7 +84,7 @@ func makeInstance(t testing.TB, node string, num int, dependencies ...resource.R
 	return d
 }
 
-func assertPlansEqual(t testing.TB, expected, actual []resource.Plan) {
+func assertPlansEqual(t testing.TB, expected, actual []resource.PlanSummary) {
 	t.Helper()
 
 	require.Equal(t, len(expected), len(actual), "actual has different length:\n%s", asJSON(t, expected, actual))

@@ -32,15 +32,12 @@ func (a *Activities) ExecutePersistState(
 }
 
 func (a *Activities) PersistState(ctx context.Context, input *PersistStateInput) (*PersistStateOutput, error) {
-	store, err := do.Invoke[*resource.Store](a.Injector)
+	service, err := do.Invoke[*resource.Service](a.Injector)
 	if err != nil {
 		return nil, err
 	}
 
-	err = store.Put(&resource.StoredState{
-		DatabaseID: input.DatabaseID,
-		State:      input.State,
-	}).Exec(ctx)
+	err = service.PersistState(ctx, input.DatabaseID, input.State)
 	if err != nil {
 		return nil, fmt.Errorf("failed to persist state: %w", err)
 	}

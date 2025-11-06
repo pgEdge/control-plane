@@ -171,7 +171,8 @@ endif
 	$(changie) merge
 	$(changie) latest > api/version.txt
 	$(MAKE) -C api generate
-	VERSION=$(VERSION) yq -i '.extra.version = strenv(VERSION)' mkdocs.yml
+	VERSION=$(VERSION) yq -i \ 
+		'.extra.control_plane_version = strenv(VERSION)' mkdocs.yml
 	git checkout -b release/$(VERSION)
 	git add api changes CHANGELOG.md mkdocs.yml
 	git -c core.pager='' diff --staged

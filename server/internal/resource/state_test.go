@@ -110,18 +110,21 @@ func TestState(t *testing.T) {
 					{
 						Type:     resource.EventTypeCreate,
 						Resource: resource3Data,
+						Reason:   resource.EventReasonDoesNotExist,
 					},
 				},
 				{
 					{
 						Type:     resource.EventTypeCreate,
 						Resource: resource2Data,
+						Reason:   resource.EventReasonDoesNotExist,
 					},
 				},
 				{
 					{
 						Type:     resource.EventTypeCreate,
 						Resource: resource1Data,
+						Reason:   resource.EventReasonDoesNotExist,
 					},
 				},
 			}
@@ -168,12 +171,14 @@ func TestState(t *testing.T) {
 					{
 						Type:     resource.EventTypeCreate,
 						Resource: resource2Data,
+						Reason:   resource.EventReasonDoesNotExist,
 					},
 				},
 				{
 					{
 						Type:     resource.EventTypeCreate,
 						Resource: resource1Data,
+						Reason:   resource.EventReasonDoesNotExist,
 					},
 				},
 			}
@@ -196,6 +201,8 @@ func TestState(t *testing.T) {
 					testResourceID("test3"),
 				},
 			}
+			resource2Data, err := resource.ToResourceData(resource2)
+			require.NoError(t, err)
 
 			resource3 := &testResource{
 				identifier: testResourceID("test3"),
@@ -225,11 +232,16 @@ func TestState(t *testing.T) {
 			plan, err := current.Plan(resource.PlanOptions{}, desired)
 			assert.NoError(t, err)
 
+			expectedDiff, err := resource2Data.Diff(updatedResource2Data)
+			assert.NoError(t, err)
+
 			expected := resource.Plan{
 				{
 					{
 						Type:     resource.EventTypeUpdate,
 						Resource: updatedResource2Data,
+						Reason:   resource.EventReasonHasDiff,
+						Diff:     expectedDiff,
 					},
 				},
 				{
@@ -238,6 +250,7 @@ func TestState(t *testing.T) {
 					{
 						Type:     resource.EventTypeUpdate,
 						Resource: resource1Data,
+						Reason:   resource.EventReasonDependencyUpdated,
 					},
 				},
 			}
@@ -369,20 +382,24 @@ func TestState(t *testing.T) {
 					{
 						Type:     resource.EventTypeCreate,
 						Resource: resource2Data,
+						Reason:   resource.EventReasonDoesNotExist,
 					},
 					{
 						Type:     resource.EventTypeCreate,
 						Resource: resource4Data,
+						Reason:   resource.EventReasonDoesNotExist,
 					},
 				},
 				{
 					{
 						Type:     resource.EventTypeCreate,
 						Resource: resource1Data,
+						Reason:   resource.EventReasonDoesNotExist,
 					},
 					{
 						Type:     resource.EventTypeCreate,
 						Resource: resource3Data,
+						Reason:   resource.EventReasonDoesNotExist,
 					},
 				},
 				{

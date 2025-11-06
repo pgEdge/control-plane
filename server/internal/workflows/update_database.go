@@ -105,6 +105,11 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		return nil, handleError(fmt.Errorf("failed to execute plan update: %w", err))
 	}
 
+	err = w.persistPlans(ctx, input.Spec.DatabaseID, input.TaskID, planOutput.Plans)
+	if err != nil {
+		return nil, handleError(err)
+	}
+
 	err = w.applyPlans(ctx, input.Spec.DatabaseID, input.TaskID, current, planOutput.Plans)
 	if err != nil {
 		return nil, handleError(err)

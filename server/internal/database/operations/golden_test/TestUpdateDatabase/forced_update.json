@@ -1,0 +1,34 @@
+[
+  [
+    [
+      {
+        "type": "update",
+        "resource_id": "orchestrator.resource::n1-instance-1-dep-1-id",
+        "reason": "force_update",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "update",
+        "resource_id": "database.instance::n1-instance-1-id",
+        "reason": "force_update",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "update",
+        "resource_id": "database.node::n1",
+        "reason": "force_update",
+        "diff": null
+      },
+      {
+        "type": "update",
+        "resource_id": "monitor.instance::n1-instance-1-id",
+        "reason": "force_update",
+        "diff": null
+      }
+    ]
+  ]
+]

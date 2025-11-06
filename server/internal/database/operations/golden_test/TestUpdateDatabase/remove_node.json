@@ -1,0 +1,42 @@
+[
+  [
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.subscription::n1n2",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.subscription::n2n1",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "monitor.instance::n2-instance-1-id",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.node::n2",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.instance::n2-instance-1-id",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "orchestrator.resource::n2-instance-1-dep-1-id",
+        "diff": null
+      }
+    ]
+  ]
+]

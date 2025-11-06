@@ -2,8 +2,8 @@
   "swagger": "2.0",
   "info": {
     "title": "pgEdge Control Plane v1 API",
-    "description": "Service for creating, modifying, and operating pgEdge databases.",
-    "version": "v0.4.0"
+    "description": "A distributed application that provides a declarative API to deploy and manage Postgres databases.",
+    "version": "v0.5.0"
   },
   "host": "localhost:3000",
   "consumes": [

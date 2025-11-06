@@ -1,3 +1,0 @@
-kind: Added
-body: Added a 'remote_etcd' storage option to enable Control Plane servers that do not run an embedded Etcd server.
-time: 2025-10-27T09:16:19.96142-04:00

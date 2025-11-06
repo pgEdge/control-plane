@@ -134,10 +134,7 @@ func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*A
 	data.NeedsRecreate = needsCreate
 
 	return &ApplyEventOutput{
-		Event: &resource.Event{
-			Type:     input.Event.Type,
-			Resource: data,
-		},
+		Event: input.Event.WithData(data),
 	}, nil
 }
 

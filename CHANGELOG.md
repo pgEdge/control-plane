@@ -1,4 +1,23 @@
 # Changelog
+## v0.5.0 - 2025-11-04
+### Added
+- Added support for Postgres 18.0.
+- Added a new "client-only" Etcd mode to enable larger clusters and clusters with an even number of hosts.
+- Added access logging.
+- Added ability to run the Control Plane on Docker Swarm worker nodes.
+### Changed
+- Moved the cluster ID configuration setting to be an optional parameter on the init-cluster endpoint.
+- Changed the default behavior when adding a node. Instead of initializing to an empty state, new nodes will always be populated from an existing node unless the new node has a `restore_config`.
+- Changed the shape of the return type for `list-hosts`, `restart-instance`, `stop-instance`, and `start-instance`.
+- Renamed Etcd server and client configuration options.
+### Removed
+- Removed cohort ID from host API endpoints.
+### Fixed
+- Fixed unknown host status and missing component status in host API endpoints.
+- Fixed a bug that prevented users from using Service Accounts for pgBackRest credentials in GCS.
+- Fixed missing replication sets after restoring from backup.
+- Fixed incorrect response in `update-database` when a non-existent host ID is specified.
+- Fixed a bug with scheduled instance restarts.
 
 ## v0.4.0 - 2025-10-06
 ### Added

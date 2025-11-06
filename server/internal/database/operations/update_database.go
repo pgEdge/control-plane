@@ -112,6 +112,14 @@ func UpdateDatabase(
 		}
 	}
 
+	end, err := EndState(nodes)
+	if err != nil {
+		return nil, err
+	}
+	// Mark resources not in the end state with PendingDeletion = true so that
+	// we skip updating them.
+	start.MarkPendingDeletion(end)
+
 	// The states produced by the *Nodes functions are just diffs. Here's where
 	// we create a sequence of incremental updates by iteratively applying those
 	// diffs.
@@ -123,11 +131,6 @@ func UpdateDatabase(
 		// Write the updated state back to our states slice.
 		states[i] = curr
 		prev = curr
-	}
-
-	end, err := EndState(nodes)
-	if err != nil {
-		return nil, err
 	}
 	states = append(states, end)
 

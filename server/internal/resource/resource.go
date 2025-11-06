@@ -42,11 +42,12 @@ type ResourceData struct {
 	Dependencies    []Identifier    `json:"dependencies"`
 	DiffIgnore      []string        `json:"diff_ignore"`
 	ResourceVersion string          `json:"resource_version"`
+	PendingDeletion bool            `json:"pending_deletion"`
 }
 
-func (r *ResourceData) Differs(other *ResourceData) (bool, error) {
+func (r *ResourceData) Diff(other *ResourceData) (jsondiff.Patch, error) {
 	if r.ResourceVersion != other.ResourceVersion {
-		return true, nil
+		return nil, nil
 	}
 	diff, err := jsondiff.CompareJSON(
 		r.Attributes,
@@ -54,13 +55,9 @@ func (r *ResourceData) Differs(other *ResourceData) (bool, error) {
 		jsondiff.Ignores(r.DiffIgnore...),
 	)
 	if err != nil {
-		return false, fmt.Errorf("failed to compare resource attributes: %w", err)
+		return nil, fmt.Errorf("failed to compare resource attributes: %w", err)
 	}
-	if len(diff) > 0 {
-		return true, nil
-	}
-
-	return false, nil
+	return diff, nil
 }
 
 func (r *ResourceData) Clone() *ResourceData {
@@ -72,6 +69,7 @@ func (r *ResourceData) Clone() *ResourceData {
 		Dependencies:    slices.Clone(r.Dependencies),
 		DiffIgnore:      slices.Clone(r.DiffIgnore),
 		ResourceVersion: r.ResourceVersion,
+		PendingDeletion: r.PendingDeletion,
 	}
 }
 
