@@ -318,6 +318,27 @@ This example demonstrates adding a new node, `n4`, to an existing database using
                     }
                 ],
                 "port": 5432,
+                "backup_config": {
+                    "repositories": [
+                        {
+                            "type": "s3",
+                            "s3_bucket": "backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                            "s3_region": "us-east-1",
+                        }
+                    ],
+                    "schedules": [
+                        {
+                            "id": "nightly-full-backup",
+                            "type": "full",
+                            "cron_expression": "0 0 * * *"
+                        },
+                        {
+                            "id": "hourly-incremental",
+                            "type": "incr",
+                            "cron_expression": "0 * * * *"
+                        }
+                    ]
+                },
                 "nodes": [
                     { "name": "n1", "host_ids": ["host-1"] },
                     { "name": "n2", "host_ids": ["host-2"] },

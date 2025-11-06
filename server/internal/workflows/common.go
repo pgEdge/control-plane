@@ -102,6 +102,24 @@ func (w *Workflows) applyPlans(
 	return nil
 }
 
+func (w *Workflows) persistPlans(
+	ctx workflow.Context,
+	databaseID string,
+	taskID uuid.UUID,
+	plans []resource.Plan,
+) error {
+	in := &activities.PersistPlanSummariesInput{
+		DatabaseID: databaseID,
+		TaskID:     taskID,
+		Plans:      resource.SummarizePlans(plans),
+	}
+	_, err := w.Activities.ExecutePersistPlanSummaries(ctx, in).Get(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (w *Workflows) updateTask(
 	ctx workflow.Context,
 	logger *slog.Logger,

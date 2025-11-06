@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
@@ -21,7 +23,7 @@ func NewService(store *Store) *Service {
 }
 
 func (s *Service) GetState(ctx context.Context, databaseID string) (*State, error) {
-	stored, err := s.store.GetByKey(databaseID).Exec(ctx)
+	stored, err := s.store.State.GetByKey(databaseID).Exec(ctx)
 	if errors.Is(err, storage.ErrNotFound) {
 		return nil, ErrStateNotFound
 	} else if err != nil {
@@ -31,7 +33,7 @@ func (s *Service) GetState(ctx context.Context, databaseID string) (*State, erro
 }
 
 func (s *Service) PersistState(ctx context.Context, databaseID string, state *State) error {
-	err := s.store.Put(&StoredState{
+	err := s.store.State.Put(&StoredState{
 		DatabaseID: databaseID,
 		State:      state,
 	}).Exec(ctx)
@@ -41,10 +43,26 @@ func (s *Service) PersistState(ctx context.Context, databaseID string, state *St
 	return nil
 }
 
-func (s *Service) DeleteState(ctx context.Context, databaseID string) error {
-	_, err := s.store.DeleteByKey(databaseID).Exec(ctx)
+func (s *Service) PersistPlanSummaries(ctx context.Context, databaseID string, taskID uuid.UUID, plans []PlanSummary) error {
+	err := s.store.PlanSummaries.Put(&StoredPlanSummaries{
+		DatabaseID: databaseID,
+		TaskID:     taskID,
+		Plans:      plans,
+	}).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to store plans: %w", err)
+	}
+	return nil
+}
+
+func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) error {
+	_, err := s.store.State.DeleteByKey(databaseID).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to delete state: %w", err)
+	}
+	_, err = s.store.PlanSummaries.DeleteByDatabaseID(databaseID).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete plans: %w", err)
 	}
 	return nil
 }

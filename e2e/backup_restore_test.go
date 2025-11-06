@@ -517,6 +517,93 @@ func TestS3CreateDBFromBackup(t *testing.T) {
 	})
 }
 
+// Tests that removing the backup config in an update statement works without
+// error (PLAT-330).
+func TestRemoveBackupConfig(t *testing.T) {
+	t.Parallel()
+
+	host1 := fixture.HostIDs()[0]
+	tmpDir := fixture.TempDir(host1, t)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Minute)
+	defer cancel()
+
+	tLog(t, "creating database")
+
+	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
+		Spec: &controlplane.DatabaseSpec{
+			DatabaseName: "test_backup_restore",
+			DatabaseUsers: []*controlplane.DatabaseUserSpec{
+				{
+					Username:   "admin",
+					Password:   pointerTo("password"),
+					DbOwner:    pointerTo(true),
+					Attributes: []string{"LOGIN", "SUPERUSER"},
+				},
+			},
+			Port: pointerTo(0),
+			Nodes: []*controlplane.DatabaseNodeSpec{
+				{
+					Name:    "n1",
+					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+					BackupConfig: &controlplane.BackupConfigSpec{
+						Repositories: []*controlplane.BackupRepositorySpec{
+							{
+								Type:     client.RepositoryTypePosix,
+								BasePath: pointerTo("/backups"),
+							},
+						},
+					},
+					OrchestratorOpts: &controlplane.OrchestratorOpts{
+						Swarm: &controlplane.SwarmOpts{
+							ExtraVolumes: []*controlplane.ExtraVolumesSpec{
+								{
+									HostPath:        tmpDir,
+									DestinationPath: "/backups",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+
+	tLog(t, "updating database to remove backup_config")
+
+	err := db.Update(ctx, UpdateOptions{
+		Spec: &controlplane.DatabaseSpec{
+			DatabaseName: "test_backup_restore",
+			DatabaseUsers: []*controlplane.DatabaseUserSpec{
+				{
+					Username:   "admin",
+					DbOwner:    pointerTo(true),
+					Attributes: []string{"LOGIN", "SUPERUSER"},
+				},
+			},
+			Port: pointerTo(0),
+			Nodes: []*controlplane.DatabaseNodeSpec{
+				{
+					Name:    "n1",
+					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+					OrchestratorOpts: &controlplane.OrchestratorOpts{
+						Swarm: &controlplane.SwarmOpts{
+							ExtraVolumes: []*controlplane.ExtraVolumesSpec{
+								{
+									HostPath:        tmpDir,
+									DestinationPath: "/backups",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+
+	assert.NoError(t, err)
+}
+
 func assertInDefaultRepSet(t *testing.T, ctx context.Context, conn *pgx.Conn) {
 	t.Helper()
 	var exists bool

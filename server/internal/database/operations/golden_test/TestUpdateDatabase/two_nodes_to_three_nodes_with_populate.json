@@ -1,0 +1,205 @@
+[
+  [
+    [
+      {
+        "type": "create",
+        "resource_id": "orchestrator.resource::n3-instance-1-dep-1-id",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.instance::n3-instance-1-id",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.node::n3",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "monitor.instance::n3-instance-1-id",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ]
+  ],
+  [
+    [
+      {
+        "type": "create",
+        "resource_id": "database.replication_slot_create::spk_test_n2_sub_n2_n3",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "database.subscription::n2n3",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.sync_event::n2n1",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.wait_for_sync_event::n2n1",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.subscription::n1n3",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.sync_event::n1n3",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.wait_for_sync_event::n1n3",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.lag_tracker_commit_ts::n2n3",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.replication_slot_advance_from_cts::n2n3",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ]
+  ],
+  [
+    [
+      {
+        "type": "update",
+        "resource_id": "database.subscription::n1n3",
+        "reason": "has_diff",
+        "diff": [
+          {
+            "value": null,
+            "op": "replace",
+            "path": "/dependent_subscriptions"
+          },
+          {
+            "value": false,
+            "op": "replace",
+            "path": "/sync_data"
+          },
+          {
+            "value": false,
+            "op": "replace",
+            "path": "/sync_structure"
+          }
+        ]
+      },
+      {
+        "type": "update",
+        "resource_id": "database.subscription::n2n3",
+        "reason": "has_diff",
+        "diff": [
+          {
+            "value": false,
+            "op": "replace",
+            "path": "/disabled"
+          }
+        ]
+      },
+      {
+        "type": "create",
+        "resource_id": "database.subscription::n3n1",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "database.subscription::n3n2",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.replication_slot_advance_from_cts::n2n3",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.lag_tracker_commit_ts::n2n3",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.wait_for_sync_event::n1n3",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.sync_event::n1n3",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.wait_for_sync_event::n2n1",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.sync_event::n2n1",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.replication_slot_create::spk_test_n2_sub_n2_n3",
+        "diff": null
+      }
+    ]
+  ]
+]

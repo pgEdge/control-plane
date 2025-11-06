@@ -1,0 +1,174 @@
+[
+  [
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.subscription::n1n2",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.subscription::n2n1",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "monitor.instance::n1-instance-1-id",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "monitor.instance::n2-instance-1-id",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.node::n1",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.node::n2",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.instance::n1-instance-1-id",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.instance::n2-instance-1-id",
+        "diff": null
+      }
+    ]
+  ],
+  [
+    [
+      {
+        "type": "create",
+        "resource_id": "orchestrator.restore_resource::n1-instance-restore-1-1-id",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "orchestrator.restore_resource::n2-instance-restore-1-1-id",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.instance::n1-instance-1-id",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "database.instance::n2-instance-1-id",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "monitor.instance::n1-instance-1-id",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "monitor.instance::n2-instance-1-id",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ]
+  ],
+  [
+    [
+      {
+        "type": "update",
+        "resource_id": "database.instance::n1-instance-1-id",
+        "reason": "has_diff",
+        "diff": [
+          {
+            "op": "remove",
+            "path": "/dependencies/1"
+          }
+        ]
+      },
+      {
+        "type": "update",
+        "resource_id": "database.instance::n2-instance-1-id",
+        "reason": "has_diff",
+        "diff": [
+          {
+            "op": "remove",
+            "path": "/dependencies/1"
+          }
+        ]
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.node::n1",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "database.node::n2",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "update",
+        "resource_id": "monitor.instance::n1-instance-1-id",
+        "reason": "dependency_updated",
+        "diff": null
+      },
+      {
+        "type": "update",
+        "resource_id": "monitor.instance::n2-instance-1-id",
+        "reason": "dependency_updated",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "orchestrator.restore_resource::n1-instance-restore-1-1-id",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "orchestrator.restore_resource::n2-instance-restore-1-1-id",
+        "diff": null
+      }
+    ]
+  ],
+  [
+    [
+      {
+        "type": "create",
+        "resource_id": "database.subscription::n1n2",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "database.subscription::n2n1",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ]
+  ]
+]
