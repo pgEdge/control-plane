@@ -257,10 +257,9 @@ func (s *PostInitHandlers) CreateDatabase(ctx context.Context, req *api.CreateDa
 
 	// Full validation on create (no PreviousSpec, not delta mode).
 	input := &workflows.ValidateSpecInput{
-		DatabaseID:          spec.DatabaseID,
-		Spec:                spec,
-		PreviousSpec:        nil,
-		ValidateOnlyUpdated: false,
+		DatabaseID:   spec.DatabaseID,
+		Spec:         spec,
+		PreviousSpec: nil,
 	}
 	output, err := s.workflowSvc.ValidateSpec(ctx, input)
 	if err != nil {
@@ -326,10 +325,9 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 	}
 
 	input := &workflows.ValidateSpecInput{
-		DatabaseID:          spec.DatabaseID,
-		Spec:                spec,
-		PreviousSpec:        existing.Spec,
-		ValidateOnlyUpdated: true,
+		DatabaseID:   spec.DatabaseID,
+		Spec:         spec,
+		PreviousSpec: existing.Spec,
 	}
 	output, err := s.workflowSvc.ValidateSpec(ctx, input)
 	if err != nil {

@@ -439,6 +439,11 @@ type InstanceSpec struct {
 	OrchestratorOpts *OrchestratorOpts   `json:"orchestrator_opts,omitempty"`
 }
 
+type InstanceSpecChange struct {
+	Previous *InstanceSpec
+	Current  *InstanceSpec
+}
+
 func (s *InstanceSpec) Clone() *InstanceSpec {
 	users := make([]*User, len(s.DatabaseUsers))
 	for i, user := range s.DatabaseUsers {
