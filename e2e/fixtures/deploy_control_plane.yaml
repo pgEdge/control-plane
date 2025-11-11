@@ -41,3 +41,9 @@
   roles:
     - role: generate_test_config
     - role: generate_bruno_config
+
+- name: Create aliases
+  hosts: all
+  become: true
+  roles:
+    - role: etcdctl_alias
