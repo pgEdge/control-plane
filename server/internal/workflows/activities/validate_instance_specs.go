@@ -12,8 +12,9 @@ import (
 )
 
 type ValidateInstanceSpecsInput struct {
-	DatabaseID string                   `json:"database_id"`
-	Specs      []*database.InstanceSpec `json:"spec"`
+	DatabaseID    string                   `json:"database_id"`
+	Specs         []*database.InstanceSpec `json:"spec"`
+	PreviousSpecs []*database.InstanceSpec `json:"previous_spec"`
 }
 
 type ValidateInstanceSpecsOutput struct {
@@ -47,7 +48,30 @@ func (a *Activities) ValidateInstanceSpecs(ctx context.Context, input *ValidateI
 	)
 	logger.Info("starting instance spec validation")
 
-	results, err := a.Orchestrator.ValidateInstanceSpecs(ctx, input.Specs)
+	var prevIndex map[string]*database.InstanceSpec
+	if len(input.PreviousSpecs) > 0 {
+		prevIndex = make(map[string]*database.InstanceSpec, len(input.PreviousSpecs))
+		for _, p := range input.PreviousSpecs {
+			if p == nil {
+				continue
+			}
+			prevIndex[p.NodeName] = p
+		}
+	}
+
+	changes := make([]*database.InstanceSpecChange, 0, len(input.Specs))
+	for _, cur := range input.Specs {
+		var prev *database.InstanceSpec
+		if prevIndex != nil {
+			prev = prevIndex[cur.NodeName]
+		}
+		changes = append(changes, &database.InstanceSpecChange{
+			Previous: prev,
+			Current:  cur,
+		})
+	}
+
+	results, err := a.Orchestrator.ValidateInstanceSpecs(ctx, changes)
 	if err != nil {
 		return nil, fmt.Errorf("instance spec validation failed: %w", err)
 	}

@@ -234,19 +234,15 @@ func (s *Service) translateCreateErr(err error) error {
 	return fmt.Errorf("failed to create workflow instance: %w", err)
 }
 
-func (s *Service) ValidateSpec(ctx context.Context, spec *database.Spec) (*ValidateSpecOutput, error) {
-	if spec == nil {
+func (s *Service) ValidateSpec(ctx context.Context, input *ValidateSpecInput) (*ValidateSpecOutput, error) {
+	if input == nil || input.Spec == nil {
 		return nil, errors.New("spec is nil")
 	}
 
-	databaseID := spec.DatabaseID
+	databaseID := input.Spec.DatabaseID
 	opts := client.WorkflowInstanceOptions{
 		Queue:      utils.HostQueue(s.cfg.HostID),
 		InstanceID: uuid.NewString(),
-	}
-	input := &ValidateSpecInput{
-		DatabaseID: databaseID,
-		Spec:       spec,
 	}
 
 	instance, err := s.client.CreateWorkflowInstance(ctx, opts, s.workflows.ValidateSpec, input)

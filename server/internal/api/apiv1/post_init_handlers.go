@@ -255,9 +255,18 @@ func (s *PostInitHandlers) CreateDatabase(ctx context.Context, req *api.CreateDa
 		return nil, makeInvalidInputErr(fmt.Errorf("failed to validate database spec: %w", err))
 	}
 
-	err = s.ValidateSpec(ctx, spec)
+	// Full validation on create (no PreviousSpec, not delta mode).
+	input := &workflows.ValidateSpecInput{
+		DatabaseID:   spec.DatabaseID,
+		Spec:         spec,
+		PreviousSpec: nil,
+	}
+	output, err := s.workflowSvc.ValidateSpec(ctx, input)
 	if err != nil {
 		return nil, apiErr(err)
+	}
+	if !output.Valid {
+		return nil, makeInvalidInputErr(errors.New(strings.Join(output.Errors, "\n")))
 	}
 
 	db, err := s.dbSvc.CreateDatabase(ctx, spec)
@@ -315,9 +324,17 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 		return nil, makeInvalidInputErr(fmt.Errorf("failed to validate database spec: %w", err))
 	}
 
-	err = s.ValidateSpec(ctx, spec)
+	input := &workflows.ValidateSpecInput{
+		DatabaseID:   spec.DatabaseID,
+		Spec:         spec,
+		PreviousSpec: existing.Spec,
+	}
+	output, err := s.workflowSvc.ValidateSpec(ctx, input)
 	if err != nil {
 		return nil, apiErr(err)
+	}
+	if !output.Valid {
+		return nil, makeInvalidInputErr(errors.New(strings.Join(output.Errors, "\n")))
 	}
 
 	db, err := s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateModifying, spec)
@@ -784,23 +801,6 @@ func (s *PostInitHandlers) InitCluster(ctx context.Context, req *api.InitCluster
 
 func (s *PostInitHandlers) JoinCluster(ctx context.Context, token *api.ClusterJoinToken) error {
 	return ErrAlreadyInitialized
-}
-
-func (s *PostInitHandlers) ValidateSpec(ctx context.Context, spec *database.Spec) error {
-	if spec == nil {
-		return errors.New("spec cannot be nil")
-	}
-
-	output, err := s.workflowSvc.ValidateSpec(ctx, spec)
-	if err != nil {
-		return fmt.Errorf("failed to validate spec: %w", err)
-	}
-	if !output.Valid {
-		return makeInvalidInputErr(errors.New(strings.Join(output.Errors, "\n")))
-	}
-	s.logger.Info().Msg("spec validation succeeded")
-
-	return nil
 }
 
 func (s *PostInitHandlers) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (*api.RestartInstanceResponse, error) {

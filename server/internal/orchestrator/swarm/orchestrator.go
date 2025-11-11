@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/netip"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -25,7 +27,6 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/docker"
-	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
@@ -461,31 +462,69 @@ func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, 
 	return nil
 }
 
-func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, specs []*database.InstanceSpec) ([]*database.ValidationResult, error) {
-	results := make([]*database.ValidationResult, len(specs))
+func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, changes []*database.InstanceSpecChange) ([]*database.ValidationResult, error) {
+	results := make([]*database.ValidationResult, 0, len(changes)*3)
 
-	occupiedPorts := ds.NewSet[int]()
-	for i, instance := range specs {
-		result := &database.ValidationResult{
-			InstanceID: instance.InstanceID,
-			HostID:     instance.HostID,
-			NodeName:   instance.NodeName,
-			Valid:      true,
+	for _, ch := range changes {
+		updates := instanceDiff(ch.Previous, ch.Current)
+
+		if updates.NewPort == nil && len(updates.NewVolumes) == 0 && len(updates.NewNetworks) == 0 {
+			continue
 		}
-		if instance.Port != nil {
-			if *instance.Port != 0 && occupiedPorts.Has(*instance.Port) {
-				result.Valid = false
-				result.Errors = append(
-					result.Errors,
-					fmt.Sprintf("port %d allocated to multiple instances on this host", instance.Port),
-				)
+
+		updateResult := func(kind string, err error) {
+			if err != nil {
+				results = append(results, &database.ValidationResult{
+					Valid:    false,
+					NodeName: ch.Current.NodeName,
+					HostID:   ch.Current.HostID,
+					Errors:   []string{fmt.Sprintf("%s: %v", kind, err)},
+				})
+			} else {
+				results = append(results, &database.ValidationResult{
+					Valid:    true,
+					NodeName: ch.Current.NodeName,
+					HostID:   ch.Current.HostID,
+				})
 			}
-			occupiedPorts.Add(*instance.Port)
 		}
-		if err := o.validateInstanceSpec(ctx, instance, result); err != nil {
-			return nil, err
+
+		// If more than one kind of update, run the single combined validation.
+		changedKinds := 0
+		if updates.NewPort != nil && *updates.NewPort > 0 {
+			changedKinds++
 		}
-		results[i] = result
+		if len(updates.NewVolumes) > 0 {
+			changedKinds++
+		}
+		if len(updates.NewNetworks) > 0 {
+			changedKinds++
+		}
+
+		if changedKinds > 1 {
+			res := &database.ValidationResult{
+				Valid:    true,
+				NodeName: ch.Current.NodeName,
+				HostID:   ch.Current.HostID,
+			}
+			if err := o.validateInstanceSpec(ctx, ch.Current, res); err != nil {
+				updateResult("combined validation error", err)
+				continue
+			}
+			results = append(results, res)
+			continue
+		}
+
+		// Otherwise, targeted validations.
+		if updates.NewPort != nil && *updates.NewPort > 0 {
+			updateResult("port", o.validatePortAvailable(ctx, ch.Current.NodeName, *updates.NewPort))
+		}
+		if len(updates.NewVolumes) > 0 {
+			updateResult("volumes", o.validateVolumes(ctx, ch.Current.NodeName, updates.NewVolumes))
+		}
+		if len(updates.NewNetworks) > 0 {
+			updateResult("networks", o.validateNetworks(ctx, ch.Current.NodeName, updates.NewNetworks))
+		}
 	}
 
 	return results, nil
@@ -533,10 +572,28 @@ func (o *Orchestrator) scaleInstance(
 func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.InstanceSpec, result *database.ValidationResult) error {
 	orchestratorOpts := spec.OrchestratorOpts
 
-	// Short-circuit if there's nothing to validate
-	if orchestratorOpts == nil || orchestratorOpts.Swarm == nil ||
-		(len(orchestratorOpts.Swarm.ExtraVolumes) == 0 &&
-			len(orchestratorOpts.Swarm.ExtraNetworks) == 0) {
+	var endpointConfigs map[string]*network.EndpointSettings
+	if orchestratorOpts != nil && orchestratorOpts.Swarm != nil && len(orchestratorOpts.Swarm.ExtraNetworks) > 0 {
+		info, err := ensureNetworks(ctx, o.docker, orchestratorOpts.Swarm.ExtraNetworks)
+		if err != nil {
+			result.Valid = false
+			result.Errors = append(result.Errors, fmt.Sprintf("network validation failed: %v", err))
+			return nil
+		}
+		endpointConfigs = info
+	}
+
+	var mounts []mount.Mount
+	var mountTargets []string
+	if orchestratorOpts != nil && orchestratorOpts.Swarm != nil && len(orchestratorOpts.Swarm.ExtraVolumes) > 0 {
+		for _, vol := range orchestratorOpts.Swarm.ExtraVolumes {
+			mounts = append(mounts, docker.BuildMount(vol.HostPath, vol.DestinationPath, false))
+			mountTargets = append(mountTargets, vol.DestinationPath)
+		}
+	}
+
+	// If there are NO networks, NO mounts, and port is nil/0 → nothing to validate
+	if len(mounts) == 0 && len(endpointConfigs) == 0 && (spec.Port == nil || *spec.Port == 0) {
 		return nil
 	}
 
@@ -550,27 +607,13 @@ func (o *Orchestrator) validateInstanceSpec(ctx context.Context, spec *database.
 	if err != nil {
 		return fmt.Errorf("image fetch error: %w", err)
 	}
-	var endpointConfigs map[string]*network.EndpointSettings
-	if len(orchestratorOpts.Swarm.ExtraNetworks) > 0 {
-		endpointConfigs, err = ensureNetworks(ctx, o.docker, orchestratorOpts.Swarm.ExtraNetworks)
-		if err != nil {
-			result.Valid = false
-			result.Errors = append(result.Errors, fmt.Sprintf("network validation failed: %v", err))
-			return nil
-		}
-	}
-
-	var mounts []mount.Mount
-	var mountTargets []string
-	for _, vol := range orchestratorOpts.Swarm.ExtraVolumes {
-		mounts = append(mounts, docker.BuildMount(vol.HostPath, vol.DestinationPath, false))
-		mountTargets = append(mountTargets, vol.DestinationPath)
-	}
 
 	cmd := buildVolumeCheckCommand(mountTargets)
 	output, err := o.runValidationContainer(
-		ctx, images.PgEdgeImage,
-		cmd, mounts,
+		ctx,
+		images.PgEdgeImage,
+		cmd,
+		mounts,
 		spec.Port,
 		endpointConfigs,
 	)
@@ -637,6 +680,67 @@ func (o *Orchestrator) runValidationContainer(
 	return strings.TrimSpace(buf.String()), nil
 }
 
+func (o *Orchestrator) validatePortAvailable(ctx context.Context, nodeName string, port int) error {
+	if port <= 0 {
+		return nil
+	}
+
+	specVersion := o.versions.defaultVersion
+	images, err := o.versions.GetImages(specVersion)
+	if err != nil {
+		return fmt.Errorf("image fetch error: %w", err)
+	}
+
+	cmd := []string{"sh", "-c", "true"}
+	_, runErr := o.runValidationContainer(ctx, images.PgEdgeImage, cmd, nil, &port, nil)
+
+	if msg := docker.ExtractPortErrorMsg(runErr); msg != "" {
+		return errors.New(msg)
+	}
+	return runErr
+}
+
+func (o *Orchestrator) validateVolumes(ctx context.Context, nodeName string, vols []database.ExtraVolumesSpec) error {
+	if len(vols) == 0 {
+		return nil
+	}
+
+	var mounts []mount.Mount
+	var targets []string
+	for _, v := range vols {
+		mounts = append(mounts, docker.BuildMount(v.HostPath, v.DestinationPath, false))
+		targets = append(targets, v.DestinationPath)
+	}
+
+	specVersion := o.versions.defaultVersion
+	images, err := o.versions.GetImages(specVersion)
+	if err != nil {
+		return fmt.Errorf("image fetch error: %w", err)
+	}
+
+	cmd := buildVolumeCheckCommand(targets)
+	out, runErr := o.runValidationContainer(ctx, images.PgEdgeImage, cmd, mounts, nil, nil)
+
+	if msg := docker.ExtractBindMountErrorMsg(runErr); msg != "" {
+		return errors.New(msg)
+	}
+	if runErr == nil && strings.TrimSpace(out) != "" {
+		return errors.New(strings.TrimSpace(out))
+	}
+	return runErr
+}
+
+func (o *Orchestrator) validateNetworks(ctx context.Context, nodeName string, nets []database.ExtraNetworkSpec) error {
+	if len(nets) == 0 {
+		return nil
+	}
+	_, err := ensureNetworks(ctx, o.docker, nets)
+	if msg := docker.ExtractNetworkErrorMsg(err); msg != "" {
+		return errors.New(msg)
+	}
+	return err
+}
+
 func validationContainerOpts(
 	image string,
 	cmd []string,
@@ -654,24 +758,21 @@ func validationContainerOpts(
 			PortBindings: nat.PortMap{},
 		},
 	}
-	// TODO (PLAT-170): this check prevents users from updating databases that
-	// have a port enabled. Commenting this out is a short-term fix.
-	// if port != nil && *port > 0 {
-	// 	exposedPort := fmt.Sprintf("%d/tcp", *port)
-	// 	portSet := nat.PortSet{
-	// 		nat.Port(exposedPort): struct{}{},
-	// 	}
-	// 	portMap := nat.PortMap{
-	// 		nat.Port(exposedPort): []nat.PortBinding{
-	// 			{
-	// 				HostIP:   "0.0.0.0",
-	// 				HostPort: strconv.Itoa(*port),
-	// 			},
-	// 		},
-	// 	}
-	// 	opts.Config.ExposedPorts = portSet
-	// 	opts.Host.PortBindings = portMap
-	// }
+
+	// Bind only when a non-zero port is explicitly requested.
+	if port != nil && *port > 0 {
+		exposed := nat.Port(fmt.Sprintf("%d/tcp", *port))
+		opts.Config.ExposedPorts = nat.PortSet{exposed: struct{}{}}
+		opts.Host.PortBindings = nat.PortMap{
+			exposed: []nat.PortBinding{
+				{
+					HostIP:   "0.0.0.0",
+					HostPort: strconv.Itoa(*port),
+				},
+			},
+		}
+	}
+
 	if len(endpoints) > 0 {
 		opts.Net = &network.NetworkingConfig{
 			EndpointsConfig: endpoints,
@@ -696,9 +797,10 @@ func buildVolumeCheckCommand(mountTargets []string) []string {
 
 	return []string{"sh", "-c", fmt.Sprintf(cmdTemplate, strings.Join(mountTargets, " "))}
 }
+
 func ensureNetworks(
 	ctx context.Context,
-	docker *docker.Docker,
+	dockerCli *docker.Docker,
 	networks []database.ExtraNetworkSpec,
 ) (map[string]*network.EndpointSettings, error) {
 
@@ -706,7 +808,7 @@ func ensureNetworks(
 
 	for _, net := range networks {
 		// Try to inspect the network
-		info, err := docker.NetworkInspect(ctx, net.ID, network.InspectOptions{})
+		info, err := dockerCli.NetworkInspect(ctx, net.ID, network.InspectOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to inspect network %q: %w", net.ID, err)
 		}
@@ -726,4 +828,97 @@ func ensureNetworks(
 	}
 
 	return endpointConfigs, nil
+}
+
+type updatedInstanceFields struct {
+	NewPort     *int
+	NewVolumes  []database.ExtraVolumesSpec
+	NewNetworks []database.ExtraNetworkSpec
+}
+
+func instanceDiff(prev, cur *database.InstanceSpec) updatedInstanceFields {
+	var out updatedInstanceFields
+	if cur == nil {
+		return out
+	}
+
+	if prev == nil {
+		// Full validation on first create
+		if cur.Port != nil && *cur.Port != 0 {
+			out.NewPort = cur.Port
+		}
+		if cur.OrchestratorOpts != nil && cur.OrchestratorOpts.Swarm != nil {
+			out.NewVolumes = append(out.NewVolumes, cur.OrchestratorOpts.Swarm.ExtraVolumes...)
+			out.NewNetworks = append(out.NewNetworks, cur.OrchestratorOpts.Swarm.ExtraNetworks...)
+		}
+		return out
+	}
+
+	// Port: validate only if non-zero and changed
+	if (prev.Port == nil && cur.Port != nil && *cur.Port != 0) ||
+		(prev.Port != nil && cur.Port != nil && *prev.Port != *cur.Port && *cur.Port != 0) {
+		out.NewPort = cur.Port
+	}
+	// Volumes: only new volumes
+	var prevVols, curVols []database.ExtraVolumesSpec
+	if prev.OrchestratorOpts != nil && prev.OrchestratorOpts.Swarm != nil {
+		prevVols = prev.OrchestratorOpts.Swarm.ExtraVolumes
+	}
+	if cur.OrchestratorOpts != nil && cur.OrchestratorOpts.Swarm != nil {
+		curVols = cur.OrchestratorOpts.Swarm.ExtraVolumes
+	}
+	out.NewVolumes = diffVolumes(prevVols, curVols)
+
+	// Networks: only new networks
+	var prevNets, curNets []database.ExtraNetworkSpec
+	if prev.OrchestratorOpts != nil && prev.OrchestratorOpts.Swarm != nil {
+		prevNets = prev.OrchestratorOpts.Swarm.ExtraNetworks
+	}
+	if cur.OrchestratorOpts != nil && cur.OrchestratorOpts.Swarm != nil {
+		curNets = cur.OrchestratorOpts.Swarm.ExtraNetworks
+	}
+	out.NewNetworks = diffNetworks(prevNets, curNets)
+
+	return out
+}
+
+func diffVolumes(oldV, newV []database.ExtraVolumesSpec) []database.ExtraVolumesSpec {
+	var out []database.ExtraVolumesSpec
+	for _, v := range newV {
+		if !containsVolume(oldV, v) {
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
+func diffNetworks(oldN, newN []database.ExtraNetworkSpec) []database.ExtraNetworkSpec {
+	var out []database.ExtraNetworkSpec
+	for _, n := range newN {
+		if !containsNetwork(oldN, n) {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+func containsVolume(set []database.ExtraVolumesSpec, v database.ExtraVolumesSpec) bool {
+	return slices.ContainsFunc(set, func(x database.ExtraVolumesSpec) bool {
+		return x.HostPath == v.HostPath && x.DestinationPath == v.DestinationPath
+	})
+}
+
+func containsNetwork(set []database.ExtraNetworkSpec, n database.ExtraNetworkSpec) bool {
+	return slices.ContainsFunc(set, func(x database.ExtraNetworkSpec) bool {
+		if x.ID != n.ID {
+			return false
+		}
+		if !slices.Equal(x.Aliases, n.Aliases) {
+			return false
+		}
+		if !maps.Equal(x.DriverOpts, n.DriverOpts) {
+			return false
+		}
+		return true
+	})
 }
