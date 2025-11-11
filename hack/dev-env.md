@@ -13,6 +13,7 @@ This document describes the `dev-env.zsh` helper functions as well as the
     - [Utility functions](#utility-functions)
       - [`cp-psql`](#cp-psql)
       - [`cp-docker-exec`](#cp-docker-exec)
+      - [`cp-follow-task`](#cp-follow-task)
 - [`pgedge-cp-env` integration for Oh My Zsh](#pgedge-cp-env-integration-for-oh-my-zsh)
   - [Prerequisites](#prerequisites-1)
   - [Installation](#installation)
@@ -193,6 +194,35 @@ Examples:
 
         # Also works with stdin
         echo 'select 1' | cp-docker-exec -i storefront-n1-689qacsi psql -U admin storefront
+```
+
+#### `cp-follow-task`
+
+This function will tail the logs for a task until it's completed. Similar to the
+other functions, it will present you with an interactive picker for any
+unspecified options. You can also pipe in an API response that contains a `task`
+object and it will read the database and task ID from that object. The help text
+demonstrates all of these uses:
+
+```
+> cp-follow-task --help
+
+cp-follow-task [-h|--help]
+cp-follow-task <-d|--database-id database id> <-t|--task-id task id>
+
+Examples:
+        # By default, this command will present interactive pickers for the database
+        # and task
+        cp-follow-task
+
+        # Specify the database and use the picker for the task ID
+        cp-follow-task -d storefront
+
+        # Specify both the database and task IDs rather than use the picker
+        cp-follow-task -d storefront -t 019a6f9e-d1dc-7c23-90f0-5dc7a0ab12f9
+
+        # We can also extract the database and task ID from an API response on stdin
+        cp1-req delete-database storefront | cp-follow-task
 ```
 
 # `pgedge-cp-env` integration for Oh My Zsh

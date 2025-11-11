@@ -69,6 +69,20 @@ _use-test-config() {
 	done
 }
 
+_choose-database() {
+	local database_choice=$(restish host-1 list-databases \
+		| jq -c '.databases[]? | { id, state, created_at, updated_at }' \
+		| sk --preview 'echo {} | jq')
+
+	if [[ -z "${database_choice}" ]]; then
+		return 1
+	fi
+
+	local database_id=$(jq -r '.id' <<<"${database_choice}")
+	echo "using database ${database_id}" >&2
+	echo "${database_choice}"
+}
+
 _choose-instance() {
 	local instance_choice=$(restish host-1 list-databases \
 		| jq -c '.databases[]? | { database_id: .id } + (.instances[]?)' \
@@ -95,6 +109,20 @@ _choose-user() {
 	local username=$(jq -r '.username' <<<"${user_choice}")
 	echo "using user ${username}" >&2
 	echo ${username}
+}
+
+_choose-task() {
+	local task_choice=$(restish host-1 list-database-tasks $1 \
+		| jq -c '.tasks[]?' \
+		| sk --preview 'echo {} | jq')
+
+	if [[ -z "${task_choice}" ]]; then
+		return 1
+	fi
+
+	local task_id=$(jq -r '.task_id' <<<"${task_choice}")
+	echo "using task ${task_id}" >&2
+	echo "${task_choice}"
 }
 
 _docker-cmd() {
@@ -263,7 +291,7 @@ cp-psql() {
 	local database_id
 
 	if [[ -z "${instance_id}" ]]; then
-		instance=$(_choose-instance)
+		local instance=$(_choose-instance)
 
 		if [[ -z "${instance}" ]]; then
 			return 1
@@ -434,6 +462,117 @@ cp-init() {
 
 		restish ${host_id} join-cluster "${join_token}" > /dev/null
 	done
+}
+
+_cp-follow-task-help() {
+	cat <<EOF
+$1 [-h|--help]
+$1 <-d|--database-id database id> <-t|--task-id task id>
+
+Examples:
+	# By default, this command will present interactive pickers for the database
+	# and task
+	$1
+
+	# Specify the database and use the picker for the task ID
+	$1 -d storefront
+
+	# Specify both the database and task IDs rather than use the picker
+	$1 -d storefront -t 019a6f9e-d1dc-7c23-90f0-5dc7a0ab12f9
+
+	# We can also extract the database and task ID from an API response on stdin
+	cp1-req delete-database storefront | $1
+EOF
+}
+
+cp-follow-task() {
+	local o_database_id
+	local o_task_id
+	local o_help
+
+	zparseopts -D -F -K -- \
+        {d,-database-id}:=o_database_id \
+		{t,-task-id}:=o_task_id \
+        {h,-help}=o_help || return
+
+	if (($#o_help)); then
+        _cp-follow-task-help $0
+        return
+    fi
+
+	local database_id="${o_database_id[-1]}"
+    local task_id="${o_task_id[-1]}"
+
+	# If we have an api response on stdin, we'll try to extract the database ID
+	# and task ID from there.
+	if [[ ! -t 0 ]]; then
+		local input=$(cat -)
+
+		# echo the input for visibility
+		echo "${input}"
+
+		database_id=$(<<<"${input}" jq -r '.task.database_id')
+		task_id=$(<<<"${input}" jq -r '.task.task_id')
+
+		if [[ -z "${database_id}" || -z "${task_id}" ]]; then
+			echo "no task object found on stdin" >&2
+			return 1
+		fi
+	fi
+
+	if [[ -z "${database_id}" ]]; then
+		local database=$(_choose-database)
+
+		if [[ -z "${database}" ]]; then
+			return 1
+		fi
+
+		database_id=$(<<<"${database}" jq -r '.id')
+	fi
+
+	if [[ -z "${task_id}" ]]; then
+		local task=$(_choose-task "${database_id}")
+
+		if [[ -z "${task}" ]]; then
+			return 1
+		fi
+
+		task_id=$(<<<"${task}" jq -r '.task_id')
+	fi
+
+	local resp
+	local task_status
+	local last_entry_id
+	local next_last_entry_id
+
+	while :; do
+		# Get next set of entries
+        resp=$(restish host-1 \
+            get-database-task-log \
+            ${database_id} \
+            ${task_id} \
+            --after-entry-id "${last_entry_id}")
+
+        # Print entries
+        jq -r '.entries[] | "[" + .timestamp + "] " + .message' <<<"${resp}"
+
+        # Update loop vars
+        task_status=$(jq -r '.task_status' <<<"${resp}")
+        next_last_entry_id=$(jq -r '.last_entry_id' <<<"${resp}")
+
+        if [[ "${next_last_entry_id}" != "null" ]]; then
+            last_entry_id=${next_last_entry_id}
+        fi
+
+        sleep 1s
+
+        [[ "${task_status}" != "completed" && \
+			"${task_status}" != "failed" && \
+			"${task_status}" != "canceled" ]] || break
+	done
+
+	echo
+    echo "database ${database_id} task ${task_id} ${task_status}"
 }
 
 #########
