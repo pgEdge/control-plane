@@ -51,7 +51,7 @@ You should also you set alias restish="noglob restish" in your ~/.zshrc to preve
 export alias restish="noglob restish"
 ```
 
-After you've updated `.zshrc`,  reload the configuration in your current shell session; this will automatically apply the configuration to any new sessions.
+The changes to your `.zshrc` will automatically apply to new sessions. To reload the configuration in your current shell session, run:
 
 ```sh
 exec zsh
