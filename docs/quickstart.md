@@ -189,7 +189,7 @@ curl https://downloads.pgedge.com/platform/examples/northwind/northwind.sql \
     | PGPASSWORD=password psql -h localhost -p 6432 -U admin example
 ```
 
-Now, try querying one of the new tables from the other node:
+Then, try querying one of the new tables from the other node:
 
 ```sh
 PGPASSWORD=password psql -h localhost -p 6433 -U admin example -c "SELECT * FROM northwind.shippers"
