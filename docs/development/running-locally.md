@@ -45,12 +45,6 @@ disable Restish's default retry behavior:
 export RSH_RETRY=0
 ```
 
-You should also you set alias restish="noglob restish" in your ~/.zshrc to prevent it from trying to handle `?` in URLs and `[]` in shorthand input. Alternatively you can use quotes around your inputs.
-
-```sh
-export alias restish="noglob restish"
-```
-
 The changes to your `.zshrc` will automatically apply to new sessions. To reload the configuration in your current shell session, run:
 
 ```sh
