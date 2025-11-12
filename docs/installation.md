@@ -28,7 +28,7 @@ After provisioning hosts that meet the prerequisites, the next step is to provis
 To initialize a new Docker Swarm cluster, run the following command on one of your hosts. This host will become the first manager in the swarm. Use the command:
 
 ```sh
-docker swarm init --advertise-addr 192.168.99.100
+docker swarm init
 Swarm initialized: current node (dxn1zf6l61qsb1josjja83ngz) is now a manager.
 
 To add a worker to this swarm, run the following command:
