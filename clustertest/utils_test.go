@@ -26,6 +26,7 @@ func buildImage() {
 	log.Println("building control-plane image")
 
 	cmd := exec.CommandContext(ctx, "make", "-C", "..", "goreleaser-build", "control-plane-images")
+	cmd.Env = append(cmd.Env, os.Environ()...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
