@@ -285,14 +285,14 @@ the same example above, the initialization steps would be:
     }
     ```
 
-    We'll submit this to the other Control Plane server instances to join them to the new cluster.
+    We'll submit this `token` and `server_url` to the other Control Plane server instances when we join them to the new cluster.
 
 2.  Join `host-2` to `host-1`'s cluster:
 
     === "curl"
 
         ```sh
-        curl -X POST http://host-2:3000/v1/cluster/join \
+        curl -i -X POST http://host-2:3000/v1/cluster/join \
             -H 'Content-Type:application/json' \
             --data '{
                 "token":"PGEDGE-0c470f2eac35bb25135654a8dd9c812fc4aca4be8c8e34483c0e279ab79a7d30-907336deda459ebc79079babf08036fc",
@@ -300,20 +300,22 @@ the same example above, the initialization steps would be:
             }'
         ```
 
-    This will return a `204` response on success.
+    This will return a `0` or `204` response on success.
 
 3.  Join `host-3` to `host-1`'s cluster:
 
     === "curl"
 
         ```sh
-        curl -X POST http://host-3:3000/v1/cluster/join \
+        curl -i -X POST http://host-3:3000/v1/cluster/join \
             -H 'Content-Type:application/json' \
             --data '{
                 "token":"PGEDGE-0c470f2eac35bb25135654a8dd9c812fc4aca4be8c8e34483c0e279ab79a7d30-907336deda459ebc79079babf08036fc",
                 "server_url":"http://198.19.249.2:3000"
             }'
         ```
+    
+    This will return a `0` or `204` response on success.
 
     The "join token" can also be fetched from any host in the cluster with a `GET`
     request the `/v1/cluster/join-token` endpoint:
