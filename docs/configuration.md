@@ -5,7 +5,7 @@ configuration file, environment variables, or a combination of both. If you're
 using a configuration file, you can provide it to the pgEdge Control Plane
 server command with the `-c` or `--config` parameter.
 
-This reference uses a JSON-path like syntax to denote nested properties; for example:
+This reference uses a JSON-path like syntax to denote a nested property; for example:
 
 `property.sub_property`.
 
@@ -15,14 +15,14 @@ This reference uses a JSON-path like syntax to denote nested properties; for exa
 
 ## Required Settings
 
-| JSON key   | Environment variable | Type   | Description                                                                                                                                                                                                                                                          | Constraints                                                                                                                                                           |
+| Property | Environment variable | Type   | Description                                                                                                                                                                                                                                                          | Constraints                                                                                                                                                           |
 | :--------- | :------------------- | :----- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `host_id`  | `PGEDGE_HOST_ID`     | string | A logical identifier for the host that the Control Plane server is running on. This ID must be stable and unique to each Control Plane server instance.                                                                                                              | Must be 1-63 characters long and contain only lower-cased letters, numbers, and hyphens (`-`). It must also start and end with either a lower-cased letter or number. |
 | `data_dir` | `PGEDGE_DATA_DIR`    | string | A directory path where the Control Plane application data will be stored. This includes the server's internal database and configuration files as well as the data and configuration files for each Postgres database instance managed by this Control Plane server. |                                                                                                                                                                       |
 
 ## Optional Settings
 
-| JSON key                                     | Environment variable                                 | Type    | Default                | Description                                                                                                       | Constraints                                                                 |
+| Property                                     | Environment variable                                 | Type    | Default                | Description                                                                                                       | Constraints                                                                 |
 | :------------------------------------------- | :--------------------------------------------------- | :------ | :--------------------- | :---------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------- |
 | `ipv4_address`                               | `PGEDGE_IPV4_ADDRESS`                                | string  | Automatically detected | Can be used to override the automatically detected IP address of the host that runs this Control Plane server.    | Must be a valid, stable IPv4 Address.                                       |
 | `hostname`                                   | `PGEDGE_HOSTNAME`                                    | string  | Automatically detected | Can be used to override the automatically detected hostname of the host that runs this Control Plane server.      | Must be a valid, stable hostname.                                           |
