@@ -180,7 +180,7 @@ docker exec -it <container ID> psql -U admin example
     PGPASSWORD=password psql -h localhost -p 6432 -U admin example -c "SELECT * FROM example;"
     ```
 
-## Loading the Northwind Sample Dataset
+### Loading the Northwind Sample Dataset
 
 The Northwind sample dataset is a Postgres database dump that you can use to try replication with a more realistic database. To load the Northwind dataset into your pgEdge database, use the command:
 
@@ -189,7 +189,7 @@ curl https://downloads.pgedge.com/platform/examples/northwind/northwind.sql \
     | PGPASSWORD=password psql -h localhost -p 6432 -U admin example
 ```
 
-Now, try querying one of the new tables from the other node:
+Then, try querying one of the new tables from the other node:
 
 ```sh
 PGPASSWORD=password psql -h localhost -p 6433 -U admin example -c "SELECT * FROM northwind.shippers"
