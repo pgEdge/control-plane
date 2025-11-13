@@ -175,12 +175,12 @@ control-plane-images:
 goreleaser-build:
 	GORELEASER_CURRENT_TAG=$(CONTROL_PLANE_VERSION) \
 	$(goreleaser) build --snapshot --clean
-	tar -C dist --strip-components=1 -c -z \
+	tar -C dist/control-plane_linux_amd64_v1 -c -z \
 		-f dist/control-plane_$(CONTROL_PLANE_VERSION:v%=%)_linux_amd64.tar.gz \
-		control-plane_linux_amd64_v1
-	tar -C dist --strip-components=1 -c -z \
+		control-plane
+	tar -C dist/control-plane_linux_arm64_v8.0 -c -z \
 		-f dist/control-plane_$(CONTROL_PLANE_VERSION:v%=%)_linux_arm64.tar.gz \
-		control-plane_linux_arm64_v8.0
+		control-plane
 
 goreleaser-test-release:
 	GORELEASER_CURRENT_TAG=$(CONTROL_PLANE_VERSION) \
