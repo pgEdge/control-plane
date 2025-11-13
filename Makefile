@@ -12,6 +12,12 @@ E2E_RUN ?=
 E2E_SKIP_CLEANUP ?= 0
 E2E_DEBUG ?= 0
 E2E_DEBUG_DIR ?=
+CLUSTER_TEST_PARALLEL ?=
+CLUSTER_TEST_RUN ?=
+CLUSTER_TEST_SKIP_IMAGE_BUILD ?= 0
+CLUSTER_TEST_SKIP_CLEANUP ?= 0
+CLUSTER_TEST_IMAGE_TAG ?=
+CLUSTER_TEST_DATA_DIR ?=
 
 docker_swarm_state=$(shell docker info --format '{{.Swarm.LocalNodeState}}')
 buildx_builder=$(if $(CI),"control-plane-ci","control-plane")
@@ -30,6 +36,15 @@ e2e_args=-tags=e2e_test -count=1 -timeout=20m ./e2e/... \
 	$(if $(filter 1,$(E2E_SKIP_CLEANUP)),-skip-cleanup) \
 	$(if $(filter 1,$(E2E_DEBUG)),-debug) \
 	$(if $(E2E_DEBUG_DIR),-debug-dir $(E2E_DEBUG_DIR))
+
+cluster_test_args=-tags=cluster_test -count=1 -timeout=10m ./clustertest/... \
+	$(if $(CLUSTER_TEST_PARALLEL),-parallel $(CLUSTER_TEST_PARALLEL)) \
+	$(if $(CLUSTER_TEST_RUN),-run $(CLUSTER_TEST_RUN)) \
+	-args \
+	$(if $(filter 1,$(CLUSTER_TEST_SKIP_CLEANUP)),-skip-cleanup) \
+	$(if $(filter 1,$(CLUSTER_TEST_SKIP_IMAGE_BUILD)),-skip-image-build) \
+	$(if $(CLUSTER_TEST_IMAGE_TAG),-image-tag $(CLUSTER_TEST_IMAGE_TAG)) \
+	$(if $(CLUSTER_TEST_DATA_DIR),-data-dir $(CLUSTER_TEST_DATA_DIR))
 
 ###########
 # testing #
@@ -82,6 +97,23 @@ test-e2e-ci:
 		--junitfile e2e-test-results.xml \
 		-- \
 		$(e2e_args)
+
+.PHONY: test-cluster
+test-cluster:
+	$(gotestsum) \
+		--format-hide-empty-pkg \
+		--format standard-verbose \
+		-- \
+		$(cluster_test_args)
+
+.PHONY: test-cluster-ci
+test-cluster-ci:
+	$(gotestsum) \
+		--format-hide-empty-pkg \
+		--format standard-verbose \
+		--junitfile cluster-test-results.xml \
+		-- \
+		$(cluster_test_args)
 
 .PHONY: lint
 lint:
