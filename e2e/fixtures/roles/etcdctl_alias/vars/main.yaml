@@ -1,0 +1,4 @@
+---
+data_dir: /data/control-plane
+certs_dir: "{{ data_dir }}/certificates"
+generated_cfg: "{{ data_dir }}/generated.config.json"

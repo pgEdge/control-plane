@@ -40,3 +40,12 @@
     name: docker
     state: started
     enabled: yes
+- name: Install etcdctl
+  ansible.builtin.unarchive:
+    src: "{{ etcd_download_url }}"
+    dest: /usr/bin
+    remote_src: yes
+    extra_opts:
+      - "--strip-components=1"
+      - "{{ etcd_archive_name }}/etcdctl"
+    creates: /usr/bin/etcdctl

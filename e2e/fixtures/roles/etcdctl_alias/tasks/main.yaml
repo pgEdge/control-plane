@@ -1,0 +1,36 @@
+---
+- name: Compute endpoints
+  set_fact:
+    etcd_endpoints: "{{ hostvars['localhost'].manager_hosts
+      | map('extract', hostvars, 'peer_ip')
+      | map('regex_replace', '^(.*)$', 'https://\\1:2379')
+      | join(',') }}"
+
+- name: Create cp-etcdctl alias for root user
+  ansible.builtin.blockinfile:
+    path: ~/.bashrc
+    append_newline: true
+    create: true
+    block: |
+      alias cp-etcdctl="etcdctl \
+        --endpoints='{{ etcd_endpoints }}' \
+        --cacert {{ certs_dir }}/ca.crt \
+        --cert {{ certs_dir }}/etcd-user.crt \
+        --key {{ certs_dir }}/etcd-user.key \
+        --user \$(jq -r '.etcd_username' {{ generated_cfg }}) \
+        --password \$(jq -r '.etcd_password' {{ generated_cfg }})"
+
+- name: Create cp-etcdctl alias for sudo user
+  become: false
+  ansible.builtin.blockinfile:
+    path: ~/.bashrc
+    append_newline: true
+    create: true
+    block: |
+      alias cp-etcdctl="sudo etcdctl \
+        --endpoints='{{ etcd_endpoints }}' \
+        --cacert {{ certs_dir }}/ca.crt \
+        --cert {{ certs_dir }}/etcd-user.crt \
+        --key {{ certs_dir }}/etcd-user.key \
+        --user \$(sudo jq -r '.etcd_username' {{ generated_cfg }}) \
+        --password \$(sudo jq -r '.etcd_password' {{ generated_cfg }})"
