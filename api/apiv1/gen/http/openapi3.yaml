@@ -2509,6 +2509,16 @@ paths:
       description: Removes a host from the cluster.
       operationId: remove-host
       parameters:
+        - name: force
+          in: query
+          description: 'Force removal even if instances exist or quorum would be violated. Use only for disaster recovery when a host is permanently lost. '
+          allowEmptyValue: true
+          schema:
+            type: boolean
+            description: 'Force removal even if instances exist or quorum would be violated. Use only for disaster recovery when a host is permanently lost. '
+            default: false
+            example: true
+          example: true
         - name: host_id
           in: path
           description: ID of the host to remove.
