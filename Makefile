@@ -83,6 +83,24 @@ test-e2e-ci:
 		-- \
 		$(e2e_args)
 
+.PHONY: test-clustertest
+test-clustertest:
+	$(gotestsum) \
+		--format-hide-empty-pkg \
+		--format standard-verbose \
+		-- \
+		-count=1 \
+		-timeout=30m \
+		./clustertest/...
+
+.PHONY: test-clustertest-short
+test-clustertest-short:
+	$(gotestsum) \
+		--format-hide-empty-pkg \
+		-- \
+		-short \
+		./clustertest/...
+
 .PHONY: lint
 lint:
 	$(golangcilint) run ./...
