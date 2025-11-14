@@ -107,7 +107,9 @@ func NewCluster(ctx context.Context, t *testing.T, opts ...ClusterOption) (*Clus
 
 	// Register automatic cleanup with the test framework.
 	t.Cleanup(func() {
-		cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		// Allow more time for cleanup, especially for hung containers.
+		// This needs to be longer than the container stop timeout (currently 30s per container).
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 		if err := cluster.cleanup(cleanupCtx, !cluster.keepOnFailure || !t.Failed()); err != nil {
 			t.Errorf("Failed to cleanup cluster: %v", err)
