@@ -2,6 +2,7 @@
 .vscode
 .scratch
 docker/control-plane-dev/data
+clustertest/data
 .vagrant
 vagrant-ssh.cfg
 .terraform

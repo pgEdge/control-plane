@@ -136,6 +136,22 @@ func (c *MultiServerClient) GetHost(ctx context.Context, req *api.GetHostPayload
 }
 
 func (c *MultiServerClient) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) (err error) {
+	for hostID, server := range c.servers {
+		// Try to find a server other than the one we're trying to remove.
+		if hostID == string(req.HostID) {
+			continue
+		}
+		// Check liveness
+		_, err := server.GetVersion(ctx)
+		if err != nil {
+			continue
+		}
+
+		return server.RemoveHost(ctx, req)
+	}
+
+	// Fallback to attempting from any live server so that the user gets the
+	// server-generated error message from trying to remove a host from itself.
 	server, err := c.liveServer(ctx)
 	if err != nil {
 		return err
