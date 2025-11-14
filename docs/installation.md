@@ -23,7 +23,11 @@ Before installing the Control Plane, you must:
 
 ## Initializing Docker Swarm
 
-After provisioning hosts that meet the prerequisites, the next step is to provision a Docker Swarm cluster. Docker Swarm is used to deploy the Control Plane server on each host, and will also be used by the Control Plane to deploy Postgres instances across hosts when requested.
+After provisioning hosts that meet the prerequisites listed above, the next step is to provision a Docker Swarm cluster. Docker Swarm is used to deploy the Control Plane server on each host, and will also be used by the Control Plane to deploy Postgres instances across hosts when requested.
+
+!!! hint
+
+    Each system that hosts a node must be a member of the Docker swarm; Docker is the cluster coordinator for Control Plane.
 
 To initialize a new Docker Swarm cluster, run the following command on one of your hosts. This host will become the first manager in the swarm. Use the command:
 
