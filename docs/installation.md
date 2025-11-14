@@ -23,9 +23,13 @@ Before installing the Control Plane, you must:
 
 ## Initializing Docker Swarm
 
-After provisioning hosts that meet the prerequisites, the next step is to provision a Docker Swarm cluster. Docker Swarm is used to deploy the Control Plane server on each host, and will also be used by the Control Plane to deploy Postgres instances across hosts when requested.
+After provisioning hosts that meet the prerequisites, the next step is to provision a Docker Swarm cluster. Docker Swarm is used to deploy the Control Plane server on each host, and will also be used by the Control Plane to deploy Postgres instances across hosts when requested. 
 
-To initialize a new Docker Swarm cluster, run the following command on one of your hosts. This host will become the first manager in the swarm. Use the command:
+!!! hint
+
+    Every VM that hosts a cluster node must be a member of the Docker Swarm.
+
+To initialize a new Docker Swarm cluster, connect to a VM with ssh and run the following command. This host will become the first manager in the swarm. Use the command:
 
 ```sh
 docker swarm init --advertise-addr 192.168.99.100
@@ -40,7 +44,7 @@ To add a worker to this swarm, run the following command:
 To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
 ```
 
-This command will output a `docker swarm join` command with a token. Invoke this command on each of the other hosts to join them to the cluster. After all hosts have joined the cluster, you can verify the cluster status by running:
+This command will output a [`docker swarm join`](https://docs.docker.com/engine/swarm/join-nodes/) command with a token. Invoke this command on each of the other hosts to join them to the cluster. After all hosts have joined the cluster, you can verify the cluster status by running:
 
 ```sh
 docker node ls
