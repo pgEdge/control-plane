@@ -64,6 +64,7 @@ func ParseEndpoint(
 
 		controlPlaneRemoveHostFlags      = flag.NewFlagSet("remove-host", flag.ExitOnError)
 		controlPlaneRemoveHostHostIDFlag = controlPlaneRemoveHostFlags.String("host-id", "REQUIRED", "ID of the host to remove.")
+		controlPlaneRemoveHostForceFlag  = controlPlaneRemoveHostFlags.String("force", "", "")
 
 		controlPlaneListDatabasesFlags = flag.NewFlagSet("list-databases", flag.ExitOnError)
 
@@ -321,7 +322,7 @@ func ParseEndpoint(
 				data, err = controlplanec.BuildGetHostPayload(*controlPlaneGetHostHostIDFlag)
 			case "remove-host":
 				endpoint = c.RemoveHost()
-				data, err = controlplanec.BuildRemoveHostPayload(*controlPlaneRemoveHostHostIDFlag)
+				data, err = controlplanec.BuildRemoveHostPayload(*controlPlaneRemoveHostHostIDFlag, *controlPlaneRemoveHostForceFlag)
 			case "list-databases":
 				endpoint = c.ListDatabases()
 			case "create-database":
@@ -503,13 +504,14 @@ Example:
 }
 
 func controlPlaneRemoveHostUsage() {
-	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane remove-host -host-id STRING
+	fmt.Fprintf(os.Stderr, `%[1]s [flags] control-plane remove-host -host-id STRING -force BOOL
 
 Removes a host from the cluster.
     -host-id STRING: ID of the host to remove.
+    -force BOOL: 
 
 Example:
-    %[1]s control-plane remove-host --host-id "host-1"
+    %[1]s control-plane remove-host --host-id "host-1" --force true
 `, os.Args[0])
 }
 

@@ -1185,6 +1185,12 @@ paths:
       description: Removes a host from the cluster.
       operationId: control-plane#remove-host
       parameters:
+        - name: force
+          in: query
+          description: 'Force removal even if instances exist or quorum would be violated. Use only for disaster recovery when a host is permanently lost. '
+          required: false
+          type: boolean
+          default: false
         - name: host_id
           in: path
           description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.

@@ -775,6 +775,21 @@ func (c *Client) BuildRemoveHostRequest(ctx context.Context, v any) (*http.Reque
 	return req, nil
 }
 
+// EncodeRemoveHostRequest returns an encoder for requests sent to the
+// control-plane remove-host server.
+func EncodeRemoveHostRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.RemoveHostPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "remove-host", "*controlplane.RemoveHostPayload", v)
+		}
+		values := req.URL.Query()
+		values.Add("force", fmt.Sprintf("%v", p.Force))
+		req.URL.RawQuery = values.Encode()
+		return nil
+	}
+}
+
 // DecodeRemoveHostResponse returns a decoder for responses returned by the
 // control-plane remove-host endpoint. restoreBody controls whether the
 // response body should be restored after having been read.

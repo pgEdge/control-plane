@@ -683,6 +683,9 @@ type PgEdgeVersion struct {
 type RemoveHostPayload struct {
 	// ID of the host to remove.
 	HostID Identifier
+	// Force removal even if instances exist or quorum would be violated. Use only
+	// for disaster recovery when a host is permanently lost.
+	Force bool
 }
 
 // RestartInstancePayload is the payload type of the control-plane service

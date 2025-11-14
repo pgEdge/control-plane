@@ -132,7 +132,7 @@ func BuildGetHostPayload(controlPlaneGetHostHostID string) (*controlplane.GetHos
 
 // BuildRemoveHostPayload builds the payload for the control-plane remove-host
 // endpoint from CLI flags.
-func BuildRemoveHostPayload(controlPlaneRemoveHostHostID string) (*controlplane.RemoveHostPayload, error) {
+func BuildRemoveHostPayload(controlPlaneRemoveHostHostID string, controlPlaneRemoveHostForce string) (*controlplane.RemoveHostPayload, error) {
 	var err error
 	var hostID string
 	{
@@ -147,8 +147,18 @@ func BuildRemoveHostPayload(controlPlaneRemoveHostHostID string) (*controlplane.
 			return nil, err
 		}
 	}
+	var force bool
+	{
+		if controlPlaneRemoveHostForce != "" {
+			force, err = strconv.ParseBool(controlPlaneRemoveHostForce)
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for force, must be BOOL")
+			}
+		}
+	}
 	v := &controlplane.RemoveHostPayload{}
 	v.HostID = controlplane.Identifier(hostID)
+	v.Force = force
 
 	return v, nil
 }

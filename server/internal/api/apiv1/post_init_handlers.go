@@ -195,12 +195,14 @@ func (s *PostInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPa
 	} else if err != nil {
 		return apiErr(err)
 	}
-	count, err := s.dbSvc.InstanceCountForHost(ctx, hostID)
-	if err != nil {
-		return apiErr(err)
-	}
-	if count != 0 {
-		return makeInvalidInputErr(errors.New("cannot remove host with running instances"))
+	if !req.Force { // bypass instance count check if force == true
+		count, err := s.dbSvc.InstanceCountForHost(ctx, hostID)
+		if err != nil {
+			return apiErr(err)
+		}
+		if count != 0 {
+			return makeInvalidInputErr(errors.New("cannot remove host with running instances"))
+		}
 	}
 	err = s.etcd.RemoveHost(ctx, hostID)
 	if err != nil {

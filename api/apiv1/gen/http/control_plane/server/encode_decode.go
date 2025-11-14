@@ -591,6 +591,7 @@ func DecodeRemoveHostRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 	return func(r *http.Request) (any, error) {
 		var (
 			hostID string
+			force  bool
 			err    error
 
 			params = mux.Vars(r)
@@ -602,10 +603,20 @@ func DecodeRemoveHostRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 		if utf8.RuneCountInString(hostID) > 63 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("host_id", hostID, utf8.RuneCountInString(hostID), 63, false))
 		}
+		{
+			forceRaw := r.URL.Query().Get("force")
+			if forceRaw != "" {
+				v, err2 := strconv.ParseBool(forceRaw)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("force", forceRaw, "boolean"))
+				}
+				force = v
+			}
+		}
 		if err != nil {
 			return nil, err
 		}
-		payload := NewRemoveHostPayload(hostID)
+		payload := NewRemoveHostPayload(hostID, force)
 
 		return payload, nil
 	}

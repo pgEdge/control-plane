@@ -3836,9 +3836,10 @@ func NewGetHostPayload(hostID string) *controlplane.GetHostPayload {
 
 // NewRemoveHostPayload builds a control-plane service remove-host endpoint
 // payload.
-func NewRemoveHostPayload(hostID string) *controlplane.RemoveHostPayload {
+func NewRemoveHostPayload(hostID string, force bool) *controlplane.RemoveHostPayload {
 	v := &controlplane.RemoveHostPayload{}
 	v.HostID = controlplane.Identifier(hostID)
+	v.Force = force
 
 	return v
 }
