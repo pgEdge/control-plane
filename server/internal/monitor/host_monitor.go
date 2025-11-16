@@ -3,7 +3,6 @@ package monitor
 import (
 	"context"
 
-	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/rs/zerolog"
 )
@@ -22,7 +21,7 @@ func NewHostMonitor(
 	}
 	m.monitor = NewMonitor(
 		logger,
-		database.InstanceMoniterRefreshInterval,
+		statusMonitorInterval,
 		m.checkStatus,
 	)
 	return m

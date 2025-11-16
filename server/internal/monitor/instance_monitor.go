@@ -16,6 +16,8 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
+const statusMonitorInterval = 5 * time.Second
+
 type InstanceMonitor struct {
 	statusMonitor *Monitor
 	databaseID    string
@@ -45,7 +47,7 @@ func NewInstanceMonitor(
 	}
 	m.statusMonitor = NewMonitor(
 		logger,
-		database.InstanceMoniterRefreshInterval,
+		statusMonitorInterval,
 		m.checkStatus,
 	)
 	return m
