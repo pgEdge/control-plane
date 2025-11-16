@@ -70,6 +70,50 @@ You can also limit your request to only the most recent log entries with the
     curl 'http://host-3:3000/v1/databases/example/tasks/d3cd2fab-4b1f-4eb9-b614-181c10b07acd/log?limit=10'
     ```
 
+# Cancel Task
+
+The **Cancel Task** feature allows users (or automated systems) to request cancellation of a long-running workflow task. This provides interruption of operations such as backups, restores, updates, and database lifecycle tasks. 
+
+Cancellation is cooperative: the workflow checks its context for cancellation and performs cleanup before exiting. This also means that cancellation is not instantaneous  as cleanup must run. Tasks already in `completed`, `failed`, or `canceled` cannot be canceled, cancellation is only possible if the task has a workflow instance.
+
+A task can be canceled by calling:
+
+=== "curl"
+
+```
+ curl 'http://host-3:3000/v1/databases/{database_id}/tasks/{task_id}/cancel
+```
+
+Why cancel a task?
+
+Task cancellation can be used to stop long-running operations, and can be helpful as a tool for emergency interruption without killing the entire service. Note that cancelling certain tasks can result in failed database states as a result of partially applied operations, and that operations are not safely rolled back. 
+
+Create Database / Update Database
+
+* Canceling stops the workflow immediately and the task becomes **canceled**.
+* The database is marked **failed**  as the instance may be in an undefined state.
+
+Delete Database
+
+* The task stops and becomes **canceled**.
+* The database is marked **failed**  as the instance may be in an undefined state.
+
+Restart Instance
+
+* Cancellation halts the restart process and marks the task as **canceled**.
+* The database is set to **failed**, as the instance may be in an undefined state.
+
+pgBackRest Backup
+* The backup stops and the task becomes **canceled**.
+* No state modification occurs
+
+pgBackRest Restore
+
+* Cancellation stops the restore workflow and marks the task as **canceled**.
+* No state modification occurs
+* Note that partially restored data may remain
+
+
 ## Viewing Postgres logs
 
 By default, each database is configured to write log files to the following directory:
