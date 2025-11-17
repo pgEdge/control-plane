@@ -56,21 +56,26 @@ extra:
 copyright: Copyright &copy; 2023 - 2025 pgEdge, Inc
 repo_url: https://github.com/pgEdge/control-plane
 nav:
-  - Introduction: index.md
-  - Concepts: concepts.md
-  - Quickstart: quickstart.md
-  - Installation: installation.md
-  - Configuration: configuration.md
-  - User Guide:
-      - Creating a Database: guides/create-db.md
-      - Connecting to a Database: guides/connecting.md
-      - Updating a Database: guides/update-db.md
-      - Upgrading a Database: guides/upgrade-db.md
-      - Backup & Restore: guides/backup-restore.md
-      - Tasks & Logs: guides/tasks-logs.md
-      - Read Replicas: guides/read-replicas.md
-      - Deleting a Database: guides/delete-db.md
-      - Migrating a Database: guides/migrate-db.md
+  - Control Plane Overview: index.md
+  - Prerequisites - Preparing your System:
+    - Control Plane Concepts: prerequisites/concepts.md
+    - Preparing your System: prerequisites/index.md
+  - Installing Control Plane:
+    - Deployment Options: installation/index.md
+    - Quickstart: installation/quickstart.md
+    - Installation: installation/installation.md
+    - Configuration: installation/configuration.md
+  - Using Control Plane:
+    - Using Control Plane API Calls: using/index.md
+    - Creating a Database: guides/create-db.md
+    - Connecting to a Database: guides/connecting.md
+    - Updating a Database: guides/update-db.md
+    - Upgrading a Database: guides/upgrade-db.md
+    - Backup & Restore: guides/backup-restore.md
+    - Tasks & Logs: guides/tasks-logs.md
+    - Read Replicas: guides/read-replicas.md
+    - Deleting a Database: guides/delete-db.md
+    - Migrating a Database: guides/migrate-db.md
   - API:
       - OpenAPI: api/openapi.md
       - API Reference: api/reference.md
