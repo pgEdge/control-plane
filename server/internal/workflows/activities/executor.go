@@ -12,7 +12,10 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
-var ErrExecutorNotFound = errors.New("executor not found")
+var (
+	ErrExecutorNotFound = errors.New("executor not found")
+	ErrHostRemoved      = errors.New("host with the given ID has been removed")
+)
 
 func (a *Activities) ResolveExecutor(state *resource.State, executor resource.Executor) (core.Queue, error) {
 	registry, err := do.Invoke[*resource.Registry](a.Injector)

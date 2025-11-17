@@ -9,6 +9,7 @@ import (
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/resource"
@@ -16,10 +17,11 @@ import (
 )
 
 type ApplyEventInput struct {
-	DatabaseID string          `json:"database_id"`
-	TaskID     uuid.UUID       `json:"task_id"`
-	State      *resource.State `json:"state"`
-	Event      *resource.Event `json:"event"`
+	DatabaseID  string          `json:"database_id"`
+	TaskID      uuid.UUID       `json:"task_id"`
+	State       *resource.State `json:"state"`
+	Event       *resource.Event `json:"event"`
+	RemoveHosts []string        `json:"remove_hosts"`
 }
 
 type ApplyEventOutput struct {
@@ -35,6 +37,12 @@ func (a *Activities) ExecuteApplyEvent(
 		identifier := input.Event.Resource.Identifier
 		return nil, fmt.Errorf("failed to resolve executor for %s resource %s: %w", identifier.Type, identifier.ID, err)
 	}
+	for _, id := range input.RemoveHosts {
+		if queue == utils.HostQueue(id) {
+			return nil, ErrHostRemoved
+		}
+	}
+
 	options := workflow.ActivityOptions{
 		Queue: queue,
 		RetryOptions: workflow.RetryOptions{

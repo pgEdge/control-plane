@@ -213,6 +213,18 @@ func (s *PostInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPa
 		return apiErr(err)
 	}
 
+	dbs, err := s.dbSvc.GetDatabasesByHostId(ctx, hostID)
+	if err != nil {
+		return apiErr(err)
+	}
+	// TODO - this isn't right
+	for _, db := range dbs {
+		err := s.hostSvc.UpdateHost(ctx)
+		if err != nil {
+			return apiErr(err)
+		}
+	}
+
 	return nil
 }
 
