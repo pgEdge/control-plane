@@ -83,6 +83,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, spec *database.Spec, force
 		TaskID:      t.TaskID,
 		Spec:        spec,
 		ForceUpdate: forceUpdate,
+		RemoveHosts: nil, // TODO - how to fill in?
 	}
 	err = s.createWorkflow(ctx, t, s.workflows.UpdateDatabase, input)
 	if err != nil {

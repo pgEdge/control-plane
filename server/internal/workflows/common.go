@@ -21,15 +21,17 @@ func (w *Workflows) applyEvents(
 	taskID uuid.UUID,
 	state *resource.State,
 	plan resource.Plan,
+	removeHosts []string,
 ) error {
 	for _, phase := range plan {
 		futures := make([]workflow.Future[*activities.ApplyEventOutput], len(phase))
 		for i, event := range phase {
 			in := &activities.ApplyEventInput{
-				DatabaseID: databaseID,
-				TaskID:     taskID,
-				State:      state,
-				Event:      event,
+				DatabaseID:  databaseID,
+				TaskID:      taskID,
+				State:       state,
+				Event:       event,
+				RemoveHosts: removeHosts,
 			}
 			future, err := w.Activities.ExecuteApplyEvent(ctx, in)
 			if errors.Is(err, activities.ErrExecutorNotFound) {
@@ -39,6 +41,9 @@ func (w *Workflows) applyEvents(
 				// so that it can be recreated.
 				// TODO: validate that this is always the right choice.
 				state.Remove(event.Resource)
+				continue
+			} else if errors.Is(err, activities.ErrHostRemoved) {
+				// TODO
 				continue
 			} else if err != nil {
 				return fmt.Errorf("failed to queue apply event: %w", err)
@@ -78,6 +83,7 @@ func (w *Workflows) applyPlans(
 	taskID uuid.UUID,
 	state *resource.State,
 	plans []resource.Plan,
+	removeHosts []string,
 ) error {
 	logger := workflow.Logger(ctx).With("database_id", databaseID)
 
@@ -94,7 +100,7 @@ func (w *Workflows) applyPlans(
 	}()
 
 	for i, plan := range plans {
-		err := w.applyEvents(ctx, databaseID, taskID, state, plan)
+		err := w.applyEvents(ctx, databaseID, taskID, state, plan, removeHosts)
 		if err != nil {
 			return fmt.Errorf("error in plan %d: %w", i, err)
 		}
