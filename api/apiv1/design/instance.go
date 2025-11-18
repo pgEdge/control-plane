@@ -43,7 +43,7 @@ var InstancePostgresStatus = g.Type("InstancePostgresStatus", func() {
 	g.Description("Postgres status information for a pgEdge instance.")
 	g.Attribute("version", g.String, func() {
 		g.Description("The version of Postgres for this instance.")
-		g.Example("17.5")
+		g.Example("18.1")
 	})
 	g.Attribute("patroni_state", g.String, func() {
 		g.Example("stopping")

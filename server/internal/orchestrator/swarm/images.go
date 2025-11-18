@@ -33,9 +33,6 @@ func NewVersions(cfg config.Config) *Versions {
 	})
 
 	// pg17
-	versions.addImage(host.MustPgEdgeVersion("17.5", "5"), &Images{
-		PgEdgeImage: imageTag(cfg, "17.5-spock5.0.1-standard-1"),
-	})
 	versions.addImage(host.MustPgEdgeVersion("17.6", "5"), &Images{
 		PgEdgeImage: imageTag(cfg, "17.6-spock5.0.4-standard-1"),
 	})

@@ -3,7 +3,7 @@
 ## Minor Version Upgrades
 
 The Control Plane supports minor Postgres version upgrades, such as upgrading
-from Postgres 17.5 to 17.6, via the API. The Postgres version is a field in the
+from Postgres 18.0 to 18.1, via the API. The Postgres version is a field in the
 `spec` that you submit in the [create](./create-db.md) and
 [update](./update-db.md) requests.
 

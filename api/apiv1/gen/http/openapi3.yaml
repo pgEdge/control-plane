@@ -44,7 +44,7 @@ paths:
                     supported_pgedge_versions:
                       - postgres_version: "17.6"
                         spock_version: "5"
-                      - postgres_version: "17.5"
+                      - postgres_version: "18.1"
                         spock_version: "5"
                       - postgres_version: "16.10"
                         spock_version: "5"
@@ -70,7 +70,7 @@ paths:
                     supported_pgedge_versions:
                       - postgres_version: "17.6"
                         spock_version: "5"
-                      - postgres_version: "17.5"
+                      - postgres_version: "18.1"
                         spock_version: "5"
                       - postgres_version: "16.10"
                         spock_version: "5"
@@ -96,7 +96,7 @@ paths:
                     supported_pgedge_versions:
                       - postgres_version: "17.6"
                         spock_version: "5"
-                      - postgres_version: "17.5"
+                      - postgres_version: "18.1"
                         spock_version: "5"
                       - postgres_version: "16.10"
                         spock_version: "5"
@@ -758,7 +758,7 @@ paths:
                     postgres:
                       patroni_state: running
                       role: primary
-                      version: "17.5"
+                      version: "18.1"
                     spock:
                       read_only: "off"
                       subscriptions:
@@ -783,7 +783,7 @@ paths:
                     postgres:
                       patroni_state: running
                       role: primary
-                      version: "17.5"
+                      version: "18.1"
                     spock:
                       read_only: "off"
                       subscriptions:
@@ -808,7 +808,7 @@ paths:
                     postgres:
                       patroni_state: running
                       role: primary
-                      version: "17.5"
+                      version: "18.1"
                     spock:
                       read_only: "off"
                       subscriptions:
@@ -1003,7 +1003,7 @@ paths:
                       postgres:
                         patroni_state: running
                         role: primary
-                        version: "17.5"
+                        version: "18.1"
                       spock:
                         read_only: "off"
                         subscriptions:
@@ -1028,7 +1028,7 @@ paths:
                       postgres:
                         patroni_state: running
                         role: primary
-                        version: "17.5"
+                        version: "18.1"
                       spock:
                         read_only: "off"
                         subscriptions:
@@ -1053,7 +1053,7 @@ paths:
                       postgres:
                         patroni_state: running
                         role: primary
-                        version: "17.5"
+                        version: "18.1"
                       spock:
                         read_only: "off"
                         subscriptions:
@@ -1789,7 +1789,7 @@ paths:
                       postgres:
                         patroni_state: running
                         role: primary
-                        version: "17.5"
+                        version: "18.1"
                       spock:
                         read_only: "off"
                         subscriptions:
@@ -1814,7 +1814,7 @@ paths:
                       postgres:
                         patroni_state: running
                         role: primary
-                        version: "17.5"
+                        version: "18.1"
                       spock:
                         read_only: "off"
                         subscriptions:
@@ -1839,7 +1839,7 @@ paths:
                       postgres:
                         patroni_state: running
                         role: primary
-                        version: "17.5"
+                        version: "18.1"
                       spock:
                         read_only: "off"
                         subscriptions:
@@ -2427,7 +2427,7 @@ paths:
                         supported_pgedge_versions:
                           - postgres_version: "17.6"
                             spock_version: "5"
-                          - postgres_version: "17.5"
+                          - postgres_version: "18.1"
                             spock_version: "5"
                           - postgres_version: "16.10"
                             spock_version: "5"
@@ -2453,7 +2453,7 @@ paths:
                         supported_pgedge_versions:
                           - postgres_version: "17.6"
                             spock_version: "5"
-                          - postgres_version: "17.5"
+                          - postgres_version: "18.1"
                             spock_version: "5"
                           - postgres_version: "16.10"
                             spock_version: "5"
@@ -2479,7 +2479,7 @@ paths:
                         supported_pgedge_versions:
                           - postgres_version: "17.6"
                             spock_version: "5"
-                          - postgres_version: "17.5"
+                          - postgres_version: "18.1"
                             spock_version: "5"
                           - postgres_version: "16.10"
                             spock_version: "5"
@@ -3059,7 +3059,7 @@ components:
               supported_pgedge_versions:
                 - postgres_version: "17.6"
                   spock_version: "5"
-                - postgres_version: "17.5"
+                - postgres_version: "18.1"
                   spock_version: "5"
                 - postgres_version: "16.10"
                   spock_version: "5"
@@ -3085,7 +3085,7 @@ components:
               supported_pgedge_versions:
                 - postgres_version: "17.6"
                   spock_version: "5"
-                - postgres_version: "17.5"
+                - postgres_version: "18.1"
                   spock_version: "5"
                 - postgres_version: "16.10"
                   spock_version: "5"
@@ -3111,7 +3111,7 @@ components:
               supported_pgedge_versions:
                 - postgres_version: "17.6"
                   spock_version: "5"
-                - postgres_version: "17.5"
+                - postgres_version: "18.1"
                   spock_version: "5"
                 - postgres_version: "16.10"
                   spock_version: "5"
@@ -3153,7 +3153,7 @@ components:
             supported_pgedge_versions:
               - postgres_version: "17.6"
                 spock_version: "5"
-              - postgres_version: "17.5"
+              - postgres_version: "18.1"
                 spock_version: "5"
               - postgres_version: "16.10"
                 spock_version: "5"
@@ -3179,7 +3179,7 @@ components:
             supported_pgedge_versions:
               - postgres_version: "17.6"
                 spock_version: "5"
-              - postgres_version: "17.5"
+              - postgres_version: "18.1"
                 spock_version: "5"
               - postgres_version: "16.10"
                 spock_version: "5"
@@ -3205,7 +3205,7 @@ components:
             supported_pgedge_versions:
               - postgres_version: "17.6"
                 spock_version: "5"
-              - postgres_version: "17.5"
+              - postgres_version: "18.1"
                 spock_version: "5"
               - postgres_version: "16.10"
                 spock_version: "5"
@@ -3448,7 +3448,7 @@ components:
             postgres:
               patroni_state: running
               role: primary
-              version: "17.5"
+              version: "18.1"
             spock:
               read_only: "off"
               subscriptions:
@@ -3473,7 +3473,7 @@ components:
             postgres:
               patroni_state: running
               role: primary
-              version: "17.5"
+              version: "18.1"
             spock:
               read_only: "off"
               subscriptions:
@@ -3498,7 +3498,7 @@ components:
             postgres:
               patroni_state: running
               role: primary
-              version: "17.5"
+              version: "18.1"
             spock:
               read_only: "off"
               subscriptions:
@@ -3687,7 +3687,7 @@ components:
               patroni_state: unknown
               pending_restart: false
               role: primary
-              version: "17.5"
+              version: "18.1"
             spock:
               read_only: "off"
               subscriptions:
@@ -3715,7 +3715,7 @@ components:
               patroni_state: unknown
               pending_restart: false
               role: primary
-              version: "17.5"
+              version: "18.1"
             spock:
               read_only: "off"
               subscriptions:
@@ -4084,7 +4084,7 @@ components:
                 patroni_state: unknown
                 pending_restart: false
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
@@ -4112,7 +4112,7 @@ components:
                 patroni_state: unknown
                 pending_restart: false
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
@@ -4471,7 +4471,7 @@ components:
                 patroni_state: unknown
                 pending_restart: false
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
@@ -4499,7 +4499,7 @@ components:
                 patroni_state: unknown
                 pending_restart: false
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
@@ -6081,7 +6081,7 @@ components:
           patroni_state: unknown
           pending_restart: false
           role: primary
-          version: "17.5"
+          version: "18.1"
         spock:
           read_only: "off"
           subscriptions:
@@ -6121,7 +6121,7 @@ components:
             patroni_state: unknown
             pending_restart: false
             role: primary
-            version: "17.5"
+            version: "18.1"
           spock:
             read_only: "off"
             subscriptions:
@@ -6149,7 +6149,7 @@ components:
             patroni_state: unknown
             pending_restart: false
             role: primary
-            version: "17.5"
+            version: "18.1"
           spock:
             read_only: "off"
             subscriptions:
@@ -6177,7 +6177,7 @@ components:
             patroni_state: unknown
             pending_restart: false
             role: primary
-            version: "17.5"
+            version: "18.1"
           spock:
             read_only: "off"
             subscriptions:
@@ -6233,14 +6233,14 @@ components:
         version:
           type: string
           description: The version of Postgres for this instance.
-          example: "17.5"
+          example: "18.1"
       description: Postgres status information for a pgEdge instance.
       example:
         patroni_paused: true
         patroni_state: unknown
         pending_restart: false
         role: primary
-        version: "17.5"
+        version: "18.1"
     InstanceResponseBody:
       type: object
       properties:
@@ -6309,7 +6309,7 @@ components:
           patroni_state: unknown
           pending_restart: false
           role: primary
-          version: "17.5"
+          version: "18.1"
         spock:
           read_only: "off"
           subscriptions:
@@ -6353,7 +6353,7 @@ components:
             patroni_state: unknown
             pending_restart: false
             role: primary
-            version: "17.5"
+            version: "18.1"
           spock:
             read_only: "off"
             subscriptions:
@@ -6384,7 +6384,7 @@ components:
             patroni_state: unknown
             pending_restart: false
             role: primary
-            version: "17.5"
+            version: "18.1"
           spock:
             read_only: "off"
             subscriptions:
@@ -6415,7 +6415,7 @@ components:
             patroni_state: unknown
             pending_restart: false
             role: primary
-            version: "17.5"
+            version: "18.1"
           spock:
             read_only: "off"
             subscriptions:
@@ -7006,7 +7006,7 @@ components:
               postgres:
                 patroni_state: running
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
@@ -7031,7 +7031,7 @@ components:
               postgres:
                 patroni_state: running
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
@@ -7056,7 +7056,7 @@ components:
               postgres:
                 patroni_state: running
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
@@ -7686,7 +7686,7 @@ components:
               postgres:
                 patroni_state: running
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
@@ -7711,7 +7711,7 @@ components:
               postgres:
                 patroni_state: running
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
@@ -7736,7 +7736,7 @@ components:
               postgres:
                 patroni_state: running
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:

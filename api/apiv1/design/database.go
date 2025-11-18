@@ -1290,7 +1290,7 @@ var exampleDatabase = map[string]any{
 			"postgres": map[string]any{
 				"patroni_state": "running",
 				"role":          "primary",
-				"version":       "17.5",
+				"version":       "18.1",
 			},
 			"spock": map[string]any{
 				"read_only": "off",
@@ -1325,7 +1325,7 @@ var exampleDatabase = map[string]any{
 			"postgres": map[string]any{
 				"patroni_state": "running",
 				"role":          "primary",
-				"version":       "17.5",
+				"version":       "18.1",
 			},
 			"spock": map[string]any{
 				"read_only": "off",
@@ -1360,7 +1360,7 @@ var exampleDatabase = map[string]any{
 			"postgres": map[string]any{
 				"patroni_state": "running",
 				"role":          "primary",
-				"version":       "17.5",
+				"version":       "18.1",
 			},
 			"spock": map[string]any{
 				"read_only": "off",
