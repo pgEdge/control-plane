@@ -182,6 +182,7 @@ func (s *PostInitHandlers) GetHost(ctx context.Context, req *api.GetHostPayload)
 }
 
 func (s *PostInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) error {
+	fmt.Printf(">>>>> in RemoveHost: force==%t\n", req.Force)
 	hostID, err := hostIdentToString(req.HostID)
 	if err != nil {
 		return apiErr(err)
@@ -217,10 +218,27 @@ func (s *PostInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPa
 	if err != nil {
 		return apiErr(err)
 	}
-	// TODO - this isn't right
+	fmt.Println(">>>>> ranging over databases...")
 	for _, db := range dbs {
-		err := s.hostSvc.UpdateHost(ctx)
+		fmt.Printf("\t>>>>> db %s: removing %s from db spec\n", db.DatabaseID, hostID)
+		if ok := db.Spec.RemoveHost(hostID); !ok {
+			return apiErr(fmt.Errorf("%s host id not found/removed", hostID))
+		}
+
+		fmt.Printf("\t>>>>> db %s: applying db service update\n", db.DatabaseID)
+		_, err := s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateModifying, db.Spec)
 		if err != nil {
+			return apiErr(err)
+		}
+
+		prevState := db.State
+		fmt.Printf("\t>>>>> db %s: applying db workflow service update with removeHost == %s\n", db.DatabaseID, hostID)
+		_, err = s.workflowSvc.UpdateDatabase(ctx, db.Spec, false, hostID)
+		if err != nil {
+			restorationErr := s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, db.State, prevState)
+			if restorationErr != nil {
+				s.logger.Err(restorationErr).Msg("failed to roll back database state change")
+			}
 			return apiErr(err)
 		}
 	}

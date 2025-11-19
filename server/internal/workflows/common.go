@@ -21,7 +21,7 @@ func (w *Workflows) applyEvents(
 	taskID uuid.UUID,
 	state *resource.State,
 	plan resource.Plan,
-	removeHosts []string,
+	removeHosts ...string,
 ) error {
 	for _, phase := range plan {
 		futures := make([]workflow.Future[*activities.ApplyEventOutput], len(phase))
@@ -34,16 +34,14 @@ func (w *Workflows) applyEvents(
 				RemoveHosts: removeHosts,
 			}
 			future, err := w.Activities.ExecuteApplyEvent(ctx, in)
-			if errors.Is(err, activities.ErrExecutorNotFound) {
+			if errors.Is(err, activities.ErrExecutorNotFound) || errors.Is(err, activities.ErrHostRemoved) {
 				// The executor is missing from the state, which can happen if a
 				// resource was removed outside of control-plane and we've
 				// updated our state to reflect that. We'll remove this resource
 				// so that it can be recreated.
 				// TODO: validate that this is always the right choice.
+				fmt.Printf(">>>>> applyEvents received err from ExecuteApplyEvent: %s\n", err.Error())
 				state.Remove(event.Resource)
-				continue
-			} else if errors.Is(err, activities.ErrHostRemoved) {
-				// TODO
 				continue
 			} else if err != nil {
 				return fmt.Errorf("failed to queue apply event: %w", err)
@@ -83,7 +81,7 @@ func (w *Workflows) applyPlans(
 	taskID uuid.UUID,
 	state *resource.State,
 	plans []resource.Plan,
-	removeHosts []string,
+	removeHosts ...string,
 ) error {
 	logger := workflow.Logger(ctx).With("database_id", databaseID)
 
@@ -100,7 +98,7 @@ func (w *Workflows) applyPlans(
 	}()
 
 	for i, plan := range plans {
-		err := w.applyEvents(ctx, databaseID, taskID, state, plan, removeHosts)
+		err := w.applyEvents(ctx, databaseID, taskID, state, plan, removeHosts...)
 		if err != nil {
 			return fmt.Errorf("error in plan %d: %w", i, err)
 		}
