@@ -20,7 +20,7 @@ func TestValidateChangedSpec(t *testing.T) {
 			current: &database.Spec{
 				TenantID:        utils.PointerTo("tenant-id"),
 				DatabaseName:    "test",
-				PostgresVersion: "17.5",
+				PostgresVersion: "18.0",
 				SpockVersion:    "5",
 				Nodes: []*database.Node{
 					{Name: "n1", HostIDs: []string{"host-1"}},
@@ -29,7 +29,7 @@ func TestValidateChangedSpec(t *testing.T) {
 			updated: &database.Spec{
 				TenantID:        utils.PointerTo("tenant-id"),
 				DatabaseName:    "test",
-				PostgresVersion: "17.5",
+				PostgresVersion: "18.0",
 				SpockVersion:    "5",
 				Nodes: []*database.Node{
 					{Name: "n1", HostIDs: []string{"host-1"}},
@@ -41,7 +41,7 @@ func TestValidateChangedSpec(t *testing.T) {
 			current: &database.Spec{
 				TenantID:        utils.PointerTo("tenant-id"),
 				DatabaseName:    "test",
-				PostgresVersion: "17.5",
+				PostgresVersion: "18.0",
 				SpockVersion:    "5",
 				Nodes: []*database.Node{
 					{Name: "n1", HostIDs: []string{"host-1"}},
@@ -50,7 +50,7 @@ func TestValidateChangedSpec(t *testing.T) {
 			updated: &database.Spec{
 				TenantID:        utils.PointerTo("tenant-id"),
 				DatabaseName:    "test",
-				PostgresVersion: "17.5",
+				PostgresVersion: "18.0",
 				SpockVersion:    "5",
 				Nodes: []*database.Node{
 					{Name: "n1", HostIDs: []string{"host-1"}},
@@ -63,7 +63,7 @@ func TestValidateChangedSpec(t *testing.T) {
 			current: &database.Spec{
 				TenantID:        utils.PointerTo("tenant-id"),
 				DatabaseName:    "test",
-				PostgresVersion: "17.5",
+				PostgresVersion: "18.0",
 				SpockVersion:    "5",
 				Nodes: []*database.Node{
 					{Name: "n1", HostIDs: []string{"host-1"}},
@@ -72,7 +72,7 @@ func TestValidateChangedSpec(t *testing.T) {
 			updated: &database.Spec{
 				TenantID:        utils.PointerTo("tenant-id"),
 				DatabaseName:    "test",
-				PostgresVersion: "17.6",
+				PostgresVersion: "18.1",
 				SpockVersion:    "5",
 				Nodes: []*database.Node{
 					{Name: "n1", HostIDs: []string{"host-1"}},
@@ -84,7 +84,7 @@ func TestValidateChangedSpec(t *testing.T) {
 			current: &database.Spec{
 				TenantID:        utils.PointerTo("tenant-id"),
 				DatabaseName:    "test",
-				PostgresVersion: "17.5",
+				PostgresVersion: "18.0",
 				SpockVersion:    "5",
 				Nodes: []*database.Node{
 					{Name: "n1", HostIDs: []string{"host-1"}},
@@ -94,10 +94,10 @@ func TestValidateChangedSpec(t *testing.T) {
 			updated: &database.Spec{
 				TenantID:        utils.PointerTo("tenant-id"),
 				DatabaseName:    "test",
-				PostgresVersion: "17.5",
+				PostgresVersion: "18.0",
 				SpockVersion:    "5",
 				Nodes: []*database.Node{
-					{Name: "n1", HostIDs: []string{"host-1"}, PostgresVersion: "17.6"},
+					{Name: "n1", HostIDs: []string{"host-1"}, PostgresVersion: "18.1"},
 					{Name: "n2", HostIDs: []string{"host-2"}},
 				},
 			},
@@ -107,7 +107,7 @@ func TestValidateChangedSpec(t *testing.T) {
 			current: &database.Spec{
 				TenantID:        utils.PointerTo("tenant-id"),
 				DatabaseName:    "test",
-				PostgresVersion: "17.5",
+				PostgresVersion: "18.0",
 				SpockVersion:    "5",
 				Nodes: []*database.Node{
 					{Name: "n1", HostIDs: []string{"host-1"}},
@@ -116,7 +116,7 @@ func TestValidateChangedSpec(t *testing.T) {
 			updated: &database.Spec{
 				TenantID:        utils.PointerTo("new-tenant-id"),
 				DatabaseName:    "test",
-				PostgresVersion: "17.5",
+				PostgresVersion: "18.0",
 				SpockVersion:    "5",
 				Nodes: []*database.Node{
 					{Name: "n1", HostIDs: []string{"host-1"}},
@@ -129,7 +129,7 @@ func TestValidateChangedSpec(t *testing.T) {
 			current: &database.Spec{
 				TenantID:        utils.PointerTo("tenant-id"),
 				DatabaseName:    "test",
-				PostgresVersion: "17.5",
+				PostgresVersion: "18.0",
 				SpockVersion:    "5",
 				Nodes: []*database.Node{
 					{Name: "n1", HostIDs: []string{"host-1"}},
@@ -138,7 +138,7 @@ func TestValidateChangedSpec(t *testing.T) {
 			updated: &database.Spec{
 				TenantID:        utils.PointerTo("tenant-id"),
 				DatabaseName:    "updated_test",
-				PostgresVersion: "17.5",
+				PostgresVersion: "18.0",
 				SpockVersion:    "5",
 				Nodes: []*database.Node{
 					{Name: "n1", HostIDs: []string{"host-1"}},
@@ -151,7 +151,7 @@ func TestValidateChangedSpec(t *testing.T) {
 			current: &database.Spec{
 				TenantID:        utils.PointerTo("tenant-id"),
 				DatabaseName:    "test",
-				PostgresVersion: "17.5",
+				PostgresVersion: "17.6",
 				SpockVersion:    "5",
 				Nodes: []*database.Node{
 					{Name: "n1", HostIDs: []string{"host-1"}},
@@ -173,7 +173,7 @@ func TestValidateChangedSpec(t *testing.T) {
 			current: &database.Spec{
 				TenantID:        utils.PointerTo("tenant-id"),
 				DatabaseName:    "test",
-				PostgresVersion: "17.5",
+				PostgresVersion: "17.6",
 				SpockVersion:    "5",
 				Nodes: []*database.Node{
 					{Name: "n1", HostIDs: []string{"host-1"}},
@@ -183,7 +183,7 @@ func TestValidateChangedSpec(t *testing.T) {
 			updated: &database.Spec{
 				TenantID:        utils.PointerTo("tenant-id"),
 				DatabaseName:    "updated_test",
-				PostgresVersion: "17.5",
+				PostgresVersion: "18.0",
 				SpockVersion:    "5",
 				Nodes: []*database.Node{
 					{Name: "n1", HostIDs: []string{"host-1"}, PostgresVersion: "18.0"},

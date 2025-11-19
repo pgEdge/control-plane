@@ -312,17 +312,17 @@ func TestGreatestCommonDefaultVersion(t *testing.T) {
 			supportedVersions: [][]*host.PgEdgeVersion{
 				{
 					host.MustPgEdgeVersion("16.10", "5"),
-					host.MustPgEdgeVersion("17.5", "5"),
+					host.MustPgEdgeVersion("18.1", "5"),
 					host.MustPgEdgeVersion("17.6", "5"),
 				},
 				{
 					host.MustPgEdgeVersion("16.10", "5"),
-					host.MustPgEdgeVersion("17.5", "5"),
+					host.MustPgEdgeVersion("18.1", "5"),
 					host.MustPgEdgeVersion("17.6", "5"),
 				},
 				{
 					host.MustPgEdgeVersion("16.10", "5"),
-					host.MustPgEdgeVersion("17.5", "5"),
+					host.MustPgEdgeVersion("18.1", "5"),
 					host.MustPgEdgeVersion("17.6", "5"),
 				},
 			},
@@ -338,18 +338,18 @@ func TestGreatestCommonDefaultVersion(t *testing.T) {
 			supportedVersions: [][]*host.PgEdgeVersion{
 				{
 					host.MustPgEdgeVersion("16.10", "5"),
-					host.MustPgEdgeVersion("17.5", "5"),
+					host.MustPgEdgeVersion("18.1", "5"),
 					host.MustPgEdgeVersion("17.6", "5"),
 					host.MustPgEdgeVersion("17.7", "5"),
 				},
 				{
 					host.MustPgEdgeVersion("16.10", "5"),
-					host.MustPgEdgeVersion("17.5", "5"),
+					host.MustPgEdgeVersion("18.1", "5"),
 					host.MustPgEdgeVersion("17.6", "5"),
 				},
 				{
 					host.MustPgEdgeVersion("16.10", "5"),
-					host.MustPgEdgeVersion("17.5", "5"),
+					host.MustPgEdgeVersion("18.1", "5"),
 					host.MustPgEdgeVersion("17.6", "5"),
 				},
 			},
@@ -370,12 +370,12 @@ func TestGreatestCommonDefaultVersion(t *testing.T) {
 				},
 				{
 					host.MustPgEdgeVersion("16.10", "5"),
-					host.MustPgEdgeVersion("17.5", "5"),
+					host.MustPgEdgeVersion("18.1", "5"),
 					host.MustPgEdgeVersion("17.6", "5"),
 				},
 				{
 					host.MustPgEdgeVersion("16.10", "5"),
-					host.MustPgEdgeVersion("17.5", "5"),
+					host.MustPgEdgeVersion("18.1", "5"),
 					host.MustPgEdgeVersion("17.6", "5"),
 				},
 			},
@@ -390,8 +390,8 @@ func TestGreatestCommonDefaultVersion(t *testing.T) {
 			name: "no overlapping defaults",
 			defaultVersions: []*host.PgEdgeVersion{
 				host.MustPgEdgeVersion("18.0", "6"),
-				host.MustPgEdgeVersion("17.5", "5"),
-				host.MustPgEdgeVersion("17.5", "5"),
+				host.MustPgEdgeVersion("18.1", "5"),
+				host.MustPgEdgeVersion("18.1", "5"),
 			},
 			supportedVersions: [][]*host.PgEdgeVersion{
 				{
@@ -401,12 +401,12 @@ func TestGreatestCommonDefaultVersion(t *testing.T) {
 				},
 				{
 					host.MustPgEdgeVersion("16.10", "5"),
-					host.MustPgEdgeVersion("17.5", "5"),
+					host.MustPgEdgeVersion("18.1", "5"),
 					host.MustPgEdgeVersion("17.6", "5"),
 				},
 				{
 					host.MustPgEdgeVersion("16.10", "5"),
-					host.MustPgEdgeVersion("17.5", "5"),
+					host.MustPgEdgeVersion("18.1", "5"),
 					host.MustPgEdgeVersion("17.6", "5"),
 				},
 			},

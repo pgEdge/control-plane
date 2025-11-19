@@ -161,7 +161,7 @@ var HostsArrayExample = []map[string]any{
 				"spock_version":    "5",
 			},
 			{
-				"postgres_version": "17.5",
+				"postgres_version": "18.1",
 				"spock_version":    "5",
 			},
 			{
@@ -199,7 +199,7 @@ var HostsArrayExample = []map[string]any{
 				"spock_version":    "5",
 			},
 			{
-				"postgres_version": "17.5",
+				"postgres_version": "18.1",
 				"spock_version":    "5",
 			},
 			{
@@ -237,7 +237,7 @@ var HostsArrayExample = []map[string]any{
 				"spock_version":    "5",
 			},
 			{
-				"postgres_version": "17.5",
+				"postgres_version": "18.1",
 				"spock_version":    "5",
 			},
 			{
