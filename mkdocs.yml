@@ -86,6 +86,6 @@ nav:
       - API Reference: api/reference.md
   - Development:
       - Development Process: development/development.md
-      - Automated end-to-end tests: development/e2e-tests.md
-      - Running locally: development/running-locally.md
+      - Automated End-to-End tests: development/e2e-tests.md
+      - Running Locally: development/running-locally.md
   - Control Plane Release Notes: cp_rel_notes.md
