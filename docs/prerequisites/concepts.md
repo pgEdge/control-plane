@@ -4,8 +4,8 @@ The pgEdge Control Plane is designed to simplify the management and orchestratio
 
 This section introduces the core concepts and terminology used throughout the Control Plane documentation to help you understand how databases, nodes, instances, and hosts interact within a cluster.
 
-![Concepts Diagram](img/concepts-light.png#only-light)
-![Concepts Diagram](img/concepts-dark.png#only-dark)
+![Concepts Diagram](../img/concepts-light.png#only-light)
+![Concepts Diagram](../img/concepts-dark.png#only-dark)
 
 The above diagram illustrates the relationship between nodes, hosts, instances, and databases in a distributed cluster: a database is composed of one or more nodes, each node is made of one or more instances, and each instance runs on a host.
 
@@ -22,8 +22,8 @@ A Cluster represents a collection of hosts that are joined together to provide a
 A database in the Control Plane API is a Postgres database that is optionally replicated between multiple Postgres instances. A database is composed of one or more [nodes](#nodes).
 
 You create and update databases by submitting a "database spec"
-to the Control Plane API. See [Creating a Database](guides/create-db.md) and
-[Updating a Database](guides/update-db.md) for more information.
+to the Control Plane API. See [Creating a Database](../using/create-db.md) and
+[Updating a Database](../using/update-db.md) for more information.
 
 ## Nodes
 
