@@ -18,6 +18,7 @@ type UpdateDatabaseInput struct {
 	TaskID      uuid.UUID      `json:"task_id"`
 	Spec        *database.Spec `json:"spec"`
 	ForceUpdate bool           `json:"force_update"`
+	RemoveHosts []string       `json:"remove_hosts"`
 }
 
 type UpdateDatabaseOutput struct {
@@ -82,8 +83,9 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 	}
 
 	refreshCurrentInput := &RefreshCurrentStateInput{
-		DatabaseID: input.Spec.DatabaseID,
-		TaskID:     input.TaskID,
+		DatabaseID:  input.Spec.DatabaseID,
+		TaskID:      input.TaskID,
+		RemoveHosts: input.RemoveHosts,
 	}
 	refreshCurrentOutput, err := w.ExecuteRefreshCurrentState(ctx, refreshCurrentInput).Get(ctx)
 	if err != nil {
@@ -110,7 +112,7 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		return nil, handleError(err)
 	}
 
-	err = w.applyPlans(ctx, input.Spec.DatabaseID, input.TaskID, current, planOutput.Plans)
+	err = w.applyPlans(ctx, input.Spec.DatabaseID, input.TaskID, current, planOutput.Plans, input.RemoveHosts...)
 	if err != nil {
 		return nil, handleError(err)
 	}

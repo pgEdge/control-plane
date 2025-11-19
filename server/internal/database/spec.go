@@ -369,6 +369,34 @@ func (s *Spec) DefaultOptionalFieldsFrom(other *Spec) {
 	}
 }
 
+// RemoveHost removes hostId from Spec.Nodes.HostIDs (if present).  If this results in an empty Node, then the
+// Node is removed from Spec.Nodes.  Return true if hostId was found and removed, false otherwise.
+func (s *Spec) RemoveHost(hostId string) (ok bool) {
+	var remainingNodes []*Node
+
+	for _, node := range s.Nodes {
+		// Filter out the hostId from this node's HostIDs
+		var filteredHostIDs []string
+		for _, id := range node.HostIDs {
+			if id == hostId {
+				ok = true
+			} else {
+				filteredHostIDs = append(filteredHostIDs, id)
+			}
+		}
+
+		node.HostIDs = filteredHostIDs
+
+		if len(filteredHostIDs) > 0 {
+			remainingNodes = append(remainingNodes, node)
+		}
+	}
+
+	s.Nodes = remainingNodes
+
+	return ok
+}
+
 func (s Spec) defaultOptionalFieldFromNodes(other []*Node) {
 	otherNodesByName := make(map[string]*Node)
 	for _, n := range other {
