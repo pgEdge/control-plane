@@ -3,6 +3,7 @@ package database
 import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 
+	"github.com/pgEdge/control-plane/server/internal/encryption"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
@@ -12,14 +13,16 @@ type StoredSpec struct {
 }
 
 type SpecStore struct {
-	client *clientv3.Client
-	root   string
+	client    *clientv3.Client
+	encryptor encryption.Encryptor
+	root      string
 }
 
-func NewSpecStore(client *clientv3.Client, root string) *SpecStore {
+func NewSpecStore(client *clientv3.Client, encryptor encryption.Encryptor, root string) *SpecStore {
 	return &SpecStore{
-		client: client,
-		root:   root,
+		client:    client,
+		encryptor: encryptor,
+		root:      root,
 	}
 }
 
@@ -38,7 +41,7 @@ func (s *SpecStore) ExistsByKey(databaseID string) storage.ExistsOp {
 
 func (s *SpecStore) GetByKey(databaseID string) storage.GetOp[*StoredSpec] {
 	key := s.Key(databaseID)
-	return storage.NewGetOp[*StoredSpec](s.client, key)
+	return storage.NewGetOpWithEncryption[*StoredSpec](s.client, s.encryptor, key)
 }
 
 func (s *SpecStore) GetByKeys(databaseIDs ...string) storage.GetMultipleOp[*StoredSpec] {
@@ -46,22 +49,22 @@ func (s *SpecStore) GetByKeys(databaseIDs ...string) storage.GetMultipleOp[*Stor
 	for idx, databaseID := range databaseIDs {
 		keys[idx] = s.Key(databaseID)
 	}
-	return storage.NewGetMultipleOp[*StoredSpec](s.client, keys)
+	return storage.NewGetMultipleOpWithEncryption[*StoredSpec](s.client, s.encryptor, keys)
 }
 
 func (s *SpecStore) GetAll() storage.GetMultipleOp[*StoredSpec] {
 	prefix := s.Prefix()
-	return storage.NewGetPrefixOp[*StoredSpec](s.client, prefix)
+	return storage.NewGetPrefixOpWithEncryption[*StoredSpec](s.client, s.encryptor, prefix)
 }
 
 func (s *SpecStore) Create(item *StoredSpec) storage.PutOp[*StoredSpec] {
 	key := s.Key(item.DatabaseID)
-	return storage.NewCreateOp(s.client, key, item)
+	return storage.NewCreateOpWithEncryption(s.client, s.encryptor, key, item)
 }
 
 func (s *SpecStore) Update(item *StoredSpec) storage.PutOp[*StoredSpec] {
 	key := s.Key(item.DatabaseID)
-	return storage.NewUpdateOp(s.client, key, item)
+	return storage.NewUpdateOpWithEncryption(s.client, s.encryptor, key, item)
 }
 
 func (s *SpecStore) Delete(item *StoredSpec) storage.DeleteValueOp[*StoredSpec] {

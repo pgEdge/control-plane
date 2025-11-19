@@ -5,6 +5,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/encryption"
 	"github.com/pgEdge/control-plane/server/internal/host"
 )
 
@@ -41,6 +42,10 @@ func provideStore(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		return NewStore(client, cfg.EtcdKeyRoot), nil
+		encryptor, err := do.Invoke[encryption.Encryptor](i)
+		if err != nil {
+			return nil, err
+		}
+		return NewStore(client, encryptor, cfg.EtcdKeyRoot), nil
 	})
 }

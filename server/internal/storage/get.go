@@ -11,20 +11,28 @@ import (
 
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
+
+	"github.com/pgEdge/control-plane/server/internal/encryption"
 )
 
 type getOp[V Value] struct {
-	client  *clientv3.Client
-	key     string
-	options []clientv3.OpOption
+	client    *clientv3.Client
+	encryptor encryption.Encryptor
+	key       string
+	options   []clientv3.OpOption
 }
 
 // NewGetOp returns an operation that returns a single value by key.
 func NewGetOp[V Value](client *clientv3.Client, key string, options ...clientv3.OpOption) GetOp[V] {
+	return NewGetOpWithEncryption[V](client, nil, key, options...)
+}
+
+func NewGetOpWithEncryption[V Value](client *clientv3.Client, encryptor encryption.Encryptor, key string, options ...clientv3.OpOption) GetOp[V] {
 	return &getOp[V]{
-		client:  client,
-		key:     key,
-		options: options,
+		client:    client,
+		encryptor: encryptor,
+		key:       key,
+		options:   options,
 	}
 }
 
@@ -34,7 +42,7 @@ func (o *getOp[V]) Exec(ctx context.Context) (V, error) {
 	if err != nil {
 		return zero, fmt.Errorf("failed to get %q: %w", o.key, err)
 	}
-	vals, err := DecodeGetResponse[V](resp)
+	vals, err := decodeGetResponse[V](ctx, o.encryptor, resp)
 	if err != nil {
 		return zero, err
 	}
@@ -46,17 +54,23 @@ func (o *getOp[V]) Exec(ctx context.Context) (V, error) {
 }
 
 type getMultipleOp[V Value] struct {
-	client  *clientv3.Client
-	keys    []string
-	options []clientv3.OpOption
+	client    *clientv3.Client
+	encryptor encryption.Encryptor
+	keys      []string
+	options   []clientv3.OpOption
 }
 
 // NewGetMultipleOp returns an operation that returns multiple values by key.
 func NewGetMultipleOp[V Value](client *clientv3.Client, keys []string, options ...clientv3.OpOption) GetMultipleOp[V] {
+	return NewGetMultipleOpWithEncryption[V](client, nil, keys, options...)
+}
+
+func NewGetMultipleOpWithEncryption[V Value](client *clientv3.Client, encryptor encryption.Encryptor, keys []string, options ...clientv3.OpOption) GetMultipleOp[V] {
 	return &getMultipleOp[V]{
-		client:  client,
-		keys:    keys,
-		options: options,
+		client:    client,
+		encryptor: encryptor,
+		keys:      keys,
+		options:   options,
 	}
 }
 
@@ -73,7 +87,7 @@ func (o *getMultipleOp[V]) Exec(ctx context.Context) ([]V, error) {
 	}
 	var vals []V
 	for _, r := range resp.Responses {
-		v, err := decodeKVs[V](r.GetResponseRange().Kvs)
+		v, err := decodeKVs[V](ctx, o.encryptor, r.GetResponseRange().Kvs)
 		if err != nil {
 			return nil, err
 		}
@@ -84,17 +98,23 @@ func (o *getMultipleOp[V]) Exec(ctx context.Context) ([]V, error) {
 }
 
 type getPrefixOp[V Value] struct {
-	client  *clientv3.Client
-	prefix  string
-	options []clientv3.OpOption
+	client    *clientv3.Client
+	encryptor encryption.Encryptor
+	prefix    string
+	options   []clientv3.OpOption
 }
 
 // NewGetPrefixOp returns an operation that returns multiple values by prefix.
 func NewGetPrefixOp[V Value](client *clientv3.Client, prefix string, options ...clientv3.OpOption) GetMultipleOp[V] {
+	return NewGetPrefixOpWithEncryption[V](client, nil, prefix, options...)
+}
+
+func NewGetPrefixOpWithEncryption[V Value](client *clientv3.Client, encryptor encryption.Encryptor, prefix string, options ...clientv3.OpOption) GetMultipleOp[V] {
 	return &getPrefixOp[V]{
-		client:  client,
-		prefix:  ensureTrailingSlash(prefix),
-		options: options,
+		client:    client,
+		encryptor: encryptor,
+		prefix:    ensureTrailingSlash(prefix),
+		options:   options,
 	}
 }
 
@@ -105,24 +125,30 @@ func (o *getPrefixOp[V]) Exec(ctx context.Context) ([]V, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get prefix %q: %w", o.prefix, err)
 	}
-	return DecodeGetResponse[V](resp)
+	return decodeGetResponse[V](ctx, o.encryptor, resp)
 }
 
 type getRangeOp[V Value] struct {
-	start   string
-	end     string
-	client  *clientv3.Client
-	options []clientv3.OpOption
+	start     string
+	end       string
+	client    *clientv3.Client
+	encryptor encryption.Encryptor
+	options   []clientv3.OpOption
 }
 
 // NewGetRangeOp returns an operation that returns values in the range
 // [start, end).
 func NewGetRangeOp[V Value](client *clientv3.Client, start, end string, options ...clientv3.OpOption) GetMultipleOp[V] {
+	return NewGetRangeOpWithEncryption[V](client, nil, start, end, options...)
+}
+
+func NewGetRangeOpWithEncryption[V Value](client *clientv3.Client, encryptor encryption.Encryptor, start, end string, options ...clientv3.OpOption) GetMultipleOp[V] {
 	return &getRangeOp[V]{
-		client:  client,
-		start:   start,
-		end:     end,
-		options: options,
+		client:    client,
+		encryptor: encryptor,
+		start:     start,
+		end:       end,
+		options:   options,
 	}
 }
 
@@ -133,7 +159,7 @@ func (o *getRangeOp[V]) Exec(ctx context.Context) ([]V, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get range [%q, %q): %w", o.start, o.end, err)
 	}
-	return DecodeGetResponse[V](resp)
+	return decodeGetResponse[V](ctx, o.encryptor, resp)
 }
 
 type existsOp struct {
@@ -161,13 +187,17 @@ func (o *existsOp) Exec(ctx context.Context) (bool, error) {
 // DecodeGetResponse is a helper function to extract typed values from a
 // clientv3.GetResponse
 func DecodeGetResponse[V Value](resp *clientv3.GetResponse) ([]V, error) {
-	return decodeKVs[V](resp.Kvs)
+	return decodeGetResponse[V](context.Background(), nil, resp)
 }
 
-func decodeKVs[V Value](kvs []*mvccpb.KeyValue) ([]V, error) {
+func decodeGetResponse[V Value](ctx context.Context, encryptor encryption.Encryptor, resp *clientv3.GetResponse) ([]V, error) {
+	return decodeKVs[V](ctx, encryptor, resp.Kvs)
+}
+
+func decodeKVs[V Value](ctx context.Context, encryptor encryption.Encryptor, kvs []*mvccpb.KeyValue) ([]V, error) {
 	vals := make([]V, len(kvs))
 	for idx, kv := range kvs {
-		v, err := decodeKV[V](kv)
+		v, err := decodeKV[V](ctx, encryptor, kv)
 		if err != nil {
 			return nil, err
 		}
@@ -177,10 +207,10 @@ func decodeKVs[V Value](kvs []*mvccpb.KeyValue) ([]V, error) {
 	return vals, nil
 }
 
-func decodeKV[V Value](kv *mvccpb.KeyValue) (V, error) {
+func decodeKV[V Value](ctx context.Context, encryptor encryption.Encryptor, kv *mvccpb.KeyValue) (V, error) {
 	var zero V
 	key := string(kv.Key)
-	val, err := decodeJSON[V](kv.Value)
+	val, err := decodeJSON[V](ctx, encryptor, kv.Value)
 	if err != nil {
 		return zero, fmt.Errorf("failed to decode %q: %w", key, err)
 	}
@@ -188,16 +218,34 @@ func decodeKV[V Value](kv *mvccpb.KeyValue) (V, error) {
 	return val, nil
 }
 
-func decodeJSON[V any](val []byte) (V, error) {
+func decodeJSON[V any](ctx context.Context, encryptor encryption.Encryptor, val []byte) (V, error) {
 	var out V
+
+	// Decrypt if encryptor is provided
+	if encryptor != nil && isEncrypted(val) {
+		decrypted, err := encryptor.Decrypt(ctx, val)
+		if err != nil {
+			return out, fmt.Errorf("failed to decrypt data: %w", err)
+		}
+		val = decrypted
+	}
+
 	dec, err := decompress(val)
 	if err != nil {
 		return out, err
 	}
+
 	if err := json.Unmarshal(dec, &out); err != nil {
 		return out, err
 	}
 	return out, nil
+}
+
+func isEncrypted(data []byte) bool {
+	if len(data) == 0 {
+		return false
+	}
+	return data[0] == 0x01
 }
 
 func decompress(in []byte) ([]byte, error) {

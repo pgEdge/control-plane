@@ -7,35 +7,47 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pgEdge/control-plane/server/internal/encryption"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type watchOp[V Value] struct {
-	mu      sync.Mutex
-	client  *clientv3.Client
-	key     string
-	options []clientv3.OpOption
-	ch      clientv3.WatchChan
-	cancel  context.CancelFunc
+	mu        sync.Mutex
+	client    *clientv3.Client
+	encryptor encryption.Encryptor
+	key       string
+	options   []clientv3.OpOption
+	ch        clientv3.WatchChan
+	cancel    context.CancelFunc
 }
 
 func NewWatchOp[V Value](client *clientv3.Client, key string, options ...clientv3.OpOption) WatchOp[V] {
+	return NewWatchOpWithEncryption[V](client, nil, key, options...)
+}
+
+func NewWatchOpWithEncryption[V Value](client *clientv3.Client, encryptor encryption.Encryptor, key string, options ...clientv3.OpOption) WatchOp[V] {
 	return &watchOp[V]{
-		client:  client,
-		key:     key,
-		options: options,
+		client:    client,
+		encryptor: encryptor,
+		key:       key,
+		options:   options,
 	}
 }
 
 func NewWatchPrefixOp[V Value](client *clientv3.Client, key string, options ...clientv3.OpOption) WatchOp[V] {
+	return NewWatchPrefixOpWithEncryption[V](client, nil, key, options...)
+}
+
+func NewWatchPrefixOpWithEncryption[V Value](client *clientv3.Client, encryptor encryption.Encryptor, key string, options ...clientv3.OpOption) WatchOp[V] {
 	allOptions := []clientv3.OpOption{clientv3.WithPrefix()}
 	allOptions = append(allOptions, options...)
 
 	return &watchOp[V]{
-		client:  client,
-		key:     ensureTrailingSlash(key),
-		options: allOptions,
+		client:    client,
+		encryptor: encryptor,
+		key:       ensureTrailingSlash(key),
+		options:   allOptions,
 	}
 }
 
@@ -74,7 +86,7 @@ func (o *watchOp[V]) Watch(ctx context.Context, handle func(e *Event[V])) error 
 			}
 
 			for _, event := range resp.Events {
-				handle(convertEvent[V](event))
+				handle(o.convertEvent(ctx, event))
 			}
 		}
 
@@ -101,7 +113,7 @@ func (o *watchOp[V]) Until(ctx context.Context, timeout time.Duration, handle fu
 			}
 
 			for _, event := range resp.Events {
-				if handle(convertEvent[V](event)) {
+				if handle(o.convertEvent(ctx, event)) {
 					return nil
 				}
 			}
@@ -125,11 +137,11 @@ func (o *watchOp[V]) Close() {
 	o.mu.Unlock()
 }
 
-func convertEvent[V Value](in *clientv3.Event) *Event[V] {
+func (o *watchOp[V]) convertEvent(ctx context.Context, in *clientv3.Event) *Event[V] {
 	key := string(in.Kv.Key)
 	var val V
 	if len(in.Kv.Value) > 0 {
-		v, err := decodeKV[V](in.Kv)
+		v, err := decodeKV[V](ctx, o.encryptor, in.Kv)
 		if err != nil {
 			return &Event[V]{
 				Type: EventTypeError,

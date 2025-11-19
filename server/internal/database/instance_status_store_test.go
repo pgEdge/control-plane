@@ -18,7 +18,7 @@ func TestInstanceStatusStore(t *testing.T) {
 	t.Run("PLAT-245", func(t *testing.T) {
 		// PLAT-245: ensure that we don't get overlapping results when database
 		// ID A is a prefix of host ID B.
-		store := database.NewInstanceStatusStore(client, uuid.NewString())
+		store := database.NewInstanceStatusStore(client, nil, uuid.NewString())
 
 		err := store.Put(&database.StoredInstanceStatus{
 			DatabaseID: "database",

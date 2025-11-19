@@ -9,29 +9,37 @@ import (
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
+
+	"github.com/pgEdge/control-plane/server/internal/encryption"
 )
 
 // PutOp stores a key value pair with an optional time-to-live. This operation
 // does not enforce any version constraints.
 type putOp[V Value] struct {
-	client  *clientv3.Client
-	key     string
-	val     V
-	ttl     *time.Duration
-	options []clientv3.OpOption
+	client    *clientv3.Client
+	encryptor encryption.Encryptor
+	key       string
+	val       V
+	ttl       *time.Duration
+	options   []clientv3.OpOption
 }
 
 func NewPutOp[V Value](client *clientv3.Client, key string, val V, options ...clientv3.OpOption) PutOp[V] {
+	return NewPutOpWithEncryption[V](client, nil, key, val, options...)
+}
+
+func NewPutOpWithEncryption[V Value](client *clientv3.Client, encryptor encryption.Encryptor, key string, val V, options ...clientv3.OpOption) PutOp[V] {
 	return &putOp[V]{
-		client:  client,
-		key:     key,
-		val:     val,
-		options: options,
+		client:    client,
+		encryptor: encryptor,
+		key:       key,
+		val:       val,
+		options:   options,
 	}
 }
 
 func (o *putOp[V]) Ops(ctx context.Context) ([]clientv3.Op, error) {
-	return putOps(ctx, o.client, o.key, o.val, o.ttl, o.options...)
+	return putOps(ctx, o.client, o.encryptor, o.key, o.val, o.ttl, o.options...)
 }
 
 func (o *putOp[V]) Cmps() []clientv3.Cmp {
@@ -59,24 +67,30 @@ func (o *putOp[V]) Exec(ctx context.Context) error {
 // CreateOp creates a key value pair with an optional time-to-live. This
 // operation will fail with ErrAlreadyExists if the given key already exists.
 type createOp[V Value] struct {
-	client  *clientv3.Client
-	key     string
-	val     V
-	ttl     *time.Duration
-	options []clientv3.OpOption
+	client    *clientv3.Client
+	encryptor encryption.Encryptor
+	key       string
+	val       V
+	ttl       *time.Duration
+	options   []clientv3.OpOption
 }
 
 func NewCreateOp[V Value](client *clientv3.Client, key string, val V, options ...clientv3.OpOption) PutOp[V] {
+	return NewCreateOpWithEncryption[V](client, nil, key, val, options...)
+}
+
+func NewCreateOpWithEncryption[V Value](client *clientv3.Client, encryptor encryption.Encryptor, key string, val V, options ...clientv3.OpOption) PutOp[V] {
 	return &createOp[V]{
-		client:  client,
-		key:     key,
-		val:     val,
-		options: options,
+		client:    client,
+		encryptor: encryptor,
+		key:       key,
+		val:       val,
+		options:   options,
 	}
 }
 
 func (o *createOp[V]) Ops(ctx context.Context) ([]clientv3.Op, error) {
-	return putOps(ctx, o.client, o.key, o.val, o.ttl, o.options...)
+	return putOps(ctx, o.client, o.encryptor, o.key, o.val, o.ttl, o.options...)
 }
 
 func (o *createOp[V]) Cmps() []clientv3.Cmp {
@@ -111,24 +125,30 @@ func (o *createOp[V]) Exec(ctx context.Context) error {
 // time-to-live. This operation will fail with ErrValueVersionMismatch if the
 // stored value's version does not match the given value's version.
 type updateOp[V Value] struct {
-	client  *clientv3.Client
-	key     string
-	val     V
-	ttl     *time.Duration
-	options []clientv3.OpOption
+	client    *clientv3.Client
+	encryptor encryption.Encryptor
+	key       string
+	val       V
+	ttl       *time.Duration
+	options   []clientv3.OpOption
 }
 
 func NewUpdateOp[V Value](client *clientv3.Client, key string, val V, options ...clientv3.OpOption) PutOp[V] {
+	return NewUpdateOpWithEncryption[V](client, nil, key, val, options...)
+}
+
+func NewUpdateOpWithEncryption[V Value](client *clientv3.Client, encryptor encryption.Encryptor, key string, val V, options ...clientv3.OpOption) PutOp[V] {
 	return &updateOp[V]{
-		client:  client,
-		key:     key,
-		val:     val,
-		options: options,
+		client:    client,
+		encryptor: encryptor,
+		key:       key,
+		val:       val,
+		options:   options,
 	}
 }
 
 func (o *updateOp[V]) Ops(ctx context.Context) ([]clientv3.Op, error) {
-	return putOps(ctx, o.client, o.key, o.val, o.ttl, o.options...)
+	return putOps(ctx, o.client, o.encryptor, o.key, o.val, o.ttl, o.options...)
 }
 
 func (o *updateOp[V]) Cmps() []clientv3.Cmp {
@@ -161,16 +181,24 @@ func (o *updateOp[V]) Exec(ctx context.Context) error {
 	return nil
 }
 
-func encodeJSON(val any) (string, error) {
+func encodeJSON(ctx context.Context, encryptor encryption.Encryptor, val any) (string, error) {
 	raw, err := json.Marshal(val)
 	if err != nil {
 		return "", err
 	}
+
 	com, err := compress(raw)
 	if err != nil {
 		return "", err
 	}
-
+	// Encrypt if encryptor is provided
+	if encryptor != nil {
+		encrypted, err := encryptor.Encrypt(ctx, com)
+		if err != nil {
+			return "", fmt.Errorf("failed to encrypt data: %w", err)
+		}
+		com = encrypted
+	}
 	return string(com), nil
 }
 
@@ -196,6 +224,7 @@ func compress(in []byte) ([]byte, error) {
 func putOps[V Value](
 	ctx context.Context,
 	client *clientv3.Client,
+	encryptor encryption.Encryptor,
 	key string,
 	val V,
 	ttl *time.Duration,
@@ -211,7 +240,7 @@ func putOps[V Value](
 	}
 	allOptions = append(allOptions, options...)
 
-	encoded, err := encodeJSON(val)
+	encoded, err := encodeJSON(ctx, encryptor, val)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode value for %q: %w", key, err)
 	}

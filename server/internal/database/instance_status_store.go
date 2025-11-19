@@ -3,6 +3,7 @@ package database
 import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 
+	"github.com/pgEdge/control-plane/server/internal/encryption"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
@@ -14,14 +15,16 @@ type StoredInstanceStatus struct {
 }
 
 type InstanceStatusStore struct {
-	client *clientv3.Client
-	root   string
+	client    *clientv3.Client
+	encryptor encryption.Encryptor
+	root      string
 }
 
-func NewInstanceStatusStore(client *clientv3.Client, root string) *InstanceStatusStore {
+func NewInstanceStatusStore(client *clientv3.Client, encryptor encryption.Encryptor, root string) *InstanceStatusStore {
 	return &InstanceStatusStore{
-		client: client,
-		root:   root,
+		client:    client,
+		encryptor: encryptor,
+		root:      root,
 	}
 }
 
@@ -39,22 +42,22 @@ func (s *InstanceStatusStore) Key(databaseID, instanceID string) string {
 
 func (s *InstanceStatusStore) GetByKey(databaseID, instanceID string) storage.GetOp[*StoredInstanceStatus] {
 	key := s.Key(databaseID, instanceID)
-	return storage.NewGetOp[*StoredInstanceStatus](s.client, key)
+	return storage.NewGetOpWithEncryption[*StoredInstanceStatus](s.client, s.encryptor, key)
 }
 
 func (s *InstanceStatusStore) GetByDatabaseID(databaseID string) storage.GetMultipleOp[*StoredInstanceStatus] {
 	prefix := s.DatabasePrefix(databaseID)
-	return storage.NewGetPrefixOp[*StoredInstanceStatus](s.client, prefix)
+	return storage.NewGetPrefixOpWithEncryption[*StoredInstanceStatus](s.client, s.encryptor, prefix)
 }
 
 func (s *InstanceStatusStore) GetAll() storage.GetMultipleOp[*StoredInstanceStatus] {
 	prefix := s.Prefix()
-	return storage.NewGetPrefixOp[*StoredInstanceStatus](s.client, prefix)
+	return storage.NewGetPrefixOpWithEncryption[*StoredInstanceStatus](s.client, s.encryptor, prefix)
 }
 
 func (s *InstanceStatusStore) Put(item *StoredInstanceStatus) storage.PutOp[*StoredInstanceStatus] {
 	key := s.Key(item.DatabaseID, item.InstanceID)
-	return storage.NewPutOp(s.client, key, item)
+	return storage.NewPutOpWithEncryption(s.client, s.encryptor, key, item)
 }
 
 func (s *InstanceStatusStore) DeleteByKey(databaseID, instanceID string) storage.DeleteOp {

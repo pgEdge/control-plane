@@ -5,6 +5,7 @@ import (
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 
+	"github.com/pgEdge/control-plane/server/internal/encryption"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
@@ -50,14 +51,16 @@ func (i *StoredInstance) Update(opts *InstanceUpdateOptions) {
 }
 
 type InstanceStore struct {
-	client *clientv3.Client
-	root   string
+	client    *clientv3.Client
+	encryptor encryption.Encryptor
+	root      string
 }
 
-func NewInstanceStore(client *clientv3.Client, root string) *InstanceStore {
+func NewInstanceStore(client *clientv3.Client, encryptor encryption.Encryptor, root string) *InstanceStore {
 	return &InstanceStore{
-		client: client,
-		root:   root,
+		client:    client,
+		encryptor: encryptor,
+		root:      root,
 	}
 }
 
@@ -75,22 +78,22 @@ func (s *InstanceStore) Key(databaseID, instanceID string) string {
 
 func (s *InstanceStore) GetByKey(databaseID, instanceID string) storage.GetOp[*StoredInstance] {
 	key := s.Key(databaseID, instanceID)
-	return storage.NewGetOp[*StoredInstance](s.client, key)
+	return storage.NewGetOpWithEncryption[*StoredInstance](s.client, s.encryptor, key)
 }
 
 func (s *InstanceStore) GetByDatabaseID(databaseID string) storage.GetMultipleOp[*StoredInstance] {
 	prefix := s.DatabasePrefix(databaseID)
-	return storage.NewGetPrefixOp[*StoredInstance](s.client, prefix)
+	return storage.NewGetPrefixOpWithEncryption[*StoredInstance](s.client, s.encryptor, prefix)
 }
 
 func (s *InstanceStore) GetAll() storage.GetMultipleOp[*StoredInstance] {
 	prefix := s.Prefix()
-	return storage.NewGetPrefixOp[*StoredInstance](s.client, prefix)
+	return storage.NewGetPrefixOpWithEncryption[*StoredInstance](s.client, s.encryptor, prefix)
 }
 
 func (s *InstanceStore) Put(item *StoredInstance) storage.PutOp[*StoredInstance] {
 	key := s.Key(item.DatabaseID, item.InstanceID)
-	return storage.NewPutOp(s.client, key, item)
+	return storage.NewPutOpWithEncryption(s.client, s.encryptor, key, item)
 }
 
 func (s *InstanceStore) DeleteByKey(databaseID, instanceID string) storage.DeleteOp {
