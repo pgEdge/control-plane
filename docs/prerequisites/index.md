@@ -2,7 +2,7 @@
 
 Before installing the Control Plane, you must:
 
-- Create a set of Linux hosts where you want to deploy Postgres instances; if you are deploying Control Plane on your localhost, see the [Quickstart Guide](quickstart.md):
+- Create a set of Linux hosts where you want to deploy Postgres instances; if you are deploying Control Plane on your localhost, see the [Quickstart Guide](../installation/quickstart.md):
     - Hosts should have a stable IP address or hostname from which they can access each other.
     - Hosts should have Docker installed by following the [Docker installation guide](https://docs.docker.com/engine/install/) for your operating system.
 - Create a volume on each host with enough space for your databases:

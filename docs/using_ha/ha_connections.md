@@ -34,7 +34,7 @@ instances or to only consider read replicas.
 
 Similar to multiple hosts, this feature is supported by `libpq` and many other open-source drivers and clients.
 
-This connection string uses the hosts from the [read replicas](./read-replicas.md) example to connect to the closest primary instance only:
+This connection string uses the hosts from the [read replicas](../using/read-replicas.md) example to connect to the closest primary instance only:
 
 `host=us-east-1a,us-east-1c,u-central-1a,eu-central-1b,ap-south-2a,ap-south-2c port=5432 user=admin password=password dbname=example target_session_attrs=read-write`
 

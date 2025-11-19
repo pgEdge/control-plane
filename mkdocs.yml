@@ -57,14 +57,19 @@ copyright: Copyright &copy; 2023 - 2025 pgEdge, Inc
 repo_url: https://github.com/pgEdge/control-plane
 nav:
   - Control Plane Overview: index.md
+  - Control Plane Version Support: version.md 
   - Prerequisites - Preparing your System:
     - Control Plane Concepts: prerequisites/concepts.md
     - Preparing your System: prerequisites/index.md
   - Installing Control Plane:
     - Deployment Options: installation/index.md
-    - Quickstart: installation/quickstart.md
-    - Installation: installation/installation.md
-    - Configuration: installation/configuration.md
+    - Quickstart - Deploying Control Plane on Docker Hosts: installation/quickstart.md
+    - Installating Control Plane on Your Hosts: installation/installation.md
+    - Configuration Options: installation/configuration.md
+    - Upgrading a Control Plane Installation: installation/upgrading.md
+  - Managing a High-Availability Environment:
+    - Best Practices for Deploying a High-Availability Cluster: using_ha/index.md
+    - Connecting to a High-Availability Cluster: using_ha/ha_connections.md
   - Using Control Plane:
     - Using Control Plane API Calls: using/index.md
     - Creating a Database: using/create-db.md
@@ -76,9 +81,6 @@ nav:
     - Read Replicas: using/read-replicas.md
     - Deleting a Database: using/delete-db.md
     - Migrating a Database: using/migrate-db.md
-  - Deploying a High-Availability Cluster:
-    - Best Practices for Deploying a High-Availability Cluster: using_ha/index.md
-    - Connecting to a High-Availability Cluster: using_ha/ha_connections.md
   - API:
       - OpenAPI: api/openapi.md
       - API Reference: api/reference.md
@@ -86,3 +88,4 @@ nav:
       - Development Process: development/development.md
       - Automated end-to-end tests: development/e2e-tests.md
       - Running locally: development/running-locally.md
+  - Control Plane Release Notes: cp_rel_notes.md
