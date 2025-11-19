@@ -34,16 +34,25 @@ func (w *Workflows) applyEvents(
 				RemoveHosts: removeHosts,
 			}
 			future, err := w.Activities.ExecuteApplyEvent(ctx, in)
-			if errors.Is(err, activities.ErrExecutorNotFound) || errors.Is(err, activities.ErrHostRemoved) {
+			switch {
+			case errors.Is(err, activities.ErrExecutorNotFound):
 				// The executor is missing from the state, which can happen if a
 				// resource was removed outside of control-plane and we've
 				// updated our state to reflect that. We'll remove this resource
 				// so that it can be recreated.
-				// TODO: validate that this is always the right choice.
-				fmt.Printf(">>>>> applyEvents received err from ExecuteApplyEvent: %s\n", err.Error())
 				state.Remove(event.Resource)
-				continue
-			} else if err != nil {
+			case errors.Is(err, activities.ErrHostRemoved):
+				if event.Type == resource.EventTypeDelete {
+					// The host is removed, so we want to just remove it from
+					// the state.
+					state.Remove(event.Resource)
+				} else if event.Type != resource.EventTypeRefresh {
+					// In the case of a refresh event, we'll just leave the
+					// state alone so that we can plan dependent operations. All
+					// other types of events should produce an error.
+					return fmt.Errorf("cannot queue event type %s for %s because its host is being removed", event.Type, event.Resource.Identifier)
+				}
+			case err != nil:
 				return fmt.Errorf("failed to queue apply event: %w", err)
 			}
 			futures[i] = future
