@@ -7,6 +7,8 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 )
 
+const InstanceMoniterRefreshInterval = 5 * time.Second
+
 type InstanceState string
 
 const (
@@ -115,6 +117,13 @@ func storedToInstance(instance *StoredInstance, status *StoredInstanceStatus) *I
 	// We want to infer the instance state if the instance is supposed to be
 	// available.
 	if out.State == InstanceStateAvailable && status != nil {
+		breakpoint := time.Now().Add(-2 * InstanceMoniterRefreshInterval)
+		if out.Status.StatusUpdatedAt.Before(breakpoint) {
+			out.State = InstanceStateUnknown
+			out.Status = nil
+			return out
+		}
+
 		if status.Status.Stopped != nil && *status.Status.Stopped {
 			out.State = InstanceStateStopped
 			instance.State = InstanceStateStopped
