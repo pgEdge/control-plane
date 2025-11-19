@@ -1,2 +1,2 @@
-[worker.oci]
-  max-parallelism = 1
+[registry."172.17.0.1:5000"]
+  http = true
