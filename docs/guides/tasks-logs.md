@@ -35,7 +35,7 @@ For example:
 === "curl"
 
     ```sh
-    curl 'http://44.196.165.149:3000/v1/databases/example/tasks?limit=5&after_task_id=404ecbe0-5cda-11f0-900b-a74a79e3bdba&sort_order=asc'
+    curl 'http://44.196.165.149:3000/v1/databases/acctg/tasks?limit=5&after_task_id=404ecbe0-5cda-11f0-900b-a74a79e3bdba&sort_order=asc'
     ```
 
 This command returns the `5` tasks that occurred after the `task_id` specified in `after_task_id` in ascending order.
@@ -83,7 +83,7 @@ Task logs are updated in real time, so you can fetch them while a task is still 
 === "curl"
 
     ```sh
-    curl 'http://44.196.165.149:3000/v1/databases/example/tasks/d3cd2fab-4b1f-4eb9-b614-181c10b07acd/log?after_entry_id=0d639fbe-72bf-41ca-a81d-f7a524083cd4'
+    curl 'http://44.196.165.149:3000/v1/databases/acctg/tasks/d3cd2fab-4b1f-4eb9-b614-181c10b07acd/log?after_entry_id=0d639fbe-72bf-41ca-a81d-f7a524083cd4'
     ```
 
 You can also limit your request to only the most recent log entries by including the `limit` parameter; for example:
@@ -91,7 +91,7 @@ You can also limit your request to only the most recent log entries by including
 === "curl"
 
     ```sh
-    curl 'http://44.196.165.149:3000/v1/databases/example/tasks/d3cd2fab-4b1f-4eb9-b614-181c10b07acd/log?limit=10'
+    curl 'http://44.196.165.149:3000/v1/databases/acctg/tasks/d3cd2fab-4b1f-4eb9-b614-181c10b07acd/log?limit=10'
     ```
 
 Where:
