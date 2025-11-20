@@ -814,8 +814,21 @@ func DecodeRemoveHostResponse(decoder func(*http.Response) goahttp.Decoder, rest
 			defer resp.Body.Close()
 		}
 		switch resp.StatusCode {
-		case http.StatusNoContent:
-			return nil, nil
+		case http.StatusOK:
+			var (
+				body RemoveHostResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "remove-host", err)
+			}
+			err = ValidateRemoveHostResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "remove-host", err)
+			}
+			res := NewRemoveHostResponseOK(&body)
+			return res, nil
 		case http.StatusConflict:
 			var (
 				body RemoveHostClusterNotInitializedResponseBody
@@ -3545,6 +3558,26 @@ func unmarshalPgEdgeVersionResponseBodyToControlplanePgEdgeVersion(v *PgEdgeVers
 	return res
 }
 
+// unmarshalTaskResponseBodyToControlplaneTask builds a value of type
+// *controlplane.Task from a value of type *TaskResponseBody.
+func unmarshalTaskResponseBodyToControlplaneTask(v *TaskResponseBody) *controlplane.Task {
+	res := &controlplane.Task{
+		ParentID:    v.ParentID,
+		DatabaseID:  *v.DatabaseID,
+		NodeName:    v.NodeName,
+		InstanceID:  v.InstanceID,
+		HostID:      v.HostID,
+		TaskID:      *v.TaskID,
+		CreatedAt:   *v.CreatedAt,
+		CompletedAt: v.CompletedAt,
+		Type:        *v.Type,
+		Status:      *v.Status,
+		Error:       v.Error,
+	}
+
+	return res
+}
+
 // unmarshalDatabaseResponseBodyToControlplaneviewsDatabaseView builds a value
 // of type *controlplaneviews.DatabaseView from a value of type
 // *DatabaseResponseBody.
@@ -4707,26 +4740,6 @@ func marshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec(v *Databas
 		for i, val := range v.Roles {
 			res.Roles[i] = val
 		}
-	}
-
-	return res
-}
-
-// unmarshalTaskResponseBodyToControlplaneTask builds a value of type
-// *controlplane.Task from a value of type *TaskResponseBody.
-func unmarshalTaskResponseBodyToControlplaneTask(v *TaskResponseBody) *controlplane.Task {
-	res := &controlplane.Task{
-		ParentID:    v.ParentID,
-		DatabaseID:  *v.DatabaseID,
-		NodeName:    v.NodeName,
-		InstanceID:  v.InstanceID,
-		HostID:      v.HostID,
-		TaskID:      *v.TaskID,
-		CreatedAt:   *v.CreatedAt,
-		CompletedAt: v.CompletedAt,
-		Type:        *v.Type,
-		Status:      *v.Status,
-		Error:       v.Error,
 	}
 
 	return res

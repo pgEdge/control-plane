@@ -174,6 +174,15 @@ type GetHostResponseBody struct {
 	SupportedPgedgeVersions []*PgEdgeVersionResponseBody `form:"supported_pgedge_versions,omitempty" json:"supported_pgedge_versions,omitempty" xml:"supported_pgedge_versions,omitempty"`
 }
 
+// RemoveHostResponseBody is the type of the "control-plane" service
+// "remove-host" endpoint HTTP response body.
+type RemoveHostResponseBody struct {
+	// The task that will remove the host.
+	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
+	// The tasks that will update databases affected by the host removal.
+	UpdateDatabaseTasks []*TaskResponseBody `form:"update_database_tasks,omitempty" json:"update_database_tasks,omitempty" xml:"update_database_tasks,omitempty"`
+}
+
 // ListDatabasesResponseBody is the type of the "control-plane" service
 // "list-databases" endpoint HTTP response body.
 type ListDatabasesResponseBody struct {
@@ -1433,6 +1442,32 @@ type PgEdgeVersionResponseBody struct {
 	SpockVersion string `form:"spock_version" json:"spock_version" xml:"spock_version"`
 }
 
+// TaskResponseBody is used to define fields on response body types.
+type TaskResponseBody struct {
+	// The parent task ID of the task.
+	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	// The database ID of the task.
+	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// The unique ID of the task.
+	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+	// The time when the task was created.
+	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The status of the task.
+	Status string `form:"status" json:"status" xml:"status"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
 // DatabaseResponseBodyAbbreviatedCollection is used to define fields on
 // response body types.
 type DatabaseResponseBodyAbbreviatedCollection []*DatabaseResponseBodyAbbreviated
@@ -1468,32 +1503,6 @@ type InstanceResponseBodyAbbreviated struct {
 	// The Spock node name for this instance.
 	NodeName string `form:"node_name" json:"node_name" xml:"node_name"`
 	State    string `form:"state" json:"state" xml:"state"`
-}
-
-// TaskResponseBody is used to define fields on response body types.
-type TaskResponseBody struct {
-	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
-	// The database ID of the task.
-	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
-	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
-	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-	// The unique ID of the task.
-	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
-	// The time when the task was created.
-	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
-	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
-	// The type of the task.
-	Type string `form:"type" json:"type" xml:"type"`
-	// The status of the task.
-	Status string `form:"status" json:"status" xml:"status"`
-	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
 // DatabaseResponseBody is used to define fields on response body types.
@@ -2504,6 +2513,22 @@ func NewGetHostResponseBody(res *controlplane.Host) *GetHostResponseBody {
 		body.SupportedPgedgeVersions = make([]*PgEdgeVersionResponseBody, len(res.SupportedPgedgeVersions))
 		for i, val := range res.SupportedPgedgeVersions {
 			body.SupportedPgedgeVersions[i] = marshalControlplanePgEdgeVersionToPgEdgeVersionResponseBody(val)
+		}
+	}
+	return body
+}
+
+// NewRemoveHostResponseBody builds the HTTP response body from the result of
+// the "remove-host" endpoint of the "control-plane" service.
+func NewRemoveHostResponseBody(res *controlplane.RemoveHostResponse) *RemoveHostResponseBody {
+	body := &RemoveHostResponseBody{}
+	if res.Task != nil {
+		body.Task = marshalControlplaneTaskToTaskResponseBody(res.Task)
+	}
+	if res.UpdateDatabaseTasks != nil {
+		body.UpdateDatabaseTasks = make([]*TaskResponseBody, len(res.UpdateDatabaseTasks))
+		for i, val := range res.UpdateDatabaseTasks {
+			body.UpdateDatabaseTasks[i] = marshalControlplaneTaskToTaskResponseBody(val)
 		}
 	}
 	return body

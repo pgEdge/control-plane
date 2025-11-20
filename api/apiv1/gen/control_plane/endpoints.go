@@ -168,7 +168,7 @@ func NewGetHostEndpoint(s Service) goa.Endpoint {
 func NewRemoveHostEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*RemoveHostPayload)
-		return nil, s.RemoveHost(ctx, p)
+		return s.RemoveHost(ctx, p)
 	}
 }
 

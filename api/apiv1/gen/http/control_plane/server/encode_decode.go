@@ -580,8 +580,11 @@ func EncodeGetHostError(encoder func(context.Context, http.ResponseWriter) goaht
 // control-plane remove-host endpoint.
 func EncodeRemoveHostResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
 	return func(ctx context.Context, w http.ResponseWriter, v any) error {
-		w.WriteHeader(http.StatusNoContent)
-		return nil
+		res, _ := v.(*controlplane.RemoveHostResponse)
+		enc := encoder(ctx, w)
+		body := NewRemoveHostResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
 	}
 }
 
@@ -2972,6 +2975,26 @@ func marshalControlplanePgEdgeVersionToPgEdgeVersionResponseBody(v *controlplane
 	return res
 }
 
+// marshalControlplaneTaskToTaskResponseBody builds a value of type
+// *TaskResponseBody from a value of type *controlplane.Task.
+func marshalControlplaneTaskToTaskResponseBody(v *controlplane.Task) *TaskResponseBody {
+	res := &TaskResponseBody{
+		ParentID:    v.ParentID,
+		DatabaseID:  v.DatabaseID,
+		NodeName:    v.NodeName,
+		InstanceID:  v.InstanceID,
+		HostID:      v.HostID,
+		TaskID:      v.TaskID,
+		CreatedAt:   v.CreatedAt,
+		CompletedAt: v.CompletedAt,
+		Type:        v.Type,
+		Status:      v.Status,
+		Error:       v.Error,
+	}
+
+	return res
+}
+
 // marshalControlplaneviewsDatabaseViewToDatabaseResponseBodyAbbreviated builds
 // a value of type *DatabaseResponseBodyAbbreviated from a value of type
 // *controlplaneviews.DatabaseView.
@@ -3345,26 +3368,6 @@ func unmarshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec(v *Datab
 		for i, val := range v.Roles {
 			res.Roles[i] = val
 		}
-	}
-
-	return res
-}
-
-// marshalControlplaneTaskToTaskResponseBody builds a value of type
-// *TaskResponseBody from a value of type *controlplane.Task.
-func marshalControlplaneTaskToTaskResponseBody(v *controlplane.Task) *TaskResponseBody {
-	res := &TaskResponseBody{
-		ParentID:    v.ParentID,
-		DatabaseID:  v.DatabaseID,
-		NodeName:    v.NodeName,
-		InstanceID:  v.InstanceID,
-		HostID:      v.HostID,
-		TaskID:      v.TaskID,
-		CreatedAt:   v.CreatedAt,
-		CompletedAt: v.CompletedAt,
-		Type:        v.Type,
-		Status:      v.Status,
-		Error:       v.Error,
 	}
 
 	return res
