@@ -20,7 +20,7 @@ For example:
     curl http://44.196.165.149:3000/v1/databases/acctg/tasks
     ```
 
-This request returns a comprehensive list of the tasks associated with the `acctg` database on `44.196.165.149`. This endpoint also supports pagination and sorting, which can be useful when there are a large number of tasks. To limit the number of requests returned and specify a starting task boundary, include the `limit`, `after_task_id`, and `sort_order` properties: {node_ip_address}:3000/v1/databases/{database_id}/tasks?limit={value}&after_task_id={task_id}&sort_order={asc|desc}
+This request returns a comprehensive list of the tasks associated with the `acctg` database on `44.196.165.149`. This endpoint also supports pagination and sorting, which can be useful when there are a large number of tasks. To limit the number of requests returned and specify a starting task boundary, include the `limit`, `after_task_id`, and `sort_order` properties: `{node_ip_address}:3000/v1/databases/{database_id}/tasks?limit={value}&after_task_id={task_id}&sort_order={asc|desc}`
 
 Where:
 
@@ -140,12 +140,12 @@ Restart Instance
 
 pgBackRest Backup
 * The backup stops and the task becomes **canceled**.
-* The state remains unchanged.
+* The database state remains unchanged.
 
 pgBackRest Restore
 
 * Cancellation stops the restore workflow and marks the task as **canceled**.
-* The state remains unchanged.
+* The database state remains unchanged.
 * Note that partially restored data may remain.
 
 
