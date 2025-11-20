@@ -15,7 +15,7 @@ type Client interface {
 	GetCluster(ctx context.Context) (*api.Cluster, error)
 	ListHosts(ctx context.Context) (*api.ListHostsResponse, error)
 	GetHost(ctx context.Context, req *api.GetHostPayload) (*api.Host, error)
-	RemoveHost(ctx context.Context, req *api.RemoveHostPayload) error
+	RemoveHost(ctx context.Context, req *api.RemoveHostPayload) (*api.RemoveHostResponse, error)
 	ListDatabases(ctx context.Context) (*api.ListDatabasesResponse, error)
 	CreateDatabase(ctx context.Context, req *api.CreateDatabaseRequest) (*api.CreateDatabaseResponse, error)
 	GetDatabase(ctx context.Context, req *api.GetDatabasePayload) (*api.Database, error)

@@ -135,10 +135,10 @@ func (c *MultiServerClient) GetHost(ctx context.Context, req *api.GetHostPayload
 	return server.GetHost(ctx, req)
 }
 
-func (c *MultiServerClient) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) (err error) {
+func (c *MultiServerClient) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) (*api.RemoveHostResponse, error) {
 	server, err := c.liveServer(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	return server.RemoveHost(ctx, req)
 }

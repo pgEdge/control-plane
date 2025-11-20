@@ -97,9 +97,9 @@ func (c *SingleServerClient) GetHost(ctx context.Context, req *api.GetHostPayloa
 	return resp, translateErr(err)
 }
 
-func (c *SingleServerClient) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) error {
-	err := c.api.RemoveHost(ctx, req)
-	return translateErr(err)
+func (c *SingleServerClient) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) (*api.RemoveHostResponse, error) {
+	resp, err := c.api.RemoveHost(ctx, req)
+	return resp, translateErr(err)
 }
 
 func (c *SingleServerClient) ListDatabases(ctx context.Context) (*api.ListDatabasesResponse, error) {
