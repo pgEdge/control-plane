@@ -181,69 +181,67 @@ func (s *PostInitHandlers) GetHost(ctx context.Context, req *api.GetHostPayload)
 	return hostToAPI(host), nil
 }
 
-func (s *PostInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) error {
-	fmt.Printf(">>>>> in RemoveHost: force==%t\n", req.Force)
+func (s *PostInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) (*api.RemoveHostResponse, error) {
 	hostID, err := hostIdentToString(req.HostID)
 	if err != nil {
-		return apiErr(err)
+		return nil, apiErr(err)
 	}
 	if hostID == s.cfg.HostID {
-		return makeInvalidInputErr(errors.New("a host cannot remove itself from the cluster"))
+		return nil, makeInvalidInputErr(errors.New("a host cannot remove itself from the cluster"))
 	}
 	_, err = s.hostSvc.GetHost(ctx, hostID)
 	if errors.Is(err, storage.ErrNotFound) {
-		return ErrHostNotFound
+		return nil, ErrHostNotFound
 	} else if err != nil {
-		return apiErr(err)
+		return nil, apiErr(err)
 	}
-	if !req.Force { // bypass instance count check if force == true
+	if !req.Force {
 		count, err := s.dbSvc.InstanceCountForHost(ctx, hostID)
 		if err != nil {
-			return apiErr(err)
+			return nil, apiErr(err)
 		}
 		if count != 0 {
-			return makeInvalidInputErr(errors.New("cannot remove host with running instances"))
+			return nil, makeInvalidInputErr(errors.New("cannot remove host with running instances"))
 		}
-	}
-	err = s.etcd.RemoveHost(ctx, hostID)
-	if err != nil {
-		return apiErr(err)
-	}
-	err = s.hostSvc.RemoveHost(ctx, hostID)
-	if err != nil {
-		return apiErr(err)
 	}
 
 	dbs, err := s.dbSvc.GetDatabasesByHostId(ctx, hostID)
 	if err != nil {
-		return apiErr(err)
+		return nil, apiErr(err)
 	}
-	fmt.Println(">>>>> ranging over databases...")
+
+	var updateDatabaseInputs []*workflows.UpdateDatabaseInput
 	for _, db := range dbs {
-		fmt.Printf("\t>>>>> db %s: removing %s from db spec\n", db.DatabaseID, hostID)
 		if ok := db.Spec.RemoveHost(hostID); !ok {
-			return apiErr(fmt.Errorf("%s host id not found/removed", hostID))
+			return nil, apiErr(fmt.Errorf("%s host id not found/removed", hostID))
 		}
 
-		fmt.Printf("\t>>>>> db %s: applying db service update\n", db.DatabaseID)
 		_, err := s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateModifying, db.Spec)
 		if err != nil {
-			return apiErr(err)
+			return nil, apiErr(err)
 		}
 
-		prevState := db.State
-		fmt.Printf("\t>>>>> db %s: applying db workflow service update with removeHost == %s\n", db.DatabaseID, hostID)
-		_, err = s.workflowSvc.UpdateDatabase(ctx, db.Spec, false, hostID)
-		if err != nil {
-			restorationErr := s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, db.State, prevState)
-			if restorationErr != nil {
-				s.logger.Err(restorationErr).Msg("failed to roll back database state change")
-			}
-			return apiErr(err)
-		}
+		updateDatabaseInputs = append(updateDatabaseInputs, &workflows.UpdateDatabaseInput{
+			Spec:        db.Spec,
+			ForceUpdate: false,
+			RemoveHosts: []string{hostID},
+		})
 	}
 
-	return nil
+	input := &workflows.RemoveHostInput{
+		HostID:               hostID,
+		UpdateDatabaseInputs: updateDatabaseInputs,
+	}
+
+	mainTask, dbTasks, err := s.workflowSvc.RemoveHost(ctx, input)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	return &api.RemoveHostResponse{
+		Task:                taskToAPI(mainTask),
+		UpdateDatabaseTasks: tasksToAPI(dbTasks),
+	}, nil
 }
 
 // ListDatabases fetches all databases from the database service and converts them to API format.

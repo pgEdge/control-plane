@@ -190,6 +190,7 @@ var _ = g.Service("control-plane", func() {
 
 			g.Required("host_id")
 		})
+		g.Result(RemoveHostResponse)
 		g.Error("cluster_not_initialized")
 		g.Error("invalid_input")
 		g.Error("not_found")

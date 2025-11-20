@@ -28,6 +28,7 @@ const (
 	TypeStartInstance   Type = "start_instance"
 	TypeSwitchover      Type = "switchover"
 	TypeFailover        Type = "failover"
+	TypeRemoveHost      Type = "remove_host"
 )
 
 type Status string

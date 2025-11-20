@@ -181,9 +181,13 @@ func (c *Client) GetHost(ctx context.Context, p *GetHostPayload) (res *Host, err
 //   - "not_found" (type *goa.ServiceError)
 //   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
-func (c *Client) RemoveHost(ctx context.Context, p *RemoveHostPayload) (err error) {
-	_, err = c.RemoveHostEndpoint(ctx, p)
-	return
+func (c *Client) RemoveHost(ctx context.Context, p *RemoveHostPayload) (res *RemoveHostResponse, err error) {
+	var ires any
+	ires, err = c.RemoveHostEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*RemoveHostResponse), nil
 }
 
 // ListDatabases calls the "list-databases" endpoint of the "control-plane"

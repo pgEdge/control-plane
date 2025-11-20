@@ -203,8 +203,8 @@ func (s *PreInitHandlers) GetHost(ctx context.Context, req *api.GetHostPayload) 
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) error {
-	return ErrUninitialized
+func (s *PreInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) (*api.RemoveHostResponse, error) {
+	return nil, ErrUninitialized
 }
 
 func (s *PreInitHandlers) ListDatabases(ctx context.Context) (*api.ListDatabasesResponse, error) {
