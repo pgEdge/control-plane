@@ -149,7 +149,7 @@ pgBackRest Restore
 * Note that partially restored data may remain.
 
 
-## Viewing Postgres logs
+## Viewing Postgres Logs
 
 By default, each database is configured to write log files to the following directory:
 
