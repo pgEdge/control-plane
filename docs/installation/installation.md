@@ -148,7 +148,7 @@ networks:
     external: true
 ```
 
-We recommend including the [`deploy: placement: constraints:` property](https://docs.docker.com/engine/swarm/services/#placement-constraints) in your stack definition to ensure that the Control Plane server is deployed onto a specific Swarm node. Placement constraints in Docker Swarm are used to control where services run within your cluster. In the configuration above, each service defined under the `deploy` property specifies a placement constraint:
+Include the [`deploy: placement: constraints:` property](https://docs.docker.com/engine/swarm/services/#placement-constraints) in your stack definition to ensure that the Control Plane server is deployed onto a specific Swarm node. Placement constraints in Docker Swarm are used to control where services run within your cluster. In the configuration above, each service defined under the `deploy` property specifies a placement constraint:
 
 ``` yaml
     deploy:
@@ -236,7 +236,7 @@ Paste the output below and click "Generate Stack." This generator is fully local
 
 ## Deploying the Stack
 
-To [deploy the stack definition file](https://docs.docker.com/engine/swarm/stack-deploy/), run the following command, specifying the complete path to the control-plane.yaml file:
+To [deploy the stack definition file](https://docs.docker.com/engine/swarm/stack-deploy/), run the following command, specifying the path to the `control-plane.yaml` file:
 
 ```sh
 docker stack deploy -c control-plane.yaml control-plane
@@ -272,7 +272,7 @@ the example from above, the initialization steps would be:
         curl http://node_ip_address:3000/v1/cluster/init
         ```
 
-    Where `node_ip_address` specifies the IP address of the `host-1`.  This returns a response like:
+    Where `node_ip_address` specifies the IP address of `host-1`.  Control Plane returns a response like:
 
     ```json
     {
@@ -296,7 +296,7 @@ the example from above, the initialization steps would be:
             }'
         ```
 
-    Where `node_ip_address` specifies the IP address of `host-2`. This command returns a `204` response on success.
+    Where `node_ip_address` specifies the IP address of `host-2`. Control Plane returns a `204` response on success.
 
 3.  Join `host-3` to `host-1`'s cluster:
 
@@ -311,7 +311,7 @@ the example from above, the initialization steps would be:
             }'
         ```
 
-    Where `node_ip_address` specifies the IP address of `host-3`. This command returns a `204` response on success.
+    Where `node_ip_address` specifies the IP address of `host-3`. Control Plane returns a `204` response on success.
 
     The `join token` can also be fetched from any host in the cluster with a `GET`
     request to the `/v1/cluster/join-token` endpoint:

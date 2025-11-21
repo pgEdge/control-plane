@@ -10,7 +10,7 @@ services:
 ```
 
 You can *pin* to a specific version by including a version in the `image`
-fields in your service specification, such as `ghcr.io/pgedge/control-plane:v0.5.0`. 
+fields in your service specification, such as `ghcr.io/pgedge/control-plane:<< control_plane_version >>`. 
 
 If you do not include a version, Docker will pull the `ghcr.io/pgedge/control-plane:latest` tag by default. 
 
@@ -22,11 +22,9 @@ If you do not include a version, Docker will pull the `ghcr.io/pgedge/control-pl
 
 To upgrade from a pinned version:
 
-1. Modify the `image` fields in your service specification to reference the new version, such as
-   updating `ghcr.io/pgedge/control-plane:<< control_plane_version >>` to
-   `ghcr.io/pgedge/control-plane:v0.5.0`.
-2. Re-run `docker stack deploy -c control-plane.yaml control-plane` as in the
-   [Deploying the stack](installation.md#deploying-the-stack) section.
+1. Modify the `image` fields in your service specification to reference the new version, such as updating `ghcr.io/pgedge/control-plane:<< control_plane_version >>` to `ghcr.io/pgedge/control-plane:v0.5.0`.
+   
+2. Re-run `docker stack deploy -c control-plane.yaml control-plane` as in the [Deploying the stack](installation.md#deploying-the-stack) section.
 
 ## Upgrading with the `latest` Tag
 
@@ -51,5 +49,7 @@ with the `/v1/version` API endpoint:
 
 Where `host_ip_address` specifies the IP address of the node.  For example:
 
+```sh
 curl http://10.177.149.2:3000/v1/version
 {"version":"v0.5.1-0.20251119153303-d1f3c883fa41","revision":"d1f3c883fa415db1cc62ab329100d9579cdb5d68","revision_time":"2025-11-19T15:33:03Z","arch":"arm64"}
+```
