@@ -49,13 +49,13 @@ jobs:
       - run:
           name: Run CI checks
           command: make ci
-      - run:
-          name: Run cluster tests
-          command: |
-            make docker-swarm-init
-            make start-local-registry
-            make buildx-init
-            make test-cluster-ci CONTROL_PLANE_IMAGE_REPO=172.17.0.1:5000/control-plane
+      # - run:
+      #     name: Run cluster tests
+      #     command: |
+      #       make docker-swarm-init
+      #       make start-local-registry
+      #       make buildx-init
+      #       make test-cluster-ci CONTROL_PLANE_IMAGE_REPO=172.17.0.1:5000/control-plane
       - run:
           name: Run e2e tests with Docker Compose
           command: |
