@@ -47,7 +47,7 @@ You can identify the primary instance for each node by submitting a `GET` reques
     curl http://us-east-1a:3000/v1/databases/example
     ```
 
-See [High Availability Client Connections](../using_ha/ha_connections.md) for ways to connect to the read replicas in a high-availability use case.
+See [High Availability Client Connections](../using-ha/ha-connections.md) for ways to connect to the read replicas in a high-availability use case.
 
 
 ## Switchover and Failover Operations
