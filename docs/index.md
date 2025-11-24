@@ -12,7 +12,7 @@ resolving the underlying issue.
 
 ## Features
 
-At a high level, the pgEdge Control Plane supports:
+The pgEdge Control Plane supports:
 
 - deploying Postgres 16, 17, and 18 with support for managed extensions.
     - Extension support includes: Spock, LOLOR, Snowflake, pgAudit, PostGIS, pgVector.
@@ -34,11 +34,3 @@ At a high level, the pgEdge Control Plane supports:
 - monitoring database operations through detailed task logs, enabling visibility into deployment progress, troubleshooting, and historical activity tracking.
 - secure API access with certificate-based authentication.
 - performing in-place minor version upgrades of Postgres and supporting components.
-
-## Supported Operating Systems
-
-Currently, the pgEdge Control Plane supports deploying databases to virtual machines and bare metal hosts using the Docker Swarm orchestrator, with both the Control Plane and Postgres instances running in containers.
-
-With this model, the pgEdge Control Plane can be deployed to hosts running any Linux distribution supported by [Docker Engine for Linux](https://docs.docker.com/engine/install/), on either x86_64 or arm64 architectures.
-
-We plan to support additional orchestration approaches in the near future, including direct deployment to hosts without containerization.
