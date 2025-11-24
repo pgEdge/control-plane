@@ -22,7 +22,7 @@ If you do not include a version, Docker will pull the `ghcr.io/pgedge/control-pl
 
 To upgrade from a pinned version:
 
-1. Modify the `image` fields in your service specification to reference the new version, such as updating `ghcr.io/pgedge/control-plane:<< control_plane_version >>` to `ghcr.io/pgedge/control-plane:v0.5.0`.
+1. Modify the `image` fields in your service specification to reference the new version, such as updating `ghcr.io/pgedge/control-plane:v0.4.0` to `ghcr.io/pgedge/control-plane:v0.5.0`.
    
 2. Re-run `docker stack deploy -c control-plane.yaml control-plane` as in the [Deploying the stack](installation.md#deploying-the-stack) section.
 
