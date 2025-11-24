@@ -13,7 +13,6 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
-
 plugins:
   - macros:
       j2_variable_start_string: '<<'
@@ -52,35 +51,35 @@ theme:
         name: Switch to system preference
 extra:
   generator: false
-  control_plane_version: v0.5.0
+  control_plane_version: v0.5.1
 copyright: Copyright &copy; 2023 - 2025 pgEdge, Inc
 repo_url: https://github.com/pgEdge/control-plane
 nav:
   - Control Plane Overview: index.md
-  - Control Plane Version Support: version.md 
+  - Control Plane Version Support: version.md
   - Prerequisites - Preparing your System:
-    - Control Plane Concepts: prerequisites/concepts.md
-    - Preparing your System: prerequisites/index.md
+      - Control Plane Concepts: prerequisites/concepts.md
+      - Preparing your System: prerequisites/index.md
   - Installing Control Plane:
-    - Deployment Options: installation/index.md
-    - Quickstart - Deploying Control Plane on Docker Hosts: installation/quickstart.md
-    - Installating Control Plane on Your Host: installation/installation.md
-    - Configuration Options: installation/configuration.md
-    - Upgrading a Control Plane Installation: installation/upgrading.md
+      - Deployment Options: installation/index.md
+      - Quickstart - Deploying Control Plane on Docker Hosts: installation/quickstart.md
+      - Installating Control Plane on Your Host: installation/installation.md
+      - Configuration Options: installation/configuration.md
+      - Upgrading a Control Plane Installation: installation/upgrading.md
   - Managing a High-Availability Environment:
-    - Best Practices for Deploying a High-Availability Cluster: using-ha/index.md
-    - Connecting to a High-Availability Cluster: using-ha/ha-connections.md
+      - Best Practices for Deploying a High-Availability Cluster: using-ha/index.md
+      - Connecting to a High-Availability Cluster: using-ha/ha-connections.md
   - Using Control Plane:
-    - Using Control Plane API Calls: using/index.md
-    - Creating a Database: using/create-db.md
-    - Connecting to a Database: using/connecting.md
-    - Updating a Database: using/update-db.md
-    - Upgrading a Database: using/upgrade-db.md
-    - Backup & Restore: using/backup-restore.md
-    - Tasks & Logs: using/tasks-logs.md
-    - Read Replicas: using/read-replicas.md
-    - Deleting a Database: using/delete-db.md
-    - Migrating a Database: using/migrate-db.md
+      - Using Control Plane API Calls: using/index.md
+      - Creating a Database: using/create-db.md
+      - Connecting to a Database: using/connecting.md
+      - Updating a Database: using/update-db.md
+      - Upgrading a Database: using/upgrade-db.md
+      - Backup & Restore: using/backup-restore.md
+      - Tasks & Logs: using/tasks-logs.md
+      - Read Replicas: using/read-replicas.md
+      - Deleting a Database: using/delete-db.md
+      - Migrating a Database: using/migrate-db.md
   - API:
       - OpenAPI: api/openapi.md
       - API Reference: api/reference.md

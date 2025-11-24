@@ -1,4 +1,15 @@
 # Changelog
+## v0.5.1 - 2025-11-24
+### Added
+- Added support for Postgres 16.11, 17.7, and 18.1.
+### Changed
+- Default Postgres version to 18.1.
+### Removed
+- Removed unsupported Postgres 17.5.
+### Fixed
+- Fixed a bug where database instance state would not be properly set to unknown when status updates were missed for two consecutive monitor intervals.
+- Fixed a bug where port validation would prevent databases from updating.
+
 ## v0.5.0 - 2025-11-04
 ### Added
 - Added support for Postgres 18.0.
