@@ -6,6 +6,9 @@
 - Default Postgres version to 18.1.
 ### Removed
 - Removed unsupported Postgres 17.5.
+### Fixed
+- Fixed a bug where database instance state would not be properly set to unknown when status updates were missed for two consecutive monitor intervals.
+- Fixed a bug where port validation would prevent databases from updating.
 
 ## v0.5.0 - 2025-11-04
 ### Added
