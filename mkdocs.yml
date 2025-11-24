@@ -68,8 +68,8 @@ nav:
     - Configuration Options: installation/configuration.md
     - Upgrading a Control Plane Installation: installation/upgrading.md
   - Managing a High-Availability Environment:
-    - Best Practices for Deploying a High-Availability Cluster: using_ha/index.md
-    - Connecting to a High-Availability Cluster: using_ha/ha_connections.md
+    - Best Practices for Deploying a High-Availability Cluster: using-ha/index.md
+    - Connecting to a High-Availability Cluster: using-ha/ha-connections.md
   - Using Control Plane:
     - Using Control Plane API Calls: using/index.md
     - Creating a Database: using/create-db.md
@@ -88,4 +88,4 @@ nav:
       - Development Process: development/development.md
       - Automated End-to-End tests: development/e2e-tests.md
       - Running Locally: development/running-locally.md
-  - Control Plane Release Notes: cp_rel_notes.md
+  - Control Plane Release Notes: changelog.md
