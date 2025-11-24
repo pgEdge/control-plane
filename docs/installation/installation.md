@@ -2,7 +2,7 @@
 
 This guide contains instructions for deploying the Control Plane on a set of Linux hosts, such as virtual machines or bare metal servers. 
 
-Control Plan excels at managing Postgres in a highly-available configuration.  To review a list of best practices for Control Plane deployment in a high-availability environment, visit [here](../using_ha/index.md).
+Control Plan excels at managing Postgres in a highly-available configuration.  To review a list of best practices for Control Plane deployment in a high-availability environment, visit [here](../using-ha/index.md).
 
 
 ## Initializing Docker Swarm
@@ -40,7 +40,7 @@ our0m7sn7gjops9klp7j1nvu7     host-3           Ready     Active         Reachabl
 
 ### Promoting Swarm Managers
 
-Swarm manager nodes are responsible for orchestrating and maintaining the state of the Docker Swarm cluster. To conform to [high availability best practices](../using_ha/index.md), we recommend using an odd number of managers based on your cluster size to ensure consensus.
+Swarm manager nodes are responsible for orchestrating and maintaining the state of the Docker Swarm cluster. To conform to [high availability best practices](../using-ha/index.md), we recommend using an odd number of managers based on your cluster size to ensure consensus.
 
 !!! hint
 
