@@ -134,6 +134,7 @@ licenses:
 	GOOS=linux $(go-licenses) report ./... \
 	--ignore github.com/pgEdge/control-plane \
 	--ignore github.com/eclipse/paho.golang \
+	--ignore github.com/etcd-io/etcd \
 	--template=NOTICE.txt.tmpl > NOTICE.txt
 
 .PHONY: licenses-ci
@@ -203,13 +204,16 @@ endif
 	$(changie) merge
 	$(changie) latest > api/version.txt
 	$(MAKE) -C api generate
-	VERSION=$(VERSION) yq -i \ 
+	VERSION=$(VERSION) yq -i \
 		'.extra.control_plane_version = strenv(VERSION)' mkdocs.yml
 	git checkout -b release/$(VERSION)
 	git add api changes CHANGELOG.md mkdocs.yml
 	git -c core.pager='' diff --staged
 	git -c core.pager='' diff --staged --compact-summary
 	@echo -n "Are you sure? [y/N] " && read ans && [ $${ans:-N} == y ]
+	# copy/add changelog here in case formatting fix were required
+	cp CHANGELOG.md docs/changelog.md
+	git add docs/changelog.md
 	git commit -m "build(release): bump version to $(VERSION)"
 	git push origin release/$(VERSION)
 	git tag $(VERSION)-rc.1
