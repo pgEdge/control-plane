@@ -1,5 +1,11 @@
 # Changelog
-## v0.5.0 - 2025-11-04
+## v0.5.1 - 2025-11-24
+### Added
+- Added support for Postgres 16.11, 17.7, and 18.1.
+### Changed
+- Default Postgres version to 18.1.
+### Removed
+- Removed unsupported Postgres 17.5.## v0.5.0 - 2025-11-04
 ### Added
 - Added support for Postgres 18.0.
 - Added a new "client-only" Etcd mode to enable larger clusters and clusters with an even number of hosts.
@@ -17,9 +23,7 @@
 - Fixed a bug that prevented users from using Service Accounts for pgBackRest credentials in GCS.
 - Fixed missing replication sets after restoring from backup.
 - Fixed incorrect response in `update-database` when a non-existent host ID is specified.
-- Fixed a bug with scheduled instance restarts.
-
-## v0.4.0 - 2025-10-06
+- Fixed a bug with scheduled instance restarts.## v0.4.0 - 2025-10-06
 ### Added
 - Introduced stop-instance and start-instance APIs to allow users to manually trigger a stop/start of a specific Postgres instance.
 - Added support for adding new database nodes with zero downtime.
@@ -42,9 +46,7 @@
 - Changed patroni configuration to use pg_rewind for faster recovery after a switchover.
 ### Fixed
 - Fixed join cluster timeouts when requests were submitted to a member other than the raft leader.
-- Ensure that join and init cluster calls only return once the server is ready to take requests. Any errors during the initialization process will now be returned to callers.
-
-## v0.3.0 - 2025-08-19
+- Ensure that join and init cluster calls only return once the server is ready to take requests. Any errors during the initialization process will now be returned to callers.## v0.3.0 - 2025-08-19
 ### Added
 - Added ability to override 'database modifiable state' check via `force` parameters on several endpoints.
 - Added a `client` package that wraps the generated client code in a friendlier interface.
@@ -55,9 +57,7 @@
 - Fixed error in restore database workflow when the request is submitted to a host that is not running the target instance.
 - Fixed client-side validation errors from missing enum values in our generated client code.
 - Fixed timing issue where a new database operation could not be started immediately after the task was marked as completed.
-- Fixed a bug in the restore database workflow where, sometimes, the restore would start before Postgres had finished shutting down.
-
-## v0.2.0 - 2025-07-22
+- Fixed a bug in the restore database workflow where, sometimes, the restore would start before Postgres had finished shutting down.## v0.2.0 - 2025-07-22
 ### Added
 - Tasks and task logs for every database operation.
 - `parent_id`, `node_name`, `host_id`, and `instance_id` fields to task API entities.
@@ -88,8 +88,6 @@
 ### Fixed
 - Delay when resuming workflows after a restart.
 - Database operation errors when instance IPs change after restarting.
-- Method to determine default IPv4 address to always return IPv4.
-
-## v0.1.0 - 2025-05-28
+- Method to determine default IPv4 address to always return IPv4.## v0.1.0 - 2025-05-28
 ### Added
 - Release process to publish Docker images for the Control Plane server.
