@@ -58,7 +58,54 @@ You can now pull these images from `127.0.0.1:5000/control-plane`.
 
 We use [*semantic versions*](https://semver.org/) to identify Control Plane
 releases, and a partially-automated process to tag and publish new
-releases. To initiate a new release, run **one** of the following:
+releases.
+
+### Before You Create a Release
+
+Make sure that there is a changelog entry for every user-facing release by
+examining merged pull requests since the last release. It's easy to do this with
+the [GitHub CLI](https://github.com/cli/cli):
+
+```sh
+# Get the timestamp of the last release
+timestamp=$(gh release list \
+  --limit 1 \
+  --json publishedAt \
+  --jq ".[0].publishedAt | fromdateiso8601")
+
+# Alternatively, get the timestamp for a specific release
+timestamp=$(gh release view 'v0.5.0' \
+  --json publishedAt \
+  --jq ".publishedAt | fromdateiso8601")
+
+# Make sure this was successful
+echo $timestamp
+
+# Output JSON-formatted list of PRs
+ GH_PAGER='' gh pr list \
+  --state merged \
+  --json author,number,mergeCommit,mergedAt,url,title \
+  --limit 999 | \
+  jq -c --argjson timestamp "${timestamp}" '.[] |
+      select (.mergedAt | fromdateiso8601 > $timestamp) |
+      { title, author: .author.login, url }'
+```
+
+Use the guidelines from the [Pull Requests section](#pull-requests) section to
+determine which PRs should have included a changelog entry and check that one
+was either included in the PR or otherwise added to the `changes/unreleased`
+directory. If you find a missing entry, use `make changelog-entry` to create a
+new entry before running the release process.
+
+> [!TIP]
+> If you've added a lot of new entries, it's a good idea to backup the
+> `changes/unreleased` directory by copying it to another location before
+> starting the release process. This can save time if you need to restart the
+> release process.
+
+### Running the Release Process
+
+To initiate a new release, run **one** of the following:
 
 ```sh
 # If this is a "patch" release
@@ -77,8 +124,11 @@ This:
 - creates a release branch named `release/<version>`.
 - stages the Changelog.
 
-You'll be shown the changes and prompted to accept them. If you accept the
-changes, the make recipe will:
+You'll be shown the changes and prompted to accept them. If you make any changes
+at this point (adding files, editing files, etc.), make sure to stage those
+changes with `git add` before accepting the prompt.
+
+Once you accept the prompt, the make recipe will:
 
 - create a commit.
 - push the release branch to the origin.
