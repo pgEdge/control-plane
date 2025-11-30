@@ -100,6 +100,7 @@ test-e2e-ci:
 
 .PHONY: test-cluster
 test-cluster:
+	CONTROL_PLANE_VERSION="$(CONTROL_PLANE_VERSION)" \
 	$(gotestsum) \
 		--format-hide-empty-pkg \
 		--format standard-verbose \
@@ -108,6 +109,7 @@ test-cluster:
 
 .PHONY: test-cluster-ci
 test-cluster-ci:
+	CONTROL_PLANE_VERSION="$(CONTROL_PLANE_VERSION)" \
 	$(gotestsum) \
 		--format-hide-empty-pkg \
 		--format standard-verbose \
