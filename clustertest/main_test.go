@@ -12,8 +12,6 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-const defaultImageTag = "127.0.0.1:5000/control-plane:latest"
-
 var testConfig = struct {
 	skipCleanup    bool
 	skipImageBuild bool
@@ -23,6 +21,8 @@ var testConfig = struct {
 }{}
 
 func TestMain(m *testing.M) {
+	defaultImageTag := "127.0.0.1:5000/control-plane:" + os.Getenv("CONTROL_PLANE_VERSION")
+
 	flag.BoolVar(&testConfig.skipCleanup, "skip-cleanup", false, "skip cleaning up resources created by the tests")
 	flag.BoolVar(&testConfig.skipImageBuild, "skip-image-build", false, "skip building the control plane image. this setting is implied true when a non-default image-tag is specified.")
 	flag.StringVar(&testConfig.imageTag, "image-tag", defaultImageTag, "the control plane image to test")
