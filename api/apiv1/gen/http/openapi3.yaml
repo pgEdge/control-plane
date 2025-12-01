@@ -3864,7 +3864,7 @@ components:
               patroni_state: unknown
               pending_restart: false
               role: primary
-              version: "17.5"
+              version: "18.1"
             spock:
               read_only: "off"
               subscriptions:
@@ -3892,7 +3892,7 @@ components:
               patroni_state: unknown
               pending_restart: false
               role: primary
-              version: "17.5"
+              version: "18.1"
             spock:
               read_only: "off"
               subscriptions:
@@ -4317,7 +4317,7 @@ components:
                 patroni_state: unknown
                 pending_restart: false
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
@@ -4345,7 +4345,7 @@ components:
                 patroni_state: unknown
                 pending_restart: false
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
@@ -4760,7 +4760,7 @@ components:
                 patroni_state: unknown
                 pending_restart: false
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
@@ -4788,7 +4788,7 @@ components:
                 patroni_state: unknown
                 pending_restart: false
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
@@ -5147,7 +5147,7 @@ components:
                 patroni_state: unknown
                 pending_restart: false
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
@@ -5175,7 +5175,7 @@ components:
                 patroni_state: unknown
                 pending_restart: false
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
@@ -5203,7 +5203,7 @@ components:
                 patroni_state: unknown
                 pending_restart: false
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
@@ -5231,7 +5231,7 @@ components:
                 patroni_state: unknown
                 pending_restart: false
                 role: primary
-                version: "17.5"
+                version: "18.1"
               spock:
                 read_only: "off"
                 subscriptions:
