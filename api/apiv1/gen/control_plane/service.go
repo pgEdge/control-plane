@@ -691,8 +691,6 @@ type RemoveHostPayload struct {
 // RemoveHostResponse is the result type of the control-plane service
 // remove-host method.
 type RemoveHostResponse struct {
-	// The task that will remove the host.
-	Task *Task
 	// The tasks that will update databases affected by the host removal.
 	UpdateDatabaseTasks []*Task
 }

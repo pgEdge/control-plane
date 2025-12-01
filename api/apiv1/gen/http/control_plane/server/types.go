@@ -177,10 +177,8 @@ type GetHostResponseBody struct {
 // RemoveHostResponseBody is the type of the "control-plane" service
 // "remove-host" endpoint HTTP response body.
 type RemoveHostResponseBody struct {
-	// The task that will remove the host.
-	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
 	// The tasks that will update databases affected by the host removal.
-	UpdateDatabaseTasks []*TaskResponseBody `form:"update_database_tasks,omitempty" json:"update_database_tasks,omitempty" xml:"update_database_tasks,omitempty"`
+	UpdateDatabaseTasks []*TaskResponseBody `form:"update_database_tasks" json:"update_database_tasks" xml:"update_database_tasks"`
 }
 
 // ListDatabasesResponseBody is the type of the "control-plane" service
@@ -2522,14 +2520,13 @@ func NewGetHostResponseBody(res *controlplane.Host) *GetHostResponseBody {
 // the "remove-host" endpoint of the "control-plane" service.
 func NewRemoveHostResponseBody(res *controlplane.RemoveHostResponse) *RemoveHostResponseBody {
 	body := &RemoveHostResponseBody{}
-	if res.Task != nil {
-		body.Task = marshalControlplaneTaskToTaskResponseBody(res.Task)
-	}
 	if res.UpdateDatabaseTasks != nil {
 		body.UpdateDatabaseTasks = make([]*TaskResponseBody, len(res.UpdateDatabaseTasks))
 		for i, val := range res.UpdateDatabaseTasks {
 			body.UpdateDatabaseTasks[i] = marshalControlplaneTaskToTaskResponseBody(val)
 		}
+	} else {
+		body.UpdateDatabaseTasks = []*TaskResponseBody{}
 	}
 	return body
 }

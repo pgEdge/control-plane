@@ -2538,13 +2538,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/RemoveHostResponse'
               example:
-                task:
-                  completed_at: "2025-06-18T16:52:35Z"
-                  created_at: "2025-06-18T16:52:05Z"
-                  database_id: storefront
-                  status: completed
-                  task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
-                  type: create
                 update_database_tasks:
                   - completed_at: "2025-06-18T16:52:35Z"
                     created_at: "2025-06-18T16:52:05Z"
@@ -7695,8 +7688,6 @@ components:
     RemoveHostResponse:
       type: object
       properties:
-        task:
-          $ref: '#/components/schemas/Task'
         update_database_tasks:
           type: array
           items:
@@ -7716,13 +7707,6 @@ components:
               task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
               type: create
       example:
-        task:
-          completed_at: "2025-06-18T16:52:35Z"
-          created_at: "2025-06-18T16:52:05Z"
-          database_id: storefront
-          status: completed
-          task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
-          type: create
         update_database_tasks:
           - completed_at: "2025-06-18T16:52:35Z"
             created_at: "2025-06-18T16:52:05Z"
@@ -7749,7 +7733,7 @@ components:
             task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
             type: create
       required:
-        - task
+        - update_database_tasks
     RestartInstanceResponse:
       type: object
       properties:

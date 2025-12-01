@@ -177,8 +177,6 @@ type GetHostResponseBody struct {
 // RemoveHostResponseBody is the type of the "control-plane" service
 // "remove-host" endpoint HTTP response body.
 type RemoveHostResponseBody struct {
-	// The task that will remove the host.
-	Task *TaskResponseBody `form:"task,omitempty" json:"task,omitempty" xml:"task,omitempty"`
 	// The tasks that will update databases affected by the host removal.
 	UpdateDatabaseTasks []*TaskResponseBody `form:"update_database_tasks,omitempty" json:"update_database_tasks,omitempty" xml:"update_database_tasks,omitempty"`
 }
@@ -2813,12 +2811,9 @@ func NewGetHostServerError(body *GetHostServerErrorResponseBody) *controlplane.A
 // endpoint result from a HTTP "OK" response.
 func NewRemoveHostResponseOK(body *RemoveHostResponseBody) *controlplane.RemoveHostResponse {
 	v := &controlplane.RemoveHostResponse{}
-	v.Task = unmarshalTaskResponseBodyToControlplaneTask(body.Task)
-	if body.UpdateDatabaseTasks != nil {
-		v.UpdateDatabaseTasks = make([]*controlplane.Task, len(body.UpdateDatabaseTasks))
-		for i, val := range body.UpdateDatabaseTasks {
-			v.UpdateDatabaseTasks[i] = unmarshalTaskResponseBodyToControlplaneTask(val)
-		}
+	v.UpdateDatabaseTasks = make([]*controlplane.Task, len(body.UpdateDatabaseTasks))
+	for i, val := range body.UpdateDatabaseTasks {
+		v.UpdateDatabaseTasks[i] = unmarshalTaskResponseBodyToControlplaneTask(val)
 	}
 
 	return v
@@ -4096,13 +4091,8 @@ func ValidateGetHostResponseBody(body *GetHostResponseBody) (err error) {
 // ValidateRemoveHostResponseBody runs the validations defined on
 // Remove-HostResponseBody
 func ValidateRemoveHostResponseBody(body *RemoveHostResponseBody) (err error) {
-	if body.Task == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
-	}
-	if body.Task != nil {
-		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
+	if body.UpdateDatabaseTasks == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("update_database_tasks", "body"))
 	}
 	for _, e := range body.UpdateDatabaseTasks {
 		if e != nil {

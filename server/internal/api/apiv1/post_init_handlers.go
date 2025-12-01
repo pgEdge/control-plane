@@ -233,13 +233,12 @@ func (s *PostInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPa
 		UpdateDatabaseInputs: updateDatabaseInputs,
 	}
 
-	mainTask, dbTasks, err := s.workflowSvc.RemoveHost(ctx, input)
+	dbTasks, err := s.workflowSvc.RemoveHost(ctx, input)
 	if err != nil {
 		return nil, apiErr(err)
 	}
 
 	return &api.RemoveHostResponse{
-		Task:                taskToAPI(mainTask),
 		UpdateDatabaseTasks: tasksToAPI(dbTasks),
 	}, nil
 }
