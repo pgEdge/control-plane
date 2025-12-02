@@ -29,9 +29,7 @@ number of tasks:
 
 ### Getting a Specific Task
 
-If you have a task ID, such as one returned when [create a database](./create-db.md), you can fetch details for that task by
-submitting a `GET` request to the `/v1/databases/{database_id}/tasks/{task_id}`
-endpoint. For example:
+If you have a task ID, such as one returned when [create a database](./create-db.md), you can fetch details for that task by submitting a `GET` request to the `/v1/databases/{database_id}/tasks/{task_id}` endpoint. For example:
 
 === "curl"
 
