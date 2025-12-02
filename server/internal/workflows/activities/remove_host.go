@@ -7,7 +7,6 @@ import (
 
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/workflow"
-	"github.com/google/uuid"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/etcd"
@@ -16,8 +15,7 @@ import (
 )
 
 type RemoveHostInput struct {
-	HostID string    `json:"host_id"`
-	TaskID uuid.UUID `json:"task_id"`
+	HostID string `json:"host_id"`
 }
 
 type RemoveHostOutput struct{}
@@ -27,7 +25,7 @@ func (a *Activities) ExecuteRemoveHost(
 	input *RemoveHostInput,
 ) workflow.Future[*RemoveHostOutput] {
 	options := workflow.ActivityOptions{
-		Queue: utils.HostQueue(a.Config.HostID), // TODO: confirm w/Jason
+		Queue: utils.HostQueue(a.Config.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},

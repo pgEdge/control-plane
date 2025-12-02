@@ -3,6 +3,7 @@ package workflows
 import (
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
+	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
 type RemoveHostInput struct {
@@ -44,6 +45,14 @@ func (w *Workflows) RemoveHost(ctx workflow.Context, input *RemoveHostInput) (*R
 		}
 
 		logger.Info("all database update workflows completed successfully")
+	}
+
+	req := activities.RemoveHostInput{
+		HostID: input.HostID,
+	}
+	_, err := w.Activities.ExecuteRemoveHost(ctx, &req).Get(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	logger.Info("successfully removed host")
