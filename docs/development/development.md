@@ -29,8 +29,9 @@ make changelog-entry
 ```
 
 And follow the interactive prompts. This adds your changelog entry to a new file
-under `changes/unreleased`. We'll automatically combine these files to produce
-the release changelog in the release process described below.
+under `changes/unreleased`, which you need to add/push to the git repo. We'll 
+automatically combine these files to produce the release changelog in the release 
+process described below.
 
 ## Building Pre-release Control Plane Images
 
