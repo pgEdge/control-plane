@@ -182,6 +182,24 @@ func (s *Service) GetDatabases(ctx context.Context) ([]*Database, error) {
 	return databases, nil
 }
 
+func (s *Service) GetDatabasesByHostId(ctx context.Context, hostID string) ([]*Database, error) {
+	allDatabases, err := s.GetDatabases(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*Database
+	for _, db := range allDatabases {
+		for _, instance := range db.Instances {
+			if instance.HostID == hostID {
+				result = append(result, db)
+				break // Found at least one instance on this host
+			}
+		}
+	}
+	return result, nil
+}
+
 func (s *Service) UpdateDatabaseState(ctx context.Context, databaseID string, from, to DatabaseState) error {
 	storedDb, err := s.store.Database.GetByKey(databaseID).Exec(ctx)
 	if errors.Is(err, storage.ErrNotFound) {

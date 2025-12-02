@@ -35,6 +35,7 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.PersistPlanSummaries),
 		work.RegisterActivity(a.PersistState),
 		work.RegisterActivity(a.PlanRefresh),
+		work.RegisterActivity(a.RemoveHost),
 		work.RegisterActivity(a.RestartInstance),
 		work.RegisterActivity(a.SelectCandidate),
 		work.RegisterActivity(a.StartInstance),

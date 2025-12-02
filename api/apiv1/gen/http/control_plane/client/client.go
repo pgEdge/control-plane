@@ -323,10 +323,15 @@ func (c *Client) GetHost() goa.Endpoint {
 // service remove-host server.
 func (c *Client) RemoveHost() goa.Endpoint {
 	var (
+		encodeRequest  = EncodeRemoveHostRequest(c.encoder)
 		decodeResponse = DecodeRemoveHostResponse(c.decoder, c.RestoreResponseBody)
 	)
 	return func(ctx context.Context, v any) (any, error) {
 		req, err := c.BuildRemoveHostRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
 		if err != nil {
 			return nil, err
 		}

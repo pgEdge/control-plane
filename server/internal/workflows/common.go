@@ -21,26 +21,38 @@ func (w *Workflows) applyEvents(
 	taskID uuid.UUID,
 	state *resource.State,
 	plan resource.Plan,
+	removeHosts ...string,
 ) error {
 	for _, phase := range plan {
 		futures := make([]workflow.Future[*activities.ApplyEventOutput], len(phase))
 		for i, event := range phase {
 			in := &activities.ApplyEventInput{
-				DatabaseID: databaseID,
-				TaskID:     taskID,
-				State:      state,
-				Event:      event,
+				DatabaseID:  databaseID,
+				TaskID:      taskID,
+				State:       state,
+				Event:       event,
+				RemoveHosts: removeHosts,
 			}
 			future, err := w.Activities.ExecuteApplyEvent(ctx, in)
-			if errors.Is(err, activities.ErrExecutorNotFound) {
+			switch {
+			case errors.Is(err, activities.ErrExecutorNotFound):
 				// The executor is missing from the state, which can happen if a
 				// resource was removed outside of control-plane and we've
 				// updated our state to reflect that. We'll remove this resource
 				// so that it can be recreated.
-				// TODO: validate that this is always the right choice.
 				state.Remove(event.Resource)
-				continue
-			} else if err != nil {
+			case errors.Is(err, activities.ErrHostRemoved):
+				if event.Type == resource.EventTypeDelete {
+					// The host is removed, so we want to just remove it from
+					// the state.
+					state.Remove(event.Resource)
+				} else if event.Type != resource.EventTypeRefresh {
+					// In the case of a refresh event, we'll just leave the
+					// state alone so that we can plan dependent operations. All
+					// other types of events should produce an error.
+					return fmt.Errorf("cannot queue event type %s for %s because its host is being removed", event.Type, event.Resource.Identifier)
+				}
+			case err != nil:
 				return fmt.Errorf("failed to queue apply event: %w", err)
 			}
 			futures[i] = future
@@ -78,6 +90,7 @@ func (w *Workflows) applyPlans(
 	taskID uuid.UUID,
 	state *resource.State,
 	plans []resource.Plan,
+	removeHosts ...string,
 ) error {
 	logger := workflow.Logger(ctx).With("database_id", databaseID)
 
@@ -94,7 +107,7 @@ func (w *Workflows) applyPlans(
 	}()
 
 	for i, plan := range plans {
-		err := w.applyEvents(ctx, databaseID, taskID, state, plan)
+		err := w.applyEvents(ctx, databaseID, taskID, state, plan, removeHosts...)
 		if err != nil {
 			return fmt.Errorf("error in plan %d: %w", i, err)
 		}

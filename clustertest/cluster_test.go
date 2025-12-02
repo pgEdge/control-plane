@@ -97,10 +97,12 @@ func (c *Cluster) Add(t testing.TB, hostCfg HostConfig) {
 func (c *Cluster) Remove(t testing.TB, hostID string) {
 	t.Helper()
 
-	err := c.client.RemoveHost(t.Context(), &controlplane.RemoveHostPayload{
+	resp, err := c.client.RemoveHost(t.Context(), &controlplane.RemoveHostPayload{
 		HostID: controlplane.Identifier(hostID),
 	})
 	require.NoError(t, err)
+	require.NotNil(t, resp, "RemoveHost response should not be nil")
+	require.NotNil(t, resp.UpdateDatabaseTasks, "UpdateDatabaseTasks should always be present (empty slice if no databases)")
 
 	delete(c.hosts, hostID)
 	c.client = hostsClient(t, c.hosts)

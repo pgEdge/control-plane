@@ -31,7 +31,7 @@ type Service interface {
 	// Returns information about a particular host in the cluster.
 	GetHost(context.Context, *GetHostPayload) (res *Host, err error)
 	// Removes a host from the cluster.
-	RemoveHost(context.Context, *RemoveHostPayload) (err error)
+	RemoveHost(context.Context, *RemoveHostPayload) (res *RemoveHostResponse, err error)
 	// Lists all databases in the cluster.
 	ListDatabases(context.Context) (res *ListDatabasesResponse, err error)
 	// Creates a new database in the cluster.
@@ -683,6 +683,16 @@ type PgEdgeVersion struct {
 type RemoveHostPayload struct {
 	// ID of the host to remove.
 	HostID Identifier
+	// Force removal even if instances exist or quorum would be violated. Use only
+	// for disaster recovery when a host is permanently lost.
+	Force bool
+}
+
+// RemoveHostResponse is the result type of the control-plane service
+// remove-host method.
+type RemoveHostResponse struct {
+	// The tasks that will update databases affected by the host removal.
+	UpdateDatabaseTasks []*Task
 }
 
 // RestartInstancePayload is the payload type of the control-plane service

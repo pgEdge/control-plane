@@ -70,7 +70,7 @@ func (s *Service) CreateDatabase(ctx context.Context, spec *database.Spec) (*tas
 	return t, nil
 }
 
-func (s *Service) UpdateDatabase(ctx context.Context, spec *database.Spec, forceUpdate bool) (*task.Task, error) {
+func (s *Service) UpdateDatabase(ctx context.Context, spec *database.Spec, forceUpdate bool, removeHosts ...string) (*task.Task, error) {
 	databaseID := spec.DatabaseID
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
 		DatabaseID: databaseID,
@@ -83,6 +83,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, spec *database.Spec, force
 		TaskID:      t.TaskID,
 		Spec:        spec,
 		ForceUpdate: forceUpdate,
+		RemoveHosts: removeHosts,
 	}
 	err = s.createWorkflow(ctx, t, s.workflows.UpdateDatabase, input)
 	if err != nil {
@@ -387,4 +388,38 @@ func (s *Service) FailoverDatabaseNode(ctx context.Context, input *FailoverInput
 	}
 
 	return t, nil
+}
+
+func (s *Service) RemoveHost(ctx context.Context, input *RemoveHostInput) ([]*task.Task, error) {
+	databaseTaskIDs := map[string]uuid.UUID{}
+	var allTasks []*task.Task
+	var databaseTasks []*task.Task
+
+	for _, dbInput := range input.UpdateDatabaseInputs {
+		dt, err := s.taskSvc.CreateTask(ctx, task.Options{
+			DatabaseID: dbInput.Spec.DatabaseID,
+			Type:       task.TypeUpdate,
+		})
+		if err != nil {
+			s.abortTasks(ctx, allTasks...)
+			return nil, fmt.Errorf("failed to create database update task: %w", err)
+		}
+		allTasks = append(allTasks, dt)
+		databaseTasks = append(databaseTasks, dt)
+		databaseTaskIDs[dbInput.Spec.DatabaseID] = dt.TaskID
+		dbInput.TaskID = dt.TaskID
+	}
+
+	input.DatabaseTaskIDs = databaseTaskIDs
+
+	opts := client.WorkflowInstanceOptions{
+		Queue:      utils.HostQueue(s.cfg.HostID),
+		InstanceID: uuid.NewString(),
+	}
+	_, err := s.client.CreateWorkflowInstance(ctx, opts, s.workflows.RemoveHost, input)
+	if err != nil {
+		return nil, err
+	}
+
+	return databaseTasks, nil
 }

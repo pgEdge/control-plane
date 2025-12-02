@@ -181,32 +181,94 @@ func (s *PostInitHandlers) GetHost(ctx context.Context, req *api.GetHostPayload)
 	return hostToAPI(host), nil
 }
 
-func (s *PostInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) error {
+func (s *PostInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) (*api.RemoveHostResponse, error) {
 	hostID, err := hostIdentToString(req.HostID)
 	if err != nil {
-		return apiErr(err)
+		return nil, apiErr(err)
 	}
+
+	if err := s.validateHostRemoval(ctx, hostID, req.Force); err != nil {
+		return nil, err
+	}
+
+	dbs, err := s.dbSvc.GetDatabasesByHostId(ctx, hostID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	updateDatabaseInputs, err := s.prepareDatabaseUpdates(ctx, hostID, dbs)
+	if err != nil {
+		return nil, err
+	}
+
+	input := &workflows.RemoveHostInput{
+		HostID:               hostID,
+		UpdateDatabaseInputs: updateDatabaseInputs,
+	}
+
+	dbTasks, err := s.workflowSvc.RemoveHost(ctx, input)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	return &api.RemoveHostResponse{
+		UpdateDatabaseTasks: tasksToAPI(dbTasks),
+	}, nil
+}
+
+// validateHostRemoval checks if the host can be safely removed from the cluster.
+func (s *PostInitHandlers) validateHostRemoval(ctx context.Context, hostID string, force bool) error {
 	if hostID == s.cfg.HostID {
 		return makeInvalidInputErr(errors.New("a host cannot remove itself from the cluster"))
 	}
-	_, err = s.hostSvc.GetHost(ctx, hostID)
+
+	_, err := s.hostSvc.GetHost(ctx, hostID)
 	if errors.Is(err, storage.ErrNotFound) {
 		return ErrHostNotFound
 	} else if err != nil {
 		return apiErr(err)
 	}
-	count, err := s.dbSvc.InstanceCountForHost(ctx, hostID)
-	if err != nil {
-		return apiErr(err)
+
+	// Check for running instances if not forced
+	if !force {
+		count, err := s.dbSvc.InstanceCountForHost(ctx, hostID)
+		if err != nil {
+			return apiErr(err)
+		}
+		if count != 0 {
+			return makeInvalidInputErr(errors.New("cannot remove host with running instances"))
+		}
 	}
-	if count != 0 {
-		return makeInvalidInputErr(errors.New("cannot remove host with running instances"))
+
+	return nil
+}
+
+// prepareDatabaseUpdates prepares workflow inputs for all databases affected by host removal.
+func (s *PostInitHandlers) prepareDatabaseUpdates(ctx context.Context, hostID string, dbs []*database.Database) ([]*workflows.UpdateDatabaseInput, error) {
+	updateInputs := make([]*workflows.UpdateDatabaseInput, 0, len(dbs))
+
+	for _, db := range dbs {
+		if err := s.updateDatabaseForHostRemoval(ctx, db, hostID); err != nil {
+			return nil, err
+		}
+
+		updateInputs = append(updateInputs, &workflows.UpdateDatabaseInput{
+			Spec:        db.Spec,
+			ForceUpdate: false,
+			RemoveHosts: []string{hostID},
+		})
 	}
-	err = s.etcd.RemoveHost(ctx, hostID)
-	if err != nil {
-		return apiErr(err)
+
+	return updateInputs, nil
+}
+
+// updateDatabaseForHostRemoval removes the host from a database spec and updates the database state.
+func (s *PostInitHandlers) updateDatabaseForHostRemoval(ctx context.Context, db *database.Database, hostID string) error {
+	if ok := db.Spec.RemoveHost(hostID); !ok {
+		return apiErr(fmt.Errorf("%s host id not found/removed", hostID))
 	}
-	err = s.hostSvc.RemoveHost(ctx, hostID)
+
+	_, err := s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateModifying, db.Spec)
 	if err != nil {
 		return apiErr(err)
 	}

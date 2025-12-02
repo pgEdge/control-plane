@@ -174,6 +174,13 @@ type GetHostResponseBody struct {
 	SupportedPgedgeVersions []*PgEdgeVersionResponseBody `form:"supported_pgedge_versions,omitempty" json:"supported_pgedge_versions,omitempty" xml:"supported_pgedge_versions,omitempty"`
 }
 
+// RemoveHostResponseBody is the type of the "control-plane" service
+// "remove-host" endpoint HTTP response body.
+type RemoveHostResponseBody struct {
+	// The tasks that will update databases affected by the host removal.
+	UpdateDatabaseTasks []*TaskResponseBody `form:"update_database_tasks,omitempty" json:"update_database_tasks,omitempty" xml:"update_database_tasks,omitempty"`
+}
+
 // ListDatabasesResponseBody is the type of the "control-plane" service
 // "list-databases" endpoint HTTP response body.
 type ListDatabasesResponseBody struct {
@@ -1433,6 +1440,32 @@ type PgEdgeVersionResponseBody struct {
 	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
 }
 
+// TaskResponseBody is used to define fields on response body types.
+type TaskResponseBody struct {
+	// The parent task ID of the task.
+	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	// The database ID of the task.
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// The unique ID of the task.
+	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
+	// The time when the task was created.
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// The status of the task.
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
 // DatabaseCollectionResponseBody is used to define fields on response body
 // types.
 type DatabaseCollectionResponseBody []*DatabaseResponseBody
@@ -2060,32 +2093,6 @@ type DatabaseUserSpecRequestBody struct {
 	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
 	// The roles to assign to this database user.
 	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
-}
-
-// TaskResponseBody is used to define fields on response body types.
-type TaskResponseBody struct {
-	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
-	// The database ID of the task.
-	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
-	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
-	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
-	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
-	// The unique ID of the task.
-	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
-	// The time when the task was created.
-	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
-	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
-	// The type of the task.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
-	// The status of the task.
-	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
-	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
 // InstanceResponseBodyCollection is used to define fields on response body
@@ -2795,6 +2802,18 @@ func NewGetHostServerError(body *GetHostServerErrorResponseBody) *controlplane.A
 	v := &controlplane.APIError{
 		Name:    *body.Name,
 		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewRemoveHostResponseOK builds a "control-plane" service "remove-host"
+// endpoint result from a HTTP "OK" response.
+func NewRemoveHostResponseOK(body *RemoveHostResponseBody) *controlplane.RemoveHostResponse {
+	v := &controlplane.RemoveHostResponse{}
+	v.UpdateDatabaseTasks = make([]*controlplane.Task, len(body.UpdateDatabaseTasks))
+	for i, val := range body.UpdateDatabaseTasks {
+		v.UpdateDatabaseTasks[i] = unmarshalTaskResponseBodyToControlplaneTask(val)
 	}
 
 	return v
@@ -4062,6 +4081,22 @@ func ValidateGetHostResponseBody(body *GetHostResponseBody) (err error) {
 	for _, e := range body.SupportedPgedgeVersions {
 		if e != nil {
 			if err2 := ValidatePgEdgeVersionResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateRemoveHostResponseBody runs the validations defined on
+// Remove-HostResponseBody
+func ValidateRemoveHostResponseBody(body *RemoveHostResponseBody) (err error) {
+	if body.UpdateDatabaseTasks == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("update_database_tasks", "body"))
+	}
+	for _, e := range body.UpdateDatabaseTasks {
+		if e != nil {
+			if err2 := ValidateTaskResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -5748,6 +5783,43 @@ func ValidatePgEdgeVersionResponseBody(body *PgEdgeVersionResponseBody) (err err
 	return
 }
 
+// ValidateTaskResponseBody runs the validations defined on TaskResponseBody
+func ValidateTaskResponseBody(body *TaskResponseBody) (err error) {
+	if body.DatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
+	}
+	if body.TaskID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
+	}
+	if body.CreatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
+	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.ParentID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
+	}
+	if body.TaskID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
+	}
+	if body.CreatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
+	}
+	if body.CompletedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
+	}
+	if body.Status != nil {
+		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
+		}
+	}
+	return
+}
+
 // ValidateDatabaseCollectionResponseBody runs the validations defined on
 // DatabaseCollectionResponseBody
 func ValidateDatabaseCollectionResponseBody(body DatabaseCollectionResponseBody) (err error) {
@@ -7095,43 +7167,6 @@ func ValidateDatabaseUserSpecRequestBody(body *DatabaseUserSpecRequestBody) (err
 	}
 	if len(body.Roles) > 16 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.roles", body.Roles, len(body.Roles), 16, false))
-	}
-	return
-}
-
-// ValidateTaskResponseBody runs the validations defined on TaskResponseBody
-func ValidateTaskResponseBody(body *TaskResponseBody) (err error) {
-	if body.DatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
-	}
-	if body.TaskID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
-	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
-	}
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ParentID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
-	}
-	if body.TaskID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.CompletedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
-	}
-	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
-		}
 	}
 	return
 }

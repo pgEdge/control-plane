@@ -26,6 +26,7 @@ func (w *Workflows) Register(work *worker.Worker) error {
 		work.RegisterWorkflow(w.PlanRestore),
 		work.RegisterWorkflow(w.PlanUpdate),
 		work.RegisterWorkflow(w.RefreshCurrentState),
+		work.RegisterWorkflow(w.RemoveHost),
 		work.RegisterWorkflow(w.RestartInstance),
 		work.RegisterWorkflow(w.StartInstance),
 		work.RegisterWorkflow(w.StopInstance),

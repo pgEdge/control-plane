@@ -135,7 +135,7 @@ func (c *MultiServerClient) GetHost(ctx context.Context, req *api.GetHostPayload
 	return server.GetHost(ctx, req)
 }
 
-func (c *MultiServerClient) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) (err error) {
+func (c *MultiServerClient) RemoveHost(ctx context.Context, req *api.RemoveHostPayload) (*api.RemoveHostResponse, error) {
 	for hostID, server := range c.servers {
 		// Try to find a server other than the one we're trying to remove.
 		if hostID == string(req.HostID) {
@@ -154,7 +154,7 @@ func (c *MultiServerClient) RemoveHost(ctx context.Context, req *api.RemoveHostP
 	// server-generated error message from trying to remove a host from itself.
 	server, err := c.liveServer(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	return server.RemoveHost(ctx, req)
 }

@@ -1,0 +1,3 @@
+kind: Added
+body: '"remove-host" now has a "force" attribute that allows users to recover from the loss of one or more hosts.'
+time: 2025-12-02T14:07:20.855147-05:00

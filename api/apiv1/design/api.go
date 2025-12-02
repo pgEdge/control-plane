@@ -181,15 +181,23 @@ var _ = g.Service("control-plane", func() {
 				g.Description("ID of the host to remove.")
 				g.Example("host-1")
 			})
+			g.Attribute("force", g.Boolean, func() {
+				g.Description("Force removal even if instances exist or quorum would be violated. " +
+					"Use only for disaster recovery when a host is permanently lost. ")
+				g.Default(false)
+				g.Example(true)
+			})
 
 			g.Required("host_id")
 		})
+		g.Result(RemoveHostResponse)
 		g.Error("cluster_not_initialized")
 		g.Error("invalid_input")
 		g.Error("not_found")
 
 		g.HTTP(func() {
 			g.DELETE("/v1/hosts/{host_id}")
+			g.Param("force")
 
 			g.Meta("openapi:tag:Host")
 		})
