@@ -3,7 +3,6 @@
 package clustertest
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -100,7 +99,7 @@ func TestRemove(t *testing.T) {
 // create a 3 node cluster, forcibly kill n3, call "remove-host --force", assert that the 2 node cluster is healthy
 func TestForcedHostRemovalWithDatabase(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tLog(t, "creating cluster")
 	cluster := NewCluster(t, ClusterConfig{
@@ -153,10 +152,7 @@ func TestForcedHostRemovalWithDatabase(t *testing.T) {
 	err = verifyDatabaseHealth(ctx, t, cluster.Client(), dbID, 3)
 	require.NoError(t, err, "database not healthy with 3 nodes")
 
-	tLog(t, "forcibly stopping host-3 container")
-	host3 := cluster.Host("host-3")
-	err = host3.container.Terminate(ctx)
-	require.NoError(t, err, "failed to terminate host-3 container")
+	cluster.Host("host-3").Stop(t)
 
 	// Allow cluster some time to detect the container termination
 	time.Sleep(5 * time.Second)
