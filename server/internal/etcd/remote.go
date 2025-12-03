@@ -250,3 +250,65 @@ func (r *RemoteEtcd) updateEndpointsConfig(ctx context.Context, client *clientv3
 
 	return nil
 }
+
+func (r *RemoteEtcd) ChangeMode(ctx context.Context, mode config.EtcdMode) (Etcd, error) {
+	if mode != config.EtcdModeServer {
+		return nil, fmt.Errorf("invalid mode transition from %s to %s", config.EtcdModeClient, mode)
+	}
+
+	if err := r.Start(ctx); err != nil {
+		return nil, err
+	}
+
+	cfg := r.cfg.Config()
+
+	clientPrincipal, err := r.certSvc.HostEtcdUser(ctx, cfg.HostID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get client principal: %w", err)
+	}
+
+	creds := &HostCredentials{
+		Username:   cfg.EtcdUsername,
+		Password:   cfg.EtcdPassword,
+		CaCert:     r.certSvc.CACert(),
+		ClientCert: clientPrincipal.CertPEM,
+		ClientKey:  clientPrincipal.KeyPEM,
+	}
+
+	if err := addEtcdServerCredentials(ctx, cfg.HostID, cfg.Hostname, cfg.IPv4Address, r.certSvc, creds); err != nil {
+		return nil, err
+	}
+
+	client, err := r.GetClient()
+	if err != nil {
+		return nil, err
+	}
+
+	leader, err := GetClusterLeader(ctx, client)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cluster leader: %w", err)
+	}
+
+	if err := r.Shutdown(); err != nil {
+		return nil, err
+	}
+
+	embedded := NewEmbeddedEtcd(r.cfg, r.logger)
+	err = embedded.Join(ctx, JoinOptions{
+		Leader:      leader,
+		Credentials: creds,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to join embedded etcd to cluster: %w", err)
+	}
+
+	generated := r.cfg.GeneratedConfig()
+	generated.EtcdMode = config.EtcdModeServer
+	generated.EtcdClient = config.EtcdClient{}
+	generated.EtcdServer = cfg.EtcdServer
+	if err := r.cfg.UpdateGeneratedConfig(generated); err != nil {
+		return nil, fmt.Errorf("failed to clear out etcd client settings in generated config: %w", err)
+	}
+
+	return embedded, nil
+}
