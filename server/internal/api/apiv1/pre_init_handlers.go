@@ -4,17 +4,14 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/url"
 	"os"
 
 	"github.com/google/uuid"
-	goahttp "goa.design/goa/v3/http"
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
-	"github.com/pgEdge/control-plane/api/apiv1/gen/http/control_plane/client"
 	"github.com/pgEdge/control-plane/server/internal/cluster"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
@@ -93,20 +90,15 @@ func (s *PreInitHandlers) JoinCluster(ctx context.Context, token *api.ClusterJoi
 		return ErrInvalidServerURL
 	}
 
-	http_client, err := s.GetClient()
-
+	httpClient, err := s.GetClient()
 	if err != nil {
 		return err
 	}
 
-	enc := goahttp.RequestEncoder
-	dec := goahttp.ResponseDecoder //make our own
-	c := client.NewClient(serverURL.Scheme, serverURL.Host, http_client, enc, dec, false)
-	cli := &api.Client{
-		GetJoinOptionsEndpoint: c.GetJoinOptions(),
-	}
+	// Use shared API client creation utility
+	apiClient := etcd.CreateAPIClient(serverURL, httpClient)
 
-	opts, err := cli.GetJoinOptions(ctx, &api.ClusterJoinRequest{
+	opts, err := apiClient.GetJoinOptions(ctx, &api.ClusterJoinRequest{
 		HostID:              api.Identifier(s.cfg.HostID),
 		Hostname:            s.cfg.Hostname,
 		Ipv4Address:         s.cfg.IPv4Address,
@@ -117,43 +109,13 @@ func (s *PreInitHandlers) JoinCluster(ctx context.Context, token *api.ClusterJoi
 		return apiErr(err)
 	}
 
-	caCert, err := base64.StdEncoding.DecodeString(opts.Credentials.CaCert)
+	// Decode credentials using shared utility
+	joinOptions, err := etcd.DecodeJoinCredentials(opts)
 	if err != nil {
-		return apiErr(fmt.Errorf("failed to decode CA certificate: %w", err))
-	}
-	clientCert, err := base64.StdEncoding.DecodeString(opts.Credentials.ClientCert)
-	if err != nil {
-		return apiErr(fmt.Errorf("failed to decode client certificate: %w", err))
-	}
-	clientKey, err := base64.StdEncoding.DecodeString(opts.Credentials.ClientKey)
-	if err != nil {
-		return apiErr(fmt.Errorf("failed to decode client key: %w", err))
-	}
-	serverCert, err := base64.StdEncoding.DecodeString(opts.Credentials.ServerCert)
-	if err != nil {
-		return apiErr(fmt.Errorf("failed to decode server certificate: %w", err))
-	}
-	serverKey, err := base64.StdEncoding.DecodeString(opts.Credentials.ServerKey)
-	if err != nil {
-		return apiErr(fmt.Errorf("failed to decode server key: %w", err))
+		return apiErr(err)
 	}
 
-	err = s.etcd.Join(ctx, etcd.JoinOptions{
-		Leader: &etcd.ClusterMember{
-			Name:       opts.Leader.Name,
-			PeerURLs:   opts.Leader.PeerUrls,
-			ClientURLs: opts.Leader.ClientUrls,
-		},
-		Credentials: &etcd.HostCredentials{
-			Username:   opts.Credentials.Username,
-			Password:   opts.Credentials.Password,
-			CaCert:     caCert,
-			ClientCert: clientCert,
-			ClientKey:  clientKey,
-			ServerCert: serverCert,
-			ServerKey:  serverKey,
-		},
-	})
+	err = s.etcd.Join(ctx, *joinOptions)
 	if err != nil {
 		return apiErr(fmt.Errorf("failed to join existing cluster: %w", err))
 	}

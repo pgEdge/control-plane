@@ -42,6 +42,7 @@ type Host struct {
 	DataDir                 string
 	Hostname                string
 	IPv4Address             string
+	HTTPPort                int
 	CPUs                    int
 	MemBytes                uint64
 	Status                  *HostStatus
@@ -93,6 +94,7 @@ func fromStorage(host *StoredHost, status *StoredHostStatus) (*Host, error) {
 		DataDir:                 host.DataDir,
 		Hostname:                host.Hostname,
 		IPv4Address:             host.IPv4Address,
+		HTTPPort:                host.HTTPPort,
 		CPUs:                    host.CPUs,
 		MemBytes:                host.MemBytes,
 		SupportedPgEdgeVersions: host.SupportedPgEdgeVersions,
@@ -141,6 +143,7 @@ func toStorage(host *Host) *StoredHost {
 		DataDir:                 host.DataDir,
 		Hostname:                host.Hostname,
 		IPv4Address:             host.IPv4Address,
+		HTTPPort:                host.HTTPPort,
 		CPUs:                    host.CPUs,
 		MemBytes:                host.MemBytes,
 		DefaultPgEdgeVersion:    host.DefaultPgEdgeVersion,
