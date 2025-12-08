@@ -117,6 +117,7 @@ var _ = g.Service("control-plane", func() {
 		g.Payload(ClusterJoinRequest)
 		g.Error("cluster_not_initialized")
 		g.Error("invalid_join_token")
+		g.Error("invalid_input")
 
 		g.HTTP(func() {
 			g.POST("/v1/internal/cluster/join-options")
