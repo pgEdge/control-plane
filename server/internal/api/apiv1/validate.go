@@ -14,7 +14,6 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
-	"github.com/pgEdge/control-plane/server/internal/storage"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
@@ -433,16 +432,12 @@ func validateIdentifier(ident string, path []string) error {
 }
 
 // validateHostIDUniqueness checks that the given host ID does not already exist in the cluster.
-// Returns an error if the host ID already exists, or if there's an error checking for the host.
+// Returns an error if the host ID already exists.
 func validateHostIDUniqueness(ctx context.Context, hostSvc *host.Service, hostID string) error {
 	_, err := hostSvc.GetHost(ctx, hostID)
 	if err == nil {
 		// Host already exists - this is a duplicate
 		return fmt.Errorf("host with ID %q already exists in the cluster", hostID)
-	}
-	if !errors.Is(err, storage.ErrNotFound) {
-		// Some error other than "not found" occurred
-		return fmt.Errorf("failed to check host ID uniqueness: %w", err)
 	}
 	// Host doesn't exist (storage.ErrNotFound) - good, host ID is unique
 	return nil
