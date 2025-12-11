@@ -39,6 +39,7 @@ At a high level, the pgEdge Control Plane supports:
 - monitoring database operations through detailed task logs, enabling visibility into deployment progress, troubleshooting, and historical activity tracking.
 - secure API access with certificate-based authentication.
 - performing in-place minor version upgrades of Postgres and supporting components.
+- performing major version upgrades of Postgres using zero downtime node addition.
 
 ## Releases
 
