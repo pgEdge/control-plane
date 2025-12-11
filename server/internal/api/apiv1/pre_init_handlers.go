@@ -153,6 +153,7 @@ func (s *PreInitHandlers) JoinCluster(ctx context.Context, token *api.ClusterJoi
 			ServerCert: serverCert,
 			ServerKey:  serverKey,
 		},
+		HTTPEndpoints: opts.HTTPEndpoints,
 	})
 	if err != nil {
 		return apiErr(fmt.Errorf("failed to join existing cluster: %w", err))

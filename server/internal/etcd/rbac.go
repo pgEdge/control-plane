@@ -304,7 +304,7 @@ func removeUserIfExists(
 	return fmt.Errorf("failed to delete user %q: %w", username, err)
 }
 
-func writeHostCredentials(creds *HostCredentials, cfg *config.Manager) error {
+func writeHostCredentials(creds *HostCredentials, cfg *config.Manager, httpEndpoints []string) error {
 	certs := &filesystem.Directory{
 		Path: "certificates",
 		Mode: 0o700,
@@ -354,6 +354,12 @@ func writeHostCredentials(creds *HostCredentials, cfg *config.Manager) error {
 	generatedCfg.EtcdUsername = creds.Username
 	generatedCfg.EtcdPassword = creds.Password
 	generatedCfg.EtcdMode = appCfg.EtcdMode
+
+	// Store HTTP endpoints for automatic rejoin
+	if len(httpEndpoints) > 0 {
+		generatedCfg.EtcdClient.HTTPEndpoints = httpEndpoints
+	}
+
 	if err := cfg.UpdateGeneratedConfig(generatedCfg); err != nil {
 		return fmt.Errorf("failed to update generated config: %w", err)
 	}
