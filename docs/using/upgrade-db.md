@@ -12,7 +12,6 @@ from Postgres 18.0 to 18.1, via the API. The Postgres version is a field in the
     Before you upgrade, make sure that your desired version is supported by
     following the [instructions below](#which-versions-are-available).
 
-
 To upgrade a database, submit a `POST` request to the
 `/v1/databases/{database_id}` endpoint of any host in the cluster with the new
 version in the `postgres_version` field. For example:
@@ -20,7 +19,7 @@ version in the `postgres_version` field. For example:
 === "curl"
 
     ```sh
-    curl -X POST http://host-3:3000/v1/databases \
+    curl -X POST http://host-3:3000/v1/databases/example \
         -H 'Content-Type:application/json' \
         --data '{
             "id": "example",
@@ -51,13 +50,117 @@ Like with all other updates, the Control Plane applies upgrades in a rolling
 fashion, meaning that it upgrades one node at a time. If a node has both primary
 and replica instances, the replica instances are upgraded first.
 
+You can also set the `postgres_version` field on a per node basis if you want to gradually roll out minor version updates to different nodes. For example:
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases/example \
+        -H 'Content-Type:application/json' \
+        --data '{
+            "id": "example",
+            "spec": {
+                "database_name": "example",
+                "database_users": [
+                    {
+                        "username": "admin",
+                        "db_owner": true,
+                        "attributes": ["SUPERUSER", "LOGIN"]
+                    }
+                ],
+                "port": 5432,
+                "postgres_version": "18.0",
+                "nodes": [
+                    { "name": "n1", "host_ids": ["host-1"] },
+                    { 
+                        "name": "n2", 
+                        "host_ids": ["host-2"], 
+                        "postgres_version": "18.1" 
+                    },
+                ]
+            }
+        }'
+    ```
+
 ## Major Version Upgrades
 
-The Control Plane doesn't currently support major Postgres version upgrades. We
-recommend that you [create a new Database](./create-db.md) with your desired
-version, and then use
-[`pg_dump`](https://www.postgresql.org/docs/current/backup-dump.html) to migrate
-your data to the new database.
+The Control Plane supports major Postgres version upgrades by leveraging the Spock extension's zero downtime add node capability. With this approach, you can add a new node to your existing Database with the `postgres_version` set to the new version. 
+
+For example, to gradually move a single node Database running Postgres 17.6 to 18.1:
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases/example \
+        -H 'Content-Type:application/json' \
+        --data '{
+            "id": "example",
+            "spec": {
+                "database_name": "example",
+                "database_users": [
+                    {
+                        "username": "admin",
+                        "db_owner": true,
+                        "attributes": ["SUPERUSER", "LOGIN"]
+                    }
+                ],
+                "port": 5432,
+                "postgres_version": "17.6",
+                "nodes": [
+                    { "name": "n1", "host_ids": ["host-1"] },
+                    { 
+                        "name": "n2", 
+                        "host_ids": ["host-2"], 
+                        "postgres_version": "18.1", 
+                        "source_node": "n1" 
+                    },
+                ]
+            }
+        }'
+    ```
+
+Once the update operation completes, the newly added node will be running Postgres 18.1, and the existing node remains operational running Postgres 17.6. Both nodes remain writeable during this operation. This allows for easier migration of your applications to the new node.
+
+Once you are satisfied with the upgraded node, you can perform an additional update to remove the old node from your Database spec, and update the `postgres_version` field across your database to 18.1. For example:
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases/example \
+        -H 'Content-Type:application/json' \
+        --data '{
+            "id": "example",
+            "spec": {
+                "database_name": "example",
+                "database_users": [
+                    {
+                        "username": "admin",
+                        "db_owner": true,
+                        "attributes": ["SUPERUSER", "LOGIN"]
+                    }
+                ],
+                "port": 5432,
+                "postgres_version": "18.1",
+                "nodes": [
+                    { "name": "n2", "host_ids": ["host-2"] },
+                ]
+            }
+        }'
+    ```
+
+!!! tip
+
+    This approach is supported for both single region and distributed deployments. You can also choose to use the same host for the upgraded node, assuming you have the availabile space and compute power to run both instances side by side.
+
+
+Outside of this approach, The Control Plane doesn't currently support other mechanisms for performing in-place major Postgres version upgrades. 
+
+As an alternative to using the zero downtime add node approach, you can also [create a new Database](./create-db.md) with your desired version, and then use [`pg_dump`](https://www.postgresql.org/docs/current/backup-dump.html) to migrate your data to the new database.
+
+!!! warning
+
+    You should thoroughly test major version upgrade scenarios in a separate environment before proceeding on your production database. In addition, you should review the [Backup and Restore](./backup-restore.md) documentation to ensure you have appropriate backups of your database, and that you are prepared to restore in the event of unforseen problems.
+
 
 ## Which Versions Are Available
 
