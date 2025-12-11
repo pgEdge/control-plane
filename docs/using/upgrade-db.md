@@ -84,9 +84,11 @@ You can also set the `postgres_version` field on a per node basis if you want to
 
 ## Major Version Upgrades
 
-The Control Plane supports major Postgres version upgrades by leveraging the Spock extension's zero downtime add node capability. With this approach, you can add a new node to your existing Database with the `postgres_version` set to the new version. 
 
-For example, to gradually move a single node Database running Postgres 17.6 to 18.1:
+The Control Plane supports major Postgres version upgrades by leveraging the Spock extension's zero downtime add node capability. With this approach, you can add a new node to your existing database with the `postgres_version` set to the new version.
+
+
+For example, to gradually move a single node database running Postgres 17.6 to 18.1:
 
 === "curl"
 
@@ -119,9 +121,10 @@ For example, to gradually move a single node Database running Postgres 17.6 to 1
         }'
     ```
 
-Once the update operation completes, the newly added node will be running Postgres 18.1, and the existing node remains operational running Postgres 17.6. Both nodes remain writeable during this operation. This allows for easier migration of your applications to the new node.
+Once the update operation completes, the newly added node will be running Postgres 18.1, and the existing node remains operational, running Postgres 17.6. Both nodes remain writeable during this operation. This allows for easier migration of your applications to the new node.
 
-Once you are satisfied with the upgraded node, you can perform an additional update to remove the old node from your Database spec, and update the `postgres_version` field across your database to 18.1. For example:
+
+Once you are satisfied with the upgraded node, you can perform an additional update to remove the old node from your database spec, and update the `postgres_version` field across your database to 18.1. For example:
 
 === "curl"
 
@@ -150,16 +153,20 @@ Once you are satisfied with the upgraded node, you can perform an additional upd
 
 !!! tip
 
-    This approach is supported for both single region and distributed deployments. You can also choose to use the same host for the upgraded node, assuming you have the availabile space and compute power to run both instances side by side.
+    This approach is supported for both single region and distributed deployments. You can also choose to use the same host for the upgraded node, assuming you have the available space and compute power to run both instances side by side.
 
 
-Outside of this approach, The Control Plane doesn't currently support other mechanisms for performing in-place major Postgres version upgrades. 
 
-As an alternative to using the zero downtime add node approach, you can also [create a new Database](./create-db.md) with your desired version, and then use [`pg_dump`](https://www.postgresql.org/docs/current/backup-dump.html) to migrate your data to the new database.
+
+Outside of this approach, the Control Plane doesn't currently support other mechanisms for performing in-place major version upgrades of Postgres. 
+
+As an alternative to using the zero downtime add node approach, you can also [create a new database](./create-db.md) with your desired version, and then use [`pg_dump`](https://www.postgresql.org/docs/current/backup-dump.html) to migrate your data to the new database.
 
 !!! warning
 
-    You should thoroughly test major version upgrade scenarios in a separate environment before proceeding on your production database. In addition, you should review the [Backup and Restore](./backup-restore.md) documentation to ensure you have appropriate backups of your database, and that you are prepared to restore in the event of unforseen problems.
+You should thoroughly test major version upgrade scenarios in a non-production environment before upgrading your production database. Additionally, we recommend you review the [Backup and Restore](./backup-restore.md) documentation, and take a fresh backup of your database before upgrading to ensure that you are prepared to restore in the event you run into problems.
+
+
 
 
 ## Which Versions Are Available
