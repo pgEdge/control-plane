@@ -53,6 +53,11 @@ func (e *EmbeddedEtcd) Start(ctx context.Context) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
+	// If already started (e.g., via Join during automatic reconfiguration), just return success
+	if e.etcd != nil {
+		return nil
+	}
+
 	initialized, err := e.IsInitialized()
 	if err != nil {
 		return err
@@ -109,7 +114,7 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 		return fmt.Errorf("failed to create etcd host credentials: %w", err)
 	}
 
-	if err := writeHostCredentials(creds, e.cfg); err != nil {
+	if err := writeHostCredentials(creds, e.cfg, nil); err != nil {
 		return err
 	}
 
@@ -145,6 +150,15 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 	}
 
 	close(e.initialized)
+
+	// Mark server as initialized in generated config
+	generatedCfg := e.cfg.GeneratedConfig()
+	generatedCfg.EtcdServerInitialized = true
+	if err := e.cfg.UpdateGeneratedConfig(generatedCfg); err != nil {
+		e.logger.Warn().
+			Err(err).
+			Msg("failed to update server initialized flag after init, but initialization succeeded")
+	}
 
 	return nil
 }
@@ -187,7 +201,7 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 		return errors.New("etcd already initialized - cannot join another cluster")
 	}
 
-	if err := writeHostCredentials(options.Credentials, e.cfg); err != nil {
+	if err := writeHostCredentials(options.Credentials, e.cfg, options.HTTPEndpoints); err != nil {
 		return err
 	}
 
@@ -274,6 +288,15 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 	}
 
 	close(e.initialized)
+
+	// Mark server as initialized in generated config
+	generatedCfg := e.cfg.GeneratedConfig()
+	generatedCfg.EtcdServerInitialized = true
+	if err := e.cfg.UpdateGeneratedConfig(generatedCfg); err != nil {
+		e.logger.Warn().
+			Err(err).
+			Msg("failed to update server initialized flag after join, but join succeeded")
+	}
 
 	return nil
 }

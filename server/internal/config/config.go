@@ -161,8 +161,9 @@ var etcdServerDefault = EtcdServer{
 }
 
 type EtcdClient struct {
-	LogLevel  string   `koanf:"log_level" json:"log_level,omitempty"`
-	Endpoints []string `koanf:"endpoints" json:"endpoints,omitempty"`
+	LogLevel      string   `koanf:"log_level" json:"log_level,omitempty"`
+	Endpoints     []string `koanf:"endpoints" json:"endpoints,omitempty"`
+	HTTPEndpoints []string `koanf:"http_endpoints" json:"http_endpoints,omitempty"`
 }
 
 func (r EtcdClient) validate() []error {
@@ -205,6 +206,7 @@ type Config struct {
 	EtcdUsername           string       `koanf:"etcd_username" json:"etcd_username,omitempty"`
 	EtcdPassword           string       `koanf:"etcd_password" json:"etcd_password,omitempty"`
 	EtcdKeyRoot            string       `koanf:"etcd_key_root" json:"etcd_key_root,omitempty"`
+	EtcdServerInitialized  bool         `koanf:"etcd_server_initialized" json:"etcd_server_initialized,omitempty"`
 	EtcdServer             EtcdServer   `koanf:"etcd_server" json:"etcd_server,omitzero"`
 	EtcdClient             EtcdClient   `koanf:"etcd_client" json:"etcd_client,omitzero"`
 	TraefikEnabled         bool         `koanf:"traefik_enabled" json:"traefik_enabled,omitempty"`
