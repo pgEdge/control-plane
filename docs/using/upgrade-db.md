@@ -164,7 +164,7 @@ As an alternative to using the zero downtime add node approach, you can also [cr
 
 !!! warning
 
-You should thoroughly test major version upgrade scenarios in a non-production environment before upgrading your production database. Additionally, we recommend you review the [Backup and Restore](./backup-restore.md) documentation, and take a fresh backup of your database before upgrading to ensure that you are prepared to restore in the event you run into problems.
+    You should thoroughly test major version upgrade scenarios in a non-production environment before upgrading your production database. Additionally, we recommend you review the [Backup and Restore](./backup-restore.md) documentation, and take a fresh backup of your database before upgrading to ensure that you are prepared to restore in the event you run into problems.
 
 
 
