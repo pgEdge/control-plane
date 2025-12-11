@@ -10638,7 +10638,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 * Name: go.etcd.io/etcd/client/v3
 * Version: v3.6.5
-* License: [Apache-2.0](https://github.com/etcd-io/etcd/blob/client/v3.6.5/client/v3/LICENSE)
+* License: [Apache-2.0](https://github.com/etcd-io/etcd/blob/client/v3.6.5/client/LICENSE)
 
 ```
 
