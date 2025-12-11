@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -126,21 +128,22 @@ func reconfigureServerToClient(
 	logger zerolog.Logger,
 ) (Etcd, error) {
 	appCfg := cfg.Config()
+	generated := cfg.GeneratedConfig()
 
+	logger.Info().Msg("starting server->client reconfiguration")
+
+	// Check if embedded etcd was ever initialized
 	embedded := NewEmbeddedEtcd(cfg, logger)
-
 	initialized, err := embedded.IsInitialized()
 	if err != nil {
 		return nil, fmt.Errorf("failed to check embedded etcd initialization during server->client transition: %w", err)
 	}
 
 	// If etcd was never initialized, there's nothing to demote – just persist
-	// the new mode and come up as a client. The client won't be able to Start
-	// until it has endpoints, which is consistent with current behavior.
+	// the new mode and come up as a client.
 	if !initialized {
 		logger.Info().Msg("embedded etcd not initialized, skipping server->client demotion")
 
-		generated := cfg.GeneratedConfig()
 		generated.EtcdMode = appCfg.EtcdMode
 		generated.EtcdServerInitialized = false
 		if err := cfg.UpdateGeneratedConfig(generated); err != nil {
@@ -150,21 +153,28 @@ func reconfigureServerToClient(
 		return NewRemoteEtcd(cfg, logger), nil
 	}
 
-	// Start local embedded etcd so we can talk to the cluster as the "old" node.
-	if err := embedded.Start(ctx); err != nil {
-		return nil, fmt.Errorf("failed to start embedded etcd for server->client transition: %w", err)
-	}
-	client, err := embedded.GetClient()
+	// Connect to cluster using existing credentials
+	// We need to get the client URLs from the local embedded etcd's cluster config
+	logger.Info().Msg("getting cluster member list to find remote endpoints")
+
+	// Create a temporary client connection using the existing server credentials
+	// We'll connect to localhost since we're still running as a server
+	localClientURLs := []string{fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, appCfg.EtcdServer.ClientPort)}
+
+	clientCfg, err := clientConfig(appCfg, logger, localClientURLs...)
 	if err != nil {
-		_ = shutdownEtcd(embedded)
-		return nil, fmt.Errorf("failed to get embedded etcd client for server->client transition: %w", err)
+		return nil, fmt.Errorf("failed to create client config for server->client transition: %w", err)
 	}
 
-	// Get the full member list *before* removing this host, so we can build
-	// a list of remote endpoints.
+	client, err := clientv3.New(clientCfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to local etcd for server->client transition: %w", err)
+	}
+	defer client.Close()
+
+	// Get the full member list before removing this host
 	resp, err := client.MemberList(ctx)
 	if err != nil {
-		_ = shutdownEtcd(embedded)
 		return nil, fmt.Errorf("failed to list etcd members for server->client transition: %w", err)
 	}
 
@@ -178,26 +188,34 @@ func reconfigureServerToClient(
 	}
 
 	if len(endpoints) == 0 {
-		_ = shutdownEtcd(embedded)
 		return nil, fmt.Errorf("cannot demote etcd server on host %s: no remaining cluster members with client URLs", appCfg.HostID)
 	}
 
-	// Remove this host's etcd member from the cluster. We intentionally call
-	// RemoveMember instead of RemoveHost here so that we *do not* remove the
-	// host user / credentials – we still need them as a remote client.
+	// Remove this host's etcd member from the cluster
+	logger.Info().Msg("removing this host from etcd cluster")
 	if err := RemoveMember(ctx, client, appCfg.HostID); err != nil {
-		_ = shutdownEtcd(embedded)
 		return nil, fmt.Errorf("failed to remove this host from etcd cluster during server->client transition: %w", err)
 	}
 
-	if err := shutdownEtcd(embedded); err != nil {
-		logger.Warn().Err(err).Msg("failed to shutdown embedded etcd after server->client transition")
+	// Remove the etcd data directory since we're no longer a server
+	etcdDataDir := filepath.Join(appCfg.DataDir, "etcd")
+	logger.Info().
+		Str("etcd_data_dir", etcdDataDir).
+		Msg("removing etcd data directory for server->client transition")
+
+	if err := os.RemoveAll(etcdDataDir); err != nil {
+		logger.Warn().
+			Err(err).
+			Str("etcd_data_dir", etcdDataDir).
+			Msg("failed to remove etcd data directory - continuing anyway")
 	}
 
-	// Persist new mode + remote endpoints; keep username/password the same.
-	generated := cfg.GeneratedConfig()
+	// Persist new mode + remote endpoints; keep username/password and HTTPEndpoints
 	generated.EtcdMode = appCfg.EtcdMode
 	generated.EtcdClient.Endpoints = endpoints
+	// Preserve HTTPEndpoints - they're still needed for potential future transitions
+	// generated.EtcdClient.HTTPEndpoints stays as is
+	generated.EtcdServerInitialized = false
 	if err := cfg.UpdateGeneratedConfig(generated); err != nil {
 		return nil, fmt.Errorf("failed to update generated config after server->client transition: %w", err)
 	}
@@ -206,7 +224,7 @@ func reconfigureServerToClient(
 		Strs("endpoints", endpoints).
 		Msg("completed etcd server->client transition; using remaining cluster members as remote endpoints")
 
-	// From this point on, the host behaves as a remote etcd client.
+	// Return a new RemoteEtcd client for the demoted host
 	return NewRemoteEtcd(cfg, logger), nil
 }
 
