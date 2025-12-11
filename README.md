@@ -10,10 +10,10 @@ You interact with the Control Plane via an HTTP API. Once you've initialized a C
 - [Releases](#releases)
 - [Development](#development)
 - [Documentation](#documentation)
-- [Quick Start](docs/quickstart.md)
-- [Concepts](docs/concepts.md)
-- [Installation](docs/installation.md)
-- [Configuration](docs/configuration.md)
+- [Quick Start](https://docs.pgedge.com/control-plane/installation/quickstart/)
+- [Concepts](https://docs.pgedge.com/control-plane/prerequisites/concepts/)
+- [Installation](https://docs.pgedge.com/control-plane/installation/installation/)
+- [Configuration](https://docs.pgedge.com/control-plane/installation/configuration/)
 
 ## Features
 
@@ -83,6 +83,8 @@ For step-by-step guidance on using this setup, including interacting with the AP
 ## Documentation
 
 This project includes a documentation site maintained in the [docs](docs/) folder, which covers usage guides, architecture concepts, installation instructions, configuration options, and development workflows. 
+
+You can view the latest version of the documentation at [docs.pgedge.com/control-plane](https://docs.pgedge.com/control-plane/)
 
 It uses MkDocs with the Material theme to generate styled static HTML documentation from Markdown files in the docs directory.
 
