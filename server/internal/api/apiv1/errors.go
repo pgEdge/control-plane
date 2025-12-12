@@ -2,6 +2,7 @@ package apiv1
 
 import (
 	"errors"
+	"fmt"
 
 	goa "goa.design/goa/v3/pkg"
 
@@ -38,9 +39,15 @@ var (
 	ErrInvalidJoinToken           = newAPIError(errInvalidJoinToken, "the given join token is invalid")
 	ErrDatabaseAlreadyExists      = newAPIError(errDatabaseAlreadyExists, "a database already exists with the given ID")
 	ErrHostNotFound               = newAPIError(errNotFound, "no host found with the given ID")
+	ErrHostAlreadyExists          = newAPIError(errInvalidInput, "a host with the given ID already exists in the cluster")
 	ErrNoPrimaryInstance          = newAPIError(errNotFound, "no primary instance found for the given node")
 	ErrOperationNotSupported      = newAPIError(errOperationNotSupported, "operation not supported by this control plane server")
 )
+
+// ErrHostAlreadyExistsWithID returns an error indicating that a host with the given ID already exists.
+func ErrHostAlreadyExistsWithID(hostID string) error {
+	return fmt.Errorf("host with ID %q already exists in the cluster", hostID)
+}
 
 func apiErr(err error) error {
 	var goaErr *goa.ServiceError

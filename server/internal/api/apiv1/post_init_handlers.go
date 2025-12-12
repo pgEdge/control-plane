@@ -95,6 +95,11 @@ func (s *PostInitHandlers) GetJoinOptions(ctx context.Context, req *api.ClusterJ
 		return nil, apiErr(err)
 	}
 
+	// Validate that the host ID is unique in the cluster
+	if err := validateHostIDUniqueness(ctx, s.hostSvc, hostID); err != nil {
+		return nil, makeInvalidInputErr(err)
+	}
+
 	creds, err := s.etcd.AddHost(ctx, etcd.HostCredentialOptions{
 		HostID:              hostID,
 		Hostname:            req.Hostname,
