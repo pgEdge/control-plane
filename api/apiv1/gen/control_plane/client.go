@@ -92,6 +92,7 @@ func (c *Client) InitCluster(ctx context.Context, p *InitClusterRequest) (res *C
 // JoinCluster may return the following errors:
 //   - "cluster_already_initialized" (type *goa.ServiceError)
 //   - "invalid_join_token" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
 //   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) JoinCluster(ctx context.Context, p *ClusterJoinToken) (err error) {
@@ -119,6 +120,7 @@ func (c *Client) GetJoinToken(ctx context.Context) (res *ClusterJoinToken, err e
 // GetJoinOptions may return the following errors:
 //   - "cluster_not_initialized" (type *goa.ServiceError)
 //   - "invalid_join_token" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
 //   - "server_error" (type *goa.ServiceError)
 //   - error: internal error
 func (c *Client) GetJoinOptions(ctx context.Context, p *ClusterJoinRequest) (res *ClusterJoinOptions, err error) {

@@ -422,6 +422,16 @@ type JoinClusterInvalidJoinTokenResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
+// JoinClusterInvalidInputResponseBody is the type of the "control-plane"
+// service "join-cluster" endpoint HTTP response body for the "invalid_input"
+// error.
+type JoinClusterInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
 // JoinClusterServerErrorResponseBody is the type of the "control-plane"
 // service "join-cluster" endpoint HTTP response body for the "server_error"
 // error.
@@ -466,6 +476,16 @@ type GetJoinOptionsClusterNotInitializedResponseBody struct {
 // "control-plane" service "get-join-options" endpoint HTTP response body for
 // the "invalid_join_token" error.
 type GetJoinOptionsInvalidJoinTokenResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetJoinOptionsInvalidInputResponseBody is the type of the "control-plane"
+// service "get-join-options" endpoint HTTP response body for the
+// "invalid_input" error.
+type GetJoinOptionsInvalidInputResponseBody struct {
 	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// The error message.
@@ -2575,6 +2595,17 @@ func NewJoinClusterInvalidJoinToken(body *JoinClusterInvalidJoinTokenResponseBod
 	return v
 }
 
+// NewJoinClusterInvalidInput builds a control-plane service join-cluster
+// endpoint invalid_input error.
+func NewJoinClusterInvalidInput(body *JoinClusterInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
 // NewJoinClusterServerError builds a control-plane service join-cluster
 // endpoint server_error error.
 func NewJoinClusterServerError(body *JoinClusterServerErrorResponseBody) *controlplane.APIError {
@@ -2643,6 +2674,17 @@ func NewGetJoinOptionsClusterNotInitialized(body *GetJoinOptionsClusterNotInitia
 // NewGetJoinOptionsInvalidJoinToken builds a control-plane service
 // get-join-options endpoint invalid_join_token error.
 func NewGetJoinOptionsInvalidJoinToken(body *GetJoinOptionsInvalidJoinTokenResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetJoinOptionsInvalidInput builds a control-plane service
+// get-join-options endpoint invalid_input error.
+func NewGetJoinOptionsInvalidInput(body *GetJoinOptionsInvalidInputResponseBody) *controlplane.APIError {
 	v := &controlplane.APIError{
 		Name:    *body.Name,
 		Message: *body.Message,
@@ -4478,6 +4520,18 @@ func ValidateJoinClusterInvalidJoinTokenResponseBody(body *JoinClusterInvalidJoi
 	return
 }
 
+// ValidateJoinClusterInvalidInputResponseBody runs the validations defined on
+// join-cluster_invalid_input_response_body
+func ValidateJoinClusterInvalidInputResponseBody(body *JoinClusterInvalidInputResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
 // ValidateJoinClusterServerErrorResponseBody runs the validations defined on
 // join-cluster_server_error_response_body
 func ValidateJoinClusterServerErrorResponseBody(body *JoinClusterServerErrorResponseBody) (err error) {
@@ -4529,6 +4583,18 @@ func ValidateGetJoinOptionsClusterNotInitializedResponseBody(body *GetJoinOption
 // ValidateGetJoinOptionsInvalidJoinTokenResponseBody runs the validations
 // defined on get-join-options_invalid_join_token_response_body
 func ValidateGetJoinOptionsInvalidJoinTokenResponseBody(body *GetJoinOptionsInvalidJoinTokenResponseBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetJoinOptionsInvalidInputResponseBody runs the validations defined
+// on get-join-options_invalid_input_response_body
+func ValidateGetJoinOptionsInvalidInputResponseBody(body *GetJoinOptionsInvalidInputResponseBody) (err error) {
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}

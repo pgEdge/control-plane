@@ -305,6 +305,20 @@
           "204": {
             "description": "No Content response."
           },
+          "400": {
+            "description": "invalid_input: Bad Request response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
           "401": {
             "description": "invalid_join_token: Unauthorized response.",
             "content": {

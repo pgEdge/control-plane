@@ -422,6 +422,16 @@ type JoinClusterInvalidJoinTokenResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// JoinClusterInvalidInputResponseBody is the type of the "control-plane"
+// service "join-cluster" endpoint HTTP response body for the "invalid_input"
+// error.
+type JoinClusterInvalidInputResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // JoinClusterServerErrorResponseBody is the type of the "control-plane"
 // service "join-cluster" endpoint HTTP response body for the "server_error"
 // error.
@@ -2830,6 +2840,16 @@ func NewJoinClusterClusterAlreadyInitializedResponseBody(res *controlplane.APIEr
 // service.
 func NewJoinClusterInvalidJoinTokenResponseBody(res *controlplane.APIError) *JoinClusterInvalidJoinTokenResponseBody {
 	body := &JoinClusterInvalidJoinTokenResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewJoinClusterInvalidInputResponseBody builds the HTTP response body from
+// the result of the "join-cluster" endpoint of the "control-plane" service.
+func NewJoinClusterInvalidInputResponseBody(res *controlplane.APIError) *JoinClusterInvalidInputResponseBody {
+	body := &JoinClusterInvalidInputResponseBody{
 		Name:    res.Name,
 		Message: res.Message,
 	}
