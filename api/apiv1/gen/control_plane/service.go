@@ -992,14 +992,14 @@ func MakeInvalidJoinToken(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "invalid_join_token", false, false, false)
 }
 
-// MakeClusterNotInitialized builds a goa.ServiceError from an error.
-func MakeClusterNotInitialized(err error) *goa.ServiceError {
-	return goa.NewServiceError(err, "cluster_not_initialized", false, false, false)
-}
-
 // MakeInvalidInput builds a goa.ServiceError from an error.
 func MakeInvalidInput(err error) *goa.ServiceError {
 	return goa.NewServiceError(err, "invalid_input", false, false, false)
+}
+
+// MakeClusterNotInitialized builds a goa.ServiceError from an error.
+func MakeClusterNotInitialized(err error) *goa.ServiceError {
+	return goa.NewServiceError(err, "cluster_not_initialized", false, false, false)
 }
 
 // MakeNotFound builds a goa.ServiceError from an error.

@@ -176,6 +176,7 @@ func EncodeJoinClusterRequest(encoder func(*http.Request) goahttp.Encoder) func(
 // DecodeJoinClusterResponse may return the following errors:
 //   - "cluster_already_initialized" (type *controlplane.APIError): http.StatusConflict
 //   - "invalid_join_token" (type *controlplane.APIError): http.StatusUnauthorized
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
 //   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeJoinClusterResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
@@ -223,6 +224,20 @@ func DecodeJoinClusterResponse(decoder func(*http.Response) goahttp.Decoder, res
 				return nil, goahttp.ErrValidationError("control-plane", "join-cluster", err)
 			}
 			return nil, NewJoinClusterInvalidJoinToken(&body)
+		case http.StatusBadRequest:
+			var (
+				body JoinClusterInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "join-cluster", err)
+			}
+			err = ValidateJoinClusterInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "join-cluster", err)
+			}
+			return nil, NewJoinClusterInvalidInput(&body)
 		case http.StatusInternalServerError:
 			var (
 				body JoinClusterServerErrorResponseBody
@@ -368,6 +383,7 @@ func EncodeGetJoinOptionsRequest(encoder func(*http.Request) goahttp.Encoder) fu
 // DecodeGetJoinOptionsResponse may return the following errors:
 //   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
 //   - "invalid_join_token" (type *controlplane.APIError): http.StatusUnauthorized
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
 //   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
 //   - error: internal error
 func DecodeGetJoinOptionsResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
@@ -428,6 +444,20 @@ func DecodeGetJoinOptionsResponse(decoder func(*http.Response) goahttp.Decoder, 
 				return nil, goahttp.ErrValidationError("control-plane", "get-join-options", err)
 			}
 			return nil, NewGetJoinOptionsInvalidJoinToken(&body)
+		case http.StatusBadRequest:
+			var (
+				body GetJoinOptionsInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-join-options", err)
+			}
+			err = ValidateGetJoinOptionsInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-join-options", err)
+			}
+			return nil, NewGetJoinOptionsInvalidInput(&body)
 		case http.StatusInternalServerError:
 			var (
 				body GetJoinOptionsServerErrorResponseBody

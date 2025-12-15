@@ -422,6 +422,16 @@ type JoinClusterInvalidJoinTokenResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// JoinClusterInvalidInputResponseBody is the type of the "control-plane"
+// service "join-cluster" endpoint HTTP response body for the "invalid_input"
+// error.
+type JoinClusterInvalidInputResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // JoinClusterServerErrorResponseBody is the type of the "control-plane"
 // service "join-cluster" endpoint HTTP response body for the "server_error"
 // error.
@@ -466,6 +476,16 @@ type GetJoinOptionsClusterNotInitializedResponseBody struct {
 // "control-plane" service "get-join-options" endpoint HTTP response body for
 // the "invalid_join_token" error.
 type GetJoinOptionsInvalidJoinTokenResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetJoinOptionsInvalidInputResponseBody is the type of the "control-plane"
+// service "get-join-options" endpoint HTTP response body for the
+// "invalid_input" error.
+type GetJoinOptionsInvalidInputResponseBody struct {
 	// The name of the error.
 	Name string `form:"name" json:"name" xml:"name"`
 	// The error message.
@@ -2826,6 +2846,16 @@ func NewJoinClusterInvalidJoinTokenResponseBody(res *controlplane.APIError) *Joi
 	return body
 }
 
+// NewJoinClusterInvalidInputResponseBody builds the HTTP response body from
+// the result of the "join-cluster" endpoint of the "control-plane" service.
+func NewJoinClusterInvalidInputResponseBody(res *controlplane.APIError) *JoinClusterInvalidInputResponseBody {
+	body := &JoinClusterInvalidInputResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewJoinClusterServerErrorResponseBody builds the HTTP response body from the
 // result of the "join-cluster" endpoint of the "control-plane" service.
 func NewJoinClusterServerErrorResponseBody(res *controlplane.APIError) *JoinClusterServerErrorResponseBody {
@@ -2873,6 +2903,16 @@ func NewGetJoinOptionsClusterNotInitializedResponseBody(res *controlplane.APIErr
 // service.
 func NewGetJoinOptionsInvalidJoinTokenResponseBody(res *controlplane.APIError) *GetJoinOptionsInvalidJoinTokenResponseBody {
 	body := &GetJoinOptionsInvalidJoinTokenResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetJoinOptionsInvalidInputResponseBody builds the HTTP response body from
+// the result of the "get-join-options" endpoint of the "control-plane" service.
+func NewGetJoinOptionsInvalidInputResponseBody(res *controlplane.APIError) *GetJoinOptionsInvalidInputResponseBody {
+	body := &GetJoinOptionsInvalidInputResponseBody{
 		Name:    res.Name,
 		Message: res.Message,
 	}

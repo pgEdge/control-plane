@@ -154,6 +154,16 @@
           "204": {
             "description": "No Content response."
           },
+          "400": {
+            "description": "Bad Request response.",
+            "schema": {
+              "$ref": "#/definitions/APIError",
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          },
           "401": {
             "description": "Unauthorized response.",
             "schema": {

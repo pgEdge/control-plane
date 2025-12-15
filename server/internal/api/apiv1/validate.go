@@ -1,6 +1,7 @@
 package apiv1
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -11,7 +12,9 @@ import (
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/ds"
+	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
+	"github.com/pgEdge/control-plane/server/internal/storage"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
@@ -427,4 +430,21 @@ func validateIdentifier(ident string, path []string) error {
 	}
 
 	return nil
+}
+
+// validateHostIDUniqueness checks that the given host ID does not already exist in the cluster.
+// Returns an error if the host ID already exists.
+func validateHostIDUniqueness(ctx context.Context, hostSvc *host.Service, hostID string) error {
+	_, err := hostSvc.GetHost(ctx, hostID)
+	switch {
+	case err == nil:
+		// Host already exists - this is a duplicate
+		return ErrHostAlreadyExistsWithID(hostID)
+	case errors.Is(err, storage.ErrNotFound):
+		// Host doesn't exist - good, host ID is unique
+		return nil
+	default:
+		// Other errors (connection failures, permission errors, etc.) should be propagated
+		return fmt.Errorf("failed to check for existing host: %w", err)
+	}
 }
