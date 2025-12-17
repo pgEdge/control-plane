@@ -20,7 +20,7 @@ You interact with the Control Plane via an HTTP API. Once you've initialized a C
 At a high level, the pgEdge Control Plane supports:
 
 - deploying Postgres 16, 17, and 18 with support for managed extensions.
-    - Extension support includes: Spock, LOLOR, Snowflake, pgAudit, PostGIS, pgVector.
+    - Extension support includes: Spock, LOLOR, Snowflake, pgAudit, PostGIS, pgVector, pgEdge Vectorizer, pg_tokenizer, vchord_bm25, pg_vectorize, pgmq, pg_cron, pg_stat_monitor.
 - deploying multiple Postgres instances on the same host, enabling efficient resource utilization and consolidation of workloads.
 - flexible deployment options for both single-region and multi-region deployments. You can:
     - deploy to a single region with optional standby replicas.

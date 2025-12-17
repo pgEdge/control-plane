@@ -79,42 +79,46 @@ the response:
 You can also use the task ID from the original response to retrieve logs and
 other details from the creation process. See the [Tasks and Logs](tasks-logs.md) for more information.
 
+## Customizing Database Configuration
+
 There are many other database settings that you can customize when creating or
 updating a database. Settings in the `spec` object will apply to all distributed nodes. You can also apply or override a setting on a specific node by setting it in the node's object in `spec.nodes[]`.
 
 This example request alters the `max_connections` value for all nodes and overrides the port just for the `n1` node:
 
-```sh
-curl -X POST http://host-3:3000/v1/databases \
-    -H 'Content-Type:application/json' \
-    --data '{
-        "id": "example",
-        "spec": {
-            "database_name": "example",
-            "database_users": [
-                {
-                    "username": "admin",
-                    "password": "password",
-                    "db_owner": true,
-                    "attributes": ["SUPERUSER", "LOGIN"]
-                }
-            ],
-            "port": 5432,
-            "postgresql_conf": {
-                "max_connections": 5000
-            },
-            "nodes": [
-                {
-                    "name": "n1",
-                    "host_ids": ["host-1"],
-                    "port": 6432
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases \
+        -H 'Content-Type:application/json' \
+        --data '{
+            "id": "example",
+            "spec": {
+                "database_name": "example",
+                "database_users": [
+                    {
+                        "username": "admin",
+                        "password": "password",
+                        "db_owner": true,
+                        "attributes": ["SUPERUSER", "LOGIN"]
+                    }
+                ],
+                "port": 5432,
+                "postgresql_conf": {
+                    "max_connections": 5000
                 },
-                { "name": "n2", "host_ids": ["host-2"] },
-                { "name": "n3", "host_ids": ["host-3"] }
-            ]
-        }
-    }'
-```
+                "nodes": [
+                    {
+                        "name": "n1",
+                        "host_ids": ["host-1"],
+                        "port": 6432
+                    },
+                    { "name": "n2", "host_ids": ["host-2"] },
+                    { "name": "n3", "host_ids": ["host-3"] }
+                ]
+            }
+        }'
+    ```
 
 !!! warning
 
@@ -122,3 +126,40 @@ curl -X POST http://host-3:3000/v1/databases \
 
 Refer to the [API Reference](../api/reference.md) for details on all
 available settings.
+
+## Extension Support
+
+The Control Plane supports all extensions included in the standard flavor of the [pgEdge Enterprise Postgres Image](https://github.com/pgedge/postgres-images?tab=readme-ov-file#standard-images). You can configure extension-related settings using the `postgresql_conf` object in your database specification.
+
+To support extension configuration, the Control Plane allows setting `shared_preload_libraries` in the `postgresql_conf` field on the database spec.  If your extension requires additional configuration parameters, you can also include them in the `postgresql_conf` parameter. 
+
+By default, `shared_preload_libraries` contains `pg_stat_statements`, `snowflake`, `spock`, and `postgis`.
+
+In this example, the `shared_preload_libraries` parameter is set to load both `spock` and `pg_cron` extensions when the database starts, and `pg_cron` 
+is further configured using the `cron.database_name` parameter:
+
+=== "curl"
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases \
+        -H 'Content-Type:application/json' \
+        --data '{
+            "id": "example",
+            "spec": {
+                "database_name": "example",
+                "postgresql_conf": {
+                    "shared_preload_libraries": "spock,pg_cron",
+                    "cron.database_name": "example"
+                },
+                "nodes": [
+                    { "name": "n1", "host_ids": ["host-1"] }
+                ]
+            }
+        }'
+    ```
+
+After creating the database, you can enable extensions in your database using `CREATE EXTENSION`.
+
+!!! note
+
+    Always include `spock` in `shared_preload_libraries`, as it is required for core functionality provided by the Control Plane. The Control Plane will call `CREATE EXTENSION` for spock when initializing each instance.
