@@ -1,0 +1,3 @@
+kind: Fixed
+body: 'Added validation to the "get-join-options" endpoint to ensure incoming host IDs are unique within the cluster.'
+time: 2025-12-17T13:18:56.185836-06:00
