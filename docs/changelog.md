@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.6.0 - 2025-12-17
+
+### Added
+
+- "remove-host" now has a "force" attribute that allows users to recover from the loss of one or more hosts.
+- Added support for new extensions in standard pgEdge Enterprise Postgres image, including pgedge_vectorizer, pg_tokenizer, vchord_bm25, pg_vectorize, pgmq, pg_cron, and pg_stat_monitor.
+
+### Fixed
+
+- Added validation to the "get-join-options" endpoint to ensure incoming host IDs are unique within the cluster.
+
 ## v0.5.1 - 2025-11-24
 
 ### Added

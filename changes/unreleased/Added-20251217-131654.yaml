@@ -1,3 +1,0 @@
-kind: Added
-body: Added support for new extensions in standard pgEdge Enterprise Postgres image, including pgedge_vectorizer, pg_tokenizer, vchord_bm25, pg_vectorize, pgmq, pg_cron, and pg_stat_monitor.
-time: 2025-12-17T13:16:54.886-06:00
