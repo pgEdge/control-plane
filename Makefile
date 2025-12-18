@@ -215,7 +215,7 @@ endif
 	@echo -n "Are you sure? [y/N] " && read ans && [ $${ans:-N} == y ]
 	git commit -m "build(release): bump version to $(VERSION)"
 	git push origin release/$(VERSION)
-	git tag $(VERSION)-rc.1
+	git tag -a -F changes/$(VERSION).md $(VERSION)-rc.1
 	git push origin $(VERSION)-rc.1
 	@echo "Go to https://github.com/pgEdge/control-plane/compare/release/$(VERSION)?expand=1 to open the release PR."
 
