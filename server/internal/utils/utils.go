@@ -120,10 +120,6 @@ func BuildOptionArgs(options map[string]string) []string {
 			res = append(res, prefix+k)
 			continue
 		}
-		// Quote value if it contains whitespace
-		if strings.ContainsAny(v, " \t\r\n") {
-			v = `"` + v + `"`
-		}
 
 		res = append(res, prefix+k+"="+v)
 	}

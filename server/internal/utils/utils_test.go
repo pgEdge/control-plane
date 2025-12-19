@@ -43,7 +43,7 @@ func TestBuildOptionArgs(t *testing.T) {
 			},
 			expected: []string{
 				"--type=time",
-				`--target="2025-06-11 09:00:00"`,
+				`--target=2025-06-11 09:00:00`,
 			},
 		},
 		{
@@ -53,8 +53,8 @@ func TestBuildOptionArgs(t *testing.T) {
 				"tab":  "one\t two",
 			},
 			expected: []string{
-				"--note=\"line1\nline2\"",
-				"--tab=\"one\t two\"",
+				"--note=line1\nline2",
+				"--tab=one\t two",
 			},
 		},
 	}

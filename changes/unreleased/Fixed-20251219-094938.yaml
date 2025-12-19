@@ -1,0 +1,3 @@
+kind: Fixed
+body: Fixed incorrect pgbackrest command format for database restore endpoint.
+time: 2025-12-19T09:49:38.606386-05:00
