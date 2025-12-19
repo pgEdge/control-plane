@@ -3,7 +3,7 @@
   "info": {
     "title": "pgEdge Control Plane v1 API",
     "description": "A distributed application that provides a declarative API to deploy and manage Postgres databases.",
-    "version": "v0.6.0"
+    "version": "v0.6.1"
   },
   "host": "localhost:3000",
   "consumes": [

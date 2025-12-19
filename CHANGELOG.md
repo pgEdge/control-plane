@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.6.1 - 2025-12-19
+
+### Fixed
+
+- Fixed incorrect pgbackrest command format for database restore endpoint.
+- Fixed task logs API to return a `last_entry_id` even if `after_entry_id` is the last entry.
+
 ## v0.6.0 - 2025-12-17
 
 ### Added
