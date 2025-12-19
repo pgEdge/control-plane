@@ -61,7 +61,10 @@ func (s *TaskLogEntryStore) GetAllByTaskID(databaseID string, taskID uuid.UUID, 
 		opOptions = append(opOptions, clientv3.WithLimit(int64(options.Limit)))
 	}
 	if options.AfterEntryID != uuid.Nil {
-		rangeStart = s.Key(databaseID, taskID, options.AfterEntryID) + "0"
+		// We intentionally treat this as inclusive so that we still return an
+		// entry when AfterEntryID is the last entry. Callers must ignore the
+		// entry with EntryID == AfterEntryID.
+		rangeStart = s.Key(databaseID, taskID, options.AfterEntryID)
 	}
 	opOptions = append(
 		opOptions,

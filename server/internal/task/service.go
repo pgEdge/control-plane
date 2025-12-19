@@ -140,9 +140,17 @@ func (s *Service) GetTaskLog(ctx context.Context, databaseID string, taskID uuid
 	log := &TaskLog{
 		DatabaseID: databaseID,
 		TaskID:     taskID,
+		Entries:    make([]LogEntry, 0, len(stored)),
 	}
 	for i := len(stored) - 1; i >= 0; i-- {
 		s := stored[i]
+		if s.EntryID == options.AfterEntryID {
+			// This range should be behave as if its exclusive, however we need
+			// to perform an inclusive get so that we're still able to return
+			// the last entry ID when there are no entries after AfterEntryID.
+			// Skipping this entry produces the expected behavior.
+			continue
+		}
 		log.Entries = append(log.Entries, LogEntry{
 			Timestamp: s.Timestamp,
 			Message:   s.Message,
