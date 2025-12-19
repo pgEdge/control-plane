@@ -110,7 +110,7 @@ jobs:
             make buildx-init
 
             # create the github release
-            goreleaser release \
+            GORELEASER_CURRENT_TAG=${CIRCLE_TAG} goreleaser release \
               --release-notes=${release_notes}
 
             # log into control plane ECR repo
