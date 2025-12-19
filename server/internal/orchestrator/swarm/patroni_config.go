@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"path/filepath"
 
+	"github.com/alessio/shellescape"
 	"github.com/samber/do"
 	"github.com/spf13/afero"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -475,6 +476,9 @@ func generatePatroniConfig(
 
 	if spec.RestoreConfig != nil {
 		restoreOptions := utils.BuildOptionArgs(spec.RestoreConfig.RestoreOptions)
+		for i, o := range restoreOptions {
+			restoreOptions[i] = shellescape.Quote(o)
+		}
 		cfg.Bootstrap.Method = utils.PointerTo(patroni.BootstrapMethodNameRestore)
 		cfg.Bootstrap.Restore = &patroni.BootstrapMethodConf{
 			Command:                  utils.PointerTo(PgBackRestRestoreCmd("restore", restoreOptions...).String()),
