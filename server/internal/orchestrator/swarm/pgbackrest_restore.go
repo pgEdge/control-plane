@@ -121,6 +121,11 @@ func (p *PgBackRestRestore) Create(ctx context.Context, rc *resource.Context) er
 		return handleError(err)
 	}
 
+	err = p.renameDataDir(rc)
+	if err != nil {
+		return handleError(err)
+	}
+
 	err = p.completeTask(ctx, taskSvc, t)
 	if err != nil {
 		return handleError(err)
@@ -277,6 +282,27 @@ func (p *PgBackRestRestore) streamLogsAndWait(
 	err = dockerClient.ContainerWait(ctx, containerID, container.WaitConditionNotRunning, 30*time.Second)
 	if err != nil {
 		return fmt.Errorf("error while waiting for pgbackrest restore container: %w", err)
+	}
+
+	return nil
+}
+
+func (p *PgBackRestRestore) renameDataDir(rc *resource.Context) error {
+	fs, err := do.Invoke[afero.Fs](rc.Injector)
+	if err != nil {
+		return err
+	}
+
+	dataDirPath, err := filesystem.DirResourceFullPath(rc, p.InstanceID+"-data")
+	if err != nil {
+		return fmt.Errorf("failed to get data dir from state: %w", err)
+	}
+
+	pgdataPath := filepath.Join(dataDirPath, "pgdata")
+	newPgdataPath := filepath.Join(dataDirPath, "pgdata-restore")
+
+	if err := fs.Rename(pgdataPath, newPgdataPath); err != nil {
+		return fmt.Errorf("failed to rename pgdata for restore: %w", err)
 	}
 
 	return nil

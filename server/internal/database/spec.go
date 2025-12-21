@@ -465,6 +465,7 @@ type InstanceSpec struct {
 	PostgreSQLConf   map[string]any      `json:"postgresql_conf"`
 	ClusterSize      int                 `json:"cluster_size"`
 	OrchestratorOpts *OrchestratorOpts   `json:"orchestrator_opts,omitempty"`
+	InPlaceRestore   bool                `json:"in_place_restore,omitempty"`
 }
 
 type InstanceSpecChange struct {

@@ -344,17 +344,7 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 		return nil, fmt.Errorf("missing restore config for node %s instance %s", spec.NodeName, spec.InstanceID)
 	}
 
-	// TODO: I'd like Patroni to use the backup config that pgbackrest outputs,
-	// but it removes the postgresql.auto.conf when it starts bootstrapping the
-	// cluster. Setting the restore command ourselves is a decent workaround.
-	restoreCmd := PgBackRestRestoreCmd("archive-get", "%f", `"%p"`).String()
-	if spec.PostgreSQLConf == nil {
-		spec.PostgreSQLConf = map[string]any{
-			"restore_command": restoreCmd,
-		}
-	} else {
-		spec.PostgreSQLConf["restore_command"] = restoreCmd
-	}
+	spec.InPlaceRestore = true
 
 	instance, resources, err := o.instanceResources(spec)
 	if err != nil {

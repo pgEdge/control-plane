@@ -475,15 +475,24 @@ func generatePatroniConfig(
 	}
 
 	if spec.RestoreConfig != nil {
-		restoreOptions := utils.BuildOptionArgs(spec.RestoreConfig.RestoreOptions)
-		for i, o := range restoreOptions {
-			restoreOptions[i] = shellescape.Quote(o)
-		}
 		cfg.Bootstrap.Method = utils.PointerTo(patroni.BootstrapMethodNameRestore)
-		cfg.Bootstrap.Restore = &patroni.BootstrapMethodConf{
-			Command:                  utils.PointerTo(PgBackRestRestoreCmd("restore", restoreOptions...).String()),
-			NoParams:                 utils.PointerTo(true),
-			KeepExistingRecoveryConf: utils.PointerTo(true),
+
+		if spec.InPlaceRestore {
+			cfg.Bootstrap.Restore = &patroni.BootstrapMethodConf{
+				Command:                  utils.PointerTo("mv /opt/pgedge/data/pgdata-restore /opt/pgedge/data/pgdata"),
+				NoParams:                 utils.PointerTo(true),
+				KeepExistingRecoveryConf: utils.PointerTo(true),
+			}
+		} else {
+			restoreOptions := utils.BuildOptionArgs(spec.RestoreConfig.RestoreOptions)
+			for i, o := range restoreOptions {
+				restoreOptions[i] = shellescape.Quote(o)
+			}
+			cfg.Bootstrap.Restore = &patroni.BootstrapMethodConf{
+				Command:                  utils.PointerTo(PgBackRestRestoreCmd("restore", restoreOptions...).String()),
+				NoParams:                 utils.PointerTo(true),
+				KeepExistingRecoveryConf: utils.PointerTo(true),
+			}
 		}
 	}
 
