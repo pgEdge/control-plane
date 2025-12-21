@@ -106,7 +106,15 @@ func TestPosixBackupRestore(t *testing.T) {
 
 	setName := fixture.LatestPosixBackup(t, host1, tmpDir, string(db.ID))
 
-	t.Log("Restoring to latest full backup")
+	t.Log("Creating another backup to ensure we can restore the correct one")
+	db.BackupDatabaseNode(ctx, BackupDatabaseNodeOptions{
+		Node: "n1",
+		Options: &controlplane.BackupOptions{
+			Type: "full",
+		},
+	})
+
+	t.Log("Restoring to the first backup")
 
 	err := db.RestoreDatabase(ctx, RestoreDatabaseOptions{
 		RestoreConfig: &controlplane.RestoreConfigSpec{
@@ -118,7 +126,8 @@ func TestPosixBackupRestore(t *testing.T) {
 				BasePath: pointerTo("/backups"),
 			},
 			RestoreOptions: map[string]string{
-				"set": strings.TrimSpace(setName),
+				"set":  strings.TrimSpace(setName),
+				"type": "immediate",
 			},
 		},
 	})
@@ -224,7 +233,15 @@ func TestS3BackupRestore(t *testing.T) {
 
 	setName := fixture.LatestS3Backup(t, host1, string(db.ID))
 
-	t.Log("Restoring to latest full backup")
+	t.Log("Creating another backup to ensure we can restore the correct one")
+	db.BackupDatabaseNode(ctx, BackupDatabaseNodeOptions{
+		Node: "n1",
+		Options: &controlplane.BackupOptions{
+			Type: "full",
+		},
+	})
+
+	t.Log("Restoring to the first backup")
 
 	err := db.RestoreDatabase(ctx, RestoreDatabaseOptions{
 		RestoreConfig: &controlplane.RestoreConfigSpec{
@@ -233,7 +250,8 @@ func TestS3BackupRestore(t *testing.T) {
 			SourceDatabaseName: db.Spec.DatabaseName,
 			Repository:         fixture.S3RestoreRepository(),
 			RestoreOptions: map[string]string{
-				"set": strings.TrimSpace(setName),
+				"set":  strings.TrimSpace(setName),
+				"type": "immediate",
 			},
 		},
 	})
