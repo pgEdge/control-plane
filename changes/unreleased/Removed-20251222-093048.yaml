@@ -1,3 +1,0 @@
-kind: Removed
-body: Removed unused "tenant_id" field from GetCluster endpoint.
-time: 2025-12-22T09:30:48.776635-06:00

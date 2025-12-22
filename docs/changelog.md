@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.6.2 - 2025-12-22
+
+### Removed
+
+- Removed unused "tenant_id" field from GetCluster endpoint.
+
+### Fixed
+
+- Fixed in-place restores where the recovery target is not the latest point in the repository.
+
 ## v0.6.1 - 2025-12-19
 
 ### Fixed
