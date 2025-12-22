@@ -132,8 +132,6 @@ type GetJoinOptionsResponseBody struct {
 type GetClusterResponseBody struct {
 	// Unique identifier for the cluster.
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Unique identifier for the cluster's owner.
-	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
 	// Current status of the cluster.
 	Status *ClusterStatusResponseBody `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// All of the hosts in the cluster.
@@ -2708,8 +2706,7 @@ func NewGetJoinOptionsServerError(body *GetJoinOptionsServerErrorResponseBody) *
 // endpoint result from a HTTP "OK" response.
 func NewGetClusterClusterOK(body *GetClusterResponseBody) *controlplane.Cluster {
 	v := &controlplane.Cluster{
-		ID:       controlplane.Identifier(*body.ID),
-		TenantID: controlplane.Identifier(*body.TenantID),
+		ID: controlplane.Identifier(*body.ID),
 	}
 	v.Status = unmarshalClusterStatusResponseBodyToControlplaneClusterStatus(body.Status)
 	v.Hosts = make([]*controlplane.Host, len(body.Hosts))
@@ -4011,9 +4008,6 @@ func ValidateGetClusterResponseBody(body *GetClusterResponseBody) (err error) {
 	if body.ID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
 	}
-	if body.TenantID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("tenant_id", "body"))
-	}
 	if body.Status == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
 	}
@@ -4028,16 +4022,6 @@ func ValidateGetClusterResponseBody(body *GetClusterResponseBody) (err error) {
 	if body.ID != nil {
 		if utf8.RuneCountInString(*body.ID) > 63 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
-		}
-	}
-	if body.TenantID != nil {
-		if utf8.RuneCountInString(*body.TenantID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.tenant_id", *body.TenantID, utf8.RuneCountInString(*body.TenantID), 1, true))
-		}
-	}
-	if body.TenantID != nil {
-		if utf8.RuneCountInString(*body.TenantID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.tenant_id", *body.TenantID, utf8.RuneCountInString(*body.TenantID), 63, false))
 		}
 	}
 	if body.Status != nil {

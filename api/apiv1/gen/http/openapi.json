@@ -32,7 +32,6 @@
               "$ref": "#/definitions/Cluster",
               "required": [
                 "id",
-                "tenant_id",
                 "status",
                 "hosts"
               ]
@@ -2439,13 +2438,6 @@
         },
         "status": {
           "$ref": "#/definitions/ClusterStatus"
-        },
-        "tenant_id": {
-          "type": "string",
-          "description": "Unique identifier for the cluster's owner.",
-          "example": "engineering",
-          "minLength": 1,
-          "maxLength": 63
         }
       },
       "example": {
@@ -2568,12 +2560,10 @@
         "id": "production",
         "status": {
           "state": "available"
-        },
-        "tenant_id": "engineering"
+        }
       },
       "required": [
         "id",
-        "tenant_id",
         "status",
         "hosts"
       ]

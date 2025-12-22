@@ -18,10 +18,6 @@ var Cluster = g.Type("Cluster", func() {
 		g.Description("Unique identifier for the cluster.")
 		g.Example("production")
 	})
-	g.Attribute("tenant_id", Identifier, func() {
-		g.Description("Unique identifier for the cluster's owner.")
-		g.Example("engineering")
-	})
 	g.Attribute("status", ClusterStatus, func() {
 		g.Description("Current status of the cluster.")
 	})
@@ -30,7 +26,7 @@ var Cluster = g.Type("Cluster", func() {
 		g.Example(HostsArrayExample)
 	})
 
-	g.Required("id", "tenant_id", "status", "hosts")
+	g.Required("id", "status", "hosts")
 })
 
 var InitClusterRequest = g.Type("InitClusterRequest", func() {
