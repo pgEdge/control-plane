@@ -132,8 +132,6 @@ type GetJoinOptionsResponseBody struct {
 type GetClusterResponseBody struct {
 	// Unique identifier for the cluster.
 	ID string `form:"id" json:"id" xml:"id"`
-	// Unique identifier for the cluster's owner.
-	TenantID string `form:"tenant_id" json:"tenant_id" xml:"tenant_id"`
 	// Current status of the cluster.
 	Status *ClusterStatusResponseBody `form:"status" json:"status" xml:"status"`
 	// All of the hosts in the cluster.
@@ -2474,8 +2472,7 @@ func NewGetJoinOptionsResponseBody(res *controlplane.ClusterJoinOptions) *GetJoi
 // the "get-cluster" endpoint of the "control-plane" service.
 func NewGetClusterResponseBody(res *controlplane.Cluster) *GetClusterResponseBody {
 	body := &GetClusterResponseBody{
-		ID:       string(res.ID),
-		TenantID: string(res.TenantID),
+		ID: string(res.ID),
 	}
 	if res.Status != nil {
 		body.Status = marshalControlplaneClusterStatusToClusterStatusResponseBody(res.Status)

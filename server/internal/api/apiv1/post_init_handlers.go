@@ -152,10 +152,9 @@ func (s *PostInitHandlers) GetCluster(ctx context.Context) (*api.Cluster, error)
 		return nil, apiErr(err)
 	}
 	cluster := &api.Cluster{
-		ID:       api.Identifier(storedCluster.ID),
-		TenantID: api.Identifier(s.cfg.TenantID),
-		Hosts:    apiHosts,
-		Status:   &api.ClusterStatus{State: "available"},
+		ID:     api.Identifier(storedCluster.ID),
+		Hosts:  apiHosts,
+		Status: &api.ClusterStatus{State: "available"},
 	}
 
 	return cluster, nil

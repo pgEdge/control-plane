@@ -205,8 +205,6 @@ type CancelDatabaseTaskPayload struct {
 type Cluster struct {
 	// Unique identifier for the cluster.
 	ID Identifier
-	// Unique identifier for the cluster's owner.
-	TenantID Identifier
 	// Current status of the cluster.
 	Status *ClusterStatus
 	// All of the hosts in the cluster.

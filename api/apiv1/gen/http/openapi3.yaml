@@ -103,7 +103,6 @@ paths:
                 id: production
                 status:
                   state: available
-                tenant_id: engineering
         "409":
           description: 'cluster_not_initialized: Conflict response.'
           content:
@@ -3246,12 +3245,6 @@ components:
           maxLength: 63
         status:
           $ref: '#/components/schemas/ClusterStatus'
-        tenant_id:
-          type: string
-          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
-          example: 76f9b8c0-4958-11f0-a489-3bb29577c696
-          minLength: 1
-          maxLength: 63
       example:
         hosts:
           - cohort:
@@ -3335,10 +3328,8 @@ components:
         id: production
         status:
           state: available
-        tenant_id: engineering
       required:
         - id
-        - tenant_id
         - status
         - hosts
     ClusterCredentials:
