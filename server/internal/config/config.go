@@ -161,9 +161,8 @@ var etcdServerDefault = EtcdServer{
 }
 
 type EtcdClient struct {
-	LogLevel      string   `koanf:"log_level" json:"log_level,omitempty"`
-	Endpoints     []string `koanf:"endpoints" json:"endpoints,omitempty"`
-	HTTPEndpoints []string `koanf:"http_endpoints" json:"http_endpoints,omitempty"`
+	LogLevel  string   `koanf:"log_level" json:"log_level,omitempty"`
+	Endpoints []string `koanf:"endpoints" json:"endpoints,omitempty"`
 }
 
 func (r EtcdClient) validate() []error {

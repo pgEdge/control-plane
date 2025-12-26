@@ -110,13 +110,6 @@ func (s *PostInitHandlers) GetJoinOptions(ctx context.Context, req *api.ClusterJ
 		return nil, apiErr(err)
 	}
 
-	// Build HTTP endpoints list from all cluster hosts
-	httpEndpoints, err := s.buildHTTPEndpoints(ctx)
-	if err != nil {
-		// Log error but don't fail - HTTP endpoints are for fallback only
-		s.logger.Warn().Err(err).Msg("failed to build HTTP endpoints list")
-	}
-
 	return &api.ClusterJoinOptions{
 		Leader: &api.EtcdClusterMember{
 			Name:       leader.Name,
@@ -132,37 +125,7 @@ func (s *PostInitHandlers) GetJoinOptions(ctx context.Context, req *api.ClusterJ
 			ServerCert: base64.StdEncoding.EncodeToString(creds.ServerCert),
 			ServerKey:  base64.StdEncoding.EncodeToString(creds.ServerKey),
 		},
-		HTTPEndpoints: httpEndpoints,
 	}, nil
-}
-
-// buildHTTPEndpoints builds a list of HTTP API endpoints from all hosts in the cluster
-func (s *PostInitHandlers) buildHTTPEndpoints(ctx context.Context) ([]string, error) {
-	hosts, err := s.hostSvc.GetAllHosts(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get all hosts: %w", err)
-	}
-
-	httpEndpoints := make([]string, 0, len(hosts))
-
-	// Always include the current server's endpoint first (from GetServerURL)
-	currentServerURL := GetServerURL(s.cfg)
-	httpEndpoints = append(httpEndpoints, currentServerURL.String())
-
-	// Add other hosts' endpoints, but since we don't know their ports,
-	// we'll use the same port as this server (best effort)
-	for _, host := range hosts {
-		// Skip if it's the current host
-		if host.IPv4Address == s.cfg.IPv4Address {
-			continue
-		}
-		// Build HTTP endpoint from host IPv4 and the HTTP port from config
-		// Note: We assume all hosts use the same HTTP port as this host
-		endpoint := fmt.Sprintf("http://%s:%d", host.IPv4Address, s.cfg.HTTP.Port)
-		httpEndpoints = append(httpEndpoints, endpoint)
-	}
-
-	return httpEndpoints, nil
 }
 
 func (s *PostInitHandlers) ServiceDescription(ctx context.Context) (string, error) {

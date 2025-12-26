@@ -15,9 +15,8 @@ type ClusterMember struct {
 }
 
 type JoinOptions struct {
-	Leader        *ClusterMember
-	Credentials   *HostCredentials
-	HTTPEndpoints []string
+	Leader      *ClusterMember
+	Credentials *HostCredentials
 }
 
 type HostCredentialOptions struct {

@@ -82,7 +82,7 @@ func (r *RemoteEtcd) Join(ctx context.Context, options JoinOptions) error {
 		return errors.New("etcd already initialized - cannot join another cluster")
 	}
 
-	if err := writeHostCredentials(options.Credentials, r.cfg, options.HTTPEndpoints); err != nil {
+	if err := writeHostCredentials(options.Credentials, r.cfg); err != nil {
 		return err
 	}
 

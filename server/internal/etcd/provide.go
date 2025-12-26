@@ -213,8 +213,7 @@ func reconfigureServerToClient(
 	// Persist new mode + remote endpoints; keep username/password and HTTPEndpoints
 	generated.EtcdMode = appCfg.EtcdMode
 	generated.EtcdClient.Endpoints = endpoints
-	// Preserve HTTPEndpoints - they're still needed for potential future transitions
-	// generated.EtcdClient.HTTPEndpoints stays as is
+
 	generated.EtcdServerInitialized = false
 	if err := cfg.UpdateGeneratedConfig(generated); err != nil {
 		return nil, fmt.Errorf("failed to update generated config after server->client transition: %w", err)
@@ -407,17 +406,10 @@ func autoRejoinCluster(
 	logger zerolog.Logger,
 ) (Etcd, error) {
 	appCfg := cfg.Config()
-	generated := cfg.GeneratedConfig()
 
 	logger.Info().
 		Str("host_id", appCfg.HostID).
 		Msg("attempting automatic cluster rejoin")
-
-	// Save HTTP endpoints BEFORE clearing the config
-	httpEndpoints := generated.EtcdClient.HTTPEndpoints
-	if httpEndpoints == nil || len(httpEndpoints) == 0 {
-		return nil, fmt.Errorf("no HTTP endpoints available for rejoin")
-	}
 
 	// Clear the generated config
 	if err := clearGeneratedConfig(cfg, logger); err != nil {
@@ -426,27 +418,6 @@ func autoRejoinCluster(
 
 	// Try each stored HTTP endpoint to get join token
 	var lastErr error
-	for _, httpEndpoint := range httpEndpoints {
-		logger.Info().
-			Str("http_endpoint", httpEndpoint).
-			Msg("trying to get join token from cluster member")
-
-		// Try to rejoin via this endpoint
-		embedded, err := rejoinViaHTTP(ctx, httpEndpoint, cfg, logger)
-		if err != nil {
-			logger.Warn().
-				Err(err).
-				Str("http_endpoint", httpEndpoint).
-				Msg("failed to rejoin via this endpoint")
-			lastErr = err
-			continue
-		}
-
-		logger.Info().
-			Str("http_endpoint", httpEndpoint).
-			Msg("successfully rejoined cluster")
-		return embedded, nil
-	}
 
 	return nil, fmt.Errorf("failed to rejoin cluster after trying all endpoints: %w", lastErr)
 }
@@ -543,7 +514,6 @@ func rejoinViaHTTP(
 			ServerCert: serverCert,
 			ServerKey:  serverKey,
 		},
-		HTTPEndpoints: joinOpts.HTTPEndpoints,
 	}); err != nil {
 		return nil, fmt.Errorf("failed to join cluster: %w", err)
 	}

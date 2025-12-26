@@ -114,7 +114,7 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 		return fmt.Errorf("failed to create etcd host credentials: %w", err)
 	}
 
-	if err := writeHostCredentials(creds, e.cfg, nil); err != nil {
+	if err := writeHostCredentials(creds, e.cfg); err != nil {
 		return err
 	}
 
@@ -201,7 +201,7 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 		return errors.New("etcd already initialized - cannot join another cluster")
 	}
 
-	if err := writeHostCredentials(options.Credentials, e.cfg, options.HTTPEndpoints); err != nil {
+	if err := writeHostCredentials(options.Credentials, e.cfg); err != nil {
 		return err
 	}
 
