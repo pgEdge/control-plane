@@ -21,6 +21,7 @@ type StoredHost struct {
 	DataDir                 string              `json:"data_dir"`
 	Hostname                string              `json:"hostname"`
 	IPv4Address             string              `json:"ipv4_address"`
+	HTTPPort                int                 `json:"http_port"`
 	CPUs                    int                 `json:"cpus"`
 	MemBytes                uint64              `json:"mem_bytes"`
 	DefaultPgEdgeVersion    *PgEdgeVersion      `json:"default_version"`

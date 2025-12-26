@@ -1,13 +1,19 @@
 package etcd
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -75,6 +81,10 @@ func provideEtcd(i *do.Injector) {
 
 		// First startup (no generated config yet) or no change: behave as before.
 		if oldMode == "" || oldMode == newMode {
+			logger.Info().
+				Str("mode", string(newMode)).
+				Bool("first_startup", oldMode == "").
+				Msg("creating new etcd instance for mode (no reconfiguration needed)")
 			return newEtcdForMode(newMode, cfg, logger)
 		}
 
@@ -194,7 +204,9 @@ func reconfigureServerToClient(
 	// Remove this host's etcd member from the cluster
 	logger.Info().Msg("removing this host from etcd cluster")
 	if err := RemoveMember(ctx, client, appCfg.HostID); err != nil {
-		return nil, fmt.Errorf("failed to remove this host from etcd cluster during server->client transition: %w", err)
+		logger.Warn().Err(err).Msg("failed to remove this host via direct etcd API")
+		// Continue anyway - when we shut down the etcd server, the cluster will detect it
+		logger.Warn().Msg("continuing with server->client transition - cluster will detect member loss")
 	}
 
 	// Remove the etcd data directory since we're no longer a server
@@ -213,7 +225,8 @@ func reconfigureServerToClient(
 	// Persist new mode + remote endpoints; keep username/password and HTTPEndpoints
 	generated.EtcdMode = appCfg.EtcdMode
 	generated.EtcdClient.Endpoints = endpoints
-
+	// Preserve HTTPEndpoints - they're still needed for potential future transitions
+	// generated.EtcdClient.HTTPEndpoints stays as is
 	generated.EtcdServerInitialized = false
 	if err := cfg.UpdateGeneratedConfig(generated); err != nil {
 		return nil, fmt.Errorf("failed to update generated config after server->client transition: %w", err)
@@ -225,6 +238,25 @@ func reconfigureServerToClient(
 
 	// Return a new RemoteEtcd client for the demoted host
 	return NewRemoteEtcd(cfg, logger), nil
+}
+
+// decompressData handles both compressed and uncompressed data
+// If data is gzip compressed, it decompresses it. Otherwise returns as-is.
+func decompressData(in []byte) ([]byte, error) {
+	r, err := gzip.NewReader(bytes.NewReader(in))
+	if errors.Is(err, gzip.ErrHeader) {
+		// The gzip.NewReader checks for a valid header. If there is no valid
+		// header, this data is not compressed.
+		return in, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to initialize gzip reader: %w", err)
+	}
+	defer r.Close()
+	out, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decompress data: %w", err)
+	}
+	return out, nil
 }
 
 // client -> server
@@ -249,35 +281,104 @@ func reconfigureClientToServer(
 		Msg("starting client->server reconfiguration")
 
 	// Connect to the existing cluster as a remote client using persisted credentials.
-	// These credentials should be valid if the host is still part of the cluster.
 	remote := NewRemoteEtcd(cfg, logger)
 
 	logger.Info().Msg("starting remote etcd client with existing credentials")
 	if err := remote.Start(ctx); err != nil {
-		// If authentication fails, the host was likely removed from the cluster.
-		// Try to automatically rejoin using the known cluster endpoints.
-		logger.Warn().
+		// Authentication failed - credentials are invalid
+		// Without HTTP API, we cannot automatically recover
+		logger.Error().
 			Err(err).
-			Msg("failed to authenticate with existing credentials - attempting automatic rejoin")
+			Msg("failed to authenticate with existing credentials - cannot automatically recover without valid credentials")
 
-		// Attempt automatic rejoin
-		embedded, rejoinErr := autoRejoinCluster(ctx, cfg, logger)
-		if rejoinErr != nil {
-			logger.Error().Err(rejoinErr).Msg("automatic rejoin failed")
-
-			// Clear config as fallback
-			if clearErr := clearGeneratedConfig(cfg, logger); clearErr != nil {
-				logger.Error().Err(clearErr).Msg("failed to clear generated config")
-			}
-
-			return nil, fmt.Errorf("failed to automatically rejoin cluster after auth failure: %w", rejoinErr)
+		// Clear the invalid config
+		if clearErr := clearGeneratedConfig(cfg, logger); clearErr != nil {
+			logger.Error().Err(clearErr).Msg("failed to clear generated config")
 		}
 
-		logger.Info().Msg("successfully rejoined cluster automatically")
-		return embedded, nil
+		// Return to pre-init mode - manual intervention required
+		logger.Info().Msg("returning to pre-initialization mode - use JoinCluster API to rejoin")
+		return NewRemoteEtcd(cfg, logger), nil
 	}
 
-	logger.Info().Msg("remote etcd client started, requesting server credentials via AddHost")
+	logger.Info().Msg("remote etcd client started, querying cluster information")
+
+	// We have an authenticated client - query cluster state using raw etcd operations
+	client, err := remote.GetClient()
+	if err != nil {
+		logger.Error().Err(err).Msg("failed to get etcd client")
+		if clearErr := clearGeneratedConfig(cfg, logger); clearErr != nil {
+			logger.Error().Err(clearErr).Msg("failed to clear generated config")
+		}
+		return NewRemoteEtcd(cfg, logger), nil
+	}
+
+	// Query existing hosts in the cluster for informational purposes
+	hostsKeyPrefix := "/hosts/"
+	logger.Info().
+		Str("key_prefix", hostsKeyPrefix).
+		Msg("querying hosts from etcd")
+
+	hostsResp, err := client.Get(ctx, hostsKeyPrefix, clientv3.WithPrefix())
+	if err != nil {
+		logger.Warn().
+			Err(err).
+			Str("key_prefix", hostsKeyPrefix).
+			Msg("failed to query hosts from cluster")
+	} else if hostsResp.Count == 0 {
+		logger.Warn().
+			Str("key_prefix", hostsKeyPrefix).
+			Msg("no hosts found in cluster - cluster may be empty or host data not yet populated")
+	} else {
+		logger.Info().Int64("count", hostsResp.Count).Msg("found existing hosts in cluster")
+	}
+
+	// Query existing databases
+	dbsResp, err := client.Get(ctx, "/databases/", clientv3.WithPrefix())
+	if err == nil && dbsResp.Count > 0 {
+		logger.Info().Int64("count", dbsResp.Count).Msg("found existing databases in cluster")
+	}
+
+	// Query existing instances
+	instancesResp, err := client.Get(ctx, "/instances/", clientv3.WithPrefix())
+	if err == nil && instancesResp.Count > 0 {
+		logger.Info().Int64("count", instancesResp.Count).Msg("found existing instances in cluster")
+	}
+
+	logger.Info().Msg("completed cluster information query")
+
+	// Check if THIS host already has an entry in the cluster
+	// If it does, the host was previously part of the cluster but credentials may be incomplete
+	thisHostKey := fmt.Sprintf("/hosts/%s", appCfg.HostID)
+	thisHostResp, err := client.Get(ctx, thisHostKey)
+	if err != nil {
+		logger.Warn().Err(err).Str("key", thisHostKey).Msg("failed to check if this host exists in cluster")
+	} else if thisHostResp.Count > 0 {
+		logger.Warn().
+			Str("host_id", appCfg.HostID).
+			Msg("this host already has an entry in cluster - will attempt to remove and rejoin")
+
+		// Try to remove the existing host entry
+		// This is necessary when the host has stale/incomplete credentials
+		logger.Info().Msg("attempting to remove existing host entry from cluster")
+		if err := remote.RemoveHost(ctx, appCfg.HostID); err != nil {
+			logger.Warn().
+				Err(err).
+				Msg("failed to remove existing host entry - will continue with AddHost anyway")
+		} else {
+			logger.Info().Msg("successfully removed existing host entry from cluster")
+		}
+	} else {
+		logger.Info().
+			Str("host_id", appCfg.HostID).
+			Msg("this host does not have an entry in cluster yet")
+	}
+
+	// First, collect HTTP endpoints from the hosts in the cluster for potential rejoin
+	// We need these BEFORE attempting AddHost, in case it fails
+	httpEndpoints := collectHTTPEndpointsFromHosts(ctx, client, appCfg.HostID, logger)
+
+	logger.Info().Msg("requesting server credentials via AddHost")
 
 	// Ask the existing cluster to create server credentials for this host.
 	// This is the same flow as GetJoinOptions in the API.
@@ -288,51 +389,39 @@ func reconfigureClientToServer(
 		EmbeddedEtcdEnabled: true,
 	})
 	if err != nil {
-		// If AddHost fails, we still have a working remote connection.
-		// Try to remove the old host entry and re-add it with server credentials.
+		// AddHost failed even after attempting to remove the existing entry
+		// This means the credentials truly lack the required permissions
+		//
+		// Strategy: Attempt automatic rejoin via HTTP endpoints
+		// This replicates the JoinCluster API flow automatically
 		logger.Warn().
 			Err(err).
-			Msg("failed to create server credentials - attempting to remove and re-add host")
+			Msg("failed to create server credentials - attempting automatic rejoin via HTTP")
 
-		// Remove the old host entry
-		if removeErr := remote.RemoveHost(ctx, appCfg.HostID); removeErr != nil {
-			logger.Warn().
-				Err(removeErr).
-				Msg("failed to remove old host entry - will try automatic rejoin")
+		// Shutdown the remote client with insufficient credentials
+		if shutdownErr := remote.Shutdown(); shutdownErr != nil {
+			logger.Warn().Err(shutdownErr).Msg("failed to shutdown remote client during credential failure")
+		}
 
-			_ = remote.Shutdown()
+		// Attempt automatic rejoin using HTTP endpoints
+		embedded, rejoinErr := attemptAutomaticRejoin(ctx, httpEndpoints, cfg, logger)
+		if rejoinErr != nil {
+			logger.Error().
+				Err(rejoinErr).
+				Msg("automatic rejoin failed - clearing config and returning to pre-init mode")
 
-			// Fall back to automatic rejoin via HTTP
-			embedded, rejoinErr := autoRejoinCluster(ctx, cfg, logger)
-			if rejoinErr != nil {
-				logger.Error().Err(rejoinErr).Msg("automatic rejoin failed")
-
-				if clearErr := clearGeneratedConfig(cfg, logger); clearErr != nil {
-					logger.Error().Err(clearErr).Msg("failed to clear generated config")
-				}
-
-				return nil, fmt.Errorf("failed to automatically rejoin cluster: %w", rejoinErr)
+			// Clear the insufficient credentials
+			if clearErr := clearGeneratedConfig(cfg, logger); clearErr != nil {
+				logger.Error().Err(clearErr).Msg("failed to clear generated config")
 			}
 
-			logger.Info().Msg("successfully rejoined cluster automatically")
-			return embedded, nil
+			// Return to pre-initialization mode - manual intervention required
+			logger.Info().Msg("returning to pre-initialization mode - use JoinCluster API with valid join token to rejoin")
+			return NewRemoteEtcd(cfg, logger), nil
 		}
 
-		logger.Info().Msg("old host entry removed, re-adding with server credentials")
-
-		// Try AddHost again after removing the old entry
-		creds, err = remote.AddHost(ctx, HostCredentialOptions{
-			HostID:              appCfg.HostID,
-			Hostname:            appCfg.Hostname,
-			IPv4Address:         appCfg.IPv4Address,
-			EmbeddedEtcdEnabled: true,
-		})
-		if err != nil {
-			_ = remote.Shutdown()
-			return nil, fmt.Errorf("failed to re-add host after removal: %w", err)
-		}
-
-		logger.Info().Msg("host successfully re-added with server credentials")
+		logger.Info().Msg("automatic rejoin successful - joined cluster as embedded etcd server")
+		return embedded, nil
 	}
 
 	logger.Info().Msg("server credentials obtained, discovering cluster leader")
@@ -380,15 +469,23 @@ func reconfigureClientToServer(
 // to a pre-initialized state. This is used when credentials become invalid and the
 // host needs to rejoin the cluster from scratch.
 func clearGeneratedConfig(cfg *config.Manager, logger zerolog.Logger) error {
-	// Create an empty config to clear all fields
+	// Get the current user-configured mode - we want to preserve this intent
+	appCfg := cfg.Config()
+	desiredMode := appCfg.EtcdMode
+
+	// Create an empty config to clear credentials but preserve the desired mode
 	emptyConfig := config.Config{
-		EtcdMode: "", // Clear the mode
+		EtcdMode: desiredMode, // Keep the user's intended mode
 		EtcdClient: config.EtcdClient{
 			Endpoints: nil, // Clear endpoints
 		},
 		EtcdUsername: "",
 		EtcdPassword: "",
 	}
+
+	logger.Info().
+		Str("desired_mode", string(desiredMode)).
+		Msg("clearing generated config but preserving desired etcd mode")
 
 	if err := cfg.UpdateGeneratedConfig(emptyConfig); err != nil {
 		return fmt.Errorf("failed to update generated config: %w", err)
@@ -398,138 +495,191 @@ func clearGeneratedConfig(cfg *config.Manager, logger zerolog.Logger) error {
 	return nil
 }
 
-// autoRejoinCluster attempts to automatically rejoin the cluster when credentials are invalid.
-// It tries to contact known cluster members via HTTP to get a join token and rejoin.
-func autoRejoinCluster(
+// collectHTTPEndpointsFromHosts queries the etcd cluster for host information
+// and constructs HTTP endpoints from the stored host data (IPv4Address + HTTPPort)
+func collectHTTPEndpointsFromHosts(ctx context.Context, client *clientv3.Client, thisHostID string, logger zerolog.Logger) []string {
+	// Query all hosts from etcd
+	hostsResp, err := client.Get(ctx, "/hosts/", clientv3.WithPrefix())
+	if err != nil {
+		logger.Warn().Err(err).Msg("failed to query hosts for HTTP endpoints")
+		return nil
+	}
+
+	if hostsResp.Count == 0 {
+		logger.Warn().Msg("no hosts found in cluster for HTTP endpoint discovery")
+		return nil
+	}
+
+	var httpEndpoints []string
+	for _, kv := range hostsResp.Kvs {
+		// Parse the host data
+		hostData, err := decompressData(kv.Value)
+		if err != nil {
+			logger.Warn().Err(err).Str("key", string(kv.Key)).Msg("failed to decompress host data")
+			continue
+		}
+
+		// Extract host ID from the key (format: /hosts/{host-id})
+		key := string(kv.Key)
+		parts := strings.Split(key, "/")
+		if len(parts) < 3 {
+			continue
+		}
+		hostID := parts[2]
+
+		// Skip this host
+		if hostID == thisHostID {
+			continue
+		}
+
+		// Parse IPv4 address and HTTP port from the host data
+		// Host data is stored as JSON with fields: ipv4_address and http_port
+		var hostInfo struct {
+			IPv4Address string `json:"ipv4_address"`
+			HTTPPort    int    `json:"http_port"`
+		}
+
+		if err := json.Unmarshal(hostData, &hostInfo); err != nil {
+			logger.Warn().Err(err).Str("host_id", hostID).Msg("failed to parse host data")
+			continue
+		}
+
+		// Construct HTTP endpoint from IPv4 address and HTTP port
+		if hostInfo.IPv4Address != "" && hostInfo.HTTPPort > 0 {
+			httpEndpoint := fmt.Sprintf("http://%s:%d", hostInfo.IPv4Address, hostInfo.HTTPPort)
+			httpEndpoints = append(httpEndpoints, httpEndpoint)
+			logger.Info().
+				Str("host_id", hostID).
+				Str("http_endpoint", httpEndpoint).
+				Msg("constructed HTTP endpoint from host data")
+		}
+	}
+
+	return httpEndpoints
+}
+
+// attemptAutomaticRejoin tries to rejoin the cluster automatically using HTTP endpoints
+func attemptAutomaticRejoin(
 	ctx context.Context,
+	httpEndpoints []string,
 	cfg *config.Manager,
 	logger zerolog.Logger,
 ) (Etcd, error) {
+	if len(httpEndpoints) == 0 {
+		return nil, fmt.Errorf("no HTTP endpoints available for automatic rejoin")
+	}
+
 	appCfg := cfg.Config()
 
 	logger.Info().
 		Str("host_id", appCfg.HostID).
-		Msg("attempting automatic cluster rejoin")
+		Int("endpoint_count", len(httpEndpoints)).
+		Msg("attempting automatic rejoin via HTTP endpoints")
 
-	// Clear the generated config
-	if err := clearGeneratedConfig(cfg, logger); err != nil {
-		return nil, fmt.Errorf("failed to clear generated config: %w", err)
-	}
-
-	// Try each stored HTTP endpoint to get join token
+	// Try each HTTP endpoint until one succeeds
 	var lastErr error
+	for _, httpEndpoint := range httpEndpoints {
+		logger.Info().
+			Str("endpoint", httpEndpoint).
+			Msg("trying to get credentials from cluster member")
 
-	return nil, fmt.Errorf("failed to rejoin cluster after trying all endpoints: %w", lastErr)
-}
+		// Parse the HTTP endpoint
+		serverURL, err := url.Parse(httpEndpoint)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to parse HTTP endpoint: %w", err)
+			continue
+		}
 
-// rejoinViaHTTP attempts to rejoin the cluster by getting a join token via HTTP
-func rejoinViaHTTP(
-	ctx context.Context,
-	httpEndpoint string,
-	cfg *config.Manager,
-	logger zerolog.Logger,
-) (Etcd, error) {
-	appCfg := cfg.Config()
+		// Create HTTP client
+		httpClient := &http.Client{Timeout: 30 * time.Second}
+		enc := goahttp.RequestEncoder
+		dec := goahttp.ResponseDecoder
+		c := client.NewClient(serverURL.Scheme, serverURL.Host, httpClient, enc, dec, false)
+		cli := &api.Client{
+			GetJoinTokenEndpoint:   c.GetJoinToken(),
+			GetJoinOptionsEndpoint: c.GetJoinOptions(),
+		}
 
-	// Parse the HTTP endpoint
-	serverURL, err := url.Parse(httpEndpoint)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse HTTP endpoint: %w", err)
+		// Get join token
+		joinToken, err := cli.GetJoinToken(ctx)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to get join token: %w", err)
+			logger.Warn().Err(err).Str("endpoint", httpEndpoint).Msg("failed to get join token from endpoint")
+			continue
+		}
+
+		// Get join options with credentials
+		joinOpts, err := cli.GetJoinOptions(ctx, &api.ClusterJoinRequest{
+			HostID:              api.Identifier(appCfg.HostID),
+			Hostname:            appCfg.Hostname,
+			Ipv4Address:         appCfg.IPv4Address,
+			Token:               joinToken.Token,
+			EmbeddedEtcdEnabled: true, // server mode
+		})
+		if err != nil {
+			lastErr = fmt.Errorf("failed to get join options: %w", err)
+			logger.Warn().Err(err).Str("endpoint", httpEndpoint).Msg("failed to get join options from endpoint")
+			continue
+		}
+
+		// Successfully got credentials - decode them
+		caCert, err := base64.StdEncoding.DecodeString(joinOpts.Credentials.CaCert)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to decode CA certificate: %w", err)
+			continue
+		}
+		clientCert, err := base64.StdEncoding.DecodeString(joinOpts.Credentials.ClientCert)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to decode client certificate: %w", err)
+			continue
+		}
+		clientKey, err := base64.StdEncoding.DecodeString(joinOpts.Credentials.ClientKey)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to decode client key: %w", err)
+			continue
+		}
+		serverCert, err := base64.StdEncoding.DecodeString(joinOpts.Credentials.ServerCert)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to decode server certificate: %w", err)
+			continue
+		}
+		serverKey, err := base64.StdEncoding.DecodeString(joinOpts.Credentials.ServerKey)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to decode server key: %w", err)
+			continue
+		}
+
+		logger.Info().
+			Str("leader", joinOpts.Leader.Name).
+			Msg("received credentials via HTTP - joining cluster as embedded etcd")
+
+		// Create JoinOptions for embedded etcd
+		etcdJoinOpts := JoinOptions{
+			Leader: &ClusterMember{
+				Name:       joinOpts.Leader.Name,
+				PeerURLs:   joinOpts.Leader.PeerUrls,
+				ClientURLs: joinOpts.Leader.ClientUrls,
+			},
+			Credentials: &HostCredentials{
+				Username:   joinOpts.Credentials.Username,
+				Password:   joinOpts.Credentials.Password,
+				CaCert:     caCert,
+				ClientCert: clientCert,
+				ClientKey:  clientKey,
+				ServerCert: serverCert,
+				ServerKey:  serverKey,
+			},
+		}
+
+		// Create embedded etcd and join the cluster
+		embedded := NewEmbeddedEtcd(cfg, logger)
+		if err := embedded.Join(ctx, etcdJoinOpts); err != nil {
+			return nil, fmt.Errorf("failed to join cluster as embedded etcd: %w", err)
+		}
+
+		logger.Info().Msg("successfully joined cluster as embedded etcd via automatic rejoin")
+		return embedded, nil
 	}
 
-	// Create HTTP client
-	httpClient := &http.Client{Timeout: 30 * time.Second}
-	enc := goahttp.RequestEncoder
-	dec := goahttp.ResponseDecoder
-	c := client.NewClient(serverURL.Scheme, serverURL.Host, httpClient, enc, dec, false)
-	cli := &api.Client{
-		GetJoinTokenEndpoint:   c.GetJoinToken(),
-		GetJoinOptionsEndpoint: c.GetJoinOptions(),
-	}
-
-	// Get join token
-	logger.Info().Msg("requesting join token from cluster")
-	joinToken, err := cli.GetJoinToken(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get join token: %w", err)
-	}
-
-	logger.Info().
-		Str("server_url", joinToken.ServerURL).
-		Msg("received join token")
-
-	// Get join options with embedded etcd enabled (for server mode)
-	logger.Info().Msg("requesting join options")
-	joinOpts, err := cli.GetJoinOptions(ctx, &api.ClusterJoinRequest{
-		HostID:              api.Identifier(appCfg.HostID),
-		Hostname:            appCfg.Hostname,
-		Ipv4Address:         appCfg.IPv4Address,
-		Token:               joinToken.Token,
-		EmbeddedEtcdEnabled: true, // We want to join as server
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get join options: %w", err)
-	}
-
-	logger.Info().
-		Str("leader", joinOpts.Leader.Name).
-		Msg("received join options")
-
-	// Decode credentials
-	caCert, err := base64.StdEncoding.DecodeString(joinOpts.Credentials.CaCert)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode CA cert: %w", err)
-	}
-	clientCert, err := base64.StdEncoding.DecodeString(joinOpts.Credentials.ClientCert)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode client cert: %w", err)
-	}
-	clientKey, err := base64.StdEncoding.DecodeString(joinOpts.Credentials.ClientKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode client key: %w", err)
-	}
-	serverCert, err := base64.StdEncoding.DecodeString(joinOpts.Credentials.ServerCert)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode server cert: %w", err)
-	}
-	serverKey, err := base64.StdEncoding.DecodeString(joinOpts.Credentials.ServerKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode server key: %w", err)
-	}
-
-	// Create embedded etcd and join
-	embedded := NewEmbeddedEtcd(cfg, logger)
-	if err := embedded.Join(ctx, JoinOptions{
-		Leader: &ClusterMember{
-			Name:       joinOpts.Leader.Name,
-			PeerURLs:   joinOpts.Leader.PeerUrls,
-			ClientURLs: joinOpts.Leader.ClientUrls,
-		},
-		Credentials: &HostCredentials{
-			Username:   joinOpts.Credentials.Username,
-			Password:   joinOpts.Credentials.Password,
-			CaCert:     caCert,
-			ClientCert: clientCert,
-			ClientKey:  clientKey,
-			ServerCert: serverCert,
-			ServerKey:  serverKey,
-		},
-	}); err != nil {
-		return nil, fmt.Errorf("failed to join cluster: %w", err)
-	}
-
-	return embedded, nil
-}
-
-// shutdownEtcd best-effort shuts down either embedded or remote etcd,
-// depending on which concrete type we actually have.
-func shutdownEtcd(e Etcd) error {
-	switch v := e.(type) {
-	case *EmbeddedEtcd:
-		return v.Shutdown()
-	case *RemoteEtcd:
-		return v.Shutdown()
-	default:
-		return nil
-	}
+	return nil, fmt.Errorf("failed to rejoin via all endpoints: %w", lastErr)
 }
