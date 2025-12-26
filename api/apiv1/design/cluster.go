@@ -148,10 +148,6 @@ var ClusterJoinOptions = g.Type("ClusterJoinOptions", func() {
 	g.Attribute("credentials", ClusterCredentials, func() {
 		g.Description("Credentials for the new host joining the cluster.")
 	})
-	g.Attribute("http_endpoints", g.ArrayOf(g.String), func() {
-		g.Description("HTTP API endpoints of cluster members for fallback communication")
-		g.Example([]string{"http://192.168.1.10:3000", "http://192.168.1.11:3001", "http://192.168.1.12:3002"})
-	})
 
 	g.Required("leader", "credentials")
 })

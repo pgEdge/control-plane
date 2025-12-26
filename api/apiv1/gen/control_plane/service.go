@@ -237,8 +237,6 @@ type ClusterJoinOptions struct {
 	Leader *EtcdClusterMember
 	// Credentials for the new host joining the cluster.
 	Credentials *ClusterCredentials
-	// HTTP API endpoints of cluster members for fallback communication
-	HTTPEndpoints []string
 }
 
 // ClusterJoinRequest is the payload type of the control-plane service

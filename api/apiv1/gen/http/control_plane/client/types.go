@@ -125,8 +125,6 @@ type GetJoinOptionsResponseBody struct {
 	Leader *EtcdClusterMemberResponseBody `form:"leader,omitempty" json:"leader,omitempty" xml:"leader,omitempty"`
 	// Credentials for the new host joining the cluster.
 	Credentials *ClusterCredentialsResponseBody `form:"credentials,omitempty" json:"credentials,omitempty" xml:"credentials,omitempty"`
-	// HTTP API endpoints of cluster members for fallback communication
-	HTTPEndpoints []string `form:"http_endpoints,omitempty" json:"http_endpoints,omitempty" xml:"http_endpoints,omitempty"`
 }
 
 // GetClusterResponseBody is the type of the "control-plane" service
@@ -2627,12 +2625,6 @@ func NewGetJoinOptionsClusterJoinOptionsOK(body *GetJoinOptionsResponseBody) *co
 	v := &controlplane.ClusterJoinOptions{}
 	v.Leader = unmarshalEtcdClusterMemberResponseBodyToControlplaneEtcdClusterMember(body.Leader)
 	v.Credentials = unmarshalClusterCredentialsResponseBodyToControlplaneClusterCredentials(body.Credentials)
-	if body.HTTPEndpoints != nil {
-		v.HTTPEndpoints = make([]string, len(body.HTTPEndpoints))
-		for i, val := range body.HTTPEndpoints {
-			v.HTTPEndpoints[i] = val
-		}
-	}
 
 	return v
 }
