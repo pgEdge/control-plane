@@ -205,6 +205,7 @@ type Config struct {
 	EtcdUsername           string       `koanf:"etcd_username" json:"etcd_username,omitempty"`
 	EtcdPassword           string       `koanf:"etcd_password" json:"etcd_password,omitempty"`
 	EtcdKeyRoot            string       `koanf:"etcd_key_root" json:"etcd_key_root,omitempty"`
+	EtcdServerInitialized  bool         `koanf:"etcd_server_initialized" json:"etcd_server_initialized,omitempty"`
 	EtcdServer             EtcdServer   `koanf:"etcd_server" json:"etcd_server,omitzero"`
 	EtcdClient             EtcdClient   `koanf:"etcd_client" json:"etcd_client,omitzero"`
 	TraefikEnabled         bool         `koanf:"traefik_enabled" json:"traefik_enabled,omitempty"`
