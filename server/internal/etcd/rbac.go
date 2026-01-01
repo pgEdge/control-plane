@@ -353,6 +353,8 @@ func writeHostCredentials(creds *HostCredentials, cfg *config.Manager) error {
 	generatedCfg := cfg.GeneratedConfig()
 	generatedCfg.EtcdUsername = creds.Username
 	generatedCfg.EtcdPassword = creds.Password
+	generatedCfg.EtcdMode = appCfg.EtcdMode
+
 	if err := cfg.UpdateGeneratedConfig(generatedCfg); err != nil {
 		return fmt.Errorf("failed to update generated config: %w", err)
 	}

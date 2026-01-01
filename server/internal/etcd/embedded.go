@@ -53,6 +53,10 @@ func (e *EmbeddedEtcd) Start(ctx context.Context) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
+	if e.etcd != nil {
+		return nil // already started
+	}
+
 	initialized, err := e.IsInitialized()
 	if err != nil {
 		return err
@@ -292,6 +296,7 @@ func (e *EmbeddedEtcd) Shutdown() error {
 	}
 	if e.etcd != nil {
 		e.etcd.Close()
+		e.etcd = nil
 	}
 	return errors.Join(errs...)
 }
