@@ -1,11 +1,10 @@
-include tools.mk
+include common.mk
 
 # Overridable vars
 DEBUG ?= 0
 LOG_LEVEL ?= info
 DEV_IMAGE_REPO ?= ghcr.io/pgedge
 CONTROL_PLANE_IMAGE_REPO ?= host.docker.internal:5000/control-plane
-CONTROL_PLANE_VERSION ?= $(shell git describe --tags --abbrev=0 --match 'v*')
 E2E_FIXTURE ?=
 E2E_PARALLEL ?=
 E2E_RUN ?=

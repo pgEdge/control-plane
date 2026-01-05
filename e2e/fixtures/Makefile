@@ -1,3 +1,5 @@
+include ../../common.mk
+
 # Overridable vars
 CONTROL_PLANE_VERSION ?= $(shell git describe --tags --abbrev=0 --match 'v*')
 LIMA_VARS_FILE ?= vars/lima_rocky.yaml

@@ -14,7 +14,7 @@ commands:
           command: |
             uname -m > /tmp/mod-checksums.txt
             md5sum ./go.sum >> /tmp/mod-checksums.txt
-            md5sum tools.mk >> /tmp/mod-checksums.txt
+            md5sum common.mk >> /tmp/mod-checksums.txt
       - restore_cache:
           keys:
             - v4-go-mod-{{ checksum "/tmp/mod-checksums.txt" }}
