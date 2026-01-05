@@ -126,7 +126,7 @@ func (b *Backend) RemoveWorkflowInstance(ctx context.Context, instance *workflow
 		return fmt.Errorf("failed to get workflow instance: %w", err)
 	}
 
-	if inst.State != core.WorkflowInstanceStateFinished && inst.State != core.WorkflowInstanceStateContinuedAsNew {
+	if inst.State == core.WorkflowInstanceStateActive {
 		return backend.ErrInstanceNotFinished
 	}
 
