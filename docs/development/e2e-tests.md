@@ -208,7 +208,7 @@ limactl sudoers | sudo tee /etc/sudoers.d/lima
 #### Lima test fixture targets
 
 ```sh
-# Deploy the virtual machines. By default, this will create Rocky 9 VMs with
+# Deploy the virtual machines. By default, this will create six Rocky 9 VMs with
 # Lima. This needs to download a ~500Mb VM image the first time it runs, so it
 # may take a while to start the first machine.
 make -C e2e/fixtures deploy-lima-machines
@@ -277,19 +277,19 @@ Ansible vars file for each test fixture. The `lima_rocky_global` test fixture
 simulates virtual machines in `us-west-1`, `af-south-1`, and `ap-southeast-4`:
 
 ```sh
-make -C e2e/fixtures setup-lima-hosts LIMA_VARS_FILE=vars/lima_rocky_global.yaml
+make -C e2e/fixtures setup-lima-hosts VARIANT=global
 ```
 
-#### Large cluster
+#### Small cluster
 
-You can deploy a six-host variant of the Lima fixture by using the
-`lima_rocky_large.yaml` vars file:
+You can deploy a three-host variant of the Lima fixture by specifying the
+`small` variant:
 
 ```sh
-make -C e2e/fixtures deploy-lima-machines LIMA_VARS_FILE=vars/lima_rocky_large.yaml
-make -C e2e/fixtures setup-lima-hosts LIMA_VARS_FILE=vars/lima_rocky_large.yaml
+make -C e2e/fixtures deploy-lima-machines VARIANT=small
+make -C e2e/fixtures setup-lima-hosts VARIANT=small
 make goreleaser-build
-make -C e2e/fixtures deploy-lima-control-plane LIMA_VARS_FILE=vars/lima_rocky_large.yaml
+make -C e2e/fixtures deploy-lima-control-plane VARIANT=small
 
 # After it's deployed, it's used the same as the normal lima fixture
 make test-e2e E2E_PARALLEL=4 E2E_FIXTURE=lima
@@ -297,14 +297,14 @@ make test-e2e E2E_PARALLEL=4 E2E_FIXTURE=lima
 
 #### Huge cluster
 
-You can deploy a twelve-host variant of the Lima fixture by using the
-`lima_rocky_huge.yaml` vars file:
+You can deploy a twelve-host variant of the Lima fixture by specifying the
+`huge` variant:
 
 ```sh
-make -C e2e/fixtures deploy-lima-machines LIMA_VARS_FILE=vars/lima_rocky_huge.yaml
-make -C e2e/fixtures setup-lima-hosts LIMA_VARS_FILE=vars/lima_rocky_huge.yaml
+make -C e2e/fixtures deploy-lima-machines VARIANT=huge
+make -C e2e/fixtures setup-lima-hosts VARIANT=huge
 make goreleaser-build
-make -C e2e/fixtures deploy-lima-control-plane LIMA_VARS_FILE=vars/lima_rocky_huge.yaml
+make -C e2e/fixtures deploy-lima-control-plane VARIANT=huge
 
 # After it's deployed, it's used the same as the normal lima fixture
 make test-e2e E2E_PARALLEL=4 E2E_FIXTURE=lima
@@ -391,7 +391,7 @@ different architecture.
 #### EC2 test fixture targets
 
 ```sh
-# Deploy the virtual machines. By default, this will create Rocky 9 VMs with
+# Deploy the virtual machines. By default, this will create six Rocky 9 VMs with
 # x86_64 architecture.
 make -C e2e/fixtures deploy-ec2-machines
 
@@ -443,14 +443,14 @@ make -C e2e/fixtures deploy-ec2-control-plane
 
 #### Large cluster
 
-You can deploy a six-host variant of the EC2 fixture by using the
-`ec2_rocky_large.yaml` vars file:
+You can deploy a three-host variant of the EC2 fixture by specifying the `small`
+variant:
 
 ```sh
-make -C e2e/fixtures deploy-ec2-machines EC2_VARS_FILE=vars/ec2_rocky_large.yaml
-make -C e2e/fixtures setup-ec2-hosts EC2_VARS_FILE=vars/ec2_rocky_large.yaml
+make -C e2e/fixtures deploy-ec2-machines VARIANT=small
+make -C e2e/fixtures setup-ec2-hosts VARIANT=small
 make goreleaser-build
-make -C e2e/fixtures deploy-ec2-control-plane EC2_VARS_FILE=vars/ec2_rocky_large.yaml
+make -C e2e/fixtures deploy-ec2-control-plane VARIANT=small
 
 # After it's deployed, it's used the same as the normal ec2 fixture
 make test-e2e E2E_PARALLEL=4 E2E_FIXTURE=ec2
@@ -458,14 +458,14 @@ make test-e2e E2E_PARALLEL=4 E2E_FIXTURE=ec2
 
 #### Huge cluster
 
-You can deploy a twelve-host variant of the EC2 fixture by using the
-`ec2_rocky_huge.yaml` vars file:
+You can deploy a twelve-host variant of the EC2 fixture by specifying the
+`huge` variant:
 
 ```sh
-make -C e2e/fixtures deploy-ec2-machines EC2_VARS_FILE=vars/ec2_rocky_huge.yaml
-make -C e2e/fixtures setup-ec2-hosts EC2_VARS_FILE=vars/ec2_rocky_huge.yaml
+make -C e2e/fixtures deploy-ec2-machines VARIANT=huge
+make -C e2e/fixtures setup-ec2-hosts VARIANT=huge
 make goreleaser-build
-make -C e2e/fixtures deploy-ec2-control-plane EC2_VARS_FILE=vars/ec2_rocky_huge.yaml
+make -C e2e/fixtures deploy-ec2-control-plane VARIANT=huge
 
 # After it's deployed, it's used the same as the normal ec2 fixture
 make test-e2e E2E_PARALLEL=4 E2E_FIXTURE=ec2

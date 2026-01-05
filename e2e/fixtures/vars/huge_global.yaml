@@ -1,30 +1,38 @@
 ---
-minio_enabled: false
-provider: ec2
-architecture: x86_64
-instance_os: rocky-9
 machines:
   - name: host-1
     swarm_manager: true
+    region: us-west-1
   - name: host-2
     swarm_manager: true
+    region: us-west-1
   - name: host-3
-    swarm_manager: true
+    swarm_manager: false
+    region: us-west-1
   - name: host-4
-    swarm_manager: true
+    swarm_manager: false
+    region: us-west-1
   - name: host-5
     swarm_manager: true
+    region: af-south-1
   - name: host-6
-    swarm_manager: false
+    swarm_manager: true
+    region: af-south-1
   - name: host-7
     swarm_manager: false
+    region: af-south-1
   - name: host-8
     swarm_manager: false
+    region: af-south-1
   - name: host-9
-    swarm_manager: false
+    swarm_manager: true
+    region: ap-southeast-4
   - name: host-10
     swarm_manager: false
+    region: ap-southeast-4
   - name: host-11
     swarm_manager: false
+    region: ap-southeast-4
   - name: host-12
     swarm_manager: false
+    region: ap-southeast-4

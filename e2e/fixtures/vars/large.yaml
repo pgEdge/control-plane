@@ -1,18 +1,14 @@
 ---
-minio_enabled: false
-provider: ec2
-architecture: x86_64
-instance_os: rocky-9
 machines:
   - name: host-1
     swarm_manager: true
   - name: host-2
-    swarm_manager: true
+    swarm_manager: false
   - name: host-3
     swarm_manager: true
   - name: host-4
     swarm_manager: false
   - name: host-5
-    swarm_manager: false
+    swarm_manager: true
   - name: host-6
     swarm_manager: false
