@@ -453,13 +453,13 @@ func attemptAutomaticRejoin(
 		// Create HTTP client and API wrapper
 		httpClient := &http.Client{Timeout: 30 * time.Second}
 		apiClient := CreateAPIClient(serverURL, httpClient)
-		defer httpClient.CloseIdleConnections()
 
 		// Get join token from the cluster member
 		joinToken, err := apiClient.GetJoinToken(ctx)
 		if err != nil {
 			lastErr = fmt.Errorf("failed to get join token: %w", err)
 			logger.Warn().Err(err).Str("endpoint", httpEndpoint).Msg("failed to get join token from endpoint")
+			httpClient.CloseIdleConnections()
 			continue
 		}
 
@@ -474,6 +474,7 @@ func attemptAutomaticRejoin(
 		if err != nil {
 			lastErr = fmt.Errorf("failed to get join options: %w", err)
 			logger.Warn().Err(err).Str("endpoint", httpEndpoint).Msg("failed to get join options from endpoint")
+			httpClient.CloseIdleConnections()
 			continue
 		}
 
@@ -481,19 +482,16 @@ func attemptAutomaticRejoin(
 		etcdJoinOpts, err := DecodeJoinCredentials(joinOpts)
 		if err != nil {
 			lastErr = fmt.Errorf("failed to decode credentials: %w", err)
+			httpClient.CloseIdleConnections()
 			continue
 		}
 
-		logger.Info().
-			Str("leader", joinOpts.Leader.Name).
-			Msg("received credentials via HTTP - joining cluster as embedded etcd")
-
-		// Create embedded etcd and join the cluster
 		embedded := NewEmbeddedEtcd(cfg, logger)
 		if err := embedded.Join(ctx, *etcdJoinOpts); err != nil {
-			return nil, fmt.Errorf("failed to join cluster as embedded etcd: %w", err)
+			httpClient.CloseIdleConnections()
+			return nil, fmt.Errorf("failed to join cluster: %w", err)
 		}
-
+		httpClient.CloseIdleConnections()
 		logger.Info().Msg("successfully joined cluster as embedded etcd via automatic rejoin")
 		return embedded, nil
 	}
