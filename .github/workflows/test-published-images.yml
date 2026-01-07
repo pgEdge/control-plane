@@ -1,0 +1,177 @@
+# Demo workflow for testing published Docker images
+# This workflow can be manually triggered to test images from published repositories
+# Future enhancements can include:
+# - Parallel execution of test combinations using matrix strategy
+# - Support for additional test types (e2e, integration, etc.)
+# - Artifact collection and reporting
+# - Notification on test completion
+# - Support for additional architectures
+# - Custom image repository URL patterns
+
+name: Test Published Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run the workflow from'
+        required: true
+        default: 'main'
+        type: string
+      package_repository:
+        description: 'Package Repository'
+        required: true
+        default: 'pgedge-postgres-internal'
+        type: string
+      tags:
+        description: 'List of tags to test (comma-separated)'
+        required: true
+        default: 'latest'
+        type: string
+      architectures:
+        description: 'List of architectures to test (comma-separated: arm,x86)'
+        required: true
+        default: 'arm,x86'
+        type: string
+
+jobs:
+  test-images:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Initialize Docker Swarm
+        run: |
+          docker swarm init || true
+
+      - name: Start local registry
+        run: |
+          docker service create --name registry --publish published=5000,target=5000 registry:2 || \
+          docker service update --force registry || true
+
+      - name: Wait for registry to be ready
+        run: |
+          timeout=30
+          elapsed=0
+          while ! curl -f http://localhost:5000/v2/ > /dev/null 2>&1; do
+            if [ $elapsed -ge $timeout ]; then
+              echo "Registry failed to start within ${timeout}s"
+              exit 1
+            fi
+            sleep 1
+            elapsed=$((elapsed + 1))
+          done
+          echo "Registry is ready"
+
+      - name: Install dependencies
+        run: |
+          go mod download
+
+      - name: Test all image combinations
+        env:
+          PACKAGE_REPO: ${{ github.event.inputs.package_repository }}
+          TAGS: ${{ github.event.inputs.tags }}
+          ARCHITECTURES: ${{ github.event.inputs.architectures }}
+        run: |
+          # Function to map architecture to platform
+          map_arch() {
+            case "$1" in
+              arm|arm64)
+                echo "linux/arm64"
+                ;;
+              x86|amd64)
+                echo "linux/amd64"
+                ;;
+              *)
+                echo "Unknown architecture: $1" >&2
+                exit 1
+                ;;
+            esac
+          }
+          
+          # Parse tags and architectures
+          IFS=',' read -ra TAG_ARRAY <<< "$TAGS"
+          IFS=',' read -ra ARCH_ARRAY <<< "$ARCHITECTURES"
+          
+          # Track overall success
+          OVERALL_SUCCESS=true
+          
+          # Test each combination
+          for tag in "${TAG_ARRAY[@]}"; do
+            tag=$(echo "$tag" | xargs)  # trim whitespace
+            for arch in "${ARCH_ARRAY[@]}"; do
+              arch=$(echo "$arch" | xargs)  # trim whitespace
+              
+              echo "=========================================="
+              echo "Testing: tag=$tag, arch=$arch"
+              echo "=========================================="
+              
+              # Map architecture to platform
+              PLATFORM=$(map_arch "$arch")
+              
+              # Construct image reference
+              IMAGE_REF="ghcr.io/pgedge/${PACKAGE_REPO}:${tag}"
+              LOCAL_IMAGE="127.0.0.1:5000/control-plane:${tag}"
+              
+              echo "Image: ${IMAGE_REF}"
+              echo "Platform: ${PLATFORM}"
+              
+              # Pull and verify image
+              if ! docker pull --platform "${PLATFORM}" "${IMAGE_REF}"; then
+                echo "ERROR: Failed to pull image ${IMAGE_REF} for platform ${PLATFORM}"
+                OVERALL_SUCCESS=false
+                continue
+              fi
+              
+              docker image inspect "${IMAGE_REF}" --format 'Image: {{.RepoTags}} Platform: {{.Architecture}}'
+              
+              # Tag and push to local registry
+              docker tag "${IMAGE_REF}" "${LOCAL_IMAGE}"
+              if ! docker push "${LOCAL_IMAGE}"; then
+                echo "ERROR: Failed to push to local registry"
+                OVERALL_SUCCESS=false
+                continue
+              fi
+              
+              # Run cluster tests
+              echo "Running cluster tests for ${LOCAL_IMAGE}..."
+              if ! CONTROL_PLANE_VERSION="${tag}" \
+                   make docker-swarm-init && \
+                   make test-cluster-ci \
+                     CLUSTER_TEST_SKIP_IMAGE_BUILD=1 \
+                     CLUSTER_TEST_IMAGE_TAG="${LOCAL_IMAGE}"; then
+                echo "ERROR: Cluster tests failed for tag=${tag}, arch=${arch}"
+                OVERALL_SUCCESS=false
+              else
+                echo "SUCCESS: Tests passed for tag=${tag}, arch=${arch}"
+              fi
+              
+              echo ""
+            done
+          done
+          
+          if [ "$OVERALL_SUCCESS" = false ]; then
+            echo "Some tests failed. See output above for details."
+            exit 1
+          fi
+          
+          echo "All tests passed successfully!"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker service rm registry || true
+          docker swarm leave --force || true
+
