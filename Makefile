@@ -6,11 +6,14 @@ LOG_LEVEL ?= info
 DEV_IMAGE_REPO ?= ghcr.io/pgedge
 CONTROL_PLANE_IMAGE_REPO ?= host.docker.internal:5000/control-plane
 E2E_FIXTURE ?=
-E2E_PARALLEL ?=
+E2E_PARALLEL ?= 8
 E2E_RUN ?=
 E2E_SKIP_CLEANUP ?= 0
 E2E_DEBUG ?= 0
 E2E_DEBUG_DIR ?=
+FIXTURE_VARIANT ?= large
+FIXTURE_CONTROL_PLANE_IMAGE ?=
+FIXTURE_EXTRA_VARS ?=
 CLUSTER_TEST_PARALLEL ?=
 CLUSTER_TEST_RUN ?=
 CLUSTER_TEST_SKIP_IMAGE_BUILD ?= 0
@@ -27,7 +30,7 @@ docker_compose_dev=WORKSPACE_DIR=$(shell pwd) \
 		DEV_IMAGE_REPO=$(DEV_IMAGE_REPO) \
 		docker compose -f ./docker/control-plane-dev/docker-compose.yaml
 docker_compose_ci=docker compose -f ./docker/control-plane-ci/docker-compose.yaml
-e2e_args=-tags=e2e_test -count=1 -timeout=20m ./e2e/... \
+e2e_args=-tags=e2e_test -count=1 -timeout=45m ./e2e/... \
 	$(if $(E2E_PARALLEL),-parallel $(E2E_PARALLEL)) \
 	$(if $(E2E_RUN),-run $(E2E_RUN)) \
 	-args \
@@ -147,6 +150,83 @@ licenses-ci: licenses
 
 .PHONY: ci
 ci: test-ci lint-ci licenses-ci
+
+################
+# e2e fixtures #
+################
+
+_fixture_extra_vars=$(if $(FIXTURE_CONTROL_PLANE_IMAGE),external_control_plane_image=$(FIXTURE_CONTROL_PLANE_IMAGE) ,)$(FIXTURE_EXTRA_VARS)
+
+# Set to 'goreleaser-build' if no external image is specified
+_fixture_goreleaser_build=$(if $(findstring external_control_plane_image,$(_fixture_extra_vars)),,goreleaser-build)
+
+.PHONY: _deploy-%-fixture
+_deploy-%-fixture: $(_fixture_goreleaser_build)
+	VARIANT=$(FIXTURE_VARIANT) \
+	EXTRA_VARS='$(_fixture_extra_vars)' \
+	$(MAKE) -C e2e/fixtures \
+		deploy-$*-machines \
+		setup-$*-hosts \
+		deploy-$*-control-plane
+
+.PHONY: deploy-lima-fixture
+deploy-lima-fixture: _deploy-lima-fixture
+
+.PHONY: deploy-ec2-fixture
+deploy-ec2-fixture: _deploy-ec2-fixture
+
+.PHONY: _update-%-fixture
+_update-%-fixture: $(_fixture_goreleaser_build)
+	VARIANT=$(FIXTURE_VARIANT) \
+	EXTRA_VARS='$(_fixture_extra_vars)' \
+	$(MAKE) -C e2e/fixtures \
+		deploy-$*-control-plane
+
+.PHONY: update-lima-fixture
+update-lima-fixture: _update-lima-fixture
+
+.PHONY: update-ec2-fixture
+update-ec2-fixture: _update-ec2-fixture
+
+.PHONY: _reset-%-fixture
+_reset-%-fixture: $(_fixture_goreleaser_build)
+	VARIANT=$(FIXTURE_VARIANT) \
+	EXTRA_VARS='$(_fixture_extra_vars)' \
+	$(MAKE) -C e2e/fixtures \
+		teardown-$*-control-plane \
+		deploy-$*-control-plane
+
+.PHONY: reset-lima-fixture
+reset-lima-fixture: _reset-lima-fixture
+
+.PHONY: reset-ec2-fixture
+reset-ec2-fixture: _reset-ec2-fixture
+
+.PHONY: _stop-%-fixture
+_stop-%-fixture:
+	VARIANT=$(FIXTURE_VARIANT) \
+	EXTRA_VARS='$(_fixture_extra_vars)' \
+	$(MAKE) -C e2e/fixtures \
+		stop-$*-machines
+
+.PHONY: stop-lima-fixture
+stop-lima-fixture: _stop-lima-fixture
+
+.PHONY: stop-ec2-fixture
+stop-ec2-fixture: _stop-ec2-fixture
+
+.PHONY: _teardown-%-fixture
+_teardown-%-fixture:
+	VARIANT=$(FIXTURE_VARIANT) \
+	EXTRA_VARS='$(_fixture_extra_vars)' \
+	$(MAKE) -C e2e/fixtures \
+		teardown-$*-machines
+
+.PHONY: teardown-lima-fixture
+teardown-lima-fixture: _teardown-lima-fixture
+
+.PHONY: teardown-ec2-fixture
+teardown-ec2-fixture: _teardown-ec2-fixture
 
 ###############
 # image build #

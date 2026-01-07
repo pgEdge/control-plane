@@ -208,25 +208,27 @@ limactl sudoers | sudo tee /etc/sudoers.d/lima
 #### Lima test fixture targets
 
 ```sh
-# Deploy the virtual machines. By default, this will create six Rocky 9 VMs with
-# Lima. This needs to download a ~500Mb VM image the first time it runs, so it
-# may take a while to start the first machine.
-make -C e2e/fixtures deploy-lima-machines
+# Build and deploy the Control Plane to Lima virtual machines. By default, this
+# will create six Rocky 9 VMs with Lima. This needs to download a ~500Mb VM
+# image the first time it runs, so it may take a while to start the first
+# machine.
+make deploy-lima-fixture
 
-# Install prerequisites on VMs
-make -C e2e/fixtures setup-lima-hosts
+# Rebuild and redeploy the Control Plane to existing Lima virtual machines
+make update-lima-fixture
 
-# Build the control-plane binaries
-make goreleaser-build
+# Teardown, rebuild, and redeploy the Control Plane to existing Lima virtual
+# machines
+make reset-lima-fixture
 
-# Deploy the control-plane
-make -C e2e/fixtures deploy-lima-control-plane
+# Teardown the Lima virtual machines
+make teardown-lima-fixture
 ```
 
-The `deploy-lima-control-plane` target will output a "test config" file that
-contains IPs that you can use to contact the virtual machines. This test config
-can be used as an input to the end-to-end tests. You can `cat` this file to see
-what's in it, for example:
+The `{deploy,update,reset}-lima-fixture` targets will output a "test config"
+file that contains IPs that you can use to contact the virtual machines. This
+test config can be used as an input to the end-to-end tests. You can `cat` this
+file to see what's in it, for example:
 
 ```sh
 cat e2e/fixtures/outputs/lima.test_config.yaml
@@ -246,82 +248,23 @@ For example:
 ssh -F /Users/jasonlynch/.lima/host-1/ssh.config lima-host-1
 ```
 
-#### Deploying new code changes
-
-If you've made new code changes that you'd like to deploy, you can rerun these
-steps:
-
-```sh
-# Build the control-plane binaries
-make goreleaser-build
-
-# Deploy the control-plane
-make -C e2e/fixtures deploy-lima-control-plane
-```
-
-#### Testing published releases
-
-If you'd like to test a published image, for example during pre-release testing,
-you can skip the image build and override the deployed control-plane image using
-`EXTRA_VARS`, for example:
-
-```sh
-make -C e2e/fixtures deploy-lima-control-plane EXTRA_VARS='external_control_plane_image=ghcr.io/pgedge/control-plane:v0.2.0-rc.3'
-```
-
-#### Simulating global deployments
-
-The test fixtures can add latency between specific virtual machines to simulate
-global deployments. The simulated region for each virtual machine is set in the
-Ansible vars file for each test fixture. The `lima_rocky_global` test fixture
-simulates virtual machines in `us-west-1`, `af-south-1`, and `ap-southeast-4`:
-
-```sh
-make -C e2e/fixtures setup-lima-hosts VARIANT=global
-```
-
-#### Small cluster
-
-You can deploy a three-host variant of the Lima fixture by specifying the
-`small` variant:
-
-```sh
-make -C e2e/fixtures deploy-lima-machines VARIANT=small
-make -C e2e/fixtures setup-lima-hosts VARIANT=small
-make goreleaser-build
-make -C e2e/fixtures deploy-lima-control-plane VARIANT=small
-
-# After it's deployed, it's used the same as the normal lima fixture
-make test-e2e E2E_PARALLEL=4 E2E_FIXTURE=lima
-```
-
-#### Huge cluster
-
-You can deploy a twelve-host variant of the Lima fixture by specifying the
-`huge` variant:
-
-```sh
-make -C e2e/fixtures deploy-lima-machines VARIANT=huge
-make -C e2e/fixtures setup-lima-hosts VARIANT=huge
-make goreleaser-build
-make -C e2e/fixtures deploy-lima-control-plane VARIANT=huge
-
-# After it's deployed, it's used the same as the normal lima fixture
-make test-e2e E2E_PARALLEL=4 E2E_FIXTURE=lima
-```
-
 #### Emulating x86_64 with Lima
 
 > [!WARNING]
 > This is extremely slow, like 10+ minutes to complete a deployment,
 > and should only be done in the absence of better options.
 
-You can use `EXTRA_VARS` to override the detected architecture:
+You can use `FIXTURE_EXTRA_VARS` with the
+`{deploy,update,reset,teardown}-lima-fixture` targets to override the detected
+architecture:
 
 ```sh
-make -C e2e/fixtures deploy-lima-machines EXTRA_VARS='architecture=x86_64'
-make -C e2e/fixtures setup-lima-hosts EXTRA_VARS='architecture=x86_64'
-make -C e2e/fixtures deploy-lima-control-plane EXTRA_VARS='architecture=x86_64'
+make deploy-lima-fixture FIXTURE_EXTRA_VARS='architecture=x86_64'
+
+# It's important to include the architecture with every other target as well:
+make update-lima-fixture FIXTURE_EXTRA_VARS='architecture=x86_64'
+make reset-lima-fixture FIXTURE_EXTRA_VARS='architecture=x86_64'
+make teardown-lima-fixture FIXTURE_EXTRA_VARS='architecture=x86_64'
 ```
 
 #### Stopping and starting hosts
@@ -330,38 +273,13 @@ You can stop the hosts without tearing them down using the `stop-lima-machines`
 target:
 
 ```sh
-make -C e2e/fixtures stop-lima-machines
+make stop-lima-fixture
 ```
 
-You can start them again by re-running the `deploy-lima-machines` target. It's
-also recommended to re-run the `deploy-lima-control-plane` target afterwards to
-ensure that the test config is up-to-date.
+You can start them again by re-running the `deploy-lima-fixture` target.
 
 ```sh
-make -C e2e/fixtures deploy-lima-machines
-make -C e2e/fixtures deploy-lima-control-plane
-```
-
-#### Cleanup
-
-##### Tearing down the Control Plane
-
-You can tear down the Control Plane in the test fixtures as well as any
-databases its deployed with this `make` target:
-
-```sh
-make -C e2e/fixtures teardown-lima-control-plane
-```
-
-This can be a faster alternative to remaking the virtual machines if you're
-re-testing the cluster initialization flow.
-
-##### Tearing down the virtual machines
-
-To completely remove the virtual machines, do:
-
-```sh
-make -C e2e/fixtures teardown-lima-machines
+make deploy-lima-fixture
 ```
 
 ### EC2 test fixtures
@@ -391,24 +309,25 @@ different architecture.
 #### EC2 test fixture targets
 
 ```sh
-# Deploy the virtual machines. By default, this will create six Rocky 9 VMs with
-# x86_64 architecture.
-make -C e2e/fixtures deploy-ec2-machines
+# Build and deploy the Control Plane to EC2 virtual machines. By default, this
+# will create six Rocky 9 VMs with x86_64 architecture.
+make deploy-ec2-fixture
 
-# Install prerequisites on VMs
-make -C e2e/fixtures setup-ec2-hosts
+# Rebuild and redeploy the Control Plane to existing EC2 virtual machines
+make update-ec2-fixture
 
-# Build the control-plane binaries
-make goreleaser-build
+# Teardown, rebuild, and redeploy the Control Plane to existing EC2 virtual
+# machines
+make reset-ec2-fixture
 
-# Deploy the control-plane
-make -C e2e/fixtures deploy-ec2-control-plane
+# Teardown the EC2 virtual machines
+make teardown-ec2-fixture
 ```
 
-The `deploy-ec2-control-plane` target will output a "test config" file that
-contains IPs that you can use to contact the virtual machines. This test config
-can be used with the end-to-end tests. You can `cat` this file to see what's in
-it, for example:
+The `{deploy,update,reset}-ec2-fixture` targets will output a "test config" file
+that contains IPs that you can use to contact the virtual machines. This test
+config can be used with the end-to-end tests. You can `cat` this file to see
+what's in it, for example:
 
 ```sh
 cat e2e/fixtures/outputs/ec2.test_config.yaml
@@ -428,123 +347,96 @@ For example:
 ssh -l rocky -i /Users/jasonlynch/workspace/pgEdge/control-plane/e2e/fixtures/outputs/ec2_deploy 3.133.148.76
 ```
 
-#### Deploying new code changes
-
-If you've made new code changes that you'd like to deploy, you can rerun these
-steps:
-
-```sh
-# Build the control-plane binaries
-make goreleaser-build
-
-# Deploy the control-plane
-make -C e2e/fixtures deploy-ec2-control-plane
-```
-
-#### Large cluster
-
-You can deploy a three-host variant of the EC2 fixture by specifying the `small`
-variant:
-
-```sh
-make -C e2e/fixtures deploy-ec2-machines VARIANT=small
-make -C e2e/fixtures setup-ec2-hosts VARIANT=small
-make goreleaser-build
-make -C e2e/fixtures deploy-ec2-control-plane VARIANT=small
-
-# After it's deployed, it's used the same as the normal ec2 fixture
-make test-e2e E2E_PARALLEL=4 E2E_FIXTURE=ec2
-```
-
-#### Huge cluster
-
-You can deploy a twelve-host variant of the EC2 fixture by specifying the
-`huge` variant:
-
-```sh
-make -C e2e/fixtures deploy-ec2-machines VARIANT=huge
-make -C e2e/fixtures setup-ec2-hosts VARIANT=huge
-make goreleaser-build
-make -C e2e/fixtures deploy-ec2-control-plane VARIANT=huge
-
-# After it's deployed, it's used the same as the normal ec2 fixture
-make test-e2e E2E_PARALLEL=4 E2E_FIXTURE=ec2
-```
-
-#### Testing published releases
-
-If you'd like to test a published image, for example during pre-release testing,
-you can skip the image build and override the deployed control-plane image using
-`EXTRA_VARS`, for example:
-
-```sh
-make -C e2e/fixtures deploy-ec2-control-plane EXTRA_VARS='external_control_plane_image=ghcr.io/pgedge/control-plane:v0.2.0-rc.3'
-```
-
 #### Deploying arm64 instances on EC2
 
-You can use `EXTRA_VARS` to override the detected architecture:
+You can use `FIXTURE_EXTRA_VARS` with the
+`{deploy,update,reset,teardown}-ec2-fixture` targets to override the default
+architecture:
 
 ```sh
-make -C e2e/fixtures deploy-ec2-machines EXTRA_VARS='architecture=arm64'
-make -C e2e/fixtures setup-ec2-hosts EXTRA_VARS='architecture=arm64'      
-make -C e2e/fixtures deploy-ec2-control-plane EXTRA_VARS='architecture=arm64'
+make deploy-ec2-fixture FIXTURE_EXTRA_VARS='architecture=arm64'
+
+# It's important to include the architecture with every other target as well:
+make update-ec2-fixture FIXTURE_EXTRA_VARS='architecture=arm64'
+make reset-ec2-fixture FIXTURE_EXTRA_VARS='architecture=arm64'
+make teardown-ec2-fixture FIXTURE_EXTRA_VARS='architecture=arm64'
 ```
 
 #### Stopping and starting hosts
 
-You can stop the hosts without tearing them down using the `stop-ec2-machines`
+You can stop the hosts without tearing them down using the `stop-ec2-fixture`
 target. Stopped hosts do not incur an instance charge (you're only charged for
 the EBS storage) so this is a useful cost-saving measure:
 
 ```sh
-make -C e2e/fixtures stop-ec2-machines
+make stop-ec2-fixture
 
-# It's important to include the `EXTRA_VARS` if you've deployed arm64 instances:
-make -C e2e/fixtures stop-ec2-machines EXTRA_VARS='architecture=arm64'
+# The architecture is incorporated into the instance's identifier, so it's
+# important to include `FIXTURE_EXTRA_VARS` if you've deployed arm64 instances:
+make stop-ec2-fixture FIXTURE_EXTRA_VARS='architecture=arm64'
 ```
 
-You can start them again by re-running the `deploy-ec2-machines` target. It's
-also recommended to re-run the `deploy-ec2-control-plane` target afterwards to
-ensure that the test config is up-to-date, because the public IPs can change.
+You can start them again by re-running the top-level `deploy-ec2-fixture`
+target:
 
 ```sh
-make -C e2e/fixtures deploy-ec2-machines
-make -C e2e/fixtures deploy-ec2-control-plane
+make deploy-ec2-fixture
 
-# Like above, be sure to include the `EXTRA_VARS` if you've deployed arm64
-# instances:
-make -C e2e/fixtures deploy-ec2-machines EXTRA_VARS='architecture=arm64'
-make -C e2e/fixtures deploy-ec2-control-plane EXTRA_VARS='architecture=arm64'
+# Similar to the above, be sure to include the `FIXTURE_EXTRA_VARS` if you've
+# deployed arm64 instances:
+make deploy-ec2-fixture FIXTURE_EXTRA_VARS='architecture=arm64'
 ```
 
-#### Cleanup
+### Testing published releases
 
-##### Tearing down the Control Plane
-
-You can tear down the Control Plane in the test fixtures as well as any
-databases its deployed with this `make` target:
+If you'd like to test a published image, for example during pre-release testing,
+you can skip the image build and override the deployed control-plane image by
+specifying `FIXTURE_CONTROL_PLANE_IMAGE` with the
+`{deploy,update,reset}-{lima,ec2}-fixture` targets. For example:
 
 ```sh
-make -C e2e/fixtures teardown-ec2-control-plane
-
-# It's important to include the `EXTRA_VARS` if you've deployed arm64 instances:
-make -C e2e/fixtures teardown-ec2-control-plane EXTRA_VARS='architecture=arm64'
+make update-lima-fixture FIXTURE_CONTROL_PLANE_IMAGE='ghcr.io/pgedge/control-plane:v0.6.2-rc.1'
 ```
 
-This can be a faster alternative to remaking the virtual machines if you're
-re-testing the cluster initialization flow.
+### Fixture variants
 
-##### Tearing down the virtual machines
-
-To completely remove the virtual machines, do:
+By default, we deploy the `large` fixture variant, which contains six virtual
+machines and Control Plane instances, where three are configured to act as Etcd
+servers and three are configured to act as clients only. You can specify a
+different variant using the `FIXTURE_VARIANT` variable with the
+`{deploy,update,reset,teardown}-{lima,ec2}-fixture` targets. For example:
 
 ```sh
-make -C e2e/fixtures teardown-ec2-machines
+# Deploy the 'small' fixture variant with lima
+make deploy-lima-fixture FIXTURE_VARIANT=small
 
-# It's important to include the `EXTRA_VARS` if you've deployed arm64 instances:
-make -C e2e/fixtures teardown-ec2-machines EXTRA_VARS='architecture=arm64'
+# After it's deployed, it's used the same as the normal lima fixture
+make test-e2e E2E_FIXTURE=lima
+
+# Make sure to specify the variant with the other targets as well
+make update-lima-fixture FIXTURE_VARIANT=small
+make reset-lima-fixture FIXTURE_VARIANT=small
+make teardown-lima-fixture FIXTURE_VARIANT=small
 ```
+
+> [!NOTE]
+> Make sure to run the `teardown-{lima,ec2}-fixture` before switching variants.
+
+#### Available variants
+
+- `small`: Contains three hosts, all with `ETCD_MODE=server`
+- `large` (default): Contains six hosts, three with `ETCD_MODE=server` and three
+  with `ETCD_MODE=client`
+- `huge`: Contains twelve hosts, five with `ETCD_MODE=server` and seven with
+  `ETCD_MODE=client`
+
+There are also "global" variants that mirror the above variants but use `tc` to
+introduce artificial latency between the hosts that simulates the latencies
+between the `us-west-1`, `af-south-1`, and `ap-southeast-4` AWS regions.
+
+- `small_global`
+- `large_global`
+- `huge_global`
 
 ### Custom test fixtures
 
