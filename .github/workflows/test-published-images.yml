@@ -54,12 +54,36 @@ jobs:
 
       - name: Initialize Docker Swarm
         run: |
-          docker swarm init || true
+          # Check if Docker Swarm is already active
+          SWARM_STATE=$(docker info --format '{{.Swarm.LocalNodeState}}' 2>/dev/null || echo "inactive")
+          if [ "$SWARM_STATE" = "active" ]; then
+            echo "Docker Swarm is already active; skipping initialization."
+          else
+            echo "Docker Swarm is not active; attempting to initialize..."
+            if ! docker swarm init; then
+              echo "ERROR: Docker Swarm initialization failed." >&2
+              exit 1
+            fi
+            echo "Docker Swarm initialized successfully."
+          fi
 
       - name: Start local registry
         run: |
-          docker service create --name registry --publish published=5000,target=5000 registry:2 || \
-          docker service update --force registry || true
+          # Check if registry service already exists
+          if docker service ls --format '{{.Name}}' 2>/dev/null | grep -q '^registry$'; then
+            echo "Registry service already exists, updating..."
+            if ! docker service update --force registry; then
+              echo "ERROR: Failed to update registry service." >&2
+              exit 1
+            fi
+          else
+            echo "Creating registry service..."
+            if ! docker service create --name registry --publish published=5000,target=5000 registry:2; then
+              echo "ERROR: Failed to create registry service." >&2
+              exit 1
+            fi
+          fi
+          echo "Registry service is ready."
 
       - name: Wait for registry to be ready
         run: |
