@@ -51,18 +51,9 @@ func CreateHostCredentials(
 
 	if opts.EmbeddedEtcdEnabled {
 		// Create a cert for the peer server
-		serverPrincipal, err := certSvc.EtcdServer(ctx,
-			opts.HostID,
-			opts.Hostname,
-			[]string{"localhost", opts.Hostname},
-			[]string{"127.0.0.1", opts.IPv4Address},
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create cert for etcd server: %w", err)
+		if err := addEtcdServerCredentials(ctx, opts.HostID, opts.Hostname, opts.IPv4Address, certSvc, creds); err != nil {
+			return nil, err
 		}
-
-		creds.ServerCert = serverPrincipal.CertPEM
-		creds.ServerKey = serverPrincipal.KeyPEM
 	}
 
 	return creds, nil
@@ -354,10 +345,37 @@ func writeHostCredentials(creds *HostCredentials, cfg *config.Manager) error {
 	generatedCfg.EtcdUsername = creds.Username
 	generatedCfg.EtcdPassword = creds.Password
 	generatedCfg.EtcdMode = appCfg.EtcdMode
+	generatedCfg.EtcdClient = appCfg.EtcdClient
+	generatedCfg.EtcdServer = appCfg.EtcdServer
 
 	if err := cfg.UpdateGeneratedConfig(generatedCfg); err != nil {
 		return fmt.Errorf("failed to update generated config: %w", err)
 	}
+
+	return nil
+}
+
+func addEtcdServerCredentials(
+	ctx context.Context,
+	hostID string,
+	hostname string,
+	ipv4Address string,
+	certSvc *certificates.Service,
+	creds *HostCredentials,
+) error {
+	// Create a cert for the peer server
+	serverPrincipal, err := certSvc.EtcdServer(ctx,
+		hostID,
+		hostname,
+		[]string{"localhost", hostname},
+		[]string{"127.0.0.1", ipv4Address},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create cert for etcd server: %w", err)
+	}
+
+	creds.ServerCert = serverPrincipal.CertPEM
+	creds.ServerKey = serverPrincipal.KeyPEM
 
 	return nil
 }

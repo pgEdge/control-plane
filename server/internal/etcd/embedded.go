@@ -448,6 +448,79 @@ func (e *EmbeddedEtcd) HealthCheck() common.ComponentStatus {
 	}
 }
 
+func (e *EmbeddedEtcd) ChangeMode(ctx context.Context, mode config.EtcdMode) (Etcd, error) {
+	if mode != config.EtcdModeClient {
+		return nil, fmt.Errorf("invalid mode transition from %s to %s", config.EtcdModeServer, mode)
+	}
+
+	if err := e.Start(ctx); err != nil {
+		return nil, err
+	}
+
+	cfg := e.cfg.Config()
+
+	embeddedClient, err := e.GetClient()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the full member list before removing this host
+	resp, err := embeddedClient.MemberList(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list etcd members for server->client transition: %w", err)
+	}
+
+	var endpoints []string
+	for _, m := range resp.Members {
+		// Skip this host's member; we are about to remove it.
+		if m.Name == cfg.HostID {
+			continue
+		}
+		endpoints = append(endpoints, m.ClientURLs...)
+	}
+
+	if len(endpoints) == 0 {
+		return nil, fmt.Errorf("cannot demote etcd server on host %s: no remaining cluster members with client URLs", cfg.HostID)
+	}
+
+	generated := e.cfg.GeneratedConfig()
+	generated.EtcdClient.Endpoints = endpoints
+	if err := e.cfg.UpdateGeneratedConfig(generated); err != nil {
+		return nil, fmt.Errorf("failed to update generated config with client endpoints: %w", err)
+	}
+
+	if err := e.Shutdown(); err != nil {
+		return nil, err
+	}
+
+	remote := NewRemoteEtcd(e.cfg, e.logger)
+	if err := remote.Start(ctx); err != nil {
+		return nil, fmt.Errorf("failed to start remote client: %w", err)
+	}
+
+	remoteClient, err := remote.GetClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get remote client: %w", err)
+	}
+
+	if err := RemoveMember(ctx, remoteClient, cfg.HostID); err != nil {
+		return nil, fmt.Errorf("failed to remove embedded etcd from cluster: %w", err)
+	}
+
+	if err := os.RemoveAll(e.etcdDir()); err != nil {
+		return nil, fmt.Errorf("failed to remove embedded etcd data dir: %w", err)
+	}
+
+	generated.EtcdMode = config.EtcdModeClient
+	generated.EtcdServer = config.EtcdServer{}
+	generated.EtcdClient = cfg.EtcdClient
+	if err := e.cfg.UpdateGeneratedConfig(generated); err != nil {
+		return nil, fmt.Errorf("failed to clear out etcd server settings in generated config: %w", err)
+	}
+
+	return remote, err
+}
+
 const maxLearnerStallTime = 5 * time.Minute
 
 type learnerProgress struct {

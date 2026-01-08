@@ -65,32 +65,45 @@ func provideEtcd(i *do.Injector) {
 			Bool("modes_equal", oldMode == newMode).
 			Msg("checking etcd mode for reconfiguration")
 
-		// First startup (no generated config yet) or no change: use the configured mode.
-		if oldMode == "" || oldMode == newMode {
-			logger.Info().
-				Str("mode", string(newMode)).
-				Bool("first_startup", oldMode == "").
-				Msg("creating new etcd instance for mode (no reconfiguration needed)")
-			return newEtcdForMode(newMode, cfg, logger)
-		}
+		// // First startup (no generated config yet) or no change: use the configured mode.
+		// if oldMode == "" || oldMode == newMode {
+		// 	logger.Info().
+		// 		Str("mode", string(newMode)).
+		// 		Bool("first_startup", oldMode == "").
+		// 		Msg("creating new etcd instance for mode (no reconfiguration needed)")
+		// 	return newEtcdForMode(newMode, cfg, logger)
+		// }
 
 		// Mode has changed - perform reconfiguration.
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
 
-		logger.Info().
-			Str("host_id", appCfg.HostID).
-			Str("old_mode", string(oldMode)).
-			Str("new_mode", string(newMode)).
-			Msg("detected etcd_mode change, performing reconfiguration")
-
 		switch {
+		case oldMode == "" || oldMode == newMode:
+			etcd, err := newEtcdForMode(newMode, cfg, logger)
+			if err != nil {
+				return nil, err
+			}
+			initialized, err := etcd.IsInitialized()
+			if err != nil {
+				return nil, err
+			}
+			if initialized {
+				generated.EtcdMode = appCfg.EtcdMode
+				generated.EtcdServer = appCfg.EtcdServer
+				generated.EtcdClient = appCfg.EtcdClient
+				if err := cfg.UpdateGeneratedConfig(generated); err != nil {
+					return nil, fmt.Errorf("failed to persist etcd configuration: %w", err)
+				}
+			}
+
+			return etcd, nil
 		case oldMode == config.EtcdModeServer && newMode == config.EtcdModeClient:
-			return reconfigureServerToClient(ctx, cfg, logger)
-
+			embedded := NewEmbeddedEtcd(cfg, logger)
+			return embedded.ChangeMode(ctx, newMode)
 		case oldMode == config.EtcdModeClient && newMode == config.EtcdModeServer:
-			return reconfigureClientToServer(ctx, cfg, logger)
-
+			remote := NewRemoteEtcd(cfg, logger)
+			return remote.ChangeMode(ctx, newMode)
 		default:
 			return nil, fmt.Errorf("unsupported etcd mode transition: %s -> %s", oldMode, newMode)
 		}

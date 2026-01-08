@@ -6,6 +6,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/common"
+	"github.com/pgEdge/control-plane/server/internal/config"
 )
 
 type ClusterMember struct {
@@ -50,4 +51,5 @@ type Etcd interface {
 	RemoveHost(ctx context.Context, hostID string) error
 	JoinToken() (string, error)
 	VerifyJoinToken(in string) error
+	ChangeMode(ctx context.Context, mode config.EtcdMode) (Etcd, error)
 }
