@@ -41,6 +41,21 @@ commands:
           version: '1.24.3'
       - checkout
       - use_mod_cache
+      - run:
+          # Docker < 29 has a Docker Swarm bug that affects our E2Es. We can
+          # remove this once Circle releases an updated Ubuntu image with the
+          # latest Docker version.
+          name: Upgrade Docker
+          command: |
+            sudo systemctl stop docker
+            sudo apt update
+            sudo apt install -y \
+              docker-ce \
+              docker-ce-cli \
+              containerd.io \
+              docker-buildx-plugin \
+              docker-compose-plugin
+            sudo systemctl start docker
 jobs:
   test:
     executor: common
