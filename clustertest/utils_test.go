@@ -22,7 +22,7 @@ import (
 )
 
 func buildImage() {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 	defer cancel()
 
 	log.Println("building control-plane image")
