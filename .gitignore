@@ -11,6 +11,7 @@ hack/apis
 bruno/test-scenarios/**/repos
 bruno/test-scenarios/environments
 !bruno/test-scenarios/environments/compose.bru
+**/.claude/settings.local.json
 
 # build artifacts
 *-results.xml
