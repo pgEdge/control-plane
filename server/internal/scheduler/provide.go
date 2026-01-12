@@ -3,39 +3,29 @@ package scheduler
 import (
 	"time"
 
-	"github.com/pgEdge/control-plane/server/internal/config"
-	"github.com/pgEdge/control-plane/server/internal/database"
-	"github.com/pgEdge/control-plane/server/internal/workflows"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	clientv3 "go.etcd.io/etcd/client/v3"
+
+	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/election"
+	"github.com/pgEdge/control-plane/server/internal/workflows"
 )
 
+const electionName election.Name = "scheduler"
+const electionTTL time.Duration = 30 * time.Second
+
 func Provide(i *do.Injector) {
-	provideLeaderStore(i)
 	provideElector(i)
 	provideScheduledJobStore(i)
 	provideService(i)
 	provideExecutor(i)
 }
 
-func provideLeaderStore(i *do.Injector) {
-	do.Provide(i, func(i *do.Injector) (*LeaderStore, error) {
-		client, err := do.Invoke[*clientv3.Client](i)
-		if err != nil {
-			return nil, err
-		}
-		cfg, err := do.Invoke[config.Config](i)
-		if err != nil {
-			return nil, err
-		}
-		return NewLeaderStore(client, cfg.EtcdKeyRoot), nil
-	})
-}
-
 func provideElector(i *do.Injector) {
 	do.Provide(i, func(i *do.Injector) (*Elector, error) {
-		store, err := do.Invoke[*LeaderStore](i)
+		electionSvc, err := do.Invoke[*election.Service](i)
 		if err != nil {
 			return nil, err
 		}
@@ -43,11 +33,9 @@ func provideElector(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		logger, err := do.Invoke[zerolog.Logger](i)
-		if err != nil {
-			return nil, err
-		}
-		return NewElector(cfg.HostID, store, logger, 30*time.Second), nil
+
+		candidate := electionSvc.NewCandidate(electionName, cfg.HostID, electionTTL)
+		return NewElector(candidate), nil
 	})
 }
 
