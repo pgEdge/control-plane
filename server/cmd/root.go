@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pgEdge/control-plane/server/internal/cluster"
+	"github.com/pgEdge/control-plane/server/internal/election"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	"github.com/spf13/cobra"
@@ -62,6 +63,7 @@ func newRootCmd(i *do.Injector) *cobra.Command {
 			certificates.Provide(i)
 			database.Provide(i)
 			docker.Provide(i)
+			election.Provide(i)
 			etcd.Provide(i)
 			filesystem.Provide(i)
 			host.Provide(i)
