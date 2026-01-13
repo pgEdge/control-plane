@@ -526,6 +526,112 @@ var _ = g.Service("control-plane", func() {
 			g.Meta("openapi:tag:Database")
 		})
 	})
+	g.Method("list-host-tasks", func() {
+		g.Description("Lists all tasks for a host.")
+		g.Meta("openapi:summary", "List host tasks")
+		g.Payload(func() {
+			g.Attribute("host_id", Identifier, func() {
+				g.Description("ID of the host to list tasks for.")
+				g.Example("host-1")
+			})
+			g.Attribute("after_task_id", g.String, func() {
+				g.Description("ID of the task to start from.")
+				g.Format(g.FormatUUID)
+				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+			})
+			g.Attribute("limit", g.Int, func() {
+				g.Description("Maximum number of tasks to return.")
+				g.Example(100)
+			})
+			g.Attribute("sort_order", g.String, func() {
+				g.Enum("asc", "ascend", "ascending", "desc", "descend", "descending")
+				g.Description("Sort order for the tasks.")
+				g.Example("ascend")
+			})
+
+			g.Required("host_id")
+		})
+		g.Result(ListHostTasksResponse)
+		g.Error("cluster_not_initialized")
+		g.Error("invalid_input")
+		g.Error("not_found")
+
+		g.HTTP(func() {
+			g.GET("/v1/hosts/{host_id}/tasks")
+			g.Param("after_task_id")
+			g.Param("limit")
+			g.Param("sort_order")
+
+			g.Meta("openapi:tag:Host")
+		})
+	})
+
+	g.Method("get-host-task", func() {
+		g.Description("Returns information about a particular task for a host.")
+		g.Meta("openapi:summary", "Get host task")
+		g.Payload(func() {
+			g.Attribute("host_id", Identifier, func() {
+				g.Description("ID of the host the task belongs to.")
+				g.Example("host-1")
+			})
+			g.Attribute("task_id", g.String, func() {
+				g.Description("ID of the task to get.")
+				g.Format(g.FormatUUID)
+				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+			})
+
+			g.Required("host_id", "task_id")
+		})
+		g.Result(Task)
+		g.Error("cluster_not_initialized")
+		g.Error("invalid_input")
+		g.Error("not_found")
+
+		g.HTTP(func() {
+			g.GET("/v1/hosts/{host_id}/tasks/{task_id}")
+
+			g.Meta("openapi:tag:Host")
+		})
+	})
+
+	g.Method("get-host-task-log", func() {
+		g.Description("Returns the log of a particular task for a host.")
+		g.Meta("openapi:summary", "Get host task logs")
+		g.Payload(func() {
+			g.Attribute("host_id", Identifier, func() {
+				g.Description("ID of the host to get the task logs for.")
+				g.Example("host-1")
+			})
+			g.Attribute("task_id", g.String, func() {
+				g.Description("ID of the task to get the logs for.")
+				g.Format(g.FormatUUID)
+				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+			})
+			g.Attribute("after_entry_id", g.String, func() {
+				g.Description("ID of the entry to start from.")
+				g.Format(g.FormatUUID)
+				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+			})
+			g.Attribute("limit", g.Int, func() {
+				g.Description("Maximum number of entries to return.")
+				g.Example(100)
+			})
+
+			g.Required("host_id", "task_id")
+		})
+		g.Result(TaskLog)
+		g.Error("cluster_not_initialized")
+		g.Error("invalid_input")
+		g.Error("not_found")
+
+		g.HTTP(func() {
+			g.GET("/v1/hosts/{host_id}/tasks/{task_id}/logs")
+			g.Param("after_entry_id")
+			g.Param("limit")
+
+			g.Meta("openapi:tag:Host")
+		})
+	})
 
 	g.Method("restore-database", func() {
 		g.Description("Perform an in-place restore of one or more nodes using the given restore configuration.")

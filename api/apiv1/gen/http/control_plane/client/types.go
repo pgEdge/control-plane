@@ -308,6 +308,62 @@ type GetDatabaseTaskLogResponseBody struct {
 	Entries []*TaskLogEntryResponseBody `form:"entries,omitempty" json:"entries,omitempty" xml:"entries,omitempty"`
 }
 
+// ListHostTasksResponseBody is the type of the "control-plane" service
+// "list-host-tasks" endpoint HTTP response body.
+type ListHostTasksResponseBody struct {
+	Tasks []*TaskResponseBody `form:"tasks,omitempty" json:"tasks,omitempty" xml:"tasks,omitempty"`
+}
+
+// GetHostTaskResponseBody is the type of the "control-plane" service
+// "get-host-task" endpoint HTTP response body.
+type GetHostTaskResponseBody struct {
+	// The parent task ID of the task.
+	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	// The scope of the task (database or host).
+	Scope *string `form:"scope,omitempty" json:"scope,omitempty" xml:"scope,omitempty"`
+	// The entity ID (database_id or host_id) that this task belongs to.
+	EntityID *string `form:"entity_id,omitempty" json:"entity_id,omitempty" xml:"entity_id,omitempty"`
+	// The database ID of the task.
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	// The name of the node that the task is operating on.
+	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	// The ID of the instance that the task is operating on.
+	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	// The ID of the host that the task is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// The unique ID of the task.
+	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
+	// The time when the task was created.
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// The time when the task was completed.
+	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	// The type of the task.
+	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	// The status of the task.
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// The error message if the task failed.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
+// GetHostTaskLogResponseBody is the type of the "control-plane" service
+// "get-host-task-log" endpoint HTTP response body.
+type GetHostTaskLogResponseBody struct {
+	// The scope of the task (database or host).
+	Scope *string `form:"scope,omitempty" json:"scope,omitempty" xml:"scope,omitempty"`
+	// The entity ID (database_id or host_id) that this task log belongs to.
+	EntityID *string `form:"entity_id,omitempty" json:"entity_id,omitempty" xml:"entity_id,omitempty"`
+	// The database ID of the task log. Deprecated: use entity_id instead.
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	// The unique ID of the task log.
+	TaskID *string `form:"task_id,omitempty" json:"task_id,omitempty" xml:"task_id,omitempty"`
+	// The status of the task.
+	TaskStatus *string `form:"task_status,omitempty" json:"task_status,omitempty" xml:"task_status,omitempty"`
+	// The ID of the last entry in the task log.
+	LastEntryID *string `form:"last_entry_id,omitempty" json:"last_entry_id,omitempty" xml:"last_entry_id,omitempty"`
+	// Entries in the task log.
+	Entries []*TaskLogEntryResponseBody `form:"entries,omitempty" json:"entries,omitempty" xml:"entries,omitempty"`
+}
+
 // RestoreDatabaseResponseBody is the type of the "control-plane" service
 // "restore-database" endpoint HTTP response body.
 type RestoreDatabaseResponseBody struct {
@@ -1150,6 +1206,124 @@ type GetDatabaseTaskLogNotFoundResponseBody struct {
 // service "get-database-task-log" endpoint HTTP response body for the
 // "server_error" error.
 type GetDatabaseTaskLogServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// ListHostTasksClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "list-host-tasks" endpoint HTTP response body for
+// the "cluster_not_initialized" error.
+type ListHostTasksClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// ListHostTasksInvalidInputResponseBody is the type of the "control-plane"
+// service "list-host-tasks" endpoint HTTP response body for the
+// "invalid_input" error.
+type ListHostTasksInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// ListHostTasksNotFoundResponseBody is the type of the "control-plane" service
+// "list-host-tasks" endpoint HTTP response body for the "not_found" error.
+type ListHostTasksNotFoundResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// ListHostTasksServerErrorResponseBody is the type of the "control-plane"
+// service "list-host-tasks" endpoint HTTP response body for the "server_error"
+// error.
+type ListHostTasksServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetHostTaskClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "get-host-task" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type GetHostTaskClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetHostTaskInvalidInputResponseBody is the type of the "control-plane"
+// service "get-host-task" endpoint HTTP response body for the "invalid_input"
+// error.
+type GetHostTaskInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetHostTaskNotFoundResponseBody is the type of the "control-plane" service
+// "get-host-task" endpoint HTTP response body for the "not_found" error.
+type GetHostTaskNotFoundResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetHostTaskServerErrorResponseBody is the type of the "control-plane"
+// service "get-host-task" endpoint HTTP response body for the "server_error"
+// error.
+type GetHostTaskServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetHostTaskLogClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "get-host-task-log" endpoint HTTP response body for
+// the "cluster_not_initialized" error.
+type GetHostTaskLogClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetHostTaskLogInvalidInputResponseBody is the type of the "control-plane"
+// service "get-host-task-log" endpoint HTTP response body for the
+// "invalid_input" error.
+type GetHostTaskLogInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetHostTaskLogNotFoundResponseBody is the type of the "control-plane"
+// service "get-host-task-log" endpoint HTTP response body for the "not_found"
+// error.
+type GetHostTaskLogNotFoundResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetHostTaskLogServerErrorResponseBody is the type of the "control-plane"
+// service "get-host-task-log" endpoint HTTP response body for the
+// "server_error" error.
+type GetHostTaskLogServerErrorResponseBody struct {
 	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// The error message.
@@ -3691,6 +3865,201 @@ func NewGetDatabaseTaskLogServerError(body *GetDatabaseTaskLogServerErrorRespons
 	return v
 }
 
+// NewListHostTasksResponseOK builds a "control-plane" service
+// "list-host-tasks" endpoint result from a HTTP "OK" response.
+func NewListHostTasksResponseOK(body *ListHostTasksResponseBody) *controlplane.ListHostTasksResponse {
+	v := &controlplane.ListHostTasksResponse{}
+	if body.Tasks != nil {
+		v.Tasks = make([]*controlplane.Task, len(body.Tasks))
+		for i, val := range body.Tasks {
+			if val == nil {
+				v.Tasks[i] = nil
+				continue
+			}
+			v.Tasks[i] = unmarshalTaskResponseBodyToControlplaneTask(val)
+		}
+	}
+
+	return v
+}
+
+// NewListHostTasksClusterNotInitialized builds a control-plane service
+// list-host-tasks endpoint cluster_not_initialized error.
+func NewListHostTasksClusterNotInitialized(body *ListHostTasksClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewListHostTasksInvalidInput builds a control-plane service list-host-tasks
+// endpoint invalid_input error.
+func NewListHostTasksInvalidInput(body *ListHostTasksInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewListHostTasksNotFound builds a control-plane service list-host-tasks
+// endpoint not_found error.
+func NewListHostTasksNotFound(body *ListHostTasksNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewListHostTasksServerError builds a control-plane service list-host-tasks
+// endpoint server_error error.
+func NewListHostTasksServerError(body *ListHostTasksServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetHostTaskTaskOK builds a "control-plane" service "get-host-task"
+// endpoint result from a HTTP "OK" response.
+func NewGetHostTaskTaskOK(body *GetHostTaskResponseBody) *controlplane.Task {
+	v := &controlplane.Task{
+		ParentID:    body.ParentID,
+		Scope:       *body.Scope,
+		EntityID:    *body.EntityID,
+		DatabaseID:  body.DatabaseID,
+		NodeName:    body.NodeName,
+		InstanceID:  body.InstanceID,
+		HostID:      body.HostID,
+		TaskID:      *body.TaskID,
+		CreatedAt:   *body.CreatedAt,
+		CompletedAt: body.CompletedAt,
+		Type:        *body.Type,
+		Status:      *body.Status,
+		Error:       body.Error,
+	}
+
+	return v
+}
+
+// NewGetHostTaskClusterNotInitialized builds a control-plane service
+// get-host-task endpoint cluster_not_initialized error.
+func NewGetHostTaskClusterNotInitialized(body *GetHostTaskClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetHostTaskInvalidInput builds a control-plane service get-host-task
+// endpoint invalid_input error.
+func NewGetHostTaskInvalidInput(body *GetHostTaskInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetHostTaskNotFound builds a control-plane service get-host-task endpoint
+// not_found error.
+func NewGetHostTaskNotFound(body *GetHostTaskNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetHostTaskServerError builds a control-plane service get-host-task
+// endpoint server_error error.
+func NewGetHostTaskServerError(body *GetHostTaskServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetHostTaskLogTaskLogOK builds a "control-plane" service
+// "get-host-task-log" endpoint result from a HTTP "OK" response.
+func NewGetHostTaskLogTaskLogOK(body *GetHostTaskLogResponseBody) *controlplane.TaskLog {
+	v := &controlplane.TaskLog{
+		Scope:       *body.Scope,
+		EntityID:    *body.EntityID,
+		DatabaseID:  body.DatabaseID,
+		TaskID:      *body.TaskID,
+		TaskStatus:  *body.TaskStatus,
+		LastEntryID: body.LastEntryID,
+	}
+	v.Entries = make([]*controlplane.TaskLogEntry, len(body.Entries))
+	for i, val := range body.Entries {
+		if val == nil {
+			v.Entries[i] = nil
+			continue
+		}
+		v.Entries[i] = unmarshalTaskLogEntryResponseBodyToControlplaneTaskLogEntry(val)
+	}
+
+	return v
+}
+
+// NewGetHostTaskLogClusterNotInitialized builds a control-plane service
+// get-host-task-log endpoint cluster_not_initialized error.
+func NewGetHostTaskLogClusterNotInitialized(body *GetHostTaskLogClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetHostTaskLogInvalidInput builds a control-plane service
+// get-host-task-log endpoint invalid_input error.
+func NewGetHostTaskLogInvalidInput(body *GetHostTaskLogInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetHostTaskLogNotFound builds a control-plane service get-host-task-log
+// endpoint not_found error.
+func NewGetHostTaskLogNotFound(body *GetHostTaskLogNotFoundResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetHostTaskLogServerError builds a control-plane service
+// get-host-task-log endpoint server_error error.
+func NewGetHostTaskLogServerError(body *GetHostTaskLogServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
 // NewRestoreDatabaseResponseOK builds a "control-plane" service
 // "restore-database" endpoint result from a HTTP "OK" response.
 func NewRestoreDatabaseResponseOK(body *RestoreDatabaseResponseBody) *controlplane.RestoreDatabaseResponse {
@@ -4105,6 +4474,24 @@ func ValidateGetDatabaseTaskResponseBody(body *GetDatabaseTaskResponseBody) (err
 // ValidateGetDatabaseTaskLogResponseBody runs a no-op validation on
 // Get-Database-Task-LogResponseBody
 func ValidateGetDatabaseTaskLogResponseBody(body *GetDatabaseTaskLogResponseBody) (err error) {
+	return
+}
+
+// ValidateListHostTasksResponseBody runs a no-op validation on
+// List-Host-TasksResponseBody
+func ValidateListHostTasksResponseBody(body *ListHostTasksResponseBody) (err error) {
+	return
+}
+
+// ValidateGetHostTaskResponseBody runs a no-op validation on
+// Get-Host-TaskResponseBody
+func ValidateGetHostTaskResponseBody(body *GetHostTaskResponseBody) (err error) {
+	return
+}
+
+// ValidateGetHostTaskLogResponseBody runs a no-op validation on
+// Get-Host-Task-LogResponseBody
+func ValidateGetHostTaskLogResponseBody(body *GetHostTaskLogResponseBody) (err error) {
 	return
 }
 
@@ -4612,6 +4999,78 @@ func ValidateGetDatabaseTaskLogNotFoundResponseBody(body *GetDatabaseTaskLogNotF
 // ValidateGetDatabaseTaskLogServerErrorResponseBody runs a no-op validation on
 // get-database-task-log_server_error_response_body
 func ValidateGetDatabaseTaskLogServerErrorResponseBody(body *GetDatabaseTaskLogServerErrorResponseBody) (err error) {
+	return
+}
+
+// ValidateListHostTasksClusterNotInitializedResponseBody runs a no-op
+// validation on list-host-tasks_cluster_not_initialized_response_body
+func ValidateListHostTasksClusterNotInitializedResponseBody(body *ListHostTasksClusterNotInitializedResponseBody) (err error) {
+	return
+}
+
+// ValidateListHostTasksInvalidInputResponseBody runs a no-op validation on
+// list-host-tasks_invalid_input_response_body
+func ValidateListHostTasksInvalidInputResponseBody(body *ListHostTasksInvalidInputResponseBody) (err error) {
+	return
+}
+
+// ValidateListHostTasksNotFoundResponseBody runs a no-op validation on
+// list-host-tasks_not_found_response_body
+func ValidateListHostTasksNotFoundResponseBody(body *ListHostTasksNotFoundResponseBody) (err error) {
+	return
+}
+
+// ValidateListHostTasksServerErrorResponseBody runs a no-op validation on
+// list-host-tasks_server_error_response_body
+func ValidateListHostTasksServerErrorResponseBody(body *ListHostTasksServerErrorResponseBody) (err error) {
+	return
+}
+
+// ValidateGetHostTaskClusterNotInitializedResponseBody runs a no-op validation
+// on get-host-task_cluster_not_initialized_response_body
+func ValidateGetHostTaskClusterNotInitializedResponseBody(body *GetHostTaskClusterNotInitializedResponseBody) (err error) {
+	return
+}
+
+// ValidateGetHostTaskInvalidInputResponseBody runs a no-op validation on
+// get-host-task_invalid_input_response_body
+func ValidateGetHostTaskInvalidInputResponseBody(body *GetHostTaskInvalidInputResponseBody) (err error) {
+	return
+}
+
+// ValidateGetHostTaskNotFoundResponseBody runs a no-op validation on
+// get-host-task_not_found_response_body
+func ValidateGetHostTaskNotFoundResponseBody(body *GetHostTaskNotFoundResponseBody) (err error) {
+	return
+}
+
+// ValidateGetHostTaskServerErrorResponseBody runs a no-op validation on
+// get-host-task_server_error_response_body
+func ValidateGetHostTaskServerErrorResponseBody(body *GetHostTaskServerErrorResponseBody) (err error) {
+	return
+}
+
+// ValidateGetHostTaskLogClusterNotInitializedResponseBody runs a no-op
+// validation on get-host-task-log_cluster_not_initialized_response_body
+func ValidateGetHostTaskLogClusterNotInitializedResponseBody(body *GetHostTaskLogClusterNotInitializedResponseBody) (err error) {
+	return
+}
+
+// ValidateGetHostTaskLogInvalidInputResponseBody runs a no-op validation on
+// get-host-task-log_invalid_input_response_body
+func ValidateGetHostTaskLogInvalidInputResponseBody(body *GetHostTaskLogInvalidInputResponseBody) (err error) {
+	return
+}
+
+// ValidateGetHostTaskLogNotFoundResponseBody runs a no-op validation on
+// get-host-task-log_not_found_response_body
+func ValidateGetHostTaskLogNotFoundResponseBody(body *GetHostTaskLogNotFoundResponseBody) (err error) {
+	return
+}
+
+// ValidateGetHostTaskLogServerErrorResponseBody runs a no-op validation on
+// get-host-task-log_server_error_response_body
+func ValidateGetHostTaskLogServerErrorResponseBody(body *GetHostTaskLogServerErrorResponseBody) (err error) {
 	return
 }
 

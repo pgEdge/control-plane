@@ -337,7 +337,7 @@ func (d *DatabaseFixture) GetInstances(matcher InstanceMatcher) iter.Seq[*contro
 }
 
 func (d *DatabaseFixture) waitForTask(ctx context.Context, task *controlplane.Task) error {
-	task, err := d.client.WaitForTask(ctx, &controlplane.GetDatabaseTaskPayload{
+	task, err := d.client.WaitForDatabaseTask(ctx, &controlplane.GetDatabaseTaskPayload{
 		DatabaseID: d.ID,
 		TaskID:     task.TaskID,
 	})

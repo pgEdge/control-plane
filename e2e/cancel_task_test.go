@@ -11,6 +11,7 @@ import (
 	controlplane "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
 	"github.com/pgEdge/control-plane/client"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCancelDatabaseTask(t *testing.T) {
@@ -61,10 +62,11 @@ func testCancelDB(t *testing.T) {
 	}
 	t.Logf("canceled")
 
-	final_task, err := fixture.Client.WaitForTask(t.Context(), &controlplane.GetDatabaseTaskPayload{
+	final_task, err := fixture.Client.WaitForDatabaseTask(t.Context(), &controlplane.GetDatabaseTaskPayload{
 		DatabaseID: database.ID,
 		TaskID:     cancelation_task.TaskID,
 	})
+	require.NoError(t, err)
 	t.Logf("waited for task")
 
 	assert.Equal(t, final_task.Status, client.TaskStatusCanceled)

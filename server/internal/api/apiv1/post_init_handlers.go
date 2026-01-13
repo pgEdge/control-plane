@@ -1083,3 +1083,71 @@ func hasPrimaryInstance(instances []*database.Instance) bool {
 	}
 	return false
 }
+
+func (s *PostInitHandlers) ListHostTasks(ctx context.Context, req *api.ListHostTasksPayload) (*api.ListHostTasksResponse, error) {
+	hostID, err := hostIdentToString(req.HostID)
+	if err != nil {
+		return nil, err
+	}
+
+	options, err := taskListOptionsFromHost(req)
+	if err != nil {
+		return nil, makeInvalidInputErr(err)
+	}
+
+	tasks, err := s.taskSvc.GetTasks(ctx, task.ScopeHost, hostID, options)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	return &api.ListHostTasksResponse{
+		Tasks: tasksToAPI(tasks),
+	}, nil
+}
+
+func (s *PostInitHandlers) GetHostTask(ctx context.Context, req *api.GetHostTaskPayload) (*api.Task, error) {
+	hostID, err := hostIdentToString(req.HostID)
+	if err != nil {
+		return nil, err
+	}
+	taskID, err := uuid.Parse(req.TaskID)
+	if err != nil {
+		return nil, ErrInvalidTaskID
+	}
+
+	t, err := s.taskSvc.GetTask(ctx, task.ScopeHost, hostID, taskID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	return taskToAPI(t), nil
+}
+
+func (s *PostInitHandlers) GetHostTaskLog(ctx context.Context, req *api.GetHostTaskLogPayload) (*api.TaskLog, error) {
+	hostID, err := hostIdentToString(req.HostID)
+	if err != nil {
+		return nil, err
+	}
+	taskID, err := uuid.Parse(req.TaskID)
+	if err != nil {
+		return nil, ErrInvalidTaskID
+	}
+
+	t, err := s.taskSvc.GetTask(ctx, task.ScopeHost, hostID, taskID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	options, err := taskLogOptionsFromHost(req)
+	if err != nil {
+		return nil, makeInvalidInputErr(err)
+	}
+
+	log, err := s.taskSvc.GetTaskLog(ctx, task.ScopeHost, hostID, taskID, options)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	return taskLogToAPI(log, t.Status), nil
+}
+

@@ -93,6 +93,18 @@ type Client struct {
 	// get-database-task-log endpoint.
 	GetDatabaseTaskLogDoer goahttp.Doer
 
+	// ListHostTasks Doer is the HTTP client used to make requests to the
+	// list-host-tasks endpoint.
+	ListHostTasksDoer goahttp.Doer
+
+	// GetHostTask Doer is the HTTP client used to make requests to the
+	// get-host-task endpoint.
+	GetHostTaskDoer goahttp.Doer
+
+	// GetHostTaskLog Doer is the HTTP client used to make requests to the
+	// get-host-task-log endpoint.
+	GetHostTaskLogDoer goahttp.Doer
+
 	// RestoreDatabase Doer is the HTTP client used to make requests to the
 	// restore-database endpoint.
 	RestoreDatabaseDoer goahttp.Doer
@@ -157,6 +169,9 @@ func NewClient(
 		ListDatabaseTasksDoer:      doer,
 		GetDatabaseTaskDoer:        doer,
 		GetDatabaseTaskLogDoer:     doer,
+		ListHostTasksDoer:          doer,
+		GetHostTaskDoer:            doer,
+		GetHostTaskLogDoer:         doer,
 		RestoreDatabaseDoer:        doer,
 		GetVersionDoer:             doer,
 		RestartInstanceDoer:        doer,
@@ -587,6 +602,73 @@ func (c *Client) GetDatabaseTaskLog() goa.Endpoint {
 		resp, err := c.GetDatabaseTaskLogDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("control-plane", "get-database-task-log", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// ListHostTasks returns an endpoint that makes HTTP requests to the
+// control-plane service list-host-tasks server.
+func (c *Client) ListHostTasks() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeListHostTasksRequest(c.encoder)
+		decodeResponse = DecodeListHostTasksResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildListHostTasksRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.ListHostTasksDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "list-host-tasks", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GetHostTask returns an endpoint that makes HTTP requests to the
+// control-plane service get-host-task server.
+func (c *Client) GetHostTask() goa.Endpoint {
+	var (
+		decodeResponse = DecodeGetHostTaskResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetHostTaskRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetHostTaskDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "get-host-task", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GetHostTaskLog returns an endpoint that makes HTTP requests to the
+// control-plane service get-host-task-log server.
+func (c *Client) GetHostTaskLog() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeGetHostTaskLogRequest(c.encoder)
+		decodeResponse = DecodeGetHostTaskLogResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetHostTaskLogRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetHostTaskLogDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "get-host-task-log", err)
 		}
 		return decodeResponse(resp)
 	}

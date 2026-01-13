@@ -792,3 +792,43 @@ func extraNetworksToAPI(nets []database.ExtraNetworkSpec) []*api.ExtraNetworkSpe
 	}
 	return result
 }
+
+func taskListOptionsFromHost(req *api.ListHostTasksPayload) (task.TaskListOptions, error) {
+	options := task.TaskListOptions{}
+	if req.Limit != nil {
+		options.Limit = *req.Limit
+	}
+	if req.AfterTaskID != nil {
+		afterTaskID, err := uuid.Parse(*req.AfterTaskID)
+		if err != nil {
+			return task.TaskListOptions{}, fmt.Errorf("invalid after task ID %q: %w", *req.AfterTaskID, err)
+		}
+		options.AfterTaskID = afterTaskID
+	}
+	if req.SortOrder != nil {
+		switch *req.SortOrder {
+		case "asc", "ascend", "ascending":
+			options.SortOrder = task.SortAscend
+		case "desc", "descend", "descending":
+			options.SortOrder = task.SortDescend
+		default:
+			return task.TaskListOptions{}, fmt.Errorf("invalid sort order %q", *req.SortOrder)
+		}
+	}
+	return options, nil
+}
+
+func taskLogOptionsFromHost(req *api.GetHostTaskLogPayload) (task.TaskLogOptions, error) {
+	options := task.TaskLogOptions{}
+	if req.Limit != nil {
+		options.Limit = *req.Limit
+	}
+	if req.AfterEntryID != nil {
+		afterEntryID, err := uuid.Parse(*req.AfterEntryID)
+		if err != nil {
+			return task.TaskLogOptions{}, fmt.Errorf("invalid after entry ID %q: %w", *req.AfterEntryID, err)
+		}
+		options.AfterEntryID = afterEntryID
+	}
+	return options, nil
+}

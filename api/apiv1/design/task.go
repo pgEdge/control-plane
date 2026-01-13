@@ -310,3 +310,22 @@ var ListDatabaseTasksResponse = g.Type("ListDatabaseTasksResponse", func() {
 		},
 	})
 })
+
+var ListHostTasksResponse = g.Type("ListHostTasksResponse", func() {
+	g.Attribute("tasks", g.ArrayOf(Task))
+
+	g.Example(map[string]any{
+		"tasks": []map[string]any{
+			{
+				"completed_at": "2025-06-18T17:54:36Z",
+				"created_at":   "2025-06-18T17:54:28Z",
+				"scope":        "host",
+				"entity_id":    "host-1",
+				"host_id":      "host-1",
+				"status":       "completed",
+				"task_id":      "0197842d-9082-7496-b787-77bd2e11809f",
+				"type":         "remove_host",
+			},
+		},
+	})
+})

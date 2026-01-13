@@ -15,6 +15,12 @@ var ErrInvalidServerConfig = errors.New("server configuration is empty")
 
 const taskPollInterval = 500 * time.Millisecond
 
+var taskEnded = map[string]bool{
+	TaskStatusCompleted: true,
+	TaskStatusCanceled:  true,
+	TaskStatusFailed:    true,
+}
+
 type SingleServerClient struct {
 	api *api.Client
 }
@@ -63,6 +69,9 @@ func NewSingleServerClient(server ServerConfig) (*SingleServerClient, error) {
 			CancelDatabaseTaskEndpoint:     cli.CancelDatabaseTask(),
 			SwitchoverDatabaseNodeEndpoint: cli.SwitchoverDatabaseNode(),
 			FailoverDatabaseNodeEndpoint:   cli.FailoverDatabaseNode(),
+			ListHostTasksEndpoint:          cli.ListHostTasks(),
+			GetHostTaskEndpoint:            cli.GetHostTask(),
+			GetHostTaskLogEndpoint:         cli.GetHostTaskLog(),
 		},
 	}, nil
 }
@@ -147,6 +156,21 @@ func (c *SingleServerClient) GetDatabaseTaskLog(ctx context.Context, req *api.Ge
 	return resp, translateErr(err)
 }
 
+func (c *SingleServerClient) ListHostTasks(ctx context.Context, req *api.ListHostTasksPayload) (*api.ListHostTasksResponse, error) {
+	resp, err := c.api.ListHostTasks(ctx, req)
+	return resp, translateErr(err)
+}
+
+func (c *SingleServerClient) GetHostTask(ctx context.Context, req *api.GetHostTaskPayload) (*api.Task, error) {
+	resp, err := c.api.GetHostTask(ctx, req)
+	return resp, translateErr(err)
+}
+
+func (c *SingleServerClient) GetHostTaskLog(ctx context.Context, req *api.GetHostTaskLogPayload) (*api.TaskLog, error) {
+	resp, err := c.api.GetHostTaskLog(ctx, req)
+	return resp, translateErr(err)
+}
+
 func (c *SingleServerClient) RestoreDatabase(ctx context.Context, req *api.RestoreDatabasePayload) (*api.RestoreDatabaseResponse, error) {
 	resp, err := c.api.RestoreDatabase(ctx, req)
 	return resp, translateErr(err)
@@ -162,21 +186,33 @@ func (c *SingleServerClient) RestartInstance(ctx context.Context, req *api.Resta
 	return resp, translateErr(err)
 }
 
-func (c *SingleServerClient) WaitForTask(ctx context.Context, req *api.GetDatabaseTaskPayload) (*api.Task, error) {
+func (c *SingleServerClient) WaitForDatabaseTask(ctx context.Context, req *api.GetDatabaseTaskPayload) (*api.Task, error) {
+	return c.waitForTask(ctx, func(ctx context.Context) (*api.Task, error) {
+		return c.GetDatabaseTask(ctx, req)
+	})
+}
+
+func (c *SingleServerClient) WaitForHostTask(ctx context.Context, req *api.GetHostTaskPayload) (*api.Task, error) {
+	return c.waitForTask(ctx, func(ctx context.Context) (*api.Task, error) {
+		return c.GetHostTask(ctx, req)
+	})
+}
+
+func (c *SingleServerClient) waitForTask(ctx context.Context, getTask func(context.Context) (*api.Task, error)) (*api.Task, error) {
 	ticker := time.NewTicker(taskPollInterval)
 	defer ticker.Stop()
 
-	task, err := c.GetDatabaseTask(ctx, req)
+	task, err := getTask(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	for task.Status != TaskStatusCompleted && task.Status != TaskStatusCanceled && task.Status != TaskStatusFailed {
+	for !taskEnded[task.Status] {
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		case <-ticker.C:
-			task, err = c.GetDatabaseTask(ctx, req)
+			task, err = getTask(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -185,6 +221,7 @@ func (c *SingleServerClient) WaitForTask(ctx context.Context, req *api.GetDataba
 
 	return task, nil
 }
+
 func (c *SingleServerClient) CancelDatabaseTask(ctx context.Context, req *api.CancelDatabaseTaskPayload) (*api.Task, error) {
 	resp, err := c.api.CancelDatabaseTask(ctx, req)
 	return resp, translateErr(err)
@@ -200,7 +237,7 @@ func (c *SingleServerClient) FailoverDatabaseNode(ctx context.Context, req *api.
 	return resp, translateErr(err)
 }
 
-func (c *SingleServerClient) FollowTask(ctx context.Context, req *api.GetDatabaseTaskLogPayload, handler func(e *api.TaskLogEntry)) error {
+func (c *SingleServerClient) FollowDatabaseTask(ctx context.Context, req *api.GetDatabaseTaskLogPayload, handler func(e *api.TaskLogEntry)) error {
 	ticker := time.NewTicker(taskPollInterval)
 	defer ticker.Stop()
 
@@ -219,7 +256,7 @@ func (c *SingleServerClient) FollowTask(ctx context.Context, req *api.GetDatabas
 		handler(entry)
 	}
 
-	for taskLog.TaskStatus != TaskStatusCompleted && taskLog.TaskStatus != TaskStatusCanceled && taskLog.TaskStatus != TaskStatusFailed {
+	for !taskEnded[taskLog.TaskStatus] {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -227,6 +264,45 @@ func (c *SingleServerClient) FollowTask(ctx context.Context, req *api.GetDatabas
 			curr.AfterEntryID = taskLog.LastEntryID
 
 			taskLog, err = c.GetDatabaseTaskLog(ctx, curr)
+			if err != nil {
+				return err
+			}
+			for _, entry := range taskLog.Entries {
+				handler(entry)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (c *SingleServerClient) FollowHostTask(ctx context.Context, req *api.GetHostTaskLogPayload, handler func(e *api.TaskLogEntry)) error {
+	ticker := time.NewTicker(taskPollInterval)
+	defer ticker.Stop()
+
+	curr := &api.GetHostTaskLogPayload{
+		HostID:       req.HostID,
+		TaskID:       req.TaskID,
+		AfterEntryID: req.AfterEntryID,
+		Limit:        req.Limit,
+	}
+
+	taskLog, err := c.GetHostTaskLog(ctx, curr)
+	if err != nil {
+		return err
+	}
+	for _, entry := range taskLog.Entries {
+		handler(entry)
+	}
+
+	for !taskEnded[taskLog.TaskStatus] {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			curr.AfterEntryID = taskLog.LastEntryID
+
+			taskLog, err = c.GetHostTaskLog(ctx, curr)
 			if err != nil {
 				return err
 			}
