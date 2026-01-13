@@ -518,7 +518,7 @@ func (e *EmbeddedEtcd) ChangeMode(ctx context.Context, mode config.EtcdMode) (Et
 		return nil, fmt.Errorf("failed to clear out etcd server settings in generated config: %w", err)
 	}
 
-	return remote, err
+	return remote, nil
 }
 
 const maxLearnerStallTime = 5 * time.Minute
