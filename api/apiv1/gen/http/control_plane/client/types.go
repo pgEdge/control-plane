@@ -3986,2722 +3986,901 @@ func NewCancelDatabaseTaskServerError(body *CancelDatabaseTaskServerErrorRespons
 	return v
 }
 
-// ValidateInitClusterResponseBody runs the validations defined on
+// ValidateInitClusterResponseBody runs a no-op validation on
 // Init-ClusterResponseBody
 func ValidateInitClusterResponseBody(body *InitClusterResponseBody) (err error) {
-	if body.Token == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("token", "body"))
-	}
-	if body.ServerURL == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("server_url", "body"))
-	}
-	if body.ServerURL != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.server_url", *body.ServerURL, goa.FormatURI))
-	}
 	return
 }
 
-// ValidateGetJoinTokenResponseBody runs the validations defined on
+// ValidateGetJoinTokenResponseBody runs a no-op validation on
 // Get-Join-TokenResponseBody
 func ValidateGetJoinTokenResponseBody(body *GetJoinTokenResponseBody) (err error) {
-	if body.Token == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("token", "body"))
-	}
-	if body.ServerURL == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("server_url", "body"))
-	}
-	if body.ServerURL != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.server_url", *body.ServerURL, goa.FormatURI))
-	}
 	return
 }
 
-// ValidateGetJoinOptionsResponseBody runs the validations defined on
+// ValidateGetJoinOptionsResponseBody runs a no-op validation on
 // Get-Join-OptionsResponseBody
 func ValidateGetJoinOptionsResponseBody(body *GetJoinOptionsResponseBody) (err error) {
-	if body.Leader == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("leader", "body"))
-	}
-	if body.Credentials == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("credentials", "body"))
-	}
-	if body.Leader != nil {
-		if err2 := ValidateEtcdClusterMemberResponseBody(body.Leader); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Credentials != nil {
-		if err2 := ValidateClusterCredentialsResponseBody(body.Credentials); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	return
 }
 
-// ValidateGetClusterResponseBody runs the validations defined on
+// ValidateGetClusterResponseBody runs a no-op validation on
 // Get-ClusterResponseBody
 func ValidateGetClusterResponseBody(body *GetClusterResponseBody) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.Hosts == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("hosts", "body"))
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
-		}
-	}
-	if body.Status != nil {
-		if err2 := ValidateClusterStatusResponseBody(body.Status); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	for _, e := range body.Hosts {
-		if e != nil {
-			if err2 := ValidateHostResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
 	return
 }
 
-// ValidateListHostsResponseBody runs the validations defined on
+// ValidateListHostsResponseBody runs a no-op validation on
 // List-HostsResponseBody
 func ValidateListHostsResponseBody(body *ListHostsResponseBody) (err error) {
-	if body.Hosts == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("hosts", "body"))
-	}
-	for _, e := range body.Hosts {
-		if e != nil {
-			if err2 := ValidateHostResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
 	return
 }
 
-// ValidateGetHostResponseBody runs the validations defined on
-// Get-HostResponseBody
+// ValidateGetHostResponseBody runs a no-op validation on Get-HostResponseBody
 func ValidateGetHostResponseBody(body *GetHostResponseBody) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
-	if body.Orchestrator == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("orchestrator", "body"))
-	}
-	if body.DataDir == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("data_dir", "body"))
-	}
-	if body.Hostname == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("hostname", "body"))
-	}
-	if body.Ipv4Address == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("ipv4_address", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
-		}
-	}
-	if body.Cohort != nil {
-		if err2 := ValidateHostCohortResponseBody(body.Cohort); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Ipv4Address != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
-	}
-	if body.Status != nil {
-		if err2 := ValidateHostStatusResponseBody(body.Status); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.DefaultPgedgeVersion != nil {
-		if err2 := ValidatePgEdgeVersionResponseBody(body.DefaultPgedgeVersion); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	for _, e := range body.SupportedPgedgeVersions {
-		if e != nil {
-			if err2 := ValidatePgEdgeVersionResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
 	return
 }
 
-// ValidateRemoveHostResponseBody runs the validations defined on
+// ValidateRemoveHostResponseBody runs a no-op validation on
 // Remove-HostResponseBody
 func ValidateRemoveHostResponseBody(body *RemoveHostResponseBody) (err error) {
-	if body.UpdateDatabaseTasks == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("update_database_tasks", "body"))
-	}
-	for _, e := range body.UpdateDatabaseTasks {
-		if e != nil {
-			if err2 := ValidateTaskResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
 	return
 }
 
-// ValidateCreateDatabaseResponseBody runs the validations defined on
+// ValidateCreateDatabaseResponseBody runs a no-op validation on
 // Create-DatabaseResponseBody
 func ValidateCreateDatabaseResponseBody(body *CreateDatabaseResponseBody) (err error) {
-	if body.Task == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
-	}
-	if body.Database == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database", "body"))
-	}
-	if body.Task != nil {
-		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Database != nil {
-		if err2 := ValidateDatabaseResponseBody(body.Database); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	return
 }
 
-// ValidateUpdateDatabaseResponseBody runs the validations defined on
+// ValidateUpdateDatabaseResponseBody runs a no-op validation on
 // Update-DatabaseResponseBody
 func ValidateUpdateDatabaseResponseBody(body *UpdateDatabaseResponseBody) (err error) {
-	if body.Task == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
-	}
-	if body.Database == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database", "body"))
-	}
-	if body.Task != nil {
-		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Database != nil {
-		if err2 := ValidateDatabaseResponseBody(body.Database); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	return
 }
 
-// ValidateDeleteDatabaseResponseBody runs the validations defined on
+// ValidateDeleteDatabaseResponseBody runs a no-op validation on
 // Delete-DatabaseResponseBody
 func ValidateDeleteDatabaseResponseBody(body *DeleteDatabaseResponseBody) (err error) {
-	if body.Task == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
-	}
-	if body.Task != nil {
-		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	return
 }
 
-// ValidateBackupDatabaseNodeResponseBody runs the validations defined on
+// ValidateBackupDatabaseNodeResponseBody runs a no-op validation on
 // Backup-Database-NodeResponseBody
 func ValidateBackupDatabaseNodeResponseBody(body *BackupDatabaseNodeResponseBody) (err error) {
-	if body.Task == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
-	}
-	if body.Task != nil {
-		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	return
 }
 
-// ValidateSwitchoverDatabaseNodeResponseBody runs the validations defined on
+// ValidateSwitchoverDatabaseNodeResponseBody runs a no-op validation on
 // Switchover-Database-NodeResponseBody
 func ValidateSwitchoverDatabaseNodeResponseBody(body *SwitchoverDatabaseNodeResponseBody) (err error) {
-	if body.Task == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
-	}
-	if body.Task != nil {
-		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	return
 }
 
-// ValidateFailoverDatabaseNodeResponseBody runs the validations defined on
+// ValidateFailoverDatabaseNodeResponseBody runs a no-op validation on
 // Failover-Database-NodeResponseBody
 func ValidateFailoverDatabaseNodeResponseBody(body *FailoverDatabaseNodeResponseBody) (err error) {
-	if body.Task == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
-	}
-	if body.Task != nil {
-		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	return
 }
 
-// ValidateListDatabaseTasksResponseBody runs the validations defined on
+// ValidateListDatabaseTasksResponseBody runs a no-op validation on
 // List-Database-TasksResponseBody
 func ValidateListDatabaseTasksResponseBody(body *ListDatabaseTasksResponseBody) (err error) {
-	for _, e := range body.Tasks {
-		if e != nil {
-			if err2 := ValidateTaskResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
 	return
 }
 
-// ValidateGetDatabaseTaskResponseBody runs the validations defined on
+// ValidateGetDatabaseTaskResponseBody runs a no-op validation on
 // Get-Database-TaskResponseBody
 func ValidateGetDatabaseTaskResponseBody(body *GetDatabaseTaskResponseBody) (err error) {
-	if body.DatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
-	}
-	if body.TaskID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
-	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
-	}
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ParentID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
-	}
-	if body.TaskID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.CompletedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
-	}
-	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
-		}
-	}
 	return
 }
 
-// ValidateGetDatabaseTaskLogResponseBody runs the validations defined on
+// ValidateGetDatabaseTaskLogResponseBody runs a no-op validation on
 // Get-Database-Task-LogResponseBody
 func ValidateGetDatabaseTaskLogResponseBody(body *GetDatabaseTaskLogResponseBody) (err error) {
-	if body.DatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
-	}
-	if body.TaskID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
-	}
-	if body.TaskStatus == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task_status", "body"))
-	}
-	if body.Entries == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("entries", "body"))
-	}
-	if body.TaskStatus != nil {
-		if !(*body.TaskStatus == "pending" || *body.TaskStatus == "running" || *body.TaskStatus == "completed" || *body.TaskStatus == "failed" || *body.TaskStatus == "unknown" || *body.TaskStatus == "canceled" || *body.TaskStatus == "canceling") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.task_status", *body.TaskStatus, []any{"pending", "running", "completed", "failed", "unknown", "canceled", "canceling"}))
-		}
-	}
-	for _, e := range body.Entries {
-		if e != nil {
-			if err2 := ValidateTaskLogEntryResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
 	return
 }
 
-// ValidateRestoreDatabaseResponseBody runs the validations defined on
+// ValidateRestoreDatabaseResponseBody runs a no-op validation on
 // Restore-DatabaseResponseBody
 func ValidateRestoreDatabaseResponseBody(body *RestoreDatabaseResponseBody) (err error) {
-	if body.Task == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
-	}
-	if body.NodeTasks == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("node_tasks", "body"))
-	}
-	if body.Database == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database", "body"))
-	}
-	if body.Task != nil {
-		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	for _, e := range body.NodeTasks {
-		if e != nil {
-			if err2 := ValidateTaskResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	if body.Database != nil {
-		if err2 := ValidateDatabaseResponseBody(body.Database); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	return
 }
 
-// ValidateGetVersionResponseBody runs the validations defined on
+// ValidateGetVersionResponseBody runs a no-op validation on
 // Get-VersionResponseBody
 func ValidateGetVersionResponseBody(body *GetVersionResponseBody) (err error) {
-	if body.Version == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("version", "body"))
-	}
-	if body.Revision == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("revision", "body"))
-	}
-	if body.RevisionTime == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("revision_time", "body"))
-	}
-	if body.Arch == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("arch", "body"))
-	}
-	if body.RevisionTime != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.revision_time", *body.RevisionTime, goa.FormatDateTime))
-	}
 	return
 }
 
-// ValidateRestartInstanceResponseBody runs the validations defined on
+// ValidateRestartInstanceResponseBody runs a no-op validation on
 // Restart-InstanceResponseBody
 func ValidateRestartInstanceResponseBody(body *RestartInstanceResponseBody) (err error) {
-	if body.Task == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
-	}
-	if body.Task != nil {
-		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	return
 }
 
-// ValidateStopInstanceResponseBody runs the validations defined on
+// ValidateStopInstanceResponseBody runs a no-op validation on
 // Stop-InstanceResponseBody
 func ValidateStopInstanceResponseBody(body *StopInstanceResponseBody) (err error) {
-	if body.Task == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
-	}
-	if body.Task != nil {
-		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	return
 }
 
-// ValidateStartInstanceResponseBody runs the validations defined on
+// ValidateStartInstanceResponseBody runs a no-op validation on
 // Start-InstanceResponseBody
 func ValidateStartInstanceResponseBody(body *StartInstanceResponseBody) (err error) {
-	if body.Task == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task", "body"))
-	}
-	if body.Task != nil {
-		if err2 := ValidateTaskResponseBody(body.Task); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	return
 }
 
-// ValidateCancelDatabaseTaskResponseBody runs the validations defined on
+// ValidateCancelDatabaseTaskResponseBody runs a no-op validation on
 // Cancel-Database-TaskResponseBody
 func ValidateCancelDatabaseTaskResponseBody(body *CancelDatabaseTaskResponseBody) (err error) {
-	if body.DatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
-	}
-	if body.TaskID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
-	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
-	}
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ParentID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
-	}
-	if body.TaskID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.CompletedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
-	}
-	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
-		}
-	}
 	return
 }
 
-// ValidateInitClusterClusterAlreadyInitializedResponseBody runs the
-// validations defined on init-cluster_cluster_already_initialized_response_body
+// ValidateInitClusterClusterAlreadyInitializedResponseBody runs a no-op
+// validation on init-cluster_cluster_already_initialized_response_body
 func ValidateInitClusterClusterAlreadyInitializedResponseBody(body *InitClusterClusterAlreadyInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateInitClusterOperationNotSupportedResponseBody runs the validations
-// defined on init-cluster_operation_not_supported_response_body
+// ValidateInitClusterOperationNotSupportedResponseBody runs a no-op validation
+// on init-cluster_operation_not_supported_response_body
 func ValidateInitClusterOperationNotSupportedResponseBody(body *InitClusterOperationNotSupportedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateInitClusterServerErrorResponseBody runs the validations defined on
+// ValidateInitClusterServerErrorResponseBody runs a no-op validation on
 // init-cluster_server_error_response_body
 func ValidateInitClusterServerErrorResponseBody(body *InitClusterServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateJoinClusterClusterAlreadyInitializedResponseBody runs the
-// validations defined on join-cluster_cluster_already_initialized_response_body
+// ValidateJoinClusterClusterAlreadyInitializedResponseBody runs a no-op
+// validation on join-cluster_cluster_already_initialized_response_body
 func ValidateJoinClusterClusterAlreadyInitializedResponseBody(body *JoinClusterClusterAlreadyInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateJoinClusterInvalidJoinTokenResponseBody runs the validations defined
-// on join-cluster_invalid_join_token_response_body
+// ValidateJoinClusterInvalidJoinTokenResponseBody runs a no-op validation on
+// join-cluster_invalid_join_token_response_body
 func ValidateJoinClusterInvalidJoinTokenResponseBody(body *JoinClusterInvalidJoinTokenResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateJoinClusterInvalidInputResponseBody runs the validations defined on
+// ValidateJoinClusterInvalidInputResponseBody runs a no-op validation on
 // join-cluster_invalid_input_response_body
 func ValidateJoinClusterInvalidInputResponseBody(body *JoinClusterInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateJoinClusterServerErrorResponseBody runs the validations defined on
+// ValidateJoinClusterServerErrorResponseBody runs a no-op validation on
 // join-cluster_server_error_response_body
 func ValidateJoinClusterServerErrorResponseBody(body *JoinClusterServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetJoinTokenClusterNotInitializedResponseBody runs the validations
-// defined on get-join-token_cluster_not_initialized_response_body
+// ValidateGetJoinTokenClusterNotInitializedResponseBody runs a no-op
+// validation on get-join-token_cluster_not_initialized_response_body
 func ValidateGetJoinTokenClusterNotInitializedResponseBody(body *GetJoinTokenClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetJoinTokenServerErrorResponseBody runs the validations defined on
+// ValidateGetJoinTokenServerErrorResponseBody runs a no-op validation on
 // get-join-token_server_error_response_body
 func ValidateGetJoinTokenServerErrorResponseBody(body *GetJoinTokenServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetJoinOptionsClusterNotInitializedResponseBody runs the validations
-// defined on get-join-options_cluster_not_initialized_response_body
+// ValidateGetJoinOptionsClusterNotInitializedResponseBody runs a no-op
+// validation on get-join-options_cluster_not_initialized_response_body
 func ValidateGetJoinOptionsClusterNotInitializedResponseBody(body *GetJoinOptionsClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetJoinOptionsInvalidJoinTokenResponseBody runs the validations
-// defined on get-join-options_invalid_join_token_response_body
+// ValidateGetJoinOptionsInvalidJoinTokenResponseBody runs a no-op validation
+// on get-join-options_invalid_join_token_response_body
 func ValidateGetJoinOptionsInvalidJoinTokenResponseBody(body *GetJoinOptionsInvalidJoinTokenResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetJoinOptionsInvalidInputResponseBody runs the validations defined
-// on get-join-options_invalid_input_response_body
+// ValidateGetJoinOptionsInvalidInputResponseBody runs a no-op validation on
+// get-join-options_invalid_input_response_body
 func ValidateGetJoinOptionsInvalidInputResponseBody(body *GetJoinOptionsInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetJoinOptionsServerErrorResponseBody runs the validations defined
-// on get-join-options_server_error_response_body
+// ValidateGetJoinOptionsServerErrorResponseBody runs a no-op validation on
+// get-join-options_server_error_response_body
 func ValidateGetJoinOptionsServerErrorResponseBody(body *GetJoinOptionsServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetClusterClusterNotInitializedResponseBody runs the validations
-// defined on get-cluster_cluster_not_initialized_response_body
+// ValidateGetClusterClusterNotInitializedResponseBody runs a no-op validation
+// on get-cluster_cluster_not_initialized_response_body
 func ValidateGetClusterClusterNotInitializedResponseBody(body *GetClusterClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetClusterServerErrorResponseBody runs the validations defined on
+// ValidateGetClusterServerErrorResponseBody runs a no-op validation on
 // get-cluster_server_error_response_body
 func ValidateGetClusterServerErrorResponseBody(body *GetClusterServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateListHostsClusterNotInitializedResponseBody runs the validations
-// defined on list-hosts_cluster_not_initialized_response_body
+// ValidateListHostsClusterNotInitializedResponseBody runs a no-op validation
+// on list-hosts_cluster_not_initialized_response_body
 func ValidateListHostsClusterNotInitializedResponseBody(body *ListHostsClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateListHostsServerErrorResponseBody runs the validations defined on
+// ValidateListHostsServerErrorResponseBody runs a no-op validation on
 // list-hosts_server_error_response_body
 func ValidateListHostsServerErrorResponseBody(body *ListHostsServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetHostClusterNotInitializedResponseBody runs the validations
-// defined on get-host_cluster_not_initialized_response_body
+// ValidateGetHostClusterNotInitializedResponseBody runs a no-op validation on
+// get-host_cluster_not_initialized_response_body
 func ValidateGetHostClusterNotInitializedResponseBody(body *GetHostClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetHostInvalidInputResponseBody runs the validations defined on
+// ValidateGetHostInvalidInputResponseBody runs a no-op validation on
 // get-host_invalid_input_response_body
 func ValidateGetHostInvalidInputResponseBody(body *GetHostInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetHostNotFoundResponseBody runs the validations defined on
+// ValidateGetHostNotFoundResponseBody runs a no-op validation on
 // get-host_not_found_response_body
 func ValidateGetHostNotFoundResponseBody(body *GetHostNotFoundResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetHostServerErrorResponseBody runs the validations defined on
+// ValidateGetHostServerErrorResponseBody runs a no-op validation on
 // get-host_server_error_response_body
 func ValidateGetHostServerErrorResponseBody(body *GetHostServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateRemoveHostClusterNotInitializedResponseBody runs the validations
-// defined on remove-host_cluster_not_initialized_response_body
+// ValidateRemoveHostClusterNotInitializedResponseBody runs a no-op validation
+// on remove-host_cluster_not_initialized_response_body
 func ValidateRemoveHostClusterNotInitializedResponseBody(body *RemoveHostClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateRemoveHostInvalidInputResponseBody runs the validations defined on
+// ValidateRemoveHostInvalidInputResponseBody runs a no-op validation on
 // remove-host_invalid_input_response_body
 func ValidateRemoveHostInvalidInputResponseBody(body *RemoveHostInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateRemoveHostNotFoundResponseBody runs the validations defined on
+// ValidateRemoveHostNotFoundResponseBody runs a no-op validation on
 // remove-host_not_found_response_body
 func ValidateRemoveHostNotFoundResponseBody(body *RemoveHostNotFoundResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateRemoveHostServerErrorResponseBody runs the validations defined on
+// ValidateRemoveHostServerErrorResponseBody runs a no-op validation on
 // remove-host_server_error_response_body
 func ValidateRemoveHostServerErrorResponseBody(body *RemoveHostServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateListDatabasesClusterNotInitializedResponseBody runs the validations
-// defined on list-databases_cluster_not_initialized_response_body
+// ValidateListDatabasesClusterNotInitializedResponseBody runs a no-op
+// validation on list-databases_cluster_not_initialized_response_body
 func ValidateListDatabasesClusterNotInitializedResponseBody(body *ListDatabasesClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateListDatabasesServerErrorResponseBody runs the validations defined on
+// ValidateListDatabasesServerErrorResponseBody runs a no-op validation on
 // list-databases_server_error_response_body
 func ValidateListDatabasesServerErrorResponseBody(body *ListDatabasesServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateCreateDatabaseDatabaseAlreadyExistsResponseBody runs the validations
-// defined on create-database_database_already_exists_response_body
+// ValidateCreateDatabaseDatabaseAlreadyExistsResponseBody runs a no-op
+// validation on create-database_database_already_exists_response_body
 func ValidateCreateDatabaseDatabaseAlreadyExistsResponseBody(body *CreateDatabaseDatabaseAlreadyExistsResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateCreateDatabaseClusterNotInitializedResponseBody runs the validations
-// defined on create-database_cluster_not_initialized_response_body
+// ValidateCreateDatabaseClusterNotInitializedResponseBody runs a no-op
+// validation on create-database_cluster_not_initialized_response_body
 func ValidateCreateDatabaseClusterNotInitializedResponseBody(body *CreateDatabaseClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateCreateDatabaseOperationAlreadyInProgressResponseBody runs the
-// validations defined on
-// create-database_operation_already_in_progress_response_body
+// ValidateCreateDatabaseOperationAlreadyInProgressResponseBody runs a no-op
+// validation on create-database_operation_already_in_progress_response_body
 func ValidateCreateDatabaseOperationAlreadyInProgressResponseBody(body *CreateDatabaseOperationAlreadyInProgressResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateCreateDatabaseInvalidInputResponseBody runs the validations defined
-// on create-database_invalid_input_response_body
+// ValidateCreateDatabaseInvalidInputResponseBody runs a no-op validation on
+// create-database_invalid_input_response_body
 func ValidateCreateDatabaseInvalidInputResponseBody(body *CreateDatabaseInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateCreateDatabaseServerErrorResponseBody runs the validations defined
-// on create-database_server_error_response_body
+// ValidateCreateDatabaseServerErrorResponseBody runs a no-op validation on
+// create-database_server_error_response_body
 func ValidateCreateDatabaseServerErrorResponseBody(body *CreateDatabaseServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetDatabaseClusterNotInitializedResponseBody runs the validations
-// defined on get-database_cluster_not_initialized_response_body
+// ValidateGetDatabaseClusterNotInitializedResponseBody runs a no-op validation
+// on get-database_cluster_not_initialized_response_body
 func ValidateGetDatabaseClusterNotInitializedResponseBody(body *GetDatabaseClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetDatabaseInvalidInputResponseBody runs the validations defined on
+// ValidateGetDatabaseInvalidInputResponseBody runs a no-op validation on
 // get-database_invalid_input_response_body
 func ValidateGetDatabaseInvalidInputResponseBody(body *GetDatabaseInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetDatabaseNotFoundResponseBody runs the validations defined on
+// ValidateGetDatabaseNotFoundResponseBody runs a no-op validation on
 // get-database_not_found_response_body
 func ValidateGetDatabaseNotFoundResponseBody(body *GetDatabaseNotFoundResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetDatabaseServerErrorResponseBody runs the validations defined on
+// ValidateGetDatabaseServerErrorResponseBody runs a no-op validation on
 // get-database_server_error_response_body
 func ValidateGetDatabaseServerErrorResponseBody(body *GetDatabaseServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateUpdateDatabaseClusterNotInitializedResponseBody runs the validations
-// defined on update-database_cluster_not_initialized_response_body
+// ValidateUpdateDatabaseClusterNotInitializedResponseBody runs a no-op
+// validation on update-database_cluster_not_initialized_response_body
 func ValidateUpdateDatabaseClusterNotInitializedResponseBody(body *UpdateDatabaseClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateUpdateDatabaseDatabaseNotModifiableResponseBody runs the validations
-// defined on update-database_database_not_modifiable_response_body
+// ValidateUpdateDatabaseDatabaseNotModifiableResponseBody runs a no-op
+// validation on update-database_database_not_modifiable_response_body
 func ValidateUpdateDatabaseDatabaseNotModifiableResponseBody(body *UpdateDatabaseDatabaseNotModifiableResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateUpdateDatabaseOperationAlreadyInProgressResponseBody runs the
-// validations defined on
-// update-database_operation_already_in_progress_response_body
+// ValidateUpdateDatabaseOperationAlreadyInProgressResponseBody runs a no-op
+// validation on update-database_operation_already_in_progress_response_body
 func ValidateUpdateDatabaseOperationAlreadyInProgressResponseBody(body *UpdateDatabaseOperationAlreadyInProgressResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateUpdateDatabaseInvalidInputResponseBody runs the validations defined
-// on update-database_invalid_input_response_body
+// ValidateUpdateDatabaseInvalidInputResponseBody runs a no-op validation on
+// update-database_invalid_input_response_body
 func ValidateUpdateDatabaseInvalidInputResponseBody(body *UpdateDatabaseInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateUpdateDatabaseNotFoundResponseBody runs the validations defined on
+// ValidateUpdateDatabaseNotFoundResponseBody runs a no-op validation on
 // update-database_not_found_response_body
 func ValidateUpdateDatabaseNotFoundResponseBody(body *UpdateDatabaseNotFoundResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateUpdateDatabaseServerErrorResponseBody runs the validations defined
-// on update-database_server_error_response_body
+// ValidateUpdateDatabaseServerErrorResponseBody runs a no-op validation on
+// update-database_server_error_response_body
 func ValidateUpdateDatabaseServerErrorResponseBody(body *UpdateDatabaseServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateDeleteDatabaseClusterNotInitializedResponseBody runs the validations
-// defined on delete-database_cluster_not_initialized_response_body
+// ValidateDeleteDatabaseClusterNotInitializedResponseBody runs a no-op
+// validation on delete-database_cluster_not_initialized_response_body
 func ValidateDeleteDatabaseClusterNotInitializedResponseBody(body *DeleteDatabaseClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateDeleteDatabaseDatabaseNotModifiableResponseBody runs the validations
-// defined on delete-database_database_not_modifiable_response_body
+// ValidateDeleteDatabaseDatabaseNotModifiableResponseBody runs a no-op
+// validation on delete-database_database_not_modifiable_response_body
 func ValidateDeleteDatabaseDatabaseNotModifiableResponseBody(body *DeleteDatabaseDatabaseNotModifiableResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateDeleteDatabaseOperationAlreadyInProgressResponseBody runs the
-// validations defined on
-// delete-database_operation_already_in_progress_response_body
+// ValidateDeleteDatabaseOperationAlreadyInProgressResponseBody runs a no-op
+// validation on delete-database_operation_already_in_progress_response_body
 func ValidateDeleteDatabaseOperationAlreadyInProgressResponseBody(body *DeleteDatabaseOperationAlreadyInProgressResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateDeleteDatabaseInvalidInputResponseBody runs the validations defined
-// on delete-database_invalid_input_response_body
+// ValidateDeleteDatabaseInvalidInputResponseBody runs a no-op validation on
+// delete-database_invalid_input_response_body
 func ValidateDeleteDatabaseInvalidInputResponseBody(body *DeleteDatabaseInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateDeleteDatabaseNotFoundResponseBody runs the validations defined on
+// ValidateDeleteDatabaseNotFoundResponseBody runs a no-op validation on
 // delete-database_not_found_response_body
 func ValidateDeleteDatabaseNotFoundResponseBody(body *DeleteDatabaseNotFoundResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateDeleteDatabaseServerErrorResponseBody runs the validations defined
-// on delete-database_server_error_response_body
+// ValidateDeleteDatabaseServerErrorResponseBody runs a no-op validation on
+// delete-database_server_error_response_body
 func ValidateDeleteDatabaseServerErrorResponseBody(body *DeleteDatabaseServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateBackupDatabaseNodeClusterNotInitializedResponseBody runs the
-// validations defined on
-// backup-database-node_cluster_not_initialized_response_body
+// ValidateBackupDatabaseNodeClusterNotInitializedResponseBody runs a no-op
+// validation on backup-database-node_cluster_not_initialized_response_body
 func ValidateBackupDatabaseNodeClusterNotInitializedResponseBody(body *BackupDatabaseNodeClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateBackupDatabaseNodeDatabaseNotModifiableResponseBody runs the
-// validations defined on
-// backup-database-node_database_not_modifiable_response_body
+// ValidateBackupDatabaseNodeDatabaseNotModifiableResponseBody runs a no-op
+// validation on backup-database-node_database_not_modifiable_response_body
 func ValidateBackupDatabaseNodeDatabaseNotModifiableResponseBody(body *BackupDatabaseNodeDatabaseNotModifiableResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateBackupDatabaseNodeOperationAlreadyInProgressResponseBody runs the
-// validations defined on
+// ValidateBackupDatabaseNodeOperationAlreadyInProgressResponseBody runs a
+// no-op validation on
 // backup-database-node_operation_already_in_progress_response_body
 func ValidateBackupDatabaseNodeOperationAlreadyInProgressResponseBody(body *BackupDatabaseNodeOperationAlreadyInProgressResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateBackupDatabaseNodeInvalidInputResponseBody runs the validations
-// defined on backup-database-node_invalid_input_response_body
+// ValidateBackupDatabaseNodeInvalidInputResponseBody runs a no-op validation
+// on backup-database-node_invalid_input_response_body
 func ValidateBackupDatabaseNodeInvalidInputResponseBody(body *BackupDatabaseNodeInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateBackupDatabaseNodeNotFoundResponseBody runs the validations defined
-// on backup-database-node_not_found_response_body
+// ValidateBackupDatabaseNodeNotFoundResponseBody runs a no-op validation on
+// backup-database-node_not_found_response_body
 func ValidateBackupDatabaseNodeNotFoundResponseBody(body *BackupDatabaseNodeNotFoundResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateBackupDatabaseNodeServerErrorResponseBody runs the validations
-// defined on backup-database-node_server_error_response_body
+// ValidateBackupDatabaseNodeServerErrorResponseBody runs a no-op validation on
+// backup-database-node_server_error_response_body
 func ValidateBackupDatabaseNodeServerErrorResponseBody(body *BackupDatabaseNodeServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateSwitchoverDatabaseNodeClusterNotInitializedResponseBody runs the
-// validations defined on
-// switchover-database-node_cluster_not_initialized_response_body
+// ValidateSwitchoverDatabaseNodeClusterNotInitializedResponseBody runs a no-op
+// validation on switchover-database-node_cluster_not_initialized_response_body
 func ValidateSwitchoverDatabaseNodeClusterNotInitializedResponseBody(body *SwitchoverDatabaseNodeClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateSwitchoverDatabaseNodeDatabaseNotModifiableResponseBody runs the
-// validations defined on
-// switchover-database-node_database_not_modifiable_response_body
+// ValidateSwitchoverDatabaseNodeDatabaseNotModifiableResponseBody runs a no-op
+// validation on switchover-database-node_database_not_modifiable_response_body
 func ValidateSwitchoverDatabaseNodeDatabaseNotModifiableResponseBody(body *SwitchoverDatabaseNodeDatabaseNotModifiableResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateSwitchoverDatabaseNodeOperationAlreadyInProgressResponseBody runs
-// the validations defined on
+// ValidateSwitchoverDatabaseNodeOperationAlreadyInProgressResponseBody runs a
+// no-op validation on
 // switchover-database-node_operation_already_in_progress_response_body
 func ValidateSwitchoverDatabaseNodeOperationAlreadyInProgressResponseBody(body *SwitchoverDatabaseNodeOperationAlreadyInProgressResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateSwitchoverDatabaseNodeInvalidInputResponseBody runs the validations
-// defined on switchover-database-node_invalid_input_response_body
+// ValidateSwitchoverDatabaseNodeInvalidInputResponseBody runs a no-op
+// validation on switchover-database-node_invalid_input_response_body
 func ValidateSwitchoverDatabaseNodeInvalidInputResponseBody(body *SwitchoverDatabaseNodeInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateSwitchoverDatabaseNodeNotFoundResponseBody runs the validations
-// defined on switchover-database-node_not_found_response_body
+// ValidateSwitchoverDatabaseNodeNotFoundResponseBody runs a no-op validation
+// on switchover-database-node_not_found_response_body
 func ValidateSwitchoverDatabaseNodeNotFoundResponseBody(body *SwitchoverDatabaseNodeNotFoundResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateSwitchoverDatabaseNodeServerErrorResponseBody runs the validations
-// defined on switchover-database-node_server_error_response_body
+// ValidateSwitchoverDatabaseNodeServerErrorResponseBody runs a no-op
+// validation on switchover-database-node_server_error_response_body
 func ValidateSwitchoverDatabaseNodeServerErrorResponseBody(body *SwitchoverDatabaseNodeServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateFailoverDatabaseNodeClusterNotInitializedResponseBody runs the
-// validations defined on
-// failover-database-node_cluster_not_initialized_response_body
+// ValidateFailoverDatabaseNodeClusterNotInitializedResponseBody runs a no-op
+// validation on failover-database-node_cluster_not_initialized_response_body
 func ValidateFailoverDatabaseNodeClusterNotInitializedResponseBody(body *FailoverDatabaseNodeClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateFailoverDatabaseNodeDatabaseNotModifiableResponseBody runs the
-// validations defined on
-// failover-database-node_database_not_modifiable_response_body
+// ValidateFailoverDatabaseNodeDatabaseNotModifiableResponseBody runs a no-op
+// validation on failover-database-node_database_not_modifiable_response_body
 func ValidateFailoverDatabaseNodeDatabaseNotModifiableResponseBody(body *FailoverDatabaseNodeDatabaseNotModifiableResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateFailoverDatabaseNodeOperationAlreadyInProgressResponseBody runs the
-// validations defined on
+// ValidateFailoverDatabaseNodeOperationAlreadyInProgressResponseBody runs a
+// no-op validation on
 // failover-database-node_operation_already_in_progress_response_body
 func ValidateFailoverDatabaseNodeOperationAlreadyInProgressResponseBody(body *FailoverDatabaseNodeOperationAlreadyInProgressResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateFailoverDatabaseNodeInvalidInputResponseBody runs the validations
-// defined on failover-database-node_invalid_input_response_body
+// ValidateFailoverDatabaseNodeInvalidInputResponseBody runs a no-op validation
+// on failover-database-node_invalid_input_response_body
 func ValidateFailoverDatabaseNodeInvalidInputResponseBody(body *FailoverDatabaseNodeInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateFailoverDatabaseNodeNotFoundResponseBody runs the validations
-// defined on failover-database-node_not_found_response_body
+// ValidateFailoverDatabaseNodeNotFoundResponseBody runs a no-op validation on
+// failover-database-node_not_found_response_body
 func ValidateFailoverDatabaseNodeNotFoundResponseBody(body *FailoverDatabaseNodeNotFoundResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateFailoverDatabaseNodeServerErrorResponseBody runs the validations
-// defined on failover-database-node_server_error_response_body
+// ValidateFailoverDatabaseNodeServerErrorResponseBody runs a no-op validation
+// on failover-database-node_server_error_response_body
 func ValidateFailoverDatabaseNodeServerErrorResponseBody(body *FailoverDatabaseNodeServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateListDatabaseTasksClusterNotInitializedResponseBody runs the
-// validations defined on
-// list-database-tasks_cluster_not_initialized_response_body
+// ValidateListDatabaseTasksClusterNotInitializedResponseBody runs a no-op
+// validation on list-database-tasks_cluster_not_initialized_response_body
 func ValidateListDatabaseTasksClusterNotInitializedResponseBody(body *ListDatabaseTasksClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateListDatabaseTasksInvalidInputResponseBody runs the validations
-// defined on list-database-tasks_invalid_input_response_body
+// ValidateListDatabaseTasksInvalidInputResponseBody runs a no-op validation on
+// list-database-tasks_invalid_input_response_body
 func ValidateListDatabaseTasksInvalidInputResponseBody(body *ListDatabaseTasksInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateListDatabaseTasksNotFoundResponseBody runs the validations defined
-// on list-database-tasks_not_found_response_body
+// ValidateListDatabaseTasksNotFoundResponseBody runs a no-op validation on
+// list-database-tasks_not_found_response_body
 func ValidateListDatabaseTasksNotFoundResponseBody(body *ListDatabaseTasksNotFoundResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateListDatabaseTasksServerErrorResponseBody runs the validations
-// defined on list-database-tasks_server_error_response_body
+// ValidateListDatabaseTasksServerErrorResponseBody runs a no-op validation on
+// list-database-tasks_server_error_response_body
 func ValidateListDatabaseTasksServerErrorResponseBody(body *ListDatabaseTasksServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetDatabaseTaskClusterNotInitializedResponseBody runs the
-// validations defined on
-// get-database-task_cluster_not_initialized_response_body
+// ValidateGetDatabaseTaskClusterNotInitializedResponseBody runs a no-op
+// validation on get-database-task_cluster_not_initialized_response_body
 func ValidateGetDatabaseTaskClusterNotInitializedResponseBody(body *GetDatabaseTaskClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetDatabaseTaskInvalidInputResponseBody runs the validations defined
-// on get-database-task_invalid_input_response_body
+// ValidateGetDatabaseTaskInvalidInputResponseBody runs a no-op validation on
+// get-database-task_invalid_input_response_body
 func ValidateGetDatabaseTaskInvalidInputResponseBody(body *GetDatabaseTaskInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetDatabaseTaskNotFoundResponseBody runs the validations defined on
+// ValidateGetDatabaseTaskNotFoundResponseBody runs a no-op validation on
 // get-database-task_not_found_response_body
 func ValidateGetDatabaseTaskNotFoundResponseBody(body *GetDatabaseTaskNotFoundResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetDatabaseTaskServerErrorResponseBody runs the validations defined
-// on get-database-task_server_error_response_body
+// ValidateGetDatabaseTaskServerErrorResponseBody runs a no-op validation on
+// get-database-task_server_error_response_body
 func ValidateGetDatabaseTaskServerErrorResponseBody(body *GetDatabaseTaskServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetDatabaseTaskLogClusterNotInitializedResponseBody runs the
-// validations defined on
-// get-database-task-log_cluster_not_initialized_response_body
+// ValidateGetDatabaseTaskLogClusterNotInitializedResponseBody runs a no-op
+// validation on get-database-task-log_cluster_not_initialized_response_body
 func ValidateGetDatabaseTaskLogClusterNotInitializedResponseBody(body *GetDatabaseTaskLogClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetDatabaseTaskLogInvalidInputResponseBody runs the validations
-// defined on get-database-task-log_invalid_input_response_body
+// ValidateGetDatabaseTaskLogInvalidInputResponseBody runs a no-op validation
+// on get-database-task-log_invalid_input_response_body
 func ValidateGetDatabaseTaskLogInvalidInputResponseBody(body *GetDatabaseTaskLogInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetDatabaseTaskLogNotFoundResponseBody runs the validations defined
-// on get-database-task-log_not_found_response_body
+// ValidateGetDatabaseTaskLogNotFoundResponseBody runs a no-op validation on
+// get-database-task-log_not_found_response_body
 func ValidateGetDatabaseTaskLogNotFoundResponseBody(body *GetDatabaseTaskLogNotFoundResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetDatabaseTaskLogServerErrorResponseBody runs the validations
-// defined on get-database-task-log_server_error_response_body
+// ValidateGetDatabaseTaskLogServerErrorResponseBody runs a no-op validation on
+// get-database-task-log_server_error_response_body
 func ValidateGetDatabaseTaskLogServerErrorResponseBody(body *GetDatabaseTaskLogServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateRestoreDatabaseClusterNotInitializedResponseBody runs the
-// validations defined on restore-database_cluster_not_initialized_response_body
+// ValidateRestoreDatabaseClusterNotInitializedResponseBody runs a no-op
+// validation on restore-database_cluster_not_initialized_response_body
 func ValidateRestoreDatabaseClusterNotInitializedResponseBody(body *RestoreDatabaseClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateRestoreDatabaseDatabaseNotModifiableResponseBody runs the
-// validations defined on restore-database_database_not_modifiable_response_body
+// ValidateRestoreDatabaseDatabaseNotModifiableResponseBody runs a no-op
+// validation on restore-database_database_not_modifiable_response_body
 func ValidateRestoreDatabaseDatabaseNotModifiableResponseBody(body *RestoreDatabaseDatabaseNotModifiableResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateRestoreDatabaseOperationAlreadyInProgressResponseBody runs the
-// validations defined on
-// restore-database_operation_already_in_progress_response_body
+// ValidateRestoreDatabaseOperationAlreadyInProgressResponseBody runs a no-op
+// validation on restore-database_operation_already_in_progress_response_body
 func ValidateRestoreDatabaseOperationAlreadyInProgressResponseBody(body *RestoreDatabaseOperationAlreadyInProgressResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateRestoreDatabaseInvalidInputResponseBody runs the validations defined
-// on restore-database_invalid_input_response_body
+// ValidateRestoreDatabaseInvalidInputResponseBody runs a no-op validation on
+// restore-database_invalid_input_response_body
 func ValidateRestoreDatabaseInvalidInputResponseBody(body *RestoreDatabaseInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateRestoreDatabaseNotFoundResponseBody runs the validations defined on
+// ValidateRestoreDatabaseNotFoundResponseBody runs a no-op validation on
 // restore-database_not_found_response_body
 func ValidateRestoreDatabaseNotFoundResponseBody(body *RestoreDatabaseNotFoundResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateRestoreDatabaseServerErrorResponseBody runs the validations defined
-// on restore-database_server_error_response_body
+// ValidateRestoreDatabaseServerErrorResponseBody runs a no-op validation on
+// restore-database_server_error_response_body
 func ValidateRestoreDatabaseServerErrorResponseBody(body *RestoreDatabaseServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateGetVersionServerErrorResponseBody runs the validations defined on
+// ValidateGetVersionServerErrorResponseBody runs a no-op validation on
 // get-version_server_error_response_body
 func ValidateGetVersionServerErrorResponseBody(body *GetVersionServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateRestartInstanceClusterNotInitializedResponseBody runs the
-// validations defined on restart-instance_cluster_not_initialized_response_body
+// ValidateRestartInstanceClusterNotInitializedResponseBody runs a no-op
+// validation on restart-instance_cluster_not_initialized_response_body
 func ValidateRestartInstanceClusterNotInitializedResponseBody(body *RestartInstanceClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateRestartInstanceInvalidInputResponseBody runs the validations defined
-// on restart-instance_invalid_input_response_body
+// ValidateRestartInstanceInvalidInputResponseBody runs a no-op validation on
+// restart-instance_invalid_input_response_body
 func ValidateRestartInstanceInvalidInputResponseBody(body *RestartInstanceInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateRestartInstanceNotFoundResponseBody runs the validations defined on
+// ValidateRestartInstanceNotFoundResponseBody runs a no-op validation on
 // restart-instance_not_found_response_body
 func ValidateRestartInstanceNotFoundResponseBody(body *RestartInstanceNotFoundResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateRestartInstanceServerErrorResponseBody runs the validations defined
-// on restart-instance_server_error_response_body
+// ValidateRestartInstanceServerErrorResponseBody runs a no-op validation on
+// restart-instance_server_error_response_body
 func ValidateRestartInstanceServerErrorResponseBody(body *RestartInstanceServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateStopInstanceClusterNotInitializedResponseBody runs the validations
-// defined on stop-instance_cluster_not_initialized_response_body
+// ValidateStopInstanceClusterNotInitializedResponseBody runs a no-op
+// validation on stop-instance_cluster_not_initialized_response_body
 func ValidateStopInstanceClusterNotInitializedResponseBody(body *StopInstanceClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateStopInstanceInvalidInputResponseBody runs the validations defined on
+// ValidateStopInstanceInvalidInputResponseBody runs a no-op validation on
 // stop-instance_invalid_input_response_body
 func ValidateStopInstanceInvalidInputResponseBody(body *StopInstanceInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateStopInstanceNotFoundResponseBody runs the validations defined on
+// ValidateStopInstanceNotFoundResponseBody runs a no-op validation on
 // stop-instance_not_found_response_body
 func ValidateStopInstanceNotFoundResponseBody(body *StopInstanceNotFoundResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateStopInstanceServerErrorResponseBody runs the validations defined on
+// ValidateStopInstanceServerErrorResponseBody runs a no-op validation on
 // stop-instance_server_error_response_body
 func ValidateStopInstanceServerErrorResponseBody(body *StopInstanceServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateStartInstanceClusterNotInitializedResponseBody runs the validations
-// defined on start-instance_cluster_not_initialized_response_body
+// ValidateStartInstanceClusterNotInitializedResponseBody runs a no-op
+// validation on start-instance_cluster_not_initialized_response_body
 func ValidateStartInstanceClusterNotInitializedResponseBody(body *StartInstanceClusterNotInitializedResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateStartInstanceInvalidInputResponseBody runs the validations defined
-// on start-instance_invalid_input_response_body
+// ValidateStartInstanceInvalidInputResponseBody runs a no-op validation on
+// start-instance_invalid_input_response_body
 func ValidateStartInstanceInvalidInputResponseBody(body *StartInstanceInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateStartInstanceNotFoundResponseBody runs the validations defined on
+// ValidateStartInstanceNotFoundResponseBody runs a no-op validation on
 // start-instance_not_found_response_body
 func ValidateStartInstanceNotFoundResponseBody(body *StartInstanceNotFoundResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateStartInstanceServerErrorResponseBody runs the validations defined on
+// ValidateStartInstanceServerErrorResponseBody runs a no-op validation on
 // start-instance_server_error_response_body
 func ValidateStartInstanceServerErrorResponseBody(body *StartInstanceServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateCancelDatabaseTaskNotFoundResponseBody runs the validations defined
-// on cancel-database-task_not_found_response_body
+// ValidateCancelDatabaseTaskNotFoundResponseBody runs a no-op validation on
+// cancel-database-task_not_found_response_body
 func ValidateCancelDatabaseTaskNotFoundResponseBody(body *CancelDatabaseTaskNotFoundResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateCancelDatabaseTaskInvalidInputResponseBody runs the validations
-// defined on cancel-database-task_invalid_input_response_body
+// ValidateCancelDatabaseTaskInvalidInputResponseBody runs a no-op validation
+// on cancel-database-task_invalid_input_response_body
 func ValidateCancelDatabaseTaskInvalidInputResponseBody(body *CancelDatabaseTaskInvalidInputResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateCancelDatabaseTaskServerErrorResponseBody runs the validations
-// defined on cancel-database-task_server_error_response_body
+// ValidateCancelDatabaseTaskServerErrorResponseBody runs a no-op validation on
+// cancel-database-task_server_error_response_body
 func ValidateCancelDatabaseTaskServerErrorResponseBody(body *CancelDatabaseTaskServerErrorResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
 	return
 }
 
-// ValidateEtcdClusterMemberResponseBody runs the validations defined on
+// ValidateEtcdClusterMemberResponseBody runs a no-op validation on
 // EtcdClusterMemberResponseBody
 func ValidateEtcdClusterMemberResponseBody(body *EtcdClusterMemberResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.PeerUrls == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("peer_urls", "body"))
-	}
-	if body.ClientUrls == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("client_urls", "body"))
-	}
 	return
 }
 
-// ValidateClusterCredentialsResponseBody runs the validations defined on
+// ValidateClusterCredentialsResponseBody runs a no-op validation on
 // ClusterCredentialsResponseBody
 func ValidateClusterCredentialsResponseBody(body *ClusterCredentialsResponseBody) (err error) {
-	if body.Username == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
-	}
-	if body.Password == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("password", "body"))
-	}
-	if body.CaCert == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("ca_cert", "body"))
-	}
-	if body.ClientCert == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("client_cert", "body"))
-	}
-	if body.ClientKey == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("client_key", "body"))
-	}
-	if body.ServerCert == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("server_cert", "body"))
-	}
-	if body.ServerKey == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("server_key", "body"))
-	}
 	return
 }
 
-// ValidateClusterStatusResponseBody runs the validations defined on
+// ValidateClusterStatusResponseBody runs a no-op validation on
 // ClusterStatusResponseBody
 func ValidateClusterStatusResponseBody(body *ClusterStatusResponseBody) (err error) {
-	if body.State == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
-	}
-	if body.State != nil {
-		if !(*body.State == "available" || *body.State == "error") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"available", "error"}))
-		}
-	}
 	return
 }
 
-// ValidateHostResponseBody runs the validations defined on HostResponseBody
+// ValidateHostResponseBody runs a no-op validation on HostResponseBody
 func ValidateHostResponseBody(body *HostResponseBody) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
-	if body.Orchestrator == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("orchestrator", "body"))
-	}
-	if body.DataDir == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("data_dir", "body"))
-	}
-	if body.Hostname == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("hostname", "body"))
-	}
-	if body.Ipv4Address == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("ipv4_address", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
-		}
-	}
-	if body.Cohort != nil {
-		if err2 := ValidateHostCohortResponseBody(body.Cohort); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Ipv4Address != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
-	}
-	if body.Status != nil {
-		if err2 := ValidateHostStatusResponseBody(body.Status); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.DefaultPgedgeVersion != nil {
-		if err2 := ValidatePgEdgeVersionResponseBody(body.DefaultPgedgeVersion); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	for _, e := range body.SupportedPgedgeVersions {
-		if e != nil {
-			if err2 := ValidatePgEdgeVersionResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
 	return
 }
 
-// ValidateHostCohortResponseBody runs the validations defined on
+// ValidateHostCohortResponseBody runs a no-op validation on
 // HostCohortResponseBody
 func ValidateHostCohortResponseBody(body *HostCohortResponseBody) (err error) {
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.MemberID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("member_id", "body"))
-	}
-	if body.ControlAvailable == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("control_available", "body"))
-	}
 	return
 }
 
-// ValidateHostStatusResponseBody runs the validations defined on
+// ValidateHostStatusResponseBody runs a no-op validation on
 // HostStatusResponseBody
 func ValidateHostStatusResponseBody(body *HostStatusResponseBody) (err error) {
-	if body.State == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
-	}
-	if body.UpdatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("updated_at", "body"))
-	}
-	if body.Components == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("components", "body"))
-	}
-	if body.State != nil {
-		if !(*body.State == "healthy" || *body.State == "unreachable" || *body.State == "degraded" || *body.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"healthy", "unreachable", "degraded", "unknown"}))
-		}
-	}
-	if body.UpdatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
-	}
 	return
 }
 
-// ValidateComponentStatusResponseBody runs the validations defined on
+// ValidateComponentStatusResponseBody runs a no-op validation on
 // ComponentStatusResponseBody
 func ValidateComponentStatusResponseBody(body *ComponentStatusResponseBody) (err error) {
-	if body.Healthy == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("healthy", "body"))
-	}
 	return
 }
 
-// ValidatePgEdgeVersionResponseBody runs the validations defined on
+// ValidatePgEdgeVersionResponseBody runs a no-op validation on
 // PgEdgeVersionResponseBody
 func ValidatePgEdgeVersionResponseBody(body *PgEdgeVersionResponseBody) (err error) {
-	if body.PostgresVersion == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("postgres_version", "body"))
-	}
-	if body.SpockVersion == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("spock_version", "body"))
-	}
 	return
 }
 
-// ValidateTaskResponseBody runs the validations defined on TaskResponseBody
+// ValidateTaskResponseBody runs a no-op validation on TaskResponseBody
 func ValidateTaskResponseBody(body *TaskResponseBody) (err error) {
-	if body.DatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "body"))
-	}
-	if body.TaskID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "body"))
-	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
-	}
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ParentID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.parent_id", *body.ParentID, goa.FormatUUID))
-	}
-	if body.TaskID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.task_id", *body.TaskID, goa.FormatUUID))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.CompletedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.completed_at", *body.CompletedAt, goa.FormatDateTime))
-	}
-	if body.Status != nil {
-		if !(*body.Status == "pending" || *body.Status == "running" || *body.Status == "completed" || *body.Status == "canceled" || *body.Status == "canceling" || *body.Status == "failed" || *body.Status == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"pending", "running", "completed", "canceled", "canceling", "failed", "unknown"}))
-		}
-	}
 	return
 }
 
-// ValidateDatabaseCollectionResponseBody runs the validations defined on
+// ValidateDatabaseCollectionResponseBody runs a no-op validation on
 // DatabaseCollectionResponseBody
 func ValidateDatabaseCollectionResponseBody(body DatabaseCollectionResponseBody) (err error) {
-	for _, e := range body {
-		if e != nil {
-			if err2 := ValidateDatabaseResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
 	return
 }
 
-// ValidateDatabaseResponseBody runs the validations defined on
-// DatabaseResponseBody
+// ValidateDatabaseResponseBody runs a no-op validation on DatabaseResponseBody
 func ValidateDatabaseResponseBody(body *DatabaseResponseBody) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
-	}
-	if body.UpdatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("updated_at", "body"))
-	}
-	if body.State == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
-		}
-	}
-	if body.TenantID != nil {
-		if utf8.RuneCountInString(*body.TenantID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.tenant_id", *body.TenantID, utf8.RuneCountInString(*body.TenantID), 1, true))
-		}
-	}
-	if body.TenantID != nil {
-		if utf8.RuneCountInString(*body.TenantID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.tenant_id", *body.TenantID, utf8.RuneCountInString(*body.TenantID), 63, false))
-		}
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.UpdatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
-	}
-	if body.State != nil {
-		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "available" || *body.State == "deleting" || *body.State == "degraded" || *body.State == "failed" || *body.State == "backing_up" || *body.State == "restoring" || *body.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "available", "deleting", "degraded", "failed", "backing_up", "restoring", "unknown"}))
-		}
-	}
-	if body.Instances != nil {
-		if err2 := ValidateInstanceCollectionResponseBody(body.Instances); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Spec != nil {
-		if err2 := ValidateDatabaseSpecResponseBody(body.Spec); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	return
 }
 
-// ValidateInstanceCollectionResponseBody runs the validations defined on
+// ValidateInstanceCollectionResponseBody runs a no-op validation on
 // InstanceCollectionResponseBody
 func ValidateInstanceCollectionResponseBody(body InstanceCollectionResponseBody) (err error) {
-	for _, e := range body {
-		if e != nil {
-			if err2 := ValidateInstanceResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
 	return
 }
 
-// ValidateInstanceResponseBody runs the validations defined on
-// InstanceResponseBody
+// ValidateInstanceResponseBody runs a no-op validation on InstanceResponseBody
 func ValidateInstanceResponseBody(body *InstanceResponseBody) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
-	if body.HostID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "body"))
-	}
-	if body.NodeName == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("node_name", "body"))
-	}
-	if body.CreatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "body"))
-	}
-	if body.UpdatedAt == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("updated_at", "body"))
-	}
-	if body.State == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("state", "body"))
-	}
-	if body.CreatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.created_at", *body.CreatedAt, goa.FormatDateTime))
-	}
-	if body.UpdatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.updated_at", *body.UpdatedAt, goa.FormatDateTime))
-	}
-	if body.StatusUpdatedAt != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.status_updated_at", *body.StatusUpdatedAt, goa.FormatDateTime))
-	}
-	if body.State != nil {
-		if !(*body.State == "creating" || *body.State == "modifying" || *body.State == "backing_up" || *body.State == "available" || *body.State == "degraded" || *body.State == "failed" || *body.State == "stopped" || *body.State == "unknown") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.state", *body.State, []any{"creating", "modifying", "backing_up", "available", "degraded", "failed", "stopped", "unknown"}))
-		}
-	}
-	if body.ConnectionInfo != nil {
-		if err2 := ValidateInstanceConnectionInfoResponseBody(body.ConnectionInfo); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.Spock != nil {
-		if err2 := ValidateInstanceSpockStatusResponseBody(body.Spock); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	return
 }
 
-// ValidateInstanceConnectionInfoResponseBody runs the validations defined on
+// ValidateInstanceConnectionInfoResponseBody runs a no-op validation on
 // InstanceConnectionInfoResponseBody
 func ValidateInstanceConnectionInfoResponseBody(body *InstanceConnectionInfoResponseBody) (err error) {
-	if body.Ipv4Address != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
-	}
 	return
 }
 
-// ValidateInstanceSpockStatusResponseBody runs the validations defined on
+// ValidateInstanceSpockStatusResponseBody runs a no-op validation on
 // InstanceSpockStatusResponseBody
 func ValidateInstanceSpockStatusResponseBody(body *InstanceSpockStatusResponseBody) (err error) {
-	for _, e := range body.Subscriptions {
-		if e != nil {
-			if err2 := ValidateInstanceSubscriptionResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
 	return
 }
 
-// ValidateInstanceSubscriptionResponseBody runs the validations defined on
+// ValidateInstanceSubscriptionResponseBody runs a no-op validation on
 // InstanceSubscriptionResponseBody
 func ValidateInstanceSubscriptionResponseBody(body *InstanceSubscriptionResponseBody) (err error) {
-	if body.ProviderNode == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("provider_node", "body"))
-	}
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.Status == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
-	}
-	if body.ProviderNode != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.provider_node", *body.ProviderNode, "n[0-9]+"))
-	}
 	return
 }
 
-// ValidateDatabaseSpecResponseBody runs the validations defined on
+// ValidateDatabaseSpecResponseBody runs a no-op validation on
 // DatabaseSpecResponseBody
 func ValidateDatabaseSpecResponseBody(body *DatabaseSpecResponseBody) (err error) {
-	if body.DatabaseName == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_name", "body"))
-	}
-	if body.Nodes == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("nodes", "body"))
-	}
-	if body.DatabaseName != nil {
-		if utf8.RuneCountInString(*body.DatabaseName) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.database_name", *body.DatabaseName, utf8.RuneCountInString(*body.DatabaseName), 1, true))
-		}
-	}
-	if body.DatabaseName != nil {
-		if utf8.RuneCountInString(*body.DatabaseName) > 31 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.database_name", *body.DatabaseName, utf8.RuneCountInString(*body.DatabaseName), 31, false))
-		}
-	}
-	if body.PostgresVersion != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.postgres_version", *body.PostgresVersion, "^\\d{2}\\.\\d{1,2}$"))
-	}
-	if body.SpockVersion != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.spock_version", *body.SpockVersion, "^\\d{1}$"))
-	}
-	if body.Port != nil {
-		if *body.Port < 0 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 0, true))
-		}
-	}
-	if body.Port != nil {
-		if *body.Port > 65535 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 65535, false))
-		}
-	}
-	if body.Cpus != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.cpus", *body.Cpus, "^[0-9]+(\\.[0-9]{1,3}|m)?$"))
-	}
-	if body.Memory != nil {
-		if utf8.RuneCountInString(*body.Memory) > 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.memory", *body.Memory, utf8.RuneCountInString(*body.Memory), 16, false))
-		}
-	}
-	if len(body.Nodes) < 1 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.nodes", body.Nodes, len(body.Nodes), 1, true))
-	}
-	if len(body.Nodes) > 9 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.nodes", body.Nodes, len(body.Nodes), 9, false))
-	}
-	for _, e := range body.Nodes {
-		if e != nil {
-			if err2 := ValidateDatabaseNodeSpecResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	if len(body.DatabaseUsers) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.database_users", body.DatabaseUsers, len(body.DatabaseUsers), 16, false))
-	}
-	for _, e := range body.DatabaseUsers {
-		if e != nil {
-			if err2 := ValidateDatabaseUserSpecResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	if body.BackupConfig != nil {
-		if err2 := ValidateBackupConfigSpecResponseBody(body.BackupConfig); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.RestoreConfig != nil {
-		if err2 := ValidateRestoreConfigSpecResponseBody(body.RestoreConfig); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if len(body.PostgresqlConf) > 64 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.postgresql_conf", body.PostgresqlConf, len(body.PostgresqlConf), 64, false))
-	}
-	if body.OrchestratorOpts != nil {
-		if err2 := ValidateOrchestratorOptsResponseBody(body.OrchestratorOpts); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	return
 }
 
-// ValidateDatabaseNodeSpecResponseBody runs the validations defined on
+// ValidateDatabaseNodeSpecResponseBody runs a no-op validation on
 // DatabaseNodeSpecResponseBody
 func ValidateDatabaseNodeSpecResponseBody(body *DatabaseNodeSpecResponseBody) (err error) {
-	if body.Name == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
-	}
-	if body.HostIds == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
-	}
-	if body.Name != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.name", *body.Name, "n[0-9]+"))
-	}
-	if len(body.HostIds) < 1 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
-	}
-	for _, e := range body.HostIds {
-		if utf8.RuneCountInString(e) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 1, true))
-		}
-		if utf8.RuneCountInString(e) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 63, false))
-		}
-	}
-	if body.PostgresVersion != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.postgres_version", *body.PostgresVersion, "^\\d{2}\\.\\d{1,2}$"))
-	}
-	if body.Port != nil {
-		if *body.Port < 0 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 0, true))
-		}
-	}
-	if body.Port != nil {
-		if *body.Port > 65535 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 65535, false))
-		}
-	}
-	if body.Cpus != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.cpus", *body.Cpus, "^[0-9]+(\\.[0-9]{1,3}|m)?$"))
-	}
-	if body.Memory != nil {
-		if utf8.RuneCountInString(*body.Memory) > 16 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.memory", *body.Memory, utf8.RuneCountInString(*body.Memory), 16, false))
-		}
-	}
-	if body.BackupConfig != nil {
-		if err2 := ValidateBackupConfigSpecResponseBody(body.BackupConfig); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.RestoreConfig != nil {
-		if err2 := ValidateRestoreConfigSpecResponseBody(body.RestoreConfig); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if body.OrchestratorOpts != nil {
-		if err2 := ValidateOrchestratorOptsResponseBody(body.OrchestratorOpts); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	return
 }
 
-// ValidateBackupConfigSpecResponseBody runs the validations defined on
+// ValidateBackupConfigSpecResponseBody runs a no-op validation on
 // BackupConfigSpecResponseBody
 func ValidateBackupConfigSpecResponseBody(body *BackupConfigSpecResponseBody) (err error) {
-	if body.Repositories == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("repositories", "body"))
-	}
-	if len(body.Repositories) < 1 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.repositories", body.Repositories, len(body.Repositories), 1, true))
-	}
-	for _, e := range body.Repositories {
-		if e != nil {
-			if err2 := ValidateBackupRepositorySpecResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	if len(body.Schedules) > 32 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.schedules", body.Schedules, len(body.Schedules), 32, false))
-	}
-	for _, e := range body.Schedules {
-		if e != nil {
-			if err2 := ValidateBackupScheduleSpecResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
 	return
 }
 
-// ValidateBackupRepositorySpecResponseBody runs the validations defined on
+// ValidateBackupRepositorySpecResponseBody runs a no-op validation on
 // BackupRepositorySpecResponseBody
 func ValidateBackupRepositorySpecResponseBody(body *BackupRepositorySpecResponseBody) (err error) {
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
-		}
-	}
-	if body.Type != nil {
-		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure" || *body.Type == "posix" || *body.Type == "cifs") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"s3", "gcs", "azure", "posix", "cifs"}))
-		}
-	}
-	if body.S3Bucket != nil {
-		if utf8.RuneCountInString(*body.S3Bucket) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_bucket", *body.S3Bucket, utf8.RuneCountInString(*body.S3Bucket), 3, true))
-		}
-	}
-	if body.S3Bucket != nil {
-		if utf8.RuneCountInString(*body.S3Bucket) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_bucket", *body.S3Bucket, utf8.RuneCountInString(*body.S3Bucket), 63, false))
-		}
-	}
-	if body.S3Region != nil {
-		if utf8.RuneCountInString(*body.S3Region) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_region", *body.S3Region, utf8.RuneCountInString(*body.S3Region), 1, true))
-		}
-	}
-	if body.S3Region != nil {
-		if utf8.RuneCountInString(*body.S3Region) > 32 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_region", *body.S3Region, utf8.RuneCountInString(*body.S3Region), 32, false))
-		}
-	}
-	if body.S3Endpoint != nil {
-		if utf8.RuneCountInString(*body.S3Endpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 3, true))
-		}
-	}
-	if body.S3Endpoint != nil {
-		if utf8.RuneCountInString(*body.S3Endpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 128, false))
-		}
-	}
-	if body.S3Key != nil {
-		if utf8.RuneCountInString(*body.S3Key) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 128, false))
-		}
-	}
-	if body.S3KeySecret != nil {
-		if utf8.RuneCountInString(*body.S3KeySecret) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key_secret", *body.S3KeySecret, utf8.RuneCountInString(*body.S3KeySecret), 128, false))
-		}
-	}
-	if body.GcsBucket != nil {
-		if utf8.RuneCountInString(*body.GcsBucket) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_bucket", *body.GcsBucket, utf8.RuneCountInString(*body.GcsBucket), 3, true))
-		}
-	}
-	if body.GcsBucket != nil {
-		if utf8.RuneCountInString(*body.GcsBucket) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_bucket", *body.GcsBucket, utf8.RuneCountInString(*body.GcsBucket), 63, false))
-		}
-	}
-	if body.GcsEndpoint != nil {
-		if utf8.RuneCountInString(*body.GcsEndpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_endpoint", *body.GcsEndpoint, utf8.RuneCountInString(*body.GcsEndpoint), 3, true))
-		}
-	}
-	if body.GcsEndpoint != nil {
-		if utf8.RuneCountInString(*body.GcsEndpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_endpoint", *body.GcsEndpoint, utf8.RuneCountInString(*body.GcsEndpoint), 128, false))
-		}
-	}
-	if body.GcsKey != nil {
-		if utf8.RuneCountInString(*body.GcsKey) > 1024 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_key", *body.GcsKey, utf8.RuneCountInString(*body.GcsKey), 1024, false))
-		}
-	}
-	if body.AzureAccount != nil {
-		if utf8.RuneCountInString(*body.AzureAccount) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_account", *body.AzureAccount, utf8.RuneCountInString(*body.AzureAccount), 3, true))
-		}
-	}
-	if body.AzureAccount != nil {
-		if utf8.RuneCountInString(*body.AzureAccount) > 24 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_account", *body.AzureAccount, utf8.RuneCountInString(*body.AzureAccount), 24, false))
-		}
-	}
-	if body.AzureContainer != nil {
-		if utf8.RuneCountInString(*body.AzureContainer) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_container", *body.AzureContainer, utf8.RuneCountInString(*body.AzureContainer), 3, true))
-		}
-	}
-	if body.AzureContainer != nil {
-		if utf8.RuneCountInString(*body.AzureContainer) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_container", *body.AzureContainer, utf8.RuneCountInString(*body.AzureContainer), 63, false))
-		}
-	}
-	if body.AzureEndpoint != nil {
-		if utf8.RuneCountInString(*body.AzureEndpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_endpoint", *body.AzureEndpoint, utf8.RuneCountInString(*body.AzureEndpoint), 3, true))
-		}
-	}
-	if body.AzureEndpoint != nil {
-		if utf8.RuneCountInString(*body.AzureEndpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_endpoint", *body.AzureEndpoint, utf8.RuneCountInString(*body.AzureEndpoint), 128, false))
-		}
-	}
-	if body.AzureKey != nil {
-		if utf8.RuneCountInString(*body.AzureKey) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_key", *body.AzureKey, utf8.RuneCountInString(*body.AzureKey), 128, false))
-		}
-	}
-	if body.RetentionFull != nil {
-		if *body.RetentionFull < 1 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.retention_full", *body.RetentionFull, 1, true))
-		}
-	}
-	if body.RetentionFull != nil {
-		if *body.RetentionFull > 9.999999e+06 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.retention_full", *body.RetentionFull, 9.999999e+06, false))
-		}
-	}
-	if body.RetentionFullType != nil {
-		if !(*body.RetentionFullType == "time" || *body.RetentionFullType == "count") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.retention_full_type", *body.RetentionFullType, []any{"time", "count"}))
-		}
-	}
-	if body.BasePath != nil {
-		if utf8.RuneCountInString(*body.BasePath) > 256 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.base_path", *body.BasePath, utf8.RuneCountInString(*body.BasePath), 256, false))
-		}
-	}
 	return
 }
 
-// ValidateBackupScheduleSpecResponseBody runs the validations defined on
+// ValidateBackupScheduleSpecResponseBody runs a no-op validation on
 // BackupScheduleSpecResponseBody
 func ValidateBackupScheduleSpecResponseBody(body *BackupScheduleSpecResponseBody) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.CronExpression == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("cron_expression", "body"))
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 64 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 64, false))
-		}
-	}
-	if body.Type != nil {
-		if !(*body.Type == "full" || *body.Type == "incr") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"full", "incr"}))
-		}
-	}
-	if body.CronExpression != nil {
-		if utf8.RuneCountInString(*body.CronExpression) > 32 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.cron_expression", *body.CronExpression, utf8.RuneCountInString(*body.CronExpression), 32, false))
-		}
-	}
 	return
 }
 
-// ValidateRestoreConfigSpecResponseBody runs the validations defined on
+// ValidateRestoreConfigSpecResponseBody runs a no-op validation on
 // RestoreConfigSpecResponseBody
 func ValidateRestoreConfigSpecResponseBody(body *RestoreConfigSpecResponseBody) (err error) {
-	if body.SourceDatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("source_database_id", "body"))
-	}
-	if body.SourceNodeName == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("source_node_name", "body"))
-	}
-	if body.SourceDatabaseName == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("source_database_name", "body"))
-	}
-	if body.Repository == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("repository", "body"))
-	}
-	if body.SourceDatabaseID != nil {
-		if utf8.RuneCountInString(*body.SourceDatabaseID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", *body.SourceDatabaseID, utf8.RuneCountInString(*body.SourceDatabaseID), 1, true))
-		}
-	}
-	if body.SourceDatabaseID != nil {
-		if utf8.RuneCountInString(*body.SourceDatabaseID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", *body.SourceDatabaseID, utf8.RuneCountInString(*body.SourceDatabaseID), 63, false))
-		}
-	}
-	if body.SourceNodeName != nil {
-		err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", *body.SourceNodeName, "n[0-9]+"))
-	}
-	if body.SourceDatabaseName != nil {
-		if utf8.RuneCountInString(*body.SourceDatabaseName) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_name", *body.SourceDatabaseName, utf8.RuneCountInString(*body.SourceDatabaseName), 1, true))
-		}
-	}
-	if body.SourceDatabaseName != nil {
-		if utf8.RuneCountInString(*body.SourceDatabaseName) > 31 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_name", *body.SourceDatabaseName, utf8.RuneCountInString(*body.SourceDatabaseName), 31, false))
-		}
-	}
-	if body.Repository != nil {
-		if err2 := ValidateRestoreRepositorySpecResponseBody(body.Repository); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
-	if len(body.RestoreOptions) > 32 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.restore_options", body.RestoreOptions, len(body.RestoreOptions), 32, false))
-	}
 	return
 }
 
-// ValidateRestoreRepositorySpecResponseBody runs the validations defined on
+// ValidateRestoreRepositorySpecResponseBody runs a no-op validation on
 // RestoreRepositorySpecResponseBody
 func ValidateRestoreRepositorySpecResponseBody(body *RestoreRepositorySpecResponseBody) (err error) {
-	if body.Type == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("type", "body"))
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 1, true))
-		}
-	}
-	if body.ID != nil {
-		if utf8.RuneCountInString(*body.ID) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.id", *body.ID, utf8.RuneCountInString(*body.ID), 63, false))
-		}
-	}
-	if body.Type != nil {
-		if !(*body.Type == "s3" || *body.Type == "gcs" || *body.Type == "azure" || *body.Type == "posix" || *body.Type == "cifs") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", *body.Type, []any{"s3", "gcs", "azure", "posix", "cifs"}))
-		}
-	}
-	if body.S3Bucket != nil {
-		if utf8.RuneCountInString(*body.S3Bucket) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_bucket", *body.S3Bucket, utf8.RuneCountInString(*body.S3Bucket), 3, true))
-		}
-	}
-	if body.S3Bucket != nil {
-		if utf8.RuneCountInString(*body.S3Bucket) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_bucket", *body.S3Bucket, utf8.RuneCountInString(*body.S3Bucket), 63, false))
-		}
-	}
-	if body.S3Region != nil {
-		if utf8.RuneCountInString(*body.S3Region) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_region", *body.S3Region, utf8.RuneCountInString(*body.S3Region), 1, true))
-		}
-	}
-	if body.S3Region != nil {
-		if utf8.RuneCountInString(*body.S3Region) > 32 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_region", *body.S3Region, utf8.RuneCountInString(*body.S3Region), 32, false))
-		}
-	}
-	if body.S3Endpoint != nil {
-		if utf8.RuneCountInString(*body.S3Endpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 3, true))
-		}
-	}
-	if body.S3Endpoint != nil {
-		if utf8.RuneCountInString(*body.S3Endpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_endpoint", *body.S3Endpoint, utf8.RuneCountInString(*body.S3Endpoint), 128, false))
-		}
-	}
-	if body.S3Key != nil {
-		if utf8.RuneCountInString(*body.S3Key) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key", *body.S3Key, utf8.RuneCountInString(*body.S3Key), 128, false))
-		}
-	}
-	if body.S3KeySecret != nil {
-		if utf8.RuneCountInString(*body.S3KeySecret) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.s3_key_secret", *body.S3KeySecret, utf8.RuneCountInString(*body.S3KeySecret), 128, false))
-		}
-	}
-	if body.GcsBucket != nil {
-		if utf8.RuneCountInString(*body.GcsBucket) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_bucket", *body.GcsBucket, utf8.RuneCountInString(*body.GcsBucket), 3, true))
-		}
-	}
-	if body.GcsBucket != nil {
-		if utf8.RuneCountInString(*body.GcsBucket) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_bucket", *body.GcsBucket, utf8.RuneCountInString(*body.GcsBucket), 63, false))
-		}
-	}
-	if body.GcsEndpoint != nil {
-		if utf8.RuneCountInString(*body.GcsEndpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_endpoint", *body.GcsEndpoint, utf8.RuneCountInString(*body.GcsEndpoint), 3, true))
-		}
-	}
-	if body.GcsEndpoint != nil {
-		if utf8.RuneCountInString(*body.GcsEndpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_endpoint", *body.GcsEndpoint, utf8.RuneCountInString(*body.GcsEndpoint), 128, false))
-		}
-	}
-	if body.GcsKey != nil {
-		if utf8.RuneCountInString(*body.GcsKey) > 1024 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.gcs_key", *body.GcsKey, utf8.RuneCountInString(*body.GcsKey), 1024, false))
-		}
-	}
-	if body.AzureAccount != nil {
-		if utf8.RuneCountInString(*body.AzureAccount) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_account", *body.AzureAccount, utf8.RuneCountInString(*body.AzureAccount), 3, true))
-		}
-	}
-	if body.AzureAccount != nil {
-		if utf8.RuneCountInString(*body.AzureAccount) > 24 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_account", *body.AzureAccount, utf8.RuneCountInString(*body.AzureAccount), 24, false))
-		}
-	}
-	if body.AzureContainer != nil {
-		if utf8.RuneCountInString(*body.AzureContainer) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_container", *body.AzureContainer, utf8.RuneCountInString(*body.AzureContainer), 3, true))
-		}
-	}
-	if body.AzureContainer != nil {
-		if utf8.RuneCountInString(*body.AzureContainer) > 63 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_container", *body.AzureContainer, utf8.RuneCountInString(*body.AzureContainer), 63, false))
-		}
-	}
-	if body.AzureEndpoint != nil {
-		if utf8.RuneCountInString(*body.AzureEndpoint) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_endpoint", *body.AzureEndpoint, utf8.RuneCountInString(*body.AzureEndpoint), 3, true))
-		}
-	}
-	if body.AzureEndpoint != nil {
-		if utf8.RuneCountInString(*body.AzureEndpoint) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_endpoint", *body.AzureEndpoint, utf8.RuneCountInString(*body.AzureEndpoint), 128, false))
-		}
-	}
-	if body.AzureKey != nil {
-		if utf8.RuneCountInString(*body.AzureKey) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.azure_key", *body.AzureKey, utf8.RuneCountInString(*body.AzureKey), 128, false))
-		}
-	}
-	if body.BasePath != nil {
-		if utf8.RuneCountInString(*body.BasePath) > 256 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.base_path", *body.BasePath, utf8.RuneCountInString(*body.BasePath), 256, false))
-		}
-	}
 	return
 }
 
-// ValidateOrchestratorOptsResponseBody runs the validations defined on
+// ValidateOrchestratorOptsResponseBody runs a no-op validation on
 // OrchestratorOptsResponseBody
 func ValidateOrchestratorOptsResponseBody(body *OrchestratorOptsResponseBody) (err error) {
-	if body.Swarm != nil {
-		if err2 := ValidateSwarmOptsResponseBody(body.Swarm); err2 != nil {
-			err = goa.MergeErrors(err, err2)
-		}
-	}
 	return
 }
 
-// ValidateSwarmOptsResponseBody runs the validations defined on
+// ValidateSwarmOptsResponseBody runs a no-op validation on
 // SwarmOptsResponseBody
 func ValidateSwarmOptsResponseBody(body *SwarmOptsResponseBody) (err error) {
-	if len(body.ExtraVolumes) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_volumes", body.ExtraVolumes, len(body.ExtraVolumes), 16, false))
-	}
-	for _, e := range body.ExtraVolumes {
-		if e != nil {
-			if err2 := ValidateExtraVolumesSpecResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	if len(body.ExtraNetworks) > 8 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.extra_networks", body.ExtraNetworks, len(body.ExtraNetworks), 8, false))
-	}
-	for _, e := range body.ExtraNetworks {
-		if e != nil {
-			if err2 := ValidateExtraNetworkSpecResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
 	return
 }
 
-// ValidateExtraVolumesSpecResponseBody runs the validations defined on
+// ValidateExtraVolumesSpecResponseBody runs a no-op validation on
 // ExtraVolumesSpecResponseBody
 func ValidateExtraVolumesSpecResponseBody(body *ExtraVolumesSpecResponseBody) (err error) {
-	if body.HostPath == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("host_path", "body"))
-	}
-	if body.DestinationPath == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("destination_path", "body"))
-	}
-	if body.HostPath != nil {
-		if utf8.RuneCountInString(*body.HostPath) > 256 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_path", *body.HostPath, utf8.RuneCountInString(*body.HostPath), 256, false))
-		}
-	}
-	if body.DestinationPath != nil {
-		if utf8.RuneCountInString(*body.DestinationPath) > 256 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.destination_path", *body.DestinationPath, utf8.RuneCountInString(*body.DestinationPath), 256, false))
-		}
-	}
 	return
 }
 
-// ValidateExtraNetworkSpecResponseBody runs the validations defined on
+// ValidateExtraNetworkSpecResponseBody runs a no-op validation on
 // ExtraNetworkSpecResponseBody
 func ValidateExtraNetworkSpecResponseBody(body *ExtraNetworkSpecResponseBody) (err error) {
-	if body.ID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("id", "body"))
-	}
-	if len(body.Aliases) > 8 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.aliases", body.Aliases, len(body.Aliases), 8, false))
-	}
 	return
 }
 
-// ValidateDatabaseUserSpecResponseBody runs the validations defined on
+// ValidateDatabaseUserSpecResponseBody runs a no-op validation on
 // DatabaseUserSpecResponseBody
 func ValidateDatabaseUserSpecResponseBody(body *DatabaseUserSpecResponseBody) (err error) {
-	if body.Username == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("username", "body"))
-	}
-	if body.Username != nil {
-		if utf8.RuneCountInString(*body.Username) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.username", *body.Username, utf8.RuneCountInString(*body.Username), 1, true))
-		}
-	}
-	if body.Password != nil {
-		if utf8.RuneCountInString(*body.Password) < 1 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.password", *body.Password, utf8.RuneCountInString(*body.Password), 1, true))
-		}
-	}
-	if len(body.Attributes) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.attributes", body.Attributes, len(body.Attributes), 16, false))
-	}
-	if len(body.Roles) > 16 {
-		err = goa.MergeErrors(err, goa.InvalidLengthError("body.roles", body.Roles, len(body.Roles), 16, false))
-	}
 	return
 }
 
@@ -7822,17 +6001,8 @@ func ValidateDatabaseUserSpecRequestBodyRequestBody(body *DatabaseUserSpecReques
 	return
 }
 
-// ValidateTaskLogEntryResponseBody runs the validations defined on
+// ValidateTaskLogEntryResponseBody runs a no-op validation on
 // TaskLogEntryResponseBody
 func ValidateTaskLogEntryResponseBody(body *TaskLogEntryResponseBody) (err error) {
-	if body.Timestamp == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("timestamp", "body"))
-	}
-	if body.Message == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
-	}
-	if body.Timestamp != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.timestamp", *body.Timestamp, goa.FormatDateTime))
-	}
 	return
 }
