@@ -816,6 +816,84 @@ func BuildGetHostTaskLogPayload(controlPlaneGetHostTaskLogHostID string, control
 	return v, nil
 }
 
+// BuildListTasksPayload builds the payload for the control-plane list-tasks
+// endpoint from CLI flags.
+func BuildListTasksPayload(controlPlaneListTasksScope string, controlPlaneListTasksEntityID string, controlPlaneListTasksAfterTaskID string, controlPlaneListTasksLimit string, controlPlaneListTasksSortOrder string) (*controlplane.ListTasksPayload, error) {
+	var err error
+	var scope *string
+	{
+		if controlPlaneListTasksScope != "" {
+			scope = &controlPlaneListTasksScope
+			if !(*scope == "database" || *scope == "host") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("scope", *scope, []any{"database", "host"}))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	var entityID *string
+	{
+		if controlPlaneListTasksEntityID != "" {
+			entityID = &controlPlaneListTasksEntityID
+			if utf8.RuneCountInString(*entityID) < 1 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("entity_id", *entityID, utf8.RuneCountInString(*entityID), 1, true))
+			}
+			if utf8.RuneCountInString(*entityID) > 63 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("entity_id", *entityID, utf8.RuneCountInString(*entityID), 63, false))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	var afterTaskID *string
+	{
+		if controlPlaneListTasksAfterTaskID != "" {
+			afterTaskID = &controlPlaneListTasksAfterTaskID
+			err = goa.MergeErrors(err, goa.ValidateFormat("after_task_id", *afterTaskID, goa.FormatUUID))
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	var limit *int
+	{
+		if controlPlaneListTasksLimit != "" {
+			var v int64
+			v, err = strconv.ParseInt(controlPlaneListTasksLimit, 10, strconv.IntSize)
+			val := int(v)
+			limit = &val
+			if err != nil {
+				return nil, fmt.Errorf("invalid value for limit, must be INT")
+			}
+		}
+	}
+	var sortOrder *string
+	{
+		if controlPlaneListTasksSortOrder != "" {
+			sortOrder = &controlPlaneListTasksSortOrder
+			if !(*sortOrder == "asc" || *sortOrder == "ascend" || *sortOrder == "ascending" || *sortOrder == "desc" || *sortOrder == "descend" || *sortOrder == "descending") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("sort_order", *sortOrder, []any{"asc", "ascend", "ascending", "desc", "descend", "descending"}))
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	v := &controlplane.ListTasksPayload{}
+	v.Scope = scope
+	if entityID != nil {
+		tmpentityID := controlplane.Identifier(*entityID)
+		v.EntityID = &tmpentityID
+	}
+	v.AfterTaskID = afterTaskID
+	v.Limit = limit
+	v.SortOrder = sortOrder
+
+	return v, nil
+}
+
 // BuildRestoreDatabasePayload builds the payload for the control-plane
 // restore-database endpoint from CLI flags.
 func BuildRestoreDatabasePayload(controlPlaneRestoreDatabaseBody string, controlPlaneRestoreDatabaseDatabaseID string, controlPlaneRestoreDatabaseForce string) (*controlplane.RestoreDatabasePayload, error) {

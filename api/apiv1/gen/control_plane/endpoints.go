@@ -37,6 +37,7 @@ type Endpoints struct {
 	ListHostTasks          goa.Endpoint
 	GetHostTask            goa.Endpoint
 	GetHostTaskLog         goa.Endpoint
+	ListTasks              goa.Endpoint
 	RestoreDatabase        goa.Endpoint
 	GetVersion             goa.Endpoint
 	RestartInstance        goa.Endpoint
@@ -70,6 +71,7 @@ func NewEndpoints(s Service) *Endpoints {
 		ListHostTasks:          NewListHostTasksEndpoint(s),
 		GetHostTask:            NewGetHostTaskEndpoint(s),
 		GetHostTaskLog:         NewGetHostTaskLogEndpoint(s),
+		ListTasks:              NewListTasksEndpoint(s),
 		RestoreDatabase:        NewRestoreDatabaseEndpoint(s),
 		GetVersion:             NewGetVersionEndpoint(s),
 		RestartInstance:        NewRestartInstanceEndpoint(s),
@@ -104,6 +106,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.ListHostTasks = m(e.ListHostTasks)
 	e.GetHostTask = m(e.GetHostTask)
 	e.GetHostTaskLog = m(e.GetHostTaskLog)
+	e.ListTasks = m(e.ListTasks)
 	e.RestoreDatabase = m(e.RestoreDatabase)
 	e.GetVersion = m(e.GetVersion)
 	e.RestartInstance = m(e.RestartInstance)
@@ -313,6 +316,15 @@ func NewGetHostTaskLogEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*GetHostTaskLogPayload)
 		return s.GetHostTaskLog(ctx, p)
+	}
+}
+
+// NewListTasksEndpoint returns an endpoint function that calls the method
+// "list-tasks" of service "control-plane".
+func NewListTasksEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*ListTasksPayload)
+		return s.ListTasks(ctx, p)
 	}
 }
 

@@ -329,3 +329,33 @@ var ListHostTasksResponse = g.Type("ListHostTasksResponse", func() {
 		},
 	})
 })
+
+var ListTasksResponse = g.Type("ListTasksResponse", func() {
+	g.Attribute("tasks", g.ArrayOf(Task))
+
+	g.Example(map[string]any{
+		"tasks": []map[string]any{
+			{
+				"completed_at": "2025-06-18T17:54:36Z",
+				"created_at":   "2025-06-18T17:54:28Z",
+				"scope":        "database",
+				"entity_id":    "storefront",
+				"database_id":  "storefront",
+				"instance_id":  "storefront-n1-689qacsi",
+				"status":       "completed",
+				"task_id":      "0197842d-9082-7496-b787-77bd2e11809f",
+				"type":         "node_backup",
+			},
+			{
+				"completed_at": "2025-06-18T17:54:36Z",
+				"created_at":   "2025-06-18T17:54:28Z",
+				"scope":        "host",
+				"entity_id":    "host-1",
+				"host_id":      "host-1",
+				"status":       "completed",
+				"task_id":      "0197842d-9082-7496-b787-77bd2e11809f",
+				"type":         "remove_host",
+			},
+		},
+	})
+})

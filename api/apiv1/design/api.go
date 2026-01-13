@@ -633,6 +633,50 @@ var _ = g.Service("control-plane", func() {
 		})
 	})
 
+	g.Method("list-tasks", func() {
+		g.Description("Lists tasks across all scopes with optional filtering by scope and entity ID.")
+		g.Meta("openapi:summary", "List tasks")
+		g.Payload(func() {
+			g.Attribute("scope", g.String, func() {
+				g.Enum("database", "host")
+				g.Description("Optional scope to filter tasks (database or host).")
+				g.Example("database")
+			})
+			g.Attribute("entity_id", Identifier, func() {
+				g.Description("Optional entity ID to filter tasks. Requires scope to be set.")
+				g.Example("my-app")
+			})
+			g.Attribute("after_task_id", g.String, func() {
+				g.Description("ID of the task to start from.")
+				g.Format(g.FormatUUID)
+				g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+			})
+			g.Attribute("limit", g.Int, func() {
+				g.Description("Maximum number of tasks to return.")
+				g.Example(100)
+			})
+			g.Attribute("sort_order", g.String, func() {
+				g.Enum("asc", "ascend", "ascending", "desc", "descend", "descending")
+				g.Description("Sort order for the tasks.")
+				g.Example("ascend")
+			})
+		})
+		g.Result(ListTasksResponse)
+		g.Error("cluster_not_initialized")
+		g.Error("invalid_input")
+
+		g.HTTP(func() {
+			g.GET("/v1/tasks")
+			g.Param("scope")
+			g.Param("entity_id")
+			g.Param("after_task_id")
+			g.Param("limit")
+			g.Param("sort_order")
+
+			g.Meta("openapi:tag:System")
+		})
+	})
+
 	g.Method("restore-database", func() {
 		g.Description("Perform an in-place restore of one or more nodes using the given restore configuration.")
 		g.Meta("openapi:summary", "Restore database")

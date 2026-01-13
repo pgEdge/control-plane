@@ -1445,6 +1445,78 @@ paths:
               - message
       schemes:
         - http
+  /v1/tasks:
+    get:
+      tags:
+        - System
+      summary: List tasks
+      description: Lists tasks across all scopes with optional filtering by scope and entity ID.
+      operationId: control-plane#list-tasks
+      parameters:
+        - name: scope
+          in: query
+          description: Optional scope to filter tasks (database or host).
+          required: false
+          type: string
+          enum:
+            - database
+            - host
+        - name: entity_id
+          in: query
+          description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+          required: false
+          type: string
+        - name: after_task_id
+          in: query
+          description: ID of the task to start from.
+          required: false
+          type: string
+          format: uuid
+        - name: limit
+          in: query
+          description: Maximum number of tasks to return.
+          required: false
+          type: integer
+        - name: sort_order
+          in: query
+          description: Sort order for the tasks.
+          required: false
+          type: string
+          enum:
+            - asc
+            - ascend
+            - ascending
+            - desc
+            - descend
+            - descending
+      responses:
+        "200":
+          description: OK response.
+          schema:
+            $ref: '#/definitions/ListTasksResponse'
+        "400":
+          description: Bad Request response.
+          schema:
+            $ref: '#/definitions/APIError'
+            required:
+              - name
+              - message
+        "409":
+          description: Conflict response.
+          schema:
+            $ref: '#/definitions/APIError'
+            required:
+              - name
+              - message
+        "500":
+          description: Internal Server Error response.
+          schema:
+            $ref: '#/definitions/APIError'
+            required:
+              - name
+              - message
+      schemes:
+        - http
   /v1/version:
     get:
       tags:
@@ -4792,6 +4864,66 @@ definitions:
               spock_version: "5"
     required:
       - hosts
+  ListTasksResponse:
+    title: ListTasksResponse
+    type: object
+    properties:
+      tasks:
+        type: array
+        items:
+          $ref: '#/definitions/Task'
+        example:
+          - completed_at: "2025-06-18T16:52:35Z"
+            created_at: "2025-06-18T16:52:05Z"
+            database_id: storefront
+            entity_id: storefront
+            scope: database
+            status: completed
+            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+            type: create
+          - completed_at: "2025-06-18T16:52:35Z"
+            created_at: "2025-06-18T16:52:05Z"
+            database_id: storefront
+            entity_id: storefront
+            scope: database
+            status: completed
+            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+            type: create
+          - completed_at: "2025-06-18T16:52:35Z"
+            created_at: "2025-06-18T16:52:05Z"
+            database_id: storefront
+            entity_id: storefront
+            scope: database
+            status: completed
+            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+            type: create
+          - completed_at: "2025-06-18T16:52:35Z"
+            created_at: "2025-06-18T16:52:05Z"
+            database_id: storefront
+            entity_id: storefront
+            scope: database
+            status: completed
+            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+            type: create
+    example:
+      tasks:
+        - completed_at: "2025-06-18T17:54:36Z"
+          created_at: "2025-06-18T17:54:28Z"
+          database_id: storefront
+          entity_id: storefront
+          instance_id: storefront-n1-689qacsi
+          scope: database
+          status: completed
+          task_id: 0197842d-9082-7496-b787-77bd2e11809f
+          type: node_backup
+        - completed_at: "2025-06-18T17:54:36Z"
+          created_at: "2025-06-18T17:54:28Z"
+          entity_id: host-1
+          host_id: host-1
+          scope: host
+          status: completed
+          task_id: 0197842d-9082-7496-b787-77bd2e11809f
+          type: remove_host
   Listdatabasesresponse:
     title: 'Mediatype identifier: listdatabasesresponse; view=default'
     type: object
@@ -5037,7 +5169,7 @@ definitions:
         type: array
         items:
           type: string
-          example: Dignissimos cum voluptate modi consequatur non at.
+          example: Cum voluptate modi consequatur non at esse.
         description: The nodes to restore. Defaults to all nodes if empty or unspecified.
         example:
           - n1
@@ -5066,22 +5198,6 @@ definitions:
           $ref: '#/definitions/Task'
         description: The tasks that will restore each database node.
         example:
-          - completed_at: "2025-06-18T16:52:35Z"
-            created_at: "2025-06-18T16:52:05Z"
-            database_id: storefront
-            entity_id: storefront
-            scope: database
-            status: completed
-            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
-            type: create
-          - completed_at: "2025-06-18T16:52:35Z"
-            created_at: "2025-06-18T16:52:05Z"
-            database_id: storefront
-            entity_id: storefront
-            scope: database
-            status: completed
-            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
-            type: create
           - completed_at: "2025-06-18T16:52:35Z"
             created_at: "2025-06-18T16:52:05Z"
             database_id: storefront

@@ -364,6 +364,12 @@ type GetHostTaskLogResponseBody struct {
 	Entries []*TaskLogEntryResponseBody `form:"entries" json:"entries" xml:"entries"`
 }
 
+// ListTasksResponseBody is the type of the "control-plane" service
+// "list-tasks" endpoint HTTP response body.
+type ListTasksResponseBody struct {
+	Tasks []*TaskResponseBody `form:"tasks,omitempty" json:"tasks,omitempty" xml:"tasks,omitempty"`
+}
+
 // RestoreDatabaseResponseBody is the type of the "control-plane" service
 // "restore-database" endpoint HTTP response body.
 type RestoreDatabaseResponseBody struct {
@@ -1324,6 +1330,34 @@ type GetHostTaskLogNotFoundResponseBody struct {
 // service "get-host-task-log" endpoint HTTP response body for the
 // "server_error" error.
 type GetHostTaskLogServerErrorResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// ListTasksClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "list-tasks" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type ListTasksClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// ListTasksInvalidInputResponseBody is the type of the "control-plane" service
+// "list-tasks" endpoint HTTP response body for the "invalid_input" error.
+type ListTasksInvalidInputResponseBody struct {
+	// The name of the error.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The error message.
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// ListTasksServerErrorResponseBody is the type of the "control-plane" service
+// "list-tasks" endpoint HTTP response body for the "server_error" error.
+type ListTasksServerErrorResponseBody struct {
 	// The name of the error.
 	Name string `form:"name" json:"name" xml:"name"`
 	// The error message.
@@ -3002,6 +3036,23 @@ func NewGetHostTaskLogResponseBody(res *controlplane.TaskLog) *GetHostTaskLogRes
 	return body
 }
 
+// NewListTasksResponseBody builds the HTTP response body from the result of
+// the "list-tasks" endpoint of the "control-plane" service.
+func NewListTasksResponseBody(res *controlplane.ListTasksResponse) *ListTasksResponseBody {
+	body := &ListTasksResponseBody{}
+	if res.Tasks != nil {
+		body.Tasks = make([]*TaskResponseBody, len(res.Tasks))
+		for i, val := range res.Tasks {
+			if val == nil {
+				body.Tasks[i] = nil
+				continue
+			}
+			body.Tasks[i] = marshalControlplaneTaskToTaskResponseBody(val)
+		}
+	}
+	return body
+}
+
 // NewRestoreDatabaseResponseBody builds the HTTP response body from the result
 // of the "restore-database" endpoint of the "control-plane" service.
 func NewRestoreDatabaseResponseBody(res *controlplane.RestoreDatabaseResponse) *RestoreDatabaseResponseBody {
@@ -4043,6 +4094,36 @@ func NewGetHostTaskLogServerErrorResponseBody(res *controlplane.APIError) *GetHo
 	return body
 }
 
+// NewListTasksClusterNotInitializedResponseBody builds the HTTP response body
+// from the result of the "list-tasks" endpoint of the "control-plane" service.
+func NewListTasksClusterNotInitializedResponseBody(res *controlplane.APIError) *ListTasksClusterNotInitializedResponseBody {
+	body := &ListTasksClusterNotInitializedResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewListTasksInvalidInputResponseBody builds the HTTP response body from the
+// result of the "list-tasks" endpoint of the "control-plane" service.
+func NewListTasksInvalidInputResponseBody(res *controlplane.APIError) *ListTasksInvalidInputResponseBody {
+	body := &ListTasksInvalidInputResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewListTasksServerErrorResponseBody builds the HTTP response body from the
+// result of the "list-tasks" endpoint of the "control-plane" service.
+func NewListTasksServerErrorResponseBody(res *controlplane.APIError) *ListTasksServerErrorResponseBody {
+	body := &ListTasksServerErrorResponseBody{
+		Name:    res.Name,
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewRestoreDatabaseClusterNotInitializedResponseBody builds the HTTP response
 // body from the result of the "restore-database" endpoint of the
 // "control-plane" service.
@@ -4510,6 +4591,22 @@ func NewGetHostTaskLogPayload(hostID string, taskID string, afterEntryID *string
 	v.TaskID = taskID
 	v.AfterEntryID = afterEntryID
 	v.Limit = limit
+
+	return v
+}
+
+// NewListTasksPayload builds a control-plane service list-tasks endpoint
+// payload.
+func NewListTasksPayload(scope *string, entityID *string, afterTaskID *string, limit *int, sortOrder *string) *controlplane.ListTasksPayload {
+	v := &controlplane.ListTasksPayload{}
+	v.Scope = scope
+	if entityID != nil {
+		tmpentityID := controlplane.Identifier(*entityID)
+		v.EntityID = &tmpentityID
+	}
+	v.AfterTaskID = afterTaskID
+	v.Limit = limit
+	v.SortOrder = sortOrder
 
 	return v
 }

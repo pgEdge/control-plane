@@ -364,6 +364,12 @@ type GetHostTaskLogResponseBody struct {
 	Entries []*TaskLogEntryResponseBody `form:"entries,omitempty" json:"entries,omitempty" xml:"entries,omitempty"`
 }
 
+// ListTasksResponseBody is the type of the "control-plane" service
+// "list-tasks" endpoint HTTP response body.
+type ListTasksResponseBody struct {
+	Tasks []*TaskResponseBody `form:"tasks,omitempty" json:"tasks,omitempty" xml:"tasks,omitempty"`
+}
+
 // RestoreDatabaseResponseBody is the type of the "control-plane" service
 // "restore-database" endpoint HTTP response body.
 type RestoreDatabaseResponseBody struct {
@@ -1324,6 +1330,34 @@ type GetHostTaskLogNotFoundResponseBody struct {
 // service "get-host-task-log" endpoint HTTP response body for the
 // "server_error" error.
 type GetHostTaskLogServerErrorResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// ListTasksClusterNotInitializedResponseBody is the type of the
+// "control-plane" service "list-tasks" endpoint HTTP response body for the
+// "cluster_not_initialized" error.
+type ListTasksClusterNotInitializedResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// ListTasksInvalidInputResponseBody is the type of the "control-plane" service
+// "list-tasks" endpoint HTTP response body for the "invalid_input" error.
+type ListTasksInvalidInputResponseBody struct {
+	// The name of the error.
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The error message.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// ListTasksServerErrorResponseBody is the type of the "control-plane" service
+// "list-tasks" endpoint HTTP response body for the "server_error" error.
+type ListTasksServerErrorResponseBody struct {
 	// The name of the error.
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// The error message.
@@ -4060,6 +4094,57 @@ func NewGetHostTaskLogServerError(body *GetHostTaskLogServerErrorResponseBody) *
 	return v
 }
 
+// NewListTasksResponseOK builds a "control-plane" service "list-tasks"
+// endpoint result from a HTTP "OK" response.
+func NewListTasksResponseOK(body *ListTasksResponseBody) *controlplane.ListTasksResponse {
+	v := &controlplane.ListTasksResponse{}
+	if body.Tasks != nil {
+		v.Tasks = make([]*controlplane.Task, len(body.Tasks))
+		for i, val := range body.Tasks {
+			if val == nil {
+				v.Tasks[i] = nil
+				continue
+			}
+			v.Tasks[i] = unmarshalTaskResponseBodyToControlplaneTask(val)
+		}
+	}
+
+	return v
+}
+
+// NewListTasksClusterNotInitialized builds a control-plane service list-tasks
+// endpoint cluster_not_initialized error.
+func NewListTasksClusterNotInitialized(body *ListTasksClusterNotInitializedResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewListTasksInvalidInput builds a control-plane service list-tasks endpoint
+// invalid_input error.
+func NewListTasksInvalidInput(body *ListTasksInvalidInputResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewListTasksServerError builds a control-plane service list-tasks endpoint
+// server_error error.
+func NewListTasksServerError(body *ListTasksServerErrorResponseBody) *controlplane.APIError {
+	v := &controlplane.APIError{
+		Name:    *body.Name,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
 // NewRestoreDatabaseResponseOK builds a "control-plane" service
 // "restore-database" endpoint result from a HTTP "OK" response.
 func NewRestoreDatabaseResponseOK(body *RestoreDatabaseResponseBody) *controlplane.RestoreDatabaseResponse {
@@ -4492,6 +4577,12 @@ func ValidateGetHostTaskResponseBody(body *GetHostTaskResponseBody) (err error) 
 // ValidateGetHostTaskLogResponseBody runs a no-op validation on
 // Get-Host-Task-LogResponseBody
 func ValidateGetHostTaskLogResponseBody(body *GetHostTaskLogResponseBody) (err error) {
+	return
+}
+
+// ValidateListTasksResponseBody runs a no-op validation on
+// List-TasksResponseBody
+func ValidateListTasksResponseBody(body *ListTasksResponseBody) (err error) {
 	return
 }
 
@@ -5071,6 +5162,24 @@ func ValidateGetHostTaskLogNotFoundResponseBody(body *GetHostTaskLogNotFoundResp
 // ValidateGetHostTaskLogServerErrorResponseBody runs a no-op validation on
 // get-host-task-log_server_error_response_body
 func ValidateGetHostTaskLogServerErrorResponseBody(body *GetHostTaskLogServerErrorResponseBody) (err error) {
+	return
+}
+
+// ValidateListTasksClusterNotInitializedResponseBody runs a no-op validation
+// on list-tasks_cluster_not_initialized_response_body
+func ValidateListTasksClusterNotInitializedResponseBody(body *ListTasksClusterNotInitializedResponseBody) (err error) {
+	return
+}
+
+// ValidateListTasksInvalidInputResponseBody runs a no-op validation on
+// list-tasks_invalid_input_response_body
+func ValidateListTasksInvalidInputResponseBody(body *ListTasksInvalidInputResponseBody) (err error) {
+	return
+}
+
+// ValidateListTasksServerErrorResponseBody runs a no-op validation on
+// list-tasks_server_error_response_body
+func ValidateListTasksServerErrorResponseBody(body *ListTasksServerErrorResponseBody) (err error) {
 	return
 }
 

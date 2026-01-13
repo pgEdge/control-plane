@@ -207,6 +207,14 @@ func (c *MultiServerClient) BackupDatabaseNode(ctx context.Context, req *api.Bac
 	return server.BackupDatabaseNode(ctx, req)
 }
 
+func (c *MultiServerClient) ListTasks(ctx context.Context, req *api.ListTasksPayload) (res *api.ListTasksResponse, err error) {
+	server, err := c.liveServer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return server.ListTasks(ctx, req)
+}
+
 func (c *MultiServerClient) ListDatabaseTasks(ctx context.Context, req *api.ListDatabaseTasksPayload) (res *api.ListDatabaseTasksResponse, err error) {
 	server, err := c.liveServer(ctx)
 	if err != nil {

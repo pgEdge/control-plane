@@ -72,6 +72,7 @@ func NewSingleServerClient(server ServerConfig) (*SingleServerClient, error) {
 			ListHostTasksEndpoint:          cli.ListHostTasks(),
 			GetHostTaskEndpoint:            cli.GetHostTask(),
 			GetHostTaskLogEndpoint:         cli.GetHostTaskLog(),
+			ListTasksEndpoint:              cli.ListTasks(),
 		},
 	}, nil
 }
@@ -138,6 +139,11 @@ func (c *SingleServerClient) DeleteDatabase(ctx context.Context, req *api.Delete
 
 func (c *SingleServerClient) BackupDatabaseNode(ctx context.Context, req *api.BackupDatabaseNodePayload) (*api.BackupDatabaseNodeResponse, error) {
 	resp, err := c.api.BackupDatabaseNode(ctx, req)
+	return resp, translateErr(err)
+}
+
+func (c *SingleServerClient) ListTasks(ctx context.Context, req *api.ListTasksPayload) (*api.ListTasksResponse, error) {
+	resp, err := c.api.ListTasks(ctx, req)
 	return resp, translateErr(err)
 }
 

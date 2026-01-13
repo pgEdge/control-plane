@@ -3097,6 +3097,126 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+  /v1/tasks:
+    get:
+      tags:
+        - System
+      summary: List tasks
+      description: Lists tasks across all scopes with optional filtering by scope and entity ID.
+      operationId: list-tasks
+      parameters:
+        - name: scope
+          in: query
+          description: Optional scope to filter tasks (database or host).
+          allowEmptyValue: true
+          schema:
+            type: string
+            description: Optional scope to filter tasks (database or host).
+            example: database
+            enum:
+              - database
+              - host
+          example: database
+        - name: entity_id
+          in: query
+          description: Optional entity ID to filter tasks. Requires scope to be set.
+          allowEmptyValue: true
+          schema:
+            type: string
+            description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
+            example: 76f9b8c0-4958-11f0-a489-3bb29577c696
+            minLength: 1
+            maxLength: 63
+          example: my-app
+        - name: after_task_id
+          in: query
+          description: ID of the task to start from.
+          allowEmptyValue: true
+          schema:
+            type: string
+            description: ID of the task to start from.
+            example: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+            format: uuid
+          example: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+        - name: limit
+          in: query
+          description: Maximum number of tasks to return.
+          allowEmptyValue: true
+          schema:
+            type: integer
+            description: Maximum number of tasks to return.
+            example: 100
+            format: int64
+          example: 100
+        - name: sort_order
+          in: query
+          description: Sort order for the tasks.
+          allowEmptyValue: true
+          schema:
+            type: string
+            description: Sort order for the tasks.
+            example: ascend
+            enum:
+              - asc
+              - ascend
+              - ascending
+              - desc
+              - descend
+              - descending
+          example: ascend
+      responses:
+        "200":
+          description: OK response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTasksResponse'
+              example:
+                tasks:
+                  - completed_at: "2025-06-18T17:54:36Z"
+                    created_at: "2025-06-18T17:54:28Z"
+                    database_id: storefront
+                    entity_id: storefront
+                    instance_id: storefront-n1-689qacsi
+                    scope: database
+                    status: completed
+                    task_id: 0197842d-9082-7496-b787-77bd2e11809f
+                    type: node_backup
+                  - completed_at: "2025-06-18T17:54:36Z"
+                    created_at: "2025-06-18T17:54:28Z"
+                    entity_id: host-1
+                    host_id: host-1
+                    scope: host
+                    status: completed
+                    task_id: 0197842d-9082-7496-b787-77bd2e11809f
+                    type: remove_host
+        "400":
+          description: 'invalid_input: Bad Request response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
+        "409":
+          description: 'cluster_not_initialized: Conflict response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
+        "500":
+          description: 'server_error: Internal Server Error response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/version:
     get:
       tags:
@@ -3154,46 +3274,6 @@ components:
             $ref: '#/components/schemas/BackupRepositorySpec'
           description: The repositories for this backup configuration.
           example:
-            - azure_account: pgedge-backups
-              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-              azure_endpoint: blob.core.usgovcloudapi.net
-              azure_key: YXpLZXk=
-              base_path: /backups
-              custom_options:
-                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                storage-upload-chunk-size: 5MiB
-              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-              gcs_endpoint: localhost
-              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-              retention_full: 2
-              retention_full_type: count
-              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-              s3_endpoint: s3.us-east-1.amazonaws.com
-              s3_key: AKIAIOSFODNN7EXAMPLE
-              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-              s3_region: us-east-1
-              type: s3
-            - azure_account: pgedge-backups
-              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-              azure_endpoint: blob.core.usgovcloudapi.net
-              azure_key: YXpLZXk=
-              base_path: /backups
-              custom_options:
-                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                storage-upload-chunk-size: 5MiB
-              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-              gcs_endpoint: localhost
-              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-              id: f6b84a99-5e91-4203-be1e-131fe82e5984
-              retention_full: 2
-              retention_full_type: count
-              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-              s3_endpoint: s3.us-east-1.amazonaws.com
-              s3_key: AKIAIOSFODNN7EXAMPLE
-              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-              s3_region: us-east-1
-              type: s3
             - azure_account: pgedge-backups
               azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
               azure_endpoint: blob.core.usgovcloudapi.net
@@ -3329,7 +3409,7 @@ components:
             key: value
           additionalProperties:
             type: string
-            example: Ut possimus error.
+            example: Possimus error eligendi recusandae.
         backup_options:
           type: object
           description: Options for the backup.
@@ -3337,7 +3417,7 @@ components:
             archive-check: "n"
           additionalProperties:
             type: string
-            example: Recusandae similique sed neque eos rerum.
+            example: Sed neque eos rerum quia.
         type:
           type: string
           description: The type of backup.
@@ -3393,7 +3473,7 @@ components:
             storage-upload-chunk-size: 5MiB
           additionalProperties:
             type: string
-            example: Sint iure eum ducimus quia deserunt animi.
+            example: Quam sint iure eum ducimus quia.
         gcs_bucket:
           type: string
           description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -3921,7 +4001,7 @@ components:
         state:
           type: string
           description: Current state of the database.
-          example: unknown
+          example: failed
           enum:
             - creating
             - modifying
@@ -4201,7 +4281,7 @@ components:
         state:
           type: string
           description: Current state of the database.
-          example: failed
+          example: deleting
           enum:
             - creating
             - modifying
@@ -4664,7 +4744,7 @@ components:
             source_database_name: northwind
             source_node_name: n1
           spock_version: "5"
-        state: deleting
+        state: backing_up
         tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
         updated_at: "2025-01-01T02:30:00Z"
       required:
@@ -4677,892 +4757,6 @@ components:
       items:
         $ref: '#/components/schemas/Database'
       example:
-        - created_at: "2025-01-01T01:30:00Z"
-          id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-          instances:
-            - connection_info:
-                hostname: i-0123456789abcdef.ec2.internal
-                ipv4_address: 10.24.34.2
-                port: 5432
-              created_at: "1987-03-24T21:22:02Z"
-              error: 'failed to get patroni status: connection refused'
-              host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              node_name: n1
-              postgres:
-                patroni_paused: true
-                patroni_state: unknown
-                pending_restart: false
-                role: primary
-                version: "18.1"
-              spock:
-                read_only: "off"
-                subscriptions:
-                  - name: sub_n1n2
-                    provider_node: n2
-                    status: down
-                  - name: sub_n1n2
-                    provider_node: n2
-                    status: down
-                version: 4.10.0
-              state: creating
-              status_updated_at: "1974-12-13T04:15:04Z"
-              updated_at: "2006-10-18T16:07:16Z"
-            - connection_info:
-                hostname: i-0123456789abcdef.ec2.internal
-                ipv4_address: 10.24.34.2
-                port: 5432
-              created_at: "1987-03-24T21:22:02Z"
-              error: 'failed to get patroni status: connection refused'
-              host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              node_name: n1
-              postgres:
-                patroni_paused: true
-                patroni_state: unknown
-                pending_restart: false
-                role: primary
-                version: "18.1"
-              spock:
-                read_only: "off"
-                subscriptions:
-                  - name: sub_n1n2
-                    provider_node: n2
-                    status: down
-                  - name: sub_n1n2
-                    provider_node: n2
-                    status: down
-                version: 4.10.0
-              state: creating
-              status_updated_at: "1974-12-13T04:15:04Z"
-              updated_at: "2006-10-18T16:07:16Z"
-            - connection_info:
-                hostname: i-0123456789abcdef.ec2.internal
-                ipv4_address: 10.24.34.2
-                port: 5432
-              created_at: "1987-03-24T21:22:02Z"
-              error: 'failed to get patroni status: connection refused'
-              host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              node_name: n1
-              postgres:
-                patroni_paused: true
-                patroni_state: unknown
-                pending_restart: false
-                role: primary
-                version: "18.1"
-              spock:
-                read_only: "off"
-                subscriptions:
-                  - name: sub_n1n2
-                    provider_node: n2
-                    status: down
-                  - name: sub_n1n2
-                    provider_node: n2
-                    status: down
-                version: 4.10.0
-              state: creating
-              status_updated_at: "1974-12-13T04:15:04Z"
-              updated_at: "2006-10-18T16:07:16Z"
-            - connection_info:
-                hostname: i-0123456789abcdef.ec2.internal
-                ipv4_address: 10.24.34.2
-                port: 5432
-              created_at: "1987-03-24T21:22:02Z"
-              error: 'failed to get patroni status: connection refused'
-              host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              node_name: n1
-              postgres:
-                patroni_paused: true
-                patroni_state: unknown
-                pending_restart: false
-                role: primary
-                version: "18.1"
-              spock:
-                read_only: "off"
-                subscriptions:
-                  - name: sub_n1n2
-                    provider_node: n2
-                    status: down
-                  - name: sub_n1n2
-                    provider_node: n2
-                    status: down
-                version: 4.10.0
-              state: creating
-              status_updated_at: "1974-12-13T04:15:04Z"
-              updated_at: "2006-10-18T16:07:16Z"
-          spec:
-            backup_config:
-              repositories:
-                - azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    storage-upload-chunk-size: 5MiB
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                  retention_full: 2
-                  retention_full_type: count
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-              schedules:
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-            cpus: 500m
-            database_name: northwind
-            database_users:
-              - attributes:
-                  - LOGIN
-                  - CREATEDB
-                  - CREATEROLE
-                db_owner: false
-                password: secret
-                roles:
-                  - pgedge_superuser
-                username: admin
-              - attributes:
-                  - LOGIN
-                  - CREATEDB
-                  - CREATEROLE
-                db_owner: false
-                password: secret
-                roles:
-                  - pgedge_superuser
-                username: admin
-              - attributes:
-                  - LOGIN
-                  - CREATEDB
-                  - CREATEROLE
-                db_owner: false
-                password: secret
-                roles:
-                  - pgedge_superuser
-                username: admin
-            memory: 500M
-            nodes:
-              - backup_config:
-                  repositories:
-                    - azure_account: pgedge-backups
-                      azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      azure_endpoint: blob.core.usgovcloudapi.net
-                      azure_key: YXpLZXk=
-                      base_path: /backups
-                      custom_options:
-                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                        storage-upload-chunk-size: 5MiB
-                      gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      gcs_endpoint: localhost
-                      gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                      id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                      retention_full: 2
-                      retention_full_type: count
-                      s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      s3_endpoint: s3.us-east-1.amazonaws.com
-                      s3_key: AKIAIOSFODNN7EXAMPLE
-                      s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                      s3_region: us-east-1
-                      type: s3
-                  schedules:
-                    - cron_expression: 0 6 * * ?
-                      id: daily-full-backup
-                      type: full
-                    - cron_expression: 0 6 * * ?
-                      id: daily-full-backup
-                      type: full
-                    - cron_expression: 0 6 * * ?
-                      id: daily-full-backup
-                      type: full
-                cpus: 500m
-                host_ids:
-                  - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                memory: 500M
-                name: n1
-                orchestrator_opts:
-                  swarm:
-                    extra_labels:
-                      traefik.enable: "true"
-                      traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
-                    extra_networks:
-                      - aliases:
-                          - pg-db
-                          - db-alias
-                        driver_opts:
-                          com.docker.network.endpoint.expose: "true"
-                        id: traefik-public
-                      - aliases:
-                          - pg-db
-                          - db-alias
-                        driver_opts:
-                          com.docker.network.endpoint.expose: "true"
-                        id: traefik-public
-                      - aliases:
-                          - pg-db
-                          - db-alias
-                        driver_opts:
-                          com.docker.network.endpoint.expose: "true"
-                        id: traefik-public
-                    extra_volumes:
-                      - destination_path: /backups/container
-                        host_path: /Users/user/backups/host
-                      - destination_path: /backups/container
-                        host_path: /Users/user/backups/host
-                      - destination_path: /backups/container
-                        host_path: /Users/user/backups/host
-                port: 5432
-                postgres_version: "17.6"
-                postgresql_conf:
-                  max_connections: 1000
-                restore_config:
-                  repository:
-                    azure_account: pgedge-backups
-                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    azure_endpoint: blob.core.usgovcloudapi.net
-                    azure_key: YXpLZXk=
-                    base_path: /backups
-                    custom_options:
-                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    gcs_endpoint: localhost
-                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                    id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    s3_endpoint: s3.us-east-1.amazonaws.com
-                    s3_key: AKIAIOSFODNN7EXAMPLE
-                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                    s3_region: us-east-1
-                    type: s3
-                  restore_options:
-                    set: 20250505-153628F
-                    target: "123456"
-                    type: xid
-                  source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-                  source_database_name: northwind
-                  source_node_name: n1
-                source_node: n1
-              - backup_config:
-                  repositories:
-                    - azure_account: pgedge-backups
-                      azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      azure_endpoint: blob.core.usgovcloudapi.net
-                      azure_key: YXpLZXk=
-                      base_path: /backups
-                      custom_options:
-                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                        storage-upload-chunk-size: 5MiB
-                      gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      gcs_endpoint: localhost
-                      gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                      id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                      retention_full: 2
-                      retention_full_type: count
-                      s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      s3_endpoint: s3.us-east-1.amazonaws.com
-                      s3_key: AKIAIOSFODNN7EXAMPLE
-                      s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                      s3_region: us-east-1
-                      type: s3
-                  schedules:
-                    - cron_expression: 0 6 * * ?
-                      id: daily-full-backup
-                      type: full
-                    - cron_expression: 0 6 * * ?
-                      id: daily-full-backup
-                      type: full
-                    - cron_expression: 0 6 * * ?
-                      id: daily-full-backup
-                      type: full
-                cpus: 500m
-                host_ids:
-                  - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                memory: 500M
-                name: n1
-                orchestrator_opts:
-                  swarm:
-                    extra_labels:
-                      traefik.enable: "true"
-                      traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
-                    extra_networks:
-                      - aliases:
-                          - pg-db
-                          - db-alias
-                        driver_opts:
-                          com.docker.network.endpoint.expose: "true"
-                        id: traefik-public
-                      - aliases:
-                          - pg-db
-                          - db-alias
-                        driver_opts:
-                          com.docker.network.endpoint.expose: "true"
-                        id: traefik-public
-                      - aliases:
-                          - pg-db
-                          - db-alias
-                        driver_opts:
-                          com.docker.network.endpoint.expose: "true"
-                        id: traefik-public
-                    extra_volumes:
-                      - destination_path: /backups/container
-                        host_path: /Users/user/backups/host
-                      - destination_path: /backups/container
-                        host_path: /Users/user/backups/host
-                      - destination_path: /backups/container
-                        host_path: /Users/user/backups/host
-                port: 5432
-                postgres_version: "17.6"
-                postgresql_conf:
-                  max_connections: 1000
-                restore_config:
-                  repository:
-                    azure_account: pgedge-backups
-                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    azure_endpoint: blob.core.usgovcloudapi.net
-                    azure_key: YXpLZXk=
-                    base_path: /backups
-                    custom_options:
-                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    gcs_endpoint: localhost
-                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                    id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    s3_endpoint: s3.us-east-1.amazonaws.com
-                    s3_key: AKIAIOSFODNN7EXAMPLE
-                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                    s3_region: us-east-1
-                    type: s3
-                  restore_options:
-                    set: 20250505-153628F
-                    target: "123456"
-                    type: xid
-                  source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-                  source_database_name: northwind
-                  source_node_name: n1
-                source_node: n1
-            orchestrator_opts:
-              swarm:
-                extra_labels:
-                  traefik.enable: "true"
-                  traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
-                extra_networks:
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                extra_volumes:
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-            port: 5432
-            postgres_version: "17.6"
-            postgresql_conf:
-              max_connections: 1000
-            restore_config:
-              repository:
-                azure_account: pgedge-backups
-                azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                azure_endpoint: blob.core.usgovcloudapi.net
-                azure_key: YXpLZXk=
-                base_path: /backups
-                custom_options:
-                  s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                gcs_endpoint: localhost
-                gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                s3_endpoint: s3.us-east-1.amazonaws.com
-                s3_key: AKIAIOSFODNN7EXAMPLE
-                s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                s3_region: us-east-1
-                type: s3
-              restore_options:
-                set: 20250505-153628F
-                target: "123456"
-                type: xid
-              source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-              source_database_name: northwind
-              source_node_name: n1
-            spock_version: "5"
-          state: creating
-          tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
-          updated_at: "2025-01-01T02:30:00Z"
-        - created_at: "2025-01-01T01:30:00Z"
-          id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-          instances:
-            - connection_info:
-                hostname: i-0123456789abcdef.ec2.internal
-                ipv4_address: 10.24.34.2
-                port: 5432
-              created_at: "1987-03-24T21:22:02Z"
-              error: 'failed to get patroni status: connection refused'
-              host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              node_name: n1
-              postgres:
-                patroni_paused: true
-                patroni_state: unknown
-                pending_restart: false
-                role: primary
-                version: "18.1"
-              spock:
-                read_only: "off"
-                subscriptions:
-                  - name: sub_n1n2
-                    provider_node: n2
-                    status: down
-                  - name: sub_n1n2
-                    provider_node: n2
-                    status: down
-                version: 4.10.0
-              state: creating
-              status_updated_at: "1974-12-13T04:15:04Z"
-              updated_at: "2006-10-18T16:07:16Z"
-            - connection_info:
-                hostname: i-0123456789abcdef.ec2.internal
-                ipv4_address: 10.24.34.2
-                port: 5432
-              created_at: "1987-03-24T21:22:02Z"
-              error: 'failed to get patroni status: connection refused'
-              host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              node_name: n1
-              postgres:
-                patroni_paused: true
-                patroni_state: unknown
-                pending_restart: false
-                role: primary
-                version: "18.1"
-              spock:
-                read_only: "off"
-                subscriptions:
-                  - name: sub_n1n2
-                    provider_node: n2
-                    status: down
-                  - name: sub_n1n2
-                    provider_node: n2
-                    status: down
-                version: 4.10.0
-              state: creating
-              status_updated_at: "1974-12-13T04:15:04Z"
-              updated_at: "2006-10-18T16:07:16Z"
-            - connection_info:
-                hostname: i-0123456789abcdef.ec2.internal
-                ipv4_address: 10.24.34.2
-                port: 5432
-              created_at: "1987-03-24T21:22:02Z"
-              error: 'failed to get patroni status: connection refused'
-              host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              node_name: n1
-              postgres:
-                patroni_paused: true
-                patroni_state: unknown
-                pending_restart: false
-                role: primary
-                version: "18.1"
-              spock:
-                read_only: "off"
-                subscriptions:
-                  - name: sub_n1n2
-                    provider_node: n2
-                    status: down
-                  - name: sub_n1n2
-                    provider_node: n2
-                    status: down
-                version: 4.10.0
-              state: creating
-              status_updated_at: "1974-12-13T04:15:04Z"
-              updated_at: "2006-10-18T16:07:16Z"
-            - connection_info:
-                hostname: i-0123456789abcdef.ec2.internal
-                ipv4_address: 10.24.34.2
-                port: 5432
-              created_at: "1987-03-24T21:22:02Z"
-              error: 'failed to get patroni status: connection refused'
-              host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-              node_name: n1
-              postgres:
-                patroni_paused: true
-                patroni_state: unknown
-                pending_restart: false
-                role: primary
-                version: "18.1"
-              spock:
-                read_only: "off"
-                subscriptions:
-                  - name: sub_n1n2
-                    provider_node: n2
-                    status: down
-                  - name: sub_n1n2
-                    provider_node: n2
-                    status: down
-                version: 4.10.0
-              state: creating
-              status_updated_at: "1974-12-13T04:15:04Z"
-              updated_at: "2006-10-18T16:07:16Z"
-          spec:
-            backup_config:
-              repositories:
-                - azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    storage-upload-chunk-size: 5MiB
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                  retention_full: 2
-                  retention_full_type: count
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-              schedules:
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-            cpus: 500m
-            database_name: northwind
-            database_users:
-              - attributes:
-                  - LOGIN
-                  - CREATEDB
-                  - CREATEROLE
-                db_owner: false
-                password: secret
-                roles:
-                  - pgedge_superuser
-                username: admin
-              - attributes:
-                  - LOGIN
-                  - CREATEDB
-                  - CREATEROLE
-                db_owner: false
-                password: secret
-                roles:
-                  - pgedge_superuser
-                username: admin
-              - attributes:
-                  - LOGIN
-                  - CREATEDB
-                  - CREATEROLE
-                db_owner: false
-                password: secret
-                roles:
-                  - pgedge_superuser
-                username: admin
-            memory: 500M
-            nodes:
-              - backup_config:
-                  repositories:
-                    - azure_account: pgedge-backups
-                      azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      azure_endpoint: blob.core.usgovcloudapi.net
-                      azure_key: YXpLZXk=
-                      base_path: /backups
-                      custom_options:
-                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                        storage-upload-chunk-size: 5MiB
-                      gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      gcs_endpoint: localhost
-                      gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                      id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                      retention_full: 2
-                      retention_full_type: count
-                      s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      s3_endpoint: s3.us-east-1.amazonaws.com
-                      s3_key: AKIAIOSFODNN7EXAMPLE
-                      s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                      s3_region: us-east-1
-                      type: s3
-                  schedules:
-                    - cron_expression: 0 6 * * ?
-                      id: daily-full-backup
-                      type: full
-                    - cron_expression: 0 6 * * ?
-                      id: daily-full-backup
-                      type: full
-                    - cron_expression: 0 6 * * ?
-                      id: daily-full-backup
-                      type: full
-                cpus: 500m
-                host_ids:
-                  - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                memory: 500M
-                name: n1
-                orchestrator_opts:
-                  swarm:
-                    extra_labels:
-                      traefik.enable: "true"
-                      traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
-                    extra_networks:
-                      - aliases:
-                          - pg-db
-                          - db-alias
-                        driver_opts:
-                          com.docker.network.endpoint.expose: "true"
-                        id: traefik-public
-                      - aliases:
-                          - pg-db
-                          - db-alias
-                        driver_opts:
-                          com.docker.network.endpoint.expose: "true"
-                        id: traefik-public
-                      - aliases:
-                          - pg-db
-                          - db-alias
-                        driver_opts:
-                          com.docker.network.endpoint.expose: "true"
-                        id: traefik-public
-                    extra_volumes:
-                      - destination_path: /backups/container
-                        host_path: /Users/user/backups/host
-                      - destination_path: /backups/container
-                        host_path: /Users/user/backups/host
-                      - destination_path: /backups/container
-                        host_path: /Users/user/backups/host
-                port: 5432
-                postgres_version: "17.6"
-                postgresql_conf:
-                  max_connections: 1000
-                restore_config:
-                  repository:
-                    azure_account: pgedge-backups
-                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    azure_endpoint: blob.core.usgovcloudapi.net
-                    azure_key: YXpLZXk=
-                    base_path: /backups
-                    custom_options:
-                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    gcs_endpoint: localhost
-                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                    id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    s3_endpoint: s3.us-east-1.amazonaws.com
-                    s3_key: AKIAIOSFODNN7EXAMPLE
-                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                    s3_region: us-east-1
-                    type: s3
-                  restore_options:
-                    set: 20250505-153628F
-                    target: "123456"
-                    type: xid
-                  source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-                  source_database_name: northwind
-                  source_node_name: n1
-                source_node: n1
-              - backup_config:
-                  repositories:
-                    - azure_account: pgedge-backups
-                      azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      azure_endpoint: blob.core.usgovcloudapi.net
-                      azure_key: YXpLZXk=
-                      base_path: /backups
-                      custom_options:
-                        s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                        storage-upload-chunk-size: 5MiB
-                      gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      gcs_endpoint: localhost
-                      gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                      id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                      retention_full: 2
-                      retention_full_type: count
-                      s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                      s3_endpoint: s3.us-east-1.amazonaws.com
-                      s3_key: AKIAIOSFODNN7EXAMPLE
-                      s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                      s3_region: us-east-1
-                      type: s3
-                  schedules:
-                    - cron_expression: 0 6 * * ?
-                      id: daily-full-backup
-                      type: full
-                    - cron_expression: 0 6 * * ?
-                      id: daily-full-backup
-                      type: full
-                    - cron_expression: 0 6 * * ?
-                      id: daily-full-backup
-                      type: full
-                cpus: 500m
-                host_ids:
-                  - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                memory: 500M
-                name: n1
-                orchestrator_opts:
-                  swarm:
-                    extra_labels:
-                      traefik.enable: "true"
-                      traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
-                    extra_networks:
-                      - aliases:
-                          - pg-db
-                          - db-alias
-                        driver_opts:
-                          com.docker.network.endpoint.expose: "true"
-                        id: traefik-public
-                      - aliases:
-                          - pg-db
-                          - db-alias
-                        driver_opts:
-                          com.docker.network.endpoint.expose: "true"
-                        id: traefik-public
-                      - aliases:
-                          - pg-db
-                          - db-alias
-                        driver_opts:
-                          com.docker.network.endpoint.expose: "true"
-                        id: traefik-public
-                    extra_volumes:
-                      - destination_path: /backups/container
-                        host_path: /Users/user/backups/host
-                      - destination_path: /backups/container
-                        host_path: /Users/user/backups/host
-                      - destination_path: /backups/container
-                        host_path: /Users/user/backups/host
-                port: 5432
-                postgres_version: "17.6"
-                postgresql_conf:
-                  max_connections: 1000
-                restore_config:
-                  repository:
-                    azure_account: pgedge-backups
-                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    azure_endpoint: blob.core.usgovcloudapi.net
-                    azure_key: YXpLZXk=
-                    base_path: /backups
-                    custom_options:
-                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    gcs_endpoint: localhost
-                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                    id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    s3_endpoint: s3.us-east-1.amazonaws.com
-                    s3_key: AKIAIOSFODNN7EXAMPLE
-                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                    s3_region: us-east-1
-                    type: s3
-                  restore_options:
-                    set: 20250505-153628F
-                    target: "123456"
-                    type: xid
-                  source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-                  source_database_name: northwind
-                  source_node_name: n1
-                source_node: n1
-            orchestrator_opts:
-              swarm:
-                extra_labels:
-                  traefik.enable: "true"
-                  traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
-                extra_networks:
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                extra_volumes:
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-            port: 5432
-            postgres_version: "17.6"
-            postgresql_conf:
-              max_connections: 1000
-            restore_config:
-              repository:
-                azure_account: pgedge-backups
-                azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                azure_endpoint: blob.core.usgovcloudapi.net
-                azure_key: YXpLZXk=
-                base_path: /backups
-                custom_options:
-                  s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                gcs_endpoint: localhost
-                gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                s3_endpoint: s3.us-east-1.amazonaws.com
-                s3_key: AKIAIOSFODNN7EXAMPLE
-                s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                s3_region: us-east-1
-                type: s3
-              restore_options:
-                set: 20250505-153628F
-                target: "123456"
-                type: xid
-              source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-              source_database_name: northwind
-              source_node_name: n1
-            spock_version: "5"
-          state: creating
-          tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
-          updated_at: "2025-01-01T02:30:00Z"
         - created_at: "2025-01-01T01:30:00Z"
           id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
           instances:
@@ -6471,6 +5665,7 @@ components:
           example:
             - de3b1388-1f0c-42f1-a86c-59ab72f255ec
             - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+            - de3b1388-1f0c-42f1-a86c-59ab72f255ec
           minItems: 1
         memory:
           type: string
@@ -6543,7 +5738,6 @@ components:
               type: full
         cpus: 500m
         host_ids:
-          - de3b1388-1f0c-42f1-a86c-59ab72f255ec
           - de3b1388-1f0c-42f1-a86c-59ab72f255ec
         memory: 500M
         name: n1
@@ -6632,7 +5826,6 @@ components:
           description: The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.
           example:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
-            - 76f9b8c0-4958-11f0-a489-3bb29577c696
           minItems: 1
         memory:
           type: string
@@ -6745,6 +5938,7 @@ components:
               type: full
         cpus: 500m
         host_ids:
+          - 76f9b8c0-4958-11f0-a489-3bb29577c696
           - 76f9b8c0-4958-11f0-a489-3bb29577c696
         memory: 500M
         name: n1
@@ -6927,7 +6121,6 @@ components:
         cpus: 500m
         host_ids:
           - 76f9b8c0-4958-11f0-a489-3bb29577c696
-          - 76f9b8c0-4958-11f0-a489-3bb29577c696
         memory: 500M
         name: n1
         orchestrator_opts:
@@ -7014,7 +6207,6 @@ components:
             maxLength: 63
           description: The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.
           example:
-            - 76f9b8c0-4958-11f0-a489-3bb29577c696
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
           minItems: 1
@@ -7338,204 +6530,6 @@ components:
                 source_database_name: northwind
                 source_node_name: n1
               source_node: n1
-            - backup_config:
-                repositories:
-                  - azure_account: pgedge-backups
-                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    azure_endpoint: blob.core.usgovcloudapi.net
-                    azure_key: YXpLZXk=
-                    base_path: /backups
-                    custom_options:
-                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                      storage-upload-chunk-size: 5MiB
-                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    gcs_endpoint: localhost
-                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                    id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                    retention_full: 2
-                    retention_full_type: count
-                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    s3_endpoint: s3.us-east-1.amazonaws.com
-                    s3_key: AKIAIOSFODNN7EXAMPLE
-                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                    s3_region: us-east-1
-                    type: s3
-                schedules:
-                  - cron_expression: 0 6 * * ?
-                    id: daily-full-backup
-                    type: full
-                  - cron_expression: 0 6 * * ?
-                    id: daily-full-backup
-                    type: full
-                  - cron_expression: 0 6 * * ?
-                    id: daily-full-backup
-                    type: full
-              cpus: 500m
-              host_ids:
-                - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              memory: 500M
-              name: n1
-              orchestrator_opts:
-                swarm:
-                  extra_labels:
-                    traefik.enable: "true"
-                    traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
-                  extra_networks:
-                    - aliases:
-                        - pg-db
-                        - db-alias
-                      driver_opts:
-                        com.docker.network.endpoint.expose: "true"
-                      id: traefik-public
-                    - aliases:
-                        - pg-db
-                        - db-alias
-                      driver_opts:
-                        com.docker.network.endpoint.expose: "true"
-                      id: traefik-public
-                    - aliases:
-                        - pg-db
-                        - db-alias
-                      driver_opts:
-                        com.docker.network.endpoint.expose: "true"
-                      id: traefik-public
-                  extra_volumes:
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-              port: 5432
-              postgres_version: "17.6"
-              postgresql_conf:
-                max_connections: 1000
-              restore_config:
-                repository:
-                  azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-                restore_options:
-                  set: 20250505-153628F
-                  target: "123456"
-                  type: xid
-                source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-                source_database_name: northwind
-                source_node_name: n1
-              source_node: n1
-            - backup_config:
-                repositories:
-                  - azure_account: pgedge-backups
-                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    azure_endpoint: blob.core.usgovcloudapi.net
-                    azure_key: YXpLZXk=
-                    base_path: /backups
-                    custom_options:
-                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                      storage-upload-chunk-size: 5MiB
-                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    gcs_endpoint: localhost
-                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                    id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                    retention_full: 2
-                    retention_full_type: count
-                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    s3_endpoint: s3.us-east-1.amazonaws.com
-                    s3_key: AKIAIOSFODNN7EXAMPLE
-                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                    s3_region: us-east-1
-                    type: s3
-                schedules:
-                  - cron_expression: 0 6 * * ?
-                    id: daily-full-backup
-                    type: full
-                  - cron_expression: 0 6 * * ?
-                    id: daily-full-backup
-                    type: full
-                  - cron_expression: 0 6 * * ?
-                    id: daily-full-backup
-                    type: full
-              cpus: 500m
-              host_ids:
-                - de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              memory: 500M
-              name: n1
-              orchestrator_opts:
-                swarm:
-                  extra_labels:
-                    traefik.enable: "true"
-                    traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
-                  extra_networks:
-                    - aliases:
-                        - pg-db
-                        - db-alias
-                      driver_opts:
-                        com.docker.network.endpoint.expose: "true"
-                      id: traefik-public
-                    - aliases:
-                        - pg-db
-                        - db-alias
-                      driver_opts:
-                        com.docker.network.endpoint.expose: "true"
-                      id: traefik-public
-                    - aliases:
-                        - pg-db
-                        - db-alias
-                      driver_opts:
-                        com.docker.network.endpoint.expose: "true"
-                      id: traefik-public
-                  extra_volumes:
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-              port: 5432
-              postgres_version: "17.6"
-              postgresql_conf:
-                max_connections: 1000
-              restore_config:
-                repository:
-                  azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-                restore_options:
-                  set: 20250505-153628F
-                  target: "123456"
-                  type: xid
-                source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-                source_database_name: northwind
-                source_node_name: n1
-              source_node: n1
           minItems: 1
           maxItems: 9
         orchestrator_opts:
@@ -7631,6 +6625,105 @@ components:
             username: admin
         memory: 500M
         nodes:
+          - backup_config:
+              repositories:
+                - azure_account: pgedge-backups
+                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  azure_endpoint: blob.core.usgovcloudapi.net
+                  azure_key: YXpLZXk=
+                  base_path: /backups
+                  custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                    storage-upload-chunk-size: 5MiB
+                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  gcs_endpoint: localhost
+                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                  id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                  retention_full: 2
+                  retention_full_type: count
+                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  s3_endpoint: s3.us-east-1.amazonaws.com
+                  s3_key: AKIAIOSFODNN7EXAMPLE
+                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                  s3_region: us-east-1
+                  type: s3
+              schedules:
+                - cron_expression: 0 6 * * ?
+                  id: daily-full-backup
+                  type: full
+                - cron_expression: 0 6 * * ?
+                  id: daily-full-backup
+                  type: full
+                - cron_expression: 0 6 * * ?
+                  id: daily-full-backup
+                  type: full
+            cpus: 500m
+            host_ids:
+              - de3b1388-1f0c-42f1-a86c-59ab72f255ec
+            memory: 500M
+            name: n1
+            orchestrator_opts:
+              swarm:
+                extra_labels:
+                  traefik.enable: "true"
+                  traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
+                extra_networks:
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                extra_volumes:
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+            port: 5432
+            postgres_version: "17.6"
+            postgresql_conf:
+              max_connections: 1000
+            restore_config:
+              repository:
+                azure_account: pgedge-backups
+                azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                azure_endpoint: blob.core.usgovcloudapi.net
+                azure_key: YXpLZXk=
+                base_path: /backups
+                custom_options:
+                  s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                gcs_endpoint: localhost
+                gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                id: f6b84a99-5e91-4203-be1e-131fe82e5984
+                s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                s3_endpoint: s3.us-east-1.amazonaws.com
+                s3_key: AKIAIOSFODNN7EXAMPLE
+                s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                s3_region: us-east-1
+                type: s3
+              restore_options:
+                set: 20250505-153628F
+                target: "123456"
+                type: xid
+              source_database_id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+              source_database_name: northwind
+              source_node_name: n1
+            source_node: n1
           - backup_config:
               repositories:
                 - azure_account: pgedge-backups
@@ -8094,6 +7187,284 @@ components:
                 source_database_name: northwind
                 source_node_name: n1
               source_node: n1
+            - backup_config:
+                repositories:
+                  - azure_account: pgedge-backups
+                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    azure_endpoint: blob.core.usgovcloudapi.net
+                    azure_key: YXpLZXk=
+                    base_path: /backups
+                    custom_options:
+                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                      storage-upload-chunk-size: 5MiB
+                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    gcs_endpoint: localhost
+                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                    id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                    retention_full: 2
+                    retention_full_type: count
+                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    s3_endpoint: s3.us-east-1.amazonaws.com
+                    s3_key: AKIAIOSFODNN7EXAMPLE
+                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                    s3_region: us-east-1
+                    type: s3
+                  - azure_account: pgedge-backups
+                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    azure_endpoint: blob.core.usgovcloudapi.net
+                    azure_key: YXpLZXk=
+                    base_path: /backups
+                    custom_options:
+                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                      storage-upload-chunk-size: 5MiB
+                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    gcs_endpoint: localhost
+                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                    id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                    retention_full: 2
+                    retention_full_type: count
+                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    s3_endpoint: s3.us-east-1.amazonaws.com
+                    s3_key: AKIAIOSFODNN7EXAMPLE
+                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                    s3_region: us-east-1
+                    type: s3
+                  - azure_account: pgedge-backups
+                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    azure_endpoint: blob.core.usgovcloudapi.net
+                    azure_key: YXpLZXk=
+                    base_path: /backups
+                    custom_options:
+                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                      storage-upload-chunk-size: 5MiB
+                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    gcs_endpoint: localhost
+                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                    id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                    retention_full: 2
+                    retention_full_type: count
+                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    s3_endpoint: s3.us-east-1.amazonaws.com
+                    s3_key: AKIAIOSFODNN7EXAMPLE
+                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                    s3_region: us-east-1
+                    type: s3
+                schedules:
+                  - cron_expression: 0 6 * * ?
+                    id: daily-full-backup
+                    type: full
+                  - cron_expression: 0 6 * * ?
+                    id: daily-full-backup
+                    type: full
+                  - cron_expression: 0 6 * * ?
+                    id: daily-full-backup
+                    type: full
+              cpus: 500m
+              host_ids:
+                - 76f9b8c0-4958-11f0-a489-3bb29577c696
+              memory: 500M
+              name: n1
+              orchestrator_opts:
+                swarm:
+                  extra_labels:
+                    traefik.enable: "true"
+                    traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
+                  extra_networks:
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                  extra_volumes:
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+              port: 5432
+              postgres_version: "17.6"
+              postgresql_conf:
+                max_connections: 1000
+              restore_config:
+                repository:
+                  azure_account: pgedge-backups
+                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  azure_endpoint: blob.core.usgovcloudapi.net
+                  azure_key: YXpLZXk=
+                  base_path: /backups
+                  custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  gcs_endpoint: localhost
+                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  s3_endpoint: s3.us-east-1.amazonaws.com
+                  s3_key: AKIAIOSFODNN7EXAMPLE
+                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                  s3_region: us-east-1
+                  type: s3
+                restore_options:
+                  set: 20250505-153628F
+                  target: "123456"
+                  type: xid
+                source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                source_database_name: northwind
+                source_node_name: n1
+              source_node: n1
+            - backup_config:
+                repositories:
+                  - azure_account: pgedge-backups
+                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    azure_endpoint: blob.core.usgovcloudapi.net
+                    azure_key: YXpLZXk=
+                    base_path: /backups
+                    custom_options:
+                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                      storage-upload-chunk-size: 5MiB
+                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    gcs_endpoint: localhost
+                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                    id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                    retention_full: 2
+                    retention_full_type: count
+                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    s3_endpoint: s3.us-east-1.amazonaws.com
+                    s3_key: AKIAIOSFODNN7EXAMPLE
+                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                    s3_region: us-east-1
+                    type: s3
+                  - azure_account: pgedge-backups
+                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    azure_endpoint: blob.core.usgovcloudapi.net
+                    azure_key: YXpLZXk=
+                    base_path: /backups
+                    custom_options:
+                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                      storage-upload-chunk-size: 5MiB
+                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    gcs_endpoint: localhost
+                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                    id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                    retention_full: 2
+                    retention_full_type: count
+                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    s3_endpoint: s3.us-east-1.amazonaws.com
+                    s3_key: AKIAIOSFODNN7EXAMPLE
+                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                    s3_region: us-east-1
+                    type: s3
+                  - azure_account: pgedge-backups
+                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    azure_endpoint: blob.core.usgovcloudapi.net
+                    azure_key: YXpLZXk=
+                    base_path: /backups
+                    custom_options:
+                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                      storage-upload-chunk-size: 5MiB
+                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    gcs_endpoint: localhost
+                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                    id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                    retention_full: 2
+                    retention_full_type: count
+                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    s3_endpoint: s3.us-east-1.amazonaws.com
+                    s3_key: AKIAIOSFODNN7EXAMPLE
+                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                    s3_region: us-east-1
+                    type: s3
+                schedules:
+                  - cron_expression: 0 6 * * ?
+                    id: daily-full-backup
+                    type: full
+                  - cron_expression: 0 6 * * ?
+                    id: daily-full-backup
+                    type: full
+                  - cron_expression: 0 6 * * ?
+                    id: daily-full-backup
+                    type: full
+              cpus: 500m
+              host_ids:
+                - 76f9b8c0-4958-11f0-a489-3bb29577c696
+              memory: 500M
+              name: n1
+              orchestrator_opts:
+                swarm:
+                  extra_labels:
+                    traefik.enable: "true"
+                    traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
+                  extra_networks:
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                  extra_volumes:
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+              port: 5432
+              postgres_version: "17.6"
+              postgresql_conf:
+                max_connections: 1000
+              restore_config:
+                repository:
+                  azure_account: pgedge-backups
+                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  azure_endpoint: blob.core.usgovcloudapi.net
+                  azure_key: YXpLZXk=
+                  base_path: /backups
+                  custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  gcs_endpoint: localhost
+                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  s3_endpoint: s3.us-east-1.amazonaws.com
+                  s3_key: AKIAIOSFODNN7EXAMPLE
+                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                  s3_region: us-east-1
+                  type: s3
+                restore_options:
+                  set: 20250505-153628F
+                  target: "123456"
+                  type: xid
+                source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                source_database_name: northwind
+                source_node_name: n1
+              source_node: n1
           minItems: 1
           maxItems: 9
         orchestrator_opts:
@@ -8229,284 +7600,6 @@ components:
             username: admin
         memory: 500M
         nodes:
-          - backup_config:
-              repositories:
-                - azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    storage-upload-chunk-size: 5MiB
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                  retention_full: 2
-                  retention_full_type: count
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-                - azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    storage-upload-chunk-size: 5MiB
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                  retention_full: 2
-                  retention_full_type: count
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-                - azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    storage-upload-chunk-size: 5MiB
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                  retention_full: 2
-                  retention_full_type: count
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-              schedules:
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-            cpus: 500m
-            host_ids:
-              - 76f9b8c0-4958-11f0-a489-3bb29577c696
-            memory: 500M
-            name: n1
-            orchestrator_opts:
-              swarm:
-                extra_labels:
-                  traefik.enable: "true"
-                  traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
-                extra_networks:
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                extra_volumes:
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-            port: 5432
-            postgres_version: "17.6"
-            postgresql_conf:
-              max_connections: 1000
-            restore_config:
-              repository:
-                azure_account: pgedge-backups
-                azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                azure_endpoint: blob.core.usgovcloudapi.net
-                azure_key: YXpLZXk=
-                base_path: /backups
-                custom_options:
-                  s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                gcs_endpoint: localhost
-                gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                s3_endpoint: s3.us-east-1.amazonaws.com
-                s3_key: AKIAIOSFODNN7EXAMPLE
-                s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                s3_region: us-east-1
-                type: s3
-              restore_options:
-                set: 20250505-153628F
-                target: "123456"
-                type: xid
-              source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              source_database_name: northwind
-              source_node_name: n1
-            source_node: n1
-          - backup_config:
-              repositories:
-                - azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    storage-upload-chunk-size: 5MiB
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                  retention_full: 2
-                  retention_full_type: count
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-                - azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    storage-upload-chunk-size: 5MiB
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                  retention_full: 2
-                  retention_full_type: count
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-                - azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    storage-upload-chunk-size: 5MiB
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                  retention_full: 2
-                  retention_full_type: count
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-              schedules:
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-            cpus: 500m
-            host_ids:
-              - 76f9b8c0-4958-11f0-a489-3bb29577c696
-            memory: 500M
-            name: n1
-            orchestrator_opts:
-              swarm:
-                extra_labels:
-                  traefik.enable: "true"
-                  traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
-                extra_networks:
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                extra_volumes:
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-            port: 5432
-            postgres_version: "17.6"
-            postgresql_conf:
-              max_connections: 1000
-            restore_config:
-              repository:
-                azure_account: pgedge-backups
-                azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                azure_endpoint: blob.core.usgovcloudapi.net
-                azure_key: YXpLZXk=
-                base_path: /backups
-                custom_options:
-                  s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                gcs_endpoint: localhost
-                gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                s3_endpoint: s3.us-east-1.amazonaws.com
-                s3_key: AKIAIOSFODNN7EXAMPLE
-                s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                s3_region: us-east-1
-                type: s3
-              restore_options:
-                set: 20250505-153628F
-                target: "123456"
-                type: xid
-              source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              source_database_name: northwind
-              source_node_name: n1
-            source_node: n1
           - backup_config:
               repositories:
                 - azure_account: pgedge-backups
@@ -8893,127 +7986,6 @@ components:
                 source_database_name: northwind
                 source_node_name: n1
               source_node: n1
-            - backup_config:
-                repositories:
-                  - azure_account: pgedge-backups
-                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    azure_endpoint: blob.core.usgovcloudapi.net
-                    azure_key: YXpLZXk=
-                    base_path: /backups
-                    custom_options:
-                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                      storage-upload-chunk-size: 5MiB
-                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    gcs_endpoint: localhost
-                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                    id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                    retention_full: 2
-                    retention_full_type: count
-                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    s3_endpoint: s3.us-east-1.amazonaws.com
-                    s3_key: AKIAIOSFODNN7EXAMPLE
-                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                    s3_region: us-east-1
-                    type: s3
-                  - azure_account: pgedge-backups
-                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    azure_endpoint: blob.core.usgovcloudapi.net
-                    azure_key: YXpLZXk=
-                    base_path: /backups
-                    custom_options:
-                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                      storage-upload-chunk-size: 5MiB
-                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    gcs_endpoint: localhost
-                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                    id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                    retention_full: 2
-                    retention_full_type: count
-                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                    s3_endpoint: s3.us-east-1.amazonaws.com
-                    s3_key: AKIAIOSFODNN7EXAMPLE
-                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                    s3_region: us-east-1
-                    type: s3
-                schedules:
-                  - cron_expression: 0 6 * * ?
-                    id: daily-full-backup
-                    type: full
-                  - cron_expression: 0 6 * * ?
-                    id: daily-full-backup
-                    type: full
-                  - cron_expression: 0 6 * * ?
-                    id: daily-full-backup
-                    type: full
-              cpus: 500m
-              host_ids:
-                - 76f9b8c0-4958-11f0-a489-3bb29577c696
-                - 76f9b8c0-4958-11f0-a489-3bb29577c696
-                - 76f9b8c0-4958-11f0-a489-3bb29577c696
-              memory: 500M
-              name: n1
-              orchestrator_opts:
-                swarm:
-                  extra_labels:
-                    traefik.enable: "true"
-                    traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
-                  extra_networks:
-                    - aliases:
-                        - pg-db
-                        - db-alias
-                      driver_opts:
-                        com.docker.network.endpoint.expose: "true"
-                      id: traefik-public
-                    - aliases:
-                        - pg-db
-                        - db-alias
-                      driver_opts:
-                        com.docker.network.endpoint.expose: "true"
-                      id: traefik-public
-                    - aliases:
-                        - pg-db
-                        - db-alias
-                      driver_opts:
-                        com.docker.network.endpoint.expose: "true"
-                      id: traefik-public
-                  extra_volumes:
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-                    - destination_path: /backups/container
-                      host_path: /Users/user/backups/host
-              port: 5432
-              postgres_version: "17.6"
-              postgresql_conf:
-                max_connections: 1000
-              restore_config:
-                repository:
-                  azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-                restore_options:
-                  set: 20250505-153628F
-                  target: "123456"
-                  type: xid
-                source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                source_database_name: northwind
-                source_node_name: n1
-              source_node: n1
           minItems: 1
           maxItems: 9
         orchestrator_opts:
@@ -9129,248 +8101,6 @@ components:
             username: admin
         memory: 500M
         nodes:
-          - backup_config:
-              repositories:
-                - azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    storage-upload-chunk-size: 5MiB
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                  retention_full: 2
-                  retention_full_type: count
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-                - azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    storage-upload-chunk-size: 5MiB
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                  retention_full: 2
-                  retention_full_type: count
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-              schedules:
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-            cpus: 500m
-            host_ids:
-              - 76f9b8c0-4958-11f0-a489-3bb29577c696
-              - 76f9b8c0-4958-11f0-a489-3bb29577c696
-              - 76f9b8c0-4958-11f0-a489-3bb29577c696
-            memory: 500M
-            name: n1
-            orchestrator_opts:
-              swarm:
-                extra_labels:
-                  traefik.enable: "true"
-                  traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
-                extra_networks:
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                extra_volumes:
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-            port: 5432
-            postgres_version: "17.6"
-            postgresql_conf:
-              max_connections: 1000
-            restore_config:
-              repository:
-                azure_account: pgedge-backups
-                azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                azure_endpoint: blob.core.usgovcloudapi.net
-                azure_key: YXpLZXk=
-                base_path: /backups
-                custom_options:
-                  s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                gcs_endpoint: localhost
-                gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                s3_endpoint: s3.us-east-1.amazonaws.com
-                s3_key: AKIAIOSFODNN7EXAMPLE
-                s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                s3_region: us-east-1
-                type: s3
-              restore_options:
-                set: 20250505-153628F
-                target: "123456"
-                type: xid
-              source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              source_database_name: northwind
-              source_node_name: n1
-            source_node: n1
-          - backup_config:
-              repositories:
-                - azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    storage-upload-chunk-size: 5MiB
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                  retention_full: 2
-                  retention_full_type: count
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-                - azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    storage-upload-chunk-size: 5MiB
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                  retention_full: 2
-                  retention_full_type: count
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-              schedules:
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-            cpus: 500m
-            host_ids:
-              - 76f9b8c0-4958-11f0-a489-3bb29577c696
-              - 76f9b8c0-4958-11f0-a489-3bb29577c696
-              - 76f9b8c0-4958-11f0-a489-3bb29577c696
-            memory: 500M
-            name: n1
-            orchestrator_opts:
-              swarm:
-                extra_labels:
-                  traefik.enable: "true"
-                  traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
-                extra_networks:
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                extra_volumes:
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-            port: 5432
-            postgres_version: "17.6"
-            postgresql_conf:
-              max_connections: 1000
-            restore_config:
-              repository:
-                azure_account: pgedge-backups
-                azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                azure_endpoint: blob.core.usgovcloudapi.net
-                azure_key: YXpLZXk=
-                base_path: /backups
-                custom_options:
-                  s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                gcs_endpoint: localhost
-                gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                s3_endpoint: s3.us-east-1.amazonaws.com
-                s3_key: AKIAIOSFODNN7EXAMPLE
-                s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                s3_region: us-east-1
-                type: s3
-              restore_options:
-                set: 20250505-153628F
-                target: "123456"
-                type: xid
-              source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              source_database_name: northwind
-              source_node_name: n1
-            source_node: n1
           - backup_config:
               repositories:
                 - azure_account: pgedge-backups
@@ -9738,6 +8468,246 @@ components:
                 source_database_name: northwind
                 source_node_name: n1
               source_node: n1
+            - backup_config:
+                repositories:
+                  - azure_account: pgedge-backups
+                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    azure_endpoint: blob.core.usgovcloudapi.net
+                    azure_key: YXpLZXk=
+                    base_path: /backups
+                    custom_options:
+                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                      storage-upload-chunk-size: 5MiB
+                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    gcs_endpoint: localhost
+                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                    id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                    retention_full: 2
+                    retention_full_type: count
+                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    s3_endpoint: s3.us-east-1.amazonaws.com
+                    s3_key: AKIAIOSFODNN7EXAMPLE
+                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                    s3_region: us-east-1
+                    type: s3
+                  - azure_account: pgedge-backups
+                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    azure_endpoint: blob.core.usgovcloudapi.net
+                    azure_key: YXpLZXk=
+                    base_path: /backups
+                    custom_options:
+                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                      storage-upload-chunk-size: 5MiB
+                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    gcs_endpoint: localhost
+                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                    id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                    retention_full: 2
+                    retention_full_type: count
+                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    s3_endpoint: s3.us-east-1.amazonaws.com
+                    s3_key: AKIAIOSFODNN7EXAMPLE
+                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                    s3_region: us-east-1
+                    type: s3
+                schedules:
+                  - cron_expression: 0 6 * * ?
+                    id: daily-full-backup
+                    type: full
+                  - cron_expression: 0 6 * * ?
+                    id: daily-full-backup
+                    type: full
+                  - cron_expression: 0 6 * * ?
+                    id: daily-full-backup
+                    type: full
+              cpus: 500m
+              host_ids:
+                - 76f9b8c0-4958-11f0-a489-3bb29577c696
+                - 76f9b8c0-4958-11f0-a489-3bb29577c696
+              memory: 500M
+              name: n1
+              orchestrator_opts:
+                swarm:
+                  extra_labels:
+                    traefik.enable: "true"
+                    traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
+                  extra_networks:
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                  extra_volumes:
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+              port: 5432
+              postgres_version: "17.6"
+              postgresql_conf:
+                max_connections: 1000
+              restore_config:
+                repository:
+                  azure_account: pgedge-backups
+                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  azure_endpoint: blob.core.usgovcloudapi.net
+                  azure_key: YXpLZXk=
+                  base_path: /backups
+                  custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  gcs_endpoint: localhost
+                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  s3_endpoint: s3.us-east-1.amazonaws.com
+                  s3_key: AKIAIOSFODNN7EXAMPLE
+                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                  s3_region: us-east-1
+                  type: s3
+                restore_options:
+                  set: 20250505-153628F
+                  target: "123456"
+                  type: xid
+                source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                source_database_name: northwind
+                source_node_name: n1
+              source_node: n1
+            - backup_config:
+                repositories:
+                  - azure_account: pgedge-backups
+                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    azure_endpoint: blob.core.usgovcloudapi.net
+                    azure_key: YXpLZXk=
+                    base_path: /backups
+                    custom_options:
+                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                      storage-upload-chunk-size: 5MiB
+                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    gcs_endpoint: localhost
+                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                    id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                    retention_full: 2
+                    retention_full_type: count
+                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    s3_endpoint: s3.us-east-1.amazonaws.com
+                    s3_key: AKIAIOSFODNN7EXAMPLE
+                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                    s3_region: us-east-1
+                    type: s3
+                  - azure_account: pgedge-backups
+                    azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    azure_endpoint: blob.core.usgovcloudapi.net
+                    azure_key: YXpLZXk=
+                    base_path: /backups
+                    custom_options:
+                      s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                      storage-upload-chunk-size: 5MiB
+                    gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    gcs_endpoint: localhost
+                    gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                    id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                    retention_full: 2
+                    retention_full_type: count
+                    s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                    s3_endpoint: s3.us-east-1.amazonaws.com
+                    s3_key: AKIAIOSFODNN7EXAMPLE
+                    s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                    s3_region: us-east-1
+                    type: s3
+                schedules:
+                  - cron_expression: 0 6 * * ?
+                    id: daily-full-backup
+                    type: full
+                  - cron_expression: 0 6 * * ?
+                    id: daily-full-backup
+                    type: full
+                  - cron_expression: 0 6 * * ?
+                    id: daily-full-backup
+                    type: full
+              cpus: 500m
+              host_ids:
+                - 76f9b8c0-4958-11f0-a489-3bb29577c696
+                - 76f9b8c0-4958-11f0-a489-3bb29577c696
+              memory: 500M
+              name: n1
+              orchestrator_opts:
+                swarm:
+                  extra_labels:
+                    traefik.enable: "true"
+                    traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
+                  extra_networks:
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                    - aliases:
+                        - pg-db
+                        - db-alias
+                      driver_opts:
+                        com.docker.network.endpoint.expose: "true"
+                      id: traefik-public
+                  extra_volumes:
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+                    - destination_path: /backups/container
+                      host_path: /Users/user/backups/host
+              port: 5432
+              postgres_version: "17.6"
+              postgresql_conf:
+                max_connections: 1000
+              restore_config:
+                repository:
+                  azure_account: pgedge-backups
+                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  azure_endpoint: blob.core.usgovcloudapi.net
+                  azure_key: YXpLZXk=
+                  base_path: /backups
+                  custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  gcs_endpoint: localhost
+                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  s3_endpoint: s3.us-east-1.amazonaws.com
+                  s3_key: AKIAIOSFODNN7EXAMPLE
+                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                  s3_region: us-east-1
+                  type: s3
+                restore_options:
+                  set: 20250505-153628F
+                  target: "123456"
+                  type: xid
+                source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                source_database_name: northwind
+                source_node_name: n1
+              source_node: n1
           minItems: 1
           maxItems: 9
         orchestrator_opts:
@@ -10093,6 +9063,126 @@ components:
               source_database_name: northwind
               source_node_name: n1
             source_node: n1
+          - backup_config:
+              repositories:
+                - azure_account: pgedge-backups
+                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  azure_endpoint: blob.core.usgovcloudapi.net
+                  azure_key: YXpLZXk=
+                  base_path: /backups
+                  custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                    storage-upload-chunk-size: 5MiB
+                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  gcs_endpoint: localhost
+                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                  retention_full: 2
+                  retention_full_type: count
+                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  s3_endpoint: s3.us-east-1.amazonaws.com
+                  s3_key: AKIAIOSFODNN7EXAMPLE
+                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                  s3_region: us-east-1
+                  type: s3
+                - azure_account: pgedge-backups
+                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  azure_endpoint: blob.core.usgovcloudapi.net
+                  azure_key: YXpLZXk=
+                  base_path: /backups
+                  custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                    storage-upload-chunk-size: 5MiB
+                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  gcs_endpoint: localhost
+                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                  retention_full: 2
+                  retention_full_type: count
+                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  s3_endpoint: s3.us-east-1.amazonaws.com
+                  s3_key: AKIAIOSFODNN7EXAMPLE
+                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                  s3_region: us-east-1
+                  type: s3
+              schedules:
+                - cron_expression: 0 6 * * ?
+                  id: daily-full-backup
+                  type: full
+                - cron_expression: 0 6 * * ?
+                  id: daily-full-backup
+                  type: full
+                - cron_expression: 0 6 * * ?
+                  id: daily-full-backup
+                  type: full
+            cpus: 500m
+            host_ids:
+              - 76f9b8c0-4958-11f0-a489-3bb29577c696
+              - 76f9b8c0-4958-11f0-a489-3bb29577c696
+            memory: 500M
+            name: n1
+            orchestrator_opts:
+              swarm:
+                extra_labels:
+                  traefik.enable: "true"
+                  traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
+                extra_networks:
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                extra_volumes:
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+            port: 5432
+            postgres_version: "17.6"
+            postgresql_conf:
+              max_connections: 1000
+            restore_config:
+              repository:
+                azure_account: pgedge-backups
+                azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                azure_endpoint: blob.core.usgovcloudapi.net
+                azure_key: YXpLZXk=
+                base_path: /backups
+                custom_options:
+                  s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                gcs_endpoint: localhost
+                gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                s3_endpoint: s3.us-east-1.amazonaws.com
+                s3_key: AKIAIOSFODNN7EXAMPLE
+                s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                s3_region: us-east-1
+                type: s3
+              restore_options:
+                set: 20250505-153628F
+                target: "123456"
+                type: xid
+              source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+              source_database_name: northwind
+              source_node_name: n1
+            source_node: n1
         orchestrator_opts:
           swarm:
             extra_labels:
@@ -10165,7 +9255,7 @@ components:
           type: array
           items:
             type: string
-            example: Recusandae quibusdam fuga molestiae repellat.
+            example: Fuga molestiae.
           description: The attributes to assign to this database user.
           example:
             - LOGIN
@@ -10175,7 +9265,7 @@ components:
         db_owner:
           type: boolean
           description: If true, this user will be granted database ownership.
-          example: false
+          example: true
         password:
           type: string
           description: The password for this database user. This field will be excluded from the response of all endpoints. It can also be omitted from update requests to keep the current value.
@@ -10185,7 +9275,7 @@ components:
           type: array
           items:
             type: string
-            example: Nostrum eos reprehenderit harum sapiente qui ullam.
+            example: Quas nostrum eos reprehenderit harum sapiente qui.
           description: The roles to assign to this database user.
           example:
             - pgedge_superuser
@@ -10228,7 +9318,7 @@ components:
           type: array
           items:
             type: string
-            example: Qui et eius reiciendis accusamus.
+            example: Eius reiciendis accusamus veritatis quo.
           description: The Etcd client endpoint for this cluster member.
           example:
             - http://192.168.1.1:2379
@@ -10240,7 +9330,7 @@ components:
           type: array
           items:
             type: string
-            example: Facilis non modi explicabo illum.
+            example: Non modi explicabo illum alias qui.
           description: The Etcd peer endpoint for this cluster member.
           example:
             - http://192.168.1.1:2380
@@ -10261,7 +9351,7 @@ components:
           type: array
           items:
             type: string
-            example: Velit et labore in dolor quisquam placeat.
+            example: Quam id aut.
           description: Optional network-scoped aliases for the container.
           example:
             - pg-db
@@ -10274,7 +9364,7 @@ components:
             com.docker.network.endpoint.expose: "true"
           additionalProperties:
             type: string
-            example: Eos molestiae voluptates laborum.
+            example: Et labore in dolor quisquam placeat.
         id:
           type: string
           description: The name or ID of the network to connect to.
@@ -10331,12 +9421,12 @@ components:
           type: boolean
           description: If true, skip the health validations that prevent running failover on a healthy cluster.
           default: false
-          example: true
+          example: false
       example:
         candidate_instance_id: 68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi
         database_id: my-app
         node_name: n1
-        skip_validation: true
+        skip_validation: false
       required:
         - database_id
         - node_name
@@ -10351,7 +9441,7 @@ components:
           type: boolean
           description: If true, skip the health validations that prevent running failover on a healthy cluster.
           default: false
-          example: false
+          example: true
       example:
         candidate_instance_id: 68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi
         skip_validation: false
@@ -10468,8 +9558,6 @@ components:
             spock_version: "5"
           - postgres_version: "17.6"
             spock_version: "5"
-          - postgres_version: "17.6"
-            spock_version: "5"
       required:
         - id
         - orchestrator
@@ -10507,7 +9595,13 @@ components:
           type: object
           description: The status of each component of the host.
           example:
-            Sunt quibusdam quis.:
+            Dolorem itaque aut aut cupiditate sunt quibusdam.:
+              details:
+                alarms:
+                  - '3: NOSPACE'
+              error: failed to connect to etcd
+              healthy: false
+            Ipsa nihil facere ad.:
               details:
                 alarms:
                   - '3: NOSPACE'
@@ -10530,19 +9624,7 @@ components:
           format: date-time
       example:
         components:
-          Consequuntur reprehenderit esse id labore.:
-            details:
-              alarms:
-                - '3: NOSPACE'
-            error: failed to connect to etcd
-            healthy: false
-          Facere ad tenetur iure quisquam.:
-            details:
-              alarms:
-                - '3: NOSPACE'
-            error: failed to connect to etcd
-            healthy: false
-          Veritatis et omnis non.:
+          Quisquam dignissimos veritatis et omnis.:
             details:
               alarms:
                 - '3: NOSPACE'
@@ -10574,7 +9656,7 @@ components:
         created_at:
           type: string
           description: The time that the instance was created.
-          example: "2010-02-24T10:00:00Z"
+          example: "1971-02-20T15:20:44Z"
           format: date-time
         error:
           type: string
@@ -10598,7 +9680,7 @@ components:
           $ref: '#/components/schemas/InstanceSpockStatus'
         state:
           type: string
-          example: degraded
+          example: available
           enum:
             - creating
             - modifying
@@ -10611,12 +9693,12 @@ components:
         status_updated_at:
           type: string
           description: The time that the instance status information was last updated.
-          example: "2015-11-06T01:33:05Z"
+          example: "1995-04-11T11:49:24Z"
           format: date-time
         updated_at:
           type: string
           description: The time that the instance was last modified.
-          example: "1978-08-08T06:25:43Z"
+          example: "1983-10-23T08:18:23Z"
           format: date-time
       description: An instance of pgEdge Postgres running on a host.
       example:
@@ -10624,7 +9706,7 @@ components:
           hostname: i-0123456789abcdef.ec2.internal
           ipv4_address: 10.24.34.2
           port: 5432
-        created_at: "1997-01-10T00:23:00Z"
+        created_at: "2014-04-20T04:34:11Z"
         error: 'failed to get patroni status: connection refused'
         host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
         id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
@@ -10645,9 +9727,9 @@ components:
               provider_node: n2
               status: down
           version: 4.10.0
-        state: failed
-        status_updated_at: "1976-01-15T23:24:12Z"
-        updated_at: "1975-10-08T22:50:25Z"
+        state: degraded
+        status_updated_at: "2011-10-12T20:33:23Z"
+        updated_at: "1994-09-09T06:25:01Z"
       required:
         - id
         - host_id
@@ -10772,7 +9854,7 @@ components:
         patroni_paused:
           type: boolean
           description: True if Patroni is paused for this instance.
-          example: false
+          example: true
         patroni_state:
           type: string
           example: unknown
@@ -10802,7 +9884,7 @@ components:
         created_at:
           type: string
           description: The time that the instance was created.
-          example: "1996-12-12T19:46:15Z"
+          example: "2006-12-23T09:53:03Z"
           format: date-time
         error:
           type: string
@@ -10826,7 +9908,7 @@ components:
           $ref: '#/components/schemas/InstanceSpockStatus'
         state:
           type: string
-          example: creating
+          example: failed
           enum:
             - creating
             - modifying
@@ -10839,12 +9921,12 @@ components:
         status_updated_at:
           type: string
           description: The time that the instance status information was last updated.
-          example: "1999-03-14T06:06:50Z"
+          example: "1976-03-01T20:13:25Z"
           format: date-time
         updated_at:
           type: string
           description: The time that the instance was last modified.
-          example: "2013-12-27T22:37:44Z"
+          example: "2012-08-16T06:20:51Z"
           format: date-time
       description: An instance of pgEdge Postgres running on a host. (default view)
       example:
@@ -10852,7 +9934,7 @@ components:
           hostname: i-0123456789abcdef.ec2.internal
           ipv4_address: 10.24.34.2
           port: 5432
-        created_at: "1981-12-10T15:41:21Z"
+        created_at: "1977-03-14T09:54:12Z"
         error: 'failed to get patroni status: connection refused'
         host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
         id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
@@ -10873,9 +9955,9 @@ components:
               provider_node: n2
               status: down
           version: 4.10.0
-        state: stopped
-        status_updated_at: "1971-10-04T21:22:34Z"
-        updated_at: "1976-02-27T23:19:10Z"
+        state: failed
+        status_updated_at: "1988-02-08T05:38:12Z"
+        updated_at: "2002-03-20T15:42:21Z"
       required:
         - id
         - host_id
@@ -11096,14 +10178,6 @@ components:
               status: completed
               task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
               type: create
-            - completed_at: "2025-06-18T16:52:35Z"
-              created_at: "2025-06-18T16:52:05Z"
-              database_id: storefront
-              entity_id: storefront
-              scope: database
-              status: completed
-              task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
-              type: create
       example:
         tasks:
           - completed_at: "2025-06-18T17:54:36Z"
@@ -11123,44 +10197,6 @@ components:
             $ref: '#/components/schemas/Host'
           description: List of hosts in the cluster
           example:
-            - cohort:
-                control_available: true
-                member_id: lah4bsznw6kc0hp7biylmmmll
-                type: swarm
-              cpus: 4
-              data_dir: /data
-              default_pgedge_version:
-                postgres_version: "17.6"
-                spock_version: "5"
-              etcd_mode: server
-              hostname: i-0123456789abcdef.ec2.internal
-              id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-              ipv4_address: 10.24.34.2
-              memory: 16GiB
-              orchestrator: swarm
-              status:
-                components:
-                  Enim et voluptatum ex ea dolore.:
-                    details:
-                      alarms:
-                        - '3: NOSPACE'
-                    error: failed to connect to etcd
-                    healthy: false
-                  Tenetur nostrum repellendus sint qui.:
-                    details:
-                      alarms:
-                        - '3: NOSPACE'
-                    error: failed to connect to etcd
-                    healthy: false
-                state: available
-                updated_at: "2021-07-01T12:34:56Z"
-              supported_pgedge_versions:
-                - postgres_version: "17.6"
-                  spock_version: "5"
-                - postgres_version: "17.6"
-                  spock_version: "5"
-                - postgres_version: "17.6"
-                  spock_version: "5"
             - cohort:
                 control_available: true
                 member_id: lah4bsznw6kc0hp7biylmmmll
@@ -11316,8 +10352,105 @@ components:
                 spock_version: "5"
               - postgres_version: "17.6"
                 spock_version: "5"
+          - cohort:
+              control_available: true
+              member_id: lah4bsznw6kc0hp7biylmmmll
+              type: swarm
+            cpus: 4
+            data_dir: /data
+            default_pgedge_version:
+              postgres_version: "17.6"
+              spock_version: "5"
+            etcd_mode: server
+            hostname: i-0123456789abcdef.ec2.internal
+            id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+            ipv4_address: 10.24.34.2
+            memory: 16GiB
+            orchestrator: swarm
+            status:
+              components:
+                Enim et voluptatum ex ea dolore.:
+                  details:
+                    alarms:
+                      - '3: NOSPACE'
+                  error: failed to connect to etcd
+                  healthy: false
+                Tenetur nostrum repellendus sint qui.:
+                  details:
+                    alarms:
+                      - '3: NOSPACE'
+                  error: failed to connect to etcd
+                  healthy: false
+              state: available
+              updated_at: "2021-07-01T12:34:56Z"
+            supported_pgedge_versions:
+              - postgres_version: "17.6"
+                spock_version: "5"
+              - postgres_version: "17.6"
+                spock_version: "5"
+              - postgres_version: "17.6"
+                spock_version: "5"
       required:
         - hosts
+    ListTasksResponse:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+          example:
+            - completed_at: "2025-06-18T16:52:35Z"
+              created_at: "2025-06-18T16:52:05Z"
+              database_id: storefront
+              entity_id: storefront
+              scope: database
+              status: completed
+              task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+              type: create
+            - completed_at: "2025-06-18T16:52:35Z"
+              created_at: "2025-06-18T16:52:05Z"
+              database_id: storefront
+              entity_id: storefront
+              scope: database
+              status: completed
+              task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+              type: create
+            - completed_at: "2025-06-18T16:52:35Z"
+              created_at: "2025-06-18T16:52:05Z"
+              database_id: storefront
+              entity_id: storefront
+              scope: database
+              status: completed
+              task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+              type: create
+            - completed_at: "2025-06-18T16:52:35Z"
+              created_at: "2025-06-18T16:52:05Z"
+              database_id: storefront
+              entity_id: storefront
+              scope: database
+              status: completed
+              task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+              type: create
+      example:
+        tasks:
+          - completed_at: "2025-06-18T17:54:36Z"
+            created_at: "2025-06-18T17:54:28Z"
+            database_id: storefront
+            entity_id: storefront
+            instance_id: storefront-n1-689qacsi
+            scope: database
+            status: completed
+            task_id: 0197842d-9082-7496-b787-77bd2e11809f
+            type: node_backup
+          - completed_at: "2025-06-18T17:54:36Z"
+            created_at: "2025-06-18T17:54:28Z"
+            entity_id: host-1
+            host_id: host-1
+            scope: host
+            status: completed
+            task_id: 0197842d-9082-7496-b787-77bd2e11809f
+            type: remove_host
     Listdatabasesresponse:
       type: object
       properties:
@@ -11438,16 +10571,16 @@ components:
               status: completed
               task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
               type: create
+            - completed_at: "2025-06-18T16:52:35Z"
+              created_at: "2025-06-18T16:52:05Z"
+              database_id: storefront
+              entity_id: storefront
+              scope: database
+              status: completed
+              task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+              type: create
       example:
         update_database_tasks:
-          - completed_at: "2025-06-18T16:52:35Z"
-            created_at: "2025-06-18T16:52:05Z"
-            database_id: storefront
-            entity_id: storefront
-            scope: database
-            status: completed
-            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
-            type: create
           - completed_at: "2025-06-18T16:52:35Z"
             created_at: "2025-06-18T16:52:05Z"
             database_id: storefront
@@ -11507,7 +10640,7 @@ components:
           maxLength: 32
           additionalProperties:
             type: string
-            example: Dolorem impedit laudantium et quia commodi consequatur.
+            example: Ea omnis ut dolor dolorem impedit laudantium.
         source_database_id:
           type: string
           description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
@@ -11565,7 +10698,7 @@ components:
           type: array
           items:
             type: string
-            example: Quaerat qui quam id.
+            example: Consequatur ex possimus magni quaerat.
           description: The nodes to restore. Defaults to all nodes if empty or unspecified.
           example:
             - n1
@@ -11593,6 +10726,22 @@ components:
             $ref: '#/components/schemas/Task'
           description: The tasks that will restore each database node.
           example:
+            - completed_at: "2025-06-18T16:52:35Z"
+              created_at: "2025-06-18T16:52:05Z"
+              database_id: storefront
+              entity_id: storefront
+              scope: database
+              status: completed
+              task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+              type: create
+            - completed_at: "2025-06-18T16:52:35Z"
+              created_at: "2025-06-18T16:52:05Z"
+              database_id: storefront
+              entity_id: storefront
+              scope: database
+              status: completed
+              task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+              type: create
             - completed_at: "2025-06-18T16:52:35Z"
               created_at: "2025-06-18T16:52:05Z"
               database_id: storefront
@@ -11784,7 +10933,7 @@ components:
             s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
           additionalProperties:
             type: string
-            example: Sint ea omnis ut.
+            example: Non quae.
         gcs_bucket:
           type: string
           description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -11913,7 +11062,7 @@ components:
             traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
           additionalProperties:
             type: string
-            example: Et corporis harum voluptatum nulla commodi.
+            example: Voluptates laborum earum illo aut et.
         extra_networks:
           type: array
           items:

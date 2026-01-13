@@ -283,6 +283,9 @@ func (s *PreInitHandlers) GetHostTaskLog(ctx context.Context, req *api.GetHostTa
 	return nil, ErrUninitialized
 }
 
+func (s *PreInitHandlers) ListTasks(ctx context.Context, req *api.ListTasksPayload) (*api.ListTasksResponse, error) {
+	return nil, ErrUninitialized
+}
 
 func (s *PreInitHandlers) GetClient() (res *http.Client, err error) {
 	if s.cfg.HTTP.ClientCert == "" {

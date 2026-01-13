@@ -832,3 +832,37 @@ func taskLogOptionsFromHost(req *api.GetHostTaskLogPayload) (task.TaskLogOptions
 	}
 	return options, nil
 }
+
+func taskListOptionsFromGeneric(req *api.ListTasksPayload) (task.Scope, string, error) {
+	if req.Scope == nil {
+		// No scope specified - return empty scope and entity ID
+		return "", "", nil
+	}
+
+	scope, err := parseScope(*req.Scope)
+	if err != nil {
+		return "", "", err
+	}
+
+	var entityID string
+	if req.EntityID != nil {
+		id, err := identToString(*req.EntityID, []string{"entity_id"})
+		if err != nil {
+			return "", "", err
+		}
+		entityID = id
+	}
+
+	return scope, entityID, nil
+}
+
+func parseScope(scopeStr string) (task.Scope, error) {
+	switch scopeStr {
+	case "database":
+		return task.ScopeDatabase, nil
+	case "host":
+		return task.ScopeHost, nil
+	default:
+		return "", fmt.Errorf("invalid scope %q", scopeStr)
+	}
+}

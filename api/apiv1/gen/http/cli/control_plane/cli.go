@@ -23,7 +23,7 @@ import (
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() []string {
 	return []string{
-		"control-plane (init-cluster|join-cluster|get-join-token|get-join-options|get-cluster|list-hosts|get-host|remove-host|list-databases|create-database|get-database|update-database|delete-database|backup-database-node|switchover-database-node|failover-database-node|list-database-tasks|get-database-task|get-database-task-log|list-host-tasks|get-host-task|get-host-task-log|restore-database|get-version|restart-instance|stop-instance|start-instance|cancel-database-task)",
+		"control-plane (init-cluster|join-cluster|get-join-token|get-join-options|get-cluster|list-hosts|get-host|remove-host|list-databases|create-database|get-database|update-database|delete-database|backup-database-node|switchover-database-node|failover-database-node|list-database-tasks|get-database-task|get-database-task-log|list-host-tasks|get-host-task|get-host-task-log|list-tasks|restore-database|get-version|restart-instance|stop-instance|start-instance|cancel-database-task)",
 	}
 }
 
@@ -132,6 +132,13 @@ func ParseEndpoint(
 		controlPlaneGetHostTaskLogAfterEntryIDFlag = controlPlaneGetHostTaskLogFlags.String("after-entry-id", "", "")
 		controlPlaneGetHostTaskLogLimitFlag        = controlPlaneGetHostTaskLogFlags.String("limit", "", "")
 
+		controlPlaneListTasksFlags           = flag.NewFlagSet("list-tasks", flag.ExitOnError)
+		controlPlaneListTasksScopeFlag       = controlPlaneListTasksFlags.String("scope", "", "")
+		controlPlaneListTasksEntityIDFlag    = controlPlaneListTasksFlags.String("entity-id", "", "")
+		controlPlaneListTasksAfterTaskIDFlag = controlPlaneListTasksFlags.String("after-task-id", "", "")
+		controlPlaneListTasksLimitFlag       = controlPlaneListTasksFlags.String("limit", "", "")
+		controlPlaneListTasksSortOrderFlag   = controlPlaneListTasksFlags.String("sort-order", "", "")
+
 		controlPlaneRestoreDatabaseFlags          = flag.NewFlagSet("restore-database", flag.ExitOnError)
 		controlPlaneRestoreDatabaseBodyFlag       = controlPlaneRestoreDatabaseFlags.String("body", "REQUIRED", "")
 		controlPlaneRestoreDatabaseDatabaseIDFlag = controlPlaneRestoreDatabaseFlags.String("database-id", "REQUIRED", "ID of the database to restore.")
@@ -181,6 +188,7 @@ func ParseEndpoint(
 	controlPlaneListHostTasksFlags.Usage = controlPlaneListHostTasksUsage
 	controlPlaneGetHostTaskFlags.Usage = controlPlaneGetHostTaskUsage
 	controlPlaneGetHostTaskLogFlags.Usage = controlPlaneGetHostTaskLogUsage
+	controlPlaneListTasksFlags.Usage = controlPlaneListTasksUsage
 	controlPlaneRestoreDatabaseFlags.Usage = controlPlaneRestoreDatabaseUsage
 	controlPlaneGetVersionFlags.Usage = controlPlaneGetVersionUsage
 	controlPlaneRestartInstanceFlags.Usage = controlPlaneRestartInstanceUsage
@@ -288,6 +296,9 @@ func ParseEndpoint(
 			case "get-host-task-log":
 				epf = controlPlaneGetHostTaskLogFlags
 
+			case "list-tasks":
+				epf = controlPlaneListTasksFlags
+
 			case "restore-database":
 				epf = controlPlaneRestoreDatabaseFlags
 
@@ -393,6 +404,9 @@ func ParseEndpoint(
 			case "get-host-task-log":
 				endpoint = c.GetHostTaskLog()
 				data, err = controlplanec.BuildGetHostTaskLogPayload(*controlPlaneGetHostTaskLogHostIDFlag, *controlPlaneGetHostTaskLogTaskIDFlag, *controlPlaneGetHostTaskLogAfterEntryIDFlag, *controlPlaneGetHostTaskLogLimitFlag)
+			case "list-tasks":
+				endpoint = c.ListTasks()
+				data, err = controlplanec.BuildListTasksPayload(*controlPlaneListTasksScopeFlag, *controlPlaneListTasksEntityIDFlag, *controlPlaneListTasksAfterTaskIDFlag, *controlPlaneListTasksLimitFlag, *controlPlaneListTasksSortOrderFlag)
 			case "restore-database":
 				endpoint = c.RestoreDatabase()
 				data, err = controlplanec.BuildRestoreDatabasePayload(*controlPlaneRestoreDatabaseBodyFlag, *controlPlaneRestoreDatabaseDatabaseIDFlag, *controlPlaneRestoreDatabaseForceFlag)
@@ -448,6 +462,7 @@ func controlPlaneUsage() {
 	fmt.Fprintln(os.Stderr, `    list-host-tasks: Lists all tasks for a host.`)
 	fmt.Fprintln(os.Stderr, `    get-host-task: Returns information about a particular task for a host.`)
 	fmt.Fprintln(os.Stderr, `    get-host-task-log: Returns the log of a particular task for a host.`)
+	fmt.Fprintln(os.Stderr, `    list-tasks: Lists tasks across all scopes with optional filtering by scope and entity ID.`)
 	fmt.Fprintln(os.Stderr, `    restore-database: Perform an in-place restore of one or more nodes using the given restore configuration.`)
 	fmt.Fprintln(os.Stderr, `    get-version: Returns version information for this Control Plane server.`)
 	fmt.Fprintln(os.Stderr, `    restart-instance: Restarts a specific instance within a database. Supports immediate or scheduled restarts.`)
@@ -894,6 +909,32 @@ func controlPlaneGetHostTaskLogUsage() {
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
 	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane get-host-task-log --host-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\" --task-id \"3c875a27-f6a6-4c1c-ba5f-6972fb1fc348\" --after-entry-id \"3c875a27-f6a6-4c1c-ba5f-6972fb1fc348\" --limit 100")
+}
+
+func controlPlaneListTasksUsage() {
+	// Header with flags
+	fmt.Fprintf(os.Stderr, "%s [flags] control-plane list-tasks", os.Args[0])
+	fmt.Fprint(os.Stderr, " -scope STRING")
+	fmt.Fprint(os.Stderr, " -entity-id STRING")
+	fmt.Fprint(os.Stderr, " -after-task-id STRING")
+	fmt.Fprint(os.Stderr, " -limit INT")
+	fmt.Fprint(os.Stderr, " -sort-order STRING")
+	fmt.Fprintln(os.Stderr)
+
+	// Description
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, `Lists tasks across all scopes with optional filtering by scope and entity ID.`)
+
+	// Flags list
+	fmt.Fprintln(os.Stderr, `    -scope STRING: `)
+	fmt.Fprintln(os.Stderr, `    -entity-id STRING: `)
+	fmt.Fprintln(os.Stderr, `    -after-task-id STRING: `)
+	fmt.Fprintln(os.Stderr, `    -limit INT: `)
+	fmt.Fprintln(os.Stderr, `    -sort-order STRING: `)
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Example:")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane list-tasks --scope \"database\" --entity-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\" --after-task-id \"3c875a27-f6a6-4c1c-ba5f-6972fb1fc348\" --limit 100 --sort-order \"ascend\"")
 }
 
 func controlPlaneRestoreDatabaseUsage() {

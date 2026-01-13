@@ -105,6 +105,10 @@ type Client struct {
 	// get-host-task-log endpoint.
 	GetHostTaskLogDoer goahttp.Doer
 
+	// ListTasks Doer is the HTTP client used to make requests to the list-tasks
+	// endpoint.
+	ListTasksDoer goahttp.Doer
+
 	// RestoreDatabase Doer is the HTTP client used to make requests to the
 	// restore-database endpoint.
 	RestoreDatabaseDoer goahttp.Doer
@@ -172,6 +176,7 @@ func NewClient(
 		ListHostTasksDoer:          doer,
 		GetHostTaskDoer:            doer,
 		GetHostTaskLogDoer:         doer,
+		ListTasksDoer:              doer,
 		RestoreDatabaseDoer:        doer,
 		GetVersionDoer:             doer,
 		RestartInstanceDoer:        doer,
@@ -669,6 +674,30 @@ func (c *Client) GetHostTaskLog() goa.Endpoint {
 		resp, err := c.GetHostTaskLogDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("control-plane", "get-host-task-log", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// ListTasks returns an endpoint that makes HTTP requests to the control-plane
+// service list-tasks server.
+func (c *Client) ListTasks() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeListTasksRequest(c.encoder)
+		decodeResponse = DecodeListTasksResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildListTasksRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.ListTasksDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("control-plane", "list-tasks", err)
 		}
 		return decodeResponse(resp)
 	}

@@ -60,6 +60,8 @@ type Service interface {
 	GetHostTask(context.Context, *GetHostTaskPayload) (res *Task, err error)
 	// Returns the log of a particular task for a host.
 	GetHostTaskLog(context.Context, *GetHostTaskLogPayload) (res *TaskLog, err error)
+	// Lists tasks across all scopes with optional filtering by scope and entity ID.
+	ListTasks(context.Context, *ListTasksPayload) (res *ListTasksResponse, err error)
 	// Perform an in-place restore of one or more nodes using the given restore
 	// configuration.
 	RestoreDatabase(context.Context, *RestoreDatabasePayload) (res *RestoreDatabaseResponse, err error)
@@ -90,7 +92,7 @@ const ServiceName = "control-plane"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [28]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "delete-database", "backup-database-node", "switchover-database-node", "failover-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "list-host-tasks", "get-host-task", "get-host-task-log", "restore-database", "get-version", "restart-instance", "stop-instance", "start-instance", "cancel-database-task"}
+var MethodNames = [29]string{"init-cluster", "join-cluster", "get-join-token", "get-join-options", "get-cluster", "list-hosts", "get-host", "remove-host", "list-databases", "create-database", "get-database", "update-database", "delete-database", "backup-database-node", "switchover-database-node", "failover-database-node", "list-database-tasks", "get-database-task", "get-database-task-log", "list-host-tasks", "get-host-task", "get-host-task-log", "list-tasks", "restore-database", "get-version", "restart-instance", "stop-instance", "start-instance", "cancel-database-task"}
 
 // A Control Plane API error.
 type APIError struct {
@@ -710,6 +712,27 @@ type ListHostTasksResponse struct {
 type ListHostsResponse struct {
 	// List of hosts in the cluster
 	Hosts []*Host
+}
+
+// ListTasksPayload is the payload type of the control-plane service list-tasks
+// method.
+type ListTasksPayload struct {
+	// Optional scope to filter tasks (database or host).
+	Scope *string
+	// Optional entity ID to filter tasks. Requires scope to be set.
+	EntityID *Identifier
+	// ID of the task to start from.
+	AfterTaskID *string
+	// Maximum number of tasks to return.
+	Limit *int
+	// Sort order for the tasks.
+	SortOrder *string
+}
+
+// ListTasksResponse is the result type of the control-plane service list-tasks
+// method.
+type ListTasksResponse struct {
+	Tasks []*Task
 }
 
 // Options specific to the selected orchestrator.
