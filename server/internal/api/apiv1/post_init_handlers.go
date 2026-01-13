@@ -604,7 +604,7 @@ func (s *PostInitHandlers) SwitchoverDatabaseNode(ctx context.Context, req *api.
 		Limit: 1,
 	}
 
-	activeTasks, err := s.taskSvc.GetTasks(ctx, databaseID, opts)
+	activeTasks, err := s.taskSvc.GetTasks(ctx, task.ScopeDatabase, databaseID, opts)
 	if err != nil {
 		return nil, apiErr(err)
 	}
@@ -697,7 +697,7 @@ func (s *PostInitHandlers) FailoverDatabaseNode(ctx context.Context, req *api.Fa
 		Limit: 1,
 	}
 
-	activeTasks, err := s.taskSvc.GetTasks(ctx, databaseID, opts)
+	activeTasks, err := s.taskSvc.GetTasks(ctx, task.ScopeDatabase, databaseID, opts)
 	if err != nil {
 		return nil, apiErr(err)
 	}
@@ -728,7 +728,7 @@ func (s *PostInitHandlers) ListDatabaseTasks(ctx context.Context, req *api.ListD
 		return nil, makeInvalidInputErr(err)
 	}
 
-	tasks, err := s.taskSvc.GetTasks(ctx, databaseID, options)
+	tasks, err := s.taskSvc.GetTasks(ctx, task.ScopeDatabase, databaseID, options)
 	if err != nil {
 		return nil, apiErr(err)
 	}
@@ -748,7 +748,7 @@ func (s *PostInitHandlers) GetDatabaseTask(ctx context.Context, req *api.GetData
 		return nil, ErrInvalidTaskID
 	}
 
-	t, err := s.taskSvc.GetTask(ctx, databaseID, taskID)
+	t, err := s.taskSvc.GetTask(ctx, task.ScopeDatabase, databaseID, taskID)
 	if err != nil {
 		return nil, apiErr(err)
 	}
@@ -766,7 +766,7 @@ func (s *PostInitHandlers) GetDatabaseTaskLog(ctx context.Context, req *api.GetD
 		return nil, ErrInvalidTaskID
 	}
 
-	t, err := s.taskSvc.GetTask(ctx, databaseID, taskID)
+	t, err := s.taskSvc.GetTask(ctx, task.ScopeDatabase, databaseID, taskID)
 	if err != nil {
 		return nil, apiErr(err)
 	}
@@ -776,7 +776,7 @@ func (s *PostInitHandlers) GetDatabaseTaskLog(ctx context.Context, req *api.GetD
 		return nil, makeInvalidInputErr(err)
 	}
 
-	log, err := s.taskSvc.GetTaskLog(ctx, databaseID, taskID, options)
+	log, err := s.taskSvc.GetTaskLog(ctx, task.ScopeDatabase, databaseID, taskID, options)
 	if err != nil {
 		return nil, apiErr(err)
 	}
@@ -1030,7 +1030,7 @@ func (s *PostInitHandlers) CancelDatabaseTask(ctx context.Context, req *api.Canc
 		return nil, makeInvalidInputErr(fmt.Errorf("invalid task ID: %w", err))
 	}
 
-	t, err := s.taskSvc.GetTask(ctx, databaseID, taskID)
+	t, err := s.taskSvc.GetTask(ctx, task.ScopeDatabase, databaseID, taskID)
 	if err != nil {
 		return nil, makeInvalidInputErr(fmt.Errorf("task is not associated with database "))
 	}

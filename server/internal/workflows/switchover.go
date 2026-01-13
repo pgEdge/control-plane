@@ -54,14 +54,15 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 					}
 				}
 			}
-			w.cancelTask(cleanupCtx, in.DatabaseID, in.TaskID, logger)
+			w.cancelTask(cleanupCtx, task.ScopeDatabase, in.DatabaseID, in.TaskID, logger)
 		}
 	}()
 
 	handleError := func(cause error) error {
 		logger.With("error", cause).Error("switchover failed")
 		updateTaskInput := &activities.UpdateTaskInput{
-			DatabaseID:    in.DatabaseID,
+			Scope:         task.ScopeDatabase,
+			EntityID:      in.DatabaseID,
 			TaskID:        in.TaskID,
 			UpdateOptions: task.UpdateFail(cause),
 		}
@@ -71,7 +72,8 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 
 	// mark task as running
 	startUpdate := &activities.UpdateTaskInput{
-		DatabaseID:    in.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      in.DatabaseID,
 		TaskID:        in.TaskID,
 		UpdateOptions: task.UpdateStart(),
 	}
@@ -138,7 +140,8 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 	if candidateID == leaderInstanceID {
 		logger.Info("candidate is already the leader; skipping switchover", "candidate", candidateID)
 		completeUpdate := &activities.UpdateTaskInput{
-			DatabaseID:    in.DatabaseID,
+			Scope:         task.ScopeDatabase,
+			EntityID:      in.DatabaseID,
 			TaskID:        in.TaskID,
 			UpdateOptions: task.UpdateComplete(),
 		}
@@ -161,7 +164,8 @@ func (w *Workflows) Switchover(ctx workflow.Context, in *SwitchoverInput) (*Swit
 	}
 
 	completeUpdate := &activities.UpdateTaskInput{
-		DatabaseID:    in.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      in.DatabaseID,
 		TaskID:        in.TaskID,
 		UpdateOptions: task.UpdateComplete(),
 	}

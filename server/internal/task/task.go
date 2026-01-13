@@ -10,6 +10,17 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
+type Scope string
+
+func (s Scope) String() string {
+	return string(s)
+}
+
+const (
+	ScopeDatabase Scope = "database"
+	ScopeHost     Scope = "host"
+)
+
 type Type string
 
 func (t Type) String() string {
@@ -54,6 +65,8 @@ var completedStatuses = ds.NewSet(
 )
 
 type Task struct {
+	Scope               Scope     `json:"scope"`
+	EntityID            string    `json:"entity_id"`
 	ParentID            uuid.UUID `json:"parent_id"`
 	DatabaseID          string    `json:"database_id"`
 	NodeName            string    `json:"node_name"`
@@ -74,6 +87,7 @@ func (t *Task) IsComplete() bool {
 }
 
 type Options struct {
+	Scope               Scope     `json:"scope"`
 	ParentID            uuid.UUID `json:"parent_id"`
 	DatabaseID          string    `json:"database_id"`
 	NodeName            string    `json:"node_name"`
@@ -84,13 +98,40 @@ type Options struct {
 	WorkflowExecutionID string    `json:"workflow_execution_id"`
 }
 
+func (o Options) EntityID() string {
+	switch o.Scope {
+	case ScopeDatabase:
+		return o.DatabaseID
+	case ScopeHost:
+		return o.HostID
+	default:
+		return ""
+	}
+}
+
 func (o Options) validate() error {
-	if o.DatabaseID == "" {
-		return errors.New("database ID is required when creating a new task")
+	// Require scope and entity_id
+	if o.Scope == "" {
+		return errors.New("scope is required when creating a new task")
 	}
 	if o.Type == "" {
 		return errors.New("type is required when creating a new task")
 	}
+
+	// Enforce scope-specific rules
+	switch o.Scope {
+	case ScopeDatabase:
+		if o.DatabaseID == "" {
+			return errors.New("database_id is required for database scope")
+		}
+	case ScopeHost:
+		if o.HostID == "" {
+			return errors.New("host_id is required for host scope")
+		}
+	default:
+		return fmt.Errorf("invalid scope: %s", o.Scope)
+	}
+
 	return nil
 }
 
@@ -105,6 +146,8 @@ func NewTask(opts Options) (*Task, error) {
 	}
 
 	return &Task{
+		Scope:               opts.Scope,
+		EntityID:            opts.EntityID(),
 		ParentID:            opts.ParentID,
 		DatabaseID:          opts.DatabaseID,
 		NodeName:            opts.NodeName,
@@ -201,6 +244,8 @@ func (t *Task) SetCompleted() {
 }
 
 type TaskLog struct {
+	Scope       Scope      `json:"scope"`
+	EntityID    string     `json:"entity_id"`
 	DatabaseID  string     `json:"database_id"`
 	TaskID      uuid.UUID  `json:"id"`
 	LastEntryID uuid.UUID  `json:"last_entry_id"`

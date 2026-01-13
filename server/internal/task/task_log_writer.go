@@ -10,17 +10,13 @@ import (
 )
 
 type TaskLogWriter struct {
-	DatabaseID string
-	TaskID     uuid.UUID
-	writer     *utils.LineWriter
+	writer *utils.LineWriter
 }
 
-func NewTaskLogWriter(ctx context.Context, service *Service, databaseID string, taskID uuid.UUID) *TaskLogWriter {
+func NewTaskLogWriter(ctx context.Context, service *Service, scope Scope, entityID string, taskID uuid.UUID) *TaskLogWriter {
 	return &TaskLogWriter{
-		DatabaseID: databaseID,
-		TaskID:     taskID,
 		writer: utils.NewLineWriter(func(b []byte) error {
-			err := service.AddLogEntry(ctx, databaseID, taskID, LogEntry{
+			err := service.AddLogEntry(ctx, scope, entityID, taskID, LogEntry{
 				Message: utils.Clean(string(b)), // remove all control characters
 			})
 			if err != nil {

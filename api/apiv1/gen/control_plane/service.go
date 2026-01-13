@@ -870,8 +870,12 @@ type SwitchoverDatabaseNodeResponse struct {
 type Task struct {
 	// The parent task ID of the task.
 	ParentID *string
+	// The scope of the task (database or host).
+	Scope string
+	// The entity ID (database_id or host_id) that this task belongs to.
+	EntityID string
 	// The database ID of the task.
-	DatabaseID string
+	DatabaseID *string
 	// The name of the node that the task is operating on.
 	NodeName *string
 	// The ID of the instance that the task is operating on.
@@ -895,8 +899,12 @@ type Task struct {
 // TaskLog is the result type of the control-plane service
 // get-database-task-log method.
 type TaskLog struct {
-	// The database ID of the task log.
-	DatabaseID string
+	// The scope of the task (database or host).
+	Scope string
+	// The entity ID (database_id or host_id) that this task log belongs to.
+	EntityID string
+	// The database ID of the task log. Deprecated: use entity_id instead.
+	DatabaseID *string
 	// The unique ID of the task log.
 	TaskID string
 	// The status of the task.

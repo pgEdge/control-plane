@@ -942,7 +942,8 @@ paths:
           schema:
             $ref: '#/definitions/Task'
             required:
-              - database_id
+              - scope
+              - entity_id
               - task_id
               - created_at
               - type
@@ -1001,7 +1002,8 @@ paths:
           schema:
             $ref: '#/definitions/Task'
             required:
-              - database_id
+              - scope
+              - entity_id
               - task_id
               - created_at
               - type
@@ -1065,7 +1067,8 @@ paths:
           schema:
             $ref: '#/definitions/TaskLog'
             required:
-              - database_id
+              - scope
+              - entity_id
               - task_id
               - task_status
               - entries
@@ -4328,12 +4331,16 @@ definitions:
           - completed_at: "2025-06-18T16:52:35Z"
             created_at: "2025-06-18T16:52:05Z"
             database_id: storefront
+            entity_id: storefront
+            scope: database
             status: completed
             task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
             type: create
           - completed_at: "2025-06-18T16:52:35Z"
             created_at: "2025-06-18T16:52:05Z"
             database_id: storefront
+            entity_id: storefront
+            scope: database
             status: completed
             task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
             type: create
@@ -4342,25 +4349,33 @@ definitions:
         - completed_at: "2025-06-18T17:54:36Z"
           created_at: "2025-06-18T17:54:28Z"
           database_id: storefront
+          entity_id: storefront
           instance_id: storefront-n1-689qacsi
+          scope: database
           status: completed
           task_id: 0197842d-9082-7496-b787-77bd2e11809f
           type: node_backup
         - completed_at: "2025-06-18T17:54:04Z"
           created_at: "2025-06-18T17:53:17Z"
           database_id: storefront
+          entity_id: storefront
+          scope: database
           status: completed
           task_id: 0197842c-7c4f-7a8c-829e-7405c2a41c8c
           type: update
         - completed_at: "2025-06-18T17:23:28Z"
           created_at: "2025-06-18T17:23:14Z"
           database_id: storefront
+          entity_id: storefront
+          scope: database
           status: completed
           task_id: 01978410-fb5d-7cd2-bbd2-66c0bf929dc0
           type: update
         - completed_at: "2025-06-18T16:52:35Z"
           created_at: "2025-06-18T16:52:05Z"
           database_id: storefront
+          entity_id: storefront
+          scope: database
           status: completed
           task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
           type: create
@@ -4651,18 +4666,24 @@ definitions:
           - completed_at: "2025-06-18T16:52:35Z"
             created_at: "2025-06-18T16:52:05Z"
             database_id: storefront
+            entity_id: storefront
+            scope: database
             status: completed
             task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
             type: create
           - completed_at: "2025-06-18T16:52:35Z"
             created_at: "2025-06-18T16:52:05Z"
             database_id: storefront
+            entity_id: storefront
+            scope: database
             status: completed
             task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
             type: create
           - completed_at: "2025-06-18T16:52:35Z"
             created_at: "2025-06-18T16:52:05Z"
             database_id: storefront
+            entity_id: storefront
+            scope: database
             status: completed
             task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
             type: create
@@ -4671,12 +4692,16 @@ definitions:
         - completed_at: "2025-06-18T16:52:35Z"
           created_at: "2025-06-18T16:52:05Z"
           database_id: storefront
+          entity_id: storefront
+          scope: database
           status: completed
           task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
           type: create
         - completed_at: "2025-06-18T16:52:35Z"
           created_at: "2025-06-18T16:52:05Z"
           database_id: storefront
+          entity_id: storefront
+          scope: database
           status: completed
           task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
           type: create
@@ -4806,12 +4831,16 @@ definitions:
           - completed_at: "2025-06-18T16:52:35Z"
             created_at: "2025-06-18T16:52:05Z"
             database_id: storefront
+            entity_id: storefront
+            scope: database
             status: completed
             task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
             type: create
           - completed_at: "2025-06-18T16:52:35Z"
             created_at: "2025-06-18T16:52:05Z"
             database_id: storefront
+            entity_id: storefront
+            scope: database
             status: completed
             task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
             type: create
@@ -5222,6 +5251,10 @@ definitions:
         type: string
         description: The database ID of the task.
         example: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+      entity_id:
+        type: string
+        description: The entity ID (database_id or host_id) that this task belongs to.
+        example: 02f1a7db-fca8-4521-b57a-2a375c1ced51
       error:
         type: string
         description: The error message if the task failed.
@@ -5243,6 +5276,13 @@ definitions:
         description: The parent task ID of the task.
         example: 439eb515-e700-4740-b508-4a3f12ec4f83
         format: uuid
+      scope:
+        type: string
+        description: The scope of the task (database or host).
+        example: database
+        enum:
+          - database
+          - host
       status:
         type: string
         description: The status of the task.
@@ -5268,11 +5308,14 @@ definitions:
       completed_at: "2025-06-18T16:52:35Z"
       created_at: "2025-06-18T16:52:05Z"
       database_id: storefront
+      entity_id: storefront
+      scope: database
       status: completed
       task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
       type: create
     required:
-      - database_id
+      - scope
+      - entity_id
       - task_id
       - created_at
       - type
@@ -5283,7 +5326,11 @@ definitions:
     properties:
       database_id:
         type: string
-        description: The database ID of the task log.
+        description: 'The database ID of the task log. Deprecated: use entity_id instead.'
+        example: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+      entity_id:
+        type: string
+        description: The entity ID (database_id or host_id) that this task log belongs to.
         example: 02f1a7db-fca8-4521-b57a-2a375c1ced51
       entries:
         type: array
@@ -5305,6 +5352,13 @@ definitions:
         type: string
         description: The ID of the last entry in the task log.
         example: 3c875a27-f6a6-4c1c-ba5f-6972fb1fc348
+      scope:
+        type: string
+        description: The scope of the task (database or host).
+        example: database
+        enum:
+          - database
+          - host
       task_id:
         type: string
         description: The unique ID of the task log.
@@ -5322,7 +5376,7 @@ definitions:
           - canceled
           - canceling
     example:
-      database_id: storefront
+      entity_id: storefront
       entries:
         - message: refreshing current state
           timestamp: "2025-06-18T17:53:19Z"
@@ -5359,10 +5413,12 @@ definitions:
           message: finished creating resource swarm.pgbackrest_stanza::n1 (took 1.181454868s)
           timestamp: "2025-06-18T17:54:03Z"
       last_entry_id: 0197842d-303b-7251-b814-6d12c98e7d25
+      scope: database
       task_id: 0197842c-7c4f-7a8c-829e-7405c2a41c8c
       task_status: completed
     required:
-      - database_id
+      - scope
+      - entity_id
       - task_id
       - task_status
       - entries

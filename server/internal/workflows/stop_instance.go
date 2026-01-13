@@ -30,7 +30,8 @@ func (w *Workflows) StopInstance(ctx workflow.Context, input *StopInstanceInput)
 		logger.With("error", cause).Error("failed to stop instance")
 
 		updateTaskInput := &activities.UpdateTaskInput{
-			DatabaseID:    input.DatabaseID,
+			Scope:         task.ScopeDatabase,
+			EntityID:      input.DatabaseID,
 			TaskID:        input.TaskID,
 			UpdateOptions: task.UpdateFail(cause),
 		}
@@ -42,7 +43,8 @@ func (w *Workflows) StopInstance(ctx workflow.Context, input *StopInstanceInput)
 	}
 
 	updateTaskInput := &activities.UpdateTaskInput{
-		DatabaseID:    input.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      input.DatabaseID,
 		TaskID:        input.TaskID,
 		UpdateOptions: task.UpdateStart(),
 	}
@@ -63,7 +65,8 @@ func (w *Workflows) StopInstance(ctx workflow.Context, input *StopInstanceInput)
 	}
 
 	updateTaskInput = &activities.UpdateTaskInput{
-		DatabaseID:    input.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      input.DatabaseID,
 		TaskID:        input.TaskID,
 		UpdateOptions: task.UpdateComplete(),
 	}

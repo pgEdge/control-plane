@@ -3011,6 +3011,8 @@ func marshalControlplanePgEdgeVersionToPgEdgeVersionResponseBody(v *controlplane
 func marshalControlplaneTaskToTaskResponseBody(v *controlplane.Task) *TaskResponseBody {
 	res := &TaskResponseBody{
 		ParentID:    v.ParentID,
+		Scope:       v.Scope,
+		EntityID:    v.EntityID,
 		DatabaseID:  v.DatabaseID,
 		NodeName:    v.NodeName,
 		InstanceID:  v.InstanceID,

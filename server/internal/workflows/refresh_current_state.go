@@ -63,6 +63,7 @@ func (w *Workflows) RefreshCurrentState(ctx workflow.Context, input *RefreshCurr
 
 	start := workflow.Now(ctx)
 	err = w.logTaskEvent(ctx,
+		task.ScopeDatabase,
 		input.DatabaseID,
 		input.TaskID,
 		task.LogEntry{
@@ -77,6 +78,7 @@ func (w *Workflows) RefreshCurrentState(ctx workflow.Context, input *RefreshCurr
 	}
 	duration := workflow.Now(ctx).Sub(start)
 	err = w.logTaskEvent(ctx,
+		task.ScopeDatabase,
 		input.DatabaseID,
 		input.TaskID,
 		task.LogEntry{

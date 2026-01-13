@@ -263,8 +263,12 @@ type ListDatabaseTasksResponseBody struct {
 type GetDatabaseTaskResponseBody struct {
 	// The parent task ID of the task.
 	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	// The scope of the task (database or host).
+	Scope string `form:"scope" json:"scope" xml:"scope"`
+	// The entity ID (database_id or host_id) that this task belongs to.
+	EntityID string `form:"entity_id" json:"entity_id" xml:"entity_id"`
 	// The database ID of the task.
-	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
 	// The name of the node that the task is operating on.
 	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
 	// The ID of the instance that the task is operating on.
@@ -288,8 +292,12 @@ type GetDatabaseTaskResponseBody struct {
 // GetDatabaseTaskLogResponseBody is the type of the "control-plane" service
 // "get-database-task-log" endpoint HTTP response body.
 type GetDatabaseTaskLogResponseBody struct {
-	// The database ID of the task log.
-	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	// The scope of the task (database or host).
+	Scope string `form:"scope" json:"scope" xml:"scope"`
+	// The entity ID (database_id or host_id) that this task log belongs to.
+	EntityID string `form:"entity_id" json:"entity_id" xml:"entity_id"`
+	// The database ID of the task log. Deprecated: use entity_id instead.
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
 	// The unique ID of the task log.
 	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
 	// The status of the task.
@@ -350,8 +358,12 @@ type StartInstanceResponseBody struct {
 type CancelDatabaseTaskResponseBody struct {
 	// The parent task ID of the task.
 	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	// The scope of the task (database or host).
+	Scope string `form:"scope" json:"scope" xml:"scope"`
+	// The entity ID (database_id or host_id) that this task belongs to.
+	EntityID string `form:"entity_id" json:"entity_id" xml:"entity_id"`
 	// The database ID of the task.
-	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
 	// The name of the node that the task is operating on.
 	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
 	// The ID of the instance that the task is operating on.
@@ -1466,8 +1478,12 @@ type PgEdgeVersionResponseBody struct {
 type TaskResponseBody struct {
 	// The parent task ID of the task.
 	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	// The scope of the task (database or host).
+	Scope string `form:"scope" json:"scope" xml:"scope"`
+	// The entity ID (database_id or host_id) that this task belongs to.
+	EntityID string `form:"entity_id" json:"entity_id" xml:"entity_id"`
 	// The database ID of the task.
-	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
 	// The name of the node that the task is operating on.
 	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
 	// The ID of the instance that the task is operating on.
@@ -2705,6 +2721,8 @@ func NewListDatabaseTasksResponseBody(res *controlplane.ListDatabaseTasksRespons
 func NewGetDatabaseTaskResponseBody(res *controlplane.Task) *GetDatabaseTaskResponseBody {
 	body := &GetDatabaseTaskResponseBody{
 		ParentID:    res.ParentID,
+		Scope:       res.Scope,
+		EntityID:    res.EntityID,
 		DatabaseID:  res.DatabaseID,
 		NodeName:    res.NodeName,
 		InstanceID:  res.InstanceID,
@@ -2724,6 +2742,8 @@ func NewGetDatabaseTaskResponseBody(res *controlplane.Task) *GetDatabaseTaskResp
 // service.
 func NewGetDatabaseTaskLogResponseBody(res *controlplane.TaskLog) *GetDatabaseTaskLogResponseBody {
 	body := &GetDatabaseTaskLogResponseBody{
+		Scope:       res.Scope,
+		EntityID:    res.EntityID,
 		DatabaseID:  res.DatabaseID,
 		TaskID:      res.TaskID,
 		TaskStatus:  res.TaskStatus,
@@ -2816,6 +2836,8 @@ func NewStartInstanceResponseBody(res *controlplane.StartInstanceResponse) *Star
 func NewCancelDatabaseTaskResponseBody(res *controlplane.Task) *CancelDatabaseTaskResponseBody {
 	body := &CancelDatabaseTaskResponseBody{
 		ParentID:    res.ParentID,
+		Scope:       res.Scope,
+		EntityID:    res.EntityID,
 		DatabaseID:  res.DatabaseID,
 		NodeName:    res.NodeName,
 		InstanceID:  res.InstanceID,

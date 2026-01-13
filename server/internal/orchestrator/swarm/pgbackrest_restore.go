@@ -135,7 +135,7 @@ func (p *PgBackRestRestore) Create(ctx context.Context, rc *resource.Context) er
 }
 
 func (p *PgBackRestRestore) startTask(ctx context.Context, taskSvc *task.Service) (*task.Task, error) {
-	t, err := taskSvc.GetTask(ctx, p.DatabaseID, p.TaskID)
+	t, err := taskSvc.GetTask(ctx, task.ScopeDatabase, p.DatabaseID, p.TaskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get task %s: %w", p.TaskID, err)
 	}
@@ -269,7 +269,7 @@ func (p *PgBackRestRestore) streamLogsAndWait(
 				Msg("failed to remove pgbackrest restore container")
 		}
 	}()
-	taskLogger := task.NewTaskLogWriter(ctx, taskSvc, p.DatabaseID, p.TaskID)
+	taskLogger := task.NewTaskLogWriter(ctx, taskSvc, task.ScopeDatabase, p.DatabaseID, p.TaskID)
 	// The follow: true means that this will block until the container exits.
 	err := dockerClient.ContainerLogs(ctx, taskLogger, containerID, container.LogsOptions{
 		ShowStdout: true,

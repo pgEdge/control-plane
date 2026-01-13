@@ -30,7 +30,8 @@ func (w *Workflows) StartInstance(ctx workflow.Context, input *StartInstanceInpu
 		logger.With("error", cause).Error("failed to start instance")
 
 		updateTaskInput := &activities.UpdateTaskInput{
-			DatabaseID:    input.DatabaseID,
+			Scope:         task.ScopeDatabase,
+			EntityID:      input.DatabaseID,
 			TaskID:        input.TaskID,
 			UpdateOptions: task.UpdateFail(cause),
 		}
@@ -42,7 +43,8 @@ func (w *Workflows) StartInstance(ctx workflow.Context, input *StartInstanceInpu
 	}
 
 	updateTaskInput := &activities.UpdateTaskInput{
-		DatabaseID:    input.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      input.DatabaseID,
 		TaskID:        input.TaskID,
 		UpdateOptions: task.UpdateStart(),
 	}
@@ -63,7 +65,8 @@ func (w *Workflows) StartInstance(ctx workflow.Context, input *StartInstanceInpu
 	}
 
 	updateTaskInput = &activities.UpdateTaskInput{
-		DatabaseID:    input.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      input.DatabaseID,
 		TaskID:        input.TaskID,
 		UpdateOptions: task.UpdateComplete(),
 	}

@@ -44,7 +44,7 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 			if stateErr != nil {
 				logger.With("error", stateErr).Error("failed to update database state")
 			}
-			w.cancelTask(cleanupCtx, input.DatabaseID, input.TaskID, logger)
+			w.cancelTask(cleanupCtx, task.ScopeDatabase, input.DatabaseID, input.TaskID, logger)
 		}
 	}()
 
@@ -52,7 +52,8 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 		logger.With("error", cause).Error("failed to restart instance")
 
 		updateTaskInput := &activities.UpdateTaskInput{
-			DatabaseID:    input.DatabaseID,
+			Scope:         task.ScopeDatabase,
+			EntityID:      input.DatabaseID,
 			TaskID:        input.TaskID,
 			UpdateOptions: task.UpdateFail(cause),
 		}
@@ -64,7 +65,8 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 	}
 
 	updateTaskInput := &activities.UpdateTaskInput{
-		DatabaseID:    input.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      input.DatabaseID,
 		TaskID:        input.TaskID,
 		UpdateOptions: task.UpdateStart(),
 	}
@@ -83,7 +85,8 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 	}
 
 	updateTaskInput = &activities.UpdateTaskInput{
-		DatabaseID:    input.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      input.DatabaseID,
 		TaskID:        input.TaskID,
 		UpdateOptions: task.UpdateComplete(),
 	}

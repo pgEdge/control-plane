@@ -409,6 +409,10 @@ type CreateDatabaseResponseView struct {
 type TaskView struct {
 	// The parent task ID of the task.
 	ParentID *string
+	// The scope of the task (database or host).
+	Scope *string
+	// The entity ID (database_id or host_id) that this task belongs to.
+	EntityID *string
 	// The database ID of the task.
 	DatabaseID *string
 	// The name of the node that the task is operating on.
@@ -1519,8 +1523,11 @@ func ValidateCreateDatabaseResponseView(result *CreateDatabaseResponseView) (err
 
 // ValidateTaskView runs the validations defined on TaskView.
 func ValidateTaskView(result *TaskView) (err error) {
-	if result.DatabaseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "result"))
+	if result.Scope == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("scope", "result"))
+	}
+	if result.EntityID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("entity_id", "result"))
 	}
 	if result.TaskID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("task_id", "result"))
@@ -1536,6 +1543,11 @@ func ValidateTaskView(result *TaskView) (err error) {
 	}
 	if result.ParentID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.parent_id", *result.ParentID, goa.FormatUUID))
+	}
+	if result.Scope != nil {
+		if !(*result.Scope == "database" || *result.Scope == "host") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.scope", *result.Scope, []any{"database", "host"}))
+		}
 	}
 	if result.TaskID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("result.task_id", *result.TaskID, goa.FormatUUID))

@@ -38,14 +38,15 @@ func (w *Workflows) Failover(ctx workflow.Context, in *FailoverInput) (*Failover
 		if errors.Is(ctx.Err(), workflow.Canceled) {
 			logger.Warn("workflow cancelled; running cleanup")
 			cleanupCtx := workflow.NewDisconnectedContext(ctx)
-			w.cancelTask(cleanupCtx, in.DatabaseID, in.TaskID, logger)
+			w.cancelTask(cleanupCtx, task.ScopeDatabase, in.DatabaseID, in.TaskID, logger)
 		}
 	}()
 
 	handleError := func(cause error) error {
 		logger.With("error", cause).Error("failover failed")
 		updateTaskInput := &activities.UpdateTaskInput{
-			DatabaseID:    in.DatabaseID,
+			Scope:         task.ScopeDatabase,
+			EntityID:      in.DatabaseID,
 			TaskID:        in.TaskID,
 			UpdateOptions: task.UpdateFail(cause),
 		}
@@ -54,7 +55,8 @@ func (w *Workflows) Failover(ctx workflow.Context, in *FailoverInput) (*Failover
 	}
 
 	startUpdate := &activities.UpdateTaskInput{
-		DatabaseID:    in.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      in.DatabaseID,
 		TaskID:        in.TaskID,
 		UpdateOptions: task.UpdateStart(),
 	}
@@ -138,7 +140,8 @@ func (w *Workflows) Failover(ctx workflow.Context, in *FailoverInput) (*Failover
 	if candidateID == leaderInstanceID {
 		logger.Info("candidate is already the leader; skipping failover", "candidate", candidateID)
 		completeUpdate := &activities.UpdateTaskInput{
-			DatabaseID:    in.DatabaseID,
+			Scope:         task.ScopeDatabase,
+			EntityID:      in.DatabaseID,
 			TaskID:        in.TaskID,
 			UpdateOptions: task.UpdateComplete(),
 		}
@@ -160,7 +163,8 @@ func (w *Workflows) Failover(ctx workflow.Context, in *FailoverInput) (*Failover
 	}
 
 	completeUpdate := &activities.UpdateTaskInput{
-		DatabaseID:    in.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      in.DatabaseID,
 		TaskID:        in.TaskID,
 		UpdateOptions: task.UpdateComplete(),
 	}
