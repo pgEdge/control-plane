@@ -78,6 +78,7 @@ nav:
       - Backup & Restore: using/backup-restore.md
       - Tasks & Logs: using/tasks-logs.md
       - Read Replicas: using/read-replicas.md
+      - Managing Database Instances: using/database-instances.md
       - Deleting a Database: using/delete-db.md
       - Migrating a Database: using/migrate-db.md
   - API:
