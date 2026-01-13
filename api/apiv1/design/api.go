@@ -7,6 +7,7 @@ import (
 	g "goa.design/goa/v3/dsl"
 
 	"github.com/pgEdge/control-plane/api"
+	_ "github.com/pgEdge/control-plane/api/plugins"
 )
 
 var _ = g.API("control-plane", func() {
