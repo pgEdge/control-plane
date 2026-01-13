@@ -513,7 +513,6 @@ func (e *EmbeddedEtcd) ChangeMode(ctx context.Context, mode config.EtcdMode) (Et
 
 	generated.EtcdMode = config.EtcdModeClient
 	generated.EtcdServer = config.EtcdServer{}
-	generated.EtcdClient = cfg.EtcdClient
 	if err := e.cfg.UpdateGeneratedConfig(generated); err != nil {
 		return nil, fmt.Errorf("failed to clear out etcd server settings in generated config: %w", err)
 	}
