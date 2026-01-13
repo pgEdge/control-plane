@@ -38,7 +38,7 @@ commands:
   common_setup:
     steps:
       - go/install:
-          version: '1.24.3'
+          version: '1.25.5'
       - checkout
       - use_mod_cache
       - run:

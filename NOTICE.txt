@@ -2481,8 +2481,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## github.com/go-chi/chi/v5
 
 * Name: github.com/go-chi/chi/v5
-* Version: v5.2.0
-* License: [MIT](https://github.com/go-chi/chi/blob/v5.2.0/LICENSE)
+* Version: v5.2.3
+* License: [MIT](https://github.com/go-chi/chi/blob/v5.2.3/LICENSE)
 
 ```
 Copyright (c) 2015-present Peter Kieltyka (https://github.com/pkieltyka), Google Inc.
@@ -3051,6 +3051,37 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+```
+
+## github.com/gohugoio/hashstructure
+
+* Name: github.com/gohugoio/hashstructure
+* Version: v0.6.0
+* License: [MIT](https://github.com/gohugoio/hashstructure/blob/v0.6.0/LICENSE)
+
+```
+The MIT License (MIT)
+
+Copyright (c) 2016 Mitchell Hashimoto
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
 
 ```
 
@@ -14962,8 +14993,8 @@ THE SOFTWARE.
 ## goa.design/goa/v3
 
 * Name: goa.design/goa/v3
-* Version: v3.19.1
-* License: [MIT](https://github.com/goadesign/goa/blob/v3.19.1/LICENSE)
+* Version: v3.23.4
+* License: [MIT](https://github.com/goadesign/goa/blob/v3.23.4/LICENSE)
 
 ```
 The MIT License (MIT)
@@ -14993,8 +15024,8 @@ THE SOFTWARE.
 ## golang.org/x/crypto
 
 * Name: golang.org/x/crypto
-* Version: v0.42.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.42.0:LICENSE)
+* Version: v0.46.0
+* License: [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.46.0:LICENSE)
 
 ```
 Copyright 2009 The Go Authors.
@@ -15030,8 +15061,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## golang.org/x/mod
 
 * Name: golang.org/x/mod
-* Version: v0.27.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.27.0:LICENSE)
+* Version: v0.31.0
+* License: [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.31.0:LICENSE)
 
 ```
 Copyright 2009 The Go Authors.
@@ -15067,8 +15098,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## golang.org/x/net
 
 * Name: golang.org/x/net
-* Version: v0.44.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.44.0:LICENSE)
+* Version: v0.48.0
+* License: [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.48.0:LICENSE)
 
 ```
 Copyright 2009 The Go Authors.
@@ -15104,8 +15135,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## golang.org/x/sync
 
 * Name: golang.org/x/sync
-* Version: v0.17.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.17.0:LICENSE)
+* Version: v0.19.0
+* License: [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.19.0:LICENSE)
 
 ```
 Copyright 2009 The Go Authors.
@@ -15141,8 +15172,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## golang.org/x/sys/unix
 
 * Name: golang.org/x/sys/unix
-* Version: v0.36.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.36.0:LICENSE)
+* Version: v0.39.0
+* License: [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.39.0:LICENSE)
 
 ```
 Copyright 2009 The Go Authors.
@@ -15178,8 +15209,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## golang.org/x/text
 
 * Name: golang.org/x/text
-* Version: v0.29.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/text/+/v0.29.0:LICENSE)
+* Version: v0.32.0
+* License: [BSD-3-Clause](https://cs.opensource.google/go/x/text/+/v0.32.0:LICENSE)
 
 ```
 Copyright 2009 The Go Authors.
@@ -15252,8 +15283,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## golang.org/x/tools
 
 * Name: golang.org/x/tools
-* Version: v0.36.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/tools/+/v0.36.0:LICENSE)
+* Version: v0.40.0
+* License: [BSD-3-Clause](https://cs.opensource.google/go/x/tools/+/v0.40.0:LICENSE)
 
 ```
 Copyright 2009 The Go Authors.
@@ -15321,8 +15352,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## google.golang.org/genproto/googleapis/api
 
 * Name: google.golang.org/genproto/googleapis/api
-* Version: v0.0.0-20250303144028-a0af3efb3deb
-* License: [Apache-2.0](https://github.com/googleapis/go-genproto/blob/a0af3efb3deb/googleapis/api/LICENSE)
+* Version: v0.0.0-20251022142026-3a174f9686a8
+* License: [Apache-2.0](https://github.com/googleapis/go-genproto/blob/3a174f9686a8/googleapis/api/LICENSE)
 
 ```
 
@@ -15533,8 +15564,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## google.golang.org/genproto/googleapis/rpc
 
 * Name: google.golang.org/genproto/googleapis/rpc
-* Version: v0.0.0-20250303144028-a0af3efb3deb
-* License: [Apache-2.0](https://github.com/googleapis/go-genproto/blob/a0af3efb3deb/googleapis/rpc/LICENSE)
+* Version: v0.0.0-20251213004720-97cd9d5aeac2
+* License: [Apache-2.0](https://github.com/googleapis/go-genproto/blob/97cd9d5aeac2/googleapis/rpc/LICENSE)
 
 ```
 
@@ -15745,8 +15776,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## google.golang.org/grpc
 
 * Name: google.golang.org/grpc
-* Version: v1.71.1
-* License: [Apache-2.0](https://github.com/grpc/grpc-go/blob/v1.71.1/LICENSE)
+* Version: v1.77.0
+* License: [Apache-2.0](https://github.com/grpc/grpc-go/blob/v1.77.0/LICENSE)
 
 ```
 
@@ -15957,8 +15988,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## google.golang.org/protobuf
 
 * Name: google.golang.org/protobuf
-* Version: v1.36.5
-* License: [BSD-3-Clause](https://github.com/protocolbuffers/protobuf-go/blob/v1.36.5/LICENSE)
+* Version: v1.36.11
+* License: [BSD-3-Clause](https://github.com/protocolbuffers/protobuf-go/blob/v1.36.11/LICENSE)
 
 ```
 Copyright (c) 2018 The Go Authors. All rights reserved.
