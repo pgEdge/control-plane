@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(make deploy-ec2-e2e-fixture:*)",
+      "Bash(make release:*)",
+      "Bash(make major-release:*)",
+      "Bash(make minor-release:*)",
+      "Bash(make patch-release:*)"
+    ]
+  }
+}

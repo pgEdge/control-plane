@@ -48,6 +48,8 @@ cluster_test_args=-tags=cluster_test -count=1 -timeout=10m ./clustertest/... \
 	$(if $(CLUSTER_TEST_IMAGE_TAG),-image-tag $(CLUSTER_TEST_IMAGE_TAG)) \
 	$(if $(CLUSTER_TEST_DATA_DIR),-data-dir $(CLUSTER_TEST_DATA_DIR))
 
+.DEFAULT_GOAL := build
+
 ###########
 # testing #
 ###########
@@ -319,6 +321,9 @@ print-next-versions:
 ##################################
 # docker compose dev environment #
 ##################################
+
+.PHONY: build
+build: dev-build
 
 .PHONY: dev-build
 dev-build: 
