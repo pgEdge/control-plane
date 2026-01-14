@@ -1,0 +1,5 @@
+---
+minio_enabled: false
+provider: ec2
+architecture: x86_64
+instance_os: rocky-9

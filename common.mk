@@ -9,6 +9,11 @@ changie=$(gobin)/changie
 yamlfmt=$(gobin)/yamlfmt
 go-licenses=$(gobin)/go-licenses
 
+CHANGIE_LATEST = $(shell $(changie) latest)
+# deferred simple variable expansion pattern:
+# https://make.mad-scientist.net/deferred-simple-variable-expansion/
+CONTROL_PLANE_VERSION ?= $(eval CONTROL_PLANE_VERSION := $$(shell git fetch --quiet && git describe --tags --abbrev=0 --match 'v*' $$(CHANGIE_LATEST)))$(CONTROL_PLANE_VERSION)
+
 .PHONY: install-tools
 install-tools:
 	go install gotest.tools/gotestsum@v1.13.0

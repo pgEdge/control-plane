@@ -1,8 +1,12 @@
+include ../../common.mk
+
 # Overridable vars
-CONTROL_PLANE_VERSION ?= $(shell git describe --tags --abbrev=0 --match 'v*')
-LIMA_VARS_FILE ?= vars/lima_rocky.yaml
-EC2_VARS_FILE ?= vars/ec2_rocky.yaml
+LIMA_VARS_FILE ?= vars/lima.yaml
+EC2_VARS_FILE ?= vars/ec2.yaml
+VARIANT ?= large
 EXTRA_VARS ?=
+
+variant_vars_file=vars/$(VARIANT).yaml
 
 ################
 # Lima targets #
@@ -10,6 +14,7 @@ EXTRA_VARS ?=
 
 ansible_playbook_lima=ansible-playbook \
 	--extra-vars='@$(LIMA_VARS_FILE)' \
+	--extra-vars='@$(variant_vars_file)' \
 	--extra-vars='$(EXTRA_VARS)'
 
 .PHONY: deploy-lima-machines
@@ -49,6 +54,7 @@ teardown-lima-control-plane:
 
 ansible_playbook_ec2=ansible-playbook \
 	--extra-vars='@$(EC2_VARS_FILE)' \
+	--extra-vars='@$(variant_vars_file)' \
 	--extra-vars='$(EXTRA_VARS)'
 
 .PHONY: deploy-ec2-machines

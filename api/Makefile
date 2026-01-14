@@ -1,4 +1,4 @@
-include ../tools.mk
+include ../common.mk
 
 .PHONY: generate-v1
 generate-v1:

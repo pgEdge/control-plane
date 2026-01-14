@@ -1,0 +1,20 @@
+---
+machines:
+  - name: host-1
+    swarm_manager: true
+    region: us-west-1
+  - name: host-2
+    swarm_manager: false
+    region: us-west-1
+  - name: host-3
+    swarm_manager: true
+    region: af-south-1
+  - name: host-4
+    swarm_manager: false
+    region: af-south-1
+  - name: host-5
+    swarm_manager: true
+    region: ap-southeast-4
+  - name: host-6
+    swarm_manager: false
+    region: ap-southeast-4
