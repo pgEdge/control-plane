@@ -144,10 +144,14 @@ licenses:
 
 .PHONY: licenses-ci
 licenses-ci: licenses
-	@if ! git diff --exit-code NOTICE.txt; then \
-		echo "Please commit the updated NOTICE.txt file via `make licenses`."; \
+	@sort NOTICE.txt > ./licenses-ci-local.txt
+	@git show HEAD:NOTICE.txt | sort > ./licenses-ci-upstream.txt
+	@if ! diff ./licenses-ci-local.txt ./licenses-ci-upstream.txt > /dev/null; then \
+		echo "Please commit the updated NOTICE.txt file via 'make licenses'."; \
+		rm ./licenses-ci-local.txt ./licenses-ci-upstream.txt; \
 		exit 1; \
 	fi
+	@rm ./licenses-ci-local.txt ./licenses-ci-upstream.txt
 	@echo "NOTICE.txt is up to date."
 
 .PHONY: ci
