@@ -3500,6 +3500,7 @@ func unmarshalHostResponseBodyToControlplaneHost(v *HostResponseBody) *controlpl
 		Ipv4Address:  *v.Ipv4Address,
 		Cpus:         v.Cpus,
 		Memory:       v.Memory,
+		EtcdMode:     v.EtcdMode,
 	}
 	if v.Cohort != nil {
 		res.Cohort = unmarshalHostCohortResponseBodyToControlplaneHostCohort(v.Cohort)

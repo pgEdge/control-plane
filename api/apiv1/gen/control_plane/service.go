@@ -531,6 +531,8 @@ type Host struct {
 	DefaultPgedgeVersion *PgEdgeVersion
 	// The PgEdge versions supported by this host.
 	SupportedPgedgeVersions []*PgEdgeVersion
+	// The etcd mode for this host.
+	EtcdMode *string
 }
 
 type HostCohort struct {

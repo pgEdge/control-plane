@@ -44,6 +44,7 @@ func (s *Service) UpdateHost(ctx context.Context) error {
 		DataDir:      s.cfg.DataDir,
 		Hostname:     s.cfg.Hostname,
 		IPv4Address:  s.cfg.IPv4Address,
+		EtcdMode:     s.cfg.EtcdMode,
 		// CPUs:         resources.CPUs,
 		// MemBytes:     resources.MemBytes,
 		// UpdatedAt: time.Now(),

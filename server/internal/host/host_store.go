@@ -23,6 +23,7 @@ type StoredHost struct {
 	IPv4Address             string              `json:"ipv4_address"`
 	CPUs                    int                 `json:"cpus"`
 	MemBytes                uint64              `json:"mem_bytes"`
+	EtcdMode                config.EtcdMode     `json:"etcd_mode"`
 	DefaultPgEdgeVersion    *PgEdgeVersion      `json:"default_version"`
 	SupportedPgEdgeVersions []*PgEdgeVersion    `json:"supported_versions"`
 }

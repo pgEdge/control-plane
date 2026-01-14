@@ -108,6 +108,15 @@ func (c *Cluster) Remove(t testing.TB, hostID string) {
 	c.client = hostsClient(t, c.hosts)
 }
 
+// RefreshClient recreates the client with updated host configurations.
+// This is useful after a host has been recreated with new settings (e.g., port change).
+func (c *Cluster) RefreshClient(t testing.TB) {
+	t.Helper()
+
+	tLogf(t, "refreshing client for cluster %s", c.id)
+	c.client = hostsClient(t, c.hosts)
+}
+
 func hostsClient(t testing.TB, hosts map[string]*Host) client.Client {
 	t.Helper()
 
