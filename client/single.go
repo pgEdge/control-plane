@@ -73,6 +73,8 @@ func NewSingleServerClient(server ServerConfig) (*SingleServerClient, error) {
 			GetHostTaskEndpoint:            cli.GetHostTask(),
 			GetHostTaskLogEndpoint:         cli.GetHostTaskLog(),
 			ListTasksEndpoint:              cli.ListTasks(),
+			StopInstanceEndpoint:           cli.StopInstance(),
+			StartInstanceEndpoint:          cli.StartInstance(),
 		},
 	}, nil
 }
@@ -184,6 +186,16 @@ func (c *SingleServerClient) RestoreDatabase(ctx context.Context, req *api.Resto
 
 func (c *SingleServerClient) GetVersion(ctx context.Context) (*api.VersionInfo, error) {
 	resp, err := c.api.GetVersion(ctx)
+	return resp, translateErr(err)
+}
+
+func (c *SingleServerClient) StopInstance(ctx context.Context, req *api.StopInstancePayload) (*api.StopInstanceResponse, error) {
+	resp, err := c.api.StopInstance(ctx, req)
+	return resp, translateErr(err)
+}
+
+func (c *SingleServerClient) StartInstance(ctx context.Context, req *api.StartInstancePayload) (*api.StartInstanceResponse, error) {
+	resp, err := c.api.StartInstance(ctx, req)
 	return resp, translateErr(err)
 }
 
