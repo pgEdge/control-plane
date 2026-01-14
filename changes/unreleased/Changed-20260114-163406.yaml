@@ -1,0 +1,3 @@
+kind: Changed
+body: The `remove-host` API response now includes a `task` that tracks the progress of the entire remove host operation.
+time: 2026-01-14T16:34:06.805619-05:00

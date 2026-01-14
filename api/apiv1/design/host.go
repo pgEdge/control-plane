@@ -261,9 +261,12 @@ var ListHostsResponseExample = map[string]any{
 }
 
 var RemoveHostResponse = g.Type("RemoveHostResponse", func() {
+	g.Attribute("task", Task, func() {
+		g.Description("The task that tracks the overall host removal operation.")
+	})
 	g.Attribute("update_database_tasks", g.ArrayOf(Task), func() {
 		g.Description("The tasks that will update databases affected by the host removal.")
 	})
 
-	g.Required("update_database_tasks")
+	g.Required("task", "update_database_tasks")
 })
