@@ -91,9 +91,13 @@ func (p *PgBackRestRestore) Create(ctx context.Context, rc *resource.Context) er
 	}
 
 	t, err := p.startTask(ctx, taskSvc)
+	if err != nil {
+		return err
+	}
+
 	handleError := func(cause error) error {
 		p.failTask(logger, taskSvc, t, cause)
-		return err
+		return cause
 	}
 
 	svcResource, err := resource.FromContext[*PostgresService](rc, PostgresServiceResourceIdentifier(p.InstanceID))

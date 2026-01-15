@@ -191,8 +191,9 @@ func (w *Workflows) cancelTask(
 		Message: "task successfully canceled",
 		Fields:  map[string]any{"status": "canceled"},
 	})
-	logger.With("error", err).Error("failed to log task event")
-
+	if err != nil {
+		logger.With("error", err).Error("failed to log task event")
+	}
 }
 
 func (w *Workflows) getNodeResources(

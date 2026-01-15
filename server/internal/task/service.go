@@ -275,7 +275,7 @@ func matchesFilters(task *Task, opts TaskListOptions) bool {
 	if opts.Type != "" && task.Type != opts.Type {
 		return false
 	}
-	if !slices.Contains(opts.Statuses, task.Status) {
+	if len(opts.Statuses) > 0 && !slices.Contains(opts.Statuses, task.Status) {
 		return false
 	}
 	if opts.NodeName != "" && (task == nil || task.NodeName != opts.NodeName) {
