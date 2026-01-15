@@ -111,7 +111,7 @@ func NewHost(t testing.TB, config HostConfig) *Host {
 
 	tLogf(t, "creating host %s", id)
 
-	container, err := testcontainers.GenericContainer(
+	ctr, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
@@ -120,13 +120,20 @@ func NewHost(t testing.TB, config HostConfig) *Host {
 	)
 	require.NoError(t, err)
 
+	h := &Host{
+		id:        id,
+		port:      ports[0],
+		dataDir:   dataDir,
+		container: ctr,
+	}
+
 	t.Cleanup(func() {
 		// Use a new context for cleanup operations since t.Context is canceled.
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		if t.Failed() {
-			logs, err := containerLogs(ctx, t, container)
+			logs, err := containerLogs(ctx, t, h.container)
 			if err != nil {
 				tLogf(t, "failed to extract container logs: %s", err)
 			} else {
@@ -135,19 +142,14 @@ func NewHost(t testing.TB, config HostConfig) *Host {
 		}
 
 		if testConfig.skipCleanup {
-			tLogf(t, "skipping cleanup for %s container %s", id, container.GetContainerID()[:12])
+			tLogf(t, "skipping cleanup for %s container %s", id, h.container.GetContainerID()[:12])
 			return
 		}
 
-		container.Terminate(ctx)
+		h.container.Terminate(ctx)
 	})
 
-	return &Host{
-		id:        id,
-		port:      ports[0],
-		dataDir:   dataDir,
-		container: container,
-	}
+	return h
 }
 
 func (h *Host) Stop(t testing.TB) {
@@ -204,6 +206,7 @@ func (h *Host) GetEtcdMode(t testing.TB, cli client.Client) string {
 
 // RecreateWithMode stops the current container and recreates it with a new etcd mode.
 // This simulates changing the PGEDGE_ETCD_MODE environment variable and restarting.
+// The new container will be cleaned up by the original cleanup registered in NewHost.
 func (h *Host) RecreateWithMode(t testing.TB, newMode EtcdMode) {
 	t.Helper()
 
@@ -278,31 +281,11 @@ func (h *Host) RecreateWithMode(t testing.TB, newMode EtcdMode) {
 	)
 	require.NoError(t, err)
 
-	// Update the host's container reference and port
+	// Update the host's container reference and port.
+	// The cleanup registered in NewHost will terminate h.container,
+	// which now points to the new container.
 	h.container = newContainer
 	h.port = ports[0]
-
-	// Register cleanup for the new container
-	t.Cleanup(func() {
-		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cleanupCancel()
-
-		if t.Failed() {
-			logs, err := containerLogs(cleanupCtx, t, newContainer)
-			if err != nil {
-				tLogf(t, "failed to extract container logs: %s", err)
-			} else {
-				tLogf(t, "host %s logs: %s", h.id, logs)
-			}
-		}
-
-		if testConfig.skipCleanup {
-			tLogf(t, "skipping cleanup for %s container %s", h.id, newContainer.GetContainerID()[:12])
-			return
-		}
-
-		newContainer.Terminate(cleanupCtx)
-	})
 }
 
 func containerLogs(ctx context.Context, t testing.TB, container testcontainers.Container) (string, error) {
