@@ -44,6 +44,7 @@ type Host struct {
 	IPv4Address             string
 	CPUs                    int
 	MemBytes                uint64
+	EtcdMode                config.EtcdMode
 	Status                  *HostStatus
 	DefaultPgEdgeVersion    *PgEdgeVersion
 	SupportedPgEdgeVersions []*PgEdgeVersion
@@ -95,6 +96,7 @@ func fromStorage(host *StoredHost, status *StoredHostStatus) (*Host, error) {
 		IPv4Address:             host.IPv4Address,
 		CPUs:                    host.CPUs,
 		MemBytes:                host.MemBytes,
+		EtcdMode:                host.EtcdMode,
 		SupportedPgEdgeVersions: host.SupportedPgEdgeVersions,
 		DefaultPgEdgeVersion:    host.DefaultPgEdgeVersion,
 		Status: &HostStatus{
@@ -143,6 +145,7 @@ func toStorage(host *Host) *StoredHost {
 		IPv4Address:             host.IPv4Address,
 		CPUs:                    host.CPUs,
 		MemBytes:                host.MemBytes,
+		EtcdMode:                host.EtcdMode,
 		DefaultPgEdgeVersion:    host.DefaultPgEdgeVersion,
 		SupportedPgEdgeVersions: host.SupportedPgEdgeVersions,
 	}

@@ -120,6 +120,11 @@ var Host = g.Type("Host", func() {
 	g.Attribute("supported_pgedge_versions", g.ArrayOf(PgEdgeVersion), func() {
 		g.Description("The PgEdge versions supported by this host.")
 	})
+	g.Attribute("etcd_mode", g.String, func() {
+		g.Description("The etcd mode for this host.")
+		g.Enum("server", "client")
+		g.Example("server")
+	})
 
 	g.Required(
 		"id",
@@ -150,6 +155,7 @@ var HostsArrayExample = []map[string]any{
 		"memory":       "16GB",
 		"orchestrator": "swarm",
 		"data_dir":     "/data",
+		"etcd_mode":    "server",
 		"status": map[string]any{
 			"components": map[string]any{},
 			"state":      "healthy",
@@ -188,6 +194,7 @@ var HostsArrayExample = []map[string]any{
 		"memory":       "16GB",
 		"orchestrator": "swarm",
 		"data_dir":     "/data",
+		"etcd_mode":    "server",
 		"status": map[string]any{
 			"components": map[string]any{},
 			"state":      "healthy",
@@ -226,6 +233,7 @@ var HostsArrayExample = []map[string]any{
 		"memory":       "16GB",
 		"orchestrator": "swarm",
 		"data_dir":     "/data",
+		"etcd_mode":    "client",
 		"status": map[string]any{
 			"components": map[string]any{},
 			"state":      "healthy",

@@ -32,6 +32,7 @@ paths:
                     default_pgedge_version:
                       postgres_version: "17.6"
                       spock_version: "5"
+                    etcd_mode: server
                     hostname: i-0123456789abcdef.ec2.internal
                     id: us-east-1
                     ipv4_address: 10.24.34.2
@@ -58,6 +59,7 @@ paths:
                     default_pgedge_version:
                       postgres_version: "17.6"
                       spock_version: "5"
+                    etcd_mode: server
                     hostname: i-058731542fee493f.ec2.internal
                     id: ap-south-1
                     ipv4_address: 10.24.35.2
@@ -84,6 +86,7 @@ paths:
                     default_pgedge_version:
                       postgres_version: "17.6"
                       spock_version: "5"
+                    etcd_mode: client
                     hostname: i-494027b7b53f6a23.ec2.internal
                     id: eu-central-1
                     ipv4_address: 10.24.36.2
@@ -2423,6 +2426,7 @@ paths:
                         default_pgedge_version:
                           postgres_version: "17.6"
                           spock_version: "5"
+                        etcd_mode: server
                         hostname: i-0123456789abcdef.ec2.internal
                         id: us-east-1
                         ipv4_address: 10.24.34.2
@@ -2449,6 +2453,7 @@ paths:
                         default_pgedge_version:
                           postgres_version: "17.6"
                           spock_version: "5"
+                        etcd_mode: server
                         hostname: i-058731542fee493f.ec2.internal
                         id: ap-south-1
                         ipv4_address: 10.24.35.2
@@ -2475,6 +2480,7 @@ paths:
                         default_pgedge_version:
                           postgres_version: "17.6"
                           spock_version: "5"
+                        etcd_mode: client
                         hostname: i-494027b7b53f6a23.ec2.internal
                         id: eu-central-1
                         ipv4_address: 10.24.36.2
@@ -2642,6 +2648,7 @@ paths:
                 default_pgedge_version:
                   postgres_version: "17.6"
                   spock_version: "5"
+                etcd_mode: server
                 hostname: i-0123456789abcdef.ec2.internal
                 id: 76f9b8c0-4958-11f0-a489-3bb29577c696
                 ipv4_address: 10.24.34.2
@@ -3129,6 +3136,7 @@ components:
               default_pgedge_version:
                 postgres_version: "17.6"
                 spock_version: "5"
+              etcd_mode: server
               hostname: i-0123456789abcdef.ec2.internal
               id: us-east-1
               ipv4_address: 10.24.34.2
@@ -3155,6 +3163,7 @@ components:
               default_pgedge_version:
                 postgres_version: "17.6"
                 spock_version: "5"
+              etcd_mode: server
               hostname: i-058731542fee493f.ec2.internal
               id: ap-south-1
               ipv4_address: 10.24.35.2
@@ -3181,6 +3190,7 @@ components:
               default_pgedge_version:
                 postgres_version: "17.6"
                 spock_version: "5"
+              etcd_mode: client
               hostname: i-494027b7b53f6a23.ec2.internal
               id: eu-central-1
               ipv4_address: 10.24.36.2
@@ -3217,6 +3227,7 @@ components:
             default_pgedge_version:
               postgres_version: "17.6"
               spock_version: "5"
+            etcd_mode: server
             hostname: i-0123456789abcdef.ec2.internal
             id: us-east-1
             ipv4_address: 10.24.34.2
@@ -3243,6 +3254,7 @@ components:
             default_pgedge_version:
               postgres_version: "17.6"
               spock_version: "5"
+            etcd_mode: server
             hostname: i-058731542fee493f.ec2.internal
             id: ap-south-1
             ipv4_address: 10.24.35.2
@@ -3269,6 +3281,7 @@ components:
             default_pgedge_version:
               postgres_version: "17.6"
               spock_version: "5"
+            etcd_mode: client
             hostname: i-494027b7b53f6a23.ec2.internal
             id: eu-central-1
             ipv4_address: 10.24.36.2
@@ -8959,6 +8972,13 @@ components:
           example: /data
         default_pgedge_version:
           $ref: '#/components/schemas/PgEdgeVersion'
+        etcd_mode:
+          type: string
+          description: The etcd mode for this host.
+          example: server
+          enum:
+            - server
+            - client
         hostname:
           type: string
           description: The hostname of this host.
@@ -9006,6 +9026,7 @@ components:
         default_pgedge_version:
           postgres_version: "17.6"
           spock_version: "5"
+        etcd_mode: server
         hostname: i-0123456789abcdef.ec2.internal
         id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
         ipv4_address: 10.24.34.2
@@ -9636,6 +9657,7 @@ components:
               default_pgedge_version:
                 postgres_version: "17.6"
                 spock_version: "5"
+              etcd_mode: server
               hostname: i-0123456789abcdef.ec2.internal
               id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
               ipv4_address: 10.24.34.2
@@ -9673,6 +9695,7 @@ components:
               default_pgedge_version:
                 postgres_version: "17.6"
                 spock_version: "5"
+              etcd_mode: server
               hostname: i-0123456789abcdef.ec2.internal
               id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
               ipv4_address: 10.24.34.2
@@ -9713,6 +9736,7 @@ components:
             default_pgedge_version:
               postgres_version: "17.6"
               spock_version: "5"
+            etcd_mode: server
             hostname: i-0123456789abcdef.ec2.internal
             id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             ipv4_address: 10.24.34.2
@@ -9750,6 +9774,7 @@ components:
             default_pgedge_version:
               postgres_version: "17.6"
               spock_version: "5"
+            etcd_mode: server
             hostname: i-0123456789abcdef.ec2.internal
             id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             ipv4_address: 10.24.34.2
@@ -9787,6 +9812,7 @@ components:
             default_pgedge_version:
               postgres_version: "17.6"
               spock_version: "5"
+            etcd_mode: server
             hostname: i-0123456789abcdef.ec2.internal
             id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             ipv4_address: 10.24.34.2

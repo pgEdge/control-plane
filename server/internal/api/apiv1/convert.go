@@ -52,6 +52,7 @@ func hostToAPI(h *host.Host) *api.Host {
 		Memory:       utils.NillablePointerTo(humanizeBytes(h.MemBytes)),
 		Cohort:       cohort,
 		ID:           api.Identifier(h.ID),
+		EtcdMode:     utils.NillablePointerTo(string(h.EtcdMode)),
 		DefaultPgedgeVersion: &api.PgEdgeVersion{
 			PostgresVersion: h.DefaultPgEdgeVersion.PostgresVersion.String(),
 			SpockVersion:    h.DefaultPgEdgeVersion.SpockVersion.String(),

@@ -170,6 +170,8 @@ type GetHostResponseBody struct {
 	DefaultPgedgeVersion *PgEdgeVersionResponseBody `form:"default_pgedge_version,omitempty" json:"default_pgedge_version,omitempty" xml:"default_pgedge_version,omitempty"`
 	// The PgEdge versions supported by this host.
 	SupportedPgedgeVersions []*PgEdgeVersionResponseBody `form:"supported_pgedge_versions,omitempty" json:"supported_pgedge_versions,omitempty" xml:"supported_pgedge_versions,omitempty"`
+	// The etcd mode for this host.
+	EtcdMode *string `form:"etcd_mode,omitempty" json:"etcd_mode,omitempty" xml:"etcd_mode,omitempty"`
 }
 
 // RemoveHostResponseBody is the type of the "control-plane" service
@@ -1419,6 +1421,8 @@ type HostResponseBody struct {
 	DefaultPgedgeVersion *PgEdgeVersionResponseBody `form:"default_pgedge_version,omitempty" json:"default_pgedge_version,omitempty" xml:"default_pgedge_version,omitempty"`
 	// The PgEdge versions supported by this host.
 	SupportedPgedgeVersions []*PgEdgeVersionResponseBody `form:"supported_pgedge_versions,omitempty" json:"supported_pgedge_versions,omitempty" xml:"supported_pgedge_versions,omitempty"`
+	// The etcd mode for this host.
+	EtcdMode *string `form:"etcd_mode,omitempty" json:"etcd_mode,omitempty" xml:"etcd_mode,omitempty"`
 }
 
 // HostCohortResponseBody is used to define fields on response body types.
@@ -2522,6 +2526,7 @@ func NewGetHostResponseBody(res *controlplane.Host) *GetHostResponseBody {
 		Ipv4Address:  res.Ipv4Address,
 		Cpus:         res.Cpus,
 		Memory:       res.Memory,
+		EtcdMode:     res.EtcdMode,
 	}
 	if res.Cohort != nil {
 		body.Cohort = marshalControlplaneHostCohortToHostCohortResponseBody(res.Cohort)
