@@ -15,6 +15,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/migrate"
 	"github.com/pgEdge/control-plane/server/internal/monitor"
 	"github.com/pgEdge/control-plane/server/internal/scheduler"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
@@ -110,6 +111,15 @@ func (a *App) runInitialized(ctx context.Context) error {
 		return err
 	}
 
+	// Run migrations before starting other services
+	migrationRunner, err := do.Invoke[*migrate.Runner](a.i)
+	if err != nil {
+		return handleError(fmt.Errorf("failed to initialize migration runner: %w", err))
+	}
+	if err := migrationRunner.Run(ctx); err != nil {
+		return handleError(fmt.Errorf("failed to run migrations: %w", err))
+	}
+
 	certSvc, err := do.Invoke[*certificates.Service](a.i)
 	if err != nil {
 		return handleError(fmt.Errorf("failed to initialize certificate service: %w", err))
@@ -117,6 +127,7 @@ func (a *App) runInitialized(ctx context.Context) error {
 	if err := certSvc.Start(ctx); err != nil {
 		return handleError(fmt.Errorf("failed to start certificate service: %w", err))
 	}
+
 	hostSvc, err := do.Invoke[*host.Service](a.i)
 	if err != nil {
 		return handleError(fmt.Errorf("failed to initialize host service: %w", err))
@@ -124,11 +135,13 @@ func (a *App) runInitialized(ctx context.Context) error {
 	if err := hostSvc.UpdateHost(ctx); err != nil {
 		return handleError(fmt.Errorf("failed to update host: %w", err))
 	}
+
 	hostTicker, err := do.Invoke[*host.UpdateTicker](a.i)
 	if err != nil {
 		return handleError(fmt.Errorf("failed to initialize host ticker: %w", err))
 	}
 	hostTicker.Start(ctx)
+
 	monitorSvc, err := do.Invoke[*monitor.Service](a.i)
 	if err != nil {
 		return handleError(fmt.Errorf("failed to initialize monitor service: %w", err))

@@ -3,22 +3,23 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/pgEdge/control-plane/server/internal/cluster"
-	"github.com/pgEdge/control-plane/server/internal/election"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	"github.com/spf13/cobra"
 
 	"github.com/pgEdge/control-plane/server/internal/api"
 	"github.com/pgEdge/control-plane/server/internal/certificates"
+	"github.com/pgEdge/control-plane/server/internal/cluster"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/docker"
+	"github.com/pgEdge/control-plane/server/internal/election"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/ipam"
 	"github.com/pgEdge/control-plane/server/internal/logging"
+	"github.com/pgEdge/control-plane/server/internal/migrate"
 	"github.com/pgEdge/control-plane/server/internal/monitor"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator/swarm"
@@ -69,6 +70,7 @@ func newRootCmd(i *do.Injector) *cobra.Command {
 			host.Provide(i)
 			ipam.Provide(i)
 			logging.Provide(i)
+			migrate.Provide(i)
 			monitor.Provide(i)
 			resource.Provide(i)
 			scheduler.Provide(i)
