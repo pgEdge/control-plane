@@ -34,6 +34,10 @@ type Client struct {
 	ListDatabaseTasksEndpoint      goa.Endpoint
 	GetDatabaseTaskEndpoint        goa.Endpoint
 	GetDatabaseTaskLogEndpoint     goa.Endpoint
+	ListHostTasksEndpoint          goa.Endpoint
+	GetHostTaskEndpoint            goa.Endpoint
+	GetHostTaskLogEndpoint         goa.Endpoint
+	ListTasksEndpoint              goa.Endpoint
 	RestoreDatabaseEndpoint        goa.Endpoint
 	GetVersionEndpoint             goa.Endpoint
 	RestartInstanceEndpoint        goa.Endpoint
@@ -43,7 +47,7 @@ type Client struct {
 }
 
 // NewClient initializes a "control-plane" service client given the endpoints.
-func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluster, listHosts, getHost, removeHost, listDatabases, createDatabase, getDatabase, updateDatabase, deleteDatabase, backupDatabaseNode, switchoverDatabaseNode, failoverDatabaseNode, listDatabaseTasks, getDatabaseTask, getDatabaseTaskLog, restoreDatabase, getVersion, restartInstance, stopInstance, startInstance, cancelDatabaseTask goa.Endpoint) *Client {
+func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluster, listHosts, getHost, removeHost, listDatabases, createDatabase, getDatabase, updateDatabase, deleteDatabase, backupDatabaseNode, switchoverDatabaseNode, failoverDatabaseNode, listDatabaseTasks, getDatabaseTask, getDatabaseTaskLog, listHostTasks, getHostTask, getHostTaskLog, listTasks, restoreDatabase, getVersion, restartInstance, stopInstance, startInstance, cancelDatabaseTask goa.Endpoint) *Client {
 	return &Client{
 		InitClusterEndpoint:            initCluster,
 		JoinClusterEndpoint:            joinCluster,
@@ -64,6 +68,10 @@ func NewClient(initCluster, joinCluster, getJoinToken, getJoinOptions, getCluste
 		ListDatabaseTasksEndpoint:      listDatabaseTasks,
 		GetDatabaseTaskEndpoint:        getDatabaseTask,
 		GetDatabaseTaskLogEndpoint:     getDatabaseTaskLog,
+		ListHostTasksEndpoint:          listHostTasks,
+		GetHostTaskEndpoint:            getHostTask,
+		GetHostTaskLogEndpoint:         getHostTaskLog,
+		ListTasksEndpoint:              listTasks,
 		RestoreDatabaseEndpoint:        restoreDatabase,
 		GetVersionEndpoint:             getVersion,
 		RestartInstanceEndpoint:        restartInstance,
@@ -385,6 +393,72 @@ func (c *Client) GetDatabaseTaskLog(ctx context.Context, p *GetDatabaseTaskLogPa
 		return
 	}
 	return ires.(*TaskLog), nil
+}
+
+// ListHostTasks calls the "list-host-tasks" endpoint of the "control-plane"
+// service.
+// ListHostTasks may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) ListHostTasks(ctx context.Context, p *ListHostTasksPayload) (res *ListHostTasksResponse, err error) {
+	var ires any
+	ires, err = c.ListHostTasksEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*ListHostTasksResponse), nil
+}
+
+// GetHostTask calls the "get-host-task" endpoint of the "control-plane"
+// service.
+// GetHostTask may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) GetHostTask(ctx context.Context, p *GetHostTaskPayload) (res *Task, err error) {
+	var ires any
+	ires, err = c.GetHostTaskEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*Task), nil
+}
+
+// GetHostTaskLog calls the "get-host-task-log" endpoint of the "control-plane"
+// service.
+// GetHostTaskLog may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
+//   - "not_found" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) GetHostTaskLog(ctx context.Context, p *GetHostTaskLogPayload) (res *TaskLog, err error) {
+	var ires any
+	ires, err = c.GetHostTaskLogEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*TaskLog), nil
+}
+
+// ListTasks calls the "list-tasks" endpoint of the "control-plane" service.
+// ListTasks may return the following errors:
+//   - "cluster_not_initialized" (type *goa.ServiceError)
+//   - "invalid_input" (type *goa.ServiceError)
+//   - "server_error" (type *goa.ServiceError)
+//   - error: internal error
+func (c *Client) ListTasks(ctx context.Context, p *ListTasksPayload) (res *ListTasksResponse, err error) {
+	var ires any
+	ires, err = c.ListTasksEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*ListTasksResponse), nil
 }
 
 // RestoreDatabase calls the "restore-database" endpoint of the "control-plane"

@@ -22,9 +22,13 @@ type Client interface {
 	UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePayload) (*api.UpdateDatabaseResponse, error)
 	DeleteDatabase(ctx context.Context, req *api.DeleteDatabasePayload) (*api.DeleteDatabaseResponse, error)
 	BackupDatabaseNode(ctx context.Context, req *api.BackupDatabaseNodePayload) (*api.BackupDatabaseNodeResponse, error)
+	ListTasks(ctx context.Context, req *api.ListTasksPayload) (*api.ListTasksResponse, error)
 	ListDatabaseTasks(ctx context.Context, req *api.ListDatabaseTasksPayload) (*api.ListDatabaseTasksResponse, error)
 	GetDatabaseTask(ctx context.Context, req *api.GetDatabaseTaskPayload) (*api.Task, error)
 	GetDatabaseTaskLog(ctx context.Context, req *api.GetDatabaseTaskLogPayload) (*api.TaskLog, error)
+	ListHostTasks(ctx context.Context, req *api.ListHostTasksPayload) (*api.ListHostTasksResponse, error)
+	GetHostTask(ctx context.Context, req *api.GetHostTaskPayload) (*api.Task, error)
+	GetHostTaskLog(ctx context.Context, req *api.GetHostTaskLogPayload) (*api.TaskLog, error)
 	RestoreDatabase(ctx context.Context, req *api.RestoreDatabasePayload) (*api.RestoreDatabaseResponse, error)
 	GetVersion(ctx context.Context) (*api.VersionInfo, error)
 	RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (*api.RestartInstanceResponse, error)
@@ -33,6 +37,8 @@ type Client interface {
 	FailoverDatabaseNode(ctx context.Context, req *api.FailoverDatabaseNodeRequest) (*api.FailoverDatabaseNodeResponse, error)
 	// Helper methods
 
-	WaitForTask(ctx context.Context, req *api.GetDatabaseTaskPayload) (*api.Task, error)
-	FollowTask(ctx context.Context, req *api.GetDatabaseTaskLogPayload, handler func(e *api.TaskLogEntry)) error
+	WaitForDatabaseTask(ctx context.Context, req *api.GetDatabaseTaskPayload) (*api.Task, error)
+	WaitForHostTask(ctx context.Context, req *api.GetHostTaskPayload) (*api.Task, error)
+	FollowDatabaseTask(ctx context.Context, req *api.GetDatabaseTaskLogPayload, handler func(e *api.TaskLogEntry)) error
+	FollowHostTask(ctx context.Context, req *api.GetHostTaskLogPayload, handler func(e *api.TaskLogEntry)) error
 }

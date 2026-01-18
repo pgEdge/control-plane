@@ -2639,6 +2639,565 @@ func DecodeGetDatabaseTaskLogResponse(decoder func(*http.Response) goahttp.Decod
 	}
 }
 
+// BuildListHostTasksRequest instantiates a HTTP request object with method and
+// path set to call the "control-plane" service "list-host-tasks" endpoint
+func (c *Client) BuildListHostTasksRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		hostID string
+	)
+	{
+		p, ok := v.(*controlplane.ListHostTasksPayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("control-plane", "list-host-tasks", "*controlplane.ListHostTasksPayload", v)
+		}
+		hostID = string(p.HostID)
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ListHostTasksControlPlanePath(hostID)}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("control-plane", "list-host-tasks", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeListHostTasksRequest returns an encoder for requests sent to the
+// control-plane list-host-tasks server.
+func EncodeListHostTasksRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.ListHostTasksPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "list-host-tasks", "*controlplane.ListHostTasksPayload", v)
+		}
+		values := req.URL.Query()
+		if p.AfterTaskID != nil {
+			values.Add("after_task_id", *p.AfterTaskID)
+		}
+		if p.Limit != nil {
+			values.Add("limit", fmt.Sprintf("%v", *p.Limit))
+		}
+		if p.SortOrder != nil {
+			values.Add("sort_order", *p.SortOrder)
+		}
+		req.URL.RawQuery = values.Encode()
+		return nil
+	}
+}
+
+// DecodeListHostTasksResponse returns a decoder for responses returned by the
+// control-plane list-host-tasks endpoint. restoreBody controls whether the
+// response body should be restored after having been read.
+// DecodeListHostTasksResponse may return the following errors:
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
+//   - error: internal error
+func DecodeListHostTasksResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body ListHostTasksResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "list-host-tasks", err)
+			}
+			err = ValidateListHostTasksResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "list-host-tasks", err)
+			}
+			res := NewListHostTasksResponseOK(&body)
+			return res, nil
+		case http.StatusConflict:
+			var (
+				body ListHostTasksClusterNotInitializedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "list-host-tasks", err)
+			}
+			err = ValidateListHostTasksClusterNotInitializedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "list-host-tasks", err)
+			}
+			return nil, NewListHostTasksClusterNotInitialized(&body)
+		case http.StatusBadRequest:
+			var (
+				body ListHostTasksInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "list-host-tasks", err)
+			}
+			err = ValidateListHostTasksInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "list-host-tasks", err)
+			}
+			return nil, NewListHostTasksInvalidInput(&body)
+		case http.StatusNotFound:
+			var (
+				body ListHostTasksNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "list-host-tasks", err)
+			}
+			err = ValidateListHostTasksNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "list-host-tasks", err)
+			}
+			return nil, NewListHostTasksNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body ListHostTasksServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "list-host-tasks", err)
+			}
+			err = ValidateListHostTasksServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "list-host-tasks", err)
+			}
+			return nil, NewListHostTasksServerError(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("control-plane", "list-host-tasks", resp.StatusCode, string(body))
+		}
+	}
+}
+
+// BuildGetHostTaskRequest instantiates a HTTP request object with method and
+// path set to call the "control-plane" service "get-host-task" endpoint
+func (c *Client) BuildGetHostTaskRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		hostID string
+		taskID string
+	)
+	{
+		p, ok := v.(*controlplane.GetHostTaskPayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("control-plane", "get-host-task", "*controlplane.GetHostTaskPayload", v)
+		}
+		hostID = string(p.HostID)
+		taskID = p.TaskID
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetHostTaskControlPlanePath(hostID, taskID)}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("control-plane", "get-host-task", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// DecodeGetHostTaskResponse returns a decoder for responses returned by the
+// control-plane get-host-task endpoint. restoreBody controls whether the
+// response body should be restored after having been read.
+// DecodeGetHostTaskResponse may return the following errors:
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
+//   - error: internal error
+func DecodeGetHostTaskResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body GetHostTaskResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-host-task", err)
+			}
+			err = ValidateGetHostTaskResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-host-task", err)
+			}
+			res := NewGetHostTaskTaskOK(&body)
+			return res, nil
+		case http.StatusConflict:
+			var (
+				body GetHostTaskClusterNotInitializedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-host-task", err)
+			}
+			err = ValidateGetHostTaskClusterNotInitializedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-host-task", err)
+			}
+			return nil, NewGetHostTaskClusterNotInitialized(&body)
+		case http.StatusBadRequest:
+			var (
+				body GetHostTaskInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-host-task", err)
+			}
+			err = ValidateGetHostTaskInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-host-task", err)
+			}
+			return nil, NewGetHostTaskInvalidInput(&body)
+		case http.StatusNotFound:
+			var (
+				body GetHostTaskNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-host-task", err)
+			}
+			err = ValidateGetHostTaskNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-host-task", err)
+			}
+			return nil, NewGetHostTaskNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body GetHostTaskServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-host-task", err)
+			}
+			err = ValidateGetHostTaskServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-host-task", err)
+			}
+			return nil, NewGetHostTaskServerError(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("control-plane", "get-host-task", resp.StatusCode, string(body))
+		}
+	}
+}
+
+// BuildGetHostTaskLogRequest instantiates a HTTP request object with method
+// and path set to call the "control-plane" service "get-host-task-log" endpoint
+func (c *Client) BuildGetHostTaskLogRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		hostID string
+		taskID string
+	)
+	{
+		p, ok := v.(*controlplane.GetHostTaskLogPayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("control-plane", "get-host-task-log", "*controlplane.GetHostTaskLogPayload", v)
+		}
+		hostID = string(p.HostID)
+		taskID = p.TaskID
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetHostTaskLogControlPlanePath(hostID, taskID)}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("control-plane", "get-host-task-log", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeGetHostTaskLogRequest returns an encoder for requests sent to the
+// control-plane get-host-task-log server.
+func EncodeGetHostTaskLogRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.GetHostTaskLogPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "get-host-task-log", "*controlplane.GetHostTaskLogPayload", v)
+		}
+		values := req.URL.Query()
+		if p.AfterEntryID != nil {
+			values.Add("after_entry_id", *p.AfterEntryID)
+		}
+		if p.Limit != nil {
+			values.Add("limit", fmt.Sprintf("%v", *p.Limit))
+		}
+		req.URL.RawQuery = values.Encode()
+		return nil
+	}
+}
+
+// DecodeGetHostTaskLogResponse returns a decoder for responses returned by the
+// control-plane get-host-task-log endpoint. restoreBody controls whether the
+// response body should be restored after having been read.
+// DecodeGetHostTaskLogResponse may return the following errors:
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "not_found" (type *controlplane.APIError): http.StatusNotFound
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
+//   - error: internal error
+func DecodeGetHostTaskLogResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body GetHostTaskLogResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-host-task-log", err)
+			}
+			err = ValidateGetHostTaskLogResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-host-task-log", err)
+			}
+			res := NewGetHostTaskLogTaskLogOK(&body)
+			return res, nil
+		case http.StatusConflict:
+			var (
+				body GetHostTaskLogClusterNotInitializedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-host-task-log", err)
+			}
+			err = ValidateGetHostTaskLogClusterNotInitializedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-host-task-log", err)
+			}
+			return nil, NewGetHostTaskLogClusterNotInitialized(&body)
+		case http.StatusBadRequest:
+			var (
+				body GetHostTaskLogInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-host-task-log", err)
+			}
+			err = ValidateGetHostTaskLogInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-host-task-log", err)
+			}
+			return nil, NewGetHostTaskLogInvalidInput(&body)
+		case http.StatusNotFound:
+			var (
+				body GetHostTaskLogNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-host-task-log", err)
+			}
+			err = ValidateGetHostTaskLogNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-host-task-log", err)
+			}
+			return nil, NewGetHostTaskLogNotFound(&body)
+		case http.StatusInternalServerError:
+			var (
+				body GetHostTaskLogServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "get-host-task-log", err)
+			}
+			err = ValidateGetHostTaskLogServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "get-host-task-log", err)
+			}
+			return nil, NewGetHostTaskLogServerError(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("control-plane", "get-host-task-log", resp.StatusCode, string(body))
+		}
+	}
+}
+
+// BuildListTasksRequest instantiates a HTTP request object with method and
+// path set to call the "control-plane" service "list-tasks" endpoint
+func (c *Client) BuildListTasksRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ListTasksControlPlanePath()}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("control-plane", "list-tasks", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeListTasksRequest returns an encoder for requests sent to the
+// control-plane list-tasks server.
+func EncodeListTasksRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*controlplane.ListTasksPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("control-plane", "list-tasks", "*controlplane.ListTasksPayload", v)
+		}
+		values := req.URL.Query()
+		if p.Scope != nil {
+			values.Add("scope", *p.Scope)
+		}
+		if p.EntityID != nil {
+			values.Add("entity_id", string(*p.EntityID))
+		}
+		if p.AfterTaskID != nil {
+			values.Add("after_task_id", *p.AfterTaskID)
+		}
+		if p.Limit != nil {
+			values.Add("limit", fmt.Sprintf("%v", *p.Limit))
+		}
+		if p.SortOrder != nil {
+			values.Add("sort_order", *p.SortOrder)
+		}
+		req.URL.RawQuery = values.Encode()
+		return nil
+	}
+}
+
+// DecodeListTasksResponse returns a decoder for responses returned by the
+// control-plane list-tasks endpoint. restoreBody controls whether the response
+// body should be restored after having been read.
+// DecodeListTasksResponse may return the following errors:
+//   - "cluster_not_initialized" (type *controlplane.APIError): http.StatusConflict
+//   - "invalid_input" (type *controlplane.APIError): http.StatusBadRequest
+//   - "server_error" (type *controlplane.APIError): http.StatusInternalServerError
+//   - error: internal error
+func DecodeListTasksResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body ListTasksResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "list-tasks", err)
+			}
+			err = ValidateListTasksResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "list-tasks", err)
+			}
+			res := NewListTasksResponseOK(&body)
+			return res, nil
+		case http.StatusConflict:
+			var (
+				body ListTasksClusterNotInitializedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "list-tasks", err)
+			}
+			err = ValidateListTasksClusterNotInitializedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "list-tasks", err)
+			}
+			return nil, NewListTasksClusterNotInitialized(&body)
+		case http.StatusBadRequest:
+			var (
+				body ListTasksInvalidInputResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "list-tasks", err)
+			}
+			err = ValidateListTasksInvalidInputResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "list-tasks", err)
+			}
+			return nil, NewListTasksInvalidInput(&body)
+		case http.StatusInternalServerError:
+			var (
+				body ListTasksServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("control-plane", "list-tasks", err)
+			}
+			err = ValidateListTasksServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("control-plane", "list-tasks", err)
+			}
+			return nil, NewListTasksServerError(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("control-plane", "list-tasks", resp.StatusCode, string(body))
+		}
+	}
+}
+
 // BuildRestoreDatabaseRequest instantiates a HTTP request object with method
 // and path set to call the "control-plane" service "restore-database" endpoint
 func (c *Client) BuildRestoreDatabaseRequest(ctx context.Context, v any) (*http.Request, error) {

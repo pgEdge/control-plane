@@ -271,6 +271,22 @@ func (s *PreInitHandlers) CancelDatabaseTask(ctx context.Context, req *api.Cance
 	return nil, ErrUninitialized
 }
 
+func (s *PreInitHandlers) ListHostTasks(ctx context.Context, req *api.ListHostTasksPayload) (*api.ListHostTasksResponse, error) {
+	return nil, ErrUninitialized
+}
+
+func (s *PreInitHandlers) GetHostTask(ctx context.Context, req *api.GetHostTaskPayload) (*api.Task, error) {
+	return nil, ErrUninitialized
+}
+
+func (s *PreInitHandlers) GetHostTaskLog(ctx context.Context, req *api.GetHostTaskLogPayload) (*api.TaskLog, error) {
+	return nil, ErrUninitialized
+}
+
+func (s *PreInitHandlers) ListTasks(ctx context.Context, req *api.ListTasksPayload) (*api.ListTasksResponse, error) {
+	return nil, ErrUninitialized
+}
+
 func (s *PreInitHandlers) GetClient() (res *http.Client, err error) {
 	if s.cfg.HTTP.ClientCert == "" {
 		return http.DefaultClient, nil

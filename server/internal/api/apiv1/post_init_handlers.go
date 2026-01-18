@@ -1083,3 +1083,113 @@ func hasPrimaryInstance(instances []*database.Instance) bool {
 	}
 	return false
 }
+
+func (s *PostInitHandlers) ListHostTasks(ctx context.Context, req *api.ListHostTasksPayload) (*api.ListHostTasksResponse, error) {
+	hostID, err := hostIdentToString(req.HostID)
+	if err != nil {
+		return nil, err
+	}
+
+	options, err := taskListOptionsFromHost(req)
+	if err != nil {
+		return nil, makeInvalidInputErr(err)
+	}
+
+	tasks, err := s.taskSvc.GetTasks(ctx, task.ScopeHost, hostID, options)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	return &api.ListHostTasksResponse{
+		Tasks: tasksToAPI(tasks),
+	}, nil
+}
+
+func (s *PostInitHandlers) GetHostTask(ctx context.Context, req *api.GetHostTaskPayload) (*api.Task, error) {
+	hostID, err := hostIdentToString(req.HostID)
+	if err != nil {
+		return nil, err
+	}
+	taskID, err := uuid.Parse(req.TaskID)
+	if err != nil {
+		return nil, ErrInvalidTaskID
+	}
+
+	t, err := s.taskSvc.GetTask(ctx, task.ScopeHost, hostID, taskID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	return taskToAPI(t), nil
+}
+
+func (s *PostInitHandlers) GetHostTaskLog(ctx context.Context, req *api.GetHostTaskLogPayload) (*api.TaskLog, error) {
+	hostID, err := hostIdentToString(req.HostID)
+	if err != nil {
+		return nil, err
+	}
+	taskID, err := uuid.Parse(req.TaskID)
+	if err != nil {
+		return nil, ErrInvalidTaskID
+	}
+
+	t, err := s.taskSvc.GetTask(ctx, task.ScopeHost, hostID, taskID)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	options, err := taskLogOptionsFromHost(req)
+	if err != nil {
+		return nil, makeInvalidInputErr(err)
+	}
+
+	log, err := s.taskSvc.GetTaskLog(ctx, task.ScopeHost, hostID, taskID, options)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	return taskLogToAPI(log, t.Status), nil
+}
+
+func (s *PostInitHandlers) ListTasks(ctx context.Context, req *api.ListTasksPayload) (*api.ListTasksResponse, error) {
+	// Validation: entity_id requires scope
+	if req.EntityID != nil && req.Scope == nil {
+		return nil, makeInvalidInputErr(errors.New("entity_id requires scope to be set"))
+	}
+
+	scope, entityID, err := taskListOptionsFromGeneric(req)
+	if err != nil {
+		return nil, makeInvalidInputErr(err)
+	}
+
+	options := task.TaskListOptions{}
+	if req.Limit != nil {
+		options.Limit = *req.Limit
+	}
+	if req.AfterTaskID != nil {
+		afterTaskID, err := uuid.Parse(*req.AfterTaskID)
+		if err != nil {
+			return nil, makeInvalidInputErr(fmt.Errorf("invalid after task ID %q: %w", *req.AfterTaskID, err))
+		}
+		options.AfterTaskID = afterTaskID
+	}
+	if req.SortOrder != nil {
+		switch *req.SortOrder {
+		case "asc", "ascend", "ascending":
+			options.SortOrder = task.SortAscend
+		case "desc", "descend", "descending":
+			options.SortOrder = task.SortDescend
+		default:
+			return nil, makeInvalidInputErr(fmt.Errorf("invalid sort order %q", *req.SortOrder))
+		}
+	}
+
+	tasks, err := s.taskSvc.GetTasks(ctx, scope, entityID, options)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+
+	return &api.ListTasksResponse{
+		Tasks: tasksToAPI(tasks),
+	}, nil
+}

@@ -34,6 +34,10 @@ type Endpoints struct {
 	ListDatabaseTasks      goa.Endpoint
 	GetDatabaseTask        goa.Endpoint
 	GetDatabaseTaskLog     goa.Endpoint
+	ListHostTasks          goa.Endpoint
+	GetHostTask            goa.Endpoint
+	GetHostTaskLog         goa.Endpoint
+	ListTasks              goa.Endpoint
 	RestoreDatabase        goa.Endpoint
 	GetVersion             goa.Endpoint
 	RestartInstance        goa.Endpoint
@@ -64,6 +68,10 @@ func NewEndpoints(s Service) *Endpoints {
 		ListDatabaseTasks:      NewListDatabaseTasksEndpoint(s),
 		GetDatabaseTask:        NewGetDatabaseTaskEndpoint(s),
 		GetDatabaseTaskLog:     NewGetDatabaseTaskLogEndpoint(s),
+		ListHostTasks:          NewListHostTasksEndpoint(s),
+		GetHostTask:            NewGetHostTaskEndpoint(s),
+		GetHostTaskLog:         NewGetHostTaskLogEndpoint(s),
+		ListTasks:              NewListTasksEndpoint(s),
 		RestoreDatabase:        NewRestoreDatabaseEndpoint(s),
 		GetVersion:             NewGetVersionEndpoint(s),
 		RestartInstance:        NewRestartInstanceEndpoint(s),
@@ -95,6 +103,10 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.ListDatabaseTasks = m(e.ListDatabaseTasks)
 	e.GetDatabaseTask = m(e.GetDatabaseTask)
 	e.GetDatabaseTaskLog = m(e.GetDatabaseTaskLog)
+	e.ListHostTasks = m(e.ListHostTasks)
+	e.GetHostTask = m(e.GetHostTask)
+	e.GetHostTaskLog = m(e.GetHostTaskLog)
+	e.ListTasks = m(e.ListTasks)
 	e.RestoreDatabase = m(e.RestoreDatabase)
 	e.GetVersion = m(e.GetVersion)
 	e.RestartInstance = m(e.RestartInstance)
@@ -277,6 +289,42 @@ func NewGetDatabaseTaskLogEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*GetDatabaseTaskLogPayload)
 		return s.GetDatabaseTaskLog(ctx, p)
+	}
+}
+
+// NewListHostTasksEndpoint returns an endpoint function that calls the method
+// "list-host-tasks" of service "control-plane".
+func NewListHostTasksEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*ListHostTasksPayload)
+		return s.ListHostTasks(ctx, p)
+	}
+}
+
+// NewGetHostTaskEndpoint returns an endpoint function that calls the method
+// "get-host-task" of service "control-plane".
+func NewGetHostTaskEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*GetHostTaskPayload)
+		return s.GetHostTask(ctx, p)
+	}
+}
+
+// NewGetHostTaskLogEndpoint returns an endpoint function that calls the method
+// "get-host-task-log" of service "control-plane".
+func NewGetHostTaskLogEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*GetHostTaskLogPayload)
+		return s.GetHostTaskLog(ctx, p)
+	}
+}
+
+// NewListTasksEndpoint returns an endpoint function that calls the method
+// "list-tasks" of service "control-plane".
+func NewListTasksEndpoint(s Service) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*ListTasksPayload)
+		return s.ListTasks(ctx, p)
 	}
 }
 

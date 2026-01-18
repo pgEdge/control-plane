@@ -39,6 +39,10 @@ type Server struct {
 	ListDatabaseTasks      http.Handler
 	GetDatabaseTask        http.Handler
 	GetDatabaseTaskLog     http.Handler
+	ListHostTasks          http.Handler
+	GetHostTask            http.Handler
+	GetHostTaskLog         http.Handler
+	ListTasks              http.Handler
 	RestoreDatabase        http.Handler
 	GetVersion             http.Handler
 	RestartInstance        http.Handler
@@ -99,6 +103,10 @@ func New(
 			{"ListDatabaseTasks", "GET", "/v1/databases/{database_id}/tasks"},
 			{"GetDatabaseTask", "GET", "/v1/databases/{database_id}/tasks/{task_id}"},
 			{"GetDatabaseTaskLog", "GET", "/v1/databases/{database_id}/tasks/{task_id}/log"},
+			{"ListHostTasks", "GET", "/v1/hosts/{host_id}/tasks"},
+			{"GetHostTask", "GET", "/v1/hosts/{host_id}/tasks/{task_id}"},
+			{"GetHostTaskLog", "GET", "/v1/hosts/{host_id}/tasks/{task_id}/logs"},
+			{"ListTasks", "GET", "/v1/tasks"},
 			{"RestoreDatabase", "POST", "/v1/databases/{database_id}/restore"},
 			{"GetVersion", "GET", "/v1/version"},
 			{"RestartInstance", "POST", "/v1/databases/{database_id}/instances/{instance_id}/restart"},
@@ -126,6 +134,10 @@ func New(
 		ListDatabaseTasks:      NewListDatabaseTasksHandler(e.ListDatabaseTasks, mux, decoder, encoder, errhandler, formatter),
 		GetDatabaseTask:        NewGetDatabaseTaskHandler(e.GetDatabaseTask, mux, decoder, encoder, errhandler, formatter),
 		GetDatabaseTaskLog:     NewGetDatabaseTaskLogHandler(e.GetDatabaseTaskLog, mux, decoder, encoder, errhandler, formatter),
+		ListHostTasks:          NewListHostTasksHandler(e.ListHostTasks, mux, decoder, encoder, errhandler, formatter),
+		GetHostTask:            NewGetHostTaskHandler(e.GetHostTask, mux, decoder, encoder, errhandler, formatter),
+		GetHostTaskLog:         NewGetHostTaskLogHandler(e.GetHostTaskLog, mux, decoder, encoder, errhandler, formatter),
+		ListTasks:              NewListTasksHandler(e.ListTasks, mux, decoder, encoder, errhandler, formatter),
 		RestoreDatabase:        NewRestoreDatabaseHandler(e.RestoreDatabase, mux, decoder, encoder, errhandler, formatter),
 		GetVersion:             NewGetVersionHandler(e.GetVersion, mux, decoder, encoder, errhandler, formatter),
 		RestartInstance:        NewRestartInstanceHandler(e.RestartInstance, mux, decoder, encoder, errhandler, formatter),
@@ -160,6 +172,10 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.ListDatabaseTasks = m(s.ListDatabaseTasks)
 	s.GetDatabaseTask = m(s.GetDatabaseTask)
 	s.GetDatabaseTaskLog = m(s.GetDatabaseTaskLog)
+	s.ListHostTasks = m(s.ListHostTasks)
+	s.GetHostTask = m(s.GetHostTask)
+	s.GetHostTaskLog = m(s.GetHostTaskLog)
+	s.ListTasks = m(s.ListTasks)
 	s.RestoreDatabase = m(s.RestoreDatabase)
 	s.GetVersion = m(s.GetVersion)
 	s.RestartInstance = m(s.RestartInstance)
@@ -192,6 +208,10 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountListDatabaseTasksHandler(mux, h.ListDatabaseTasks)
 	MountGetDatabaseTaskHandler(mux, h.GetDatabaseTask)
 	MountGetDatabaseTaskLogHandler(mux, h.GetDatabaseTaskLog)
+	MountListHostTasksHandler(mux, h.ListHostTasks)
+	MountGetHostTaskHandler(mux, h.GetHostTask)
+	MountGetHostTaskLogHandler(mux, h.GetHostTaskLog)
+	MountListTasksHandler(mux, h.ListTasks)
 	MountRestoreDatabaseHandler(mux, h.RestoreDatabase)
 	MountGetVersionHandler(mux, h.GetVersion)
 	MountRestartInstanceHandler(mux, h.RestartInstance)
@@ -1166,6 +1186,218 @@ func NewGetDatabaseTaskLogHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "get-database-task-log")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountListHostTasksHandler configures the mux to serve the "control-plane"
+// service "list-host-tasks" endpoint.
+func MountListHostTasksHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/v1/hosts/{host_id}/tasks", f)
+}
+
+// NewListHostTasksHandler creates a HTTP handler which loads the HTTP request
+// and calls the "control-plane" service "list-host-tasks" endpoint.
+func NewListHostTasksHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeListHostTasksRequest(mux, decoder)
+		encodeResponse = EncodeListHostTasksResponse(encoder)
+		encodeError    = EncodeListHostTasksError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "list-host-tasks")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountGetHostTaskHandler configures the mux to serve the "control-plane"
+// service "get-host-task" endpoint.
+func MountGetHostTaskHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/v1/hosts/{host_id}/tasks/{task_id}", f)
+}
+
+// NewGetHostTaskHandler creates a HTTP handler which loads the HTTP request
+// and calls the "control-plane" service "get-host-task" endpoint.
+func NewGetHostTaskHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeGetHostTaskRequest(mux, decoder)
+		encodeResponse = EncodeGetHostTaskResponse(encoder)
+		encodeError    = EncodeGetHostTaskError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-host-task")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountGetHostTaskLogHandler configures the mux to serve the "control-plane"
+// service "get-host-task-log" endpoint.
+func MountGetHostTaskLogHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/v1/hosts/{host_id}/tasks/{task_id}/logs", f)
+}
+
+// NewGetHostTaskLogHandler creates a HTTP handler which loads the HTTP request
+// and calls the "control-plane" service "get-host-task-log" endpoint.
+func NewGetHostTaskLogHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeGetHostTaskLogRequest(mux, decoder)
+		encodeResponse = EncodeGetHostTaskLogResponse(encoder)
+		encodeError    = EncodeGetHostTaskLogError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "get-host-task-log")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountListTasksHandler configures the mux to serve the "control-plane"
+// service "list-tasks" endpoint.
+func MountListTasksHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/v1/tasks", f)
+}
+
+// NewListTasksHandler creates a HTTP handler which loads the HTTP request and
+// calls the "control-plane" service "list-tasks" endpoint.
+func NewListTasksHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeListTasksRequest(mux, decoder)
+		encodeResponse = EncodeListTasksResponse(encoder)
+		encodeError    = EncodeListTasksError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "list-tasks")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "control-plane")
 		payload, err := decodeRequest(r)
 		if err != nil {

@@ -2151,6 +2151,521 @@ func EncodeGetDatabaseTaskLogError(encoder func(context.Context, http.ResponseWr
 	}
 }
 
+// EncodeListHostTasksResponse returns an encoder for responses returned by the
+// control-plane list-host-tasks endpoint.
+func EncodeListHostTasksResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.ListHostTasksResponse)
+		enc := encoder(ctx, w)
+		body := NewListHostTasksResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeListHostTasksRequest returns a decoder for requests sent to the
+// control-plane list-host-tasks endpoint.
+func DecodeListHostTasksRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*controlplane.ListHostTasksPayload, error) {
+	return func(r *http.Request) (*controlplane.ListHostTasksPayload, error) {
+		var (
+			hostID      string
+			afterTaskID *string
+			limit       *int
+			sortOrder   *string
+			err         error
+
+			params = mux.Vars(r)
+		)
+		hostID = params["host_id"]
+		if utf8.RuneCountInString(hostID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("host_id", hostID, utf8.RuneCountInString(hostID), 1, true))
+		}
+		if utf8.RuneCountInString(hostID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("host_id", hostID, utf8.RuneCountInString(hostID), 63, false))
+		}
+		qp := r.URL.Query()
+		afterTaskIDRaw := qp.Get("after_task_id")
+		if afterTaskIDRaw != "" {
+			afterTaskID = &afterTaskIDRaw
+		}
+		if afterTaskID != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("after_task_id", *afterTaskID, goa.FormatUUID))
+		}
+		{
+			limitRaw := qp.Get("limit")
+			if limitRaw != "" {
+				v, err2 := strconv.ParseInt(limitRaw, 10, strconv.IntSize)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("limit", limitRaw, "integer"))
+				}
+				pv := int(v)
+				limit = &pv
+			}
+		}
+		sortOrderRaw := qp.Get("sort_order")
+		if sortOrderRaw != "" {
+			sortOrder = &sortOrderRaw
+		}
+		if sortOrder != nil {
+			if !(*sortOrder == "asc" || *sortOrder == "ascend" || *sortOrder == "ascending" || *sortOrder == "desc" || *sortOrder == "descend" || *sortOrder == "descending") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("sort_order", *sortOrder, []any{"asc", "ascend", "ascending", "desc", "descend", "descending"}))
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewListHostTasksPayload(hostID, afterTaskID, limit, sortOrder)
+
+		return payload, nil
+	}
+}
+
+// EncodeListHostTasksError returns an encoder for errors returned by the
+// list-host-tasks control-plane endpoint.
+func EncodeListHostTasksError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListHostTasksClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListHostTasksInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "not_found":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListHostTasksNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListHostTasksServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeGetHostTaskResponse returns an encoder for responses returned by the
+// control-plane get-host-task endpoint.
+func EncodeGetHostTaskResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.Task)
+		enc := encoder(ctx, w)
+		body := NewGetHostTaskResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeGetHostTaskRequest returns a decoder for requests sent to the
+// control-plane get-host-task endpoint.
+func DecodeGetHostTaskRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*controlplane.GetHostTaskPayload, error) {
+	return func(r *http.Request) (*controlplane.GetHostTaskPayload, error) {
+		var (
+			hostID string
+			taskID string
+			err    error
+
+			params = mux.Vars(r)
+		)
+		hostID = params["host_id"]
+		if utf8.RuneCountInString(hostID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("host_id", hostID, utf8.RuneCountInString(hostID), 1, true))
+		}
+		if utf8.RuneCountInString(hostID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("host_id", hostID, utf8.RuneCountInString(hostID), 63, false))
+		}
+		taskID = params["task_id"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("task_id", taskID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+		payload := NewGetHostTaskPayload(hostID, taskID)
+
+		return payload, nil
+	}
+}
+
+// EncodeGetHostTaskError returns an encoder for errors returned by the
+// get-host-task control-plane endpoint.
+func EncodeGetHostTaskError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetHostTaskClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetHostTaskInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "not_found":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetHostTaskNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetHostTaskServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeGetHostTaskLogResponse returns an encoder for responses returned by
+// the control-plane get-host-task-log endpoint.
+func EncodeGetHostTaskLogResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.TaskLog)
+		enc := encoder(ctx, w)
+		body := NewGetHostTaskLogResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeGetHostTaskLogRequest returns a decoder for requests sent to the
+// control-plane get-host-task-log endpoint.
+func DecodeGetHostTaskLogRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*controlplane.GetHostTaskLogPayload, error) {
+	return func(r *http.Request) (*controlplane.GetHostTaskLogPayload, error) {
+		var (
+			hostID       string
+			taskID       string
+			afterEntryID *string
+			limit        *int
+			err          error
+
+			params = mux.Vars(r)
+		)
+		hostID = params["host_id"]
+		if utf8.RuneCountInString(hostID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("host_id", hostID, utf8.RuneCountInString(hostID), 1, true))
+		}
+		if utf8.RuneCountInString(hostID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("host_id", hostID, utf8.RuneCountInString(hostID), 63, false))
+		}
+		taskID = params["task_id"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("task_id", taskID, goa.FormatUUID))
+		qp := r.URL.Query()
+		afterEntryIDRaw := qp.Get("after_entry_id")
+		if afterEntryIDRaw != "" {
+			afterEntryID = &afterEntryIDRaw
+		}
+		if afterEntryID != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("after_entry_id", *afterEntryID, goa.FormatUUID))
+		}
+		{
+			limitRaw := qp.Get("limit")
+			if limitRaw != "" {
+				v, err2 := strconv.ParseInt(limitRaw, 10, strconv.IntSize)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("limit", limitRaw, "integer"))
+				}
+				pv := int(v)
+				limit = &pv
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewGetHostTaskLogPayload(hostID, taskID, afterEntryID, limit)
+
+		return payload, nil
+	}
+}
+
+// EncodeGetHostTaskLogError returns an encoder for errors returned by the
+// get-host-task-log control-plane endpoint.
+func EncodeGetHostTaskLogError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetHostTaskLogClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetHostTaskLogInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "not_found":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetHostTaskLogNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetHostTaskLogServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
+// EncodeListTasksResponse returns an encoder for responses returned by the
+// control-plane list-tasks endpoint.
+func EncodeListTasksResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*controlplane.ListTasksResponse)
+		enc := encoder(ctx, w)
+		body := NewListTasksResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeListTasksRequest returns a decoder for requests sent to the
+// control-plane list-tasks endpoint.
+func DecodeListTasksRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*controlplane.ListTasksPayload, error) {
+	return func(r *http.Request) (*controlplane.ListTasksPayload, error) {
+		var (
+			scope       *string
+			entityID    *string
+			afterTaskID *string
+			limit       *int
+			sortOrder   *string
+			err         error
+		)
+		qp := r.URL.Query()
+		scopeRaw := qp.Get("scope")
+		if scopeRaw != "" {
+			scope = &scopeRaw
+		}
+		if scope != nil {
+			if !(*scope == "database" || *scope == "host") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("scope", *scope, []any{"database", "host"}))
+			}
+		}
+		entityIDRaw := qp.Get("entity_id")
+		if entityIDRaw != "" {
+			entityID = &entityIDRaw
+		}
+		if entityID != nil {
+			if utf8.RuneCountInString(*entityID) < 1 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("entity_id", *entityID, utf8.RuneCountInString(*entityID), 1, true))
+			}
+		}
+		if entityID != nil {
+			if utf8.RuneCountInString(*entityID) > 63 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("entity_id", *entityID, utf8.RuneCountInString(*entityID), 63, false))
+			}
+		}
+		afterTaskIDRaw := qp.Get("after_task_id")
+		if afterTaskIDRaw != "" {
+			afterTaskID = &afterTaskIDRaw
+		}
+		if afterTaskID != nil {
+			err = goa.MergeErrors(err, goa.ValidateFormat("after_task_id", *afterTaskID, goa.FormatUUID))
+		}
+		{
+			limitRaw := qp.Get("limit")
+			if limitRaw != "" {
+				v, err2 := strconv.ParseInt(limitRaw, 10, strconv.IntSize)
+				if err2 != nil {
+					err = goa.MergeErrors(err, goa.InvalidFieldTypeError("limit", limitRaw, "integer"))
+				}
+				pv := int(v)
+				limit = &pv
+			}
+		}
+		sortOrderRaw := qp.Get("sort_order")
+		if sortOrderRaw != "" {
+			sortOrder = &sortOrderRaw
+		}
+		if sortOrder != nil {
+			if !(*sortOrder == "asc" || *sortOrder == "ascend" || *sortOrder == "ascending" || *sortOrder == "desc" || *sortOrder == "descend" || *sortOrder == "descending") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("sort_order", *sortOrder, []any{"asc", "ascend", "ascending", "desc", "descend", "descending"}))
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewListTasksPayload(scope, entityID, afterTaskID, limit, sortOrder)
+
+		return payload, nil
+	}
+}
+
+// EncodeListTasksError returns an encoder for errors returned by the
+// list-tasks control-plane endpoint.
+func EncodeListTasksError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "cluster_not_initialized":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListTasksClusterNotInitializedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
+		case "invalid_input":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListTasksInvalidInputResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "server_error":
+			var res *controlplane.APIError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewListTasksServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeRestoreDatabaseResponse returns an encoder for responses returned by
 // the control-plane restore-database endpoint.
 func EncodeRestoreDatabaseResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {

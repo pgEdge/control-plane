@@ -207,6 +207,14 @@ func (c *MultiServerClient) BackupDatabaseNode(ctx context.Context, req *api.Bac
 	return server.BackupDatabaseNode(ctx, req)
 }
 
+func (c *MultiServerClient) ListTasks(ctx context.Context, req *api.ListTasksPayload) (res *api.ListTasksResponse, err error) {
+	server, err := c.liveServer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return server.ListTasks(ctx, req)
+}
+
 func (c *MultiServerClient) ListDatabaseTasks(ctx context.Context, req *api.ListDatabaseTasksPayload) (res *api.ListDatabaseTasksResponse, err error) {
 	server, err := c.liveServer(ctx)
 	if err != nil {
@@ -229,6 +237,30 @@ func (c *MultiServerClient) GetDatabaseTaskLog(ctx context.Context, req *api.Get
 		return nil, err
 	}
 	return server.GetDatabaseTaskLog(ctx, req)
+}
+
+func (c *MultiServerClient) ListHostTasks(ctx context.Context, req *api.ListHostTasksPayload) (*api.ListHostTasksResponse, error) {
+	server, err := c.liveServer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return server.ListHostTasks(ctx, req)
+}
+
+func (c *MultiServerClient) GetHostTask(ctx context.Context, req *api.GetHostTaskPayload) (*api.Task, error) {
+	server, err := c.liveServer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return server.GetHostTask(ctx, req)
+}
+
+func (c *MultiServerClient) GetHostTaskLog(ctx context.Context, req *api.GetHostTaskLogPayload) (*api.TaskLog, error) {
+	server, err := c.liveServer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return server.GetHostTaskLog(ctx, req)
 }
 
 func (c *MultiServerClient) RestoreDatabase(ctx context.Context, req *api.RestoreDatabasePayload) (res *api.RestoreDatabaseResponse, err error) {
@@ -278,20 +310,36 @@ func (c *MultiServerClient) FailoverDatabaseNode(ctx context.Context, req *api.F
 	return server.FailoverDatabaseNode(ctx, req)
 }
 
-func (c *MultiServerClient) WaitForTask(ctx context.Context, req *api.GetDatabaseTaskPayload) (*api.Task, error) {
+func (c *MultiServerClient) WaitForDatabaseTask(ctx context.Context, req *api.GetDatabaseTaskPayload) (*api.Task, error) {
 	server, err := c.liveServer(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return server.WaitForTask(ctx, req)
+	return server.WaitForDatabaseTask(ctx, req)
 }
 
-func (c *MultiServerClient) FollowTask(ctx context.Context, req *api.GetDatabaseTaskLogPayload, handler func(e *api.TaskLogEntry)) error {
+func (c *MultiServerClient) WaitForHostTask(ctx context.Context, req *api.GetHostTaskPayload) (*api.Task, error) {
+	server, err := c.liveServer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return server.WaitForHostTask(ctx, req)
+}
+
+func (c *MultiServerClient) FollowDatabaseTask(ctx context.Context, req *api.GetDatabaseTaskLogPayload, handler func(e *api.TaskLogEntry)) error {
 	server, err := c.liveServer(ctx)
 	if err != nil {
 		return err
 	}
-	return server.FollowTask(ctx, req, handler)
+	return server.FollowDatabaseTask(ctx, req, handler)
+}
+
+func (c *MultiServerClient) FollowHostTask(ctx context.Context, req *api.GetHostTaskLogPayload, handler func(e *api.TaskLogEntry)) error {
+	server, err := c.liveServer(ctx)
+	if err != nil {
+		return err
+	}
+	return server.FollowHostTask(ctx, req, handler)
 }
 
 func (c *MultiServerClient) liveServer(ctx context.Context) (*SingleServerClient, error) {

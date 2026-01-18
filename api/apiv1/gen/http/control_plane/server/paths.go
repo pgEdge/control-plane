@@ -106,6 +106,26 @@ func GetDatabaseTaskLogControlPlanePath(databaseID string, taskID string) string
 	return fmt.Sprintf("/v1/databases/%v/tasks/%v/log", databaseID, taskID)
 }
 
+// ListHostTasksControlPlanePath returns the URL path to the control-plane service list-host-tasks HTTP endpoint.
+func ListHostTasksControlPlanePath(hostID string) string {
+	return fmt.Sprintf("/v1/hosts/%v/tasks", hostID)
+}
+
+// GetHostTaskControlPlanePath returns the URL path to the control-plane service get-host-task HTTP endpoint.
+func GetHostTaskControlPlanePath(hostID string, taskID string) string {
+	return fmt.Sprintf("/v1/hosts/%v/tasks/%v", hostID, taskID)
+}
+
+// GetHostTaskLogControlPlanePath returns the URL path to the control-plane service get-host-task-log HTTP endpoint.
+func GetHostTaskLogControlPlanePath(hostID string, taskID string) string {
+	return fmt.Sprintf("/v1/hosts/%v/tasks/%v/logs", hostID, taskID)
+}
+
+// ListTasksControlPlanePath returns the URL path to the control-plane service list-tasks HTTP endpoint.
+func ListTasksControlPlanePath() string {
+	return "/v1/tasks"
+}
+
 // RestoreDatabaseControlPlanePath returns the URL path to the control-plane service restore-database HTTP endpoint.
 func RestoreDatabaseControlPlanePath(databaseID string) string {
 	return fmt.Sprintf("/v1/databases/%v/restore", databaseID)

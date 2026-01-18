@@ -69,6 +69,32 @@ _use-test-config() {
 	done
 }
 
+_choose-scope() {
+	# (j:\n:) joins the array with newlines
+	local scope_choice=$(echo "host\ndatabase" | sk)
+
+	if [[ -z "${scope_choice}" ]]; then
+		return 1
+	fi
+
+	echo "using scope ${scope_choice}" >&2
+	echo "${scope_choice}"
+}
+
+_choose-host() {
+	local host_choice=$(restish host-1 list-hosts \
+		| jq -c '.hosts[]? | { id, state: .status.state, hostname, ipv4_address }' \
+		| sk --preview 'echo {} | jq')
+
+	if [[ -z "${host_choice}" ]]; then
+		return 1
+	fi
+
+	local host_id=$(jq -r '.id' <<<"${host_choice}")
+	echo "using host ${host_id}" >&2
+	echo "${host_choice}"
+}
+
 _choose-database() {
 	local database_choice=$(restish host-1 list-databases \
 		| jq -c '.databases[]? | { id, state, created_at, updated_at }' \
@@ -112,7 +138,11 @@ _choose-user() {
 }
 
 _choose-task() {
-	local task_choice=$(restish host-1 list-database-tasks $1 \
+	local scope="$1"
+	local entity_id="$2"
+	local task_choice=$(restish host-1 list-tasks \
+		--scope "${scope}" \
+		--entity-id "${entity_id}" \
 		| jq -c '.tasks[]?' \
 		| sk --preview 'echo {} | jq')
 
@@ -486,12 +516,14 @@ EOF
 }
 
 cp-follow-task() {
-	local o_database_id
+	local o_scope
+	local o_entity_id
 	local o_task_id
 	local o_help
 
 	zparseopts -D -F -K -- \
-        {d,-database-id}:=o_database_id \
+		{s,-scope}:=o_scope \
+        {e,-entity-id}:=o_entity_id \
 		{t,-task-id}:=o_task_id \
         {h,-help}=o_help || return
 
@@ -500,7 +532,8 @@ cp-follow-task() {
         return
     fi
 
-	local database_id="${o_database_id[-1]}"
+	local scope="${o_scope[-1]}"
+	local entity_id="${o_entity_id[-1]}"
     local task_id="${o_task_id[-1]}"
 
 	# If we have an api response on stdin, we'll try to extract the database ID
@@ -511,27 +544,36 @@ cp-follow-task() {
 		# echo the input for visibility
 		echo "${input}"
 
-		database_id=$(<<<"${input}" jq -r '.task.database_id')
-		task_id=$(<<<"${input}" jq -r '.task.task_id')
+		scope=$(<<<"${input}" jq -r '.task.scope // empty')
+		entity_id=$(<<<"${input}" jq -r '.task.entity_id // empty')
+		task_id=$(<<<"${input}" jq -r '.task.task_id // empty')
 
-		if [[ -z "${database_id}" || -z "${task_id}" ]]; then
+		if [[ -z "${scope}" || -z "${entity_id}" || -z "${task_id}" ]]; then
 			echo "no task object found on stdin" >&2
 			return 1
 		fi
 	fi
 
-	if [[ -z "${database_id}" ]]; then
-		local database=$(_choose-database)
+	if [[ -z "${scope}" ]]; then
+		local scope=$(_choose-scope)
 
-		if [[ -z "${database}" ]]; then
+		if [[ -z "${scope}" ]]; then
+			return 1
+		fi
+	fi
+
+	if [[ -z "${entity_id}" ]]; then
+		local entity=$(_choose-${scope})
+
+		if [[ -z "${entity}" ]]; then
 			return 1
 		fi
 
-		database_id=$(<<<"${database}" jq -r '.id')
+		entity_id=$(<<<"${entity}" jq -r '.id')
 	fi
 
 	if [[ -z "${task_id}" ]]; then
-		local task=$(_choose-task "${database_id}")
+		local task=$(_choose-task "${scope}" "${entity_id}")
 
 		if [[ -z "${task}" ]]; then
 			return 1
@@ -548,8 +590,8 @@ cp-follow-task() {
 	while :; do
 		# Get next set of entries
         resp=$(restish host-1 \
-            get-database-task-log \
-            ${database_id} \
+            get-${scope}-task-log \
+            ${entity_id} \
             ${task_id} \
             --after-entry-id "${last_entry_id}")
 
@@ -564,15 +606,15 @@ cp-follow-task() {
             last_entry_id=${next_last_entry_id}
         fi
 
-        sleep 1s
-
         [[ "${task_status}" != "completed" && \
 			"${task_status}" != "failed" && \
 			"${task_status}" != "canceled" ]] || break
+
+		sleep 1s
 	done
 
 	echo
-    echo "database ${database_id} task ${task_id} ${task_status}"
+    echo "${scope} entity ${entity_id} task ${task_id} ${task_status}"
 }
 
 #########
