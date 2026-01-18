@@ -38,7 +38,7 @@ func (w *Workflows) DeleteDatabase(ctx workflow.Context, input *DeleteDatabaseIn
 			if stateErr != nil {
 				logger.With("error", stateErr).Error("failed to update database state")
 			}
-			w.cancelTask(cleanupCtx, input.DatabaseID, input.TaskID, logger)
+			w.cancelTask(cleanupCtx, task.ScopeDatabase, input.DatabaseID, input.TaskID, logger)
 
 		}
 	}()
@@ -58,7 +58,8 @@ func (w *Workflows) DeleteDatabase(ctx workflow.Context, input *DeleteDatabaseIn
 		}
 
 		updateTaskInput := &activities.UpdateTaskInput{
-			DatabaseID:    input.DatabaseID,
+			Scope:         task.ScopeDatabase,
+			EntityID:      input.DatabaseID,
 			TaskID:        input.TaskID,
 			UpdateOptions: task.UpdateFail(cause),
 		}
@@ -68,7 +69,8 @@ func (w *Workflows) DeleteDatabase(ctx workflow.Context, input *DeleteDatabaseIn
 	}
 
 	updateTaskInput := &activities.UpdateTaskInput{
-		DatabaseID:    input.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      input.DatabaseID,
 		TaskID:        input.TaskID,
 		UpdateOptions: task.UpdateStart(),
 	}
@@ -105,7 +107,8 @@ func (w *Workflows) DeleteDatabase(ctx workflow.Context, input *DeleteDatabaseIn
 	}
 
 	updateTaskInput = &activities.UpdateTaskInput{
-		DatabaseID:    input.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      input.DatabaseID,
 		TaskID:        input.TaskID,
 		UpdateOptions: task.UpdateComplete(),
 	}

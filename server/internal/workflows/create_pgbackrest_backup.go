@@ -41,7 +41,7 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 		if errors.Is(ctx.Err(), workflow.Canceled) {
 			logger.Warn("workflow was canceled")
 			cleanupCtx := workflow.NewDisconnectedContext(ctx)
-			w.cancelTask(cleanupCtx, input.DatabaseID, input.TaskID, logger)
+			w.cancelTask(cleanupCtx, task.ScopeDatabase, input.DatabaseID, input.TaskID, logger)
 		}
 	}()
 
@@ -51,7 +51,8 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 		logger.With("error", cause).Error("failed to create pgbackrest backup")
 
 		updateTaskInput := &activities.UpdateTaskInput{
-			DatabaseID:    input.DatabaseID,
+			Scope:         task.ScopeDatabase,
+			EntityID:      input.DatabaseID,
 			TaskID:        input.TaskID,
 			UpdateOptions: task.UpdateFail(cause),
 		}
@@ -71,7 +72,8 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 	updateOptions := task.UpdateStart()
 	updateOptions.InstanceID = utils.PointerTo(instance.InstanceID)
 	updateTaskInput := &activities.UpdateTaskInput{
-		DatabaseID:    input.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      input.DatabaseID,
 		TaskID:        input.TaskID,
 		UpdateOptions: updateOptions,
 	}
@@ -122,7 +124,8 @@ func (w *Workflows) CreatePgBackRestBackup(ctx workflow.Context, input *CreatePg
 	}
 
 	updateTaskInput = &activities.UpdateTaskInput{
-		DatabaseID:    input.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      input.DatabaseID,
 		TaskID:        input.TaskID,
 		UpdateOptions: task.UpdateComplete(),
 	}

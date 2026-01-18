@@ -150,7 +150,8 @@ func (w *Workflows) updateTask(
 
 func (w *Workflows) logTaskEvent(
 	ctx workflow.Context,
-	databaseID string,
+	scope task.Scope,
+	entityID string,
 	taskID uuid.UUID,
 	entries ...task.LogEntry,
 ) error {
@@ -160,9 +161,10 @@ func (w *Workflows) logTaskEvent(
 
 	_, err := w.Activities.
 		ExecuteLogTaskEvent(ctx, &activities.LogTaskEventInput{
-			DatabaseID: databaseID,
-			TaskID:     taskID,
-			Entries:    entries,
+			Scope:    scope,
+			EntityID: entityID,
+			TaskID:   taskID,
+			Entries:  entries,
 		}).Get(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to log task event: %w", err)
@@ -173,22 +175,25 @@ func (w *Workflows) logTaskEvent(
 
 func (w *Workflows) cancelTask(
 	cleanupCtx workflow.Context,
-	databaseID string,
+	scope task.Scope,
+	entityID string,
 	taskID uuid.UUID,
 	logger *slog.Logger) {
 	updateTaskInput := &activities.UpdateTaskInput{
-		DatabaseID:    databaseID,
+		Scope:         scope,
+		EntityID:      entityID,
 		TaskID:        taskID,
 		UpdateOptions: task.UpdateCancel(),
 	}
 	_ = w.updateTask(cleanupCtx, logger, updateTaskInput)
 
-	err := w.logTaskEvent(cleanupCtx, databaseID, taskID, task.LogEntry{
+	err := w.logTaskEvent(cleanupCtx, scope, entityID, taskID, task.LogEntry{
 		Message: "task successfully canceled",
 		Fields:  map[string]any{"status": "canceled"},
 	})
-	logger.With("error", err).Error("failed to log task event")
-
+	if err != nil {
+		logger.With("error", err).Error("failed to log task event")
+	}
 }
 
 func (w *Workflows) getNodeResources(

@@ -52,13 +52,18 @@ func provideRunner(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
+		migrations, err := AllMigrations()
+		if err != nil {
+			return nil, err
+		}
+
 		locker := electionSvc.NewCandidate(ElectionName, cfg.HostID, LockTTL)
 		return NewRunner(
 			cfg.HostID,
 			store,
 			i,
 			logger,
-			allMigrations(),
+			migrations,
 			locker,
 		), nil
 	})

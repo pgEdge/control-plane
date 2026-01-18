@@ -102,21 +102,21 @@ func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*A
 				resultCh <- fmt.Errorf("failed to refresh resource %s: %w", r.Identifier().String(), err)
 			}
 		case resource.EventTypeCreate:
-			err := a.logEvent(ctxWithCancel, input.DatabaseID, input.TaskID, "creating", r, func() error {
+			err := a.logResourceEvent(ctxWithCancel, input.DatabaseID, input.TaskID, "creating", r, func() error {
 				return r.Create(ctxWithCancel, rc)
 			})
 			if err != nil {
 				resultCh <- fmt.Errorf("failed to create resource %s: %w", r.Identifier().String(), err)
 			}
 		case resource.EventTypeUpdate:
-			err := a.logEvent(ctxWithCancel, input.DatabaseID, input.TaskID, "updating", r, func() error {
+			err := a.logResourceEvent(ctxWithCancel, input.DatabaseID, input.TaskID, "updating", r, func() error {
 				return r.Update(ctxWithCancel, rc)
 			})
 			if err != nil {
 				resultCh <- fmt.Errorf("failed to update resource %s: %w", r.Identifier().String(), err)
 			}
 		case resource.EventTypeDelete:
-			err := a.logEvent(ctxWithCancel, input.DatabaseID, input.TaskID, "deleting", r, func() error {
+			err := a.logResourceEvent(ctxWithCancel, input.DatabaseID, input.TaskID, "deleting", r, func() error {
 				return r.Delete(ctxWithCancel, rc)
 			})
 			if err != nil {
@@ -146,7 +146,7 @@ func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*A
 	}, nil
 }
 
-func (a *Activities) logEvent(
+func (a *Activities) logResourceEvent(
 	ctx context.Context,
 	databaseID string,
 	taskID uuid.UUID,
@@ -162,7 +162,7 @@ func (a *Activities) logEvent(
 	}
 	// Currying AddLogEntry
 	log := func(entry task.LogEntry) error {
-		return a.TaskSvc.AddLogEntry(ctx, databaseID, taskID, entry)
+		return a.TaskSvc.AddLogEntry(ctx, task.ScopeDatabase, databaseID, taskID, entry)
 	}
 	err := log(task.LogEntry{
 		Message: fmt.Sprintf("%s resource %s", verb, resourceIdentifier),

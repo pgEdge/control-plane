@@ -537,7 +537,9 @@ func taskToAPI(t *task.Task) *api.Task {
 	}
 	return &api.Task{
 		ParentID:    parentID,
-		DatabaseID:  t.DatabaseID,
+		Scope:       t.Scope.String(),
+		EntityID:    t.EntityID,
+		DatabaseID:  utils.NillablePointerTo(t.DatabaseID),
 		TaskID:      t.TaskID.String(),
 		NodeName:    utils.NillablePointerTo(t.NodeName),
 		HostID:      utils.NillablePointerTo(t.HostID),
@@ -564,7 +566,9 @@ func taskLogToAPI(t *task.TaskLog, status task.Status) *api.TaskLog {
 		lastEntryID = utils.PointerTo(t.LastEntryID.String())
 	}
 	return &api.TaskLog{
-		DatabaseID:  t.DatabaseID,
+		Scope:       t.Scope.String(),
+		EntityID:    t.EntityID,
+		DatabaseID:  utils.NillablePointerTo(t.DatabaseID),
 		TaskID:      t.TaskID.String(),
 		TaskStatus:  string(status),
 		LastEntryID: lastEntryID,

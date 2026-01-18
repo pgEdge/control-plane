@@ -11,6 +11,8 @@ import (
 
 type StoredTaskLogEntry struct {
 	storage.StoredValue
+	Scope      Scope          `json:"scope"`
+	EntityID   string         `json:"entity_id"`
 	DatabaseID string         `json:"database_id"`
 	TaskID     uuid.UUID      `json:"task_id"`
 	EntryID    uuid.UUID      `json:"entry_id"`
@@ -32,19 +34,40 @@ func NewTaskLogEntryStore(client *clientv3.Client, root string) *TaskLogEntrySto
 }
 
 func (s *TaskLogEntryStore) Prefix() string {
-	return storage.Prefix("/", s.root, "task_log_messages")
+	return storage.Prefix("/", s.root, "task_log_entries")
 }
 
+// EntityPrefix returns the prefix for all task log entries for a given scope and entity.
+func (s *TaskLogEntryStore) EntityPrefix(scope Scope, entityID string) string {
+	return storage.Prefix(s.Prefix(), scope.String(), entityID)
+}
+
+// DatabasePrefix returns the prefix for all task log entries for a given database.
+// Deprecated: Use EntityPrefix(ScopeDatabase, databaseID) instead.
 func (s *TaskLogEntryStore) DatabasePrefix(databaseID string) string {
-	return storage.Prefix(s.Prefix(), databaseID)
+	return s.EntityPrefix(ScopeDatabase, databaseID)
 }
 
-func (s *TaskLogEntryStore) TaskPrefix(databaseID string, taskID uuid.UUID) string {
-	return storage.Prefix(s.DatabasePrefix(databaseID), taskID.String())
+// TaskPrefix returns the prefix for all log entries for a specific task.
+func (s *TaskLogEntryStore) TaskPrefix(scope Scope, entityID string, taskID uuid.UUID) string {
+	return storage.Prefix(s.EntityPrefix(scope, entityID), taskID.String())
 }
 
-func (s *TaskLogEntryStore) Key(databaseID string, taskID, entryID uuid.UUID) string {
-	return storage.Key(s.TaskPrefix(databaseID, taskID), entryID.String())
+// TaskPrefixDeprecated returns the prefix for all log entries for a specific task.
+// Deprecated: Use TaskPrefix(ScopeDatabase, databaseID, taskID) instead.
+func (s *TaskLogEntryStore) TaskPrefixDeprecated(databaseID string, taskID uuid.UUID) string {
+	return s.TaskPrefix(ScopeDatabase, databaseID, taskID)
+}
+
+// Key returns the storage key for a task log entry.
+func (s *TaskLogEntryStore) Key(scope Scope, entityID string, taskID, entryID uuid.UUID) string {
+	return storage.Key(s.TaskPrefix(scope, entityID, taskID), entryID.String())
+}
+
+// KeyDeprecated returns the storage key for a task log entry.
+// Deprecated: Use Key(ScopeDatabase, databaseID, taskID, entryID) instead.
+func (s *TaskLogEntryStore) KeyDeprecated(databaseID string, taskID, entryID uuid.UUID) string {
+	return s.Key(ScopeDatabase, databaseID, taskID, entryID)
 }
 
 type TaskLogOptions struct {
@@ -52,8 +75,8 @@ type TaskLogOptions struct {
 	AfterEntryID uuid.UUID
 }
 
-func (s *TaskLogEntryStore) GetAllByTaskID(databaseID string, taskID uuid.UUID, options TaskLogOptions) storage.GetMultipleOp[*StoredTaskLogEntry] {
-	rangeStart := s.TaskPrefix(databaseID, taskID)
+func (s *TaskLogEntryStore) GetAllByTask(scope Scope, entityID string, taskID uuid.UUID, options TaskLogOptions) storage.GetMultipleOp[*StoredTaskLogEntry] {
+	rangeStart := s.TaskPrefix(scope, entityID, taskID)
 	rangeEnd := clientv3.GetPrefixRangeEnd(rangeStart)
 
 	var opOptions []clientv3.OpOption
@@ -64,7 +87,7 @@ func (s *TaskLogEntryStore) GetAllByTaskID(databaseID string, taskID uuid.UUID, 
 		// We intentionally treat this as inclusive so that we still return an
 		// entry when AfterEntryID is the last entry. Callers must ignore the
 		// entry with EntryID == AfterEntryID.
-		rangeStart = s.Key(databaseID, taskID, options.AfterEntryID)
+		rangeStart = s.Key(scope, entityID, taskID, options.AfterEntryID)
 	}
 	opOptions = append(
 		opOptions,
@@ -75,17 +98,35 @@ func (s *TaskLogEntryStore) GetAllByTaskID(databaseID string, taskID uuid.UUID, 
 	return storage.NewGetRangeOp[*StoredTaskLogEntry](s.client, rangeStart, rangeEnd, opOptions...)
 }
 
+// GetAllByTaskID retrieves all log entries for a task.
+// Deprecated: Use GetAllByTask(ScopeDatabase, databaseID, taskID, options) instead.
+func (s *TaskLogEntryStore) GetAllByTaskID(databaseID string, taskID uuid.UUID, options TaskLogOptions) storage.GetMultipleOp[*StoredTaskLogEntry] {
+	return s.GetAllByTask(ScopeDatabase, databaseID, taskID, options)
+}
+
 func (s *TaskLogEntryStore) Put(item *StoredTaskLogEntry) storage.PutOp[*StoredTaskLogEntry] {
-	key := s.Key(item.DatabaseID, item.TaskID, item.EntryID)
+	key := s.Key(item.Scope, item.EntityID, item.TaskID, item.EntryID)
 	return storage.NewPutOp(s.client, key, item)
 }
 
-func (s *TaskLogEntryStore) DeleteByTaskID(databaseID string, taskID uuid.UUID) storage.DeleteOp {
-	prefix := s.TaskPrefix(databaseID, taskID)
+func (s *TaskLogEntryStore) DeleteByTask(scope Scope, entityID string, taskID uuid.UUID) storage.DeleteOp {
+	prefix := s.TaskPrefix(scope, entityID, taskID)
 	return storage.NewDeletePrefixOp(s.client, prefix)
 }
 
-func (s *TaskLogEntryStore) DeleteByDatabaseID(databaseID string) storage.DeleteOp {
-	prefix := s.DatabasePrefix(databaseID)
+// DeleteByTaskID deletes all log entries for a task.
+// Deprecated: Use DeleteByTask(ScopeDatabase, databaseID, taskID) instead.
+func (s *TaskLogEntryStore) DeleteByTaskID(databaseID string, taskID uuid.UUID) storage.DeleteOp {
+	return s.DeleteByTask(ScopeDatabase, databaseID, taskID)
+}
+
+func (s *TaskLogEntryStore) DeleteByEntity(scope Scope, entityID string) storage.DeleteOp {
+	prefix := s.EntityPrefix(scope, entityID)
 	return storage.NewDeletePrefixOp(s.client, prefix)
+}
+
+// DeleteByDatabaseID deletes all log entries for a database.
+// Deprecated: Use DeleteByEntity(ScopeDatabase, databaseID) instead.
+func (s *TaskLogEntryStore) DeleteByDatabaseID(databaseID string) storage.DeleteOp {
+	return s.DeleteByEntity(ScopeDatabase, databaseID)
 }

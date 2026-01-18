@@ -82,7 +82,7 @@ func (a *Activities) CreatePgBackRestBackup(ctx context.Context, input *CreatePg
 		}
 	}()
 
-	taskLogWriter := task.NewTaskLogWriter(ctx, taskSvc, input.DatabaseID, input.TaskID)
+	taskLogWriter := task.NewTaskLogWriter(ctx, taskSvc, task.ScopeDatabase, input.DatabaseID, input.TaskID)
 	defer taskLogWriter.Close()
 
 	err = orch.CreatePgBackRestBackup(ctx, taskLogWriter, input.InstanceID, input.BackupOptions)

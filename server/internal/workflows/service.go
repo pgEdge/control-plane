@@ -48,10 +48,11 @@ func (s *Service) CreateDatabase(ctx context.Context, spec *database.Spec) (*tas
 	databaseID := spec.DatabaseID
 	// Clear out any old tasks. This can happen if you were to recreate a
 	// database with the same ID.
-	if err := s.taskSvc.DeleteAllTasks(ctx, databaseID); err != nil {
+	if err := s.taskSvc.DeleteAllTasks(ctx, task.ScopeDatabase, databaseID); err != nil {
 		return nil, fmt.Errorf("failed to delete old task logs: %w", err)
 	}
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		Scope:      task.ScopeDatabase,
 		DatabaseID: databaseID,
 		Type:       task.TypeCreate,
 	})
@@ -73,6 +74,7 @@ func (s *Service) CreateDatabase(ctx context.Context, spec *database.Spec) (*tas
 func (s *Service) UpdateDatabase(ctx context.Context, spec *database.Spec, forceUpdate bool, removeHosts ...string) (*task.Task, error) {
 	databaseID := spec.DatabaseID
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		Scope:      task.ScopeDatabase,
 		DatabaseID: databaseID,
 		Type:       task.TypeUpdate,
 	})
@@ -95,6 +97,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, spec *database.Spec, force
 
 func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) (*task.Task, error) {
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		Scope:      task.ScopeDatabase,
 		DatabaseID: databaseID,
 		Type:       task.TypeDelete,
 	})
@@ -122,6 +125,7 @@ func (s *Service) CreatePgBackRestBackup(
 	backupOptions *pgbackrest.BackupOptions,
 ) (*task.Task, error) {
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		Scope:      task.ScopeDatabase,
 		DatabaseID: databaseID,
 		Type:       task.TypeNodeBackup,
 	})
@@ -153,6 +157,7 @@ func (s *Service) PgBackRestRestore(
 	databaseID := spec.DatabaseID
 
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		Scope:      task.ScopeDatabase,
 		DatabaseID: databaseID,
 		Type:       task.TypeRestore,
 	})
@@ -165,6 +170,7 @@ func (s *Service) PgBackRestRestore(
 	nodeTasks := []*task.Task{}
 	for _, node := range targetNodes {
 		nt, err := s.taskSvc.CreateTask(ctx, task.Options{
+			Scope:      task.ScopeDatabase,
 			ParentID:   t.TaskID,
 			DatabaseID: databaseID,
 			NodeName:   node,
@@ -218,7 +224,7 @@ func (s *Service) createWorkflow(ctx context.Context, t *task.Task, wf workflow.
 
 func (s *Service) abortTasks(ctx context.Context, tasks ...*task.Task) {
 	for _, t := range tasks {
-		err := s.taskSvc.DeleteTask(ctx, t.DatabaseID, t.TaskID)
+		err := s.taskSvc.DeleteTask(ctx, t.Scope, t.EntityID, t.TaskID)
 		if err != nil {
 			s.logger.Err(err).
 				Str("database_id", t.DatabaseID).
@@ -263,6 +269,7 @@ func (s *Service) ValidateSpec(ctx context.Context, input *ValidateSpecInput) (*
 
 func (s *Service) RestartInstance(ctx context.Context, input *RestartInstanceInput) (*task.Task, error) {
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		Scope:      task.ScopeDatabase,
 		DatabaseID: input.DatabaseID,
 		InstanceID: input.InstanceID,
 		Type:       task.TypeRestartInstance,
@@ -281,6 +288,7 @@ func (s *Service) RestartInstance(ctx context.Context, input *RestartInstanceInp
 
 func (s *Service) StopInstance(ctx context.Context, input *StopInstanceInput) (*task.Task, error) {
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		Scope:      task.ScopeDatabase,
 		DatabaseID: input.DatabaseID,
 		InstanceID: input.InstanceID,
 		HostID:     input.HostID,
@@ -300,6 +308,7 @@ func (s *Service) StopInstance(ctx context.Context, input *StopInstanceInput) (*
 
 func (s *Service) StartInstance(ctx context.Context, input *StartInstanceInput) (*task.Task, error) {
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		Scope:      task.ScopeDatabase,
 		DatabaseID: input.DatabaseID,
 		InstanceID: input.InstanceID,
 		HostID:     input.HostID,
@@ -317,13 +326,13 @@ func (s *Service) StartInstance(ctx context.Context, input *StartInstanceInput) 
 	return t, nil
 }
 
-func (s *Service) CancelDatabaseTask(ctx context.Context, DatabaseID string, taskID uuid.UUID) (*task.Task, error) {
-	t, err := s.taskSvc.GetTask(ctx, DatabaseID, taskID)
+func (s *Service) CancelDatabaseTask(ctx context.Context, databaseID string, taskID uuid.UUID) (*task.Task, error) {
+	t, err := s.taskSvc.GetTask(ctx, task.ScopeDatabase, databaseID, taskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve task from database : %w", err)
 	}
 	if t.WorkflowInstanceID == "" {
-		return nil, fmt.Errorf("no worflow instances associated with task")
+		return nil, fmt.Errorf("no workflow instances associated with task")
 	}
 
 	t.Status = task.StatusCanceling
@@ -331,17 +340,17 @@ func (s *Service) CancelDatabaseTask(ctx context.Context, DatabaseID string, tas
 	if err != nil {
 		return t, fmt.Errorf("failed to update task status to canceling  %w", err)
 	}
-	_ = s.taskSvc.AddLogEntry(ctx, DatabaseID, taskID, task.LogEntry{
+	_ = s.taskSvc.AddLogEntry(ctx, task.ScopeDatabase, databaseID, taskID, task.LogEntry{
 		Message: "task is canceling",
 		Fields:  map[string]any{"status": "canceling"},
 	})
 
-	wrkflw_instance := core.WorkflowInstance{
+	workflowInstance := core.WorkflowInstance{
 		InstanceID:  t.WorkflowInstanceID,
 		ExecutionID: t.WorkflowExecutionID,
 	}
 
-	if err := s.client.CancelWorkflowInstance(ctx, &wrkflw_instance); err != nil {
+	if err := s.client.CancelWorkflowInstance(ctx, &workflowInstance); err != nil {
 		return nil, fmt.Errorf("failed to cancel workflow instance %w", err)
 	}
 
@@ -351,6 +360,7 @@ func (s *Service) CancelDatabaseTask(ctx context.Context, DatabaseID string, tas
 
 func (s *Service) SwitchoverDatabaseNode(ctx context.Context, input *SwitchoverInput) (*task.Task, error) {
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		Scope:      task.ScopeDatabase,
 		DatabaseID: input.DatabaseID,
 		InstanceID: input.CandidateInstanceID,
 		NodeName:   input.NodeName,
@@ -371,6 +381,7 @@ func (s *Service) SwitchoverDatabaseNode(ctx context.Context, input *SwitchoverI
 
 func (s *Service) FailoverDatabaseNode(ctx context.Context, input *FailoverInput) (*task.Task, error) {
 	t, err := s.taskSvc.CreateTask(ctx, task.Options{
+		Scope:      task.ScopeDatabase,
 		DatabaseID: input.DatabaseID,
 		InstanceID: input.CandidateInstanceID,
 		NodeName:   input.NodeName,
@@ -397,6 +408,7 @@ func (s *Service) RemoveHost(ctx context.Context, input *RemoveHostInput) ([]*ta
 
 	for _, dbInput := range input.UpdateDatabaseInputs {
 		dt, err := s.taskSvc.CreateTask(ctx, task.Options{
+			Scope:      task.ScopeDatabase,
 			DatabaseID: dbInput.Spec.DatabaseID,
 			Type:       task.TypeUpdate,
 		})

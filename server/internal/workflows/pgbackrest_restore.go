@@ -31,7 +31,7 @@ func (w *Workflows) PgBackRestRestore(ctx workflow.Context, input *PgBackRestRes
 		if errors.Is(ctx.Err(), workflow.Canceled) {
 			logger.Warn("workflow was canceled")
 			cleanupCtx := workflow.NewDisconnectedContext(ctx)
-			w.cancelTask(cleanupCtx, input.Spec.DatabaseID, input.TaskID, logger)
+			w.cancelTask(cleanupCtx, task.ScopeDatabase, input.Spec.DatabaseID, input.TaskID, logger)
 		}
 	}()
 
@@ -50,7 +50,8 @@ func (w *Workflows) PgBackRestRestore(ctx workflow.Context, input *PgBackRestRes
 	}
 
 	updateTaskInput := &activities.UpdateTaskInput{
-		DatabaseID:    input.Spec.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      input.Spec.DatabaseID,
 		TaskID:        input.TaskID,
 		UpdateOptions: task.UpdateStart(),
 	}
@@ -103,7 +104,8 @@ func (w *Workflows) PgBackRestRestore(ctx workflow.Context, input *PgBackRestRes
 	}
 
 	updateTaskInput = &activities.UpdateTaskInput{
-		DatabaseID:    input.Spec.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      input.Spec.DatabaseID,
 		TaskID:        input.TaskID,
 		UpdateOptions: task.UpdateComplete(),
 	}
@@ -135,8 +137,9 @@ func (w *Workflows) handlePgBackRestRestoreFailed(
 	}
 	for _, taskID := range input.NodeTaskIDs {
 		updateTaskInput := &activities.UpdateTaskInput{
-			DatabaseID: input.Spec.DatabaseID,
-			TaskID:     taskID,
+			Scope:    task.ScopeDatabase,
+			EntityID: input.Spec.DatabaseID,
+			TaskID:   taskID,
 			UpdateOptions: task.UpdateFail(
 				fmt.Errorf("parent task failed: %w", cause),
 			),
@@ -145,7 +148,8 @@ func (w *Workflows) handlePgBackRestRestoreFailed(
 	}
 
 	updateTaskInput := &activities.UpdateTaskInput{
-		DatabaseID:    input.Spec.DatabaseID,
+		Scope:         task.ScopeDatabase,
+		EntityID:      input.Spec.DatabaseID,
 		TaskID:        input.TaskID,
 		UpdateOptions: task.UpdateFail(cause),
 	}

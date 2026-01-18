@@ -14,7 +14,8 @@ import (
 )
 
 type UpdateTaskInput struct {
-	DatabaseID    string             `json:"database_id"`
+	Scope         task.Scope         `json:"scope"`
+	EntityID      string             `json:"entity_id"`
 	TaskID        uuid.UUID          `json:"task_id"`
 	UpdateOptions task.UpdateOptions `json:"update_options,omitempty"`
 }
@@ -36,7 +37,8 @@ func (a *Activities) ExecuteUpdateTask(
 
 func (a *Activities) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*UpdateTaskOutput, error) {
 	logger := activity.Logger(ctx).With(
-		"database_id", input.DatabaseID,
+		"scope", input.Scope,
+		"entity_id", input.EntityID,
 		"task_id", input.TaskID.String(),
 	)
 	logger.Info("updating task")
@@ -46,7 +48,7 @@ func (a *Activities) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*U
 		return nil, err
 	}
 
-	t, err := service.GetTask(ctx, input.DatabaseID, input.TaskID)
+	t, err := service.GetTask(ctx, input.Scope, input.EntityID, input.TaskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get task: %w", err)
 	}

@@ -10,6 +10,15 @@ var Task = g.Type("Task", func() {
 		g.Description("The parent task ID of the task.")
 		g.Example("439eb515-e700-4740-b508-4a3f12ec4f83")
 	})
+	g.Attribute("scope", g.String, func() {
+		g.Enum("database", "host")
+		g.Description("The scope of the task (database or host).")
+		g.Example("database")
+	})
+	g.Attribute("entity_id", g.String, func() {
+		g.Description("The entity ID (database_id or host_id) that this task belongs to.")
+		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+	})
 	g.Attribute("database_id", g.String, func() {
 		g.Description("The database ID of the task.")
 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
@@ -55,9 +64,11 @@ var Task = g.Type("Task", func() {
 		g.Example("failed to connect to database")
 	})
 
-	g.Required("database_id", "task_id", "created_at", "type", "status")
+	g.Required("scope", "entity_id", "task_id", "created_at", "type", "status")
 
 	g.Example(map[string]any{
+		"scope":        "database",
+		"entity_id":    "storefront",
 		"completed_at": "2025-06-18T16:52:35Z",
 		"created_at":   "2025-06-18T16:52:05Z",
 		"database_id":  "storefront",
@@ -88,8 +99,17 @@ var TaskLogEntry = g.Type("TaskLogEntry", func() {
 })
 
 var TaskLog = g.Type("TaskLog", func() {
+	g.Attribute("scope", g.String, func() {
+		g.Enum("database", "host")
+		g.Description("The scope of the task (database or host).")
+		g.Example("database")
+	})
+	g.Attribute("entity_id", g.String, func() {
+		g.Description("The entity ID (database_id or host_id) that this task log belongs to.")
+		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+	})
 	g.Attribute("database_id", g.String, func() {
-		g.Description("The database ID of the task log.")
+		g.Description("The database ID of the task log. Deprecated: use entity_id instead.")
 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 	})
 	g.Attribute("task_id", g.String, func() {
@@ -109,12 +129,13 @@ var TaskLog = g.Type("TaskLog", func() {
 		g.Description("Entries in the task log.")
 	})
 
-	g.Required("database_id", "task_id", "task_status", "entries")
+	g.Required("scope", "entity_id", "task_id", "task_status", "entries")
 
 	g.Example("node_backup task log", func() {
 		g.Description("The task log from a 'node_backup' task. These messages are produced by pgbackrest.")
 		g.Value(map[string]any{
-			"database_id": "storefront",
+			"scope":     "database",
+			"entity_id": "storefront",
 			"entries": []map[string]any{
 				{
 					"message":   "P00   INFO: backup command begin 2.55.1: --config=/opt/pgedge/configs/pgbackrest.backup.conf --exec-id=198-b17fae6e --log-level-console=info --no-log-timestamp --pg1-path=/opt/pgedge/data/pgdata --pg1-user=pgedge --repo1-cipher-type=none --repo1-path=/backups/databases/storefront/n1 --repo1-retention-full=7 --repo1-retention-full-type=time --repo1-type=posix --stanza=db --start-fast --type=full",
@@ -178,7 +199,8 @@ var TaskLog = g.Type("TaskLog", func() {
 	g.Example("update task log", func() {
 		g.Description("This is the task log of an update task. This example excludes many entries for brevity.")
 		g.Value(map[string]any{
-			"database_id": "storefront",
+			"scope":     "database",
+			"entity_id": "storefront",
 			"entries": []map[string]any{
 				{
 					"message":   "refreshing current state",
@@ -247,6 +269,8 @@ var ListDatabaseTasksResponse = g.Type("ListDatabaseTasksResponse", func() {
 			{
 				"completed_at": "2025-06-18T17:54:36Z",
 				"created_at":   "2025-06-18T17:54:28Z",
+				"scope":        "database",
+				"entity_id":    "storefront",
 				"database_id":  "storefront",
 				"instance_id":  "storefront-n1-689qacsi",
 				"status":       "completed",
@@ -256,6 +280,8 @@ var ListDatabaseTasksResponse = g.Type("ListDatabaseTasksResponse", func() {
 			{
 				"completed_at": "2025-06-18T17:54:04Z",
 				"created_at":   "2025-06-18T17:53:17Z",
+				"scope":        "database",
+				"entity_id":    "storefront",
 				"database_id":  "storefront",
 				"status":       "completed",
 				"task_id":      "0197842c-7c4f-7a8c-829e-7405c2a41c8c",
@@ -264,6 +290,8 @@ var ListDatabaseTasksResponse = g.Type("ListDatabaseTasksResponse", func() {
 			{
 				"completed_at": "2025-06-18T17:23:28Z",
 				"created_at":   "2025-06-18T17:23:14Z",
+				"scope":        "database",
+				"entity_id":    "storefront",
 				"database_id":  "storefront",
 				"status":       "completed",
 				"task_id":      "01978410-fb5d-7cd2-bbd2-66c0bf929dc0",
@@ -272,6 +300,8 @@ var ListDatabaseTasksResponse = g.Type("ListDatabaseTasksResponse", func() {
 			{
 				"completed_at": "2025-06-18T16:52:35Z",
 				"created_at":   "2025-06-18T16:52:05Z",
+				"scope":        "database",
+				"entity_id":    "storefront",
 				"database_id":  "storefront",
 				"status":       "completed",
 				"task_id":      "019783f4-75f4-71e7-85a3-c9b96b345d77",

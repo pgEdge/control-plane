@@ -25,19 +25,19 @@ func NewTaskStore(client *clientv3.Client, root string) *TaskStore {
 }
 
 func (s *TaskStore) Prefix() string {
-	return storage.Prefix("/", s.root, "tasks")
+	return storage.Prefix("/", s.root, "tasks_v2")
 }
 
-func (s *TaskStore) DatabasePrefix(databaseID string) string {
-	return storage.Prefix(s.Prefix(), databaseID)
+func (s *TaskStore) EntityPrefix(scope Scope, entityID string) string {
+	return storage.Prefix(s.Prefix(), scope.String(), entityID)
 }
 
-func (s *TaskStore) Key(databaseID string, taskID uuid.UUID) string {
-	return storage.Key(s.DatabasePrefix(databaseID), taskID.String())
+func (s *TaskStore) Key(scope Scope, entityID string, taskID uuid.UUID) string {
+	return storage.Key(s.EntityPrefix(scope, entityID), taskID.String())
 }
 
-func (s *TaskStore) GetByKey(databaseID string, taskID uuid.UUID) storage.GetOp[*StoredTask] {
-	key := s.Key(databaseID, taskID)
+func (s *TaskStore) GetByKey(scope Scope, entityID string, taskID uuid.UUID) storage.GetOp[*StoredTask] {
+	key := s.Key(scope, entityID, taskID)
 	return storage.NewGetOp[*StoredTask](s.client, key)
 }
 
@@ -63,8 +63,8 @@ type TaskListOptions struct {
 	Statuses []Status
 }
 
-func (s *TaskStore) GetAllByDatabaseID(databaseID string, options TaskListOptions) storage.GetMultipleOp[*StoredTask] {
-	rangeStart := s.DatabasePrefix(databaseID)
+func (s *TaskStore) GetAllByEntity(scope Scope, entityID string, options TaskListOptions) storage.GetMultipleOp[*StoredTask] {
+	rangeStart := s.EntityPrefix(scope, entityID)
 	rangeEnd := clientv3.GetPrefixRangeEnd(rangeStart)
 
 	var opOptions []clientv3.OpOption
@@ -78,9 +78,9 @@ func (s *TaskStore) GetAllByDatabaseID(databaseID string, options TaskListOption
 	if options.AfterTaskID != uuid.Nil {
 		switch sortOrder {
 		case clientv3.SortAscend:
-			rangeStart = s.Key(databaseID, options.AfterTaskID) + "0"
+			rangeStart = s.Key(scope, entityID, options.AfterTaskID) + "0"
 		case clientv3.SortDescend:
-			rangeEnd = s.Key(databaseID, options.AfterTaskID)
+			rangeEnd = s.Key(scope, entityID, options.AfterTaskID)
 		}
 	}
 
@@ -90,21 +90,21 @@ func (s *TaskStore) GetAllByDatabaseID(databaseID string, options TaskListOption
 }
 
 func (s *TaskStore) Create(item *StoredTask) storage.PutOp[*StoredTask] {
-	key := s.Key(item.Task.DatabaseID, item.Task.TaskID)
+	key := s.Key(item.Task.Scope, item.Task.EntityID, item.Task.TaskID)
 	return storage.NewCreateOp(s.client, key, item)
 }
 
 func (s *TaskStore) Update(item *StoredTask) storage.PutOp[*StoredTask] {
-	key := s.Key(item.Task.DatabaseID, item.Task.TaskID)
+	key := s.Key(item.Task.Scope, item.Task.EntityID, item.Task.TaskID)
 	return storage.NewUpdateOp(s.client, key, item)
 }
 
-func (s *TaskStore) Delete(databaseID string, taskID uuid.UUID) storage.DeleteOp {
-	key := s.Key(databaseID, taskID)
+func (s *TaskStore) Delete(scope Scope, entityID string, taskID uuid.UUID) storage.DeleteOp {
+	key := s.Key(scope, entityID, taskID)
 	return storage.NewDeleteKeyOp(s.client, key)
 }
 
-func (s *TaskStore) DeleteByDatabaseID(databaseID string) storage.DeleteOp {
-	prefix := s.DatabasePrefix(databaseID)
+func (s *TaskStore) DeleteByEntity(scope Scope, entityID string) storage.DeleteOp {
+	prefix := s.EntityPrefix(scope, entityID)
 	return storage.NewDeletePrefixOp(s.client, prefix)
 }

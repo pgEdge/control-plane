@@ -3598,7 +3598,9 @@ func unmarshalPgEdgeVersionResponseBodyToControlplanePgEdgeVersion(v *PgEdgeVers
 func unmarshalTaskResponseBodyToControlplaneTask(v *TaskResponseBody) *controlplane.Task {
 	res := &controlplane.Task{
 		ParentID:    v.ParentID,
-		DatabaseID:  *v.DatabaseID,
+		Scope:       *v.Scope,
+		EntityID:    *v.EntityID,
+		DatabaseID:  v.DatabaseID,
 		NodeName:    v.NodeName,
 		InstanceID:  v.InstanceID,
 		HostID:      v.HostID,
