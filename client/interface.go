@@ -31,6 +31,8 @@ type Client interface {
 	GetHostTaskLog(ctx context.Context, req *api.GetHostTaskLogPayload) (*api.TaskLog, error)
 	RestoreDatabase(ctx context.Context, req *api.RestoreDatabasePayload) (*api.RestoreDatabaseResponse, error)
 	GetVersion(ctx context.Context) (*api.VersionInfo, error)
+	StopInstance(ctx context.Context, req *api.StopInstancePayload) (*api.StopInstanceResponse, error)
+	StartInstance(ctx context.Context, req *api.StartInstancePayload) (*api.StartInstanceResponse, error)
 	RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (*api.RestartInstanceResponse, error)
 	CancelDatabaseTask(ctx context.Context, req *api.CancelDatabaseTaskPayload) (res *api.Task, err error)
 	SwitchoverDatabaseNode(ctx context.Context, req *api.SwitchoverDatabaseNodePayload) (*api.SwitchoverDatabaseNodeResponse, error)

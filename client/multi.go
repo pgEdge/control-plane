@@ -279,6 +279,22 @@ func (c *MultiServerClient) GetVersion(ctx context.Context) (res *api.VersionInf
 	return server.GetVersion(ctx)
 }
 
+func (c *MultiServerClient) StopInstance(ctx context.Context, req *api.StopInstancePayload) (*api.StopInstanceResponse, error) {
+	server, err := c.liveServer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return server.StopInstance(ctx, req)
+}
+
+func (c *MultiServerClient) StartInstance(ctx context.Context, req *api.StartInstancePayload) (*api.StartInstanceResponse, error) {
+	server, err := c.liveServer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return server.StartInstance(ctx, req)
+}
+
 func (c *MultiServerClient) RestartInstance(ctx context.Context, req *api.RestartInstancePayload) (res *api.RestartInstanceResponse, err error) {
 	server, err := c.liveServer(ctx)
 	if err != nil {
