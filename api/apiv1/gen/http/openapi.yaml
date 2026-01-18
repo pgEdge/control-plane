@@ -1211,6 +1211,7 @@ paths:
           schema:
             $ref: '#/definitions/RemoveHostResponse'
             required:
+              - task
               - update_database_tasks
         "400":
           description: Bad Request response.
@@ -5027,6 +5028,8 @@ definitions:
     title: RemoveHostResponse
     type: object
     properties:
+      task:
+        $ref: '#/definitions/Task'
       update_database_tasks:
         type: array
         items:
@@ -5058,6 +5061,15 @@ definitions:
             task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
             type: create
     example:
+      task:
+        completed_at: "2025-06-18T16:52:35Z"
+        created_at: "2025-06-18T16:52:05Z"
+        database_id: storefront
+        entity_id: storefront
+        scope: database
+        status: completed
+        task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+        type: create
       update_database_tasks:
         - completed_at: "2025-06-18T16:52:35Z"
           created_at: "2025-06-18T16:52:05Z"
@@ -5076,6 +5088,7 @@ definitions:
           task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
           type: create
     required:
+      - task
       - update_database_tasks
   RestartInstanceResponse:
     title: RestartInstanceResponse

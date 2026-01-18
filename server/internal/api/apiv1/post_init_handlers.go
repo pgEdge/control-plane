@@ -200,23 +200,19 @@ func (s *PostInitHandlers) RemoveHost(ctx context.Context, req *api.RemoveHostPa
 		return nil, apiErr(err)
 	}
 
-	updateDatabaseInputs, err := s.prepareDatabaseUpdates(ctx, hostID, dbs)
+	specs, err := s.prepareDatabaseUpdates(ctx, hostID, dbs)
 	if err != nil {
-		return nil, err
+		return nil, apiErr(err)
 	}
 
-	input := &workflows.RemoveHostInput{
-		HostID:               hostID,
-		UpdateDatabaseInputs: updateDatabaseInputs,
-	}
-
-	dbTasks, err := s.workflowSvc.RemoveHost(ctx, input)
+	output, err := s.workflowSvc.RemoveHost(ctx, hostID, specs...)
 	if err != nil {
 		return nil, apiErr(err)
 	}
 
 	return &api.RemoveHostResponse{
-		UpdateDatabaseTasks: tasksToAPI(dbTasks),
+		Task:                taskToAPI(output.Task),
+		UpdateDatabaseTasks: tasksToAPI(output.DatabaseTasks),
 	}, nil
 }
 
@@ -248,36 +244,22 @@ func (s *PostInitHandlers) validateHostRemoval(ctx context.Context, hostID strin
 }
 
 // prepareDatabaseUpdates prepares workflow inputs for all databases affected by host removal.
-func (s *PostInitHandlers) prepareDatabaseUpdates(ctx context.Context, hostID string, dbs []*database.Database) ([]*workflows.UpdateDatabaseInput, error) {
-	updateInputs := make([]*workflows.UpdateDatabaseInput, 0, len(dbs))
-
+func (s *PostInitHandlers) prepareDatabaseUpdates(ctx context.Context, hostID string, dbs []*database.Database) ([]*database.Spec, error) {
+	specs := make([]*database.Spec, 0, len(dbs))
 	for _, db := range dbs {
-		if err := s.updateDatabaseForHostRemoval(ctx, db, hostID); err != nil {
-			return nil, err
+		if ok := db.Spec.RemoveHost(hostID); !ok {
+			return nil, fmt.Errorf("%s host id not found/removed", hostID)
 		}
 
-		updateInputs = append(updateInputs, &workflows.UpdateDatabaseInput{
-			Spec:        db.Spec,
-			ForceUpdate: false,
-			RemoveHosts: []string{hostID},
-		})
+		_, err := s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateModifying, db.Spec)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update database: %w", err)
+		}
+
+		specs = append(specs, db.Spec)
 	}
 
-	return updateInputs, nil
-}
-
-// updateDatabaseForHostRemoval removes the host from a database spec and updates the database state.
-func (s *PostInitHandlers) updateDatabaseForHostRemoval(ctx context.Context, db *database.Database, hostID string) error {
-	if ok := db.Spec.RemoveHost(hostID); !ok {
-		return apiErr(fmt.Errorf("%s host id not found/removed", hostID))
-	}
-
-	_, err := s.dbSvc.UpdateDatabase(ctx, database.DatabaseStateModifying, db.Spec)
-	if err != nil {
-		return apiErr(err)
-	}
-
-	return nil
+	return specs, nil
 }
 
 // ListDatabases fetches all databases from the database service and converts them to API format.

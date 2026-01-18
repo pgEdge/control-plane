@@ -101,8 +101,15 @@ func (c *Cluster) Remove(t testing.TB, hostID string) {
 		HostID: controlplane.Identifier(hostID),
 	})
 	require.NoError(t, err)
-	require.NotNil(t, resp, "RemoveHost response should not be nil")
-	require.NotNil(t, resp.UpdateDatabaseTasks, "UpdateDatabaseTasks should always be present (empty slice if no databases)")
+	require.NotNil(t, resp)
+	require.NotNil(t, resp.Task)
+	require.NotNil(t, resp.UpdateDatabaseTasks)
+
+	_, err = c.client.WaitForHostTask(t.Context(), &controlplane.GetHostTaskPayload{
+		HostID: controlplane.Identifier(hostID),
+		TaskID: resp.Task.TaskID,
+	})
+	require.NoError(t, err)
 
 	delete(c.hosts, hostID)
 	c.client = hostsClient(t, c.hosts)
