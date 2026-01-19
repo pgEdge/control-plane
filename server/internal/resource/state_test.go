@@ -2,6 +2,7 @@ package resource_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/pgEdge/control-plane/server/internal/resource"
@@ -13,8 +14,8 @@ func TestState(t *testing.T) {
 	t.Run("PlanRefresh", func(t *testing.T) {
 		t.Run("from empty state", func(t *testing.T) {
 			resource1 := &testResource{
-				identifier: testResourceID("test1"),
-				dependencies: []resource.Identifier{
+				ID: "test1",
+				TestDependencies: []resource.Identifier{
 					testResourceID("test2"),
 				},
 			}
@@ -22,8 +23,8 @@ func TestState(t *testing.T) {
 			require.NoError(t, err)
 
 			resource2 := &testResource{
-				identifier: testResourceID("test2"),
-				dependencies: []resource.Identifier{
+				ID: "test2",
+				TestDependencies: []resource.Identifier{
 					testResourceID("test3"),
 				},
 			}
@@ -31,7 +32,7 @@ func TestState(t *testing.T) {
 			require.NoError(t, err)
 
 			resource3 := &testResource{
-				identifier: testResourceID("test3"),
+				ID: "test3",
 			}
 			resource3Data, err := resource.ToResourceData(resource3)
 			require.NoError(t, err)
@@ -72,8 +73,8 @@ func TestState(t *testing.T) {
 	t.Run("Plan", func(t *testing.T) {
 		t.Run("from empty state", func(t *testing.T) {
 			resource1 := &testResource{
-				identifier: testResourceID("test1"),
-				dependencies: []resource.Identifier{
+				ID: "test1",
+				TestDependencies: []resource.Identifier{
 					testResourceID("test2"),
 				},
 			}
@@ -81,8 +82,8 @@ func TestState(t *testing.T) {
 			require.NoError(t, err)
 
 			resource2 := &testResource{
-				identifier: testResourceID("test2"),
-				dependencies: []resource.Identifier{
+				ID: "test2",
+				TestDependencies: []resource.Identifier{
 					testResourceID("test3"),
 				},
 			}
@@ -90,7 +91,7 @@ func TestState(t *testing.T) {
 			require.NoError(t, err)
 
 			resource3 := &testResource{
-				identifier: testResourceID("test3"),
+				ID: "test3",
 			}
 			resource3Data, err := resource.ToResourceData(resource3)
 			require.NoError(t, err)
@@ -133,8 +134,8 @@ func TestState(t *testing.T) {
 		})
 		t.Run("from nonempty state", func(t *testing.T) {
 			resource1 := &testResource{
-				identifier: testResourceID("test1"),
-				dependencies: []resource.Identifier{
+				ID: "test1",
+				TestDependencies: []resource.Identifier{
 					testResourceID("test2"),
 				},
 			}
@@ -142,8 +143,8 @@ func TestState(t *testing.T) {
 			require.NoError(t, err)
 
 			resource2 := &testResource{
-				identifier: testResourceID("test2"),
-				dependencies: []resource.Identifier{
+				ID: "test2",
+				TestDependencies: []resource.Identifier{
 					testResourceID("test3"),
 				},
 			}
@@ -151,7 +152,7 @@ func TestState(t *testing.T) {
 			require.NoError(t, err)
 
 			resource3 := &testResource{
-				identifier: testResourceID("test3"),
+				ID: "test3",
 			}
 
 			current := resource.NewState()
@@ -187,8 +188,8 @@ func TestState(t *testing.T) {
 		})
 		t.Run("with update", func(t *testing.T) {
 			resource1 := &testResource{
-				identifier: testResourceID("test1"),
-				dependencies: []resource.Identifier{
+				ID: "test1",
+				TestDependencies: []resource.Identifier{
 					testResourceID("test2"),
 				},
 			}
@@ -196,8 +197,8 @@ func TestState(t *testing.T) {
 			require.NoError(t, err)
 
 			resource2 := &testResource{
-				identifier: testResourceID("test2"),
-				dependencies: []resource.Identifier{
+				ID: "test2",
+				TestDependencies: []resource.Identifier{
 					testResourceID("test3"),
 				},
 			}
@@ -205,13 +206,13 @@ func TestState(t *testing.T) {
 			require.NoError(t, err)
 
 			resource3 := &testResource{
-				identifier: testResourceID("test3"),
+				ID: "test3",
 			}
 
 			updatedResource2 := &testResource{
 				SomeAttribute: "updated",
-				identifier:    testResourceID("test2"),
-				dependencies: []resource.Identifier{
+				ID:            "test2",
+				TestDependencies: []resource.Identifier{
 					testResourceID("test3"),
 				},
 			}
@@ -259,8 +260,8 @@ func TestState(t *testing.T) {
 		})
 		t.Run("to empty state", func(t *testing.T) {
 			resource1 := &testResource{
-				identifier: testResourceID("test1"),
-				dependencies: []resource.Identifier{
+				ID: "test1",
+				TestDependencies: []resource.Identifier{
 					testResourceID("test2"),
 				},
 			}
@@ -268,8 +269,8 @@ func TestState(t *testing.T) {
 			require.NoError(t, err)
 
 			resource2 := &testResource{
-				identifier: testResourceID("test2"),
-				dependencies: []resource.Identifier{
+				ID: "test2",
+				TestDependencies: []resource.Identifier{
 					testResourceID("test3"),
 				},
 			}
@@ -277,7 +278,7 @@ func TestState(t *testing.T) {
 			require.NoError(t, err)
 
 			resource3 := &testResource{
-				identifier: testResourceID("test3"),
+				ID: "test3",
 			}
 			resource3Data, err := resource.ToResourceData(resource3)
 			require.NoError(t, err)
@@ -317,8 +318,8 @@ func TestState(t *testing.T) {
 		})
 		t.Run("mixed creates and deletes", func(t *testing.T) {
 			resource1 := &testResource{
-				identifier: testResourceID("test1"),
-				dependencies: []resource.Identifier{
+				ID: "test1",
+				TestDependencies: []resource.Identifier{
 					testResourceID("test2"),
 				},
 			}
@@ -326,14 +327,14 @@ func TestState(t *testing.T) {
 			require.NoError(t, err)
 
 			resource2 := &testResource{
-				identifier: testResourceID("test2"),
+				ID: "test2",
 			}
 			resource2Data, err := resource.ToResourceData(resource2)
 			require.NoError(t, err)
 
 			resource3 := &testResource{
-				identifier: testResourceID("test3"),
-				dependencies: []resource.Identifier{
+				ID: "test3",
+				TestDependencies: []resource.Identifier{
 					testResourceID("test4"),
 				},
 			}
@@ -341,20 +342,20 @@ func TestState(t *testing.T) {
 			require.NoError(t, err)
 
 			resource4 := &testResource{
-				identifier: testResourceID("test4"),
+				ID: "test4",
 			}
 			resource4Data, err := resource.ToResourceData(resource4)
 			require.NoError(t, err)
 
 			resource5 := &testResource{
-				identifier: testResourceID("test5"),
+				ID: "test5",
 			}
 			resource5Data, err := resource.ToResourceData(resource5)
 			require.NoError(t, err)
 
 			resource6 := &testResource{
-				identifier: testResourceID("test6"),
-				dependencies: []resource.Identifier{
+				ID: "test6",
+				TestDependencies: []resource.Identifier{
 					testResourceID("test5"),
 				},
 			}
@@ -423,8 +424,8 @@ func TestState(t *testing.T) {
 		})
 		t.Run("missing create dependency", func(t *testing.T) {
 			resource1 := &testResource{
-				identifier: testResourceID("test1"),
-				dependencies: []resource.Identifier{
+				ID: "test1",
+				TestDependencies: []resource.Identifier{
 					testResourceID("test2"),
 				},
 			}
@@ -442,8 +443,8 @@ func TestState(t *testing.T) {
 
 		t.Run("missing delete dependency", func(t *testing.T) {
 			resource1 := &testResource{
-				identifier: testResourceID("test1"),
-				dependencies: []resource.Identifier{
+				ID: "test1",
+				TestDependencies: []resource.Identifier{
 					testResourceID("test2"),
 				},
 			}
@@ -473,10 +474,10 @@ func TestState(t *testing.T) {
 		t.Run("ignored attributes", func(t *testing.T) {
 			currentResource := &testResource{
 				SomeIgnoredAttribute: "ignored",
-				identifier:           testResourceID("test1"),
+				ID:                   "test1",
 			}
 			desiredResource := &testResource{
-				identifier: testResourceID("test1"),
+				ID: "test1",
 			}
 
 			current := resource.NewState()
@@ -493,18 +494,22 @@ func TestState(t *testing.T) {
 	})
 }
 
+const testResourceType = resource.Type("test_resource")
+
 func testResourceID(id string) resource.Identifier {
 	return resource.Identifier{
-		Type: "test_resource",
+		Type: testResourceType,
 		ID:   id,
 	}
 }
 
 type testResource struct {
-	SomeAttribute        string `json:"some_attribute"`
-	SomeIgnoredAttribute string `json:"some_ignored_attribute"`
-	identifier           resource.Identifier
-	dependencies         []resource.Identifier
+	SomeAttribute        string                `json:"some_attribute"`
+	SomeIgnoredAttribute string                `json:"some_ignored_attribute"`
+	ID                   string                `json:"id"`
+	TestDependencies     []resource.Identifier `json:"test_dependencies"`
+	NotFound             bool                  `json:"not_found"`
+	Error                string                `json:"error"`
 }
 
 func (r *testResource) ResourceVersion() string {
@@ -522,29 +527,48 @@ func (r *testResource) Executor() resource.Executor {
 }
 
 func (r *testResource) Identifier() resource.Identifier {
-	return r.identifier
+	return testResourceID(r.ID)
 }
 
 func (r *testResource) Dependencies() []resource.Identifier {
-	return r.dependencies
-}
-
-func (r *testResource) Validate() error {
-	return nil
+	return r.TestDependencies
 }
 
 func (r *testResource) Refresh(ctx context.Context, rc *resource.Context) error {
-	return nil
+	switch {
+	case r.NotFound:
+		return resource.ErrNotFound
+	case r.Error != "":
+		return errors.New(r.Error)
+	default:
+		return nil
+	}
 }
 
 func (r *testResource) Create(ctx context.Context, rc *resource.Context) error {
+	if r.Error != "" {
+		return errors.New(r.Error)
+	}
 	return nil
 }
 
 func (r *testResource) Update(ctx context.Context, rc *resource.Context) error {
+	if r.Error != "" {
+		return errors.New(r.Error)
+	}
 	return nil
 }
 
 func (r *testResource) Delete(ctx context.Context, rc *resource.Context) error {
+	if r.Error != "" {
+		return errors.New(r.Error)
+	}
 	return nil
+}
+
+func (r *testResource) data(t testing.TB) *resource.ResourceData {
+	data, err := resource.ToResourceData(r)
+	require.NoError(t, err)
+
+	return data
 }

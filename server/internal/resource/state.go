@@ -6,47 +6,10 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/wI2L/jsondiff"
 	"gonum.org/v1/gonum/graph/simple"
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
 )
-
-type EventType string
-
-const (
-	EventTypeRefresh EventType = "refresh"
-	EventTypeCreate  EventType = "create"
-	EventTypeUpdate  EventType = "update"
-	EventTypeDelete  EventType = "delete"
-)
-
-type EventReason string
-
-const (
-	EventReasonDoesNotExist      EventReason = "does_not_exist"
-	EventReasonNeedsRecreate     EventReason = "needs_recreate"
-	EventReasonHasDiff           EventReason = "has_diff"
-	EventReasonForceUpdate       EventReason = "force_update"
-	EventReasonDependencyUpdated EventReason = "dependency_updated"
-)
-
-type Event struct {
-	Type     EventType      `json:"type"`
-	Resource *ResourceData  `json:"resource"`
-	Reason   EventReason    `json:"reason,omitempty"`
-	Diff     jsondiff.Patch `json:"diff,omitempty"`
-}
-
-// WithData returns a clone of this event with the given data.
-func (e *Event) WithData(data *ResourceData) *Event {
-	return &Event{
-		Type:     e.Type,
-		Resource: data,
-		Reason:   e.Reason,
-		Diff:     e.Diff,
-	}
-}
 
 type State struct {
 	Resources map[Type]map[string]*ResourceData `json:"resources"`
