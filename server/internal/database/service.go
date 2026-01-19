@@ -20,6 +20,7 @@ var (
 	ErrInstanceStopped       = errors.New("instance stopped")
 	ErrInvalidDatabaseUpdate = errors.New("invalid database update")
 	ErrInvalidSourceNode     = errors.New("invalid source node")
+	ErrReplicationSyncNotConfirmed = errors.New("replication sync not confirmed")
 )
 
 type Service struct {

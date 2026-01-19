@@ -250,8 +250,8 @@ func SyncEvent() Query[string] {
 	}
 }
 
-func WaitForSyncEvent(originNode, lsn string, timeoutSeconds int) Statement {
-	return Statement{
+func WaitForSyncEvent(originNode, lsn string, timeoutSeconds int) Query[bool] {
+	return Query[bool]{
 		SQL: "CALL spock.wait_for_sync_event(true, @origin_node, @lsn, @timeout);",
 		Args: pgx.NamedArgs{
 			"origin_node": originNode,

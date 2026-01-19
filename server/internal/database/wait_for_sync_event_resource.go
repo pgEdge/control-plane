@@ -73,11 +73,21 @@ func (r *WaitForSyncEventResource) Refresh(ctx context.Context, rc *resource.Con
 	}
 
 	// TODO: Set wait limit
-	err = postgres.WaitForSyncEvent(r.ProviderNode, syncEvent.SyncEventLsn, 100).Exec(ctx, subscriberConn)
+	synced, err := postgres.WaitForSyncEvent(r.ProviderNode, syncEvent.SyncEventLsn, 100).Scalar(ctx, subscriberConn)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return resource.ErrNotFound
 	} else if err != nil {
 		return fmt.Errorf("failed to wait for sync event on subscriber: %w", err)
+	}
+	if !synced {
+		return fmt.Errorf(
+			"%w: provider=%s subscriber=%s lsn=%s timeout_seconds=%d",
+			ErrReplicationSyncNotConfirmed,
+			r.ProviderNode,
+			r.SubscriberNode,
+			syncEvent.SyncEventLsn,
+			100,
+		)
 	}
 
 	return nil
