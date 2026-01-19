@@ -297,6 +297,12 @@ func (s *State) planCreates(options PlanOptions, desired *State) (Plan, error) {
 					Resource: resource,
 					Reason:   EventReasonNeedsRecreate,
 				}
+			case currentResource.Error != "":
+				event = &Event{
+					Type:     EventTypeUpdate,
+					Resource: resource,
+					Reason:   EventReasonHasError,
+				}
 			case options.ForceUpdate:
 				event = &Event{
 					Type:     EventTypeUpdate,

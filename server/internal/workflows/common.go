@@ -75,6 +75,13 @@ func (w *Workflows) applyEvents(
 				event := phase[i]
 				errs = append(errs, fmt.Errorf("failed to apply %s event from %s to state: %w", event.Type, event.Resource.Identifier, err))
 			}
+			if err := out.Event.ResourceError(); err != nil && out.Event.Type != resource.EventTypeRefresh {
+				// Returns errors that originated from the resource's lifecycle
+				// method. They're already formatted with the event type and the
+				// resource identifier. We still want to apply the event to the
+				// state to record partial creates/updates.
+				errs = append(errs, err)
+			}
 		}
 		if err := errors.Join(errs...); err != nil {
 			return fmt.Errorf("failed while modifying resources: %w", err)

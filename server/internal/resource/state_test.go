@@ -422,6 +422,97 @@ func TestState(t *testing.T) {
 				assert.ElementsMatch(t, expected[i], phase)
 			}
 		})
+		t.Run("error from previous create", func(t *testing.T) {
+			resource1Data, err := resource.ToResourceData(&testResource{
+				ID: "test1",
+				TestDependencies: []resource.Identifier{
+					testResourceID("test2"),
+				},
+			})
+			require.NoError(t, err)
+
+			resource2Data, err := resource.ToResourceData(&testResource{
+				ID: "test2",
+			})
+			require.NoError(t, err)
+
+			current := resource.NewState()
+			desired := resource.NewState()
+
+			resource2WithError := resource2Data.Clone()
+			resource2WithError.NeedsRecreate = true
+			resource2WithError.Error = "some error"
+
+			current.Add(resource2WithError)
+			desired.Add(resource1Data, resource2Data)
+
+			plan, err := current.Plan(resource.PlanOptions{}, desired)
+			assert.NoError(t, err)
+
+			expected := resource.Plan{
+				{
+					{
+						Type:     resource.EventTypeCreate,
+						Resource: resource2Data,
+						Reason:   resource.EventReasonNeedsRecreate,
+					},
+				},
+				{
+					{
+						Type:     resource.EventTypeCreate,
+						Resource: resource1Data,
+						Reason:   resource.EventReasonDoesNotExist,
+					},
+				},
+			}
+
+			assert.Equal(t, expected, plan)
+		})
+		t.Run("error from previous update", func(t *testing.T) {
+			resource1Data, err := resource.ToResourceData(&testResource{
+				ID: "test1",
+				TestDependencies: []resource.Identifier{
+					testResourceID("test2"),
+				},
+			})
+			require.NoError(t, err)
+
+			resource2Data, err := resource.ToResourceData(&testResource{
+				ID: "test2",
+			})
+			require.NoError(t, err)
+
+			current := resource.NewState()
+			desired := resource.NewState()
+
+			resource2WithError := resource2Data.Clone()
+			resource2WithError.Error = "some error"
+
+			current.Add(resource1Data, resource2WithError)
+			desired.Add(resource1Data, resource2Data)
+
+			plan, err := current.Plan(resource.PlanOptions{}, desired)
+			assert.NoError(t, err)
+
+			expected := resource.Plan{
+				{
+					{
+						Type:     resource.EventTypeUpdate,
+						Resource: resource2Data,
+						Reason:   resource.EventReasonHasError,
+					},
+				},
+				{
+					{
+						Type:     resource.EventTypeUpdate,
+						Resource: resource1Data,
+						Reason:   resource.EventReasonDependencyUpdated,
+					},
+				},
+			}
+
+			assert.Equal(t, expected, plan)
+		})
 		t.Run("missing create dependency", func(t *testing.T) {
 			resource1 := &testResource{
 				ID: "test1",

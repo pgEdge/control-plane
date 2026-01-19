@@ -139,9 +139,17 @@ func (a *Activities) logResourceEvent(
 
 	fields["duration_ms"] = duration.Milliseconds()
 
-	if applyErr != nil {
+	var applyErrStr string
+	switch {
+	case applyErr != nil:
+		applyErrStr = applyErr.Error()
+	case event.Type != resource.EventTypeRefresh:
+		applyErrStr = event.Resource.Error
+	}
+
+	if applyErrStr != "" {
 		fields["success"] = false
-		fields["error"] = applyErr.Error()
+		fields["error"] = applyErrStr
 
 		err := log(task.LogEntry{
 			Message: fmt.Sprintf("error while %s resource %s", verb, resourceIdentifier),
@@ -153,18 +161,17 @@ func (a *Activities) logResourceEvent(
 				fmt.Errorf("failed to record event error: %w", err),
 			)
 		}
-		return applyErr
+	} else {
+		fields["success"] = true
+
+		err = log(task.LogEntry{
+			Message: fmt.Sprintf("finished %s resource %s (took %s)", verb, resourceIdentifier, duration),
+			Fields:  fields,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to record event completion: %w", err)
+		}
 	}
 
-	fields["success"] = true
-
-	err = log(task.LogEntry{
-		Message: fmt.Sprintf("finished %s resource %s (took %s)", verb, resourceIdentifier, duration),
-		Fields:  fields,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to record event completion: %w", err)
-	}
-
-	return nil
+	return applyErr
 }

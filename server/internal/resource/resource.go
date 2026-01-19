@@ -43,6 +43,7 @@ type ResourceData struct {
 	DiffIgnore      []string        `json:"diff_ignore"`
 	ResourceVersion string          `json:"resource_version"`
 	PendingDeletion bool            `json:"pending_deletion"`
+	Error           string          `json:"error"`
 }
 
 func (r *ResourceData) Diff(other *ResourceData) (jsondiff.Patch, error) {
@@ -70,6 +71,7 @@ func (r *ResourceData) Clone() *ResourceData {
 		DiffIgnore:      slices.Clone(r.DiffIgnore),
 		ResourceVersion: r.ResourceVersion,
 		PendingDeletion: r.PendingDeletion,
+		Error:           r.Error,
 	}
 }
 
