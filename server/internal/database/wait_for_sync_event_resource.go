@@ -80,9 +80,7 @@ func (r *WaitForSyncEventResource) Refresh(ctx context.Context, rc *resource.Con
 		return fmt.Errorf("failed to wait for sync event on subscriber: %w", err)
 	}
 	if !synced {
-		return fmt.Errorf(
-			"%w: provider=%s subscriber=%s lsn=%s timeout_seconds=%d",
-			ErrReplicationSyncNotConfirmed,
+		return fmt.Errorf("replication sync not confirmed: provider=%s subscriber=%s lsn=%s timeout_seconds=%d",
 			r.ProviderNode,
 			r.SubscriberNode,
 			syncEvent.SyncEventLsn,
