@@ -1,0 +1,3 @@
+kind: Fixed
+body: Fixed a bug that prevented database deletion when we failed to create the Swarm service.
+time: 2026-01-19T09:57:16.746487-05:00
