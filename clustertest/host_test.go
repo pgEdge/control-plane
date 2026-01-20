@@ -44,6 +44,10 @@ type Host struct {
 	container testcontainers.Container
 }
 
+type RecreateConfig struct {
+	EtcdMode EtcdMode
+	ExtraEnv map[string]string
+}
 func NewHost(t testing.TB, config HostConfig) *Host {
 	t.Helper()
 
@@ -204,13 +208,18 @@ func (h *Host) GetEtcdMode(t testing.TB, cli client.Client) string {
 	return ""
 }
 
-// RecreateWithMode stops the current container and recreates it with a new etcd mode.
-// This simulates changing the PGEDGE_ETCD_MODE environment variable and restarting.
+// Recreate stops the current container and recreates it with the given configuration.
+// This is useful for testing configuration changes that require a restart.
 // The new container will be cleaned up by the original cleanup registered in NewHost.
-func (h *Host) RecreateWithMode(t testing.TB, newMode EtcdMode) {
+func (h *Host) Recreate(t testing.TB, cfg RecreateConfig) {
 	t.Helper()
 
-	tLogf(t, "recreating host %s with etcd mode %s", h.id, newMode)
+	etcdMode := cfg.EtcdMode
+	if etcdMode == "" {
+		etcdMode = EtcdModeServer
+	}
+
+	tLogf(t, "recreating host %s with etcd mode %s, extra env: %v", h.id, etcdMode, cfg.ExtraEnv)
 
 	// Stop the current container
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -230,7 +239,7 @@ func (h *Host) RecreateWithMode(t testing.TB, newMode EtcdMode) {
 
 	var ports []int
 
-	switch newMode {
+	switch etcdMode {
 	case EtcdModeClient:
 		ports = allocatePorts(t, 1)
 		env["PGEDGE_ETCD_MODE"] = "client"
@@ -240,10 +249,13 @@ func (h *Host) RecreateWithMode(t testing.TB, newMode EtcdMode) {
 		env["PGEDGE_ETCD_SERVER__PEER_PORT"] = strconv.Itoa(ports[1])
 		env["PGEDGE_ETCD_SERVER__CLIENT_PORT"] = strconv.Itoa(ports[2])
 	default:
-		t.Fatalf("unrecognized etcd mode '%s'", newMode)
+		t.Fatalf("unrecognized etcd mode '%s'", etcdMode)
 	}
 
 	env["PGEDGE_HTTP__PORT"] = strconv.Itoa(ports[0])
+
+	// Apply extra env overrides last
+	maps.Copy(env, cfg.ExtraEnv)
 
 	req := testcontainers.ContainerRequest{
 		AlwaysPullImage: true,
@@ -270,7 +282,7 @@ func (h *Host) RecreateWithMode(t testing.TB, newMode EtcdMode) {
 			WithStartupTimeout(60 * time.Second),
 	}
 
-	tLogf(t, "starting host %s with new mode %s", h.id, newMode)
+	tLogf(t, "starting host %s", h.id)
 
 	newContainer, err := testcontainers.GenericContainer(
 		t.Context(),
@@ -286,6 +298,18 @@ func (h *Host) RecreateWithMode(t testing.TB, newMode EtcdMode) {
 	// which now points to the new container.
 	h.container = newContainer
 	h.port = ports[0]
+}
+
+// RecreateWithMode is a convenience wrapper for Recreate that only changes the etcd mode.
+func (h *Host) RecreateWithMode(t testing.TB, newMode EtcdMode) {
+	t.Helper()
+	h.Recreate(t, RecreateConfig{EtcdMode: newMode})
+}
+
+// RecreateWithEnv is a convenience wrapper for Recreate that only adds extra environment variables.
+func (h *Host) RecreateWithEnv(t testing.TB, extraEnv map[string]string) {
+	t.Helper()
+	h.Recreate(t, RecreateConfig{ExtraEnv: extraEnv})
 }
 
 func containerLogs(ctx context.Context, t testing.TB, container testcontainers.Container) (string, error) {

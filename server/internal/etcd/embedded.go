@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -32,13 +33,14 @@ var _ do.Shutdownable = (*EmbeddedEtcd)(nil)
 const quotaBackendBytes = 8 * 1024 * 1024 * 1024 // 8GB
 
 type EmbeddedEtcd struct {
-	mu          sync.Mutex
-	certSvc     *certificates.Service
-	client      *clientv3.Client
-	etcd        *embed.Etcd
-	logger      zerolog.Logger
-	cfg         *config.Manager
-	initialized chan struct{}
+	mu            sync.Mutex
+	certSvc       *certificates.Service
+	client        *clientv3.Client
+	etcd          *embed.Etcd
+	logger        zerolog.Logger
+	cfg           *config.Manager
+	initialized   chan struct{}
+	advertiseHost string // Cached advertise host (IP or hostname) decided at startup
 }
 
 func NewEmbeddedEtcd(cfg *config.Manager, logger zerolog.Logger) *EmbeddedEtcd {
@@ -156,10 +158,12 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 func (e *EmbeddedEtcd) start(ctx context.Context) error {
 	appCfg := e.cfg.Config()
 
-	etcdCfg, err := embedConfig(appCfg, e.logger)
+	etcdCfg, advertiseHost, err := embedConfig(appCfg, e.logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize embedded etcd config: %w", err)
 	}
+	e.advertiseHost = advertiseHost
+
 	etcd, err := startEmbedded(ctx, etcdCfg)
 	if err != nil {
 		return fmt.Errorf("failed to start etcd: %w", err)
@@ -197,10 +201,11 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 
 	appCfg := e.cfg.Config()
 
-	etcdCfg, err := embedConfig(appCfg, e.logger)
+	etcdCfg, advertiseHost, err := embedConfig(appCfg, e.logger)
 	if err != nil {
 		return fmt.Errorf("failed to initialize embedded etcd config: %w", err)
 	}
+	e.advertiseHost = advertiseHost
 
 	clientCfg, err := clientConfig(e.cfg.Config(), e.logger, options.Leader.ClientURLs...)
 	if err != nil {
@@ -307,15 +312,24 @@ func (e *EmbeddedEtcd) Error() <-chan error {
 
 func (e *EmbeddedEtcd) ClientEndpoints() []string {
 	appCfg := e.cfg.Config()
+	host := e.advertiseHost
+	if host == "" {
+		host = appCfg.IPv4Address
+	}
 	return []string{
-		fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, appCfg.EtcdServer.ClientPort),
+		fmt.Sprintf("https://%s:%d", host, appCfg.EtcdServer.ClientPort),
 	}
 }
 
 func (e *EmbeddedEtcd) PeerEndpoints() []string {
 	appCfg := e.cfg.Config()
+	host := e.advertiseHost
+	if host == "" {
+		// Fallback if not set (shouldn't happen after Start)
+		host = appCfg.IPv4Address
+	}
 	return []string{
-		fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, appCfg.EtcdServer.PeerPort),
+		fmt.Sprintf("https://%s:%d", host, appCfg.EtcdServer.PeerPort),
 	}
 }
 
@@ -594,10 +608,18 @@ func (e *EmbeddedEtcd) PromoteWhenReady(ctx context.Context, client *clientv3.Cl
 	})
 }
 
-func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error) {
+func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, string, error) {
+	logger.Info().
+		Str("host_id", cfg.HostID).
+		Str("ipv4_address", cfg.IPv4Address).
+		Str("hostname", cfg.Hostname).
+		Int("client_port", cfg.EtcdServer.ClientPort).
+		Int("peer_port", cfg.EtcdServer.PeerPort).
+		Msg("embedded etcd with configuration")
+
 	lg, err := newZapLogger(logger, cfg.EtcdServer.LogLevel, "etcd_server")
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize etcd server logger: %w", err)
+		return nil, "", fmt.Errorf("failed to initialize etcd server logger: %w", err)
 	}
 
 	c := embed.NewConfig()
@@ -631,24 +653,39 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 
 	clientPort := cfg.EtcdServer.ClientPort
 	peerPort := cfg.EtcdServer.PeerPort
-	myIP := cfg.IPv4Address
+
+	// Determine the advertise host: use IP if we can reach to it, otherwise use hostname. 
+	advertiseHost := cfg.IPv4Address
+	if cfg.Hostname != "" && !isIPReachable(cfg.IPv4Address, logger) {
+		// Cannot reach to IP, so using hostname
+		advertiseHost = cfg.Hostname
+		logger.Warn().
+			Str("ip_address", cfg.IPv4Address).
+			Str("using_host", advertiseHost).
+			Msg("cannot reach configured IP, using hostname for etcd advertise URLs")
+	} else {
+		logger.Info().
+			Str("advertise_host", advertiseHost).
+			Msg("using IP address for etcd advertise URLs")
+	}
+
 	c.ListenClientUrls = []url.URL{
 		{Scheme: "https", Host: fmt.Sprintf("0.0.0.0:%d", clientPort)},
 	}
 	c.AdvertiseClientUrls = []url.URL{
-		{Scheme: "https", Host: fmt.Sprintf("%s:%d", myIP, clientPort)},
+		{Scheme: "https", Host: fmt.Sprintf("%s:%d", advertiseHost, clientPort)},
 	}
 	c.ListenPeerUrls = []url.URL{
 		{Scheme: "https", Host: fmt.Sprintf("0.0.0.0:%d", peerPort)},
 	}
 	c.AdvertisePeerUrls = []url.URL{
-		{Scheme: "https", Host: fmt.Sprintf("%s:%d", myIP, peerPort)},
+		{Scheme: "https", Host: fmt.Sprintf("%s:%d", advertiseHost, peerPort)},
 	}
 	// This will get overridden when joining an existing cluster
 	c.InitialCluster = fmt.Sprintf(
 		"%s=http://%s:%d",
 		cfg.HostID,
-		myIP,
+		advertiseHost,
 		peerPort,
 	)
 	// Using a large number here as a precaution. We're unlikely to hit this,
@@ -658,7 +695,7 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 	c.MaxRequestBytes = 10 * 1024 * 1024 // 10MB
 	c.QuotaBackendBytes = quotaBackendBytes
 
-	return c, nil
+	return c, advertiseHost, nil
 }
 
 func initializationConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error) {
@@ -731,4 +768,16 @@ func clientForEmbedded(cfg config.Config, logger zerolog.Logger, etcd *embed.Etc
 	}
 
 	return client, nil
+}
+
+func isIPReachable(ip string, logger zerolog.Logger) bool {
+	addr := fmt.Sprintf("%s:0", ip)
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		logger.Warn().Str("ip", ip).Err(err).Msg("cannot reach IP address")
+		return false
+	}
+	listener.Close()
+	logger.Info().Str("ip", ip).Msg("successfully reachable to IP address")
+	return true
 }
