@@ -8,6 +8,7 @@ import (
 	"github.com/cschleiden/go-workflows/backend"
 	"github.com/cschleiden/go-workflows/worker"
 	"github.com/cschleiden/go-workflows/workflow"
+	"github.com/rs/zerolog"
 	"github.com/samber/do"
 )
 
@@ -18,13 +19,14 @@ type Orchestrator interface {
 }
 
 type Worker struct {
+	logger    zerolog.Logger
 	worker    *worker.Worker
 	workflows *Workflows
 	ctx       context.Context
 	cancel    context.CancelFunc
 }
 
-func NewWorker(be backend.Backend, workflows *Workflows, orch Orchestrator) (*Worker, error) {
+func NewWorker(logger zerolog.Logger, be backend.Backend, workflows *Workflows, orch Orchestrator) (*Worker, error) {
 	queues, err := orch.WorkerQueues()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get worker queues: %w", err)
@@ -42,6 +44,9 @@ func NewWorker(be backend.Backend, workflows *Workflows, orch Orchestrator) (*Wo
 	}
 
 	return &Worker{
+		logger: logger.With().
+			Str("component", "workflows_worker").
+			Logger(),
 		worker:    w,
 		workflows: workflows,
 	}, nil
@@ -51,6 +56,8 @@ func (w *Worker) Start(ctx context.Context) error {
 	if w.cancel != nil {
 		return fmt.Errorf("workflows worker already started")
 	}
+
+	w.logger.Debug().Msg("starting workflows worker")
 
 	// The parent context isn't canceled until the stop grace period times out,
 	// so we start the worker with a child context that we can cancel ourselves.
@@ -66,6 +73,7 @@ func (w *Worker) Start(ctx context.Context) error {
 }
 
 func (w *Worker) Shutdown() error {
+	w.logger.Debug().Msg("shutting down workflow worker")
 
 	if w.cancel != nil {
 		w.cancel()

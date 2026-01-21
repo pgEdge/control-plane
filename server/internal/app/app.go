@@ -124,6 +124,10 @@ func (a *App) runPreInitialization(parentCtx context.Context) error {
 		return fmt.Errorf("failed to serve pre-init API: %w", err)
 	}
 
+	a.logger.Info().
+		Str("state", "uninitialized").
+		Msg("server ready")
+
 	select {
 	case <-parentCtx.Done():
 		a.logger.Info().Msg("got shutdown signal")
@@ -204,6 +208,10 @@ func (a *App) runInitialized(parentCtx context.Context) error {
 		return handleError(fmt.Errorf("failed to serve post-init API: %w", err))
 	}
 
+	a.logger.Info().
+		Str("state", "initialized").
+		Msg("server ready")
+
 	select {
 	case <-parentCtx.Done():
 		a.logger.Info().Msg("got shutdown signal")
@@ -214,6 +222,7 @@ func (a *App) runInitialized(parentCtx context.Context) error {
 }
 
 func (a *App) shutdown(reason error) error {
+	defer a.logger.Info().Msg("shutdown complete")
 	defer a.serviceCtxCancel()
 
 	if reason != nil {

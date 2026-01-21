@@ -17,6 +17,7 @@ import (
 var _ do.Shutdownable = (*Server)(nil)
 
 type Server struct {
+	logger  zerolog.Logger
 	started bool
 	cfg     config.Config
 	v1Svc   *apiv1.Service
@@ -63,15 +64,18 @@ func NewServer(
 	}
 
 	return &Server{
-		cfg:   cfg,
-		v1Svc: v1Svc,
-		http:  httpSvr,
-		mqtt:  mqttSvr,
-		errCh: make(chan error, 2),
+		logger: logger,
+		cfg:    cfg,
+		v1Svc:  v1Svc,
+		http:   httpSvr,
+		mqtt:   mqttSvr,
+		errCh:  make(chan error, 2),
 	}
 }
 
 func (s *Server) ServePreInit(ctx context.Context) error {
+	s.logger.Debug().Msg("serving pre-init handlers")
+
 	if err := s.v1Svc.UsePreInitHandlers(); err != nil {
 		return fmt.Errorf("failed to set v1 api to use pre-init handlers: %w", err)
 	}
@@ -82,6 +86,8 @@ func (s *Server) ServePreInit(ctx context.Context) error {
 }
 
 func (s *Server) ServePostInit(ctx context.Context) error {
+	s.logger.Debug().Msg("serving post-init handlers")
+
 	if err := s.v1Svc.UsePostInitHandlers(); err != nil {
 		return fmt.Errorf("failed to set v1 api to use post-init handlers: %w", err)
 	}
@@ -129,6 +135,8 @@ func (s *Server) serve(ctx context.Context) {
 }
 
 func (s *Server) Shutdown() error {
+	s.logger.Debug().Msg("shutting down api server")
+
 	ctx := context.Background()
 
 	var errs []error

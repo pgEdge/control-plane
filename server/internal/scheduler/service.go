@@ -47,7 +47,7 @@ func NewService(
 }
 
 func (s *Service) Start(ctx context.Context) error {
-	s.logger.Info().Msg("starting scheduler service")
+	s.logger.Debug().Msg("starting scheduler service")
 
 	if err := s.elector.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start elector: %w", err)
@@ -83,11 +83,11 @@ func (s *Service) Start(ctx context.Context) error {
 }
 
 func (s *Service) Shutdown() error {
-	s.logger.Info().Msg("shutting down scheduler service")
+	s.logger.Debug().Msg("shutting down scheduler service")
 	s.scheduler.Stop()
 
 	if s.watchOp != nil {
-		s.logger.Info().Msg("closing scheduled job watch")
+		s.logger.Debug().Msg("closing scheduled job watch")
 		s.watchOp.Close()
 	}
 
@@ -115,7 +115,7 @@ func (s *Service) registerJob(ctx context.Context, job *StoredScheduledJob) erro
 	}
 
 	s.runners[job.ID] = gocronJob
-	s.logger.Info().Str("job_id", job.ID).Msg("registered scheduled job")
+	s.logger.Debug().Str("job_id", job.ID).Msg("registered scheduled job")
 	return nil
 }
 
@@ -126,7 +126,7 @@ func (s *Service) UnregisterJob(jobID string) {
 	if job, ok := s.runners[jobID]; ok {
 		s.scheduler.RemoveByReference(job)
 		delete(s.runners, jobID)
-		s.logger.Info().Str("job_id", jobID).Msg("unregistered scheduled job")
+		s.logger.Debug().Str("job_id", jobID).Msg("unregistered scheduled job")
 	}
 }
 

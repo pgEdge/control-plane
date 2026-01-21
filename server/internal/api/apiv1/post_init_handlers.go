@@ -569,7 +569,7 @@ func (s *PostInitHandlers) SwitchoverDatabaseNode(ctx context.Context, req *api.
 		}
 		input.ScheduledAt = tm.UTC()
 
-		s.logger.Info().
+		s.logger.Debug().
 			Str("database_id", databaseID).
 			Str("scheduled_at", input.ScheduledAt.String()).
 			Msg("parsed scheduled_at")

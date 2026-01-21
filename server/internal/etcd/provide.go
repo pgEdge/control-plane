@@ -58,7 +58,7 @@ func provideEtcd(i *do.Injector) {
 		oldMode := generated.EtcdMode
 		newMode := appCfg.EtcdMode
 
-		logger.Info().
+		logger.Debug().
 			Str("old_mode", string(oldMode)).
 			Str("new_mode", string(newMode)).
 			Bool("old_mode_empty", oldMode == "").

@@ -49,6 +49,8 @@ func NewService(
 }
 
 func (s *Service) Start(ctx context.Context) error {
+	s.logger.Debug().Msg("starting monitors")
+
 	// The monitors should run for the lifetime of the application rather than
 	// the lifetime of a single operation.
 	s.appCtx = ctx
@@ -72,7 +74,7 @@ func (s *Service) Start(ctx context.Context) error {
 }
 
 func (s *Service) Shutdown() error {
-	s.logger.Info().Msg("shutting down instance monitors")
+	s.logger.Debug().Msg("shutting down monitors")
 
 	for _, mon := range s.instances {
 		mon.Stop()

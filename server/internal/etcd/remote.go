@@ -34,9 +34,11 @@ type RemoteEtcd struct {
 func NewRemoteEtcd(cfg *config.Manager, logger zerolog.Logger) *RemoteEtcd {
 	return &RemoteEtcd{
 		cfg:         cfg,
-		logger:      logger,
 		initialized: make(chan struct{}),
 		err:         make(chan error),
+		logger: logger.With().
+			Str("component", "etcd_client").
+			Logger(),
 	}
 }
 
@@ -46,6 +48,8 @@ func (r *RemoteEtcd) IsInitialized() (bool, error) {
 }
 
 func (r *RemoteEtcd) Start(ctx context.Context) error {
+	r.logger.Debug().Msg("starting etcd client")
+
 	initialized, err := r.IsInitialized()
 	if err != nil {
 		return err
@@ -196,6 +200,8 @@ func (r *RemoteEtcd) VerifyJoinToken(in string) error {
 }
 
 func (r *RemoteEtcd) Shutdown() error {
+	r.logger.Debug().Msg("shutting down etcd client")
+
 	if r.client == nil {
 		return nil
 	}
