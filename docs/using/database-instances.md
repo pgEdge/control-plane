@@ -66,7 +66,7 @@ Stopping an instance shuts down the Postgres process for that specific instance 
 * Other instances remain unaffected
 * A stopped instance continues to appear under list-databases with state: "stopped"
 
-In the following example, the `curl` command stops an instance named "n1" for a database named "example":
+In the following example, the `curl` command stops an instance named "example-n1-689qacsi" for a database named "example":
 
 === "curl"
 ```sh
