@@ -1,0 +1,3 @@
+kind: Added
+body: Improved etcd resilience by updating peer URLs when host IPs or hostnames change.
+time: 2026-01-22T18:51:29.295792+05:30

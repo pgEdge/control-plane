@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"net/url"
 	"path/filepath"
 
 	"github.com/alessio/shellescape"
+	"github.com/rs/zerolog/log"
 	"github.com/samber/do"
 	"github.com/spf13/afero"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -170,11 +172,34 @@ func (c *PatroniConfig) Create(ctx context.Context, rc *resource.Context) error 
 		return fmt.Errorf("failed to change ownership for %s: %w", configPath, err)
 	}
 
+	// Signal Patroni to reload config
+	if err := c.signalPatroniReload(ctx, rc); err != nil {
+		log.Warn().Err(err).Str("instance_id", c.Spec.InstanceID).Msg("failed to signal Patroni to reload config")
+	}
+
 	return nil
 }
 
 func (c *PatroniConfig) Update(ctx context.Context, rc *resource.Context) error {
 	return c.Create(ctx, rc)
+}
+
+func (c *PatroniConfig) signalPatroniReload(ctx context.Context, rc *resource.Context) error {
+	dockerClient, err := do.Invoke[*docker.Docker](rc.Injector)
+	if err != nil {
+		return err
+	}
+
+	err = PostgresContainerExec(ctx, io.Discard, dockerClient, c.Spec.InstanceID, []string{"kill", "-HUP", "1"})
+	if err != nil {
+		// Container might not be running yet during initial creation
+		if errors.Is(err, ErrNoPostgresContainer) {
+			return nil
+		}
+		return fmt.Errorf("failed to send SIGHUP to Patroni: %w", err)
+	}
+
+	return nil
 }
 
 func (c *PatroniConfig) Delete(ctx context.Context, rc *resource.Context) error {

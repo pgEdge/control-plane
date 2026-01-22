@@ -105,3 +105,42 @@ func getLeaderMember(ctx context.Context, client *clientv3.Client) (*etcdserverp
 
 	return nil, errors.New("cluster has no leader")
 }
+
+func UpdateMemberPeerURLs(ctx context.Context, client *clientv3.Client, memberName string, newPeerURLs []string) (bool, error) {
+	resp, err := client.MemberList(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to list members: %w", err)
+	}
+
+	member := findMember(resp.Members, memberName)
+	if member == nil {
+		return false, fmt.Errorf("member %s not found", memberName)
+	}
+
+	if UrlsEqual(member.PeerURLs, newPeerURLs) {
+		return false, nil // No change needed
+	}
+
+	_, err = client.MemberUpdate(ctx, member.ID, newPeerURLs)
+	if err != nil {
+		return false, fmt.Errorf("failed to update member peer URLs: %w", err)
+	}
+
+	return true, nil
+}
+
+func UrlsEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	aSet := make(map[string]struct{}, len(a))
+	for _, url := range a {
+		aSet[url] = struct{}{}
+	}
+	for _, url := range b {
+		if _, ok := aSet[url]; !ok {
+			return false
+		}
+	}
+	return true
+}
