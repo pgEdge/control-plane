@@ -10,6 +10,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/certificates"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
 var (
@@ -104,4 +105,27 @@ func getLeaderMember(ctx context.Context, client *clientv3.Client) (*etcdserverp
 	}
 
 	return nil, errors.New("cluster has no leader")
+}
+
+func UpdateMemberPeerURLs(ctx context.Context, client *clientv3.Client, memberName string, newPeerURLs []string) (bool, error) {
+	resp, err := client.MemberList(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to list members: %w", err)
+	}
+
+	member := findMember(resp.Members, memberName)
+	if member == nil {
+		return false, fmt.Errorf("member %s not found", memberName)
+	}
+
+	if ds.SetSymmetricDifference(member.PeerURLs, newPeerURLs).Size() == 0 {
+		return false, nil // No change needed
+	}
+
+	_, err = client.MemberUpdate(ctx, member.ID, newPeerURLs)
+	if err != nil {
+		return false, fmt.Errorf("failed to update member peer URLs: %w", err)
+	}
+
+	return true, nil
 }

@@ -171,6 +171,13 @@ func (e *EmbeddedEtcd) start(ctx context.Context) error {
 		return fmt.Errorf("failed to get internal etcd client: %w", err)
 	}
 
+	urlsChanged, updateErr := UpdateMemberPeerURLs(ctx, client, appCfg.HostID, e.PeerEndpoints())
+	if updateErr != nil {
+		e.logger.Warn().Err(updateErr).Msg("failed to update peer URLs after IP/hostname change")
+	} else if urlsChanged {
+		e.logger.Info().Msg("peer URLs updated due to IP/hostname change")
+	}
+
 	e.certSvc, err = certificateService(ctx, e.cfg.Config(), client)
 	if err != nil {
 		return err
@@ -237,7 +244,10 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 	// This server will have an empty member name in the members list, so we
 	// add this server to the list separately.
 	name := e.cfg.Config().HostID
-	peers := []string{fmt.Sprintf("%s=%s", name, e.PeerEndpoints()[0])}
+	var peers []string
+	for _, peerURL := range e.PeerEndpoints() {
+		peers = append(peers, fmt.Sprintf("%s=%s", name, peerURL))
+	}
 	for _, m := range members.Members {
 		// Empty name indicates a member that hasn't started, including this
 		// server.
@@ -247,7 +257,9 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 		if len(m.PeerURLs) < 1 {
 			return fmt.Errorf("member %q has no peer URLs", m.Name)
 		}
-		peers = append(peers, fmt.Sprintf("%s=%s", m.Name, m.PeerURLs[0]))
+		for _, peerURL := range m.PeerURLs {
+			peers = append(peers, fmt.Sprintf("%s=%s", m.Name, peerURL))
+		}
 	}
 	etcdCfg.InitialCluster = strings.Join(peers, ",")
 	etcdCfg.ClusterState = embed.ClusterStateFlagExisting
@@ -307,15 +319,19 @@ func (e *EmbeddedEtcd) Error() <-chan error {
 
 func (e *EmbeddedEtcd) ClientEndpoints() []string {
 	appCfg := e.cfg.Config()
+	clientPort := appCfg.EtcdServer.ClientPort
 	return []string{
-		fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, appCfg.EtcdServer.ClientPort),
+		fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, clientPort),
+		fmt.Sprintf("https://%s:%d", appCfg.Hostname, clientPort),
 	}
 }
 
 func (e *EmbeddedEtcd) PeerEndpoints() []string {
 	appCfg := e.cfg.Config()
+	peerPort := appCfg.EtcdServer.PeerPort
 	return []string{
-		fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, appCfg.EtcdServer.PeerPort),
+		fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, peerPort),
+		fmt.Sprintf("https://%s:%d", appCfg.Hostname, peerPort),
 	}
 }
 
@@ -637,13 +653,17 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 	}
 	c.AdvertiseClientUrls = []url.URL{
 		{Scheme: "https", Host: fmt.Sprintf("%s:%d", myIP, clientPort)},
+		{Scheme: "https", Host: fmt.Sprintf("%s:%d", cfg.Hostname, clientPort)},
 	}
+
 	c.ListenPeerUrls = []url.URL{
 		{Scheme: "https", Host: fmt.Sprintf("0.0.0.0:%d", peerPort)},
 	}
 	c.AdvertisePeerUrls = []url.URL{
 		{Scheme: "https", Host: fmt.Sprintf("%s:%d", myIP, peerPort)},
+		{Scheme: "https", Host: fmt.Sprintf("%s:%d", cfg.Hostname, peerPort)},
 	}
+
 	// This will get overridden when joining an existing cluster
 	c.InitialCluster = fmt.Sprintf(
 		"%s=http://%s:%d",

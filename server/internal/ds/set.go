@@ -125,3 +125,9 @@ func (s Set[T]) ToSortedSlice(cmp func(a T, b T) int) []T {
 func SetDifference[T comparable](a, b []T) Set[T] {
 	return NewSet(a...).Difference(NewSet(b...))
 }
+
+// SetSymmetricDifference (a-b)∪(b-a) returns the set of elements that are in
+// either a or b, but not both.
+func SetSymmetricDifference[T comparable](a, b []T) Set[T] {
+	return NewSet(a...).SymmetricDifference(NewSet(b...))
+}

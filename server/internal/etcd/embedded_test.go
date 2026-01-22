@@ -367,6 +367,60 @@ func TestEmbeddedEtcd(t *testing.T) {
 		err = serverA.RemoveHost(ctx, cfgB.HostID)
 		require.ErrorIs(t, err, etcd.ErrMinimumClusterSize)
 	})
+
+	t.Run("endpoints include both IP and hostname URLs", func(t *testing.T) {
+		ctx := t.Context()
+
+		cfg := config.Config{
+			HostID:      uuid.NewString(),
+			DataDir:     t.TempDir(),
+			EtcdMode:    config.EtcdModeServer,
+			IPv4Address: "127.0.0.1",
+			Hostname:    "localhost",
+			EtcdClient: config.EtcdClient{
+				LogLevel: "debug",
+			},
+			EtcdServer: config.EtcdServer{
+				LogLevel:   "debug",
+				ClientPort: storagetest.GetFreePort(t),
+				PeerPort:   storagetest.GetFreePort(t),
+			},
+		}
+
+		server := etcd.NewEmbeddedEtcd(cfgMgr(t, cfg), testutils.Logger(t))
+		require.NotNil(t, server)
+
+		err := server.Start(ctx)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			server.Shutdown()
+		})
+
+		// Verify PeerEndpoints includes both IP and hostname
+		peerEndpoints := server.PeerEndpoints()
+		assert.Len(t, peerEndpoints, 2, "PeerEndpoints should include both IP and hostname URLs")
+		assert.Contains(t, peerEndpoints[0], "127.0.0.1", "First peer endpoint should contain IP")
+		assert.Contains(t, peerEndpoints[1], "localhost", "Second peer endpoint should contain hostname")
+
+		// Verify ClientEndpoints includes both IP and hostname
+		clientEndpoints := server.ClientEndpoints()
+		assert.Len(t, clientEndpoints, 2, "ClientEndpoints should include both IP and hostname URLs")
+		assert.Contains(t, clientEndpoints[0], "127.0.0.1", "First client endpoint should contain IP")
+		assert.Contains(t, clientEndpoints[1], "localhost", "Second client endpoint should contain hostname")
+
+		// Verify the etcd member list contains both peer URLs
+		client, err := server.GetClient()
+		require.NoError(t, err)
+
+		members, err := client.MemberList(ctx)
+		require.NoError(t, err)
+		require.Len(t, members.Members, 1)
+
+		member := members.Members[0]
+		assert.Len(t, member.PeerURLs, 2, "Member should have both IP and hostname peer URLs")
+		assert.Len(t, member.ClientURLs, 2, "Member should have both IP and hostname client URLs")
+	})
+
 }
 
 func cfgMgr(t testing.TB, cfg config.Config) *config.Manager {
