@@ -320,27 +320,19 @@ func (e *EmbeddedEtcd) Error() <-chan error {
 func (e *EmbeddedEtcd) ClientEndpoints() []string {
 	appCfg := e.cfg.Config()
 	clientPort := appCfg.EtcdServer.ClientPort
-	endpoints := []string{
+	return []string{
 		fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, clientPort),
+		fmt.Sprintf("https://%s:%d", appCfg.Hostname, clientPort),
 	}
-	// Add hostname-based URL if hostname differs from IP
-	if appCfg.Hostname != "" && appCfg.Hostname != appCfg.IPv4Address {
-		endpoints = append(endpoints, fmt.Sprintf("https://%s:%d", appCfg.Hostname, clientPort))
-	}
-	return endpoints
 }
 
 func (e *EmbeddedEtcd) PeerEndpoints() []string {
 	appCfg := e.cfg.Config()
 	peerPort := appCfg.EtcdServer.PeerPort
-	endpoints := []string{
+	return []string{
 		fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, peerPort),
+		fmt.Sprintf("https://%s:%d", appCfg.Hostname, peerPort),
 	}
-	// Add hostname-based URL if hostname differs from IP
-	if appCfg.Hostname != "" && appCfg.Hostname != appCfg.IPv4Address {
-		endpoints = append(endpoints, fmt.Sprintf("https://%s:%d", appCfg.Hostname, peerPort))
-	}
-	return endpoints
 }
 
 func (e *EmbeddedEtcd) etcdDir() string {
@@ -661,23 +653,17 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 	}
 	c.AdvertiseClientUrls = []url.URL{
 		{Scheme: "https", Host: fmt.Sprintf("%s:%d", myIP, clientPort)},
+		{Scheme: "https", Host: fmt.Sprintf("%s:%d", cfg.Hostname, clientPort)},
 	}
-	// Add hostname-based URL if hostname differs from IP
-	if cfg.Hostname != "" && cfg.Hostname != myIP {
-		c.AdvertiseClientUrls = append(c.AdvertiseClientUrls,
-			url.URL{Scheme: "https", Host: fmt.Sprintf("%s:%d", cfg.Hostname, clientPort)})
-	}
+
 	c.ListenPeerUrls = []url.URL{
 		{Scheme: "https", Host: fmt.Sprintf("0.0.0.0:%d", peerPort)},
 	}
 	c.AdvertisePeerUrls = []url.URL{
 		{Scheme: "https", Host: fmt.Sprintf("%s:%d", myIP, peerPort)},
+		{Scheme: "https", Host: fmt.Sprintf("%s:%d", cfg.Hostname, peerPort)},
 	}
-	// Add hostname-based URL if hostname differs from IP
-	if cfg.Hostname != "" && cfg.Hostname != myIP {
-		c.AdvertisePeerUrls = append(c.AdvertisePeerUrls,
-			url.URL{Scheme: "https", Host: fmt.Sprintf("%s:%d", cfg.Hostname, peerPort)})
-	}
+
 	// This will get overridden when joining an existing cluster
 	c.InitialCluster = fmt.Sprintf(
 		"%s=http://%s:%d",

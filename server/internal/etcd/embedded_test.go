@@ -421,41 +421,6 @@ func TestEmbeddedEtcd(t *testing.T) {
 		assert.Len(t, member.ClientURLs, 2, "Member should have both IP and hostname client URLs")
 	})
 
-	t.Run("endpoints only include IP when hostname equals IP", func(t *testing.T) {
-		ctx := t.Context()
-
-		cfg := config.Config{
-			HostID:      uuid.NewString(),
-			DataDir:     t.TempDir(),
-			EtcdMode:    config.EtcdModeServer,
-			IPv4Address: "127.0.0.1",
-			Hostname:    "127.0.0.1",
-			EtcdClient: config.EtcdClient{
-				LogLevel: "debug",
-			},
-			EtcdServer: config.EtcdServer{
-				LogLevel:   "debug",
-				ClientPort: storagetest.GetFreePort(t),
-				PeerPort:   storagetest.GetFreePort(t),
-			},
-		}
-
-		server := etcd.NewEmbeddedEtcd(cfgMgr(t, cfg), testutils.Logger(t))
-		require.NotNil(t, server)
-
-		err := server.Start(ctx)
-		require.NoError(t, err)
-		t.Cleanup(func() {
-			server.Shutdown()
-		})
-
-		// Should only have 1 endpoint (no duplicate when hostname equals IP)
-		peerEndpoints := server.PeerEndpoints()
-		assert.Len(t, peerEndpoints, 1, "PeerEndpoints should only have IP when hostname equals IP")
-
-		clientEndpoints := server.ClientEndpoints()
-		assert.Len(t, clientEndpoints, 1, "ClientEndpoints should only have IP when hostname equals IP")
-	})
 }
 
 func cfgMgr(t testing.TB, cfg config.Config) *config.Manager {

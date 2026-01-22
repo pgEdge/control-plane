@@ -5,7 +5,7 @@ package etcd_test
 import (
 	"testing"
 
-	"github.com/pgEdge/control-plane/server/internal/etcd"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -70,7 +70,7 @@ func TestUrlsEqual(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := etcd.UrlsEqual(tt.a, tt.b)
+			result := ds.SetSymmetricDifference(tt.a, tt.b).Size() == 0
 			assert.Equal(t, tt.expected, result)
 		})
 	}

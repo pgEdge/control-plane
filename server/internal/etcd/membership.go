@@ -10,6 +10,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/certificates"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
 var (
@@ -117,7 +118,7 @@ func UpdateMemberPeerURLs(ctx context.Context, client *clientv3.Client, memberNa
 		return false, fmt.Errorf("member %s not found", memberName)
 	}
 
-	if UrlsEqual(member.PeerURLs, newPeerURLs) {
+	if ds.SetSymmetricDifference(member.PeerURLs, newPeerURLs).Size() == 0 {
 		return false, nil // No change needed
 	}
 
@@ -127,20 +128,4 @@ func UpdateMemberPeerURLs(ctx context.Context, client *clientv3.Client, memberNa
 	}
 
 	return true, nil
-}
-
-func UrlsEqual(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	aSet := make(map[string]struct{}, len(a))
-	for _, url := range a {
-		aSet[url] = struct{}{}
-	}
-	for _, url := range b {
-		if _, ok := aSet[url]; !ok {
-			return false
-		}
-	}
-	return true
 }
