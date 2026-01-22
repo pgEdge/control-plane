@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Control Plane Automated Testing</title>
+    <style>
+        @page { size: 13.333in 7.5in; margin: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; }
+
+        .slide {
+            width: 13.333in;
+            height: 7.5in;
+            page-break-after: always;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Slide 1 - Title */
+        .slide-title {
+            background: linear-gradient(135deg, #003366 0%, #004080 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        .slide-title h1 {
+            font-size: 56px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+        .slide-title h2 {
+            font-size: 28px;
+            font-weight: normal;
+            color: #c0c0c0;
+        }
+
+        /* Content slides */
+        .slide-content {
+            background: white;
+        }
+        .slide-header {
+            background: #003366;
+            color: white;
+            padding: 25px 40px;
+            font-size: 36px;
+            font-weight: bold;
+        }
+        .slide-body {
+            padding: 40px;
+            display: flex;
+            gap: 40px;
+        }
+        .slide-body.full-width {
+            flex-direction: column;
+        }
+        .content-left {
+            flex: 1;
+        }
+        .content-right {
+            flex: 1;
+            background: #282c34;
+            border-radius: 10px;
+            padding: 25px;
+            color: #c8c8c8;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        ul li {
+            font-size: 22px;
+            color: #404040;
+            margin-bottom: 18px;
+            padding-left: 30px;
+            position: relative;
+        }
+        ul li:before {
+            content: "•";
+            color: #0070c0;
+            font-size: 28px;
+            position: absolute;
+            left: 0;
+            top: -3px;
+        }
+
+        /* Pipeline slide */
+        .pipeline-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin: 50px 0;
+        }
+        .pipeline-stage {
+            width: 200px;
+            height: 160px;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+        }
+        .pipeline-stage.blue { background: #0070c0; }
+        .pipeline-stage.orange { background: #ff6600; }
+        .pipeline-stage.green { background: #009600; }
+        .pipeline-stage h3 {
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+        .pipeline-stage span {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        .arrow {
+            font-size: 36px;
+            color: #404040;
+        }
+        .command-box {
+            background: #282c34;
+            border-radius: 10px;
+            padding: 25px 35px;
+            margin: 0 60px;
+            color: #c8c8c8;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+        }
+        .command-box .comment { color: #6a9955; }
+
+        /* Architecture slide */
+        .arch-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 40px 0;
+        }
+        .node-box {
+            width: 280px;
+            height: 240px;
+            background: #0070c0;
+            border-radius: 15px;
+            border: 3px solid #003366;
+            padding: 15px;
+            color: white;
+        }
+        .node-box h4 {
+            text-align: center;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        .container-box {
+            background: #ff6600;
+            border-radius: 8px;
+            height: 140px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .container-box h5 {
+            font-size: 18px;
+        }
+        .container-box span {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        .config-box {
+            background: #282c34;
+            border-radius: 10px;
+            padding: 15px 30px;
+            color: #c8c8c8;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            text-align: center;
+            margin: 30px auto 0;
+            width: fit-content;
+        }
+
+        /* Summary slide */
+        .check-list li:before {
+            content: "✓";
+            color: #009600;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Slide 1: Title -->
+<div class="slide slide-title">
+    <h1>Control Plane Automated Testing</h1>
+    <h2>End-to-End Deployment & Testing Infrastructure</h2>
+</div>
+
+<!-- Slide 2: Pipeline Overview -->
+<div class="slide slide-content">
+    <div class="slide-header">Automation Pipeline Overview</div>
+    <div class="slide-body full-width">
+        <div class="pipeline-container">
+            <div class="pipeline-stage blue">
+                <h3>Launch<br>AWS VMs</h3>
+                <span>aws role</span>
+            </div>
+            <div class="arrow">→</div>
+            <div class="pipeline-stage blue">
+                <h3>Setup<br>Docker Swarm</h3>
+                <span>docker_swarm</span>
+            </div>
+            <div class="arrow">→</div>
+            <div class="pipeline-stage orange">
+                <h3>Deploy<br>Control Plane</h3>
+                <span>deploy_cp</span>
+            </div>
+            <div class="arrow">→</div>
+            <div class="pipeline-stage green">
+                <h3>Run<br>Tests</h3>
+                <span>http-apitest</span>
+            </div>
+        </div>
+        <div class="command-box">
+            <span class="comment"># Run entire pipeline</span><br>
+            cd ansible/launch_aws_setup && ansible-playbook site.yaml<br>
+            cd control-plane && go test -v -tags=http_apitest ./http-apitest/tests/...
+        </div>
+    </div>
+</div>
+
+<!-- Slide 3: Infrastructure Provisioning -->
+<div class="slide slide-content">
+    <div class="slide-header">Infrastructure Provisioning (Ansible)</div>
+    <div class="slide-body">
+        <div class="content-left">
+            <ul>
+                <li>AWS EC2 instances with Rocky Linux</li>
+                <li>Configurable node count via ec2_instance_count</li>
+                <li>Automatic SSH key generation and distribution</li>
+                <li>Docker CE installation on all nodes</li>
+                <li>Docker Swarm cluster initialization</li>
+                <li>Control Plane deployment from ghcr.io/pgedge/control-plane</li>
+            </ul>
+        </div>
+        <div class="content-right"># site.yaml
+- name: Launch AWS infrastructure
+  roles:
+    - aws
+
+- name: Setup Docker Swarm
+  roles:
+    - docker_swarm
+
+- name: Deploy Control Plane
+  roles:
+    - deploy_control_plane
+
+- name: Save IPs for testing
+  roles:
+    - save_node_ips</div>
+    </div>
+</div>
+
+<!-- Slide 4: Architecture -->
+<div class="slide slide-content">
+    <div class="slide-header">Docker Swarm Cluster Architecture</div>
+    <div class="slide-body full-width">
+        <div class="arch-container">
+            <div class="node-box">
+                <h4>Node 1 (Manager)</h4>
+                <div class="container-box">
+                    <h5>Control Plane</h5>
+                    <span>:3000</span>
+                </div>
+            </div>
+            <div class="node-box">
+                <h4>Node 2 (Worker)</h4>
+                <div class="container-box">
+                    <h5>Control Plane</h5>
+                    <span>:3000</span>
+                </div>
+            </div>
+            <div class="node-box">
+                <h4>Node 3 (Worker)</h4>
+                <div class="container-box">
+                    <h5>Control Plane</h5>
+                    <span>:3000</span>
+                </div>
+            </div>
+        </div>
+        <div class="config-box">
+            nodes_config.json<br>
+            ["ip1", "ip2", "ip3"]
+        </div>
+    </div>
+</div>
+
+<!-- Slide 5: Test Framework -->
+<div class="slide slide-content">
+    <div class="slide-header">HTTP API Test Framework</div>
+    <div class="slide-body">
+        <div class="content-left">
+            <ul>
+                <li>Go-based test suite with http_apitest build tag</li>
+                <li>Flexible configuration: env var or JSON file</li>
+                <li>Tests cluster initialization (GET /v1/cluster/init)</li>
+                <li>Tests node joining (POST /v1/cluster/join)</li>
+                <li>Supports 1-11 node clusters</li>
+                <li>Auto-configured by Ansible via nodes_config.json</li>
+            </ul>
+        </div>
+        <div class="content-right">// nodes_config.json
+{
+  "nodes": [
+    "13.127.241.95",
+    "13.201.116.205",
+    "13.233.245.218"
+  ]
+}
+
+// Run tests
+go test -v -tags=http_apitest \
+  ./http-apitest/tests/...
+
+// Or use environment variable
+CP_NODE_IPS=ip1,ip2,ip3 \
+  go test -v -tags=http_apitest ...</div>
+    </div>
+</div>
+
+<!-- Slide 6: Summary -->
+<div class="slide slide-content">
+    <div class="slide-header">Summary & Benefits</div>
+    <div class="slide-body full-width">
+        <ul class="check-list" style="margin-top: 30px;">
+            <li style="font-size: 26px; margin-bottom: 25px;"><strong>Infrastructure as Code</strong> - Reproducible AWS environment</li>
+            <li style="font-size: 26px; margin-bottom: 25px;"><strong>Container Orchestration</strong> - Docker Swarm for multi-node deployment</li>
+            <li style="font-size: 26px; margin-bottom: 25px;"><strong>Automated Deployment</strong> - Control Plane from official releases</li>
+            <li style="font-size: 26px; margin-bottom: 25px;"><strong>Integrated Testing</strong> - Seamless handoff to test framework</li>
+            <li style="font-size: 26px; margin-bottom: 25px;"><strong>Single Command</strong> - Full pipeline with ansible-playbook site.yaml</li>
+            <li style="font-size: 26px; margin-bottom: 25px;"><strong>Scalable</strong> - Change ec2_instance_count to add more nodes</li>
+        </ul>
+    </div>
+</div>
+
+</body>
+</html>
