@@ -1,10 +1,12 @@
 include common.mk
 
 # Overridable vars
+CI ?= false
 DEBUG ?= 0
 LOG_LEVEL ?= info
 DEV_IMAGE_REPO ?= ghcr.io/pgedge
 CONTROL_PLANE_IMAGE_REPO ?= host.docker.internal:5000/control-plane
+TEST_RERUN_FAILS ?= 0
 E2E_FIXTURE ?=
 E2E_PARALLEL ?= 8
 E2E_RUN ?=
@@ -30,7 +32,7 @@ docker_compose_dev=WORKSPACE_DIR=$(shell pwd) \
 		DEV_IMAGE_REPO=$(DEV_IMAGE_REPO) \
 		docker compose -f ./docker/control-plane-dev/docker-compose.yaml
 docker_compose_ci=docker compose -f ./docker/control-plane-ci/docker-compose.yaml
-e2e_args=-tags=e2e_test -count=1 -timeout=45m ./e2e/... \
+e2e_args=-tags=e2e_test -count=1 -timeout=45m \
 	$(if $(E2E_PARALLEL),-parallel $(E2E_PARALLEL)) \
 	$(if $(E2E_RUN),-run $(E2E_RUN)) \
 	-args \
@@ -39,7 +41,7 @@ e2e_args=-tags=e2e_test -count=1 -timeout=45m ./e2e/... \
 	$(if $(filter 1,$(E2E_DEBUG)),-debug) \
 	$(if $(E2E_DEBUG_DIR),-debug-dir $(E2E_DEBUG_DIR))
 
-cluster_test_args=-tags=cluster_test -count=1 -timeout=10m ./clustertest/... \
+cluster_test_args=-tags=cluster_test -count=1 -timeout=10m \
 	$(if $(CLUSTER_TEST_PARALLEL),-parallel $(CLUSTER_TEST_PARALLEL)) \
 	$(if $(CLUSTER_TEST_RUN),-run $(CLUSTER_TEST_RUN)) \
 	-args \
@@ -47,6 +49,14 @@ cluster_test_args=-tags=cluster_test -count=1 -timeout=10m ./clustertest/... \
 	$(if $(filter 1,$(CLUSTER_TEST_SKIP_IMAGE_BUILD)),-skip-image-build) \
 	$(if $(CLUSTER_TEST_IMAGE_TAG),-image-tag $(CLUSTER_TEST_IMAGE_TAG)) \
 	$(if $(CLUSTER_TEST_DATA_DIR),-data-dir $(CLUSTER_TEST_DATA_DIR))
+
+# Automatically adds junit output named after the rule, e.g.
+# 'test-e2e-results.xml' in CI environment.
+gotestsum=$(gobin)/gotestsum \
+	$(if $(filter true,$(CI)),--junitfile $@-results.xml)
+
+golangci-lint=$(gobin)/golangci-lint \
+	$(if $(filter true,$(CI)),--output.junit-xml.path $@-results.xml)
 
 .DEFAULT_GOAL := build
 
@@ -58,47 +68,45 @@ cluster_test_args=-tags=cluster_test -count=1 -timeout=10m ./clustertest/... \
 test:
 	$(gotestsum) \
 		--format-hide-empty-pkg \
-		./...
+		--rerun-fails=$(TEST_RERUN_FAILS) \
+		--packages='./...'
 
 .PHONY: test-etcd
 test-etcd-lifecycle:
 	$(gotestsum) \
 		--format-hide-empty-pkg \
+		--rerun-fails=$(TEST_RERUN_FAILS) \
+		--packages='./server/internal/etcd/...' \
 		-- \
-		-tags=etcd_lifecycle_test \
-		./server/internal/etcd/...
+		-tags=etcd_lifecycle_test
 
 .PHONY: test-workflows-backend
 test-workflows-backend:
 	$(gotestsum) \
 		--format-hide-empty-pkg \
+		--rerun-fails=$(TEST_RERUN_FAILS) \
+		--packages='./server/internal/workflows/backend/etcd/...' \
 		-- \
-		-tags=workflows_backend_test \
-		./server/internal/workflows/backend/etcd/...
+		-tags=workflows_backend_test
 
 .PHONY: test-ci
 test-ci:
 	$(gotestsum) \
 		--format-hide-empty-pkg \
 		--junitfile test-results.xml \
+		--rerun-fails=$(TEST_RERUN_FAILS) \
+		--packages='./...' \
 		-- \
-		-tags=workflows_backend_test,etcd_lifecycle_test \
-		./...
+		-tags=workflows_backend_test,etcd_lifecycle_test
 
 .PHONY: test-e2e
 test-e2e:
 	$(gotestsum) \
 		--format-hide-empty-pkg \
 		--format standard-verbose \
-		-- \
-		$(e2e_args)
-
-.PHONY: test-e2e-ci
-test-e2e-ci:
-	$(gotestsum) \
-		--format-hide-empty-pkg \
-		--format standard-verbose \
-		--junitfile e2e-test-results.xml \
+		--rerun-fails=$(TEST_RERUN_FAILS) \
+		--rerun-fails-max-failures=4 \
+		--packages='./e2e/...' \
 		-- \
 		$(e2e_args)
 
@@ -108,28 +116,15 @@ test-cluster:
 	$(gotestsum) \
 		--format-hide-empty-pkg \
 		--format standard-verbose \
-		-- \
-		$(cluster_test_args)
-
-.PHONY: test-cluster-ci
-test-cluster-ci:
-	CONTROL_PLANE_VERSION="$(CONTROL_PLANE_VERSION)" \
-	$(gotestsum) \
-		--format-hide-empty-pkg \
-		--format standard-verbose \
-		--junitfile cluster-test-results.xml \
+		--rerun-fails=$(TEST_RERUN_FAILS) \
+		--rerun-fails-max-failures=4 \
+		--packages='./clustertest/...' \
 		-- \
 		$(cluster_test_args)
 
 .PHONY: lint
 lint:
-	$(golangcilint) run ./...
-
-.PHONY: lint-ci
-lint-ci:
-	$(golangcilint) run \
-		--output.junit-xml.path lint-results.xml \
-		./...
+	$(golangci-lint) run ./...
 
 # Exclude some dependencies from NOTICE.txt generation
 # - github.com/pgEdge/control-plane is our own code
@@ -155,7 +150,7 @@ licenses-ci: licenses
 	@echo "NOTICE.txt is up to date."
 
 .PHONY: ci
-ci: test-ci lint-ci licenses-ci
+ci: test-ci lint licenses-ci
 
 ################
 # e2e fixtures #

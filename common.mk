@@ -2,7 +2,7 @@ first_gopath=$(firstword $(subst :, ,$(shell go env GOPATH)))
 gobin=$(or $(shell go env GOBIN),$(first_gopath)/bin)
 
 gotestsum=$(gobin)/gotestsum
-golangcilint=$(gobin)/golangci-lint
+golangci-lint=$(gobin)/golangci-lint
 goa=$(gobin)/goa
 goreleaser=$(gobin)/goreleaser
 changie=$(gobin)/changie
