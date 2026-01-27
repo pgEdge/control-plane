@@ -97,7 +97,7 @@ instances in the same database can continue running.
   `stopped` state.
 
 In the following example, the `curl` command stops an instance named
-"example-n1-689qacsi" for a database named "example":
+`example-n1-689qacsi` for a database named `example`:
 
 === "curl"
 ```sh
