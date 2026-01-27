@@ -118,7 +118,10 @@ func NewHost(t testing.TB, config HostConfig) *Host {
 			Started:          true,
 		},
 	)
-	require.NoError(t, err)
+	if err != nil {
+		printContainerLogs(t.Context(), t, id, ctr)
+		t.Fatal(err)
+	}
 
 	h := &Host{
 		id:        id,
@@ -133,12 +136,8 @@ func NewHost(t testing.TB, config HostConfig) *Host {
 		defer cancel()
 
 		if t.Failed() {
-			logs, err := containerLogs(ctx, t, h.container)
-			if err != nil {
-				tLogf(t, "failed to extract container logs: %s", err)
-			} else {
-				tLogf(t, "host %s logs: %s", id, logs)
-			}
+
+			printContainerLogs(ctx, t, id, h.container)
 		}
 
 		if testConfig.skipCleanup {
@@ -286,6 +285,21 @@ func (h *Host) RecreateWithMode(t testing.TB, newMode EtcdMode) {
 	// which now points to the new container.
 	h.container = newContainer
 	h.port = ports[0]
+}
+
+func printContainerLogs(ctx context.Context, t testing.TB, hostID string, container testcontainers.Container) {
+	t.Helper()
+
+	if container == nil {
+		tLog(t, "container is nil")
+		return
+	}
+	logs, err := containerLogs(t.Context(), t, container)
+	if err != nil {
+		tLogf(t, "failed to extract container logs: %s", err)
+	} else {
+		tLogf(t, "host %s logs: %s", hostID, logs)
+	}
 }
 
 func containerLogs(ctx context.Context, t testing.TB, container testcontainers.Container) (string, error) {

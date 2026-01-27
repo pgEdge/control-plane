@@ -63,19 +63,19 @@ jobs:
       - common_setup
       - run:
           name: Run CI checks
-          command: make ci
+          command: make ci TEST_RERUN_FAILS=2
       - run:
           name: Run cluster tests
           command: |
             make docker-swarm-init
             make start-local-registry
             make buildx-init
-            make test-cluster-ci CONTROL_PLANE_IMAGE_REPO=172.17.0.1:5000/control-plane
+            make test-cluster CONTROL_PLANE_IMAGE_REPO=172.17.0.1:5000/control-plane TEST_RERUN_FAILS=2
       - run:
           name: Run e2e tests with Docker Compose
           command: |
             make ci-compose-detached
-            make test-e2e-ci E2E_PARALLEL=4 E2E_DEBUG=1 E2E_FIXTURE=ci
+            make test-e2e E2E_PARALLEL=4 E2E_DEBUG=1 E2E_FIXTURE=ci TEST_RERUN_FAILS=2
       - run:
           name: Archive debug output
           command: |

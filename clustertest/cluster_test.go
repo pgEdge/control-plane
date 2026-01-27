@@ -3,6 +3,7 @@
 package clustertest
 
 import (
+	"encoding/json"
 	"maps"
 	"testing"
 
@@ -78,7 +79,10 @@ func (c *Cluster) AssertHealthy(t testing.TB) {
 	foundHosts := map[string]bool{}
 
 	for _, host := range resp.Hosts {
-		assert.Equal(t, "healthy", host.Status.State)
+		components, err := json.MarshalIndent(host.Status.Components, "\t", "  ")
+		require.NoError(t, err)
+
+		assert.Equal(t, "healthy", host.Status.State, "host '%s' has unhealthy status '%s', components: %s", host.ID, host.Status.State, string(components))
 		foundHosts[string(host.ID)] = true
 	}
 	for hostID := range c.hosts {
