@@ -1,6 +1,8 @@
 package pending_event
 
 import (
+	"time"
+
 	"github.com/cschleiden/go-workflows/backend/history"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
@@ -12,6 +14,20 @@ type Value struct {
 	WorkflowInstanceID  string         `json:"workflow_instance_id"`
 	WorkflowExecutionID string         `json:"workflow_execution_id"`
 	Event               *history.Event `json:"event"`
+	CreatedAt           int64          `json:"created_at"`
+}
+
+func NewValue(
+	workflowInstanceID string,
+	workflowExecutionID string,
+	event *history.Event,
+) *Value {
+	return &Value{
+		WorkflowInstanceID:  workflowInstanceID,
+		WorkflowExecutionID: workflowExecutionID,
+		Event:               event,
+		CreatedAt:           time.Now().UnixMicro(),
+	}
 }
 
 type Store struct {
