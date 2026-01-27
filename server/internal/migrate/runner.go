@@ -146,7 +146,7 @@ func (r *Runner) runMigrations(ctx context.Context) error {
 
 	startIndex := r.findStartIndex(currentRevision)
 	if startIndex >= len(r.migrations) {
-		r.logger.Info().Msg("control-plane db is up to date, no migrations to run")
+		r.logger.Debug().Msg("control-plane db is up to date, no migrations to run")
 		return nil
 	}
 
@@ -199,7 +199,7 @@ func (r *Runner) findStartIndex(currentRevision string) int {
 
 func (r *Runner) hasPendingMigrations(ctx context.Context) (bool, error) {
 	if len(r.migrations) == 0 {
-		r.logger.Info().Msg("no migrations to run")
+		r.logger.Debug().Msg("no migrations to run")
 		return false, nil
 	}
 
@@ -210,7 +210,7 @@ func (r *Runner) hasPendingMigrations(ctx context.Context) (bool, error) {
 
 	startIndex := r.findStartIndex(currentRevision)
 	if startIndex >= len(r.migrations) {
-		r.logger.Info().Msg("control-plane db is up to date, no migrations to run")
+		r.logger.Debug().Msg("control-plane db is up to date, no migrations to run")
 		return false, nil
 	}
 

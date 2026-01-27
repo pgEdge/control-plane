@@ -45,11 +45,11 @@ func (s *httpServer) start() {
 }
 
 func (s *httpServer) listenAndServe() {
-	go func() {
-		s.logger.Info().
-			Str("host_port", s.server.Addr).
-			Msg("starting http server")
+	s.logger.Info().
+		Str("host_port", s.server.Addr).
+		Msg("starting http server")
 
+	go func() {
 		if err := s.server.ListenAndServe(); err != nil {
 			s.errCh <- fmt.Errorf("http server error: %w", err)
 		}
@@ -57,11 +57,11 @@ func (s *httpServer) listenAndServe() {
 }
 
 func (s *httpServer) listenAndServeTLS() {
-	go func() {
-		s.logger.Info().
-			Str("host_port", s.server.Addr).
-			Msg("starting https server")
+	s.logger.Info().
+		Str("host_port", s.server.Addr).
+		Msg("starting https server")
 
+	go func() {
 		rootCA, err := os.ReadFile(s.cfg.CACert)
 		if err != nil {
 			s.errCh <- fmt.Errorf("failed to read CA cert: %w", err)

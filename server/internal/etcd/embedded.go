@@ -44,8 +44,10 @@ type EmbeddedEtcd struct {
 func NewEmbeddedEtcd(cfg *config.Manager, logger zerolog.Logger) *EmbeddedEtcd {
 	return &EmbeddedEtcd{
 		cfg:         cfg,
-		logger:      logger,
 		initialized: make(chan struct{}),
+		logger: logger.With().
+			Str("component", "etcd_server").
+			Logger(),
 	}
 }
 
@@ -155,6 +157,10 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 
 func (e *EmbeddedEtcd) start(ctx context.Context) error {
 	appCfg := e.cfg.Config()
+	e.logger.Info().
+		Int("peer_port", appCfg.EtcdServer.PeerPort).
+		Int("client_port", appCfg.EtcdServer.ClientPort).
+		Msg("starting embedded etcd server")
 
 	etcdCfg, err := embedConfig(appCfg, e.logger)
 	if err != nil {
@@ -264,6 +270,11 @@ func (e *EmbeddedEtcd) Join(ctx context.Context, options JoinOptions) error {
 	etcdCfg.InitialCluster = strings.Join(peers, ",")
 	etcdCfg.ClusterState = embed.ClusterStateFlagExisting
 
+	e.logger.Info().
+		Int("peer_port", appCfg.EtcdServer.PeerPort).
+		Int("client_port", appCfg.EtcdServer.ClientPort).
+		Msg("starting embedded etcd server")
+
 	etcd, err := startEmbedded(ctx, etcdCfg)
 	if err != nil {
 		return err
@@ -299,6 +310,8 @@ func (e *EmbeddedEtcd) Initialized() <-chan struct{} {
 }
 
 func (e *EmbeddedEtcd) Shutdown() error {
+	e.logger.Info().Msg("shutting down embedded etcd server")
+
 	var errs []error
 	if e.client != nil {
 		if err := e.client.Close(); err != nil {
