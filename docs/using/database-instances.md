@@ -88,7 +88,7 @@ instances in the same database can continue running.
 !!! note
 
     As `Stop Instance` removes a database instance from service without 
-    deleting it, it can be used toisolate an instance not currently in use but that is expected to be restarted later.
+    deleting it, it can be used to isolate an instance not currently in use but that is expected to be restarted later.
 
 * The transition is: available → stopping → stopped.
 * The port remains reserved for this instance.
