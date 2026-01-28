@@ -100,10 +100,10 @@ In the following example, the `curl` command stops an instance named
 `example-n1-689qacsi` for a database named `example`:
 
 === "curl"
-```sh
-curl -X POST \
-  http://host-3:3000/v1/databases/example/instances/example-n1-689qacsi/stop-instance
-```
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases/example/instances/example-n1-689qacsi/stop-instance
+    ```
 
 ## Starting Instances
 
@@ -121,10 +121,10 @@ In the following example, the `curl` command starts an instance with the ID
 `example-n1-689qacsi` for a database named `example`:
 
 === "curl"
-```sh
-curl -X POST \
-  http://host-3:3000/v1/databases/example/instances/example-n1-689qacsi/start-instance
-```
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases/example/instances/example-n1-689qacsi/start-instance
+    ```
 
 ## Restarting Instances
 
@@ -143,7 +143,7 @@ In the following example, the `curl` command restarts an instance with ID
 `example-n1-689qacsi` for a database named `example`:
 
 === "curl"
-```sh
-curl -X POST \
-  http://host-3:3000/v1/databases/example/instances/example-n1-689qacsi/restart-instance
-```
+
+    ```sh
+    curl -X POST http://host-3:3000/v1/databases/example/instances/example-n1-689qacsi/restart-instance
+    ```
