@@ -2,6 +2,12 @@
 
 set -o errexit
 set -o pipefail
+set -x
+
+script_dir=$( cd -- "$(dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
+fixtures_dir="${script_dir}/../e2e/fixtures"
+fixture_variant="${FIXTURE_VARIANT:-large}"
+fixture_extra_vars="${FIXTURE_EXTRA_VARS}"
 
 # Simulates losing a Docker Swarm node, but retains all Etcd data so that we can
 # focus on just the Docker Swarm and database instance recovery steps
@@ -23,7 +29,6 @@ simulate_swarm_node_loss() {
 EOF
 		echo
 	done
-
 }
 
 # Simulates losing an Etcd node, but retains Docker Swarm so that we can focus
@@ -48,7 +53,6 @@ simulate_etcd_node_loss() {
 EOF
 		echo
 	done
-
 }
 
 # This is most similar to a real disaster recovery scenario. We're losing the
@@ -66,6 +70,39 @@ simulate_full_loss() {
 
 		echo
 	done
+}
+
+# Resets Swarm and the Control Plane on all hosts and returns the Control Plane
+# to an uninitialized state.
+reset() {
+	echo "=== resetting all hosts ==="
+	echo
+
+	VARIANT="${fixture_variant}" \
+	EXTRA_VARS="${fixture_extra_vars}" \
+	make -C "${fixtures_dir}" \
+		deploy-lima-machines
+
+	for host_id in $(limactl ls | awk '$1~/^host-/ && $2 == "Running" { print $1 }'); do
+		echo "resetting swarm on ${host_id}"
+
+		ssh -T -F ~/.lima/${host_id}/ssh.config lima-${host_id} <<-'EOF'
+			if [[ $(docker info --format '{{.Swarm.LocalNodeState}}') == "active" ]]; then
+				docker swarm leave --force
+			else
+				echo "node already left swarm"
+			fi
+			echo "removing control-plane data directory"
+			sudo rm -rf /data/control-plane
+		EOF
+	done
+
+	VARIANT="${fixture_variant}" \
+	EXTRA_VARS="${fixture_extra_vars}" \
+	make -C "${fixtures_dir}" \
+		setup-lima-hosts \
+		teardown-lima-control-plane \
+		deploy-lima-control-plane
 }
 
 usage() {
@@ -103,6 +140,12 @@ Examples:
 
 	# Simulate full loss of two hosts to lose quorum
 	$1 full host-1 host-3
+
+	# Reset the fixture back to its initial state
+	$1 reset
+
+	# Remember to include the fixture variant if you're using a non-default one
+	FIXTURE_VARIANT=small $1 reset
 EOF
 }
 
@@ -116,6 +159,9 @@ main() {
 			;;
 		full)
 			simulate_full_node_loss ${@:2}
+			;;
+		reset)
+			reset
 			;;
 		--help|-h)
 			usage $0
