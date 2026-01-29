@@ -2,10 +2,10 @@
 
 set -o errexit
 set -o pipefail
-set -x
 
 script_dir=$( cd -- "$(dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
-fixtures_dir="${script_dir}/../e2e/fixtures"
+project_dir="${script_dir}/.."
+fixtures_dir="${project_dir}/e2e/fixtures"
 fixture_variant="${FIXTURE_VARIANT:-large}"
 fixture_extra_vars="${FIXTURE_EXTRA_VARS}"
 
@@ -40,14 +40,23 @@ simulate_etcd_node_loss() {
 		echo "=== simulating etcd node loss on ${host_id} ==="
 		echo
 
-		# We're using xargs here to gracefully ignore when the service does not
+		# We're using xargs here to gracefully ignore when the services do not
 		# exist
-		ssh -T -F ~/.lima/${host_id}/ssh.config lima-${host_id} <<-EOF
+		ssh -T -F ~/.lima/host-1/ssh.config lima-host-1 <<-EOF
 			echo "removing control-plane swarm service"
 			docker service ls \
 				--filter 'name=control-plane_${host_id}' \
 				--format '{{ .Name }}' \
 				| xargs -r docker service rm
+
+			echo "removing all database swarm services"
+			docker service ls \
+				--filter 'label=pgedge.host.id=${host_id}' \
+				--format '{{ .Name }}' \
+				| xargs -r docker service rm 
+EOF
+
+		ssh -T -F ~/.lima/${host_id}/ssh.config lima-${host_id} <<-EOF
 			echo "removing control-plane data directory"
 			sudo rm -rf /data/control-plane
 EOF
@@ -96,6 +105,8 @@ reset() {
 			sudo rm -rf /data/control-plane
 		EOF
 	done
+
+	make -C "${project_dir}" goreleaser-build
 
 	VARIANT="${fixture_variant}" \
 	EXTRA_VARS="${fixture_extra_vars}" \
