@@ -159,7 +159,10 @@ func (s *PostgresService) Delete(ctx context.Context, rc *resource.Context) erro
 		Wait:        true,
 		WaitTimeout: time.Minute,
 	})
-	if err != nil {
+	if errors.Is(err, docker.ErrNotFound) {
+		// Service is already deleted.
+		return nil
+	} else if err != nil {
 		return fmt.Errorf("failed to scale down postgres service before removal: %w", err)
 	}
 
