@@ -2,10 +2,10 @@
 
 set -o errexit
 set -o pipefail
-set -x
 
 script_dir=$( cd -- "$(dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
-fixtures_dir="${script_dir}/../e2e/fixtures"
+project_dir="${script_dir}/.."
+fixtures_dir="${project_dir}/e2e/fixtures"
 fixture_variant="${FIXTURE_VARIANT:-large}"
 fixture_extra_vars="${FIXTURE_EXTRA_VARS}"
 
@@ -14,7 +14,7 @@ fixture_extra_vars="${FIXTURE_EXTRA_VARS}"
 simulate_swarm_node_loss() {
 	local host_id
 
-	for host_id in $@; do
+	for host_id in "$@"; do
 		echo "=== simulating swarm node loss on ${host_id} ==="
 		echo
 
@@ -36,18 +36,27 @@ EOF
 simulate_etcd_node_loss() {
 	local host_id
 
-	for host_id in $@; do
+	for host_id in "$@"; do
 		echo "=== simulating etcd node loss on ${host_id} ==="
 		echo
 
-		# We're using xargs here to gracefully ignore when the service does not
+		# We're using xargs here to gracefully ignore when the services do not
 		# exist
-		ssh -T -F ~/.lima/${host_id}/ssh.config lima-${host_id} <<-EOF
+		ssh -T -F ~/.lima/host-1/ssh.config lima-host-1 <<-EOF
 			echo "removing control-plane swarm service"
 			docker service ls \
 				--filter 'name=control-plane_${host_id}' \
 				--format '{{ .Name }}' \
 				| xargs -r docker service rm
+
+			echo "removing all database swarm services"
+			docker service ls \
+				--filter 'label=pgedge.host.id=${host_id}' \
+				--format '{{ .Name }}' \
+				| xargs -r docker service rm 
+EOF
+
+		ssh -T -F ~/.lima/${host_id}/ssh.config lima-${host_id} <<-EOF
 			echo "removing control-plane data directory"
 			sudo rm -rf /data/control-plane
 EOF
@@ -61,7 +70,7 @@ EOF
 simulate_full_loss() {
 	local host_id
 
-	for host_id in $@; do
+	for host_id in "$@"; do
 		echo "=== simulating full loss of ${host_id} ==="
 		echo
 
@@ -97,6 +106,8 @@ reset() {
 		EOF
 	done
 
+	make -C "${project_dir}" goreleaser-build
+
 	VARIANT="${fixture_variant}" \
 	EXTRA_VARS="${fixture_extra_vars}" \
 	make -C "${fixtures_dir}" \
@@ -107,11 +118,10 @@ reset() {
 
 usage() {
 cat <<EOF
-Usage: $1 <swarm|etcd|full> <host-id> [host-id ...]
+Usage: $1 <swarm|etcd|full|reset> <host-id> [host-id ...]
 
 Simulates disasters against the Lima test fixtures. Supports three different
-different types of disasters to enable us to develop some recovery steps in
-parallel:
+types of disasters to enable us to develop some recovery steps in parallel:
 
 - swarm: simulates losing a Swarm node and database instance data without losing
   Etcd data
@@ -158,7 +168,7 @@ main() {
 			simulate_etcd_node_loss ${@:2}
 			;;
 		full)
-			simulate_full_node_loss ${@:2}
+			simulate_full_loss ${@:2}
 			;;
 		reset)
 			reset
@@ -173,4 +183,4 @@ main() {
 	esac
 }
 
-main $@
+main "$@"
