@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/docker/docker/api/types/swarm"
@@ -18,6 +19,14 @@ import (
 var _ resource.Resource = (*PostgresService)(nil)
 
 const ResourceTypePostgresService resource.Type = "swarm.postgres_service"
+
+// isTimeoutError checks if an error is a timeout error (context deadline exceeded).
+func isTimeoutError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return errors.Is(err, context.DeadlineExceeded) || strings.Contains(err.Error(), "context deadline exceeded")
+}
 
 func PostgresServiceResourceIdentifier(instanceID string) resource.Identifier {
 	return resource.Identifier{
@@ -159,10 +168,19 @@ func (s *PostgresService) Delete(ctx context.Context, rc *resource.Context) erro
 		Wait:        true,
 		WaitTimeout: time.Minute,
 	})
-	if errors.Is(err, docker.ErrNotFound) {
+	switch {
+	case errors.Is(err, docker.ErrNotFound):
 		// Service is already deleted.
 		return nil
-	} else if err != nil {
+	case isTimeoutError(err):
+		// NOTE: This assumes timeout always indicates an unreachable host.
+		// This is currently intended for remove-host --force operations.
+		// If timeout occurs during normal operations (e.g., temporary network
+		// issues), this could incorrectly proceed with removal.
+		//
+		// TODO: Add RemovingHosts to resource.Context to safely distinguish
+		// between force-removal scenarios and transient network issues.
+	case err != nil:
 		return fmt.Errorf("failed to scale down postgres service before removal: %w", err)
 	}
 

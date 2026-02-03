@@ -46,6 +46,19 @@ func (w *Workflows) applyEvents(
 					// The host is removed, so we want to just remove it from
 					// the state.
 					state.Remove(event.Resource)
+
+					// If this is an instance resource, we also need to clean up
+					// the instance record from etcd since the normal Delete()
+					// lifecycle method couldn't run on the removed host.
+					if event.Resource.Identifier.Type == database.ResourceTypeInstance {
+						cleanupIn := &activities.CleanupInstanceInput{
+							DatabaseID: databaseID,
+							InstanceID: event.Resource.Identifier.ID,
+						}
+						if _, err := w.Activities.ExecuteCleanupInstance(ctx, cleanupIn).Get(ctx); err != nil {
+							return fmt.Errorf("failed to cleanup orphaned instance %s: %w", event.Resource.Identifier.ID, err)
+						}
+					}
 				} else if event.Type != resource.EventTypeRefresh {
 					// In the case of a refresh event, we'll just leave the
 					// state alone so that we can plan dependent operations. All
