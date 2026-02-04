@@ -27,6 +27,7 @@ import (
 
 var ErrNotFound = errors.New("not found error")
 var ErrProcessNotFound = errors.New("matching process not found")
+var ErrNodeUnavailable = errors.New("node unavailable")
 
 var _ common.HealthCheckable = (*Docker)(nil)
 var _ do.Shutdownable = (*Docker)(nil)
@@ -357,6 +358,9 @@ func (d *Docker) TasksByServiceID(ctx context.Context) (map[string][]swarm.Task,
 // number of tasks. The Swarm API can return stale data before the updated spec
 // has propagated to all manager nodes, so the optional 'previous swarm.Version'
 // parameter can be used to detect stale reads.
+//
+// Returns ErrNodeUnavailable if tasks cannot transition because their nodes are
+// down or unreachable.
 func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout time.Duration, previous swarm.Version) error {
 	if timeout == 0 {
 		timeout = time.Minute
@@ -399,6 +403,9 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 			if err != nil {
 				return fmt.Errorf("failed to list tasks for service: %w", errTranslate(err))
 			}
+
+			// Build a set of node IDs for tasks that should be stopping but aren't
+			stuckNodeIDs := make(map[string]struct{})
 			var running, stopping uint64
 			for _, t := range tasks {
 				if t.Status.State == swarm.TaskStateRunning {
@@ -406,14 +413,44 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 						running++
 					} else {
 						stopping++
+						stuckNodeIDs[t.NodeID] = struct{}{}
 					}
 				}
 			}
 			if running == desired && stopping == 0 {
 				return nil
 			}
+
+			// If we have tasks that should be stopping, check if their nodes are unavailable
+			if len(stuckNodeIDs) > 0 {
+				unavailable, err := d.checkNodesUnavailable(ctx, stuckNodeIDs)
+				if err != nil {
+					continue
+				}
+				if unavailable {
+					return fmt.Errorf("%w: tasks cannot stop because their nodes are down", ErrNodeUnavailable)
+				}
+			}
 		}
 	}
+}
+
+// checkNodesUnavailable returns true if any of the given nodes are unavailable
+// (status "down" or "unknown").
+func (d *Docker) checkNodesUnavailable(ctx context.Context, nodeIDs map[string]struct{}) (bool, error) {
+	nodes, err := d.client.NodeList(ctx, types.NodeListOptions{})
+	if err != nil {
+		return false, fmt.Errorf("failed to list nodes: %w", err)
+	}
+
+	for _, node := range nodes {
+		if _, ok := nodeIDs[node.ID]; ok {
+			if node.Status.State == swarm.NodeStateDown || node.Status.State == swarm.NodeStateUnknown {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }
 
 func (d *Docker) HealthCheck() common.ComponentStatus {

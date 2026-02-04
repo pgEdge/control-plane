@@ -47,6 +47,9 @@ func (w *Workflows) applyEvents(
 					// the state.
 					state.Remove(event.Resource)
 
+					// TODO(PLAT-398): Remove this workaround once instance records
+					// are managed outside of the instance resource lifecycle.
+					//
 					// If this is an instance resource, we also need to clean up
 					// the instance record from etcd since the normal Delete()
 					// lifecycle method couldn't run on the removed host.

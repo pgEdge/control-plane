@@ -1,4 +1,4 @@
-# Partial Recovery Guide
+# Partial Failure Recovery Guide (Quorum Intact)
 
 This guide explains how to recover from a partial failure scenario where one or more hosts in your cluster become unavailable. Partial recovery allows you to continue operating with reduced capacity on remaining hosts and optionally restore failed hosts later.
 
@@ -6,10 +6,9 @@ This guide explains how to recover from a partial failure scenario where one or 
 
 Partial recovery is appropriate when:
 
-- A host becomes unreachable (hardware failure, network isolation, VM crash, etc.)
+- A host is permanently lost and cannot be recovered (hardware failure, data corruption, decommissioned infrastructure, etc.)
 - The Docker Swarm cluster is still functional on remaining hosts
 - The Control Plane etcd cluster maintains quorum on remaining hosts
-- You need to remove the failed host and continue operations
 
 !!! note
 
@@ -19,86 +18,96 @@ Partial recovery is appropriate when:
 
 Before starting the recovery process, ensure you have:
 
-- Access to the Control Plane API (via `cp-req` CLI or direct API calls)
+- Access to the Control Plane API
 - SSH access to healthy cluster hosts for Docker Swarm management
 - The failed host identified by its host ID (e.g., `host-3`)
-- Knowledge of which databases have nodes on the failed host
+- Knowledge of which databases have nodes on the failed host (you can find this via `GET /v1/databases` — each instance in the response includes a `host_id` field)
+- The Docker Swarm stack YAML file used to deploy Control Plane services
 
 ## Phase 1: Remove the Failed Host
 
 ### Step 1.1: Force Remove the Host from Control Plane
 
-When a host is unreachable, use the `--force` flag to remove it from the Control Plane cluster. This operation will:
+When a host is unrecoverable, use the `force` query parameter to remove it from the Control Plane cluster. This operation will:
 
 - Remove the host from the etcd cluster membership
-- Mark all database instances on the failed host for cleanup
-- Clean up orphaned instance records from the Control Plane state
+- Update each database to remove all instances on the failed host
 
-=== "curl"
+```sh
+curl -X DELETE http://host-1:3000/v1/hosts/host-3?force=true
+```
 
-    ```sh
-    curl -X DELETE http://host-1:3000/v1/hosts/host-3?force=true
-    ```
+Removing a host is an asynchronous operation. The response contains a task ID for the overall removal process, plus task IDs for each database update it performs:
 
-=== "cp-req"
+```json
+{
+  "task": {
+    "task_id": "019c243c-1eac-719e-9688-575dfb981c15",
+    "type": "remove_host",
+    "status": "pending"
+  },
+  "update_database_tasks": [
+    {
+      "task_id": "019c243c-1eaf-7416-ac13-489b7b40f66a",
+      "database_id": "example",
+      "type": "update",
+      "status": "pending"
+    }
+  ]
+}
+```
 
-    ```sh
-    cp1-req remove-host host-3 --force
-    ```
+You can monitor the progress of the host removal and database updates using the task endpoints:
+
+```sh
+# Monitor host removal task
+curl http://host-1:3000/v1/hosts/host-3/tasks/019c243c-1eac-719e-9688-575dfb981c15
+
+# Monitor database update task logs
+curl http://host-1:3000/v1/databases/example/tasks/019c243c-1eaf-7416-ac13-489b7b40f66a/log
+```
 
 !!! warning
 
-    The `--force` flag bypasses health checks and should only be used when the host is confirmed unreachable. Using it on a healthy host can cause data inconsistencies.
+    The `force` query parameter bypasses health checks and should only be used when the host is confirmed unrecoverable. Using it on a healthy host can cause data inconsistencies.
 
-### Step 1.2: Update Affected Databases
+### Step 1.2: Update Affected Databases (Optional)
 
-After removing the host, update each affected database to remove nodes that were running on the failed host. This ensures the database operates correctly with the remaining nodes.
+!!! note
+
+    Skip this step if you plan to restore the failed host later. The force remove operation in Step 1.1 is sufficient to get databases into a working state. Only perform this step if you are permanently reducing the cluster size.
+
+If you are permanently removing the node, update each affected database to remove nodes that were running on the failed host.
 
 First, retrieve the current database configuration:
 
-=== "curl"
-
-    ```sh
-    curl http://host-1:3000/v1/databases/example
-    ```
-
-=== "cp-req"
-
-    ```sh
-    cp1-req get-database example
-    ```
+```sh
+curl http://host-1:3000/v1/databases/example
+```
 
 Then submit an update request with only the healthy nodes. For example, if your database had nodes n1, n2, n3 and n3 was on the failed host:
 
-=== "curl"
-
-    ```sh
-    curl -X POST http://host-1:3000/v1/databases/example \
-        -H 'Content-Type:application/json' \
-        --data '{
-            "spec": {
-                "database_name": "example",
-                "database_users": [
-                    {
-                        "username": "admin",
-                        "db_owner": true,
-                        "attributes": ["SUPERUSER", "LOGIN"]
-                    }
-                ],
-                "port": 5432,
-                "nodes": [
-                    { "name": "n1", "host_ids": ["host-1"] },
-                    { "name": "n2", "host_ids": ["host-2"] }
-                ]
-            }
-        }'
-    ```
-
-=== "cp-req"
-
-    ```sh
-    cp1-req update-database example < reduced-spec.json
-    ```
+```sh
+curl -X POST http://host-1:3000/v1/databases/example \
+    -H 'Content-Type:application/json' \
+    --data '{
+        "spec": {
+            "database_name": "example",
+            "database_users": [
+                {
+                    "username": "admin",
+                    "db_owner": true,
+                    "attributes": ["SUPERUSER", "LOGIN"]
+                }
+            ],
+            "port": 5432,
+            "nodes": [
+                { "name": "n1", "host_ids": ["host-1"] },
+                { "name": "n2", "host_ids": ["host-2"] }
+            ]
+        }
+    }'
+```
 
 ### Step 1.3: Clean Up Docker Swarm
 
@@ -137,17 +146,9 @@ After completing Phase 1, verify that your cluster and databases are operating c
 
 ### Step 2.1: Verify Host Status
 
-=== "curl"
-
-    ```sh
-    curl http://host-1:3000/v1/hosts
-    ```
-
-=== "cp-req"
-
-    ```sh
-    cp1-req list-hosts
-    ```
+```sh
+curl http://host-1:3000/v1/hosts
+```
 
 The failed host should no longer appear in the list.
 
@@ -155,17 +156,9 @@ The failed host should no longer appear in the list.
 
 Check that each affected database shows healthy status:
 
-=== "curl"
-
-    ```sh
-    curl http://host-1:3000/v1/databases/example
-    ```
-
-=== "cp-req"
-
-    ```sh
-    cp1-req get-database example
-    ```
+```sh
+curl http://host-1:3000/v1/databases/example
+```
 
 Verify that:
 
@@ -211,11 +204,18 @@ ls -la /data/control-plane/
 
 ### Step 3.2: Rejoin Docker Swarm
 
-On a healthy manager node, generate a join token:
+On a healthy manager node, generate a join token. Use the appropriate token type based on whether the failed host was a manager or worker:
 
+**For manager nodes:**
 ```bash
-# On host-1 (manager)
+# On host-1 (existing manager)
 docker swarm join-token manager
+```
+
+**For worker nodes:**
+```bash
+# On host-1 (existing manager)
+docker swarm join-token worker
 ```
 
 This outputs a command like:
@@ -230,20 +230,25 @@ On the restored host, execute the join command:
 docker swarm join --token SWMTKN-1-xxx...xxx lima-host-1:2377
 ```
 
-!!! note
+### Step 3.3: Prepare Data Directory
 
-    Always join as a manager first using the manager token. The Control Plane requires all nodes to be swarm managers for proper service orchestration.
+Ensure the data directory exists on the restored host:
 
-### Step 3.3: Deploy Control Plane Stack
+```bash
+# On host-3
+sudo mkdir -p /data/control-plane
+```
+
+### Step 3.4: Deploy Control Plane Stack
 
 After the host rejoins the swarm, redeploy the Control Plane stack to start services on the restored host:
 
 ```bash
 # On any manager node
-docker stack deploy -c /path/to/stack.yaml control-plane
+docker stack deploy -c /tmp/stack.yaml control-plane
 ```
 
-### Step 3.4: Verify Service Startup
+### Step 3.5: Verify Service Startup
 
 Wait for the Control Plane service to start on the restored host:
 
@@ -257,51 +262,25 @@ docker service logs control-plane_host-3 --follow
 
 The service should reach `Running` state. If it shows errors, see the Troubleshooting section.
 
-### Step 3.5: Prepare Data Directory
-
-Ensure the data directory exists and has correct permissions on the restored host:
-
-```bash
-# On host-3
-sudo mkdir -p /data/control-plane
-```
-
 ## Phase 4: Join Control Plane Cluster
 
 ### Step 4.1: Get Join Token
 
-Generate a join token from an existing cluster member:
+Generate a join token from an existing cluster member. The response contains both the token and the leader's server URL, which together form the request body for the join-cluster API:
 
-=== "curl"
-
-    ```sh
-    curl http://host-1:3000/v1/join-token
-    ```
-
-=== "cp-req"
-
-    ```sh
-    JOIN_TOKEN=$(cp1-req get-join-token)
-    echo $JOIN_TOKEN
-    ```
+```sh
+JOIN_TOKEN="$(curl http://host-1:3000//v1/cluster/join-token)"
+```
 
 ### Step 4.2: Join the Cluster
 
 Call the join-cluster API on the restored host. This adds the host to the etcd cluster and registers it with the Control Plane:
 
-=== "curl"
-
-    ```sh
-    curl -X POST http://host-3:3000/v1/join-cluster \
-        -H 'Content-Type:application/json' \
-        --data "{\"token\": \"$JOIN_TOKEN\"}"
-    ```
-
-=== "cp-req"
-
-    ```sh
-    cp3-req join-cluster "$JOIN_TOKEN"
-    ```
+```sh
+curl -X POST http://host-3:3000/v1/cluster/join \
+    -H 'Content-Type:application/json' \
+    --data "${JOIN_TOKEN}"
+```
 
 !!! important
 
@@ -311,17 +290,9 @@ Call the join-cluster API on the restored host. This adds the host to the etcd c
 
 Confirm the host appears in the cluster:
 
-=== "curl"
-
-    ```sh
-    curl http://host-1:3000/v1/hosts
-    ```
-
-=== "cp-req"
-
-    ```sh
-    cp1-req list-hosts
-    ```
+```sh
+curl http://host-1:3000/v1/hosts
+```
 
 The restored host should now appear in the list with `state: available`.
 
@@ -336,38 +307,30 @@ Update your database spec to include the restored node. The Control Plane will a
 - Configure Spock replication subscriptions
 - Synchronize data from existing nodes
 
-=== "curl"
+```sh
+curl -X POST http://host-1:3000/v1/databases/example \
+    -H 'Content-Type:application/json' \
+    --data '{
+        "spec": {
+            "database_name": "example",
+            "database_users": [
+                {
+                    "username": "admin",
+                    "db_owner": true,
+                    "attributes": ["SUPERUSER", "LOGIN"]
+                }
+            ],
+            "port": 5432,
+            "nodes": [
+                { "name": "n1", "host_ids": ["host-1"] },
+                { "name": "n2", "host_ids": ["host-2"] },
+                { "name": "n3", "host_ids": ["host-3"] }
+            ]
+        }
+    }'
+```
 
-    ```sh
-    curl -X POST http://host-1:3000/v1/databases/example \
-        -H 'Content-Type:application/json' \
-        --data '{
-            "spec": {
-                "database_name": "example",
-                "database_users": [
-                    {
-                        "username": "admin",
-                        "db_owner": true,
-                        "attributes": ["SUPERUSER", "LOGIN"]
-                    }
-                ],
-                "port": 5432,
-                "nodes": [
-                    { "name": "n1", "host_ids": ["host-1"] },
-                    { "name": "n2", "host_ids": ["host-2"] },
-                    { "name": "n3", "host_ids": ["host-3"] }
-                ]
-            }
-        }'
-    ```
-
-=== "cp-req"
-
-    ```sh
-    cp1-req update-database example < full-spec.json
-    ```
-
-By default, the new node syncs data from n1. You can specify a different source using the `source_node` property:
+The Control Plane will automatically choose a source node. If you want to use a specific source node, you can specify it using the `source_node` property:
 
 ```json
 {
@@ -381,28 +344,18 @@ By default, the new node syncs data from n1. You can specify a different source 
 
 The database update is an asynchronous operation. Monitor the task progress:
 
-=== "curl"
-
-    ```sh
-    # Get task ID from update response, then:
-    curl http://host-1:3000/v1/databases/example/tasks/<task-id>
-    ```
-
-=== "cp-req"
-
-    ```sh
-    cp1-req get-task example <task-id>
-    ```
+```sh
+# Get task ID from update response, then:
+curl http://host-1:3000/v1/databases/example/tasks/<task-id>
+```
 
 ### Step 5.3: Verify Full Recovery
 
 Once the task completes, verify the database is fully operational:
 
-=== "curl"
-
-    ```sh
-    curl http://host-1:3000/v1/databases/example
-    ```
+```sh
+curl http://host-1:3000/v1/databases/example
+```
 
 Confirm:
 
@@ -417,90 +370,25 @@ Test replication to the restored node:
 
 ---
 
-## Troubleshooting
-
-### "Peer URLs already exists" Error During Join
-
-This error occurs when joining the Control Plane cluster if there's a stale etcd member entry from the previous instance of the host.
-
-```
-etcdserver: Peer URLs already exists
-```
-
-**Solution**: Remove the stale etcd member from an existing cluster node.
-
-```bash
-# On host-1, find the etcd credentials
-cat /data/control-plane/generated.config.json | jq '.etcd'
-
-# List etcd members
-sudo etcdctl --endpoints=https://127.0.0.1:2379 \
-  --cacert=/data/control-plane/certificates/ca.crt \
-  --cert=/data/control-plane/certificates/etcd-user.crt \
-  --key=/data/control-plane/certificates/etcd-user.key \
-  --user='root:<PASSWORD_FROM_CONFIG>' \
-  member list
-
-# Remove the stale member (use the member ID from the list)
-sudo etcdctl --endpoints=https://127.0.0.1:2379 \
-  --cacert=/data/control-plane/certificates/ca.crt \
-  --cert=/data/control-plane/certificates/etcd-user.crt \
-  --key=/data/control-plane/certificates/etcd-user.key \
-  --user='root:<PASSWORD_FROM_CONFIG>' \
-  member remove <MEMBER_ID>
-```
-
-Then retry the join-cluster command.
-
-### "etcd already initialized" Error
-
-This error occurs when the restored host has stale etcd data in its data directory.
-
-**Solution**: Clear the data directory and restart the service.
-
-```bash
-# On the restored host
-sudo rm -rf /data/control-plane/*
-
-# Force restart the Control Plane service
-docker service update --force control-plane_host-3
-```
-
-Then retry the join-cluster command.
-
-### Instance Shows "unknown" State
-
-If an instance shows `state: unknown` after recovery, the Patroni configuration may have stale etcd endpoints.
-
-**Solution**: Update the database to regenerate Patroni configurations:
-
-```bash
-cp1-req update-database example < current-spec.json
-```
-
-This triggers a refresh of the Patroni configuration with correct etcd endpoints.
-
----
-
 ## Summary
 
 | Phase | Step | Action | Command |
 |-------|------|--------|---------|
-| 1 | 1.1 | Remove failed host | `cp1-req remove-host <HOST_ID> --force` |
-| 1 | 1.2 | Update database to remove failed node | `cp1-req update-database <DB_ID> < reduced-spec.json` |
+| 1 | 1.1 | Remove failed host | `curl -X DELETE http://<HOST>:3000/v1/hosts/<HOST_ID>?force=true` |
+| 1 | 1.2 | Update database to remove failed node | `curl -X POST http://<HOST>:3000/v1/databases/<DB_ID>` |
 | 1 | 1.3 | Clean up Docker Swarm | `docker node rm <HOST> --force` |
-| 2 | 2.1 | Verify host removed | `cp1-req list-hosts` |
-| 2 | 2.2 | Verify database health | `cp1-req get-database <DB_ID>` |
+| 2 | 2.1 | Verify host removed | `curl http://<HOST>:3000/v1/hosts` |
+| 2 | 2.2 | Verify database health | `curl http://<HOST>:3000/v1/databases/<DB_ID>` |
 | 2 | 2.3 | Verify data replication | Query all nodes |
 | 3 | 3.1 | Clean restored host data | `sudo rm -rf /data/control-plane/*` |
 | 3 | 3.2 | Rejoin Docker Swarm | `docker swarm join --token <TOKEN> <MANAGER>:2377` |
-| 3 | 3.3 | Deploy Control Plane stack | `docker stack deploy -c stack.yaml control-plane` |
-| 3 | 3.4 | Verify service startup | `docker service ps control-plane_<HOST_ID>` |
-| 3 | 3.5 | Prepare data directory | `sudo mkdir -p /data/control-plane` |
-| 4 | 4.1 | Get join token | `cp1-req get-join-token` |
-| 4 | 4.2 | Join Control Plane cluster | `cp<N>-req join-cluster "$TOKEN"` |
-| 4 | 4.3 | Verify host rejoined | `cp1-req list-hosts` |
-| 5 | 5.1 | Update database with all nodes | `cp1-req update-database <DB_ID> < full-spec.json` |
-| 5 | 5.2 | Monitor task progress | `cp1-req get-task <DB_ID> <TASK_ID>` |
+| 3 | 3.3 | Prepare data directory | `sudo mkdir -p /data/control-plane` |
+| 3 | 3.4 | Deploy Control Plane stack | `docker stack deploy -c stack.yaml control-plane` |
+| 3 | 3.5 | Verify service startup | `docker service ps control-plane_<HOST_ID>` |
+| 4 | 4.1 | Get join token | `curl http://<HOST>:3000/v1/join-token` |
+| 4 | 4.2 | Join Control Plane cluster | `curl -X POST http://<NEW_HOST>:3000/v1/join-cluster` |
+| 4 | 4.3 | Verify host rejoined | `curl http://<HOST>:3000/v1/hosts` |
+| 5 | 5.1 | Update database with all nodes | `curl -X POST http://<HOST>:3000/v1/databases/<DB_ID>` |
+| 5 | 5.2 | Monitor task progress | `curl http://<HOST>:3000/v1/databases/<DB_ID>/tasks/<TASK_ID>` |
 | 5 | 5.3 | Verify full recovery | Query all nodes |
 
