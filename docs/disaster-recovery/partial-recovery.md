@@ -269,7 +269,7 @@ The service should reach `Running` state. If it shows errors, see the Troublesho
 Generate a join token from an existing cluster member. The response contains both the token and the leader's server URL, which together form the request body for the join-cluster API:
 
 ```sh
-JOIN_TOKEN="$(curl http://host-1:3000//v1/cluster/join-token)"
+JOIN_TOKEN="$(curl http://host-1:3000/v1/cluster/join-token)"
 ```
 
 ### Step 4.2: Join the Cluster
@@ -385,8 +385,8 @@ Test replication to the restored node:
 | 3 | 3.3 | Prepare data directory | `sudo mkdir -p /data/control-plane` |
 | 3 | 3.4 | Deploy Control Plane stack | `docker stack deploy -c stack.yaml control-plane` |
 | 3 | 3.5 | Verify service startup | `docker service ps control-plane_<HOST_ID>` |
-| 4 | 4.1 | Get join token | `curl http://<HOST>:3000/v1/join-token` |
-| 4 | 4.2 | Join Control Plane cluster | `curl -X POST http://<NEW_HOST>:3000/v1/join-cluster` |
+| 4 | 4.1 | Get join token | `curl http://<HOST>:3000/v1/cluster/join-token` |
+| 4 | 4.2 | Join Control Plane cluster | `curl -X POST http://<NEW_HOST>:3000/v1/cluster/join` |
 | 4 | 4.3 | Verify host rejoined | `curl http://<HOST>:3000/v1/hosts` |
 | 5 | 5.1 | Update database with all nodes | `curl -X POST http://<HOST>:3000/v1/databases/<DB_ID>` |
 | 5 | 5.2 | Monitor task progress | `curl http://<HOST>:3000/v1/databases/<DB_ID>/tasks/<TASK_ID>` |

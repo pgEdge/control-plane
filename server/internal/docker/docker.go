@@ -442,10 +442,11 @@ func (d *Docker) checkNodesUnavailable(ctx context.Context, nodeIDs map[string]s
 	if err != nil {
 		return false, fmt.Errorf("failed to list nodes: %w", err)
 	}
-
 	for _, node := range nodes {
 		if _, ok := nodeIDs[node.ID]; ok {
-			if node.Status.State == swarm.NodeStateDown || node.Status.State == swarm.NodeStateUnknown {
+			if node.Status.State == swarm.NodeStateDown ||
+				node.Status.State == swarm.NodeStateUnknown ||
+				node.Status.State == swarm.NodeStateDisconnected {
 				return true, nil
 			}
 		}
