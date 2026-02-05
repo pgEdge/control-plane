@@ -6,11 +6,11 @@ Plane. The Control Plane version is specified in the image property of the [stac
 ```yaml
 services:
   host-1:
-    image: ghcr.io/pgedge/control-plane:<< control_plane_version >>
+    image: ghcr.io/pgedge/control-plane:v0.6.2
 ```
 
 You can *pin* to a specific version by including a version in the `image`
-fields in your service specification, such as `ghcr.io/pgedge/control-plane:<< control_plane_version >>`. 
+fields in your service specification, such as `ghcr.io/pgedge/control-plane:v0.6.2`. 
 
 If you do not include a version, Docker will pull the `ghcr.io/pgedge/control-plane:latest` tag by default. 
 

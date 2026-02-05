@@ -35,7 +35,7 @@ For example, if you've placed the certificates in a `/opt/pgedge/control-plane` 
 ```yaml
 services:
   host-1:
-    image: ghcr.io/pgedge/control-plane:<< control_plane_version >>
+    image: ghcr.io/pgedge/control-plane:v0.6.2
     command: run
     environment:
       - PGEDGE_HOST_ID=host-1
@@ -195,7 +195,7 @@ Now that our certificates are available on each machine, we can update our stack
 ```yaml
 services:
   host-1:
-    image: ghcr.io/pgedge/control-plane:<< control_plane_version >>
+    image: ghcr.io/pgedge/control-plane:v0.6.2
     command: run
     environment:
       - PGEDGE_HOST_ID=host-1
@@ -219,7 +219,7 @@ services:
         constraints:
           - node.id==81kw1zwmh9y8hk4rd7igylry0
   host-2:
-    image: ghcr.io/pgedge/control-plane:<< control_plane_version >>
+    image: ghcr.io/pgedge/control-plane:v0.6.2
     command: run
     environment:
       - PGEDGE_HOST_ID=host-2
@@ -240,7 +240,7 @@ services:
         constraints:
           - node.id==xz7069ytbdq7uzd2tvrj2wlf2
   host-3:
-    image: ghcr.io/pgedge/control-plane:<< control_plane_version >>
+    image: ghcr.io/pgedge/control-plane:v0.6.2
     command: run
     environment:
       - PGEDGE_HOST_ID=host-3
