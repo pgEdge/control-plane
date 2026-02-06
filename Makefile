@@ -281,12 +281,15 @@ release:
 ifeq ($(VERSION),)
 	$(error VERSION must be set to trigger a release. )
 endif
+ifeq ($(shell uname -s),Darwin)
+	sed -i '' 's/$(shell $(changie) latest)/$(VERSION)/g' $(shell find docs -name '*.md')
+else
+	sed -i 's/$(shell $(changie) latest)/$(VERSION)/g' $(shell find docs -name '*.md')
+endif
 	$(changie) batch $(VERSION)
 	$(changie) merge
 	$(changie) latest > api/version.txt
 	$(MAKE) -C api generate
-	VERSION=$(VERSION) yq -i \
-		'.extra.control_plane_version = strenv(VERSION)' mkdocs.yml
 	cp CHANGELOG.md docs/changelog.md
 	git checkout -b release/$(VERSION)
 	git add api changes docs CHANGELOG.md mkdocs.yml

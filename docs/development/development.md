@@ -129,6 +129,12 @@ You'll be shown the changes and prompted to accept them. If you make any changes
 at this point (adding files, editing files, etc.), make sure to stage those
 changes with `git add` before accepting the prompt.
 
+> [!NOTE]
+> This process will replace all occurrences of the previous version number with
+> the new version number in our docs. Please pay particular attention to these
+> changes to ensure that they are correct and complete. Reviewers should also
+> validate these changes in the release PR.
+
 Once you accept the prompt, the make recipe will:
 
 - create a commit.
