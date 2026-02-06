@@ -12,6 +12,7 @@ import (
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pgEdge/control-plane/server/internal/common"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/samber/do"
 
 	"github.com/docker/docker/api/types"
@@ -353,6 +354,20 @@ func (d *Docker) TasksByServiceID(ctx context.Context) (map[string][]swarm.Task,
 	return tasksByServiceID, nil
 }
 
+func (d *Docker) readyNodeIDs(ctx context.Context) (ds.Set[string], error) {
+	nodes, err := d.NodeList(ctx)
+	if err != nil {
+		return nil, err
+	}
+	set := ds.NewSet[string]()
+	for _, node := range nodes {
+		if node.Status.State == swarm.NodeStateReady {
+			set.Add(node.ID)
+		}
+	}
+	return set, nil
+}
+
 // WaitForService waits until the given service achieves the desired state and
 // number of tasks. The Swarm API can return stale data before the updated spec
 // has propagated to all manager nodes, so the optional 'previous swarm.Version'
@@ -399,8 +414,17 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 			if err != nil {
 				return fmt.Errorf("failed to list tasks for service: %w", errTranslate(err))
 			}
+
+			// Get ready node IDs
+			readyNodes, err := d.readyNodeIDs(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to get ready node IDs: %w", err)
+			}
 			var running, stopping uint64
 			for _, t := range tasks {
+				if !readyNodes.Has(t.NodeID) {
+					continue
+				}
 				if t.Status.State == swarm.TaskStateRunning {
 					if t.DesiredState == swarm.TaskStateRunning {
 						running++
