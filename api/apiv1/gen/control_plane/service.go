@@ -689,6 +689,7 @@ type ListDatabaseTasksPayload struct {
 // ListDatabaseTasksResponse is the result type of the control-plane service
 // list-database-tasks method.
 type ListDatabaseTasksResponse struct {
+	// The tasks for the given database.
 	Tasks []*Task
 }
 
@@ -715,6 +716,7 @@ type ListHostTasksPayload struct {
 // ListHostTasksResponse is the result type of the control-plane service
 // list-host-tasks method.
 type ListHostTasksResponse struct {
+	// The tasks for the given host.
 	Tasks []*Task
 }
 
@@ -743,6 +745,7 @@ type ListTasksPayload struct {
 // ListTasksResponse is the result type of the control-plane service list-tasks
 // method.
 type ListTasksResponse struct {
+	// The tasks for the given entity.
 	Tasks []*Task
 }
 

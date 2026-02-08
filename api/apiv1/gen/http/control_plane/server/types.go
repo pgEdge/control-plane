@@ -186,7 +186,7 @@ type RemoveHostResponseBody struct {
 // "list-databases" endpoint HTTP response body.
 type ListDatabasesResponseBody struct {
 	// The databases managed by this cluster.
-	Databases []*DatabaseSummaryResponseBody `form:"databases,omitempty" json:"databases,omitempty" xml:"databases,omitempty"`
+	Databases []*DatabaseSummaryResponseBody `form:"databases" json:"databases" xml:"databases"`
 }
 
 // CreateDatabaseResponseBody is the type of the "control-plane" service
@@ -257,7 +257,8 @@ type FailoverDatabaseNodeResponseBody struct {
 // ListDatabaseTasksResponseBody is the type of the "control-plane" service
 // "list-database-tasks" endpoint HTTP response body.
 type ListDatabaseTasksResponseBody struct {
-	Tasks []*TaskResponseBody `form:"tasks,omitempty" json:"tasks,omitempty" xml:"tasks,omitempty"`
+	// The tasks for the given database.
+	Tasks []*TaskResponseBody `form:"tasks" json:"tasks" xml:"tasks"`
 }
 
 // GetDatabaseTaskResponseBody is the type of the "control-plane" service
@@ -313,7 +314,8 @@ type GetDatabaseTaskLogResponseBody struct {
 // ListHostTasksResponseBody is the type of the "control-plane" service
 // "list-host-tasks" endpoint HTTP response body.
 type ListHostTasksResponseBody struct {
-	Tasks []*TaskResponseBody `form:"tasks,omitempty" json:"tasks,omitempty" xml:"tasks,omitempty"`
+	// The tasks for the given host.
+	Tasks []*TaskResponseBody `form:"tasks" json:"tasks" xml:"tasks"`
 }
 
 // GetHostTaskResponseBody is the type of the "control-plane" service
@@ -369,7 +371,8 @@ type GetHostTaskLogResponseBody struct {
 // ListTasksResponseBody is the type of the "control-plane" service
 // "list-tasks" endpoint HTTP response body.
 type ListTasksResponseBody struct {
-	Tasks []*TaskResponseBody `form:"tasks,omitempty" json:"tasks,omitempty" xml:"tasks,omitempty"`
+	// The tasks for the given entity.
+	Tasks []*TaskResponseBody `form:"tasks" json:"tasks" xml:"tasks"`
 }
 
 // RestoreDatabaseResponseBody is the type of the "control-plane" service
@@ -2782,6 +2785,8 @@ func NewListDatabasesResponseBody(res *controlplane.ListDatabasesResponse) *List
 			}
 			body.Databases[i] = marshalControlplaneDatabaseSummaryToDatabaseSummaryResponseBody(val)
 		}
+	} else {
+		body.Databases = []*DatabaseSummaryResponseBody{}
 	}
 	return body
 }
@@ -2896,6 +2901,8 @@ func NewListDatabaseTasksResponseBody(res *controlplane.ListDatabaseTasksRespons
 			}
 			body.Tasks[i] = marshalControlplaneTaskToTaskResponseBody(val)
 		}
+	} else {
+		body.Tasks = []*TaskResponseBody{}
 	}
 	return body
 }
@@ -2961,6 +2968,8 @@ func NewListHostTasksResponseBody(res *controlplane.ListHostTasksResponse) *List
 			}
 			body.Tasks[i] = marshalControlplaneTaskToTaskResponseBody(val)
 		}
+	} else {
+		body.Tasks = []*TaskResponseBody{}
 	}
 	return body
 }
@@ -3025,6 +3034,8 @@ func NewListTasksResponseBody(res *controlplane.ListTasksResponse) *ListTasksRes
 			}
 			body.Tasks[i] = marshalControlplaneTaskToTaskResponseBody(val)
 		}
+	} else {
+		body.Tasks = []*TaskResponseBody{}
 	}
 	return body
 }

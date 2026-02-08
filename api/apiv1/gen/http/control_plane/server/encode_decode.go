@@ -3546,9 +3546,6 @@ func marshalControlplaneTaskToTaskResponseBody(v *controlplane.Task) *TaskRespon
 // value of type *DatabaseSummaryResponseBody from a value of type
 // *controlplane.DatabaseSummary.
 func marshalControlplaneDatabaseSummaryToDatabaseSummaryResponseBody(v *controlplane.DatabaseSummary) *DatabaseSummaryResponseBody {
-	if v == nil {
-		return nil
-	}
 	res := &DatabaseSummaryResponseBody{
 		ID:        string(v.ID),
 		CreatedAt: v.CreatedAt,

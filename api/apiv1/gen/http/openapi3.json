@@ -17042,6 +17042,7 @@
             "items": {
               "$ref": "#/components/schemas/Task"
             },
+            "description": "The tasks for the given database.",
             "example": [
               {
                 "completed_at": "2025-06-18T16:52:35Z",
@@ -17110,7 +17111,10 @@
               "type": "create"
             }
           ]
-        }
+        },
+        "required": [
+          "tasks"
+        ]
       },
       "ListDatabasesResponse": {
         "type": "object",
@@ -17609,7 +17613,10 @@
               "updated_at": "2025-06-12T15:10:05Z"
             }
           ]
-        }
+        },
+        "required": [
+          "databases"
+        ]
       },
       "ListHostTasksResponse": {
         "type": "object",
@@ -17619,6 +17626,7 @@
             "items": {
               "$ref": "#/components/schemas/Task"
             },
+            "description": "The tasks for the given host.",
             "example": [
               {
                 "completed_at": "2025-06-18T16:52:35Z",
@@ -17656,7 +17664,10 @@
               "type": "remove_host"
             }
           ]
-        }
+        },
+        "required": [
+          "tasks"
+        ]
       },
       "ListHostsResponse": {
         "type": "object",
@@ -18144,6 +18155,7 @@
             "items": {
               "$ref": "#/components/schemas/Task"
             },
+            "description": "The tasks for the given entity.",
             "example": [
               {
                 "completed_at": "2025-06-18T16:52:35Z",
@@ -18212,7 +18224,10 @@
               "type": "remove_host"
             }
           ]
-        }
+        },
+        "required": [
+          "tasks"
+        ]
       },
       "OrchestratorOpts": {
         "type": "object",

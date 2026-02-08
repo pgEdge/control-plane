@@ -12161,6 +12161,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Task'
+          description: The tasks for the given database.
           example:
             - completed_at: "2025-06-18T16:52:35Z"
               created_at: "2025-06-18T16:52:05Z"
@@ -12213,6 +12214,8 @@ components:
             status: completed
             task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
             type: create
+      required:
+        - tasks
     ListDatabasesResponse:
       type: object
       properties:
@@ -12570,6 +12573,8 @@ components:
                 updated_at: "2025-06-12T15:10:05Z"
             state: available
             updated_at: "2025-06-12T15:10:05Z"
+      required:
+        - databases
     ListHostTasksResponse:
       type: object
       properties:
@@ -12577,6 +12582,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Task'
+          description: The tasks for the given host.
           example:
             - completed_at: "2025-06-18T16:52:35Z"
               created_at: "2025-06-18T16:52:05Z"
@@ -12604,6 +12610,8 @@ components:
             status: completed
             task_id: 0197842d-9082-7496-b787-77bd2e11809f
             type: remove_host
+      required:
+        - tasks
     ListHostsResponse:
       type: object
       properties:
@@ -12929,6 +12937,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Task'
+          description: The tasks for the given entity.
           example:
             - completed_at: "2025-06-18T16:52:35Z"
               created_at: "2025-06-18T16:52:05Z"
@@ -12981,6 +12990,8 @@ components:
             status: completed
             task_id: 0197842d-9082-7496-b787-77bd2e11809f
             type: remove_host
+      required:
+        - tasks
     OrchestratorOpts:
       type: object
       properties:

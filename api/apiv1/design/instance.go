@@ -6,19 +6,25 @@ import (
 
 var RestartInstanceResponse = g.Type("RestartInstanceResponse", func() {
 	g.Description("Response containing the restart task")
-	g.Attribute("task", Task, "Task representing the restart operation")
+	g.Attribute("task", Task, func() {
+		g.Description("Task representing the restart operation")
+	})
 	g.Required("task")
 })
 
 var StopInstanceResponse = g.Type("StopInstanceResponse", func() {
 	g.Description("Response containing the stop task")
-	g.Attribute("task", Task, "Task representing the stop operation")
+	g.Attribute("task", Task, func() {
+		g.Description("Task representing the stop operation")
+	})
 	g.Required("task")
 })
 
 var StartInstanceResponse = g.Type("StartInstanceResponse", func() {
 	g.Description("Response containing the start task")
-	g.Attribute("task", Task, "Task representing the start operation")
+	g.Attribute("task", Task, func() {
+		g.Description("Task representing the start operation")
+	})
 	g.Required("task")
 })
 
