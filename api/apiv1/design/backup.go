@@ -9,18 +9,21 @@ var BackupOptions = g.Type("BackupOptions", func() {
 		g.Enum("full", "diff", "incr")
 		g.Description("The type of backup.")
 		g.Example("full")
+		g.Meta("struct:tag:json", "type")
 	})
 	g.Attribute("annotations", g.MapOf(g.String, g.String), func() {
 		g.Description("Annotations for the backup.")
 		g.Example(map[string]string{
 			"key": "value",
 		})
+		g.Meta("struct:tag:json", "annotations,omitempty")
 	})
 	g.Attribute("backup_options", g.MapOf(g.String, g.String), func() {
 		g.Description("Options for the backup.")
 		g.Example(map[string]string{
 			"archive-check": "n",
 		})
+		g.Meta("struct:tag:json", "backup_options,omitempty")
 	})
 
 	g.Required("type")
