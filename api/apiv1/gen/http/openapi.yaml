@@ -181,6 +181,8 @@ paths:
           description: OK response.
           schema:
             $ref: '#/definitions/ListDatabasesResponse'
+            required:
+              - databases
         "409":
           description: Conflict response.
           schema:
@@ -900,6 +902,8 @@ paths:
           description: OK response.
           schema:
             $ref: '#/definitions/ListDatabaseTasksResponse'
+            required:
+              - tasks
         "400":
           description: Bad Request response.
           schema:
@@ -1297,6 +1301,8 @@ paths:
           description: OK response.
           schema:
             $ref: '#/definitions/ListHostTasksResponse'
+            required:
+              - tasks
         "400":
           description: Bad Request response.
           schema:
@@ -1508,6 +1514,8 @@ paths:
           description: OK response.
           schema:
             $ref: '#/definitions/ListTasksResponse'
+            required:
+              - tasks
         "400":
           description: Bad Request response.
           schema:
@@ -4617,6 +4625,7 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/Task'
+        description: The tasks for the given database.
         example:
           - completed_at: "2025-06-18T16:52:35Z"
             created_at: "2025-06-18T16:52:05Z"
@@ -4669,6 +4678,8 @@ definitions:
           status: completed
           task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
           type: create
+    required:
+      - tasks
   ListDatabasesResponse:
     title: ListDatabasesResponse
     type: object
@@ -5113,6 +5124,8 @@ definitions:
               updated_at: "2025-06-12T15:10:05Z"
           state: available
           updated_at: "2025-06-12T15:10:05Z"
+    required:
+      - databases
   ListHostTasksResponse:
     title: ListHostTasksResponse
     type: object
@@ -5121,6 +5134,7 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/Task'
+        description: The tasks for the given host.
         example:
           - completed_at: "2025-06-18T16:52:35Z"
             created_at: "2025-06-18T16:52:05Z"
@@ -5148,6 +5162,8 @@ definitions:
           status: completed
           task_id: 0197842d-9082-7496-b787-77bd2e11809f
           type: remove_host
+    required:
+      - tasks
   ListHostsResponse:
     title: ListHostsResponse
     type: object
@@ -5387,6 +5403,7 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/Task'
+        description: The tasks for the given entity.
         example:
           - completed_at: "2025-06-18T16:52:35Z"
             created_at: "2025-06-18T16:52:05Z"
@@ -5431,6 +5448,8 @@ definitions:
           status: completed
           task_id: 0197842d-9082-7496-b787-77bd2e11809f
           type: remove_host
+    required:
+      - tasks
   OrchestratorOpts:
     title: OrchestratorOpts
     type: object

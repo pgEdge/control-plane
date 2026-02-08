@@ -4176,9 +4176,6 @@ func unmarshalTaskResponseBodyToControlplaneTask(v *TaskResponseBody) *controlpl
 // value of type *controlplane.DatabaseSummary from a value of type
 // *DatabaseSummaryResponseBody.
 func unmarshalDatabaseSummaryResponseBodyToControlplaneDatabaseSummary(v *DatabaseSummaryResponseBody) *controlplane.DatabaseSummary {
-	if v == nil {
-		return nil
-	}
 	res := &controlplane.DatabaseSummary{
 		ID:        controlplane.Identifier(*v.ID),
 		CreatedAt: *v.CreatedAt,

@@ -1295,6 +1295,7 @@ var ListDatabasesResponse = g.Type("ListDatabasesResponse", func() {
 	g.Attribute("databases", g.ArrayOf(DatabaseSummary), func() {
 		g.Description("The databases managed by this cluster.")
 	})
+	g.Required("databases")
 
 	g.Example(map[string]any{
 		"databases": []map[string]any{

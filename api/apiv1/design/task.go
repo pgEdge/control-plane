@@ -262,7 +262,10 @@ var TaskLog = g.Type("TaskLog", func() {
 })
 
 var ListDatabaseTasksResponse = g.Type("ListDatabaseTasksResponse", func() {
-	g.Attribute("tasks", g.ArrayOf(Task))
+	g.Attribute("tasks", g.ArrayOf(Task), func() {
+		g.Description("The tasks for the given database.")
+	})
+	g.Required("tasks")
 
 	g.Example(map[string]any{
 		"tasks": []map[string]any{
@@ -312,7 +315,10 @@ var ListDatabaseTasksResponse = g.Type("ListDatabaseTasksResponse", func() {
 })
 
 var ListHostTasksResponse = g.Type("ListHostTasksResponse", func() {
-	g.Attribute("tasks", g.ArrayOf(Task))
+	g.Attribute("tasks", g.ArrayOf(Task), func() {
+		g.Description("The tasks for the given host.")
+	})
+	g.Required("tasks")
 
 	g.Example(map[string]any{
 		"tasks": []map[string]any{
@@ -331,7 +337,10 @@ var ListHostTasksResponse = g.Type("ListHostTasksResponse", func() {
 })
 
 var ListTasksResponse = g.Type("ListTasksResponse", func() {
-	g.Attribute("tasks", g.ArrayOf(Task))
+	g.Attribute("tasks", g.ArrayOf(Task), func() {
+		g.Description("The tasks for the given entity.")
+	})
+	g.Required("tasks")
 
 	g.Example(map[string]any{
 		"tasks": []map[string]any{

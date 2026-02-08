@@ -6,7 +6,9 @@ import (
 
 var ListHostsResponse = g.Type("ListHostsResponse", func() {
 	g.Description("Response containing the list of hosts")
-	g.Attribute("hosts", g.ArrayOf(Host), "List of hosts in the cluster")
+	g.Attribute("hosts", g.ArrayOf(Host), func() {
+		g.Description("List of hosts in the cluster")
+	})
 	g.Required("hosts")
 })
 

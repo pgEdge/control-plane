@@ -259,6 +259,7 @@ type FailoverDatabaseNodeResponseBody struct {
 // ListDatabaseTasksResponseBody is the type of the "control-plane" service
 // "list-database-tasks" endpoint HTTP response body.
 type ListDatabaseTasksResponseBody struct {
+	// The tasks for the given database.
 	Tasks []*TaskResponseBody `form:"tasks,omitempty" json:"tasks,omitempty" xml:"tasks,omitempty"`
 }
 
@@ -315,6 +316,7 @@ type GetDatabaseTaskLogResponseBody struct {
 // ListHostTasksResponseBody is the type of the "control-plane" service
 // "list-host-tasks" endpoint HTTP response body.
 type ListHostTasksResponseBody struct {
+	// The tasks for the given host.
 	Tasks []*TaskResponseBody `form:"tasks,omitempty" json:"tasks,omitempty" xml:"tasks,omitempty"`
 }
 
@@ -371,6 +373,7 @@ type GetHostTaskLogResponseBody struct {
 // ListTasksResponseBody is the type of the "control-plane" service
 // "list-tasks" endpoint HTTP response body.
 type ListTasksResponseBody struct {
+	// The tasks for the given entity.
 	Tasks []*TaskResponseBody `form:"tasks,omitempty" json:"tasks,omitempty" xml:"tasks,omitempty"`
 }
 
@@ -3317,15 +3320,13 @@ func NewRemoveHostServerError(body *RemoveHostServerErrorResponseBody) *controlp
 // endpoint result from a HTTP "OK" response.
 func NewListDatabasesResponseOK(body *ListDatabasesResponseBody) *controlplane.ListDatabasesResponse {
 	v := &controlplane.ListDatabasesResponse{}
-	if body.Databases != nil {
-		v.Databases = make([]*controlplane.DatabaseSummary, len(body.Databases))
-		for i, val := range body.Databases {
-			if val == nil {
-				v.Databases[i] = nil
-				continue
-			}
-			v.Databases[i] = unmarshalDatabaseSummaryResponseBodyToControlplaneDatabaseSummary(val)
+	v.Databases = make([]*controlplane.DatabaseSummary, len(body.Databases))
+	for i, val := range body.Databases {
+		if val == nil {
+			v.Databases[i] = nil
+			continue
 		}
+		v.Databases[i] = unmarshalDatabaseSummaryResponseBodyToControlplaneDatabaseSummary(val)
 	}
 
 	return v
@@ -3883,15 +3884,13 @@ func NewFailoverDatabaseNodeServerError(body *FailoverDatabaseNodeServerErrorRes
 // "list-database-tasks" endpoint result from a HTTP "OK" response.
 func NewListDatabaseTasksResponseOK(body *ListDatabaseTasksResponseBody) *controlplane.ListDatabaseTasksResponse {
 	v := &controlplane.ListDatabaseTasksResponse{}
-	if body.Tasks != nil {
-		v.Tasks = make([]*controlplane.Task, len(body.Tasks))
-		for i, val := range body.Tasks {
-			if val == nil {
-				v.Tasks[i] = nil
-				continue
-			}
-			v.Tasks[i] = unmarshalTaskResponseBodyToControlplaneTask(val)
+	v.Tasks = make([]*controlplane.Task, len(body.Tasks))
+	for i, val := range body.Tasks {
+		if val == nil {
+			v.Tasks[i] = nil
+			continue
 		}
+		v.Tasks[i] = unmarshalTaskResponseBodyToControlplaneTask(val)
 	}
 
 	return v
@@ -4078,15 +4077,13 @@ func NewGetDatabaseTaskLogServerError(body *GetDatabaseTaskLogServerErrorRespons
 // "list-host-tasks" endpoint result from a HTTP "OK" response.
 func NewListHostTasksResponseOK(body *ListHostTasksResponseBody) *controlplane.ListHostTasksResponse {
 	v := &controlplane.ListHostTasksResponse{}
-	if body.Tasks != nil {
-		v.Tasks = make([]*controlplane.Task, len(body.Tasks))
-		for i, val := range body.Tasks {
-			if val == nil {
-				v.Tasks[i] = nil
-				continue
-			}
-			v.Tasks[i] = unmarshalTaskResponseBodyToControlplaneTask(val)
+	v.Tasks = make([]*controlplane.Task, len(body.Tasks))
+	for i, val := range body.Tasks {
+		if val == nil {
+			v.Tasks[i] = nil
+			continue
 		}
+		v.Tasks[i] = unmarshalTaskResponseBodyToControlplaneTask(val)
 	}
 
 	return v
@@ -4273,15 +4270,13 @@ func NewGetHostTaskLogServerError(body *GetHostTaskLogServerErrorResponseBody) *
 // endpoint result from a HTTP "OK" response.
 func NewListTasksResponseOK(body *ListTasksResponseBody) *controlplane.ListTasksResponse {
 	v := &controlplane.ListTasksResponse{}
-	if body.Tasks != nil {
-		v.Tasks = make([]*controlplane.Task, len(body.Tasks))
-		for i, val := range body.Tasks {
-			if val == nil {
-				v.Tasks[i] = nil
-				continue
-			}
-			v.Tasks[i] = unmarshalTaskResponseBodyToControlplaneTask(val)
+	v.Tasks = make([]*controlplane.Task, len(body.Tasks))
+	for i, val := range body.Tasks {
+		if val == nil {
+			v.Tasks[i] = nil
+			continue
 		}
+		v.Tasks[i] = unmarshalTaskResponseBodyToControlplaneTask(val)
 	}
 
 	return v

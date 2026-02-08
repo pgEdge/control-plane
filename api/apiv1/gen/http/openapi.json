@@ -256,7 +256,10 @@
           "200": {
             "description": "OK response.",
             "schema": {
-              "$ref": "#/definitions/ListDatabasesResponse"
+              "$ref": "#/definitions/ListDatabasesResponse",
+              "required": [
+                "databases"
+              ]
             }
           },
           "409": {
@@ -1294,7 +1297,10 @@
           "200": {
             "description": "OK response.",
             "schema": {
-              "$ref": "#/definitions/ListDatabaseTasksResponse"
+              "$ref": "#/definitions/ListDatabaseTasksResponse",
+              "required": [
+                "tasks"
+              ]
             }
           },
           "400": {
@@ -1857,7 +1863,10 @@
           "200": {
             "description": "OK response.",
             "schema": {
-              "$ref": "#/definitions/ListHostTasksResponse"
+              "$ref": "#/definitions/ListHostTasksResponse",
+              "required": [
+                "tasks"
+              ]
             }
           },
           "400": {
@@ -2154,7 +2163,10 @@
           "200": {
             "description": "OK response.",
             "schema": {
-              "$ref": "#/definitions/ListTasksResponse"
+              "$ref": "#/definitions/ListTasksResponse",
+              "required": [
+                "tasks"
+              ]
             }
           },
           "400": {
@@ -6367,6 +6379,7 @@
           "items": {
             "$ref": "#/definitions/Task"
           },
+          "description": "The tasks for the given database.",
           "example": [
             {
               "completed_at": "2025-06-18T16:52:35Z",
@@ -6435,7 +6448,10 @@
             "type": "create"
           }
         ]
-      }
+      },
+      "required": [
+        "tasks"
+      ]
     },
     "ListDatabasesResponse": {
       "title": "ListDatabasesResponse",
@@ -7060,7 +7076,10 @@
             "updated_at": "2025-06-12T15:10:05Z"
           }
         ]
-      }
+      },
+      "required": [
+        "databases"
+      ]
     },
     "ListHostTasksResponse": {
       "title": "ListHostTasksResponse",
@@ -7071,6 +7090,7 @@
           "items": {
             "$ref": "#/definitions/Task"
           },
+          "description": "The tasks for the given host.",
           "example": [
             {
               "completed_at": "2025-06-18T16:52:35Z",
@@ -7108,7 +7128,10 @@
             "type": "remove_host"
           }
         ]
-      }
+      },
+      "required": [
+        "tasks"
+      ]
     },
     "ListHostsResponse": {
       "title": "ListHostsResponse",
@@ -7466,6 +7489,7 @@
           "items": {
             "$ref": "#/definitions/Task"
           },
+          "description": "The tasks for the given entity.",
           "example": [
             {
               "completed_at": "2025-06-18T16:52:35Z",
@@ -7524,7 +7548,10 @@
             "type": "remove_host"
           }
         ]
-      }
+      },
+      "required": [
+        "tasks"
+      ]
     },
     "OrchestratorOpts": {
       "title": "OrchestratorOpts",
