@@ -11,7 +11,6 @@ import (
 	"unicode/utf8"
 
 	controlplane "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
-	controlplaneviews "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane/views"
 	goa "goa.design/goa/v3/pkg"
 )
 
@@ -44,7 +43,7 @@ type GetJoinOptionsRequestBody struct {
 type CreateDatabaseRequestBody struct {
 	// Unique identifier for the database.
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Unique identifier for the databases's owner.
+	// Unique identifier for the database's owner.
 	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
 	// The specification for the database.
 	Spec *DatabaseSpecRequestBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
@@ -53,7 +52,7 @@ type CreateDatabaseRequestBody struct {
 // UpdateDatabaseRequestBody is the type of the "control-plane" service
 // "update-database" endpoint HTTP request body.
 type UpdateDatabaseRequestBody struct {
-	// Unique identifier for the databases's owner.
+	// Unique identifier for the database's owner.
 	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
 	// The specification for the database.
 	Spec *DatabaseSpecRequestBodyRequestBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
@@ -186,7 +185,8 @@ type RemoveHostResponseBody struct {
 // ListDatabasesResponseBody is the type of the "control-plane" service
 // "list-databases" endpoint HTTP response body.
 type ListDatabasesResponseBody struct {
-	Databases DatabaseResponseBodyAbbreviatedCollection `form:"databases,omitempty" json:"databases,omitempty" xml:"databases,omitempty"`
+	// The databases managed by this cluster.
+	Databases []*DatabaseSummaryResponseBody `form:"databases,omitempty" json:"databases,omitempty" xml:"databases,omitempty"`
 }
 
 // CreateDatabaseResponseBody is the type of the "control-plane" service
@@ -203,7 +203,7 @@ type CreateDatabaseResponseBody struct {
 type GetDatabaseResponseBody struct {
 	// Unique identifier for the database.
 	ID string `form:"id" json:"id" xml:"id"`
-	// Unique identifier for the database.
+	// Unique identifier for the database's owner.
 	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
 	// The time that the database was created.
 	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
@@ -212,7 +212,7 @@ type GetDatabaseResponseBody struct {
 	// Current state of the database.
 	State string `form:"state" json:"state" xml:"state"`
 	// All of the instances in the database.
-	Instances InstanceResponseBodyCollection `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	Instances []*InstanceResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
 }
@@ -1714,16 +1714,11 @@ type TaskResponseBody struct {
 	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
-// DatabaseResponseBodyAbbreviatedCollection is used to define fields on
-// response body types.
-type DatabaseResponseBodyAbbreviatedCollection []*DatabaseResponseBodyAbbreviated
-
-// DatabaseResponseBodyAbbreviated is used to define fields on response body
-// types.
-type DatabaseResponseBodyAbbreviated struct {
+// DatabaseSummaryResponseBody is used to define fields on response body types.
+type DatabaseSummaryResponseBody struct {
 	// Unique identifier for the database.
 	ID string `form:"id" json:"id" xml:"id"`
-	// Unique identifier for the databases's owner.
+	// Unique identifier for the database's owner.
 	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
 	// The time that the database was created.
 	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
@@ -1732,46 +1727,8 @@ type DatabaseResponseBodyAbbreviated struct {
 	// Current state of the database.
 	State string `form:"state" json:"state" xml:"state"`
 	// All of the instances in the database.
-	Instances InstanceResponseBodyAbbreviatedCollection `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	Instances []*InstanceResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
 }
-
-// InstanceResponseBodyAbbreviatedCollection is used to define fields on
-// response body types.
-type InstanceResponseBodyAbbreviatedCollection []*InstanceResponseBodyAbbreviated
-
-// InstanceResponseBodyAbbreviated is used to define fields on response body
-// types.
-type InstanceResponseBodyAbbreviated struct {
-	// Unique identifier for the instance.
-	ID string `form:"id" json:"id" xml:"id"`
-	// The ID of the host this instance is running on.
-	HostID string `form:"host_id" json:"host_id" xml:"host_id"`
-	// The Spock node name for this instance.
-	NodeName string `form:"node_name" json:"node_name" xml:"node_name"`
-	State    string `form:"state" json:"state" xml:"state"`
-}
-
-// DatabaseResponseBody is used to define fields on response body types.
-type DatabaseResponseBody struct {
-	// Unique identifier for the database.
-	ID string `form:"id" json:"id" xml:"id"`
-	// Unique identifier for the databases's owner.
-	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
-	// The time that the database was created.
-	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
-	// The time that the database was last updated.
-	UpdatedAt string `form:"updated_at" json:"updated_at" xml:"updated_at"`
-	// Current state of the database.
-	State string `form:"state" json:"state" xml:"state"`
-	// All of the instances in the database.
-	Instances InstanceCollectionResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
-	// The user-provided specification for the database.
-	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
-}
-
-// InstanceCollectionResponseBody is used to define fields on response body
-// types.
-type InstanceCollectionResponseBody []*InstanceResponseBody
 
 // InstanceResponseBody is used to define fields on response body types.
 type InstanceResponseBody struct {
@@ -1842,6 +1799,24 @@ type InstanceSubscriptionResponseBody struct {
 	Name string `form:"name" json:"name" xml:"name"`
 	// The current status of the subscription.
 	Status string `form:"status" json:"status" xml:"status"`
+}
+
+// DatabaseResponseBody is used to define fields on response body types.
+type DatabaseResponseBody struct {
+	// Unique identifier for the database.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Unique identifier for the database's owner.
+	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
+	// The time that the database was created.
+	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	// The time that the database was last updated.
+	UpdatedAt string `form:"updated_at" json:"updated_at" xml:"updated_at"`
+	// Current state of the database.
+	State string `form:"state" json:"state" xml:"state"`
+	// All of the instances in the database.
+	Instances []*InstanceResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	// The user-provided specification for the database.
+	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
 }
 
 // DatabaseSpecResponseBody is used to define fields on response body types.
@@ -2110,10 +2085,6 @@ type DatabaseUserSpecResponseBody struct {
 	// The roles to assign to this database user.
 	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
 }
-
-// InstanceResponseBodyCollection is used to define fields on response body
-// types.
-type InstanceResponseBodyCollection []*InstanceResponseBody
 
 // TaskLogEntryResponseBody is used to define fields on response body types.
 type TaskLogEntryResponseBody struct {
@@ -2800,16 +2771,16 @@ func NewRemoveHostResponseBody(res *controlplane.RemoveHostResponse) *RemoveHost
 
 // NewListDatabasesResponseBody builds the HTTP response body from the result
 // of the "list-databases" endpoint of the "control-plane" service.
-func NewListDatabasesResponseBody(res *controlplaneviews.ListDatabasesResponseView) *ListDatabasesResponseBody {
+func NewListDatabasesResponseBody(res *controlplane.ListDatabasesResponse) *ListDatabasesResponseBody {
 	body := &ListDatabasesResponseBody{}
 	if res.Databases != nil {
-		body.Databases = make([]*DatabaseResponseBodyAbbreviated, len(res.Databases))
+		body.Databases = make([]*DatabaseSummaryResponseBody, len(res.Databases))
 		for i, val := range res.Databases {
 			if val == nil {
 				body.Databases[i] = nil
 				continue
 			}
-			body.Databases[i] = marshalControlplaneviewsDatabaseViewToDatabaseResponseBodyAbbreviated(val)
+			body.Databases[i] = marshalControlplaneDatabaseSummaryToDatabaseSummaryResponseBody(val)
 		}
 	}
 	return body
@@ -2830,12 +2801,12 @@ func NewCreateDatabaseResponseBody(res *controlplane.CreateDatabaseResponse) *Cr
 
 // NewGetDatabaseResponseBody builds the HTTP response body from the result of
 // the "get-database" endpoint of the "control-plane" service.
-func NewGetDatabaseResponseBody(res *controlplaneviews.DatabaseView) *GetDatabaseResponseBody {
+func NewGetDatabaseResponseBody(res *controlplane.Database) *GetDatabaseResponseBody {
 	body := &GetDatabaseResponseBody{
-		ID:        string(*res.ID),
-		CreatedAt: *res.CreatedAt,
-		UpdatedAt: *res.UpdatedAt,
-		State:     *res.State,
+		ID:        string(res.ID),
+		CreatedAt: res.CreatedAt,
+		UpdatedAt: res.UpdatedAt,
+		State:     res.State,
 	}
 	if res.TenantID != nil {
 		tenantID := string(*res.TenantID)
@@ -2848,11 +2819,11 @@ func NewGetDatabaseResponseBody(res *controlplaneviews.DatabaseView) *GetDatabas
 				body.Instances[i] = nil
 				continue
 			}
-			body.Instances[i] = marshalControlplaneviewsInstanceViewToInstanceResponseBody(val)
+			body.Instances[i] = marshalControlplaneInstanceToInstanceResponseBody(val)
 		}
 	}
 	if res.Spec != nil {
-		body.Spec = marshalControlplaneviewsDatabaseSpecViewToDatabaseSpecResponseBody(res.Spec)
+		body.Spec = marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody(res.Spec)
 	}
 	return body
 }

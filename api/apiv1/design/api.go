@@ -248,9 +248,7 @@ var _ = g.Service("control-plane", func() {
 
 			g.Required("database_id")
 		})
-		g.Result(Database, func() {
-			g.View("default")
-		})
+		g.Result(Database)
 		g.Error("cluster_not_initialized")
 		g.Error("invalid_input")
 		g.Error("not_found")

@@ -109,79 +109,56 @@ var InstanceSpockStatus = g.Type("InstanceSpockStatus", func() {
 	})
 })
 
-var Instance = g.ResultType("Instance", func() {
+var Instance = g.Type("Instance", func() {
 	g.Description("An instance of pgEdge Postgres running on a host.")
-	g.Attributes(func() {
-		g.Attribute("id", g.String, func() {
-			g.Description("Unique identifier for the instance.")
-			g.Example("a67cbb36-c3c3-49c9-8aac-f4a0438a883d")
-		})
-		g.Attribute("host_id", g.String, func() {
-			g.Description("The ID of the host this instance is running on.")
-			g.Example("de3b1388-1f0c-42f1-a86c-59ab72f255ec")
-		})
-		g.Attribute("node_name", g.String, func() {
-			g.Description("The Spock node name for this instance.")
-			g.Example("n1")
-		})
-		g.Attribute("created_at", g.String, func() {
-			g.Format(g.FormatDateTime)
-			g.Description("The time that the instance was created.")
-		})
-		g.Attribute("updated_at", g.String, func() {
-			g.Format(g.FormatDateTime)
-			g.Description("The time that the instance was last modified.")
-		})
-		g.Attribute("status_updated_at", g.String, func() {
-			g.Format(g.FormatDateTime)
-			g.Description("The time that the instance status information was last updated.")
-		})
-		g.Attribute("state", g.String, func() {
-			g.Enum(
-				"creating",
-				"modifying",
-				"backing_up",
-				"available",
-				"degraded",
-				"failed",
-				"stopped",
-				"unknown",
-			)
-		})
-		g.Attribute("connection_info", InstanceConnectionInfo, func() {
-			g.Description("Connection information for the instance.")
-		})
-		g.Attribute("postgres", InstancePostgresStatus, func() {
-			g.Description("Postgres status information for the instance.")
-		})
-		g.Attribute("spock", InstanceSpockStatus, func() {
-			g.Description("Spock status information for the instance.")
-		})
-		g.Attribute("error", g.String, func() {
-			g.Description("An error message if the instance is in an error state.")
-			g.Example("failed to get patroni status: connection refused")
-		})
+	g.Attribute("id", g.String, func() {
+		g.Description("Unique identifier for the instance.")
+		g.Example("a67cbb36-c3c3-49c9-8aac-f4a0438a883d")
 	})
-
-	g.View("default", func() {
-		g.Attribute("id")
-		g.Attribute("host_id")
-		g.Attribute("node_name")
-		g.Attribute("created_at")
-		g.Attribute("updated_at")
-		g.Attribute("status_updated_at")
-		g.Attribute("state")
-		g.Attribute("connection_info")
-		g.Attribute("postgres")
-		g.Attribute("spock")
-		g.Attribute("error")
+	g.Attribute("host_id", g.String, func() {
+		g.Description("The ID of the host this instance is running on.")
+		g.Example("de3b1388-1f0c-42f1-a86c-59ab72f255ec")
 	})
-
-	g.View("abbreviated", func() {
-		g.Attribute("id")
-		g.Attribute("host_id")
-		g.Attribute("node_name")
-		g.Attribute("state")
+	g.Attribute("node_name", g.String, func() {
+		g.Description("The Spock node name for this instance.")
+		g.Example("n1")
+	})
+	g.Attribute("created_at", g.String, func() {
+		g.Format(g.FormatDateTime)
+		g.Description("The time that the instance was created.")
+	})
+	g.Attribute("updated_at", g.String, func() {
+		g.Format(g.FormatDateTime)
+		g.Description("The time that the instance was last modified.")
+	})
+	g.Attribute("status_updated_at", g.String, func() {
+		g.Format(g.FormatDateTime)
+		g.Description("The time that the instance status information was last updated.")
+	})
+	g.Attribute("state", g.String, func() {
+		g.Enum(
+			"creating",
+			"modifying",
+			"backing_up",
+			"available",
+			"degraded",
+			"failed",
+			"stopped",
+			"unknown",
+		)
+	})
+	g.Attribute("connection_info", InstanceConnectionInfo, func() {
+		g.Description("Connection information for the instance.")
+	})
+	g.Attribute("postgres", InstancePostgresStatus, func() {
+		g.Description("Postgres status information for the instance.")
+	})
+	g.Attribute("spock", InstanceSpockStatus, func() {
+		g.Description("Spock status information for the instance.")
+	})
+	g.Attribute("error", g.String, func() {
+		g.Description("An error message if the instance is in an error state.")
+		g.Example("failed to get patroni status: connection refused")
 	})
 
 	g.Required("id", "host_id", "node_name", "created_at", "updated_at", "state")

@@ -1,0 +1,3 @@
+kind: Changed
+body: '`client` package: `ListDatabasesResponse.Databases` is now a `[]*DatabaseSummary` instead of a `DatabaseCollection`.'
+time: 2026-02-09T09:15:36.853868-05:00

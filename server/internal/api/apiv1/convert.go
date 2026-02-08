@@ -198,6 +198,22 @@ func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 	}
 }
 
+func instancesToAPI(instances []*database.Instance) []*api.Instance {
+	out := make([]*api.Instance, len(instances))
+	for i, inst := range instances {
+		out[i] = instanceToAPI(inst)
+	}
+	// Sort by node name, instance ID asc
+	slices.SortStableFunc(out, func(a, b *api.Instance) int {
+		if nodeEq := strings.Compare(a.NodeName, b.NodeName); nodeEq != 0 {
+			return nodeEq
+		}
+		return strings.Compare(a.ID, b.ID)
+	})
+
+	return out
+}
+
 func databaseToAPI(d *database.Database) *api.Database {
 	if d == nil {
 		return nil
@@ -207,18 +223,6 @@ func databaseToAPI(d *database.Database) *api.Database {
 	if d.Spec != nil {
 		spec = databaseSpecToAPI(d.Spec)
 	}
-
-	instances := make([]*api.Instance, len(d.Instances))
-	for i, inst := range d.Instances {
-		instances[i] = instanceToAPI(inst)
-	}
-	// Sort by node ID, instance ID asc
-	slices.SortStableFunc(instances, func(a, b *api.Instance) int {
-		if nodeEq := strings.Compare(a.NodeName, b.NodeName); nodeEq != 0 {
-			return nodeEq
-		}
-		return strings.Compare(a.ID, b.ID)
-	})
 
 	var tenantID *api.Identifier
 	if d.TenantID != nil {
@@ -232,7 +236,27 @@ func databaseToAPI(d *database.Database) *api.Database {
 		UpdatedAt: d.UpdatedAt.Format(time.RFC3339),
 		State:     string(d.State),
 		Spec:      spec,
-		Instances: instances,
+		Instances: instancesToAPI(d.Instances),
+	}
+}
+
+func databaseToSummaryAPI(d *database.Database) *api.DatabaseSummary {
+	if d == nil {
+		return nil
+	}
+
+	var tenantID *api.Identifier
+	if d.TenantID != nil {
+		tenantID = utils.PointerTo(api.Identifier(*d.TenantID))
+	}
+
+	return &api.DatabaseSummary{
+		ID:        api.Identifier(d.DatabaseID),
+		TenantID:  tenantID,
+		CreatedAt: d.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: d.UpdatedAt.Format(time.RFC3339),
+		State:     string(d.State),
+		Instances: instancesToAPI(d.Instances),
 	}
 }
 
