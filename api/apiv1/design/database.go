@@ -509,83 +509,98 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 	g.Required("database_name", "nodes")
 })
 
-var Database = g.ResultType("Database", func() {
-	g.Attributes(func() {
-		g.Attribute("id", Identifier, func() {
-			g.Description("Unique identifier for the database.")
-			g.Example("production")
-			g.Example("my-app")
-			g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
-		})
-		g.Attribute("tenant_id", Identifier, func() {
-			g.Description("Unique identifier for the databases's owner.")
-			g.Example("engineering")
-			g.Example("8210ec10-2dca-406c-ac4a-0661d2189954")
-		})
-		g.Attribute("created_at", g.String, func() {
-			g.Format(g.FormatDateTime)
-			g.Description("The time that the database was created.")
-			g.Example("2025-01-01T01:30:00Z")
-		})
-		g.Attribute("updated_at", g.String, func() {
-			g.Format(g.FormatDateTime)
-			g.Description("The time that the database was last updated.")
-			g.Example("2025-01-01T02:30:00Z")
-		})
-		g.Attribute("state", g.String, func() {
-			g.Description("Current state of the database.")
-			g.Enum(
-				"creating",
-				"modifying",
-				"available",
-				"deleting",
-				"degraded",
-				"failed",
-				"backing_up",
-				"restoring",
-				"unknown",
-			)
-		})
-		g.Attribute("instances", g.CollectionOf(Instance), func() {
-			g.Description("All of the instances in the database.")
-		})
-		g.Attribute("service_instances", g.CollectionOf(ServiceInstance), func() {
-			g.Description("Service instances running alongside this database.")
-		})
-		g.Attribute("spec", DatabaseSpec, func() {
-			g.Description("The user-provided specification for the database.")
-		})
+var Database = g.Type("Database", func() {
+	g.Attribute("id", Identifier, func() {
+		g.Description("Unique identifier for the database.")
+		g.Example("production")
+		g.Example("my-app")
+		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+	})
+	g.Attribute("tenant_id", Identifier, func() {
+		g.Description("Unique identifier for the database's owner.")
+		g.Example("engineering")
+		g.Example("8210ec10-2dca-406c-ac4a-0661d2189954")
+	})
+	g.Attribute("created_at", g.String, func() {
+		g.Format(g.FormatDateTime)
+		g.Description("The time that the database was created.")
+		g.Example("2025-01-01T01:30:00Z")
+	})
+	g.Attribute("updated_at", g.String, func() {
+		g.Format(g.FormatDateTime)
+		g.Description("The time that the database was last updated.")
+		g.Example("2025-01-01T02:30:00Z")
+	})
+	g.Attribute("state", g.String, func() {
+		g.Description("Current state of the database.")
+		g.Enum(
+			"creating",
+			"modifying",
+			"available",
+			"deleting",
+			"degraded",
+			"failed",
+			"backing_up",
+			"restoring",
+			"unknown",
+		)
+	})
+	g.Attribute("instances", g.ArrayOf(Instance), func() {
+		g.Description("All of the instances in the database.")
+	})
+	g.Attribute("service_instances", g.ArrayOf(ServiceInstance), func() {
+		g.Description("Service instances running alongside this database.")
+	})
+	g.Attribute("spec", DatabaseSpec, func() {
+		g.Description("The user-provided specification for the database.")
 	})
 
-	g.View("default", func() {
-		g.Attribute("id")
-		g.Attribute("tenant_id")
-		g.Attribute("created_at")
-		g.Attribute("updated_at")
-		g.Attribute("state")
-		g.Attribute("instances", func() {
-			g.View("default")
-		})
-		g.Attribute("service_instances", func() {
-			g.View("default")
-		})
-		g.Attribute("spec")
+	g.Example(exampleDatabase)
 
-		g.Example(exampleDatabase)
+	g.Required("id", "created_at", "updated_at", "state")
+})
+
+var DatabaseSummary = g.Type("DatabaseSummary", func() {
+	g.Attribute("id", Identifier, func() {
+		g.Description("Unique identifier for the database.")
+		g.Example("production")
+		g.Example("my-app")
+		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+	})
+	g.Attribute("tenant_id", Identifier, func() {
+		g.Description("Unique identifier for the database's owner.")
+		g.Example("engineering")
+		g.Example("8210ec10-2dca-406c-ac4a-0661d2189954")
+	})
+	g.Attribute("created_at", g.String, func() {
+		g.Format(g.FormatDateTime)
+		g.Description("The time that the database was created.")
+		g.Example("2025-01-01T01:30:00Z")
+	})
+	g.Attribute("updated_at", g.String, func() {
+		g.Format(g.FormatDateTime)
+		g.Description("The time that the database was last updated.")
+		g.Example("2025-01-01T02:30:00Z")
+	})
+	g.Attribute("state", g.String, func() {
+		g.Description("Current state of the database.")
+		g.Enum(
+			"creating",
+			"modifying",
+			"available",
+			"deleting",
+			"degraded",
+			"failed",
+			"backing_up",
+			"restoring",
+			"unknown",
+		)
+	})
+	g.Attribute("instances", g.ArrayOf(Instance), func() {
+		g.Description("All of the instances in the database.")
 	})
 
-	g.View("abbreviated", func() {
-		g.Attribute("id")
-		g.Attribute("tenant_id")
-		g.Attribute("created_at")
-		g.Attribute("updated_at")
-		g.Attribute("state")
-		g.Attribute("instances", func() {
-			g.View("abbreviated")
-		})
-	})
-
-	g.Required("id", "created_at", "updated_at", "state", "instances", "service_instances")
+	g.Required("id", "created_at", "updated_at", "state")
 })
 
 var CreateDatabaseRequest = g.Type("CreateDatabaseRequest", func() {
@@ -596,7 +611,7 @@ var CreateDatabaseRequest = g.Type("CreateDatabaseRequest", func() {
 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
 	})
 	g.Attribute("tenant_id", Identifier, func() {
-		g.Description("Unique identifier for the databases's owner.")
+		g.Description("Unique identifier for the database's owner.")
 		g.Example("engineering")
 		g.Example("8210ec10-2dca-406c-ac4a-0661d2189954")
 	})
@@ -925,7 +940,7 @@ var CreateDatabaseResponse = g.Type("CreateDatabaseResponse", func() {
 
 var UpdateDatabaseRequest = g.Type("UpdateDatabaseRequest", func() {
 	g.Attribute("tenant_id", Identifier, func() {
-		g.Description("Unique identifier for the databases's owner.")
+		g.Description("Unique identifier for the database's owner.")
 		g.Example("engineering")
 		g.Example("8210ec10-2dca-406c-ac4a-0661d2189954")
 	})
@@ -1276,69 +1291,240 @@ var ExtraVolumesSpec = g.Type("ExtraVolumesSpec", func() {
 	g.Required("host_path", "destination_path")
 })
 
-var ListDatabasesResponse = g.ResultType("ListDatabasesResponse", func() {
-	g.TypeName("ListDatabasesResponse")
-	g.Attributes(func() {
-		g.Attribute("databases", g.CollectionOf(Database), func() {
-			g.View("abbreviated")
-		})
+var ListDatabasesResponse = g.Type("ListDatabasesResponse", func() {
+	g.Attribute("databases", g.ArrayOf(DatabaseSummary), func() {
+		g.Description("The databases managed by this cluster.")
+	})
 
-		g.Example(map[string]any{
-			"databases": []map[string]any{
-				{
-					"created_at": "2025-06-17T20:05:10Z",
-					"id":         "inventory",
-					"instances": []map[string]any{
-						{
-							"host_id":   "us-east-1",
-							"id":        "inventory-n1-689qacsi",
-							"node_name": "n1",
-							"state":     "available",
+	g.Example(map[string]any{
+		"databases": []map[string]any{
+			{
+				"created_at": "2025-06-17T20:05:10Z",
+				"id":         "inventory",
+				"instances": []map[string]any{
+					{
+						"connection_info": map[string]any{
+							"hostname":     "i-0123456789abcdef.ec2.internal",
+							"ipv4_address": "10.24.34.2",
+							"port":         5432,
 						},
-						{
-							"host_id":   "ap-south-1",
-							"id":        "inventory-n2-9ptayhma",
-							"node_name": "n2",
-							"state":     "available",
+						"created_at": "2025-06-17T20:05:10Z",
+						"host_id":    "us-east-1",
+						"id":         "inventory-n1-689qacsi",
+						"node_name":  "n1",
+						"postgres": map[string]any{
+							"patroni_state": "running",
+							"role":          "primary",
+							"version":       "18.1",
 						},
-						{
-							"host_id":   "eu-central-1",
-							"id":        "inventory-n3-ant97dj4",
-							"node_name": "n3",
-							"state":     "available",
+						"spock": map[string]any{
+							"read_only": "off",
+							"subscriptions": []any{
+								map[string]any{
+									"name":          "sub_n1n3",
+									"provider_node": "n3",
+									"status":        "replicating",
+								},
+								map[string]any{
+									"name":          "sub_n1n2",
+									"provider_node": "n2",
+									"status":        "replicating",
+								},
+							},
+							"version": "4.0.10",
 						},
+						"state":             "available",
+						"status_updated_at": "2025-06-17T20:05:10Z",
+						"updated_at":        "2025-06-17T20:05:10Z",
 					},
-					"state":      "available",
-					"updated_at": "2025-06-17T20:05:10Z",
-				},
-				{
-					"created_at": "2025-06-17T20:05:10Z",
-					"id":         "storefront",
-					"instances": []map[string]any{
-						{
-							"host_id":   "us-east-1",
-							"id":        "storefront-n1-689qacsi",
-							"node_name": "n1",
-							"state":     "available",
+					{
+						"connection_info": map[string]any{
+							"hostname":     "i-058731542fee493f.ec2.internal",
+							"ipv4_address": "10.24.35.2",
+							"port":         5432,
 						},
-						{
-							"host_id":   "ap-south-1",
-							"id":        "storefront-n2-9ptayhma",
-							"node_name": "n2",
-							"state":     "available",
+						"created_at": "2025-06-17T20:05:10Z",
+						"host_id":    "ap-south-1",
+						"id":         "inventory-n2-9ptayhma",
+						"node_name":  "n2",
+						"postgres": map[string]any{
+							"patroni_state": "running",
+							"role":          "primary",
+							"version":       "18.1",
 						},
-						{
-							"host_id":   "eu-central-1",
-							"id":        "storefront-n3-ant97dj4",
-							"node_name": "n3",
-							"state":     "available",
+						"spock": map[string]any{
+							"read_only": "off",
+							"subscriptions": []any{
+								map[string]any{
+									"name":          "sub_n2n1",
+									"provider_node": "n1",
+									"status":        "replicating",
+								},
+								map[string]any{
+									"name":          "sub_n2n3",
+									"provider_node": "n3",
+									"status":        "replicating",
+								},
+							},
+							"version": "4.0.10",
 						},
+						"state":             "available",
+						"status_updated_at": "2025-06-17T20:05:10Z",
+						"updated_at":        "2025-06-17T20:05:10Z",
 					},
-					"state":      "available",
-					"updated_at": "2025-06-12T15:10:05Z",
+					{
+						"connection_info": map[string]any{
+							"hostname":     "i-494027b7b53f6a23.ec2.internal",
+							"ipv4_address": "10.24.36.2",
+							"port":         5432,
+						},
+						"created_at": "2025-06-17T20:05:10Z",
+						"host_id":    "eu-central-1",
+						"id":         "inventory-n3-ant97dj4",
+						"node_name":  "n3",
+						"postgres": map[string]any{
+							"patroni_state": "running",
+							"role":          "primary",
+							"version":       "18.1",
+						},
+						"spock": map[string]any{
+							"read_only": "off",
+							"subscriptions": []any{
+								map[string]any{
+									"name":          "sub_n3n1",
+									"provider_node": "n1",
+									"status":        "replicating",
+								},
+								map[string]any{
+									"name":          "sub_n3n2",
+									"provider_node": "n2",
+									"status":        "replicating",
+								},
+							},
+							"version": "4.0.10",
+						},
+						"state":             "available",
+						"status_updated_at": "2025-06-17T20:05:10Z",
+						"updated_at":        "2025-06-17T20:05:10Z",
+					},
 				},
+				"state":      "available",
+				"updated_at": "2025-06-17T20:05:10Z",
 			},
-		})
+			{
+				"created_at": "2025-06-12T15:10:05Z",
+				"id":         "storefront",
+				"instances": []map[string]any{
+					{
+						"connection_info": map[string]any{
+							"hostname":     "i-0123456789abcdef.ec2.internal",
+							"ipv4_address": "10.24.34.2",
+							"port":         6432,
+						},
+						"created_at": "2025-06-12T15:10:05Z",
+						"host_id":    "us-east-1",
+						"id":         "storefront-n1-689qacsi",
+						"node_name":  "n1",
+						"postgres": map[string]any{
+							"patroni_state": "running",
+							"role":          "primary",
+							"version":       "18.1",
+						},
+						"spock": map[string]any{
+							"read_only": "off",
+							"subscriptions": []any{
+								map[string]any{
+									"name":          "sub_n1n3",
+									"provider_node": "n3",
+									"status":        "replicating",
+								},
+								map[string]any{
+									"name":          "sub_n1n2",
+									"provider_node": "n2",
+									"status":        "replicating",
+								},
+							},
+							"version": "4.0.10",
+						},
+						"state":             "available",
+						"status_updated_at": "2025-06-17T20:05:10Z",
+						"updated_at":        "2025-06-12T15:10:05Z",
+					},
+					{
+						"connection_info": map[string]any{
+							"hostname":     "i-058731542fee493f.ec2.internal",
+							"ipv4_address": "10.24.35.2",
+							"port":         6432,
+						},
+						"created_at": "2025-06-12T15:10:05Z",
+						"host_id":    "ap-south-1",
+						"id":         "storefront-n2-9ptayhma",
+						"node_name":  "n2",
+						"postgres": map[string]any{
+							"patroni_state": "running",
+							"role":          "primary",
+							"version":       "18.1",
+						},
+						"spock": map[string]any{
+							"read_only": "off",
+							"subscriptions": []any{
+								map[string]any{
+									"name":          "sub_n2n1",
+									"provider_node": "n1",
+									"status":        "replicating",
+								},
+								map[string]any{
+									"name":          "sub_n2n3",
+									"provider_node": "n3",
+									"status":        "replicating",
+								},
+							},
+							"version": "4.0.10",
+						},
+						"state":             "available",
+						"status_updated_at": "2025-06-17T20:05:10Z",
+						"updated_at":        "2025-06-12T15:10:05Z",
+					},
+					{
+						"connection_info": map[string]any{
+							"hostname":     "i-494027b7b53f6a23.ec2.internal",
+							"ipv4_address": "10.24.36.2",
+							"port":         6432,
+						},
+						"created_at": "2025-06-12T15:10:05Z",
+						"host_id":    "eu-central-1",
+						"id":         "storefront-n3-ant97dj4",
+						"node_name":  "n3",
+						"postgres": map[string]any{
+							"patroni_state": "running",
+							"role":          "primary",
+							"version":       "18.1",
+						},
+						"spock": map[string]any{
+							"read_only": "off",
+							"subscriptions": []any{
+								map[string]any{
+									"name":          "sub_n3n1",
+									"provider_node": "n1",
+									"status":        "replicating",
+								},
+								map[string]any{
+									"name":          "sub_n3n2",
+									"provider_node": "n2",
+									"status":        "replicating",
+								},
+							},
+							"version": "4.0.10",
+						},
+						"state":             "available",
+						"status_updated_at": "2025-06-17T20:05:10Z",
+						"updated_at":        "2025-06-12T15:10:05Z",
+					},
+				},
+				"state":      "available",
+				"updated_at": "2025-06-12T15:10:05Z",
+			},
+		},
 	})
 })
 

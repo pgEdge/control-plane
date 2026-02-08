@@ -303,7 +303,7 @@ func BuildUpdateDatabasePayload(controlPlaneUpdateDatabaseBody string, controlPl
 		if controlPlaneUpdateDatabaseRemoveHost != "" {
 			err = json.Unmarshal([]byte(controlPlaneUpdateDatabaseRemoveHost), &removeHost)
 			if err != nil {
-				return nil, fmt.Errorf("invalid JSON for removeHost, \nerror: %s, \nexample of valid JSON:\n%s", err, "'[\n      \"Beatae provident est et.\",\n      \"Sed illum ad culpa dolor.\"\n   ]'")
+				return nil, fmt.Errorf("invalid JSON for removeHost, \nerror: %s, \nexample of valid JSON:\n%s", err, "'[\n      \"Eveniet possimus dicta laudantium.\",\n      \"Repellendus in doloremque.\",\n      \"Officia rerum eum nemo autem iste illo.\",\n      \"Non libero quibusdam et sapiente.\"\n   ]'")
 			}
 		}
 	}

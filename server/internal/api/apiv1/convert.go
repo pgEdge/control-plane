@@ -309,12 +309,12 @@ func serviceInstanceStatusToAPI(status *database.ServiceInstanceStatus) *api.Ser
 	}
 }
 
-func serviceInstanceToAPI(si *database.ServiceInstance) *api.Serviceinstance {
+func serviceInstanceToAPI(si *database.ServiceInstance) *api.ServiceInstance {
 	if si == nil {
 		return nil
 	}
 
-	return &api.Serviceinstance{
+	return &api.ServiceInstance{
 		ServiceInstanceID: si.ServiceInstanceID,
 		ServiceID:         si.ServiceID,
 		DatabaseID:        api.Identifier(si.DatabaseID),
@@ -327,6 +327,22 @@ func serviceInstanceToAPI(si *database.ServiceInstance) *api.Serviceinstance {
 	}
 }
 
+func instancesToAPI(instances []*database.Instance) []*api.Instance {
+	out := make([]*api.Instance, len(instances))
+	for i, inst := range instances {
+		out[i] = instanceToAPI(inst)
+	}
+	// Sort by node name, instance ID asc
+	slices.SortStableFunc(out, func(a, b *api.Instance) int {
+		if nodeEq := strings.Compare(a.NodeName, b.NodeName); nodeEq != 0 {
+			return nodeEq
+		}
+		return strings.Compare(a.ID, b.ID)
+	})
+
+	return out
+}
+
 func databaseToAPI(d *database.Database) *api.Database {
 	if d == nil {
 		return nil
@@ -337,24 +353,12 @@ func databaseToAPI(d *database.Database) *api.Database {
 		spec = databaseSpecToAPI(d.Spec)
 	}
 
-	instances := make([]*api.Instance, len(d.Instances))
-	for i, inst := range d.Instances {
-		instances[i] = instanceToAPI(inst)
-	}
-	// Sort by node ID, instance ID asc
-	slices.SortStableFunc(instances, func(a, b *api.Instance) int {
-		if nodeEq := strings.Compare(a.NodeName, b.NodeName); nodeEq != 0 {
-			return nodeEq
-		}
-		return strings.Compare(a.ID, b.ID)
-	})
-
-	serviceInstances := make([]*api.Serviceinstance, len(d.ServiceInstances))
+	serviceInstances := make([]*api.ServiceInstance, len(d.ServiceInstances))
 	for i, si := range d.ServiceInstances {
 		serviceInstances[i] = serviceInstanceToAPI(si)
 	}
 	// Sort by service ID, host ID asc
-	slices.SortStableFunc(serviceInstances, func(a, b *api.Serviceinstance) int {
+	slices.SortStableFunc(serviceInstances, func(a, b *api.ServiceInstance) int {
 		if svcEq := strings.Compare(a.ServiceID, b.ServiceID); svcEq != 0 {
 			return svcEq
 		}
@@ -373,8 +377,28 @@ func databaseToAPI(d *database.Database) *api.Database {
 		UpdatedAt:        d.UpdatedAt.Format(time.RFC3339),
 		State:            string(d.State),
 		Spec:             spec,
-		Instances:        instances,
 		ServiceInstances: serviceInstances,
+		Instances:        instancesToAPI(d.Instances),
+	}
+}
+
+func databaseToSummaryAPI(d *database.Database) *api.DatabaseSummary {
+	if d == nil {
+		return nil
+	}
+
+	var tenantID *api.Identifier
+	if d.TenantID != nil {
+		tenantID = utils.PointerTo(api.Identifier(*d.TenantID))
+	}
+
+	return &api.DatabaseSummary{
+		ID:        api.Identifier(d.DatabaseID),
+		TenantID:  tenantID,
+		CreatedAt: d.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: d.UpdatedAt.Format(time.RFC3339),
+		State:     string(d.State),
+		Instances: instancesToAPI(d.Instances),
 	}
 }
 

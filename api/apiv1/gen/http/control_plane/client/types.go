@@ -11,7 +11,6 @@ import (
 	"unicode/utf8"
 
 	controlplane "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
-	controlplaneviews "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane/views"
 	goa "goa.design/goa/v3/pkg"
 )
 
@@ -44,7 +43,7 @@ type GetJoinOptionsRequestBody struct {
 type CreateDatabaseRequestBody struct {
 	// Unique identifier for the database.
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Unique identifier for the databases's owner.
+	// Unique identifier for the database's owner.
 	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
 	// The specification for the database.
 	Spec *DatabaseSpecRequestBody `form:"spec" json:"spec" xml:"spec"`
@@ -53,7 +52,7 @@ type CreateDatabaseRequestBody struct {
 // UpdateDatabaseRequestBody is the type of the "control-plane" service
 // "update-database" endpoint HTTP request body.
 type UpdateDatabaseRequestBody struct {
-	// Unique identifier for the databases's owner.
+	// Unique identifier for the database's owner.
 	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
 	// The specification for the database.
 	Spec *DatabaseSpecRequestBodyRequestBody `form:"spec" json:"spec" xml:"spec"`
@@ -186,7 +185,8 @@ type RemoveHostResponseBody struct {
 // ListDatabasesResponseBody is the type of the "control-plane" service
 // "list-databases" endpoint HTTP response body.
 type ListDatabasesResponseBody struct {
-	Databases DatabaseCollectionResponseBody `form:"databases,omitempty" json:"databases,omitempty" xml:"databases,omitempty"`
+	// The databases managed by this cluster.
+	Databases []*DatabaseSummaryResponseBody `form:"databases,omitempty" json:"databases,omitempty" xml:"databases,omitempty"`
 }
 
 // CreateDatabaseResponseBody is the type of the "control-plane" service
@@ -203,7 +203,7 @@ type CreateDatabaseResponseBody struct {
 type GetDatabaseResponseBody struct {
 	// Unique identifier for the database.
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Unique identifier for the database.
+	// Unique identifier for the database's owner.
 	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
 	// The time that the database was created.
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
@@ -212,9 +212,9 @@ type GetDatabaseResponseBody struct {
 	// Current state of the database.
 	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
 	// All of the instances in the database.
-	Instances InstanceResponseBodyCollection `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	Instances []*InstanceResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
 	// Service instances running alongside this database.
-	ServiceInstances ServiceinstanceResponseBodyCollection `form:"service_instances,omitempty" json:"service_instances,omitempty" xml:"service_instances,omitempty"`
+	ServiceInstances []*ServiceInstanceResponseBody `form:"service_instances,omitempty" json:"service_instances,omitempty" xml:"service_instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
 }
@@ -1716,15 +1716,11 @@ type TaskResponseBody struct {
 	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
 }
 
-// DatabaseCollectionResponseBody is used to define fields on response body
-// types.
-type DatabaseCollectionResponseBody []*DatabaseResponseBody
-
-// DatabaseResponseBody is used to define fields on response body types.
-type DatabaseResponseBody struct {
+// DatabaseSummaryResponseBody is used to define fields on response body types.
+type DatabaseSummaryResponseBody struct {
 	// Unique identifier for the database.
 	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// Unique identifier for the databases's owner.
+	// Unique identifier for the database's owner.
 	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
 	// The time that the database was created.
 	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
@@ -1733,16 +1729,8 @@ type DatabaseResponseBody struct {
 	// Current state of the database.
 	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
 	// All of the instances in the database.
-	Instances InstanceCollectionResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
-	// Service instances running alongside this database.
-	ServiceInstances ServiceinstanceCollectionResponseBody `form:"service_instances,omitempty" json:"service_instances,omitempty" xml:"service_instances,omitempty"`
-	// The user-provided specification for the database.
-	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
+	Instances []*InstanceResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
 }
-
-// InstanceCollectionResponseBody is used to define fields on response body
-// types.
-type InstanceCollectionResponseBody []*InstanceResponseBody
 
 // InstanceResponseBody is used to define fields on response body types.
 type InstanceResponseBody struct {
@@ -1815,12 +1803,323 @@ type InstanceSubscriptionResponseBody struct {
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 }
 
-// ServiceinstanceCollectionResponseBody is used to define fields on response
-// body types.
-type ServiceinstanceCollectionResponseBody []*ServiceinstanceResponseBody
+// DatabaseSpecRequestBody is used to define fields on request body types.
+type DatabaseSpecRequestBody struct {
+	// The name of the Postgres database.
+	DatabaseName string `form:"database_name" json:"database_name" xml:"database_name"`
+	// The Postgres version in 'major.minor' format.
+	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
+	// The major version of the Spock extension.
+	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
+	// The port used by the Postgres database. If the port is 0, each instance will
+	// be assigned a random port. If the port is unspecified, the database will not
+	// be exposed on any port, dependent on orchestrator support for that feature.
+	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	// The number of CPUs to allocate for the database and to use for tuning
+	// Postgres. Defaults to the number of available CPUs on the host. Can include
+	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
+	// depends on the orchestrator.
+	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory in SI or IEC notation to allocate for the database and
+	// to use for tuning Postgres. Defaults to the total available memory on the
+	// host. Whether this limit is enforced depends on the orchestrator.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	// The Spock nodes for this database.
+	Nodes []*DatabaseNodeSpecRequestBody `form:"nodes" json:"nodes" xml:"nodes"`
+	// The users to create for this database.
+	DatabaseUsers []*DatabaseUserSpecRequestBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
+	// Service instances to run alongside the database (e.g., MCP servers).
+	Services []*ServiceSpecRequestBody `form:"services,omitempty" json:"services,omitempty" xml:"services,omitempty"`
+	// The backup configuration for this database.
+	BackupConfig *BackupConfigSpecRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
+	// The restore configuration for this database.
+	RestoreConfig *RestoreConfigSpecRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
+	// Additional postgresql.conf settings. Will be merged with the settings
+	// provided by control-plane.
+	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
+	// Orchestrator-specific configuration options.
+	OrchestratorOpts *OrchestratorOptsRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+}
 
-// ServiceinstanceResponseBody is used to define fields on response body types.
-type ServiceinstanceResponseBody struct {
+// DatabaseNodeSpecRequestBody is used to define fields on request body types.
+type DatabaseNodeSpecRequestBody struct {
+	// The name of the database node.
+	Name string `form:"name" json:"name" xml:"name"`
+	// The IDs of the hosts that should run this node. When multiple hosts are
+	// specified, one host will chosen as a primary, and the others will be read
+	// replicas.
+	HostIds []string `form:"host_ids" json:"host_ids" xml:"host_ids"`
+	// The Postgres version for this node in 'major.minor' format. Overrides the
+	// Postgres version set in the DatabaseSpec.
+	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
+	// The port used by the Postgres database for this node. Overrides the Postgres
+	// port set in the DatabaseSpec.
+	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	// The number of CPUs to allocate for the database on this node and to use for
+	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
+	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
+	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
+	// than are available on the host. Whether this limit is enforced depends on
+	// the orchestrator.
+	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory in SI or IEC notation to allocate for the database on
+	// this node and to use for tuning Postgres. Defaults to the total available
+	// memory on the host. Whether this limit is enforced depends on the
+	// orchestrator.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	// Additional postgresql.conf settings for this particular node. Will be merged
+	// with the settings provided by control-plane.
+	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
+	// The backup configuration for this node. Overrides the backup configuration
+	// set in the DatabaseSpec.
+	BackupConfig *BackupConfigSpecRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
+	// The restore configuration for this node. Overrides the restore configuration
+	// set in the DatabaseSpec.
+	RestoreConfig *RestoreConfigSpecRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
+	// Orchestrator-specific configuration options.
+	OrchestratorOpts *OrchestratorOptsRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+	// The name of the source node to use for sync. This is typically the node
+	// (like 'n1') from which the data will be copied to initialize this new node.
+	SourceNode *string `form:"source_node,omitempty" json:"source_node,omitempty" xml:"source_node,omitempty"`
+}
+
+// BackupConfigSpecRequestBody is used to define fields on request body types.
+type BackupConfigSpecRequestBody struct {
+	// The repositories for this backup configuration.
+	Repositories []*BackupRepositorySpecRequestBody `form:"repositories" json:"repositories" xml:"repositories"`
+	// The schedules for this backup configuration.
+	Schedules []*BackupScheduleSpecRequestBody `form:"schedules,omitempty" json:"schedules,omitempty" xml:"schedules,omitempty"`
+}
+
+// BackupRepositorySpecRequestBody is used to define fields on request body
+// types.
+type BackupRepositorySpecRequestBody struct {
+	// The unique identifier of this repository.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// The type of this repository.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The S3 bucket name for this repository. Only applies when type = 's3'.
+	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
+	// The region of the S3 bucket for this repository. Only applies when type =
+	// 's3'.
+	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
+	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
+	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	// An optional AWS access key ID to use for this repository. If not provided,
+	// pgbackrest will use the default credential provider chain. This field will
+	// be excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
+	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	// The corresponding secret for the AWS access key ID in s3_key. This field
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
+	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
+	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
+	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
+	// The optional GCS endpoint for this repository. Only applies when type =
+	// 'gcs'.
+	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	// Optional base64-encoded private key data. If omitted, pgbackrest will use
+	// the service account attached to the instance profile. This field will be
+	// excluded from the response of all endpoints. It can also be omitted from
+	// update requests to keep the current value.
+	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
+	// The Azure account name for this repository. Only applies when type = 'azure'.
+	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
+	// The Azure container name for this repository. Only applies when type =
+	// 'azure'.
+	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
+	// The optional Azure endpoint for this repository. Only applies when type =
+	// 'azure'.
+	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	// The Azure storage account access key to use for this repository. This field
+	// will be excluded from the response of all endpoints. It can also be omitted
+	// from update requests to keep the current value.
+	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
+	// The count of full backups to retain or the time to retain full backups.
+	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
+	// The type of measure used for retention_full.
+	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
+	// The base path within the repository to store backups. Required for type =
+	// 'posix' and 'cifs'.
+	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
+}
+
+// BackupScheduleSpecRequestBody is used to define fields on request body types.
+type BackupScheduleSpecRequestBody struct {
+	// The unique identifier for this backup schedule.
+	ID string `form:"id" json:"id" xml:"id"`
+	// The type of backup to take on this schedule.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The cron expression for this schedule.
+	CronExpression string `form:"cron_expression" json:"cron_expression" xml:"cron_expression"`
+}
+
+// RestoreConfigSpecRequestBody is used to define fields on request body types.
+type RestoreConfigSpecRequestBody struct {
+	// The ID of the database to restore this database from.
+	SourceDatabaseID string `form:"source_database_id" json:"source_database_id" xml:"source_database_id"`
+	// The name of the node to restore this database from.
+	SourceNodeName string `form:"source_node_name" json:"source_node_name" xml:"source_node_name"`
+	// The name of the database in this repository. The database will be renamed to
+	// the database_name in the DatabaseSpec after it's restored.
+	SourceDatabaseName string `form:"source_database_name" json:"source_database_name" xml:"source_database_name"`
+	// The repository to restore this database from.
+	Repository *RestoreRepositorySpecRequestBody `form:"repository" json:"repository" xml:"repository"`
+	// Additional options to use when restoring this database. If omitted, the
+	// database will be restored to the latest point in the given repository.
+	RestoreOptions map[string]string `form:"restore_options,omitempty" json:"restore_options,omitempty" xml:"restore_options,omitempty"`
+}
+
+// RestoreRepositorySpecRequestBody is used to define fields on request body
+// types.
+type RestoreRepositorySpecRequestBody struct {
+	// The unique identifier of this repository.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// The type of this repository.
+	Type string `form:"type" json:"type" xml:"type"`
+	// The S3 bucket name for this repository. Only applies when type = 's3'.
+	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
+	// The region of the S3 bucket for this repository. Only applies when type =
+	// 's3'.
+	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
+	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
+	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	// An optional AWS access key ID to use for this repository. If not provided,
+	// pgbackrest will use the default credential provider chain.
+	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	// The corresponding secret for the AWS access key ID in s3_key.
+	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
+	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
+	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
+	// The optional GCS endpoint for this repository. Only applies when type =
+	// 'gcs'.
+	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	// Optional base64-encoded private key data. If omitted, pgbackrest will use
+	// the service account attached to the instance profile.
+	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
+	// The Azure account name for this repository. Only applies when type = 'azure'.
+	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
+	// The Azure container name for this repository. Only applies when type =
+	// 'azure'.
+	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
+	// The optional Azure endpoint for this repository. Only applies when type =
+	// 'azure'.
+	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	// An optional Azure storage account access key to use for this repository. If
+	// not provided, pgbackrest will use the VM's managed identity.
+	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
+	// The base path within the repository to store backups. Required for type =
+	// 'posix' and 'cifs'.
+	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	// Additional options to apply to this repository.
+	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
+}
+
+// OrchestratorOptsRequestBody is used to define fields on request body types.
+type OrchestratorOptsRequestBody struct {
+	// Swarm-specific configuration.
+	Swarm *SwarmOptsRequestBody `form:"swarm,omitempty" json:"swarm,omitempty" xml:"swarm,omitempty"`
+}
+
+// SwarmOptsRequestBody is used to define fields on request body types.
+type SwarmOptsRequestBody struct {
+	// A list of extra volumes to mount. Each entry defines a host and container
+	// path.
+	ExtraVolumes []*ExtraVolumesSpecRequestBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
+	// A list of additional Docker Swarm networks to attach containers in this
+	// database to.
+	ExtraNetworks []*ExtraNetworkSpecRequestBody `form:"extra_networks,omitempty" json:"extra_networks,omitempty" xml:"extra_networks,omitempty"`
+	// Arbitrary labels to apply to the Docker Swarm service
+	ExtraLabels map[string]string `form:"extra_labels,omitempty" json:"extra_labels,omitempty" xml:"extra_labels,omitempty"`
+}
+
+// ExtraVolumesSpecRequestBody is used to define fields on request body types.
+type ExtraVolumesSpecRequestBody struct {
+	// The host path for the volume.
+	HostPath string `form:"host_path" json:"host_path" xml:"host_path"`
+	// The path inside the container where the volume will be mounted.
+	DestinationPath string `form:"destination_path" json:"destination_path" xml:"destination_path"`
+}
+
+// ExtraNetworkSpecRequestBody is used to define fields on request body types.
+type ExtraNetworkSpecRequestBody struct {
+	// The name or ID of the network to connect to.
+	ID string `form:"id" json:"id" xml:"id"`
+	// Optional network-scoped aliases for the container.
+	Aliases []string `form:"aliases,omitempty" json:"aliases,omitempty" xml:"aliases,omitempty"`
+	// Optional driver options for the network connection.
+	DriverOpts map[string]string `form:"driver_opts,omitempty" json:"driver_opts,omitempty" xml:"driver_opts,omitempty"`
+}
+
+// DatabaseUserSpecRequestBody is used to define fields on request body types.
+type DatabaseUserSpecRequestBody struct {
+	// The username for this database user.
+	Username string `form:"username" json:"username" xml:"username"`
+	// The password for this database user. This field will be excluded from the
+	// response of all endpoints. It can also be omitted from update requests to
+	// keep the current value.
+	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
+	// If true, this user will be granted database ownership.
+	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
+	// The attributes to assign to this database user.
+	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
+	// The roles to assign to this database user.
+	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
+}
+
+// ServiceSpecRequestBody is used to define fields on request body types.
+type ServiceSpecRequestBody struct {
+	// The unique identifier for this service.
+	ServiceID string `form:"service_id" json:"service_id" xml:"service_id"`
+	// The type of service to run.
+	ServiceType string `form:"service_type" json:"service_type" xml:"service_type"`
+	// The version of the service in semver format (e.g., '1.0.0') or the literal
+	// 'latest'.
+	Version string `form:"version" json:"version" xml:"version"`
+	// The IDs of the hosts that should run this service. One service instance will
+	// be created per host.
+	HostIds []string `form:"host_ids" json:"host_ids" xml:"host_ids"`
+	// The port to publish the service on the host. If 0, Docker assigns a random
+	// port. If unspecified, no port is published and the service is not accessible
+	// from outside the Docker network.
+	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	// Service-specific configuration. For MCP services, this includes
+	// llm_provider, llm_model, and provider-specific API keys.
+	Config map[string]any `form:"config" json:"config" xml:"config"`
+	// The number of CPUs to allocate for this service. It can include the SI
+	// suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if
+	// unspecified.
+	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory in SI or IEC notation to allocate for this service.
+	// Defaults to container defaults if unspecified.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+}
+
+// DatabaseResponseBody is used to define fields on response body types.
+type DatabaseResponseBody struct {
+	// Unique identifier for the database.
+	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	// Unique identifier for the database's owner.
+	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
+	// The time that the database was created.
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// The time that the database was last updated.
+	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
+	// Current state of the database.
+	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
+	// All of the instances in the database.
+	Instances []*InstanceResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	// Service instances running alongside this database.
+	ServiceInstances []*ServiceInstanceResponseBody `form:"service_instances,omitempty" json:"service_instances,omitempty" xml:"service_instances,omitempty"`
+	// The user-provided specification for the database.
+	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
+}
+
+// ServiceInstanceResponseBody is used to define fields on response body types.
+type ServiceInstanceResponseBody struct {
 	// Unique identifier for the service instance.
 	ServiceInstanceID *string `form:"service_instance_id,omitempty" json:"service_instance_id,omitempty" xml:"service_instance_id,omitempty"`
 	// The service ID from the DatabaseSpec.
@@ -2179,309 +2478,6 @@ type ServiceSpecResponseBody struct {
 	// Defaults to container defaults if unspecified.
 	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 }
-
-// DatabaseSpecRequestBody is used to define fields on request body types.
-type DatabaseSpecRequestBody struct {
-	// The name of the Postgres database.
-	DatabaseName string `form:"database_name" json:"database_name" xml:"database_name"`
-	// The Postgres version in 'major.minor' format.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
-	// The major version of the Spock extension.
-	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
-	// The port used by the Postgres database. If the port is 0, each instance will
-	// be assigned a random port. If the port is unspecified, the database will not
-	// be exposed on any port, dependent on orchestrator support for that feature.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
-	// The number of CPUs to allocate for the database and to use for tuning
-	// Postgres. Defaults to the number of available CPUs on the host. Can include
-	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
-	// depends on the orchestrator.
-	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
-	// The amount of memory in SI or IEC notation to allocate for the database and
-	// to use for tuning Postgres. Defaults to the total available memory on the
-	// host. Whether this limit is enforced depends on the orchestrator.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
-	// The Spock nodes for this database.
-	Nodes []*DatabaseNodeSpecRequestBody `form:"nodes" json:"nodes" xml:"nodes"`
-	// The users to create for this database.
-	DatabaseUsers []*DatabaseUserSpecRequestBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
-	// Service instances to run alongside the database (e.g., MCP servers).
-	Services []*ServiceSpecRequestBody `form:"services,omitempty" json:"services,omitempty" xml:"services,omitempty"`
-	// The backup configuration for this database.
-	BackupConfig *BackupConfigSpecRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
-	// The restore configuration for this database.
-	RestoreConfig *RestoreConfigSpecRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
-	// Additional postgresql.conf settings. Will be merged with the settings
-	// provided by control-plane.
-	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
-	// Orchestrator-specific configuration options.
-	OrchestratorOpts *OrchestratorOptsRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
-}
-
-// DatabaseNodeSpecRequestBody is used to define fields on request body types.
-type DatabaseNodeSpecRequestBody struct {
-	// The name of the database node.
-	Name string `form:"name" json:"name" xml:"name"`
-	// The IDs of the hosts that should run this node. When multiple hosts are
-	// specified, one host will chosen as a primary, and the others will be read
-	// replicas.
-	HostIds []string `form:"host_ids" json:"host_ids" xml:"host_ids"`
-	// The Postgres version for this node in 'major.minor' format. Overrides the
-	// Postgres version set in the DatabaseSpec.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
-	// The port used by the Postgres database for this node. Overrides the Postgres
-	// port set in the DatabaseSpec.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
-	// The number of CPUs to allocate for the database on this node and to use for
-	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
-	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
-	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
-	// than are available on the host. Whether this limit is enforced depends on
-	// the orchestrator.
-	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
-	// The amount of memory in SI or IEC notation to allocate for the database on
-	// this node and to use for tuning Postgres. Defaults to the total available
-	// memory on the host. Whether this limit is enforced depends on the
-	// orchestrator.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
-	// Additional postgresql.conf settings for this particular node. Will be merged
-	// with the settings provided by control-plane.
-	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
-	// The backup configuration for this node. Overrides the backup configuration
-	// set in the DatabaseSpec.
-	BackupConfig *BackupConfigSpecRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
-	// The restore configuration for this node. Overrides the restore configuration
-	// set in the DatabaseSpec.
-	RestoreConfig *RestoreConfigSpecRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
-	// Orchestrator-specific configuration options.
-	OrchestratorOpts *OrchestratorOptsRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
-	// The name of the source node to use for sync. This is typically the node
-	// (like 'n1') from which the data will be copied to initialize this new node.
-	SourceNode *string `form:"source_node,omitempty" json:"source_node,omitempty" xml:"source_node,omitempty"`
-}
-
-// BackupConfigSpecRequestBody is used to define fields on request body types.
-type BackupConfigSpecRequestBody struct {
-	// The repositories for this backup configuration.
-	Repositories []*BackupRepositorySpecRequestBody `form:"repositories" json:"repositories" xml:"repositories"`
-	// The schedules for this backup configuration.
-	Schedules []*BackupScheduleSpecRequestBody `form:"schedules,omitempty" json:"schedules,omitempty" xml:"schedules,omitempty"`
-}
-
-// BackupRepositorySpecRequestBody is used to define fields on request body
-// types.
-type BackupRepositorySpecRequestBody struct {
-	// The unique identifier of this repository.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// The type of this repository.
-	Type string `form:"type" json:"type" xml:"type"`
-	// The S3 bucket name for this repository. Only applies when type = 's3'.
-	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
-	// The region of the S3 bucket for this repository. Only applies when type =
-	// 's3'.
-	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
-	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
-	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
-	// An optional AWS access key ID to use for this repository. If not provided,
-	// pgbackrest will use the default credential provider chain. This field will
-	// be excluded from the response of all endpoints. It can also be omitted from
-	// update requests to keep the current value.
-	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
-	// The corresponding secret for the AWS access key ID in s3_key. This field
-	// will be excluded from the response of all endpoints. It can also be omitted
-	// from update requests to keep the current value.
-	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
-	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
-	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
-	// The optional GCS endpoint for this repository. Only applies when type =
-	// 'gcs'.
-	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
-	// Optional base64-encoded private key data. If omitted, pgbackrest will use
-	// the service account attached to the instance profile. This field will be
-	// excluded from the response of all endpoints. It can also be omitted from
-	// update requests to keep the current value.
-	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
-	// The Azure account name for this repository. Only applies when type = 'azure'.
-	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
-	// The Azure container name for this repository. Only applies when type =
-	// 'azure'.
-	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
-	// The optional Azure endpoint for this repository. Only applies when type =
-	// 'azure'.
-	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
-	// The Azure storage account access key to use for this repository. This field
-	// will be excluded from the response of all endpoints. It can also be omitted
-	// from update requests to keep the current value.
-	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
-	// The count of full backups to retain or the time to retain full backups.
-	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
-	// The type of measure used for retention_full.
-	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
-	// The base path within the repository to store backups. Required for type =
-	// 'posix' and 'cifs'.
-	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
-	// Additional options to apply to this repository.
-	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
-}
-
-// BackupScheduleSpecRequestBody is used to define fields on request body types.
-type BackupScheduleSpecRequestBody struct {
-	// The unique identifier for this backup schedule.
-	ID string `form:"id" json:"id" xml:"id"`
-	// The type of backup to take on this schedule.
-	Type string `form:"type" json:"type" xml:"type"`
-	// The cron expression for this schedule.
-	CronExpression string `form:"cron_expression" json:"cron_expression" xml:"cron_expression"`
-}
-
-// RestoreConfigSpecRequestBody is used to define fields on request body types.
-type RestoreConfigSpecRequestBody struct {
-	// The ID of the database to restore this database from.
-	SourceDatabaseID string `form:"source_database_id" json:"source_database_id" xml:"source_database_id"`
-	// The name of the node to restore this database from.
-	SourceNodeName string `form:"source_node_name" json:"source_node_name" xml:"source_node_name"`
-	// The name of the database in this repository. The database will be renamed to
-	// the database_name in the DatabaseSpec after it's restored.
-	SourceDatabaseName string `form:"source_database_name" json:"source_database_name" xml:"source_database_name"`
-	// The repository to restore this database from.
-	Repository *RestoreRepositorySpecRequestBody `form:"repository" json:"repository" xml:"repository"`
-	// Additional options to use when restoring this database. If omitted, the
-	// database will be restored to the latest point in the given repository.
-	RestoreOptions map[string]string `form:"restore_options,omitempty" json:"restore_options,omitempty" xml:"restore_options,omitempty"`
-}
-
-// RestoreRepositorySpecRequestBody is used to define fields on request body
-// types.
-type RestoreRepositorySpecRequestBody struct {
-	// The unique identifier of this repository.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
-	// The type of this repository.
-	Type string `form:"type" json:"type" xml:"type"`
-	// The S3 bucket name for this repository. Only applies when type = 's3'.
-	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
-	// The region of the S3 bucket for this repository. Only applies when type =
-	// 's3'.
-	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
-	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
-	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
-	// An optional AWS access key ID to use for this repository. If not provided,
-	// pgbackrest will use the default credential provider chain.
-	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
-	// The corresponding secret for the AWS access key ID in s3_key.
-	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
-	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
-	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
-	// The optional GCS endpoint for this repository. Only applies when type =
-	// 'gcs'.
-	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
-	// Optional base64-encoded private key data. If omitted, pgbackrest will use
-	// the service account attached to the instance profile.
-	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
-	// The Azure account name for this repository. Only applies when type = 'azure'.
-	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
-	// The Azure container name for this repository. Only applies when type =
-	// 'azure'.
-	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
-	// The optional Azure endpoint for this repository. Only applies when type =
-	// 'azure'.
-	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
-	// An optional Azure storage account access key to use for this repository. If
-	// not provided, pgbackrest will use the VM's managed identity.
-	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
-	// The base path within the repository to store backups. Required for type =
-	// 'posix' and 'cifs'.
-	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
-	// Additional options to apply to this repository.
-	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
-}
-
-// OrchestratorOptsRequestBody is used to define fields on request body types.
-type OrchestratorOptsRequestBody struct {
-	// Swarm-specific configuration.
-	Swarm *SwarmOptsRequestBody `form:"swarm,omitempty" json:"swarm,omitempty" xml:"swarm,omitempty"`
-}
-
-// SwarmOptsRequestBody is used to define fields on request body types.
-type SwarmOptsRequestBody struct {
-	// A list of extra volumes to mount. Each entry defines a host and container
-	// path.
-	ExtraVolumes []*ExtraVolumesSpecRequestBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
-	// A list of additional Docker Swarm networks to attach containers in this
-	// database to.
-	ExtraNetworks []*ExtraNetworkSpecRequestBody `form:"extra_networks,omitempty" json:"extra_networks,omitempty" xml:"extra_networks,omitempty"`
-	// Arbitrary labels to apply to the Docker Swarm service
-	ExtraLabels map[string]string `form:"extra_labels,omitempty" json:"extra_labels,omitempty" xml:"extra_labels,omitempty"`
-}
-
-// ExtraVolumesSpecRequestBody is used to define fields on request body types.
-type ExtraVolumesSpecRequestBody struct {
-	// The host path for the volume.
-	HostPath string `form:"host_path" json:"host_path" xml:"host_path"`
-	// The path inside the container where the volume will be mounted.
-	DestinationPath string `form:"destination_path" json:"destination_path" xml:"destination_path"`
-}
-
-// ExtraNetworkSpecRequestBody is used to define fields on request body types.
-type ExtraNetworkSpecRequestBody struct {
-	// The name or ID of the network to connect to.
-	ID string `form:"id" json:"id" xml:"id"`
-	// Optional network-scoped aliases for the container.
-	Aliases []string `form:"aliases,omitempty" json:"aliases,omitempty" xml:"aliases,omitempty"`
-	// Optional driver options for the network connection.
-	DriverOpts map[string]string `form:"driver_opts,omitempty" json:"driver_opts,omitempty" xml:"driver_opts,omitempty"`
-}
-
-// DatabaseUserSpecRequestBody is used to define fields on request body types.
-type DatabaseUserSpecRequestBody struct {
-	// The username for this database user.
-	Username string `form:"username" json:"username" xml:"username"`
-	// The password for this database user. This field will be excluded from the
-	// response of all endpoints. It can also be omitted from update requests to
-	// keep the current value.
-	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
-	// If true, this user will be granted database ownership.
-	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
-	// The attributes to assign to this database user.
-	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
-	// The roles to assign to this database user.
-	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
-}
-
-// ServiceSpecRequestBody is used to define fields on request body types.
-type ServiceSpecRequestBody struct {
-	// The unique identifier for this service.
-	ServiceID string `form:"service_id" json:"service_id" xml:"service_id"`
-	// The type of service to run.
-	ServiceType string `form:"service_type" json:"service_type" xml:"service_type"`
-	// The version of the service in semver format (e.g., '1.0.0') or the literal
-	// 'latest'.
-	Version string `form:"version" json:"version" xml:"version"`
-	// The IDs of the hosts that should run this service. One service instance will
-	// be created per host.
-	HostIds []string `form:"host_ids" json:"host_ids" xml:"host_ids"`
-	// The port to publish the service on the host. If 0, Docker assigns a random
-	// port. If unspecified, no port is published and the service is not accessible
-	// from outside the Docker network.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
-	// Service-specific configuration. For MCP services, this includes
-	// llm_provider, llm_model, and provider-specific API keys.
-	Config map[string]any `form:"config" json:"config" xml:"config"`
-	// The number of CPUs to allocate for this service. It can include the SI
-	// suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if
-	// unspecified.
-	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
-	// The amount of memory in SI or IEC notation to allocate for this service.
-	// Defaults to container defaults if unspecified.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
-}
-
-// InstanceResponseBodyCollection is used to define fields on response body
-// types.
-type InstanceResponseBodyCollection []*InstanceResponseBody
-
-// ServiceinstanceResponseBodyCollection is used to define fields on response
-// body types.
-type ServiceinstanceResponseBodyCollection []*ServiceinstanceResponseBody
 
 // DatabaseSpecRequestBodyRequestBody is used to define fields on request body
 // types.
@@ -3317,18 +3313,18 @@ func NewRemoveHostServerError(body *RemoveHostServerErrorResponseBody) *controlp
 	return v
 }
 
-// NewListDatabasesResponseViewOK builds a "control-plane" service
-// "list-databases" endpoint result from a HTTP "OK" response.
-func NewListDatabasesResponseViewOK(body *ListDatabasesResponseBody) *controlplaneviews.ListDatabasesResponseView {
-	v := &controlplaneviews.ListDatabasesResponseView{}
+// NewListDatabasesResponseOK builds a "control-plane" service "list-databases"
+// endpoint result from a HTTP "OK" response.
+func NewListDatabasesResponseOK(body *ListDatabasesResponseBody) *controlplane.ListDatabasesResponse {
+	v := &controlplane.ListDatabasesResponse{}
 	if body.Databases != nil {
-		v.Databases = make([]*controlplaneviews.DatabaseView, len(body.Databases))
+		v.Databases = make([]*controlplane.DatabaseSummary, len(body.Databases))
 		for i, val := range body.Databases {
 			if val == nil {
 				v.Databases[i] = nil
 				continue
 			}
-			v.Databases[i] = unmarshalDatabaseResponseBodyToControlplaneviewsDatabaseView(val)
+			v.Databases[i] = unmarshalDatabaseSummaryResponseBodyToControlplaneDatabaseSummary(val)
 		}
 	}
 
@@ -3424,36 +3420,39 @@ func NewCreateDatabaseServerError(body *CreateDatabaseServerErrorResponseBody) *
 
 // NewGetDatabaseDatabaseOK builds a "control-plane" service "get-database"
 // endpoint result from a HTTP "OK" response.
-func NewGetDatabaseDatabaseOK(body *GetDatabaseResponseBody) *controlplaneviews.DatabaseView {
-	v := &controlplaneviews.DatabaseView{
-		CreatedAt: body.CreatedAt,
-		UpdatedAt: body.UpdatedAt,
-		State:     body.State,
+func NewGetDatabaseDatabaseOK(body *GetDatabaseResponseBody) *controlplane.Database {
+	v := &controlplane.Database{
+		ID:        controlplane.Identifier(*body.ID),
+		CreatedAt: *body.CreatedAt,
+		UpdatedAt: *body.UpdatedAt,
+		State:     *body.State,
 	}
-	id := controlplaneviews.IdentifierView(*body.ID)
-	v.ID = &id
 	if body.TenantID != nil {
-		tenantID := controlplaneviews.IdentifierView(*body.TenantID)
+		tenantID := controlplane.Identifier(*body.TenantID)
 		v.TenantID = &tenantID
 	}
-	v.Instances = make([]*controlplaneviews.InstanceView, len(body.Instances))
-	for i, val := range body.Instances {
-		if val == nil {
-			v.Instances[i] = nil
-			continue
+	if body.Instances != nil {
+		v.Instances = make([]*controlplane.Instance, len(body.Instances))
+		for i, val := range body.Instances {
+			if val == nil {
+				v.Instances[i] = nil
+				continue
+			}
+			v.Instances[i] = unmarshalInstanceResponseBodyToControlplaneInstance(val)
 		}
-		v.Instances[i] = unmarshalInstanceResponseBodyToControlplaneviewsInstanceView(val)
 	}
-	v.ServiceInstances = make([]*controlplaneviews.ServiceinstanceView, len(body.ServiceInstances))
-	for i, val := range body.ServiceInstances {
-		if val == nil {
-			v.ServiceInstances[i] = nil
-			continue
+	if body.ServiceInstances != nil {
+		v.ServiceInstances = make([]*controlplane.ServiceInstance, len(body.ServiceInstances))
+		for i, val := range body.ServiceInstances {
+			if val == nil {
+				v.ServiceInstances[i] = nil
+				continue
+			}
+			v.ServiceInstances[i] = unmarshalServiceInstanceResponseBodyToControlplaneServiceInstance(val)
 		}
-		v.ServiceInstances[i] = unmarshalServiceinstanceResponseBodyToControlplaneviewsServiceinstanceView(val)
 	}
 	if body.Spec != nil {
-		v.Spec = unmarshalDatabaseSpecResponseBodyToControlplaneviewsDatabaseSpecView(body.Spec)
+		v.Spec = unmarshalDatabaseSpecResponseBodyToControlplaneDatabaseSpec(body.Spec)
 	}
 
 	return v
@@ -4684,9 +4683,21 @@ func ValidateRemoveHostResponseBody(body *RemoveHostResponseBody) (err error) {
 	return
 }
 
+// ValidateListDatabasesResponseBody runs a no-op validation on
+// List-DatabasesResponseBody
+func ValidateListDatabasesResponseBody(body *ListDatabasesResponseBody) (err error) {
+	return
+}
+
 // ValidateCreateDatabaseResponseBody runs a no-op validation on
 // Create-DatabaseResponseBody
 func ValidateCreateDatabaseResponseBody(body *CreateDatabaseResponseBody) (err error) {
+	return
+}
+
+// ValidateGetDatabaseResponseBody runs a no-op validation on
+// Get-DatabaseResponseBody
+func ValidateGetDatabaseResponseBody(body *GetDatabaseResponseBody) (err error) {
 	return
 }
 
@@ -5543,20 +5554,9 @@ func ValidateTaskResponseBody(body *TaskResponseBody) (err error) {
 	return
 }
 
-// ValidateDatabaseCollectionResponseBody runs a no-op validation on
-// DatabaseCollectionResponseBody
-func ValidateDatabaseCollectionResponseBody(body DatabaseCollectionResponseBody) (err error) {
-	return
-}
-
-// ValidateDatabaseResponseBody runs a no-op validation on DatabaseResponseBody
-func ValidateDatabaseResponseBody(body *DatabaseResponseBody) (err error) {
-	return
-}
-
-// ValidateInstanceCollectionResponseBody runs a no-op validation on
-// InstanceCollectionResponseBody
-func ValidateInstanceCollectionResponseBody(body InstanceCollectionResponseBody) (err error) {
+// ValidateDatabaseSummaryResponseBody runs a no-op validation on
+// DatabaseSummaryResponseBody
+func ValidateDatabaseSummaryResponseBody(body *DatabaseSummaryResponseBody) (err error) {
 	return
 }
 
@@ -5580,114 +5580,6 @@ func ValidateInstanceSpockStatusResponseBody(body *InstanceSpockStatusResponseBo
 // ValidateInstanceSubscriptionResponseBody runs a no-op validation on
 // InstanceSubscriptionResponseBody
 func ValidateInstanceSubscriptionResponseBody(body *InstanceSubscriptionResponseBody) (err error) {
-	return
-}
-
-// ValidateServiceinstanceCollectionResponseBody runs a no-op validation on
-// ServiceinstanceCollectionResponseBody
-func ValidateServiceinstanceCollectionResponseBody(body ServiceinstanceCollectionResponseBody) (err error) {
-	return
-}
-
-// ValidateServiceinstanceResponseBody runs a no-op validation on
-// ServiceinstanceResponseBody
-func ValidateServiceinstanceResponseBody(body *ServiceinstanceResponseBody) (err error) {
-	return
-}
-
-// ValidateServiceInstanceStatusResponseBody runs a no-op validation on
-// ServiceInstanceStatusResponseBody
-func ValidateServiceInstanceStatusResponseBody(body *ServiceInstanceStatusResponseBody) (err error) {
-	return
-}
-
-// ValidatePortMappingResponseBody runs a no-op validation on
-// PortMappingResponseBody
-func ValidatePortMappingResponseBody(body *PortMappingResponseBody) (err error) {
-	return
-}
-
-// ValidateHealthCheckResultResponseBody runs a no-op validation on
-// HealthCheckResultResponseBody
-func ValidateHealthCheckResultResponseBody(body *HealthCheckResultResponseBody) (err error) {
-	return
-}
-
-// ValidateDatabaseSpecResponseBody runs a no-op validation on
-// DatabaseSpecResponseBody
-func ValidateDatabaseSpecResponseBody(body *DatabaseSpecResponseBody) (err error) {
-	return
-}
-
-// ValidateDatabaseNodeSpecResponseBody runs a no-op validation on
-// DatabaseNodeSpecResponseBody
-func ValidateDatabaseNodeSpecResponseBody(body *DatabaseNodeSpecResponseBody) (err error) {
-	return
-}
-
-// ValidateBackupConfigSpecResponseBody runs a no-op validation on
-// BackupConfigSpecResponseBody
-func ValidateBackupConfigSpecResponseBody(body *BackupConfigSpecResponseBody) (err error) {
-	return
-}
-
-// ValidateBackupRepositorySpecResponseBody runs a no-op validation on
-// BackupRepositorySpecResponseBody
-func ValidateBackupRepositorySpecResponseBody(body *BackupRepositorySpecResponseBody) (err error) {
-	return
-}
-
-// ValidateBackupScheduleSpecResponseBody runs a no-op validation on
-// BackupScheduleSpecResponseBody
-func ValidateBackupScheduleSpecResponseBody(body *BackupScheduleSpecResponseBody) (err error) {
-	return
-}
-
-// ValidateRestoreConfigSpecResponseBody runs a no-op validation on
-// RestoreConfigSpecResponseBody
-func ValidateRestoreConfigSpecResponseBody(body *RestoreConfigSpecResponseBody) (err error) {
-	return
-}
-
-// ValidateRestoreRepositorySpecResponseBody runs a no-op validation on
-// RestoreRepositorySpecResponseBody
-func ValidateRestoreRepositorySpecResponseBody(body *RestoreRepositorySpecResponseBody) (err error) {
-	return
-}
-
-// ValidateOrchestratorOptsResponseBody runs a no-op validation on
-// OrchestratorOptsResponseBody
-func ValidateOrchestratorOptsResponseBody(body *OrchestratorOptsResponseBody) (err error) {
-	return
-}
-
-// ValidateSwarmOptsResponseBody runs a no-op validation on
-// SwarmOptsResponseBody
-func ValidateSwarmOptsResponseBody(body *SwarmOptsResponseBody) (err error) {
-	return
-}
-
-// ValidateExtraVolumesSpecResponseBody runs a no-op validation on
-// ExtraVolumesSpecResponseBody
-func ValidateExtraVolumesSpecResponseBody(body *ExtraVolumesSpecResponseBody) (err error) {
-	return
-}
-
-// ValidateExtraNetworkSpecResponseBody runs a no-op validation on
-// ExtraNetworkSpecResponseBody
-func ValidateExtraNetworkSpecResponseBody(body *ExtraNetworkSpecResponseBody) (err error) {
-	return
-}
-
-// ValidateDatabaseUserSpecResponseBody runs a no-op validation on
-// DatabaseUserSpecResponseBody
-func ValidateDatabaseUserSpecResponseBody(body *DatabaseUserSpecResponseBody) (err error) {
-	return
-}
-
-// ValidateServiceSpecResponseBody runs a no-op validation on
-// ServiceSpecResponseBody
-func ValidateServiceSpecResponseBody(body *ServiceSpecResponseBody) (err error) {
 	return
 }
 
@@ -6301,29 +6193,110 @@ func ValidateServiceSpecRequestBody(body *ServiceSpecRequestBody) (err error) {
 	return
 }
 
-// ValidateInstanceResponseBodyCollection runs the validations defined on
-// InstanceResponseBodyCollection
-func ValidateInstanceResponseBodyCollection(body InstanceResponseBodyCollection) (err error) {
-	for _, e := range body {
-		if e != nil {
-			if err2 := ValidateInstanceResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
+// ValidateDatabaseResponseBody runs a no-op validation on DatabaseResponseBody
+func ValidateDatabaseResponseBody(body *DatabaseResponseBody) (err error) {
 	return
 }
 
-// ValidateServiceinstanceResponseBodyCollection runs the validations defined
-// on ServiceinstanceResponseBodyCollection
-func ValidateServiceinstanceResponseBodyCollection(body ServiceinstanceResponseBodyCollection) (err error) {
-	for _, e := range body {
-		if e != nil {
-			if err2 := ValidateServiceinstanceResponseBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
+// ValidateServiceInstanceResponseBody runs a no-op validation on
+// ServiceInstanceResponseBody
+func ValidateServiceInstanceResponseBody(body *ServiceInstanceResponseBody) (err error) {
+	return
+}
+
+// ValidateServiceInstanceStatusResponseBody runs a no-op validation on
+// ServiceInstanceStatusResponseBody
+func ValidateServiceInstanceStatusResponseBody(body *ServiceInstanceStatusResponseBody) (err error) {
+	return
+}
+
+// ValidatePortMappingResponseBody runs a no-op validation on
+// PortMappingResponseBody
+func ValidatePortMappingResponseBody(body *PortMappingResponseBody) (err error) {
+	return
+}
+
+// ValidateHealthCheckResultResponseBody runs a no-op validation on
+// HealthCheckResultResponseBody
+func ValidateHealthCheckResultResponseBody(body *HealthCheckResultResponseBody) (err error) {
+	return
+}
+
+// ValidateDatabaseSpecResponseBody runs a no-op validation on
+// DatabaseSpecResponseBody
+func ValidateDatabaseSpecResponseBody(body *DatabaseSpecResponseBody) (err error) {
+	return
+}
+
+// ValidateDatabaseNodeSpecResponseBody runs a no-op validation on
+// DatabaseNodeSpecResponseBody
+func ValidateDatabaseNodeSpecResponseBody(body *DatabaseNodeSpecResponseBody) (err error) {
+	return
+}
+
+// ValidateBackupConfigSpecResponseBody runs a no-op validation on
+// BackupConfigSpecResponseBody
+func ValidateBackupConfigSpecResponseBody(body *BackupConfigSpecResponseBody) (err error) {
+	return
+}
+
+// ValidateBackupRepositorySpecResponseBody runs a no-op validation on
+// BackupRepositorySpecResponseBody
+func ValidateBackupRepositorySpecResponseBody(body *BackupRepositorySpecResponseBody) (err error) {
+	return
+}
+
+// ValidateBackupScheduleSpecResponseBody runs a no-op validation on
+// BackupScheduleSpecResponseBody
+func ValidateBackupScheduleSpecResponseBody(body *BackupScheduleSpecResponseBody) (err error) {
+	return
+}
+
+// ValidateRestoreConfigSpecResponseBody runs a no-op validation on
+// RestoreConfigSpecResponseBody
+func ValidateRestoreConfigSpecResponseBody(body *RestoreConfigSpecResponseBody) (err error) {
+	return
+}
+
+// ValidateRestoreRepositorySpecResponseBody runs a no-op validation on
+// RestoreRepositorySpecResponseBody
+func ValidateRestoreRepositorySpecResponseBody(body *RestoreRepositorySpecResponseBody) (err error) {
+	return
+}
+
+// ValidateOrchestratorOptsResponseBody runs a no-op validation on
+// OrchestratorOptsResponseBody
+func ValidateOrchestratorOptsResponseBody(body *OrchestratorOptsResponseBody) (err error) {
+	return
+}
+
+// ValidateSwarmOptsResponseBody runs a no-op validation on
+// SwarmOptsResponseBody
+func ValidateSwarmOptsResponseBody(body *SwarmOptsResponseBody) (err error) {
+	return
+}
+
+// ValidateExtraVolumesSpecResponseBody runs a no-op validation on
+// ExtraVolumesSpecResponseBody
+func ValidateExtraVolumesSpecResponseBody(body *ExtraVolumesSpecResponseBody) (err error) {
+	return
+}
+
+// ValidateExtraNetworkSpecResponseBody runs a no-op validation on
+// ExtraNetworkSpecResponseBody
+func ValidateExtraNetworkSpecResponseBody(body *ExtraNetworkSpecResponseBody) (err error) {
+	return
+}
+
+// ValidateDatabaseUserSpecResponseBody runs a no-op validation on
+// DatabaseUserSpecResponseBody
+func ValidateDatabaseUserSpecResponseBody(body *DatabaseUserSpecResponseBody) (err error) {
+	return
+}
+
+// ValidateServiceSpecResponseBody runs a no-op validation on
+// ServiceSpecResponseBody
+func ValidateServiceSpecResponseBody(body *ServiceSpecResponseBody) (err error) {
 	return
 }
 
