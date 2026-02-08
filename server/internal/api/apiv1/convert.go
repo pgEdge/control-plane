@@ -470,7 +470,7 @@ func instanceToAPI(instance *database.Instance) *api.Instance {
 
 		// An instance error takes precedence over its status error because it
 		// represents a failed modification to the database.
-		if apiInst.Error == nil && status.Error != nil {
+		if apiInst.Error == nil && status.Error != nil && *status.Error != "" {
 			apiInst.Error = status.Error
 		}
 	}
