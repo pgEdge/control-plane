@@ -96,16 +96,16 @@ var MethodNames = [29]string{"init-cluster", "join-cluster", "get-join-token", "
 // A Control Plane API error.
 type APIError struct {
 	// The name of the error.
-	Name string
+	Name string `json:"name"`
 	// The error message.
-	Message string
+	Message string `json:"message"`
 }
 
 type BackupConfigSpec struct {
 	// The repositories for this backup configuration.
-	Repositories []*BackupRepositorySpec
+	Repositories []*BackupRepositorySpec `json:"repositories"`
 	// The schedules for this backup configuration.
-	Schedules []*BackupScheduleSpec
+	Schedules []*BackupScheduleSpec `json:"schedules,omitempty"`
 }
 
 // BackupDatabaseNodePayload is the payload type of the control-plane service
@@ -124,79 +124,79 @@ type BackupDatabaseNodePayload struct {
 // backup-database-node method.
 type BackupDatabaseNodeResponse struct {
 	// The task that will backup this database node.
-	Task *Task
+	Task *Task `json:"task"`
 }
 
 type BackupOptions struct {
 	// The type of backup.
-	Type string
+	Type string `json:"type"`
 	// Annotations for the backup.
-	Annotations map[string]string
+	Annotations map[string]string `json:"annotations,omitempty"`
 	// Options for the backup.
-	BackupOptions map[string]string
+	BackupOptions map[string]string `json:"backup_options,omitempty"`
 }
 
 type BackupRepositorySpec struct {
 	// The unique identifier of this repository.
-	ID *Identifier
+	ID *Identifier `json:"id,omitempty"`
 	// The type of this repository.
-	Type string
+	Type string `json:"type"`
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
-	S3Bucket *string
+	S3Bucket *string `json:"s3_bucket,omitempty"`
 	// The region of the S3 bucket for this repository. Only applies when type =
 	// 's3'.
-	S3Region *string
+	S3Region *string `json:"s3_region,omitempty"`
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
-	S3Endpoint *string
+	S3Endpoint *string `json:"s3_endpoint,omitempty"`
 	// An optional AWS access key ID to use for this repository. If not provided,
 	// pgbackrest will use the default credential provider chain. This field will
 	// be excluded from the response of all endpoints. It can also be omitted from
 	// update requests to keep the current value.
-	S3Key *string
+	S3Key *string `json:"s3_key,omitempty"`
 	// The corresponding secret for the AWS access key ID in s3_key. This field
 	// will be excluded from the response of all endpoints. It can also be omitted
 	// from update requests to keep the current value.
-	S3KeySecret *string
+	S3KeySecret *string `json:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
-	GcsBucket *string
+	GcsBucket *string `json:"gcs_bucket,omitempty"`
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
-	GcsEndpoint *string
+	GcsEndpoint *string `json:"gcs_endpoint,omitempty"`
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
 	// the service account attached to the instance profile. This field will be
 	// excluded from the response of all endpoints. It can also be omitted from
 	// update requests to keep the current value.
-	GcsKey *string
+	GcsKey *string `json:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
-	AzureAccount *string
+	AzureAccount *string `json:"azure_account,omitempty"`
 	// The Azure container name for this repository. Only applies when type =
 	// 'azure'.
-	AzureContainer *string
+	AzureContainer *string `json:"azure_container,omitempty"`
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
-	AzureEndpoint *string
+	AzureEndpoint *string `json:"azure_endpoint,omitempty"`
 	// The Azure storage account access key to use for this repository. This field
 	// will be excluded from the response of all endpoints. It can also be omitted
 	// from update requests to keep the current value.
-	AzureKey *string
+	AzureKey *string `json:"azure_key,omitempty"`
 	// The count of full backups to retain or the time to retain full backups.
-	RetentionFull *int
+	RetentionFull *int `json:"retention_full,omitempty"`
 	// The type of measure used for retention_full.
-	RetentionFullType *string
+	RetentionFullType *string `json:"retention_full_type,omitempty"`
 	// The base path within the repository to store backups. Required for type =
 	// 'posix' and 'cifs'.
-	BasePath *string
+	BasePath *string `json:"base_path,omitempty"`
 	// Additional options to apply to this repository.
-	CustomOptions map[string]string
+	CustomOptions map[string]string `json:"custom_options,omitempty"`
 }
 
 type BackupScheduleSpec struct {
 	// The unique identifier for this backup schedule.
-	ID string
+	ID string `json:"id"`
 	// The type of backup to take on this schedule.
-	Type string
+	Type string `json:"type"`
 	// The cron expression for this schedule.
-	CronExpression string
+	CronExpression string `json:"cron_expression"`
 }
 
 // CancelDatabaseTaskPayload is the payload type of the control-plane service
@@ -211,223 +211,223 @@ type CancelDatabaseTaskPayload struct {
 // Cluster is the result type of the control-plane service get-cluster method.
 type Cluster struct {
 	// Unique identifier for the cluster.
-	ID Identifier
+	ID Identifier `json:"id"`
 	// Current status of the cluster.
-	Status *ClusterStatus
+	Status *ClusterStatus `json:"status"`
 	// All of the hosts in the cluster.
-	Hosts []*Host
+	Hosts []*Host `json:"hosts"`
 }
 
 type ClusterCredentials struct {
 	// The Etcd username for the new host.
-	Username string
+	Username string `json:"username"`
 	// The Etcd password for the new host.
-	Password string
+	Password string `json:"password"`
 	// The base64-encoded CA certificate for the cluster.
-	CaCert string
+	CaCert string `json:"ca_cert"`
 	// The base64-encoded etcd client certificate for the new cluster member.
-	ClientCert string
+	ClientCert string `json:"client_cert"`
 	// The base64-encoded etcd client key for the new cluster member.
-	ClientKey string
+	ClientKey string `json:"client_key"`
 	// The base64-encoded etcd server certificate for the new cluster member.
-	ServerCert string
+	ServerCert string `json:"server_cert"`
 	// The base64-encoded etcd server key for the new cluster member.
-	ServerKey string
+	ServerKey string `json:"server_key"`
 }
 
 // ClusterJoinOptions is the result type of the control-plane service
 // get-join-options method.
 type ClusterJoinOptions struct {
 	// Connection information for the etcd cluster leader
-	Leader *EtcdClusterMember
+	Leader *EtcdClusterMember `json:"leader"`
 	// Credentials for the new host joining the cluster.
-	Credentials *ClusterCredentials
+	Credentials *ClusterCredentials `json:"credentials"`
 }
 
 // ClusterJoinRequest is the payload type of the control-plane service
 // get-join-options method.
 type ClusterJoinRequest struct {
 	// Token to join the cluster.
-	Token string
+	Token string `json:"token"`
 	// The unique identifier for the host that's joining the cluster.
-	HostID Identifier
+	HostID Identifier `json:"host_id"`
 	// The hostname of the host that's joining the cluster.
-	Hostname string
+	Hostname string `json:"hostname"`
 	// The IPv4 address of the host that's joining the cluster.
-	Ipv4Address string
+	Ipv4Address string `json:"ipv4_address"`
 	// True if the joining member is configured to run an embedded an etcd server.
-	EmbeddedEtcdEnabled bool
+	EmbeddedEtcdEnabled bool `json:"embedded_etcd_enabled"`
 }
 
 // ClusterJoinToken is the result type of the control-plane service
 // init-cluster method.
 type ClusterJoinToken struct {
 	// Token to join an existing cluster.
-	Token string
+	Token string `json:"token"`
 	// Existing server to join
-	ServerURL string
+	ServerURL string `json:"server_url"`
 }
 
 type ClusterStatus struct {
 	// The current state of the cluster.
-	State string
+	State string `json:"state"`
 }
 
 type ComponentStatus struct {
 	// Indicates if the component is healthy.
-	Healthy bool
+	Healthy bool `json:"healthy"`
 	// Error message from any errors that occurred during the health check.
-	Error *string
+	Error *string `json:"error,omitempty"`
 	// Additional details about the component.
-	Details map[string]any
+	Details map[string]any `json:"details,omitempty"`
 }
 
 // CreateDatabaseRequest is the payload type of the control-plane service
 // create-database method.
 type CreateDatabaseRequest struct {
 	// Unique identifier for the database.
-	ID *Identifier
+	ID *Identifier `json:"id,omitempty"`
 	// Unique identifier for the database's owner.
-	TenantID *Identifier
+	TenantID *Identifier `json:"tenant_id,omitempty"`
 	// The specification for the database.
-	Spec *DatabaseSpec
+	Spec *DatabaseSpec `json:"spec"`
 }
 
 // CreateDatabaseResponse is the result type of the control-plane service
 // create-database method.
 type CreateDatabaseResponse struct {
 	// The task that will create this database.
-	Task *Task
+	Task *Task `json:"task"`
 	// The database being created.
-	Database *Database
+	Database *Database `json:"database"`
 }
 
 // Database is the result type of the control-plane service get-database method.
 type Database struct {
 	// Unique identifier for the database.
-	ID Identifier
+	ID Identifier `json:"id"`
 	// Unique identifier for the database's owner.
-	TenantID *Identifier
+	TenantID *Identifier `json:"tenant_id,omitempty"`
 	// The time that the database was created.
-	CreatedAt string
+	CreatedAt string `json:"created_at"`
 	// The time that the database was last updated.
-	UpdatedAt string
+	UpdatedAt string `json:"updated_at"`
 	// Current state of the database.
-	State string
+	State string `json:"state"`
 	// All of the instances in the database.
-	Instances []*Instance
+	Instances []*Instance `json:"instances,omitempty"`
 	// Service instances running alongside this database.
-	ServiceInstances []*ServiceInstance
+	ServiceInstances []*ServiceInstance `json:"service_instances,omitempty"`
 	// The user-provided specification for the database.
-	Spec *DatabaseSpec
+	Spec *DatabaseSpec `json:"spec,omitempty"`
 }
 
 type DatabaseNodeSpec struct {
 	// The name of the database node.
-	Name string
+	Name string `json:"name"`
 	// The IDs of the hosts that should run this node. When multiple hosts are
 	// specified, one host will chosen as a primary, and the others will be read
 	// replicas.
-	HostIds []Identifier
+	HostIds []Identifier `json:"host_ids"`
 	// The Postgres version for this node in 'major.minor' format. Overrides the
 	// Postgres version set in the DatabaseSpec.
-	PostgresVersion *string
+	PostgresVersion *string `json:"postgres_version,omitempty"`
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
-	Port *int
+	Port *int `json:"port,omitempty"`
 	// The number of CPUs to allocate for the database on this node and to use for
 	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
 	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
 	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
 	// than are available on the host. Whether this limit is enforced depends on
 	// the orchestrator.
-	Cpus *string
+	Cpus *string `json:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database on
 	// this node and to use for tuning Postgres. Defaults to the total available
 	// memory on the host. Whether this limit is enforced depends on the
 	// orchestrator.
-	Memory *string
+	Memory *string `json:"memory,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
 	// with the settings provided by control-plane.
-	PostgresqlConf map[string]any
+	PostgresqlConf map[string]any `json:"postgresql_conf,omitempty"`
 	// The backup configuration for this node. Overrides the backup configuration
 	// set in the DatabaseSpec.
-	BackupConfig *BackupConfigSpec
+	BackupConfig *BackupConfigSpec `json:"backup_config,omitempty"`
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
-	RestoreConfig *RestoreConfigSpec
+	RestoreConfig *RestoreConfigSpec `json:"restore_config,omitempty"`
 	// Orchestrator-specific configuration options.
-	OrchestratorOpts *OrchestratorOpts
+	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 	// The name of the source node to use for sync. This is typically the node
 	// (like 'n1') from which the data will be copied to initialize this new node.
-	SourceNode *string
+	SourceNode *string `json:"source_node,omitempty"`
 }
 
 type DatabaseSpec struct {
 	// The name of the Postgres database.
-	DatabaseName string
+	DatabaseName string `json:"database_name"`
 	// The Postgres version in 'major.minor' format.
-	PostgresVersion *string
+	PostgresVersion *string `json:"postgres_version,omitempty"`
 	// The major version of the Spock extension.
-	SpockVersion *string
+	SpockVersion *string `json:"spock_version,omitempty"`
 	// The port used by the Postgres database. If the port is 0, each instance will
 	// be assigned a random port. If the port is unspecified, the database will not
 	// be exposed on any port, dependent on orchestrator support for that feature.
-	Port *int
+	Port *int `json:"port,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
 	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
 	// depends on the orchestrator.
-	Cpus *string
+	Cpus *string `json:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database and
 	// to use for tuning Postgres. Defaults to the total available memory on the
 	// host. Whether this limit is enforced depends on the orchestrator.
-	Memory *string
+	Memory *string `json:"memory,omitempty"`
 	// The Spock nodes for this database.
-	Nodes []*DatabaseNodeSpec
+	Nodes []*DatabaseNodeSpec `json:"nodes"`
 	// The users to create for this database.
-	DatabaseUsers []*DatabaseUserSpec
+	DatabaseUsers []*DatabaseUserSpec `json:"database_users,omitempty"`
 	// Service instances to run alongside the database (e.g., MCP servers).
-	Services []*ServiceSpec
+	Services []*ServiceSpec `json:"services,omitempty"`
 	// The backup configuration for this database.
-	BackupConfig *BackupConfigSpec
+	BackupConfig *BackupConfigSpec `json:"backup_config,omitempty"`
 	// The restore configuration for this database.
-	RestoreConfig *RestoreConfigSpec
+	RestoreConfig *RestoreConfigSpec `json:"restore_config,omitempty"`
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
-	PostgresqlConf map[string]any
+	PostgresqlConf map[string]any `json:"postgresql_conf,omitempty"`
 	// Orchestrator-specific configuration options.
-	OrchestratorOpts *OrchestratorOpts
+	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 }
 
 type DatabaseSummary struct {
 	// Unique identifier for the database.
-	ID Identifier
+	ID Identifier `json:"id"`
 	// Unique identifier for the database's owner.
-	TenantID *Identifier
+	TenantID *Identifier `json:"tenant_id,omitempty"`
 	// The time that the database was created.
-	CreatedAt string
+	CreatedAt string `json:"created_at"`
 	// The time that the database was last updated.
-	UpdatedAt string
+	UpdatedAt string `json:"updated_at"`
 	// Current state of the database.
-	State string
+	State string `json:"state"`
 	// All of the instances in the database.
-	Instances []*Instance
+	Instances []*Instance `json:"instances,omitempty"`
 }
 
 type DatabaseUserSpec struct {
 	// The username for this database user.
-	Username string
+	Username string `json:"username"`
 	// The password for this database user. This field will be excluded from the
 	// response of all endpoints. It can also be omitted from update requests to
 	// keep the current value.
-	Password *string
+	Password *string `json:"password,omitempty"`
 	// If true, this user will be granted database ownership.
-	DbOwner *bool
+	DbOwner *bool `json:"db_owner,omitempty"`
 	// The attributes to assign to this database user.
-	Attributes []string
+	Attributes []string `json:"attributes,omitempty"`
 	// The roles to assign to this database user.
-	Roles []string
+	Roles []string `json:"roles,omitempty"`
 }
 
 // DeleteDatabasePayload is the payload type of the control-plane service
@@ -443,56 +443,56 @@ type DeleteDatabasePayload struct {
 // delete-database method.
 type DeleteDatabaseResponse struct {
 	// The task that will delete this database.
-	Task *Task
+	Task *Task `json:"task"`
 }
 
 type EtcdClusterMember struct {
 	// The name of the Etcd cluster member.
-	Name string
+	Name string `json:"name"`
 	// The Etcd peer endpoint for this cluster member.
-	PeerUrls []string
+	PeerUrls []string `json:"peer_urls"`
 	// The Etcd client endpoint for this cluster member.
-	ClientUrls []string
+	ClientUrls []string `json:"client_urls"`
 }
 
 // Describes an additional Docker network to attach the container to.
 type ExtraNetworkSpec struct {
 	// The name or ID of the network to connect to.
-	ID string
+	ID string `json:"id"`
 	// Optional network-scoped aliases for the container.
-	Aliases []string
+	Aliases []string `json:"aliases,omitempty"`
 	// Optional driver options for the network connection.
-	DriverOpts map[string]string
+	DriverOpts map[string]string `json:"driver_opts,omitempty"`
 }
 
 // Extra volumes to mount from the host to the database container.
 type ExtraVolumesSpec struct {
 	// The host path for the volume.
-	HostPath string
+	HostPath string `json:"host_path"`
 	// The path inside the container where the volume will be mounted.
-	DestinationPath string
+	DestinationPath string `json:"destination_path"`
 }
 
 // FailoverDatabaseNodeRequest is the payload type of the control-plane service
 // failover-database-node method.
 type FailoverDatabaseNodeRequest struct {
 	// ID of the database to perform the failover for.
-	DatabaseID Identifier
+	DatabaseID Identifier `json:"database_id"`
 	// Name of the node to initiate the failover from.
-	NodeName string
+	NodeName string `json:"node_name"`
 	// Optional instance_id of the replica to promote. If omitted, a candidate will
 	// be selected.
-	CandidateInstanceID *string
+	CandidateInstanceID *string `json:"candidate_instance_id,omitempty"`
 	// If true, skip the health validations that prevent running failover on a
 	// healthy cluster.
-	SkipValidation bool
+	SkipValidation bool `json:"skip_validation,omitempty"`
 }
 
 // FailoverDatabaseNodeResponse is the result type of the control-plane service
 // failover-database-node method.
 type FailoverDatabaseNodeResponse struct {
 	// The task that will perform the failover.
-	Task *Task
+	Task *Task `json:"task"`
 }
 
 // GetDatabasePayload is the payload type of the control-plane service
@@ -556,56 +556,56 @@ type GetHostTaskPayload struct {
 // Health check result for a service instance.
 type HealthCheckResult struct {
 	// The health status.
-	Status string
+	Status string `json:"status"`
 	// Optional message about the health status.
-	Message *string
+	Message *string `json:"message,omitempty"`
 	// The time this health check was performed.
-	CheckedAt string
+	CheckedAt string `json:"checked_at"`
 }
 
 // Host is the result type of the control-plane service get-host method.
 type Host struct {
 	// Unique identifier for the host.
-	ID Identifier
+	ID Identifier `json:"id"`
 	// The orchestrator used by this host.
-	Orchestrator string
+	Orchestrator string `json:"orchestrator"`
 	// The data directory for the host.
-	DataDir string
+	DataDir string `json:"data_dir"`
 	// The cohort that this host belongs to.
-	Cohort *HostCohort
+	Cohort *HostCohort `json:"cohort,omitempty"`
 	// The hostname of this host.
-	Hostname string
+	Hostname string `json:"hostname"`
 	// The IPv4 address of this host.
-	Ipv4Address string
+	Ipv4Address string `json:"ipv4_address"`
 	// The number of CPUs on this host.
-	Cpus *int
+	Cpus *int `json:"cpus,omitempty"`
 	// The amount of memory available on this host.
-	Memory *string
+	Memory *string `json:"memory,omitempty"`
 	// Current status of the host.
-	Status *HostStatus
+	Status *HostStatus `json:"status"`
 	// The default PgEdge version for this host.
-	DefaultPgedgeVersion *PgEdgeVersion
+	DefaultPgedgeVersion *PgEdgeVersion `json:"default_pgedge_version,omitempty"`
 	// The PgEdge versions supported by this host.
-	SupportedPgedgeVersions []*PgEdgeVersion
+	SupportedPgedgeVersions []*PgEdgeVersion `json:"supported_pgedge_versions,omitempty"`
 	// The etcd mode for this host.
-	EtcdMode *string
+	EtcdMode *string `json:"etcd_mode,omitempty"`
 }
 
 type HostCohort struct {
 	// The type of cohort that the host belongs to.
-	Type string
+	Type string `json:"type"`
 	// The member ID of the host within the cohort.
-	MemberID string
+	MemberID string `json:"member_id"`
 	// Indicates if the host is a control node in the cohort.
-	ControlAvailable bool
+	ControlAvailable bool `json:"control_available"`
 }
 
 type HostStatus struct {
-	State string
+	State string `json:"state"`
 	// The last time the host status was updated.
-	UpdatedAt string
+	UpdatedAt string `json:"updated_at"`
 	// The status of each component of the host.
-	Components map[string]*ComponentStatus
+	Components map[string]*ComponentStatus `json:"components"`
 }
 
 // A user-specified identifier. Must be 1-63 characters, contain only
@@ -617,74 +617,74 @@ type Identifier string
 // init-cluster method.
 type InitClusterRequest struct {
 	// Optional id for the cluster, omit for default generated id
-	ClusterID *Identifier
+	ClusterID *Identifier `json:"cluster_id,omitempty"`
 }
 
 // An instance of pgEdge Postgres running on a host.
 type Instance struct {
 	// Unique identifier for the instance.
-	ID string
+	ID string `json:"id"`
 	// The ID of the host this instance is running on.
-	HostID string
+	HostID string `json:"host_id"`
 	// The Spock node name for this instance.
-	NodeName string
+	NodeName string `json:"node_name"`
 	// The time that the instance was created.
-	CreatedAt string
+	CreatedAt string `json:"created_at"`
 	// The time that the instance was last modified.
-	UpdatedAt string
+	UpdatedAt string `json:"updated_at"`
 	// The time that the instance status information was last updated.
-	StatusUpdatedAt *string
-	State           string
+	StatusUpdatedAt *string `json:"status_updated_at,omitempty"`
+	State           string  `json:"state"`
 	// Connection information for the instance.
-	ConnectionInfo *InstanceConnectionInfo
+	ConnectionInfo *InstanceConnectionInfo `json:"connection_info,omitempty"`
 	// Postgres status information for the instance.
-	Postgres *InstancePostgresStatus
+	Postgres *InstancePostgresStatus `json:"postgres,omitempty"`
 	// Spock status information for the instance.
-	Spock *InstanceSpockStatus
+	Spock *InstanceSpockStatus `json:"spock,omitempty"`
 	// An error message if the instance is in an error state.
-	Error *string
+	Error *string `json:"error,omitempty"`
 }
 
 // Connection information for a pgEdge instance.
 type InstanceConnectionInfo struct {
 	// The hostname of the host that's running this instance.
-	Hostname *string
+	Hostname *string `json:"hostname,omitempty"`
 	// The IPv4 address of the host that's running this instance.
-	Ipv4Address *string
+	Ipv4Address *string `json:"ipv4_address,omitempty"`
 	// The host port that Postgres is listening on for this instance.
-	Port *int
+	Port *int `json:"port,omitempty"`
 }
 
 // Postgres status information for a pgEdge instance.
 type InstancePostgresStatus struct {
 	// The version of Postgres for this instance.
-	Version      *string
-	PatroniState *string
-	Role         *string
+	Version      *string `json:"version,omitempty"`
+	PatroniState *string `json:"patroni_state,omitempty"`
+	Role         *string `json:"role,omitempty"`
 	// True if this instance has a pending restart from a configuration change.
-	PendingRestart *bool
+	PendingRestart *bool `json:"pending_restart,omitempty"`
 	// True if Patroni is paused for this instance.
-	PatroniPaused *bool
+	PatroniPaused *bool `json:"patroni_paused,omitempty"`
 }
 
 // Spock status information for a pgEdge instance.
 type InstanceSpockStatus struct {
 	// The current spock.readonly setting.
-	ReadOnly *string
+	ReadOnly *string `json:"read_only,omitempty"`
 	// The version of Spock for this instance.
-	Version *string
+	Version *string `json:"version,omitempty"`
 	// Status information for this instance's Spock subscriptions.
-	Subscriptions []*InstanceSubscription
+	Subscriptions []*InstanceSubscription `json:"subscriptions,omitempty"`
 }
 
 // Status information for a Spock subscription.
 type InstanceSubscription struct {
 	// The Spock node name of the provider for this subscription.
-	ProviderNode string
+	ProviderNode string `json:"provider_node"`
 	// The name of the subscription.
-	Name string
+	Name string `json:"name"`
 	// The current status of the subscription.
-	Status string
+	Status string `json:"status"`
 }
 
 // ListDatabaseTasksPayload is the payload type of the control-plane service
@@ -704,14 +704,14 @@ type ListDatabaseTasksPayload struct {
 // list-database-tasks method.
 type ListDatabaseTasksResponse struct {
 	// The tasks for the given database.
-	Tasks []*Task
+	Tasks []*Task `json:"tasks"`
 }
 
 // ListDatabasesResponse is the result type of the control-plane service
 // list-databases method.
 type ListDatabasesResponse struct {
 	// The databases managed by this cluster.
-	Databases []*DatabaseSummary
+	Databases []*DatabaseSummary `json:"databases"`
 }
 
 // ListHostTasksPayload is the payload type of the control-plane service
@@ -731,14 +731,14 @@ type ListHostTasksPayload struct {
 // list-host-tasks method.
 type ListHostTasksResponse struct {
 	// The tasks for the given host.
-	Tasks []*Task
+	Tasks []*Task `json:"tasks"`
 }
 
 // ListHostsResponse is the result type of the control-plane service list-hosts
 // method.
 type ListHostsResponse struct {
 	// List of hosts in the cluster
-	Hosts []*Host
+	Hosts []*Host `json:"hosts"`
 }
 
 // ListTasksPayload is the payload type of the control-plane service list-tasks
@@ -760,30 +760,30 @@ type ListTasksPayload struct {
 // method.
 type ListTasksResponse struct {
 	// The tasks for the given entity.
-	Tasks []*Task
+	Tasks []*Task `json:"tasks"`
 }
 
 // Options specific to the selected orchestrator.
 type OrchestratorOpts struct {
 	// Swarm-specific configuration.
-	Swarm *SwarmOpts
+	Swarm *SwarmOpts `json:"swarm,omitempty"`
 }
 
 type PgEdgeVersion struct {
 	// The Postgres major and minor version.
-	PostgresVersion string
+	PostgresVersion string `json:"postgres_version"`
 	// The Spock major version.
-	SpockVersion string
+	SpockVersion string `json:"spock_version"`
 }
 
 // Port mapping information for a service instance.
 type PortMapping struct {
 	// The name of the port (e.g., 'http', 'web-client').
-	Name string
+	Name string `json:"name"`
 	// The port number inside the container.
-	ContainerPort *int
+	ContainerPort *int `json:"container_port,omitempty"`
 	// The port number on the host (if port-forwarded).
-	HostPort *int
+	HostPort *int `json:"host_port,omitempty"`
 }
 
 // RemoveHostPayload is the payload type of the control-plane service
@@ -800,9 +800,9 @@ type RemoveHostPayload struct {
 // remove-host method.
 type RemoveHostResponse struct {
 	// The task that tracks the overall host removal operation.
-	Task *Task
+	Task *Task `json:"task"`
 	// The tasks that will update databases affected by the host removal.
-	UpdateDatabaseTasks []*Task
+	UpdateDatabaseTasks []*Task `json:"update_database_tasks"`
 }
 
 // RestartInstancePayload is the payload type of the control-plane service
@@ -819,22 +819,22 @@ type RestartInstancePayload struct {
 // Returns a task representing the restart operation.
 type RestartInstanceResponse struct {
 	// Task representing the restart operation
-	Task *Task
+	Task *Task `json:"task"`
 }
 
 type RestoreConfigSpec struct {
 	// The ID of the database to restore this database from.
-	SourceDatabaseID Identifier
+	SourceDatabaseID Identifier `json:"source_database_id"`
 	// The name of the node to restore this database from.
-	SourceNodeName string
+	SourceNodeName string `json:"source_node_name"`
 	// The name of the database in this repository. The database will be renamed to
 	// the database_name in the DatabaseSpec after it's restored.
-	SourceDatabaseName string
+	SourceDatabaseName string `json:"source_database_name"`
 	// The repository to restore this database from.
-	Repository *RestoreRepositorySpec
+	Repository *RestoreRepositorySpec `json:"repository"`
 	// Additional options to use when restoring this database. If omitted, the
 	// database will be restored to the latest point in the given repository.
-	RestoreOptions map[string]string
+	RestoreOptions map[string]string `json:"restore_options,omitempty"`
 }
 
 // RestoreDatabasePayload is the payload type of the control-plane service
@@ -849,132 +849,132 @@ type RestoreDatabasePayload struct {
 
 type RestoreDatabaseRequest struct {
 	// Configuration for the restore process.
-	RestoreConfig *RestoreConfigSpec
+	RestoreConfig *RestoreConfigSpec `json:"restore_config"`
 	// The nodes to restore. Defaults to all nodes if empty or unspecified.
-	TargetNodes []string
+	TargetNodes []string `json:"target_nodes,omitempty"`
 }
 
 // RestoreDatabaseResponse is the result type of the control-plane service
 // restore-database method.
 type RestoreDatabaseResponse struct {
 	// The task that will restore this database.
-	Task *Task
+	Task *Task `json:"task"`
 	// The tasks that will restore each database node.
-	NodeTasks []*Task
+	NodeTasks []*Task `json:"node_tasks"`
 	// The database being restored.
-	Database *Database
+	Database *Database `json:"database"`
 }
 
 type RestoreRepositorySpec struct {
 	// The unique identifier of this repository.
-	ID *Identifier
+	ID *Identifier `json:"id,omitempty"`
 	// The type of this repository.
-	Type string
+	Type string `json:"type"`
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
-	S3Bucket *string
+	S3Bucket *string `json:"s3_bucket,omitempty"`
 	// The region of the S3 bucket for this repository. Only applies when type =
 	// 's3'.
-	S3Region *string
+	S3Region *string `json:"s3_region,omitempty"`
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
-	S3Endpoint *string
+	S3Endpoint *string `json:"s3_endpoint,omitempty"`
 	// An optional AWS access key ID to use for this repository. If not provided,
 	// pgbackrest will use the default credential provider chain.
-	S3Key *string
+	S3Key *string `json:"s3_key,omitempty"`
 	// The corresponding secret for the AWS access key ID in s3_key.
-	S3KeySecret *string
+	S3KeySecret *string `json:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
-	GcsBucket *string
+	GcsBucket *string `json:"gcs_bucket,omitempty"`
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
-	GcsEndpoint *string
+	GcsEndpoint *string `json:"gcs_endpoint,omitempty"`
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
 	// the service account attached to the instance profile.
-	GcsKey *string
+	GcsKey *string `json:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
-	AzureAccount *string
+	AzureAccount *string `json:"azure_account,omitempty"`
 	// The Azure container name for this repository. Only applies when type =
 	// 'azure'.
-	AzureContainer *string
+	AzureContainer *string `json:"azure_container,omitempty"`
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
-	AzureEndpoint *string
+	AzureEndpoint *string `json:"azure_endpoint,omitempty"`
 	// An optional Azure storage account access key to use for this repository. If
 	// not provided, pgbackrest will use the VM's managed identity.
-	AzureKey *string
+	AzureKey *string `json:"azure_key,omitempty"`
 	// The base path within the repository to store backups. Required for type =
 	// 'posix' and 'cifs'.
-	BasePath *string
+	BasePath *string `json:"base_path,omitempty"`
 	// Additional options to apply to this repository.
-	CustomOptions map[string]string
+	CustomOptions map[string]string `json:"custom_options,omitempty"`
 }
 
 // A service instance running on a host alongside the database.
 type ServiceInstance struct {
 	// Unique identifier for the service instance.
-	ServiceInstanceID string
+	ServiceInstanceID string `json:"service_instance_id"`
 	// The service ID from the DatabaseSpec.
-	ServiceID string
+	ServiceID string `json:"service_id"`
 	// The ID of the database this service belongs to.
-	DatabaseID Identifier
+	DatabaseID Identifier `json:"database_id"`
 	// The ID of the host this service instance is running on.
-	HostID string
+	HostID string `json:"host_id"`
 	// Current state of the service instance.
-	State string
+	State string `json:"state"`
 	// Runtime status information for the service instance.
-	Status *ServiceInstanceStatus
+	Status *ServiceInstanceStatus `json:"status,omitempty"`
 	// The time that the service instance was created.
-	CreatedAt string
+	CreatedAt string `json:"created_at"`
 	// The time that the service instance was last updated.
-	UpdatedAt string
+	UpdatedAt string `json:"updated_at"`
 	// An error message if the service instance is in an error state.
-	Error *string
+	Error *string `json:"error,omitempty"`
 }
 
 // Runtime status information for a service instance.
 type ServiceInstanceStatus struct {
 	// The Docker container ID.
-	ContainerID *string
+	ContainerID *string `json:"container_id,omitempty"`
 	// The container image version currently running.
-	ImageVersion *string
+	ImageVersion *string `json:"image_version,omitempty"`
 	// The hostname of the service instance.
-	Hostname *string
+	Hostname *string `json:"hostname,omitempty"`
 	// The IPv4 address of the service instance.
-	Ipv4Address *string
+	Ipv4Address *string `json:"ipv4_address,omitempty"`
 	// Port mappings for this service instance.
-	Ports []*PortMapping
+	Ports []*PortMapping `json:"ports,omitempty"`
 	// Most recent health check result.
-	HealthCheck *HealthCheckResult
+	HealthCheck *HealthCheckResult `json:"health_check,omitempty"`
 	// The time of the last health check attempt.
-	LastHealthAt *string
+	LastHealthAt *string `json:"last_health_at,omitempty"`
 	// Whether the service is ready to accept requests.
-	ServiceReady *bool
+	ServiceReady *bool `json:"service_ready,omitempty"`
 }
 
 type ServiceSpec struct {
 	// The unique identifier for this service.
-	ServiceID Identifier
+	ServiceID Identifier `json:"service_id"`
 	// The type of service to run.
-	ServiceType string
+	ServiceType string `json:"service_type"`
 	// The version of the service in semver format (e.g., '1.0.0') or the literal
 	// 'latest'.
-	Version string
+	Version string `json:"version"`
 	// The IDs of the hosts that should run this service. One service instance will
 	// be created per host.
-	HostIds []Identifier
+	HostIds []Identifier `json:"host_ids"`
 	// The port to publish the service on the host. If 0, Docker assigns a random
 	// port. If unspecified, no port is published and the service is not accessible
 	// from outside the Docker network.
-	Port *int
+	Port *int `json:"port,omitempty"`
 	// Service-specific configuration. For MCP services, this includes
 	// llm_provider, llm_model, and provider-specific API keys.
-	Config map[string]any
+	Config map[string]any `json:"config"`
 	// The number of CPUs to allocate for this service. It can include the SI
 	// suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if
 	// unspecified.
-	Cpus *string
+	Cpus *string `json:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for this service.
 	// Defaults to container defaults if unspecified.
-	Memory *string
+	Memory *string `json:"memory,omitempty"`
 }
 
 // StartInstancePayload is the payload type of the control-plane service
@@ -991,7 +991,7 @@ type StartInstancePayload struct {
 // Returns a task representing the start operation.
 type StartInstanceResponse struct {
 	// Task representing the start operation
-	Task *Task
+	Task *Task `json:"task"`
 }
 
 // StopInstancePayload is the payload type of the control-plane service
@@ -1008,19 +1008,19 @@ type StopInstancePayload struct {
 // Returns a task representing the stop operation.
 type StopInstanceResponse struct {
 	// Task representing the stop operation
-	Task *Task
+	Task *Task `json:"task"`
 }
 
 // Docker Swarm-specific options.
 type SwarmOpts struct {
 	// A list of extra volumes to mount. Each entry defines a host and container
 	// path.
-	ExtraVolumes []*ExtraVolumesSpec
+	ExtraVolumes []*ExtraVolumesSpec `json:"extra_volumes,omitempty"`
 	// A list of additional Docker Swarm networks to attach containers in this
 	// database to.
-	ExtraNetworks []*ExtraNetworkSpec
+	ExtraNetworks []*ExtraNetworkSpec `json:"extra_networks,omitempty"`
 	// Arbitrary labels to apply to the Docker Swarm service
-	ExtraLabels map[string]string
+	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
 }
 
 // SwitchoverDatabaseNodePayload is the payload type of the control-plane
@@ -1041,66 +1041,66 @@ type SwitchoverDatabaseNodePayload struct {
 // service switchover-database-node method.
 type SwitchoverDatabaseNodeResponse struct {
 	// The task that will perform the switchover.
-	Task *Task
+	Task *Task `json:"task"`
 }
 
 // Task is the result type of the control-plane service get-database-task
 // method.
 type Task struct {
 	// The parent task ID of the task.
-	ParentID *string
+	ParentID *string `json:"parent_id,omitempty"`
 	// The scope of the task (database or host).
-	Scope string
+	Scope string `json:"scope"`
 	// The entity ID (database_id or host_id) that this task belongs to.
-	EntityID string
+	EntityID string `json:"entity_id"`
 	// The database ID of the task.
-	DatabaseID *string
+	DatabaseID *string `json:"database_id,omitempty"`
 	// The name of the node that the task is operating on.
-	NodeName *string
+	NodeName *string `json:"node_name,omitempty"`
 	// The ID of the instance that the task is operating on.
-	InstanceID *string
+	InstanceID *string `json:"instance_id,omitempty"`
 	// The ID of the host that the task is running on.
-	HostID *string
+	HostID *string `json:"host_id,omitempty"`
 	// The unique ID of the task.
-	TaskID string
+	TaskID string `json:"task_id"`
 	// The time when the task was created.
-	CreatedAt string
+	CreatedAt string `json:"created_at"`
 	// The time when the task was completed.
-	CompletedAt *string
+	CompletedAt *string `json:"completed_at,omitempty"`
 	// The type of the task.
-	Type string
+	Type string `json:"type"`
 	// The status of the task.
-	Status string
+	Status string `json:"status"`
 	// The error message if the task failed.
-	Error *string
+	Error *string `json:"error,omitempty"`
 }
 
 // TaskLog is the result type of the control-plane service
 // get-database-task-log method.
 type TaskLog struct {
 	// The scope of the task (database or host).
-	Scope string
+	Scope string `json:"scope"`
 	// The entity ID (database_id or host_id) that this task log belongs to.
-	EntityID string
+	EntityID string `json:"entity_id"`
 	// The database ID of the task log. Deprecated: use entity_id instead.
-	DatabaseID *string
+	DatabaseID *string `json:"database_id,omitempty"`
 	// The unique ID of the task log.
-	TaskID string
+	TaskID string `json:"task_id"`
 	// The status of the task.
-	TaskStatus string
+	TaskStatus string `json:"task_status"`
 	// The ID of the last entry in the task log.
-	LastEntryID *string
+	LastEntryID *string `json:"last_entry_id,omitempty"`
 	// Entries in the task log.
-	Entries []*TaskLogEntry
+	Entries []*TaskLogEntry `json:"entries"`
 }
 
 type TaskLogEntry struct {
 	// The timestamp of the log entry.
-	Timestamp string
+	Timestamp string `json:"timestamp"`
 	// The log message.
-	Message string
+	Message string `json:"message"`
 	// Additional fields for the log entry.
-	Fields map[string]any
+	Fields map[string]any `json:"fields,omitempty"`
 }
 
 // UpdateDatabasePayload is the payload type of the control-plane service
@@ -1118,31 +1118,31 @@ type UpdateDatabasePayload struct {
 
 type UpdateDatabaseRequest struct {
 	// Unique identifier for the database's owner.
-	TenantID *Identifier
+	TenantID *Identifier `json:"tenant_id,omitempty"`
 	// The specification for the database.
-	Spec *DatabaseSpec
+	Spec *DatabaseSpec `json:"spec"`
 }
 
 // UpdateDatabaseResponse is the result type of the control-plane service
 // update-database method.
 type UpdateDatabaseResponse struct {
 	// The task that will update this database.
-	Task *Task
+	Task *Task `json:"task"`
 	// The database being updated.
-	Database *Database
+	Database *Database `json:"database"`
 }
 
 // VersionInfo is the result type of the control-plane service get-version
 // method.
 type VersionInfo struct {
 	// The version of the API server.
-	Version string
+	Version string `json:"version"`
 	// The VCS revision of the API server.
-	Revision string
+	Revision string `json:"revision"`
 	// The timestamp associated with the revision.
-	RevisionTime string
+	RevisionTime string `json:"revision_time"`
 	// The CPU architecture of the API server.
-	Arch string
+	Arch string `json:"arch"`
 }
 
 // Error returns an error description.

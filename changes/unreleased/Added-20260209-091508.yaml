@@ -1,0 +1,3 @@
+kind: Added
+body: '`client` package: Added JSON tags to generated `service` structs.'
+time: 2026-02-09T09:15:08.154593-05:00

@@ -23,21 +23,25 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 		g.Description("The name of the database node.")
 		g.Pattern(nodeNamePattern)
 		g.Example("n1")
+		g.Meta("struct:tag:json", "name")
 	})
 	g.Attribute("host_ids", HostIDs, func() {
 		g.Description("The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.")
 		g.MinLength(1)
+		g.Meta("struct:tag:json", "host_ids")
 	})
 	g.Attribute("postgres_version", g.String, func() {
 		g.Description("The Postgres version for this node in 'major.minor' format. Overrides the Postgres version set in the DatabaseSpec.")
 		g.Pattern(postgresVersionPattern)
 		g.Example("17.6")
+		g.Meta("struct:tag:json", "postgres_version,omitempty")
 	})
 	g.Attribute("port", g.Int, func() {
 		g.Description("The port used by the Postgres database for this node. Overrides the Postgres port set in the DatabaseSpec.")
 		g.Minimum(0)
 		g.Maximum(65535)
 		g.Example(5432)
+		g.Meta("struct:tag:json", "port,omitempty")
 	})
 	g.Attribute("cpus", g.String, func() {
 		g.Description("The number of CPUs to allocate for the database on this node and to use for tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Cannot allocate units smaller than 1m. Defaults to the number of available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs than are available on the host. Whether this limit is enforced depends on the orchestrator.")
@@ -45,31 +49,38 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 		g.Example("14")
 		g.Example("0.5")
 		g.Example("500m")
+		g.Meta("struct:tag:json", "cpus,omitempty")
 	})
 	g.Attribute("memory", g.String, func() {
 		g.Description("The amount of memory in SI or IEC notation to allocate for the database on this node and to use for tuning Postgres. Defaults to the total available memory on the host. Whether this limit is enforced depends on the orchestrator.")
 		g.MaxLength(16)
 		g.Example("16GiB")
 		g.Example("500M")
+		g.Meta("struct:tag:json", "memory,omitempty")
 	})
 	g.Attribute("postgresql_conf", g.MapOf(g.String, g.Any), func() {
 		g.Description("Additional postgresql.conf settings for this particular node. Will be merged with the settings provided by control-plane.")
 		g.Example(map[string]any{
 			"max_connections": 1000,
 		})
+		g.Meta("struct:tag:json", "postgresql_conf,omitempty")
 	})
 	g.Attribute("backup_config", BackupConfigSpec, func() {
 		g.Description("The backup configuration for this node. Overrides the backup configuration set in the DatabaseSpec.")
+		g.Meta("struct:tag:json", "backup_config,omitempty")
 	})
 	g.Attribute("restore_config", RestoreConfigSpec, func() {
 		g.Description("The restore configuration for this node. Overrides the restore configuration set in the DatabaseSpec.")
+		g.Meta("struct:tag:json", "restore_config,omitempty")
 	})
 	g.Attribute("orchestrator_opts", OrchestratorOpts, func() {
 		g.Description("Orchestrator-specific configuration options.")
+		g.Meta("struct:tag:json", "orchestrator_opts,omitempty")
 	})
 	g.Attribute("source_node", g.String, func() {
 		g.Description("The name of the source node to use for sync. This is typically the node (like 'n1') from which the data will be copied to initialize this new node.")
 		g.Example("n1")
+		g.Meta("struct:tag:json", "source_node,omitempty")
 	})
 
 	g.Required("name", "host_ids")
@@ -80,20 +91,24 @@ var DatabaseUserSpec = g.Type("DatabaseUserSpec", func() {
 		g.Description("The username for this database user.")
 		g.Example("admin")
 		g.MinLength(1)
+		g.Meta("struct:tag:json", "username")
 	})
 	g.Attribute("password", g.String, func() {
 		g.Description("The password for this database user. This field will be excluded from the response of all endpoints. It can also be omitted from update requests to keep the current value.")
 		g.Example("secret")
 		g.MinLength(1)
+		g.Meta("struct:tag:json", "password,omitempty")
 	})
 	g.Attribute("db_owner", g.Boolean, func() {
 		g.Description("If true, this user will be granted database ownership.")
+		g.Meta("struct:tag:json", "db_owner,omitempty")
 	})
 	g.Attribute("attributes", g.ArrayOf(g.String), func() {
 		g.Description("The attributes to assign to this database user.")
 		g.MaxLength(16)
 		g.Example([]string{"LOGIN", "SUPERUSER"})
 		g.Example([]string{"LOGIN", "CREATEDB", "CREATEROLE"})
+		g.Meta("struct:tag:json", "attributes,omitempty")
 	})
 	g.Attribute("roles", g.ArrayOf(g.String), func() {
 		g.Description("The roles to assign to this database user.")
@@ -101,6 +116,7 @@ var DatabaseUserSpec = g.Type("DatabaseUserSpec", func() {
 		g.Example([]string{"application"})
 		g.Example([]string{"application_read_only"})
 		g.Example([]string{"pgedge_superuser"})
+		g.Meta("struct:tag:json", "roles,omitempty")
 	})
 
 	g.Required("username")
@@ -111,11 +127,13 @@ var ServiceSpec = g.Type("ServiceSpec", func() {
 		g.Description("The unique identifier for this service.")
 		g.Example("mcp-server")
 		g.Example("analytics-service")
+		g.Meta("struct:tag:json", "service_id")
 	})
 	g.Attribute("service_type", g.String, func() {
 		g.Description("The type of service to run.")
 		g.Enum("mcp")
 		g.Example("mcp")
+		g.Meta("struct:tag:json", "service_type")
 	})
 	g.Attribute("version", g.String, func() {
 		g.Description("The version of the service in semver format (e.g., '1.0.0') or the literal 'latest'.")
@@ -123,10 +141,12 @@ var ServiceSpec = g.Type("ServiceSpec", func() {
 		g.Example("1.0.0")
 		g.Example("1.2.3")
 		g.Example("latest")
+		g.Meta("struct:tag:json", "version")
 	})
 	g.Attribute("host_ids", HostIDs, func() {
 		g.Description("The IDs of the hosts that should run this service. One service instance will be created per host.")
 		g.MinLength(1)
+		g.Meta("struct:tag:json", "host_ids")
 	})
 	g.Attribute("port", g.Int, func() {
 		g.Description("The port to publish the service on the host. If 0, Docker assigns a random port. If unspecified, no port is published and the service is not accessible from outside the Docker network.")
@@ -135,6 +155,7 @@ var ServiceSpec = g.Type("ServiceSpec", func() {
 		g.Example(8080)
 		g.Example(9000)
 		g.Example(0)
+		g.Meta("struct:tag:json", "port,omitempty")
 	})
 	g.Attribute("config", g.MapOf(g.String, g.Any), func() {
 		g.Description("Service-specific configuration. For MCP services, this includes llm_provider, llm_model, and provider-specific API keys.")
@@ -148,6 +169,7 @@ var ServiceSpec = g.Type("ServiceSpec", func() {
 			"llm_model":      "gpt-4",
 			"openai_api_key": "sk-...",
 		})
+		g.Meta("struct:tag:json", "config")
 	})
 	g.Attribute("cpus", g.String, func() {
 		g.Description("The number of CPUs to allocate for this service. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if unspecified.")
@@ -155,12 +177,14 @@ var ServiceSpec = g.Type("ServiceSpec", func() {
 		g.Example("1")
 		g.Example("0.5")
 		g.Example("500m")
+		g.Meta("struct:tag:json", "cpus,omitempty")
 	})
 	g.Attribute("memory", g.String, func() {
 		g.Description("The amount of memory in SI or IEC notation to allocate for this service. Defaults to container defaults if unspecified.")
 		g.MaxLength(16)
 		g.Example("1GiB")
 		g.Example("512M")
+		g.Meta("struct:tag:json", "memory,omitempty")
 	})
 
 	g.Required("service_id", "service_type", "version", "host_ids", "config")
@@ -171,95 +195,112 @@ var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
 		g.Description("The unique identifier of this repository.")
 		g.Example("my-app-1")
 		g.Example("f6b84a99-5e91-4203-be1e-131fe82e5984")
+		g.Meta("struct:tag:json", "id,omitempty")
 	})
 	g.Attribute("type", g.String, func() {
 		g.Description("The type of this repository.")
 		g.Enum("s3", "gcs", "azure", "posix", "cifs")
 		g.Example("s3")
+		g.Meta("struct:tag:json", "type")
 	})
 	g.Attribute("s3_bucket", g.String, func() {
 		g.Description("The S3 bucket name for this repository. Only applies when type = 's3'.")
 		g.MinLength(3)
 		g.MaxLength(63)
 		g.Example("pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1")
+		g.Meta("struct:tag:json", "s3_bucket,omitempty")
 	})
 	g.Attribute("s3_region", g.String, func() {
 		g.Description("The region of the S3 bucket for this repository. Only applies when type = 's3'.")
 		g.MinLength(1)
 		g.MaxLength(32)
 		g.Example("us-east-1")
+		g.Meta("struct:tag:json", "s3_region,omitempty")
 	})
 	g.Attribute("s3_endpoint", g.String, func() {
 		g.Description("The optional S3 endpoint for this repository. Only applies when type = 's3'.")
 		g.MinLength(3)
 		g.MaxLength(128)
 		g.Example("s3.us-east-1.amazonaws.com")
+		g.Meta("struct:tag:json", "s3_endpoint,omitempty")
 	})
 	g.Attribute("s3_key", g.String, func() {
 		g.Description("An optional AWS access key ID to use for this repository. If not provided, pgbackrest will use the default credential provider chain. This field will be excluded from the response of all endpoints. It can also be omitted from update requests to keep the current value.")
 		g.MaxLength(128)
 		g.Example("AKIAIOSFODNN7EXAMPLE")
+		g.Meta("struct:tag:json", "s3_key,omitempty")
 	})
 	g.Attribute("s3_key_secret", g.String, func() {
 		g.Description("The corresponding secret for the AWS access key ID in s3_key. This field will be excluded from the response of all endpoints. It can also be omitted from update requests to keep the current value.")
 		g.MaxLength(128)
 		g.Example("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
+		g.Meta("struct:tag:json", "s3_key_secret,omitempty")
 	})
 	g.Attribute("gcs_bucket", g.String, func() {
 		g.Description("The GCS bucket name for this repository. Only applies when type = 'gcs'.")
 		g.MinLength(3)
 		g.MaxLength(63)
 		g.Example("pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1")
+		g.Meta("struct:tag:json", "gcs_bucket,omitempty")
 	})
 	g.Attribute("gcs_endpoint", g.String, func() {
 		g.Description("The optional GCS endpoint for this repository. Only applies when type = 'gcs'.")
 		g.MinLength(3)
 		g.MaxLength(128)
 		g.Example("localhost")
+		g.Meta("struct:tag:json", "gcs_endpoint,omitempty")
 	})
 	g.Attribute("gcs_key", g.String, func() {
 		g.Description("Optional base64-encoded private key data. If omitted, pgbackrest will use the service account attached to the instance profile. This field will be excluded from the response of all endpoints. It can also be omitted from update requests to keep the current value.")
 		g.MaxLength(1024)
 		g.Example("ZXhhbXBsZSBnY3Mga2V5Cg==")
+		g.Meta("struct:tag:json", "gcs_key,omitempty")
 	})
 	g.Attribute("azure_account", g.String, func() {
 		g.Description("The Azure account name for this repository. Only applies when type = 'azure'.")
 		g.MinLength(3)
 		g.MaxLength(24)
 		g.Example("pgedge-backups")
+		g.Meta("struct:tag:json", "azure_account,omitempty")
 	})
 	g.Attribute("azure_container", g.String, func() {
 		g.Description("The Azure container name for this repository. Only applies when type = 'azure'.")
 		g.MinLength(3)
 		g.MaxLength(63)
 		g.Example("pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1")
+		g.Meta("struct:tag:json", "azure_container,omitempty")
 	})
 	g.Attribute("azure_endpoint", g.String, func() {
 		g.Description("The optional Azure endpoint for this repository. Only applies when type = 'azure'.")
 		g.MinLength(3)
 		g.MaxLength(128)
 		g.Example("blob.core.usgovcloudapi.net")
+		g.Meta("struct:tag:json", "azure_endpoint,omitempty")
 	})
 	g.Attribute("azure_key", g.String, func() {
 		g.Description("The Azure storage account access key to use for this repository. This field will be excluded from the response of all endpoints. It can also be omitted from update requests to keep the current value.")
 		g.MaxLength(128)
 		g.Example("YXpLZXk=")
+		g.Meta("struct:tag:json", "azure_key,omitempty")
 	})
 	g.Attribute("retention_full", g.Int, func() {
 		g.Description("The count of full backups to retain or the time to retain full backups.")
 		g.Minimum(1)
 		g.Maximum(9999999)
 		g.Example(2)
+		g.Meta("struct:tag:json", "retention_full,omitempty")
 	})
 	g.Attribute("retention_full_type", g.String, func() {
 		g.Description("The type of measure used for retention_full.")
 		g.Enum("time", "count")
 		g.Example("count")
+		g.Meta("struct:tag:json", "retention_full_type,omitempty")
 	})
 	g.Attribute("base_path", g.String, func() {
 		g.Description("The base path within the repository to store backups. Required for type = 'posix' and 'cifs'.")
 		g.MaxLength(256)
 		g.Example("/backups")
+		g.Meta("struct:tag:json", "base_path,omitempty")
 	})
 	g.Attribute("custom_options", g.MapOf(g.String, g.String), func() {
 		g.Description("Additional options to apply to this repository.")
@@ -267,6 +308,7 @@ var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
 			"storage-upload-chunk-size": "5MiB",
 			"s3-kms-key-id":             "1234abcd-12ab-34cd-56ef-1234567890ab",
 		})
+		g.Meta("struct:tag:json", "custom_options,omitempty")
 	})
 
 	g.Required("type")
@@ -277,16 +319,19 @@ var BackupScheduleSpec = g.Type("BackupScheduleSpec", func() {
 		g.Description("The unique identifier for this backup schedule.")
 		g.MaxLength(64)
 		g.Example("daily-full-backup")
+		g.Meta("struct:tag:json", "id")
 	})
 	g.Attribute("type", g.String, func() {
 		g.Description("The type of backup to take on this schedule.")
 		g.Enum("full", "incr")
 		g.Example("full")
+		g.Meta("struct:tag:json", "type")
 	})
 	g.Attribute("cron_expression", g.String, func() {
 		g.Description("The cron expression for this schedule.")
 		g.MaxLength(32)
 		g.Example("0 6 * * ?")
+		g.Meta("struct:tag:json", "cron_expression")
 	})
 
 	g.Required("id", "type", "cron_expression")
@@ -296,10 +341,12 @@ var BackupConfigSpec = g.Type("BackupConfigSpec", func() {
 	g.Attribute("repositories", g.ArrayOf(BackupRepositorySpec), func() {
 		g.Description("The repositories for this backup configuration.")
 		g.MinLength(1)
+		g.Meta("struct:tag:json", "repositories")
 	})
 	g.Attribute("schedules", g.ArrayOf(BackupScheduleSpec), func() {
 		g.Description("The schedules for this backup configuration.")
 		g.MaxLength(32)
+		g.Meta("struct:tag:json", "schedules,omitempty")
 	})
 
 	g.Required("repositories")
@@ -310,90 +357,106 @@ var RestoreRepositorySpec = g.Type("RestoreRepositorySpec", func() {
 		g.Description("The unique identifier of this repository.")
 		g.Example("my-app-1")
 		g.Example("f6b84a99-5e91-4203-be1e-131fe82e5984")
+		g.Meta("struct:tag:json", "id,omitempty")
 	})
 	g.Attribute("type", g.String, func() {
 		g.Description("The type of this repository.")
 		g.Enum("s3", "gcs", "azure", "posix", "cifs")
 		g.Example("s3")
+		g.Meta("struct:tag:json", "type")
 	})
 	g.Attribute("s3_bucket", g.String, func() {
 		g.Description("The S3 bucket name for this repository. Only applies when type = 's3'.")
 		g.MinLength(3)
 		g.MaxLength(63)
 		g.Example("pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1")
+		g.Meta("struct:tag:json", "s3_bucket,omitempty")
 	})
 	g.Attribute("s3_region", g.String, func() {
 		g.Description("The region of the S3 bucket for this repository. Only applies when type = 's3'.")
 		g.MinLength(1)
 		g.MaxLength(32)
 		g.Example("us-east-1")
+		g.Meta("struct:tag:json", "s3_region,omitempty")
 	})
 	g.Attribute("s3_endpoint", g.String, func() {
 		g.Description("The optional S3 endpoint for this repository. Only applies when type = 's3'.")
 		g.MinLength(3)
 		g.MaxLength(128)
 		g.Example("s3.us-east-1.amazonaws.com")
+		g.Meta("struct:tag:json", "s3_endpoint,omitempty")
 	})
 	g.Attribute("s3_key", g.String, func() {
 		g.Description("An optional AWS access key ID to use for this repository. If not provided, pgbackrest will use the default credential provider chain.")
 		g.MaxLength(128)
 		g.Example("AKIAIOSFODNN7EXAMPLE")
+		g.Meta("struct:tag:json", "s3_key,omitempty")
 	})
 	g.Attribute("s3_key_secret", g.String, func() {
 		g.Description("The corresponding secret for the AWS access key ID in s3_key.")
 		g.MaxLength(128)
 		g.Example("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
+		g.Meta("struct:tag:json", "s3_key_secret,omitempty")
 	})
 	g.Attribute("gcs_bucket", g.String, func() {
 		g.Description("The GCS bucket name for this repository. Only applies when type = 'gcs'.")
 		g.MinLength(3)
 		g.MaxLength(63)
 		g.Example("pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1")
+		g.Meta("struct:tag:json", "gcs_bucket,omitempty")
 	})
 	g.Attribute("gcs_endpoint", g.String, func() {
 		g.Description("The optional GCS endpoint for this repository. Only applies when type = 'gcs'.")
 		g.MinLength(3)
 		g.MaxLength(128)
 		g.Example("localhost")
+		g.Meta("struct:tag:json", "gcs_endpoint,omitempty")
 	})
 	g.Attribute("gcs_key", g.String, func() {
 		g.Description("Optional base64-encoded private key data. If omitted, pgbackrest will use the service account attached to the instance profile.")
 		g.MaxLength(1024)
 		g.Example("ZXhhbXBsZSBnY3Mga2V5Cg==")
+		g.Meta("struct:tag:json", "gcs_key,omitempty")
 	})
 	g.Attribute("azure_account", g.String, func() {
 		g.Description("The Azure account name for this repository. Only applies when type = 'azure'.")
 		g.MinLength(3)
 		g.MaxLength(24)
 		g.Example("pgedge-backups")
+		g.Meta("struct:tag:json", "azure_account,omitempty")
 	})
 	g.Attribute("azure_container", g.String, func() {
 		g.Description("The Azure container name for this repository. Only applies when type = 'azure'.")
 		g.MinLength(3)
 		g.MaxLength(63)
 		g.Example("pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1")
+		g.Meta("struct:tag:json", "azure_container,omitempty")
 	})
 	g.Attribute("azure_endpoint", g.String, func() {
 		g.Description("The optional Azure endpoint for this repository. Only applies when type = 'azure'.")
 		g.MinLength(3)
 		g.MaxLength(128)
 		g.Example("blob.core.usgovcloudapi.net")
+		g.Meta("struct:tag:json", "azure_endpoint,omitempty")
 	})
 	g.Attribute("azure_key", g.String, func() {
 		g.Description("An optional Azure storage account access key to use for this repository. If not provided, pgbackrest will use the VM's managed identity.")
 		g.MaxLength(128)
 		g.Example("YXpLZXk=")
+		g.Meta("struct:tag:json", "azure_key,omitempty")
 	})
 	g.Attribute("base_path", g.String, func() {
 		g.Description("The base path within the repository to store backups. Required for type = 'posix' and 'cifs'.")
 		g.MaxLength(256)
 		g.Example("/backups")
+		g.Meta("struct:tag:json", "base_path,omitempty")
 	})
 	g.Attribute("custom_options", g.MapOf(g.String, g.String), func() {
 		g.Description("Additional options to apply to this repository.")
 		g.Example(map[string]any{
 			"s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
 		})
+		g.Meta("struct:tag:json", "custom_options,omitempty")
 	})
 
 	g.Required("type")
@@ -405,20 +468,24 @@ var RestoreConfigSpec = g.Type("RestoreConfigSpec", func() {
 		g.Example("production")
 		g.Example("my-app")
 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+		g.Meta("struct:tag:json", "source_database_id")
 	})
 	g.Attribute("source_node_name", g.String, func() {
 		g.Description("The name of the node to restore this database from.")
 		g.Pattern(nodeNamePattern)
 		g.Example("n1")
+		g.Meta("struct:tag:json", "source_node_name")
 	})
 	g.Attribute("source_database_name", g.String, func() {
 		g.Description("The name of the database in this repository. The database will be renamed to the database_name in the DatabaseSpec after it's restored.")
 		g.MinLength(1)
 		g.MaxLength(31)
 		g.Example("northwind")
+		g.Meta("struct:tag:json", "source_database_name")
 	})
 	g.Attribute("repository", RestoreRepositorySpec, func() {
 		g.Description("The repository to restore this database from.")
+		g.Meta("struct:tag:json", "repository")
 	})
 	g.Attribute("restore_options", g.MapOf(g.String, g.String), func() {
 		g.Description("Additional options to use when restoring this database. If omitted, the database will be restored to the latest point in the given repository.")
@@ -436,6 +503,7 @@ var RestoreConfigSpec = g.Type("RestoreConfigSpec", func() {
 			"type":   "xid",
 			"target": "123456",
 		})
+		g.Meta("struct:tag:json", "restore_options,omitempty")
 	})
 
 	g.Required("source_database_id", "source_node_name", "source_database_name", "repository")
@@ -447,22 +515,26 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 		g.MinLength(1)
 		g.MaxLength(31)
 		g.Example("northwind")
+		g.Meta("struct:tag:json", "database_name")
 	})
 	g.Attribute("postgres_version", g.String, func() {
 		g.Description("The Postgres version in 'major.minor' format.")
 		g.Pattern(postgresVersionPattern)
 		g.Example("17.6")
+		g.Meta("struct:tag:json", "postgres_version,omitempty")
 	})
 	g.Attribute("spock_version", g.String, func() {
 		g.Description("The major version of the Spock extension.")
 		g.Pattern(spockVersionPattern)
 		g.Example("5")
+		g.Meta("struct:tag:json", "spock_version,omitempty")
 	})
 	g.Attribute("port", g.Int, func() {
 		g.Description("The port used by the Postgres database. If the port is 0, each instance will be assigned a random port. If the port is unspecified, the database will not be exposed on any port, dependent on orchestrator support for that feature.")
 		g.Minimum(0)
 		g.Maximum(65535)
 		g.Example(5432)
+		g.Meta("struct:tag:json", "port,omitempty")
 	})
 	g.Attribute("cpus", g.String, func() {
 		g.Description("The number of CPUs to allocate for the database and to use for tuning Postgres. Defaults to the number of available CPUs on the host. Can include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced depends on the orchestrator.")
@@ -470,30 +542,37 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 		g.Example("14")
 		g.Example("0.5")
 		g.Example("500m")
+		g.Meta("struct:tag:json", "cpus,omitempty")
 	})
 	g.Attribute("memory", g.String, func() {
 		g.Description("The amount of memory in SI or IEC notation to allocate for the database and to use for tuning Postgres. Defaults to the total available memory on the host. Whether this limit is enforced depends on the orchestrator.")
 		g.MaxLength(16)
 		g.Example("16GiB")
 		g.Example("500M")
+		g.Meta("struct:tag:json", "memory,omitempty")
 	})
 	g.Attribute("nodes", g.ArrayOf(DatabaseNodeSpec), func() {
 		g.Description("The Spock nodes for this database.")
 		g.MinLength(1)
 		g.MaxLength(9)
+		g.Meta("struct:tag:json", "nodes")
 	})
 	g.Attribute("database_users", g.ArrayOf(DatabaseUserSpec), func() {
 		g.Description("The users to create for this database.")
 		g.MaxLength(16)
+		g.Meta("struct:tag:json", "database_users,omitempty")
 	})
 	g.Attribute("services", g.ArrayOf(ServiceSpec), func() {
 		g.Description("Service instances to run alongside the database (e.g., MCP servers).")
+		g.Meta("struct:tag:json", "services,omitempty")
 	})
 	g.Attribute("backup_config", BackupConfigSpec, func() {
 		g.Description("The backup configuration for this database.")
+		g.Meta("struct:tag:json", "backup_config,omitempty")
 	})
 	g.Attribute("restore_config", RestoreConfigSpec, func() {
 		g.Description("The restore configuration for this database.")
+		g.Meta("struct:tag:json", "restore_config,omitempty")
 	})
 	g.Attribute("postgresql_conf", g.MapOf(g.String, g.Any), func() {
 		g.Description("Additional postgresql.conf settings. Will be merged with the settings provided by control-plane.")
@@ -501,9 +580,11 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 		g.Example(map[string]any{
 			"max_connections": 1000,
 		})
+		g.Meta("struct:tag:json", "postgresql_conf,omitempty")
 	})
 	g.Attribute("orchestrator_opts", OrchestratorOpts, func() {
 		g.Description("Orchestrator-specific configuration options.")
+		g.Meta("struct:tag:json", "orchestrator_opts,omitempty")
 	})
 
 	g.Required("database_name", "nodes")
@@ -515,21 +596,25 @@ var Database = g.Type("Database", func() {
 		g.Example("production")
 		g.Example("my-app")
 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+		g.Meta("struct:tag:json", "id")
 	})
 	g.Attribute("tenant_id", Identifier, func() {
 		g.Description("Unique identifier for the database's owner.")
 		g.Example("engineering")
 		g.Example("8210ec10-2dca-406c-ac4a-0661d2189954")
+		g.Meta("struct:tag:json", "tenant_id,omitempty")
 	})
 	g.Attribute("created_at", g.String, func() {
 		g.Format(g.FormatDateTime)
 		g.Description("The time that the database was created.")
 		g.Example("2025-01-01T01:30:00Z")
+		g.Meta("struct:tag:json", "created_at")
 	})
 	g.Attribute("updated_at", g.String, func() {
 		g.Format(g.FormatDateTime)
 		g.Description("The time that the database was last updated.")
 		g.Example("2025-01-01T02:30:00Z")
+		g.Meta("struct:tag:json", "updated_at")
 	})
 	g.Attribute("state", g.String, func() {
 		g.Description("Current state of the database.")
@@ -544,15 +629,19 @@ var Database = g.Type("Database", func() {
 			"restoring",
 			"unknown",
 		)
+		g.Meta("struct:tag:json", "state")
 	})
 	g.Attribute("instances", g.ArrayOf(Instance), func() {
 		g.Description("All of the instances in the database.")
+		g.Meta("struct:tag:json", "instances,omitempty")
 	})
 	g.Attribute("service_instances", g.ArrayOf(ServiceInstance), func() {
 		g.Description("Service instances running alongside this database.")
+		g.Meta("struct:tag:json", "service_instances,omitempty")
 	})
 	g.Attribute("spec", DatabaseSpec, func() {
 		g.Description("The user-provided specification for the database.")
+		g.Meta("struct:tag:json", "spec,omitempty")
 	})
 
 	g.Example(exampleDatabase)
@@ -566,21 +655,25 @@ var DatabaseSummary = g.Type("DatabaseSummary", func() {
 		g.Example("production")
 		g.Example("my-app")
 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+		g.Meta("struct:tag:json", "id")
 	})
 	g.Attribute("tenant_id", Identifier, func() {
 		g.Description("Unique identifier for the database's owner.")
 		g.Example("engineering")
 		g.Example("8210ec10-2dca-406c-ac4a-0661d2189954")
+		g.Meta("struct:tag:json", "tenant_id,omitempty")
 	})
 	g.Attribute("created_at", g.String, func() {
 		g.Format(g.FormatDateTime)
 		g.Description("The time that the database was created.")
 		g.Example("2025-01-01T01:30:00Z")
+		g.Meta("struct:tag:json", "created_at")
 	})
 	g.Attribute("updated_at", g.String, func() {
 		g.Format(g.FormatDateTime)
 		g.Description("The time that the database was last updated.")
 		g.Example("2025-01-01T02:30:00Z")
+		g.Meta("struct:tag:json", "updated_at")
 	})
 	g.Attribute("state", g.String, func() {
 		g.Description("Current state of the database.")
@@ -595,9 +688,11 @@ var DatabaseSummary = g.Type("DatabaseSummary", func() {
 			"restoring",
 			"unknown",
 		)
+		g.Meta("struct:tag:json", "state")
 	})
 	g.Attribute("instances", g.ArrayOf(Instance), func() {
 		g.Description("All of the instances in the database.")
+		g.Meta("struct:tag:json", "instances,omitempty")
 	})
 
 	g.Required("id", "created_at", "updated_at", "state")
@@ -609,14 +704,17 @@ var CreateDatabaseRequest = g.Type("CreateDatabaseRequest", func() {
 		g.Example("production")
 		g.Example("my-app")
 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+		g.Meta("struct:tag:json", "id,omitempty")
 	})
 	g.Attribute("tenant_id", Identifier, func() {
 		g.Description("Unique identifier for the database's owner.")
 		g.Example("engineering")
 		g.Example("8210ec10-2dca-406c-ac4a-0661d2189954")
+		g.Meta("struct:tag:json", "tenant_id,omitempty")
 	})
 	g.Attribute("spec", DatabaseSpec, func() {
 		g.Description("The specification for the database.")
+		g.Meta("struct:tag:json", "spec")
 	})
 
 	g.Required("spec")
@@ -893,9 +991,11 @@ var CreateDatabaseRequest = g.Type("CreateDatabaseRequest", func() {
 var CreateDatabaseResponse = g.Type("CreateDatabaseResponse", func() {
 	g.Attribute("task", Task, func() {
 		g.Description("The task that will create this database.")
+		g.Meta("struct:tag:json", "task")
 	})
 	g.Attribute("database", Database, func() {
 		g.Description("The database being created.")
+		g.Meta("struct:tag:json", "database")
 	})
 
 	g.Required("task", "database")
@@ -943,9 +1043,11 @@ var UpdateDatabaseRequest = g.Type("UpdateDatabaseRequest", func() {
 		g.Description("Unique identifier for the database's owner.")
 		g.Example("engineering")
 		g.Example("8210ec10-2dca-406c-ac4a-0661d2189954")
+		g.Meta("struct:tag:json", "tenant_id,omitempty")
 	})
 	g.Attribute("spec", DatabaseSpec, func() {
 		g.Description("The specification for the database.")
+		g.Meta("struct:tag:json", "spec")
 	})
 
 	g.Example("Minimal", func() {
@@ -1038,9 +1140,11 @@ var UpdateDatabaseRequest = g.Type("UpdateDatabaseRequest", func() {
 var UpdateDatabaseResponse = g.Type("UpdateDatabaseResponse", func() {
 	g.Attribute("task", Task, func() {
 		g.Description("The task that will update this database.")
+		g.Meta("struct:tag:json", "task")
 	})
 	g.Attribute("database", Database, func() {
 		g.Description("The database being updated.")
+		g.Meta("struct:tag:json", "database")
 	})
 
 	g.Required("task", "database")
@@ -1060,6 +1164,7 @@ var UpdateDatabaseResponse = g.Type("UpdateDatabaseResponse", func() {
 var DeleteDatabaseResponse = g.Type("DeleteDatabaseResponse", func() {
 	g.Attribute("task", Task, func() {
 		g.Description("The task that will delete this database.")
+		g.Meta("struct:tag:json", "task")
 	})
 
 	g.Required("task")
@@ -1078,6 +1183,7 @@ var DeleteDatabaseResponse = g.Type("DeleteDatabaseResponse", func() {
 var BackupDatabaseNodeResponse = g.Type("BackupDatabaseNodeResponse", func() {
 	g.Attribute("task", Task, func() {
 		g.Description("The task that will backup this database node.")
+		g.Meta("struct:tag:json", "task")
 	})
 
 	g.Required("task")
@@ -1097,20 +1203,24 @@ var SwitchoverDatabaseNodeRequest = g.Type("SwitchoverDatabaseNodeRequest", func
 	g.Attribute("database_id", Identifier, func() {
 		g.Description("ID of the database to perform the switchover for.")
 		g.Example("my-app")
+		g.Meta("struct:tag:json", "database_id")
 	})
 	g.Attribute("node_name", g.String, func() {
 		g.Description("Name of the node to initiate the switchover from (informational).")
 		g.Pattern(nodeNamePattern)
 		g.Example("n1")
+		g.Meta("struct:tag:json", "node_name")
 	})
 	g.Attribute("candidate_instance_id", g.String, func() {
 		g.Description("Optional instance_id of the replica to promote. If omitted, a candidate will be selected.")
 		g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+		g.Meta("struct:tag:json", "candidate_instance_id,omitempty")
 	})
 	g.Attribute("scheduled_at", g.String, func() {
 		g.Description("Optional ISO8601 datetime when the switchover should occur. If omitted the switchover occurs immediately.")
 		g.Format(g.FormatDateTime)
 		g.Example("2025-09-20T22:00:00+05:30")
+		g.Meta("struct:tag:json", "scheduled_at,omitempty")
 	})
 
 	g.Required("database_id", "node_name")
@@ -1119,6 +1229,7 @@ var SwitchoverDatabaseNodeRequest = g.Type("SwitchoverDatabaseNodeRequest", func
 var SwitchoverDatabaseNodeResponse = g.Type("SwitchoverDatabaseNodeResponse", func() {
 	g.Attribute("task", Task, func() {
 		g.Description("The task that will perform the switchover.")
+		g.Meta("struct:tag:json", "task")
 	})
 
 	g.Required("task")
@@ -1138,19 +1249,23 @@ var FailoverDatabaseNodeRequest = g.Type("FailoverDatabaseNodeRequest", func() {
 	g.Attribute("database_id", Identifier, func() {
 		g.Description("ID of the database to perform the failover for.")
 		g.Example("my-app")
+		g.Meta("struct:tag:json", "database_id")
 	})
 	g.Attribute("node_name", g.String, func() {
 		g.Description("Name of the node to initiate the failover from.")
 		g.Pattern(nodeNamePattern)
 		g.Example("n1")
+		g.Meta("struct:tag:json", "node_name")
 	})
 	g.Attribute("candidate_instance_id", g.String, func() {
 		g.Description("Optional instance_id of the replica to promote. If omitted, a candidate will be selected.")
 		g.Example("68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi")
+		g.Meta("struct:tag:json", "candidate_instance_id,omitempty")
 	})
 	g.Attribute("skip_validation", g.Boolean, func() {
 		g.Description("If true, skip the health validations that prevent running failover on a healthy cluster.")
 		g.Default(false)
+		g.Meta("struct:tag:json", "skip_validation,omitempty")
 	})
 
 	g.Required("database_id", "node_name")
@@ -1159,6 +1274,7 @@ var FailoverDatabaseNodeRequest = g.Type("FailoverDatabaseNodeRequest", func() {
 var FailoverDatabaseNodeResponse = g.Type("FailoverDatabaseNodeResponse", func() {
 	g.Attribute("task", Task, func() {
 		g.Description("The task that will perform the failover.")
+		g.Meta("struct:tag:json", "task")
 	})
 
 	g.Required("task")
@@ -1177,12 +1293,14 @@ var FailoverDatabaseNodeResponse = g.Type("FailoverDatabaseNodeResponse", func()
 var RestoreDatabaseRequest = g.Type("RestoreDatabaseRequest", func() {
 	g.Attribute("restore_config", RestoreConfigSpec, func() {
 		g.Description("Configuration for the restore process.")
+		g.Meta("struct:tag:json", "restore_config")
 	})
 	g.Attribute("target_nodes", g.ArrayOf(g.String), func() {
 		g.Description("The nodes to restore. Defaults to all nodes if empty or unspecified.")
 		g.MaxLength(9)
 		g.Example([]string{"n1", "n2"})
 		g.Example([]string{"n1"})
+		g.Meta("struct:tag:json", "target_nodes,omitempty")
 	})
 
 	g.Required("restore_config")
@@ -1222,12 +1340,15 @@ var RestoreDatabaseRequest = g.Type("RestoreDatabaseRequest", func() {
 var RestoreDatabaseResponse = g.Type("RestoreDatabaseResponse", func() {
 	g.Attribute("task", Task, func() {
 		g.Description("The task that will restore this database.")
+		g.Meta("struct:tag:json", "task")
 	})
 	g.Attribute("node_tasks", g.ArrayOf(Task), func() {
 		g.Description("The tasks that will restore each database node.")
+		g.Meta("struct:tag:json", "node_tasks")
 	})
 	g.Attribute("database", Database, func() {
 		g.Description("The database being restored.")
+		g.Meta("struct:tag:json", "database")
 	})
 
 	g.Required("task", "node_tasks", "database")
@@ -1280,12 +1401,14 @@ var ExtraVolumesSpec = g.Type("ExtraVolumesSpec", func() {
 		g.Description("The host path for the volume.")
 		g.MaxLength(256)
 		g.Example("/Users/user/backups/host")
+		g.Meta("struct:tag:json", "host_path")
 	})
 
 	g.Attribute("destination_path", g.String, func() {
 		g.Description("The path inside the container where the volume will be mounted.")
 		g.MaxLength(256)
 		g.Example("/backups/container")
+		g.Meta("struct:tag:json", "destination_path")
 	})
 
 	g.Required("host_path", "destination_path")
@@ -1294,6 +1417,7 @@ var ExtraVolumesSpec = g.Type("ExtraVolumesSpec", func() {
 var ListDatabasesResponse = g.Type("ListDatabasesResponse", func() {
 	g.Attribute("databases", g.ArrayOf(DatabaseSummary), func() {
 		g.Description("The databases managed by this cluster.")
+		g.Meta("struct:tag:json", "databases")
 	})
 	g.Required("databases")
 
@@ -1671,17 +1795,20 @@ var ExtraNetworkSpec = g.Type("ExtraNetworkSpec", func() {
 		g.Description("The name or ID of the network to connect to.")
 		g.Example("storefront")
 		g.Example("traefik-public")
+		g.Meta("struct:tag:json", "id")
 	})
 	g.Attribute("aliases", g.ArrayOf(g.String), func() {
 		g.Description("Optional network-scoped aliases for the container.")
 		g.MaxLength(8)
 		g.Example([]string{"pg-db", "db-alias"})
+		g.Meta("struct:tag:json", "aliases,omitempty")
 	})
 	g.Attribute("driver_opts", g.MapOf(g.String, g.String), func() {
 		g.Description("Optional driver options for the network connection.")
 		g.Example(map[string]string{
 			"com.docker.network.endpoint.expose": "true",
 		})
+		g.Meta("struct:tag:json", "driver_opts,omitempty")
 	})
 	g.Required("id")
 })
@@ -1692,11 +1819,13 @@ var SwarmOpts = g.Type("SwarmOpts", func() {
 	g.Attribute("extra_volumes", g.ArrayOf(ExtraVolumesSpec), func() {
 		g.Description("A list of extra volumes to mount. Each entry defines a host and container path.")
 		g.MaxLength(16)
+		g.Meta("struct:tag:json", "extra_volumes,omitempty")
 	})
 
 	g.Attribute("extra_networks", g.ArrayOf(ExtraNetworkSpec), func() {
 		g.Description("A list of additional Docker Swarm networks to attach containers in this database to.")
 		g.MaxLength(8)
+		g.Meta("struct:tag:json", "extra_networks,omitempty")
 	})
 	g.Attribute("extra_labels", g.MapOf(g.String, g.String), func() {
 		g.Description("Arbitrary labels to apply to the Docker Swarm service")
@@ -1704,6 +1833,7 @@ var SwarmOpts = g.Type("SwarmOpts", func() {
 			"traefik.enable":                "true",
 			"traefik.tcp.routers.mydb.rule": "HostSNI(`mydb.example.com`)",
 		})
+		g.Meta("struct:tag:json", "extra_labels,omitempty")
 	})
 })
 
@@ -1712,5 +1842,6 @@ var OrchestratorOpts = g.Type("OrchestratorOpts", func() {
 
 	g.Attribute("swarm", SwarmOpts, func() {
 		g.Description("Swarm-specific configuration.")
+		g.Meta("struct:tag:json", "swarm,omitempty")
 	})
 })

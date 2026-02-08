@@ -9,59 +9,72 @@ var Task = g.Type("Task", func() {
 		g.Format(g.FormatUUID)
 		g.Description("The parent task ID of the task.")
 		g.Example("439eb515-e700-4740-b508-4a3f12ec4f83")
+		g.Meta("struct:tag:json", "parent_id,omitempty")
 	})
 	g.Attribute("scope", g.String, func() {
 		g.Enum("database", "host")
 		g.Description("The scope of the task (database or host).")
 		g.Example("database")
+		g.Meta("struct:tag:json", "scope")
 	})
 	g.Attribute("entity_id", g.String, func() {
 		g.Description("The entity ID (database_id or host_id) that this task belongs to.")
 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+		g.Meta("struct:tag:json", "entity_id")
 	})
 	g.Attribute("database_id", g.String, func() {
 		g.Description("The database ID of the task.")
 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+		g.Meta("struct:tag:json", "database_id,omitempty")
 	})
 	g.Attribute("node_name", g.String, func() {
 		g.Description("The name of the node that the task is operating on.")
 		g.Example("n1")
+		g.Meta("struct:tag:json", "node_name,omitempty")
 	})
 	g.Attribute("instance_id", g.String, func() {
 		g.Description("The ID of the instance that the task is operating on.")
 		g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+		g.Meta("struct:tag:json", "instance_id,omitempty")
 	})
 	g.Attribute("host_id", g.String, func() {
 		g.Description("The ID of the host that the task is running on.")
 		g.Example("2e52dcde-86d8-4f71-b58e-8dc3a10c936a")
+		g.Meta("struct:tag:json", "host_id,omitempty")
 	})
 	g.Attribute("task_id", g.String, func() {
 		g.Format(g.FormatUUID)
 		g.Description("The unique ID of the task.")
 		g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+		g.Meta("struct:tag:json", "task_id")
 	})
 	g.Attribute("created_at", g.String, func() {
 		g.Format(g.FormatDateTime)
 		g.Description("The time when the task was created.")
 		g.Example("2025-01-01T01:30:00Z")
+		g.Meta("struct:tag:json", "created_at")
 	})
 	g.Attribute("completed_at", g.String, func() {
 		g.Format(g.FormatDateTime)
 		g.Description("The time when the task was completed.")
 		g.Example("2025-01-01T02:30:00Z")
+		g.Meta("struct:tag:json", "completed_at,omitempty")
 	})
 	g.Attribute("type", g.String, func() {
 		g.Description("The type of the task.")
 		g.Example("backup", "restore")
+		g.Meta("struct:tag:json", "type")
 	})
 	g.Attribute("status", g.String, func() {
 		g.Enum("pending", "running", "completed", "canceled", "canceling", "failed", "unknown")
 		g.Description("The status of the task.")
 		g.Example("pending")
+		g.Meta("struct:tag:json", "status")
 	})
 	g.Attribute("error", g.String, func() {
 		g.Description("The error message if the task failed.")
 		g.Example("failed to connect to database")
+		g.Meta("struct:tag:json", "error,omitempty")
 	})
 
 	g.Required("scope", "entity_id", "task_id", "created_at", "type", "status")
@@ -83,10 +96,12 @@ var TaskLogEntry = g.Type("TaskLogEntry", func() {
 		g.Format(g.FormatDateTime)
 		g.Description("The timestamp of the log entry.")
 		g.Example("2025-05-29T15:43:13Z")
+		g.Meta("struct:tag:json", "timestamp")
 	})
 	g.Attribute("message", g.String, func() {
 		g.Description("The log message.")
 		g.Example("task started")
+		g.Meta("struct:tag:json", "message")
 	})
 	g.Attribute("fields", g.MapOf(g.String, g.Any), func() {
 		g.Description("Additional fields for the log entry.")
@@ -94,6 +109,7 @@ var TaskLogEntry = g.Type("TaskLogEntry", func() {
 			"status":         "creating",
 			"option.enabled": true,
 		})
+		g.Meta("struct:tag:json", "fields,omitempty")
 	})
 	g.Required("timestamp", "message")
 })
@@ -103,30 +119,37 @@ var TaskLog = g.Type("TaskLog", func() {
 		g.Enum("database", "host")
 		g.Description("The scope of the task (database or host).")
 		g.Example("database")
+		g.Meta("struct:tag:json", "scope")
 	})
 	g.Attribute("entity_id", g.String, func() {
 		g.Description("The entity ID (database_id or host_id) that this task log belongs to.")
 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+		g.Meta("struct:tag:json", "entity_id")
 	})
 	g.Attribute("database_id", g.String, func() {
 		g.Description("The database ID of the task log. Deprecated: use entity_id instead.")
 		g.Example("02f1a7db-fca8-4521-b57a-2a375c1ced51")
+		g.Meta("struct:tag:json", "database_id,omitempty")
 	})
 	g.Attribute("task_id", g.String, func() {
 		g.Description("The unique ID of the task log.")
 		g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+		g.Meta("struct:tag:json", "task_id")
 	})
 	g.Attribute("task_status", g.String, func() {
 		g.Enum("pending", "running", "completed", "failed", "unknown", "canceled", "canceling")
 		g.Description("The status of the task.")
 		g.Example("pending")
+		g.Meta("struct:tag:json", "task_status")
 	})
 	g.Attribute("last_entry_id", g.String, func() {
 		g.Description("The ID of the last entry in the task log.")
 		g.Example("3c875a27-f6a6-4c1c-ba5f-6972fb1fc348")
+		g.Meta("struct:tag:json", "last_entry_id,omitempty")
 	})
 	g.Attribute("entries", g.ArrayOf(TaskLogEntry), func() {
 		g.Description("Entries in the task log.")
+		g.Meta("struct:tag:json", "entries")
 	})
 
 	g.Required("scope", "entity_id", "task_id", "task_status", "entries")
@@ -264,6 +287,7 @@ var TaskLog = g.Type("TaskLog", func() {
 var ListDatabaseTasksResponse = g.Type("ListDatabaseTasksResponse", func() {
 	g.Attribute("tasks", g.ArrayOf(Task), func() {
 		g.Description("The tasks for the given database.")
+		g.Meta("struct:tag:json", "tasks")
 	})
 	g.Required("tasks")
 
@@ -317,6 +341,7 @@ var ListDatabaseTasksResponse = g.Type("ListDatabaseTasksResponse", func() {
 var ListHostTasksResponse = g.Type("ListHostTasksResponse", func() {
 	g.Attribute("tasks", g.ArrayOf(Task), func() {
 		g.Description("The tasks for the given host.")
+		g.Meta("struct:tag:json", "tasks")
 	})
 	g.Required("tasks")
 
@@ -339,6 +364,7 @@ var ListHostTasksResponse = g.Type("ListHostTasksResponse", func() {
 var ListTasksResponse = g.Type("ListTasksResponse", func() {
 	g.Attribute("tasks", g.ArrayOf(Task), func() {
 		g.Description("The tasks for the given entity.")
+		g.Meta("struct:tag:json", "tasks")
 	})
 	g.Required("tasks")
 

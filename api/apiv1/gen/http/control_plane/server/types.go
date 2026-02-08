@@ -18,55 +18,55 @@ import (
 // "join-cluster" endpoint HTTP request body.
 type JoinClusterRequestBody struct {
 	// Token to join an existing cluster.
-	Token *string `form:"token,omitempty" json:"token,omitempty" xml:"token,omitempty"`
+	Token *string `json:"token"`
 	// Existing server to join
-	ServerURL *string `form:"server_url,omitempty" json:"server_url,omitempty" xml:"server_url,omitempty"`
+	ServerURL *string `json:"server_url"`
 }
 
 // GetJoinOptionsRequestBody is the type of the "control-plane" service
 // "get-join-options" endpoint HTTP request body.
 type GetJoinOptionsRequestBody struct {
 	// Token to join the cluster.
-	Token *string `form:"token,omitempty" json:"token,omitempty" xml:"token,omitempty"`
+	Token *string `json:"token"`
 	// The unique identifier for the host that's joining the cluster.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	HostID *string `json:"host_id"`
 	// The hostname of the host that's joining the cluster.
-	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
+	Hostname *string `json:"hostname"`
 	// The IPv4 address of the host that's joining the cluster.
-	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
+	Ipv4Address *string `json:"ipv4_address"`
 	// True if the joining member is configured to run an embedded an etcd server.
-	EmbeddedEtcdEnabled *bool `form:"embedded_etcd_enabled,omitempty" json:"embedded_etcd_enabled,omitempty" xml:"embedded_etcd_enabled,omitempty"`
+	EmbeddedEtcdEnabled *bool `json:"embedded_etcd_enabled"`
 }
 
 // CreateDatabaseRequestBody is the type of the "control-plane" service
 // "create-database" endpoint HTTP request body.
 type CreateDatabaseRequestBody struct {
 	// Unique identifier for the database.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	ID *string `json:"id,omitempty"`
 	// Unique identifier for the database's owner.
-	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
+	TenantID *string `json:"tenant_id,omitempty"`
 	// The specification for the database.
-	Spec *DatabaseSpecRequestBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
+	Spec *DatabaseSpecRequestBody `json:"spec"`
 }
 
 // UpdateDatabaseRequestBody is the type of the "control-plane" service
 // "update-database" endpoint HTTP request body.
 type UpdateDatabaseRequestBody struct {
 	// Unique identifier for the database's owner.
-	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
+	TenantID *string `json:"tenant_id,omitempty"`
 	// The specification for the database.
-	Spec *DatabaseSpecRequestBodyRequestBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
+	Spec *DatabaseSpecRequestBodyRequestBody `json:"spec"`
 }
 
 // BackupDatabaseNodeRequestBody is the type of the "control-plane" service
 // "backup-database-node" endpoint HTTP request body.
 type BackupDatabaseNodeRequestBody struct {
 	// The type of backup.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	Type *string `json:"type"`
 	// Annotations for the backup.
-	Annotations map[string]string `form:"annotations,omitempty" json:"annotations,omitempty" xml:"annotations,omitempty"`
+	Annotations map[string]string `json:"annotations,omitempty"`
 	// Options for the backup.
-	BackupOptions map[string]string `form:"backup_options,omitempty" json:"backup_options,omitempty" xml:"backup_options,omitempty"`
+	BackupOptions map[string]string `json:"backup_options,omitempty"`
 }
 
 // SwitchoverDatabaseNodeRequestBody is the type of the "control-plane" service
@@ -84,373 +84,373 @@ type SwitchoverDatabaseNodeRequestBody struct {
 type FailoverDatabaseNodeRequestBody struct {
 	// Optional instance_id of the replica to promote. If omitted, a candidate will
 	// be selected.
-	CandidateInstanceID *string `form:"candidate_instance_id,omitempty" json:"candidate_instance_id,omitempty" xml:"candidate_instance_id,omitempty"`
+	CandidateInstanceID *string `json:"candidate_instance_id,omitempty"`
 	// If true, skip the health validations that prevent running failover on a
 	// healthy cluster.
-	SkipValidation *bool `form:"skip_validation,omitempty" json:"skip_validation,omitempty" xml:"skip_validation,omitempty"`
+	SkipValidation *bool `json:"skip_validation,omitempty"`
 }
 
 // RestoreDatabaseRequestBody is the type of the "control-plane" service
 // "restore-database" endpoint HTTP request body.
 type RestoreDatabaseRequestBody struct {
 	// Configuration for the restore process.
-	RestoreConfig *RestoreConfigSpecRequestBodyRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
+	RestoreConfig *RestoreConfigSpecRequestBodyRequestBody `json:"restore_config"`
 	// The nodes to restore. Defaults to all nodes if empty or unspecified.
-	TargetNodes []string `form:"target_nodes,omitempty" json:"target_nodes,omitempty" xml:"target_nodes,omitempty"`
+	TargetNodes []string `json:"target_nodes,omitempty"`
 }
 
 // InitClusterResponseBody is the type of the "control-plane" service
 // "init-cluster" endpoint HTTP response body.
 type InitClusterResponseBody struct {
 	// Token to join an existing cluster.
-	Token string `form:"token" json:"token" xml:"token"`
+	Token string `json:"token"`
 	// Existing server to join
-	ServerURL string `form:"server_url" json:"server_url" xml:"server_url"`
+	ServerURL string `json:"server_url"`
 }
 
 // GetJoinTokenResponseBody is the type of the "control-plane" service
 // "get-join-token" endpoint HTTP response body.
 type GetJoinTokenResponseBody struct {
 	// Token to join an existing cluster.
-	Token string `form:"token" json:"token" xml:"token"`
+	Token string `json:"token"`
 	// Existing server to join
-	ServerURL string `form:"server_url" json:"server_url" xml:"server_url"`
+	ServerURL string `json:"server_url"`
 }
 
 // GetJoinOptionsResponseBody is the type of the "control-plane" service
 // "get-join-options" endpoint HTTP response body.
 type GetJoinOptionsResponseBody struct {
 	// Connection information for the etcd cluster leader
-	Leader *EtcdClusterMemberResponseBody `form:"leader" json:"leader" xml:"leader"`
+	Leader *EtcdClusterMemberResponseBody `json:"leader"`
 	// Credentials for the new host joining the cluster.
-	Credentials *ClusterCredentialsResponseBody `form:"credentials" json:"credentials" xml:"credentials"`
+	Credentials *ClusterCredentialsResponseBody `json:"credentials"`
 }
 
 // GetClusterResponseBody is the type of the "control-plane" service
 // "get-cluster" endpoint HTTP response body.
 type GetClusterResponseBody struct {
 	// Unique identifier for the cluster.
-	ID string `form:"id" json:"id" xml:"id"`
+	ID string `json:"id"`
 	// Current status of the cluster.
-	Status *ClusterStatusResponseBody `form:"status" json:"status" xml:"status"`
+	Status *ClusterStatusResponseBody `json:"status"`
 	// All of the hosts in the cluster.
-	Hosts []*HostResponseBody `form:"hosts" json:"hosts" xml:"hosts"`
+	Hosts []*HostResponseBody `json:"hosts"`
 }
 
 // ListHostsResponseBody is the type of the "control-plane" service
 // "list-hosts" endpoint HTTP response body.
 type ListHostsResponseBody struct {
 	// List of hosts in the cluster
-	Hosts []*HostResponseBody `form:"hosts" json:"hosts" xml:"hosts"`
+	Hosts []*HostResponseBody `json:"hosts"`
 }
 
 // GetHostResponseBody is the type of the "control-plane" service "get-host"
 // endpoint HTTP response body.
 type GetHostResponseBody struct {
 	// Unique identifier for the host.
-	ID string `form:"id" json:"id" xml:"id"`
+	ID string `json:"id"`
 	// The orchestrator used by this host.
-	Orchestrator string `form:"orchestrator" json:"orchestrator" xml:"orchestrator"`
+	Orchestrator string `json:"orchestrator"`
 	// The data directory for the host.
-	DataDir string `form:"data_dir" json:"data_dir" xml:"data_dir"`
+	DataDir string `json:"data_dir"`
 	// The cohort that this host belongs to.
-	Cohort *HostCohortResponseBody `form:"cohort,omitempty" json:"cohort,omitempty" xml:"cohort,omitempty"`
+	Cohort *HostCohortResponseBody `json:"cohort,omitempty"`
 	// The hostname of this host.
-	Hostname string `form:"hostname" json:"hostname" xml:"hostname"`
+	Hostname string `json:"hostname"`
 	// The IPv4 address of this host.
-	Ipv4Address string `form:"ipv4_address" json:"ipv4_address" xml:"ipv4_address"`
+	Ipv4Address string `json:"ipv4_address"`
 	// The number of CPUs on this host.
-	Cpus *int `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	Cpus *int `json:"cpus,omitempty"`
 	// The amount of memory available on this host.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	Memory *string `json:"memory,omitempty"`
 	// Current status of the host.
-	Status *HostStatusResponseBody `form:"status" json:"status" xml:"status"`
+	Status *HostStatusResponseBody `json:"status"`
 	// The default PgEdge version for this host.
-	DefaultPgedgeVersion *PgEdgeVersionResponseBody `form:"default_pgedge_version,omitempty" json:"default_pgedge_version,omitempty" xml:"default_pgedge_version,omitempty"`
+	DefaultPgedgeVersion *PgEdgeVersionResponseBody `json:"default_pgedge_version,omitempty"`
 	// The PgEdge versions supported by this host.
-	SupportedPgedgeVersions []*PgEdgeVersionResponseBody `form:"supported_pgedge_versions,omitempty" json:"supported_pgedge_versions,omitempty" xml:"supported_pgedge_versions,omitempty"`
+	SupportedPgedgeVersions []*PgEdgeVersionResponseBody `json:"supported_pgedge_versions,omitempty"`
 	// The etcd mode for this host.
-	EtcdMode *string `form:"etcd_mode,omitempty" json:"etcd_mode,omitempty" xml:"etcd_mode,omitempty"`
+	EtcdMode *string `json:"etcd_mode,omitempty"`
 }
 
 // RemoveHostResponseBody is the type of the "control-plane" service
 // "remove-host" endpoint HTTP response body.
 type RemoveHostResponseBody struct {
 	// The task that tracks the overall host removal operation.
-	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
+	Task *TaskResponseBody `json:"task"`
 	// The tasks that will update databases affected by the host removal.
-	UpdateDatabaseTasks []*TaskResponseBody `form:"update_database_tasks" json:"update_database_tasks" xml:"update_database_tasks"`
+	UpdateDatabaseTasks []*TaskResponseBody `json:"update_database_tasks"`
 }
 
 // ListDatabasesResponseBody is the type of the "control-plane" service
 // "list-databases" endpoint HTTP response body.
 type ListDatabasesResponseBody struct {
 	// The databases managed by this cluster.
-	Databases []*DatabaseSummaryResponseBody `form:"databases" json:"databases" xml:"databases"`
+	Databases []*DatabaseSummaryResponseBody `json:"databases"`
 }
 
 // CreateDatabaseResponseBody is the type of the "control-plane" service
 // "create-database" endpoint HTTP response body.
 type CreateDatabaseResponseBody struct {
 	// The task that will create this database.
-	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
+	Task *TaskResponseBody `json:"task"`
 	// The database being created.
-	Database *DatabaseResponseBody `form:"database" json:"database" xml:"database"`
+	Database *DatabaseResponseBody `json:"database"`
 }
 
 // GetDatabaseResponseBody is the type of the "control-plane" service
 // "get-database" endpoint HTTP response body.
 type GetDatabaseResponseBody struct {
 	// Unique identifier for the database.
-	ID string `form:"id" json:"id" xml:"id"`
+	ID string `json:"id"`
 	// Unique identifier for the database's owner.
-	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
+	TenantID *string `json:"tenant_id,omitempty"`
 	// The time that the database was created.
-	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	CreatedAt string `json:"created_at"`
 	// The time that the database was last updated.
-	UpdatedAt string `form:"updated_at" json:"updated_at" xml:"updated_at"`
+	UpdatedAt string `json:"updated_at"`
 	// Current state of the database.
-	State string `form:"state" json:"state" xml:"state"`
+	State string `json:"state"`
 	// All of the instances in the database.
-	Instances []*InstanceResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	Instances []*InstanceResponseBody `json:"instances,omitempty"`
 	// Service instances running alongside this database.
-	ServiceInstances []*ServiceInstanceResponseBody `form:"service_instances,omitempty" json:"service_instances,omitempty" xml:"service_instances,omitempty"`
+	ServiceInstances []*ServiceInstanceResponseBody `json:"service_instances,omitempty"`
 	// The user-provided specification for the database.
-	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
+	Spec *DatabaseSpecResponseBody `json:"spec,omitempty"`
 }
 
 // UpdateDatabaseResponseBody is the type of the "control-plane" service
 // "update-database" endpoint HTTP response body.
 type UpdateDatabaseResponseBody struct {
 	// The task that will update this database.
-	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
+	Task *TaskResponseBody `json:"task"`
 	// The database being updated.
-	Database *DatabaseResponseBody `form:"database" json:"database" xml:"database"`
+	Database *DatabaseResponseBody `json:"database"`
 }
 
 // DeleteDatabaseResponseBody is the type of the "control-plane" service
 // "delete-database" endpoint HTTP response body.
 type DeleteDatabaseResponseBody struct {
 	// The task that will delete this database.
-	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
+	Task *TaskResponseBody `json:"task"`
 }
 
 // BackupDatabaseNodeResponseBody is the type of the "control-plane" service
 // "backup-database-node" endpoint HTTP response body.
 type BackupDatabaseNodeResponseBody struct {
 	// The task that will backup this database node.
-	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
+	Task *TaskResponseBody `json:"task"`
 }
 
 // SwitchoverDatabaseNodeResponseBody is the type of the "control-plane"
 // service "switchover-database-node" endpoint HTTP response body.
 type SwitchoverDatabaseNodeResponseBody struct {
 	// The task that will perform the switchover.
-	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
+	Task *TaskResponseBody `json:"task"`
 }
 
 // FailoverDatabaseNodeResponseBody is the type of the "control-plane" service
 // "failover-database-node" endpoint HTTP response body.
 type FailoverDatabaseNodeResponseBody struct {
 	// The task that will perform the failover.
-	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
+	Task *TaskResponseBody `json:"task"`
 }
 
 // ListDatabaseTasksResponseBody is the type of the "control-plane" service
 // "list-database-tasks" endpoint HTTP response body.
 type ListDatabaseTasksResponseBody struct {
 	// The tasks for the given database.
-	Tasks []*TaskResponseBody `form:"tasks" json:"tasks" xml:"tasks"`
+	Tasks []*TaskResponseBody `json:"tasks"`
 }
 
 // GetDatabaseTaskResponseBody is the type of the "control-plane" service
 // "get-database-task" endpoint HTTP response body.
 type GetDatabaseTaskResponseBody struct {
 	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	ParentID *string `json:"parent_id,omitempty"`
 	// The scope of the task (database or host).
-	Scope string `form:"scope" json:"scope" xml:"scope"`
+	Scope string `json:"scope"`
 	// The entity ID (database_id or host_id) that this task belongs to.
-	EntityID string `form:"entity_id" json:"entity_id" xml:"entity_id"`
+	EntityID string `json:"entity_id"`
 	// The database ID of the task.
-	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	DatabaseID *string `json:"database_id,omitempty"`
 	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	NodeName *string `json:"node_name,omitempty"`
 	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	InstanceID *string `json:"instance_id,omitempty"`
 	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	HostID *string `json:"host_id,omitempty"`
 	// The unique ID of the task.
-	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+	TaskID string `json:"task_id"`
 	// The time when the task was created.
-	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	CreatedAt string `json:"created_at"`
 	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	CompletedAt *string `json:"completed_at,omitempty"`
 	// The type of the task.
-	Type string `form:"type" json:"type" xml:"type"`
+	Type string `json:"type"`
 	// The status of the task.
-	Status string `form:"status" json:"status" xml:"status"`
+	Status string `json:"status"`
 	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Error *string `json:"error,omitempty"`
 }
 
 // GetDatabaseTaskLogResponseBody is the type of the "control-plane" service
 // "get-database-task-log" endpoint HTTP response body.
 type GetDatabaseTaskLogResponseBody struct {
 	// The scope of the task (database or host).
-	Scope string `form:"scope" json:"scope" xml:"scope"`
+	Scope string `json:"scope"`
 	// The entity ID (database_id or host_id) that this task log belongs to.
-	EntityID string `form:"entity_id" json:"entity_id" xml:"entity_id"`
+	EntityID string `json:"entity_id"`
 	// The database ID of the task log. Deprecated: use entity_id instead.
-	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	DatabaseID *string `json:"database_id,omitempty"`
 	// The unique ID of the task log.
-	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+	TaskID string `json:"task_id"`
 	// The status of the task.
-	TaskStatus string `form:"task_status" json:"task_status" xml:"task_status"`
+	TaskStatus string `json:"task_status"`
 	// The ID of the last entry in the task log.
-	LastEntryID *string `form:"last_entry_id,omitempty" json:"last_entry_id,omitempty" xml:"last_entry_id,omitempty"`
+	LastEntryID *string `json:"last_entry_id,omitempty"`
 	// Entries in the task log.
-	Entries []*TaskLogEntryResponseBody `form:"entries" json:"entries" xml:"entries"`
+	Entries []*TaskLogEntryResponseBody `json:"entries"`
 }
 
 // ListHostTasksResponseBody is the type of the "control-plane" service
 // "list-host-tasks" endpoint HTTP response body.
 type ListHostTasksResponseBody struct {
 	// The tasks for the given host.
-	Tasks []*TaskResponseBody `form:"tasks" json:"tasks" xml:"tasks"`
+	Tasks []*TaskResponseBody `json:"tasks"`
 }
 
 // GetHostTaskResponseBody is the type of the "control-plane" service
 // "get-host-task" endpoint HTTP response body.
 type GetHostTaskResponseBody struct {
 	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	ParentID *string `json:"parent_id,omitempty"`
 	// The scope of the task (database or host).
-	Scope string `form:"scope" json:"scope" xml:"scope"`
+	Scope string `json:"scope"`
 	// The entity ID (database_id or host_id) that this task belongs to.
-	EntityID string `form:"entity_id" json:"entity_id" xml:"entity_id"`
+	EntityID string `json:"entity_id"`
 	// The database ID of the task.
-	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	DatabaseID *string `json:"database_id,omitempty"`
 	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	NodeName *string `json:"node_name,omitempty"`
 	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	InstanceID *string `json:"instance_id,omitempty"`
 	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	HostID *string `json:"host_id,omitempty"`
 	// The unique ID of the task.
-	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+	TaskID string `json:"task_id"`
 	// The time when the task was created.
-	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	CreatedAt string `json:"created_at"`
 	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	CompletedAt *string `json:"completed_at,omitempty"`
 	// The type of the task.
-	Type string `form:"type" json:"type" xml:"type"`
+	Type string `json:"type"`
 	// The status of the task.
-	Status string `form:"status" json:"status" xml:"status"`
+	Status string `json:"status"`
 	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Error *string `json:"error,omitempty"`
 }
 
 // GetHostTaskLogResponseBody is the type of the "control-plane" service
 // "get-host-task-log" endpoint HTTP response body.
 type GetHostTaskLogResponseBody struct {
 	// The scope of the task (database or host).
-	Scope string `form:"scope" json:"scope" xml:"scope"`
+	Scope string `json:"scope"`
 	// The entity ID (database_id or host_id) that this task log belongs to.
-	EntityID string `form:"entity_id" json:"entity_id" xml:"entity_id"`
+	EntityID string `json:"entity_id"`
 	// The database ID of the task log. Deprecated: use entity_id instead.
-	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	DatabaseID *string `json:"database_id,omitempty"`
 	// The unique ID of the task log.
-	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+	TaskID string `json:"task_id"`
 	// The status of the task.
-	TaskStatus string `form:"task_status" json:"task_status" xml:"task_status"`
+	TaskStatus string `json:"task_status"`
 	// The ID of the last entry in the task log.
-	LastEntryID *string `form:"last_entry_id,omitempty" json:"last_entry_id,omitempty" xml:"last_entry_id,omitempty"`
+	LastEntryID *string `json:"last_entry_id,omitempty"`
 	// Entries in the task log.
-	Entries []*TaskLogEntryResponseBody `form:"entries" json:"entries" xml:"entries"`
+	Entries []*TaskLogEntryResponseBody `json:"entries"`
 }
 
 // ListTasksResponseBody is the type of the "control-plane" service
 // "list-tasks" endpoint HTTP response body.
 type ListTasksResponseBody struct {
 	// The tasks for the given entity.
-	Tasks []*TaskResponseBody `form:"tasks" json:"tasks" xml:"tasks"`
+	Tasks []*TaskResponseBody `json:"tasks"`
 }
 
 // RestoreDatabaseResponseBody is the type of the "control-plane" service
 // "restore-database" endpoint HTTP response body.
 type RestoreDatabaseResponseBody struct {
 	// The task that will restore this database.
-	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
+	Task *TaskResponseBody `json:"task"`
 	// The tasks that will restore each database node.
-	NodeTasks []*TaskResponseBody `form:"node_tasks" json:"node_tasks" xml:"node_tasks"`
+	NodeTasks []*TaskResponseBody `json:"node_tasks"`
 	// The database being restored.
-	Database *DatabaseResponseBody `form:"database" json:"database" xml:"database"`
+	Database *DatabaseResponseBody `json:"database"`
 }
 
 // GetVersionResponseBody is the type of the "control-plane" service
 // "get-version" endpoint HTTP response body.
 type GetVersionResponseBody struct {
 	// The version of the API server.
-	Version string `form:"version" json:"version" xml:"version"`
+	Version string `json:"version"`
 	// The VCS revision of the API server.
-	Revision string `form:"revision" json:"revision" xml:"revision"`
+	Revision string `json:"revision"`
 	// The timestamp associated with the revision.
-	RevisionTime string `form:"revision_time" json:"revision_time" xml:"revision_time"`
+	RevisionTime string `json:"revision_time"`
 	// The CPU architecture of the API server.
-	Arch string `form:"arch" json:"arch" xml:"arch"`
+	Arch string `json:"arch"`
 }
 
 // RestartInstanceResponseBody is the type of the "control-plane" service
 // "restart-instance" endpoint HTTP response body.
 type RestartInstanceResponseBody struct {
 	// Task representing the restart operation
-	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
+	Task *TaskResponseBody `json:"task"`
 }
 
 // StopInstanceResponseBody is the type of the "control-plane" service
 // "stop-instance" endpoint HTTP response body.
 type StopInstanceResponseBody struct {
 	// Task representing the stop operation
-	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
+	Task *TaskResponseBody `json:"task"`
 }
 
 // StartInstanceResponseBody is the type of the "control-plane" service
 // "start-instance" endpoint HTTP response body.
 type StartInstanceResponseBody struct {
 	// Task representing the start operation
-	Task *TaskResponseBody `form:"task" json:"task" xml:"task"`
+	Task *TaskResponseBody `json:"task"`
 }
 
 // CancelDatabaseTaskResponseBody is the type of the "control-plane" service
 // "cancel-database-task" endpoint HTTP response body.
 type CancelDatabaseTaskResponseBody struct {
 	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	ParentID *string `json:"parent_id,omitempty"`
 	// The scope of the task (database or host).
-	Scope string `form:"scope" json:"scope" xml:"scope"`
+	Scope string `json:"scope"`
 	// The entity ID (database_id or host_id) that this task belongs to.
-	EntityID string `form:"entity_id" json:"entity_id" xml:"entity_id"`
+	EntityID string `json:"entity_id"`
 	// The database ID of the task.
-	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	DatabaseID *string `json:"database_id,omitempty"`
 	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	NodeName *string `json:"node_name,omitempty"`
 	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	InstanceID *string `json:"instance_id,omitempty"`
 	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	HostID *string `json:"host_id,omitempty"`
 	// The unique ID of the task.
-	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+	TaskID string `json:"task_id"`
 	// The time when the task was created.
-	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	CreatedAt string `json:"created_at"`
 	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	CompletedAt *string `json:"completed_at,omitempty"`
 	// The type of the task.
-	Type string `form:"type" json:"type" xml:"type"`
+	Type string `json:"type"`
 	// The status of the task.
-	Status string `form:"status" json:"status" xml:"status"`
+	Status string `json:"status"`
 	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Error *string `json:"error,omitempty"`
 }
 
 // InitClusterClusterAlreadyInitializedResponseBody is the type of the
@@ -458,9 +458,9 @@ type CancelDatabaseTaskResponseBody struct {
 // "cluster_already_initialized" error.
 type InitClusterClusterAlreadyInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // InitClusterOperationNotSupportedResponseBody is the type of the
@@ -468,9 +468,9 @@ type InitClusterClusterAlreadyInitializedResponseBody struct {
 // "operation_not_supported" error.
 type InitClusterOperationNotSupportedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // InitClusterServerErrorResponseBody is the type of the "control-plane"
@@ -478,9 +478,9 @@ type InitClusterOperationNotSupportedResponseBody struct {
 // error.
 type InitClusterServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // JoinClusterClusterAlreadyInitializedResponseBody is the type of the
@@ -488,9 +488,9 @@ type InitClusterServerErrorResponseBody struct {
 // "cluster_already_initialized" error.
 type JoinClusterClusterAlreadyInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // JoinClusterInvalidJoinTokenResponseBody is the type of the "control-plane"
@@ -498,9 +498,9 @@ type JoinClusterClusterAlreadyInitializedResponseBody struct {
 // "invalid_join_token" error.
 type JoinClusterInvalidJoinTokenResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // JoinClusterInvalidInputResponseBody is the type of the "control-plane"
@@ -508,9 +508,9 @@ type JoinClusterInvalidJoinTokenResponseBody struct {
 // error.
 type JoinClusterInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // JoinClusterServerErrorResponseBody is the type of the "control-plane"
@@ -518,9 +518,9 @@ type JoinClusterInvalidInputResponseBody struct {
 // error.
 type JoinClusterServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetJoinTokenClusterNotInitializedResponseBody is the type of the
@@ -528,9 +528,9 @@ type JoinClusterServerErrorResponseBody struct {
 // "cluster_not_initialized" error.
 type GetJoinTokenClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetJoinTokenServerErrorResponseBody is the type of the "control-plane"
@@ -538,9 +538,9 @@ type GetJoinTokenClusterNotInitializedResponseBody struct {
 // error.
 type GetJoinTokenServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetJoinOptionsClusterNotInitializedResponseBody is the type of the
@@ -548,9 +548,9 @@ type GetJoinTokenServerErrorResponseBody struct {
 // the "cluster_not_initialized" error.
 type GetJoinOptionsClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetJoinOptionsInvalidJoinTokenResponseBody is the type of the
@@ -558,9 +558,9 @@ type GetJoinOptionsClusterNotInitializedResponseBody struct {
 // the "invalid_join_token" error.
 type GetJoinOptionsInvalidJoinTokenResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetJoinOptionsInvalidInputResponseBody is the type of the "control-plane"
@@ -568,9 +568,9 @@ type GetJoinOptionsInvalidJoinTokenResponseBody struct {
 // "invalid_input" error.
 type GetJoinOptionsInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetJoinOptionsServerErrorResponseBody is the type of the "control-plane"
@@ -578,9 +578,9 @@ type GetJoinOptionsInvalidInputResponseBody struct {
 // "server_error" error.
 type GetJoinOptionsServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetClusterClusterNotInitializedResponseBody is the type of the
@@ -588,18 +588,18 @@ type GetJoinOptionsServerErrorResponseBody struct {
 // "cluster_not_initialized" error.
 type GetClusterClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetClusterServerErrorResponseBody is the type of the "control-plane" service
 // "get-cluster" endpoint HTTP response body for the "server_error" error.
 type GetClusterServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // ListHostsClusterNotInitializedResponseBody is the type of the
@@ -607,18 +607,18 @@ type GetClusterServerErrorResponseBody struct {
 // "cluster_not_initialized" error.
 type ListHostsClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // ListHostsServerErrorResponseBody is the type of the "control-plane" service
 // "list-hosts" endpoint HTTP response body for the "server_error" error.
 type ListHostsServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetHostClusterNotInitializedResponseBody is the type of the "control-plane"
@@ -626,36 +626,36 @@ type ListHostsServerErrorResponseBody struct {
 // "cluster_not_initialized" error.
 type GetHostClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetHostInvalidInputResponseBody is the type of the "control-plane" service
 // "get-host" endpoint HTTP response body for the "invalid_input" error.
 type GetHostInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetHostNotFoundResponseBody is the type of the "control-plane" service
 // "get-host" endpoint HTTP response body for the "not_found" error.
 type GetHostNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetHostServerErrorResponseBody is the type of the "control-plane" service
 // "get-host" endpoint HTTP response body for the "server_error" error.
 type GetHostServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // RemoveHostClusterNotInitializedResponseBody is the type of the
@@ -663,9 +663,9 @@ type GetHostServerErrorResponseBody struct {
 // "cluster_not_initialized" error.
 type RemoveHostClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // RemoveHostInvalidInputResponseBody is the type of the "control-plane"
@@ -673,27 +673,27 @@ type RemoveHostClusterNotInitializedResponseBody struct {
 // error.
 type RemoveHostInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // RemoveHostNotFoundResponseBody is the type of the "control-plane" service
 // "remove-host" endpoint HTTP response body for the "not_found" error.
 type RemoveHostNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // RemoveHostServerErrorResponseBody is the type of the "control-plane" service
 // "remove-host" endpoint HTTP response body for the "server_error" error.
 type RemoveHostServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // ListDatabasesClusterNotInitializedResponseBody is the type of the
@@ -701,9 +701,9 @@ type RemoveHostServerErrorResponseBody struct {
 // "cluster_not_initialized" error.
 type ListDatabasesClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // ListDatabasesServerErrorResponseBody is the type of the "control-plane"
@@ -711,9 +711,9 @@ type ListDatabasesClusterNotInitializedResponseBody struct {
 // error.
 type ListDatabasesServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // CreateDatabaseDatabaseAlreadyExistsResponseBody is the type of the
@@ -721,9 +721,9 @@ type ListDatabasesServerErrorResponseBody struct {
 // the "database_already_exists" error.
 type CreateDatabaseDatabaseAlreadyExistsResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // CreateDatabaseClusterNotInitializedResponseBody is the type of the
@@ -731,9 +731,9 @@ type CreateDatabaseDatabaseAlreadyExistsResponseBody struct {
 // the "cluster_not_initialized" error.
 type CreateDatabaseClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // CreateDatabaseOperationAlreadyInProgressResponseBody is the type of the
@@ -741,9 +741,9 @@ type CreateDatabaseClusterNotInitializedResponseBody struct {
 // the "operation_already_in_progress" error.
 type CreateDatabaseOperationAlreadyInProgressResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // CreateDatabaseInvalidInputResponseBody is the type of the "control-plane"
@@ -751,9 +751,9 @@ type CreateDatabaseOperationAlreadyInProgressResponseBody struct {
 // "invalid_input" error.
 type CreateDatabaseInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // CreateDatabaseServerErrorResponseBody is the type of the "control-plane"
@@ -761,9 +761,9 @@ type CreateDatabaseInvalidInputResponseBody struct {
 // error.
 type CreateDatabaseServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetDatabaseClusterNotInitializedResponseBody is the type of the
@@ -771,9 +771,9 @@ type CreateDatabaseServerErrorResponseBody struct {
 // "cluster_not_initialized" error.
 type GetDatabaseClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetDatabaseInvalidInputResponseBody is the type of the "control-plane"
@@ -781,18 +781,18 @@ type GetDatabaseClusterNotInitializedResponseBody struct {
 // error.
 type GetDatabaseInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetDatabaseNotFoundResponseBody is the type of the "control-plane" service
 // "get-database" endpoint HTTP response body for the "not_found" error.
 type GetDatabaseNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetDatabaseServerErrorResponseBody is the type of the "control-plane"
@@ -800,9 +800,9 @@ type GetDatabaseNotFoundResponseBody struct {
 // error.
 type GetDatabaseServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // UpdateDatabaseClusterNotInitializedResponseBody is the type of the
@@ -810,9 +810,9 @@ type GetDatabaseServerErrorResponseBody struct {
 // the "cluster_not_initialized" error.
 type UpdateDatabaseClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // UpdateDatabaseDatabaseNotModifiableResponseBody is the type of the
@@ -820,9 +820,9 @@ type UpdateDatabaseClusterNotInitializedResponseBody struct {
 // the "database_not_modifiable" error.
 type UpdateDatabaseDatabaseNotModifiableResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // UpdateDatabaseOperationAlreadyInProgressResponseBody is the type of the
@@ -830,9 +830,9 @@ type UpdateDatabaseDatabaseNotModifiableResponseBody struct {
 // the "operation_already_in_progress" error.
 type UpdateDatabaseOperationAlreadyInProgressResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // UpdateDatabaseInvalidInputResponseBody is the type of the "control-plane"
@@ -840,9 +840,9 @@ type UpdateDatabaseOperationAlreadyInProgressResponseBody struct {
 // "invalid_input" error.
 type UpdateDatabaseInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // UpdateDatabaseNotFoundResponseBody is the type of the "control-plane"
@@ -850,9 +850,9 @@ type UpdateDatabaseInvalidInputResponseBody struct {
 // error.
 type UpdateDatabaseNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // UpdateDatabaseServerErrorResponseBody is the type of the "control-plane"
@@ -860,9 +860,9 @@ type UpdateDatabaseNotFoundResponseBody struct {
 // error.
 type UpdateDatabaseServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // DeleteDatabaseClusterNotInitializedResponseBody is the type of the
@@ -870,9 +870,9 @@ type UpdateDatabaseServerErrorResponseBody struct {
 // the "cluster_not_initialized" error.
 type DeleteDatabaseClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // DeleteDatabaseDatabaseNotModifiableResponseBody is the type of the
@@ -880,9 +880,9 @@ type DeleteDatabaseClusterNotInitializedResponseBody struct {
 // the "database_not_modifiable" error.
 type DeleteDatabaseDatabaseNotModifiableResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // DeleteDatabaseOperationAlreadyInProgressResponseBody is the type of the
@@ -890,9 +890,9 @@ type DeleteDatabaseDatabaseNotModifiableResponseBody struct {
 // the "operation_already_in_progress" error.
 type DeleteDatabaseOperationAlreadyInProgressResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // DeleteDatabaseInvalidInputResponseBody is the type of the "control-plane"
@@ -900,9 +900,9 @@ type DeleteDatabaseOperationAlreadyInProgressResponseBody struct {
 // "invalid_input" error.
 type DeleteDatabaseInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // DeleteDatabaseNotFoundResponseBody is the type of the "control-plane"
@@ -910,9 +910,9 @@ type DeleteDatabaseInvalidInputResponseBody struct {
 // error.
 type DeleteDatabaseNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // DeleteDatabaseServerErrorResponseBody is the type of the "control-plane"
@@ -920,9 +920,9 @@ type DeleteDatabaseNotFoundResponseBody struct {
 // error.
 type DeleteDatabaseServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // BackupDatabaseNodeClusterNotInitializedResponseBody is the type of the
@@ -930,9 +930,9 @@ type DeleteDatabaseServerErrorResponseBody struct {
 // for the "cluster_not_initialized" error.
 type BackupDatabaseNodeClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // BackupDatabaseNodeDatabaseNotModifiableResponseBody is the type of the
@@ -940,9 +940,9 @@ type BackupDatabaseNodeClusterNotInitializedResponseBody struct {
 // for the "database_not_modifiable" error.
 type BackupDatabaseNodeDatabaseNotModifiableResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // BackupDatabaseNodeOperationAlreadyInProgressResponseBody is the type of the
@@ -950,9 +950,9 @@ type BackupDatabaseNodeDatabaseNotModifiableResponseBody struct {
 // for the "operation_already_in_progress" error.
 type BackupDatabaseNodeOperationAlreadyInProgressResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // BackupDatabaseNodeInvalidInputResponseBody is the type of the
@@ -960,9 +960,9 @@ type BackupDatabaseNodeOperationAlreadyInProgressResponseBody struct {
 // for the "invalid_input" error.
 type BackupDatabaseNodeInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // BackupDatabaseNodeNotFoundResponseBody is the type of the "control-plane"
@@ -970,9 +970,9 @@ type BackupDatabaseNodeInvalidInputResponseBody struct {
 // "not_found" error.
 type BackupDatabaseNodeNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // BackupDatabaseNodeServerErrorResponseBody is the type of the "control-plane"
@@ -980,9 +980,9 @@ type BackupDatabaseNodeNotFoundResponseBody struct {
 // "server_error" error.
 type BackupDatabaseNodeServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // SwitchoverDatabaseNodeClusterNotInitializedResponseBody is the type of the
@@ -990,9 +990,9 @@ type BackupDatabaseNodeServerErrorResponseBody struct {
 // body for the "cluster_not_initialized" error.
 type SwitchoverDatabaseNodeClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // SwitchoverDatabaseNodeDatabaseNotModifiableResponseBody is the type of the
@@ -1000,9 +1000,9 @@ type SwitchoverDatabaseNodeClusterNotInitializedResponseBody struct {
 // body for the "database_not_modifiable" error.
 type SwitchoverDatabaseNodeDatabaseNotModifiableResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // SwitchoverDatabaseNodeOperationAlreadyInProgressResponseBody is the type of
@@ -1010,9 +1010,9 @@ type SwitchoverDatabaseNodeDatabaseNotModifiableResponseBody struct {
 // response body for the "operation_already_in_progress" error.
 type SwitchoverDatabaseNodeOperationAlreadyInProgressResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // SwitchoverDatabaseNodeInvalidInputResponseBody is the type of the
@@ -1020,9 +1020,9 @@ type SwitchoverDatabaseNodeOperationAlreadyInProgressResponseBody struct {
 // body for the "invalid_input" error.
 type SwitchoverDatabaseNodeInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // SwitchoverDatabaseNodeNotFoundResponseBody is the type of the
@@ -1030,9 +1030,9 @@ type SwitchoverDatabaseNodeInvalidInputResponseBody struct {
 // body for the "not_found" error.
 type SwitchoverDatabaseNodeNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // SwitchoverDatabaseNodeServerErrorResponseBody is the type of the
@@ -1040,9 +1040,9 @@ type SwitchoverDatabaseNodeNotFoundResponseBody struct {
 // body for the "server_error" error.
 type SwitchoverDatabaseNodeServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // FailoverDatabaseNodeClusterNotInitializedResponseBody is the type of the
@@ -1050,9 +1050,9 @@ type SwitchoverDatabaseNodeServerErrorResponseBody struct {
 // for the "cluster_not_initialized" error.
 type FailoverDatabaseNodeClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // FailoverDatabaseNodeDatabaseNotModifiableResponseBody is the type of the
@@ -1060,9 +1060,9 @@ type FailoverDatabaseNodeClusterNotInitializedResponseBody struct {
 // for the "database_not_modifiable" error.
 type FailoverDatabaseNodeDatabaseNotModifiableResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // FailoverDatabaseNodeOperationAlreadyInProgressResponseBody is the type of
@@ -1070,9 +1070,9 @@ type FailoverDatabaseNodeDatabaseNotModifiableResponseBody struct {
 // body for the "operation_already_in_progress" error.
 type FailoverDatabaseNodeOperationAlreadyInProgressResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // FailoverDatabaseNodeInvalidInputResponseBody is the type of the
@@ -1080,9 +1080,9 @@ type FailoverDatabaseNodeOperationAlreadyInProgressResponseBody struct {
 // for the "invalid_input" error.
 type FailoverDatabaseNodeInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // FailoverDatabaseNodeNotFoundResponseBody is the type of the "control-plane"
@@ -1090,9 +1090,9 @@ type FailoverDatabaseNodeInvalidInputResponseBody struct {
 // "not_found" error.
 type FailoverDatabaseNodeNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // FailoverDatabaseNodeServerErrorResponseBody is the type of the
@@ -1100,9 +1100,9 @@ type FailoverDatabaseNodeNotFoundResponseBody struct {
 // for the "server_error" error.
 type FailoverDatabaseNodeServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // ListDatabaseTasksClusterNotInitializedResponseBody is the type of the
@@ -1110,9 +1110,9 @@ type FailoverDatabaseNodeServerErrorResponseBody struct {
 // for the "cluster_not_initialized" error.
 type ListDatabaseTasksClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // ListDatabaseTasksInvalidInputResponseBody is the type of the "control-plane"
@@ -1120,9 +1120,9 @@ type ListDatabaseTasksClusterNotInitializedResponseBody struct {
 // "invalid_input" error.
 type ListDatabaseTasksInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // ListDatabaseTasksNotFoundResponseBody is the type of the "control-plane"
@@ -1130,9 +1130,9 @@ type ListDatabaseTasksInvalidInputResponseBody struct {
 // "not_found" error.
 type ListDatabaseTasksNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // ListDatabaseTasksServerErrorResponseBody is the type of the "control-plane"
@@ -1140,9 +1140,9 @@ type ListDatabaseTasksNotFoundResponseBody struct {
 // "server_error" error.
 type ListDatabaseTasksServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetDatabaseTaskClusterNotInitializedResponseBody is the type of the
@@ -1150,9 +1150,9 @@ type ListDatabaseTasksServerErrorResponseBody struct {
 // the "cluster_not_initialized" error.
 type GetDatabaseTaskClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetDatabaseTaskInvalidInputResponseBody is the type of the "control-plane"
@@ -1160,9 +1160,9 @@ type GetDatabaseTaskClusterNotInitializedResponseBody struct {
 // "invalid_input" error.
 type GetDatabaseTaskInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetDatabaseTaskNotFoundResponseBody is the type of the "control-plane"
@@ -1170,9 +1170,9 @@ type GetDatabaseTaskInvalidInputResponseBody struct {
 // error.
 type GetDatabaseTaskNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetDatabaseTaskServerErrorResponseBody is the type of the "control-plane"
@@ -1180,9 +1180,9 @@ type GetDatabaseTaskNotFoundResponseBody struct {
 // "server_error" error.
 type GetDatabaseTaskServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetDatabaseTaskLogClusterNotInitializedResponseBody is the type of the
@@ -1190,9 +1190,9 @@ type GetDatabaseTaskServerErrorResponseBody struct {
 // for the "cluster_not_initialized" error.
 type GetDatabaseTaskLogClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetDatabaseTaskLogInvalidInputResponseBody is the type of the
@@ -1200,9 +1200,9 @@ type GetDatabaseTaskLogClusterNotInitializedResponseBody struct {
 // for the "invalid_input" error.
 type GetDatabaseTaskLogInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetDatabaseTaskLogNotFoundResponseBody is the type of the "control-plane"
@@ -1210,9 +1210,9 @@ type GetDatabaseTaskLogInvalidInputResponseBody struct {
 // "not_found" error.
 type GetDatabaseTaskLogNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetDatabaseTaskLogServerErrorResponseBody is the type of the "control-plane"
@@ -1220,9 +1220,9 @@ type GetDatabaseTaskLogNotFoundResponseBody struct {
 // "server_error" error.
 type GetDatabaseTaskLogServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // ListHostTasksClusterNotInitializedResponseBody is the type of the
@@ -1230,9 +1230,9 @@ type GetDatabaseTaskLogServerErrorResponseBody struct {
 // the "cluster_not_initialized" error.
 type ListHostTasksClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // ListHostTasksInvalidInputResponseBody is the type of the "control-plane"
@@ -1240,18 +1240,18 @@ type ListHostTasksClusterNotInitializedResponseBody struct {
 // "invalid_input" error.
 type ListHostTasksInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // ListHostTasksNotFoundResponseBody is the type of the "control-plane" service
 // "list-host-tasks" endpoint HTTP response body for the "not_found" error.
 type ListHostTasksNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // ListHostTasksServerErrorResponseBody is the type of the "control-plane"
@@ -1259,9 +1259,9 @@ type ListHostTasksNotFoundResponseBody struct {
 // error.
 type ListHostTasksServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetHostTaskClusterNotInitializedResponseBody is the type of the
@@ -1269,9 +1269,9 @@ type ListHostTasksServerErrorResponseBody struct {
 // "cluster_not_initialized" error.
 type GetHostTaskClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetHostTaskInvalidInputResponseBody is the type of the "control-plane"
@@ -1279,18 +1279,18 @@ type GetHostTaskClusterNotInitializedResponseBody struct {
 // error.
 type GetHostTaskInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetHostTaskNotFoundResponseBody is the type of the "control-plane" service
 // "get-host-task" endpoint HTTP response body for the "not_found" error.
 type GetHostTaskNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetHostTaskServerErrorResponseBody is the type of the "control-plane"
@@ -1298,9 +1298,9 @@ type GetHostTaskNotFoundResponseBody struct {
 // error.
 type GetHostTaskServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetHostTaskLogClusterNotInitializedResponseBody is the type of the
@@ -1308,9 +1308,9 @@ type GetHostTaskServerErrorResponseBody struct {
 // the "cluster_not_initialized" error.
 type GetHostTaskLogClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetHostTaskLogInvalidInputResponseBody is the type of the "control-plane"
@@ -1318,9 +1318,9 @@ type GetHostTaskLogClusterNotInitializedResponseBody struct {
 // "invalid_input" error.
 type GetHostTaskLogInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetHostTaskLogNotFoundResponseBody is the type of the "control-plane"
@@ -1328,9 +1328,9 @@ type GetHostTaskLogInvalidInputResponseBody struct {
 // error.
 type GetHostTaskLogNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetHostTaskLogServerErrorResponseBody is the type of the "control-plane"
@@ -1338,9 +1338,9 @@ type GetHostTaskLogNotFoundResponseBody struct {
 // "server_error" error.
 type GetHostTaskLogServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // ListTasksClusterNotInitializedResponseBody is the type of the
@@ -1348,27 +1348,27 @@ type GetHostTaskLogServerErrorResponseBody struct {
 // "cluster_not_initialized" error.
 type ListTasksClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // ListTasksInvalidInputResponseBody is the type of the "control-plane" service
 // "list-tasks" endpoint HTTP response body for the "invalid_input" error.
 type ListTasksInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // ListTasksServerErrorResponseBody is the type of the "control-plane" service
 // "list-tasks" endpoint HTTP response body for the "server_error" error.
 type ListTasksServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // RestoreDatabaseClusterNotInitializedResponseBody is the type of the
@@ -1376,9 +1376,9 @@ type ListTasksServerErrorResponseBody struct {
 // the "cluster_not_initialized" error.
 type RestoreDatabaseClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // RestoreDatabaseDatabaseNotModifiableResponseBody is the type of the
@@ -1386,9 +1386,9 @@ type RestoreDatabaseClusterNotInitializedResponseBody struct {
 // the "database_not_modifiable" error.
 type RestoreDatabaseDatabaseNotModifiableResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // RestoreDatabaseOperationAlreadyInProgressResponseBody is the type of the
@@ -1396,9 +1396,9 @@ type RestoreDatabaseDatabaseNotModifiableResponseBody struct {
 // the "operation_already_in_progress" error.
 type RestoreDatabaseOperationAlreadyInProgressResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // RestoreDatabaseInvalidInputResponseBody is the type of the "control-plane"
@@ -1406,9 +1406,9 @@ type RestoreDatabaseOperationAlreadyInProgressResponseBody struct {
 // "invalid_input" error.
 type RestoreDatabaseInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // RestoreDatabaseNotFoundResponseBody is the type of the "control-plane"
@@ -1416,9 +1416,9 @@ type RestoreDatabaseInvalidInputResponseBody struct {
 // error.
 type RestoreDatabaseNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // RestoreDatabaseServerErrorResponseBody is the type of the "control-plane"
@@ -1426,18 +1426,18 @@ type RestoreDatabaseNotFoundResponseBody struct {
 // "server_error" error.
 type RestoreDatabaseServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // GetVersionServerErrorResponseBody is the type of the "control-plane" service
 // "get-version" endpoint HTTP response body for the "server_error" error.
 type GetVersionServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // RestartInstanceClusterNotInitializedResponseBody is the type of the
@@ -1445,9 +1445,9 @@ type GetVersionServerErrorResponseBody struct {
 // the "cluster_not_initialized" error.
 type RestartInstanceClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // RestartInstanceInvalidInputResponseBody is the type of the "control-plane"
@@ -1455,9 +1455,9 @@ type RestartInstanceClusterNotInitializedResponseBody struct {
 // "invalid_input" error.
 type RestartInstanceInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // RestartInstanceNotFoundResponseBody is the type of the "control-plane"
@@ -1465,9 +1465,9 @@ type RestartInstanceInvalidInputResponseBody struct {
 // error.
 type RestartInstanceNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // RestartInstanceServerErrorResponseBody is the type of the "control-plane"
@@ -1475,9 +1475,9 @@ type RestartInstanceNotFoundResponseBody struct {
 // "server_error" error.
 type RestartInstanceServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // StopInstanceClusterNotInitializedResponseBody is the type of the
@@ -1485,9 +1485,9 @@ type RestartInstanceServerErrorResponseBody struct {
 // "cluster_not_initialized" error.
 type StopInstanceClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // StopInstanceInvalidInputResponseBody is the type of the "control-plane"
@@ -1495,18 +1495,18 @@ type StopInstanceClusterNotInitializedResponseBody struct {
 // error.
 type StopInstanceInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // StopInstanceNotFoundResponseBody is the type of the "control-plane" service
 // "stop-instance" endpoint HTTP response body for the "not_found" error.
 type StopInstanceNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // StopInstanceServerErrorResponseBody is the type of the "control-plane"
@@ -1514,9 +1514,9 @@ type StopInstanceNotFoundResponseBody struct {
 // error.
 type StopInstanceServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // StartInstanceClusterNotInitializedResponseBody is the type of the
@@ -1524,9 +1524,9 @@ type StopInstanceServerErrorResponseBody struct {
 // "cluster_not_initialized" error.
 type StartInstanceClusterNotInitializedResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // StartInstanceInvalidInputResponseBody is the type of the "control-plane"
@@ -1534,18 +1534,18 @@ type StartInstanceClusterNotInitializedResponseBody struct {
 // error.
 type StartInstanceInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // StartInstanceNotFoundResponseBody is the type of the "control-plane" service
 // "start-instance" endpoint HTTP response body for the "not_found" error.
 type StartInstanceNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // StartInstanceServerErrorResponseBody is the type of the "control-plane"
@@ -1553,9 +1553,9 @@ type StartInstanceNotFoundResponseBody struct {
 // error.
 type StartInstanceServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // CancelDatabaseTaskNotFoundResponseBody is the type of the "control-plane"
@@ -1563,9 +1563,9 @@ type StartInstanceServerErrorResponseBody struct {
 // "not_found" error.
 type CancelDatabaseTaskNotFoundResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // CancelDatabaseTaskInvalidInputResponseBody is the type of the
@@ -1573,9 +1573,9 @@ type CancelDatabaseTaskNotFoundResponseBody struct {
 // for the "invalid_input" error.
 type CancelDatabaseTaskInvalidInputResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // CancelDatabaseTaskServerErrorResponseBody is the type of the "control-plane"
@@ -1583,1140 +1583,1140 @@ type CancelDatabaseTaskInvalidInputResponseBody struct {
 // "server_error" error.
 type CancelDatabaseTaskServerErrorResponseBody struct {
 	// The name of the error.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The error message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 }
 
 // EtcdClusterMemberResponseBody is used to define fields on response body
 // types.
 type EtcdClusterMemberResponseBody struct {
 	// The name of the Etcd cluster member.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The Etcd peer endpoint for this cluster member.
-	PeerUrls []string `form:"peer_urls" json:"peer_urls" xml:"peer_urls"`
+	PeerUrls []string `json:"peer_urls"`
 	// The Etcd client endpoint for this cluster member.
-	ClientUrls []string `form:"client_urls" json:"client_urls" xml:"client_urls"`
+	ClientUrls []string `json:"client_urls"`
 }
 
 // ClusterCredentialsResponseBody is used to define fields on response body
 // types.
 type ClusterCredentialsResponseBody struct {
 	// The Etcd username for the new host.
-	Username string `form:"username" json:"username" xml:"username"`
+	Username string `json:"username"`
 	// The Etcd password for the new host.
-	Password string `form:"password" json:"password" xml:"password"`
+	Password string `json:"password"`
 	// The base64-encoded CA certificate for the cluster.
-	CaCert string `form:"ca_cert" json:"ca_cert" xml:"ca_cert"`
+	CaCert string `json:"ca_cert"`
 	// The base64-encoded etcd client certificate for the new cluster member.
-	ClientCert string `form:"client_cert" json:"client_cert" xml:"client_cert"`
+	ClientCert string `json:"client_cert"`
 	// The base64-encoded etcd client key for the new cluster member.
-	ClientKey string `form:"client_key" json:"client_key" xml:"client_key"`
+	ClientKey string `json:"client_key"`
 	// The base64-encoded etcd server certificate for the new cluster member.
-	ServerCert string `form:"server_cert" json:"server_cert" xml:"server_cert"`
+	ServerCert string `json:"server_cert"`
 	// The base64-encoded etcd server key for the new cluster member.
-	ServerKey string `form:"server_key" json:"server_key" xml:"server_key"`
+	ServerKey string `json:"server_key"`
 }
 
 // ClusterStatusResponseBody is used to define fields on response body types.
 type ClusterStatusResponseBody struct {
 	// The current state of the cluster.
-	State string `form:"state" json:"state" xml:"state"`
+	State string `json:"state"`
 }
 
 // HostResponseBody is used to define fields on response body types.
 type HostResponseBody struct {
 	// Unique identifier for the host.
-	ID string `form:"id" json:"id" xml:"id"`
+	ID string `json:"id"`
 	// The orchestrator used by this host.
-	Orchestrator string `form:"orchestrator" json:"orchestrator" xml:"orchestrator"`
+	Orchestrator string `json:"orchestrator"`
 	// The data directory for the host.
-	DataDir string `form:"data_dir" json:"data_dir" xml:"data_dir"`
+	DataDir string `json:"data_dir"`
 	// The cohort that this host belongs to.
-	Cohort *HostCohortResponseBody `form:"cohort,omitempty" json:"cohort,omitempty" xml:"cohort,omitempty"`
+	Cohort *HostCohortResponseBody `json:"cohort,omitempty"`
 	// The hostname of this host.
-	Hostname string `form:"hostname" json:"hostname" xml:"hostname"`
+	Hostname string `json:"hostname"`
 	// The IPv4 address of this host.
-	Ipv4Address string `form:"ipv4_address" json:"ipv4_address" xml:"ipv4_address"`
+	Ipv4Address string `json:"ipv4_address"`
 	// The number of CPUs on this host.
-	Cpus *int `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	Cpus *int `json:"cpus,omitempty"`
 	// The amount of memory available on this host.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	Memory *string `json:"memory,omitempty"`
 	// Current status of the host.
-	Status *HostStatusResponseBody `form:"status" json:"status" xml:"status"`
+	Status *HostStatusResponseBody `json:"status"`
 	// The default PgEdge version for this host.
-	DefaultPgedgeVersion *PgEdgeVersionResponseBody `form:"default_pgedge_version,omitempty" json:"default_pgedge_version,omitempty" xml:"default_pgedge_version,omitempty"`
+	DefaultPgedgeVersion *PgEdgeVersionResponseBody `json:"default_pgedge_version,omitempty"`
 	// The PgEdge versions supported by this host.
-	SupportedPgedgeVersions []*PgEdgeVersionResponseBody `form:"supported_pgedge_versions,omitempty" json:"supported_pgedge_versions,omitempty" xml:"supported_pgedge_versions,omitempty"`
+	SupportedPgedgeVersions []*PgEdgeVersionResponseBody `json:"supported_pgedge_versions,omitempty"`
 	// The etcd mode for this host.
-	EtcdMode *string `form:"etcd_mode,omitempty" json:"etcd_mode,omitempty" xml:"etcd_mode,omitempty"`
+	EtcdMode *string `json:"etcd_mode,omitempty"`
 }
 
 // HostCohortResponseBody is used to define fields on response body types.
 type HostCohortResponseBody struct {
 	// The type of cohort that the host belongs to.
-	Type string `form:"type" json:"type" xml:"type"`
+	Type string `json:"type"`
 	// The member ID of the host within the cohort.
-	MemberID string `form:"member_id" json:"member_id" xml:"member_id"`
+	MemberID string `json:"member_id"`
 	// Indicates if the host is a control node in the cohort.
-	ControlAvailable bool `form:"control_available" json:"control_available" xml:"control_available"`
+	ControlAvailable bool `json:"control_available"`
 }
 
 // HostStatusResponseBody is used to define fields on response body types.
 type HostStatusResponseBody struct {
-	State string `form:"state" json:"state" xml:"state"`
+	State string `json:"state"`
 	// The last time the host status was updated.
-	UpdatedAt string `form:"updated_at" json:"updated_at" xml:"updated_at"`
+	UpdatedAt string `json:"updated_at"`
 	// The status of each component of the host.
-	Components map[string]*ComponentStatusResponseBody `form:"components" json:"components" xml:"components"`
+	Components map[string]*ComponentStatusResponseBody `json:"components"`
 }
 
 // ComponentStatusResponseBody is used to define fields on response body types.
 type ComponentStatusResponseBody struct {
 	// Indicates if the component is healthy.
-	Healthy bool `form:"healthy" json:"healthy" xml:"healthy"`
+	Healthy bool `json:"healthy"`
 	// Error message from any errors that occurred during the health check.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Error *string `json:"error,omitempty"`
 	// Additional details about the component.
-	Details map[string]any `form:"details,omitempty" json:"details,omitempty" xml:"details,omitempty"`
+	Details map[string]any `json:"details,omitempty"`
 }
 
 // PgEdgeVersionResponseBody is used to define fields on response body types.
 type PgEdgeVersionResponseBody struct {
 	// The Postgres major and minor version.
-	PostgresVersion string `form:"postgres_version" json:"postgres_version" xml:"postgres_version"`
+	PostgresVersion string `json:"postgres_version"`
 	// The Spock major version.
-	SpockVersion string `form:"spock_version" json:"spock_version" xml:"spock_version"`
+	SpockVersion string `json:"spock_version"`
 }
 
 // TaskResponseBody is used to define fields on response body types.
 type TaskResponseBody struct {
 	// The parent task ID of the task.
-	ParentID *string `form:"parent_id,omitempty" json:"parent_id,omitempty" xml:"parent_id,omitempty"`
+	ParentID *string `json:"parent_id,omitempty"`
 	// The scope of the task (database or host).
-	Scope string `form:"scope" json:"scope" xml:"scope"`
+	Scope string `json:"scope"`
 	// The entity ID (database_id or host_id) that this task belongs to.
-	EntityID string `form:"entity_id" json:"entity_id" xml:"entity_id"`
+	EntityID string `json:"entity_id"`
 	// The database ID of the task.
-	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	DatabaseID *string `json:"database_id,omitempty"`
 	// The name of the node that the task is operating on.
-	NodeName *string `form:"node_name,omitempty" json:"node_name,omitempty" xml:"node_name,omitempty"`
+	NodeName *string `json:"node_name,omitempty"`
 	// The ID of the instance that the task is operating on.
-	InstanceID *string `form:"instance_id,omitempty" json:"instance_id,omitempty" xml:"instance_id,omitempty"`
+	InstanceID *string `json:"instance_id,omitempty"`
 	// The ID of the host that the task is running on.
-	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	HostID *string `json:"host_id,omitempty"`
 	// The unique ID of the task.
-	TaskID string `form:"task_id" json:"task_id" xml:"task_id"`
+	TaskID string `json:"task_id"`
 	// The time when the task was created.
-	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	CreatedAt string `json:"created_at"`
 	// The time when the task was completed.
-	CompletedAt *string `form:"completed_at,omitempty" json:"completed_at,omitempty" xml:"completed_at,omitempty"`
+	CompletedAt *string `json:"completed_at,omitempty"`
 	// The type of the task.
-	Type string `form:"type" json:"type" xml:"type"`
+	Type string `json:"type"`
 	// The status of the task.
-	Status string `form:"status" json:"status" xml:"status"`
+	Status string `json:"status"`
 	// The error message if the task failed.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Error *string `json:"error,omitempty"`
 }
 
 // DatabaseSummaryResponseBody is used to define fields on response body types.
 type DatabaseSummaryResponseBody struct {
 	// Unique identifier for the database.
-	ID string `form:"id" json:"id" xml:"id"`
+	ID string `json:"id"`
 	// Unique identifier for the database's owner.
-	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
+	TenantID *string `json:"tenant_id,omitempty"`
 	// The time that the database was created.
-	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	CreatedAt string `json:"created_at"`
 	// The time that the database was last updated.
-	UpdatedAt string `form:"updated_at" json:"updated_at" xml:"updated_at"`
+	UpdatedAt string `json:"updated_at"`
 	// Current state of the database.
-	State string `form:"state" json:"state" xml:"state"`
+	State string `json:"state"`
 	// All of the instances in the database.
-	Instances []*InstanceResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	Instances []*InstanceResponseBody `json:"instances,omitempty"`
 }
 
 // InstanceResponseBody is used to define fields on response body types.
 type InstanceResponseBody struct {
 	// Unique identifier for the instance.
-	ID string `form:"id" json:"id" xml:"id"`
+	ID string `json:"id"`
 	// The ID of the host this instance is running on.
-	HostID string `form:"host_id" json:"host_id" xml:"host_id"`
+	HostID string `json:"host_id"`
 	// The Spock node name for this instance.
-	NodeName string `form:"node_name" json:"node_name" xml:"node_name"`
+	NodeName string `json:"node_name"`
 	// The time that the instance was created.
-	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	CreatedAt string `json:"created_at"`
 	// The time that the instance was last modified.
-	UpdatedAt string `form:"updated_at" json:"updated_at" xml:"updated_at"`
+	UpdatedAt string `json:"updated_at"`
 	// The time that the instance status information was last updated.
-	StatusUpdatedAt *string `form:"status_updated_at,omitempty" json:"status_updated_at,omitempty" xml:"status_updated_at,omitempty"`
-	State           string  `form:"state" json:"state" xml:"state"`
+	StatusUpdatedAt *string `json:"status_updated_at,omitempty"`
+	State           string  `json:"state"`
 	// Connection information for the instance.
-	ConnectionInfo *InstanceConnectionInfoResponseBody `form:"connection_info,omitempty" json:"connection_info,omitempty" xml:"connection_info,omitempty"`
+	ConnectionInfo *InstanceConnectionInfoResponseBody `json:"connection_info,omitempty"`
 	// Postgres status information for the instance.
-	Postgres *InstancePostgresStatusResponseBody `form:"postgres,omitempty" json:"postgres,omitempty" xml:"postgres,omitempty"`
+	Postgres *InstancePostgresStatusResponseBody `json:"postgres,omitempty"`
 	// Spock status information for the instance.
-	Spock *InstanceSpockStatusResponseBody `form:"spock,omitempty" json:"spock,omitempty" xml:"spock,omitempty"`
+	Spock *InstanceSpockStatusResponseBody `json:"spock,omitempty"`
 	// An error message if the instance is in an error state.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Error *string `json:"error,omitempty"`
 }
 
 // InstanceConnectionInfoResponseBody is used to define fields on response body
 // types.
 type InstanceConnectionInfoResponseBody struct {
 	// The hostname of the host that's running this instance.
-	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
+	Hostname *string `json:"hostname,omitempty"`
 	// The IPv4 address of the host that's running this instance.
-	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
+	Ipv4Address *string `json:"ipv4_address,omitempty"`
 	// The host port that Postgres is listening on for this instance.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	Port *int `json:"port,omitempty"`
 }
 
 // InstancePostgresStatusResponseBody is used to define fields on response body
 // types.
 type InstancePostgresStatusResponseBody struct {
 	// The version of Postgres for this instance.
-	Version      *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
-	PatroniState *string `form:"patroni_state,omitempty" json:"patroni_state,omitempty" xml:"patroni_state,omitempty"`
-	Role         *string `form:"role,omitempty" json:"role,omitempty" xml:"role,omitempty"`
+	Version      *string `json:"version,omitempty"`
+	PatroniState *string `json:"patroni_state,omitempty"`
+	Role         *string `json:"role,omitempty"`
 	// True if this instance has a pending restart from a configuration change.
-	PendingRestart *bool `form:"pending_restart,omitempty" json:"pending_restart,omitempty" xml:"pending_restart,omitempty"`
+	PendingRestart *bool `json:"pending_restart,omitempty"`
 	// True if Patroni is paused for this instance.
-	PatroniPaused *bool `form:"patroni_paused,omitempty" json:"patroni_paused,omitempty" xml:"patroni_paused,omitempty"`
+	PatroniPaused *bool `json:"patroni_paused,omitempty"`
 }
 
 // InstanceSpockStatusResponseBody is used to define fields on response body
 // types.
 type InstanceSpockStatusResponseBody struct {
 	// The current spock.readonly setting.
-	ReadOnly *string `form:"read_only,omitempty" json:"read_only,omitempty" xml:"read_only,omitempty"`
+	ReadOnly *string `json:"read_only,omitempty"`
 	// The version of Spock for this instance.
-	Version *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
+	Version *string `json:"version,omitempty"`
 	// Status information for this instance's Spock subscriptions.
-	Subscriptions []*InstanceSubscriptionResponseBody `form:"subscriptions,omitempty" json:"subscriptions,omitempty" xml:"subscriptions,omitempty"`
+	Subscriptions []*InstanceSubscriptionResponseBody `json:"subscriptions,omitempty"`
 }
 
 // InstanceSubscriptionResponseBody is used to define fields on response body
 // types.
 type InstanceSubscriptionResponseBody struct {
 	// The Spock node name of the provider for this subscription.
-	ProviderNode string `form:"provider_node" json:"provider_node" xml:"provider_node"`
+	ProviderNode string `json:"provider_node"`
 	// The name of the subscription.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The current status of the subscription.
-	Status string `form:"status" json:"status" xml:"status"`
+	Status string `json:"status"`
 }
 
 // DatabaseResponseBody is used to define fields on response body types.
 type DatabaseResponseBody struct {
 	// Unique identifier for the database.
-	ID string `form:"id" json:"id" xml:"id"`
+	ID string `json:"id"`
 	// Unique identifier for the database's owner.
-	TenantID *string `form:"tenant_id,omitempty" json:"tenant_id,omitempty" xml:"tenant_id,omitempty"`
+	TenantID *string `json:"tenant_id,omitempty"`
 	// The time that the database was created.
-	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	CreatedAt string `json:"created_at"`
 	// The time that the database was last updated.
-	UpdatedAt string `form:"updated_at" json:"updated_at" xml:"updated_at"`
+	UpdatedAt string `json:"updated_at"`
 	// Current state of the database.
-	State string `form:"state" json:"state" xml:"state"`
+	State string `json:"state"`
 	// All of the instances in the database.
-	Instances []*InstanceResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	Instances []*InstanceResponseBody `json:"instances,omitempty"`
 	// Service instances running alongside this database.
-	ServiceInstances []*ServiceInstanceResponseBody `form:"service_instances,omitempty" json:"service_instances,omitempty" xml:"service_instances,omitempty"`
+	ServiceInstances []*ServiceInstanceResponseBody `json:"service_instances,omitempty"`
 	// The user-provided specification for the database.
-	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
+	Spec *DatabaseSpecResponseBody `json:"spec,omitempty"`
 }
 
 // ServiceInstanceResponseBody is used to define fields on response body types.
 type ServiceInstanceResponseBody struct {
 	// Unique identifier for the service instance.
-	ServiceInstanceID string `form:"service_instance_id" json:"service_instance_id" xml:"service_instance_id"`
+	ServiceInstanceID string `json:"service_instance_id"`
 	// The service ID from the DatabaseSpec.
-	ServiceID string `form:"service_id" json:"service_id" xml:"service_id"`
+	ServiceID string `json:"service_id"`
 	// The ID of the database this service belongs to.
-	DatabaseID string `form:"database_id" json:"database_id" xml:"database_id"`
+	DatabaseID string `json:"database_id"`
 	// The ID of the host this service instance is running on.
-	HostID string `form:"host_id" json:"host_id" xml:"host_id"`
+	HostID string `json:"host_id"`
 	// Current state of the service instance.
-	State string `form:"state" json:"state" xml:"state"`
+	State string `json:"state"`
 	// Runtime status information for the service instance.
-	Status *ServiceInstanceStatusResponseBody `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	Status *ServiceInstanceStatusResponseBody `json:"status,omitempty"`
 	// The time that the service instance was created.
-	CreatedAt string `form:"created_at" json:"created_at" xml:"created_at"`
+	CreatedAt string `json:"created_at"`
 	// The time that the service instance was last updated.
-	UpdatedAt string `form:"updated_at" json:"updated_at" xml:"updated_at"`
+	UpdatedAt string `json:"updated_at"`
 	// An error message if the service instance is in an error state.
-	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+	Error *string `json:"error,omitempty"`
 }
 
 // ServiceInstanceStatusResponseBody is used to define fields on response body
 // types.
 type ServiceInstanceStatusResponseBody struct {
 	// The Docker container ID.
-	ContainerID *string `form:"container_id,omitempty" json:"container_id,omitempty" xml:"container_id,omitempty"`
+	ContainerID *string `json:"container_id,omitempty"`
 	// The container image version currently running.
-	ImageVersion *string `form:"image_version,omitempty" json:"image_version,omitempty" xml:"image_version,omitempty"`
+	ImageVersion *string `json:"image_version,omitempty"`
 	// The hostname of the service instance.
-	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
+	Hostname *string `json:"hostname,omitempty"`
 	// The IPv4 address of the service instance.
-	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
+	Ipv4Address *string `json:"ipv4_address,omitempty"`
 	// Port mappings for this service instance.
-	Ports []*PortMappingResponseBody `form:"ports,omitempty" json:"ports,omitempty" xml:"ports,omitempty"`
+	Ports []*PortMappingResponseBody `json:"ports,omitempty"`
 	// Most recent health check result.
-	HealthCheck *HealthCheckResultResponseBody `form:"health_check,omitempty" json:"health_check,omitempty" xml:"health_check,omitempty"`
+	HealthCheck *HealthCheckResultResponseBody `json:"health_check,omitempty"`
 	// The time of the last health check attempt.
-	LastHealthAt *string `form:"last_health_at,omitempty" json:"last_health_at,omitempty" xml:"last_health_at,omitempty"`
+	LastHealthAt *string `json:"last_health_at,omitempty"`
 	// Whether the service is ready to accept requests.
-	ServiceReady *bool `form:"service_ready,omitempty" json:"service_ready,omitempty" xml:"service_ready,omitempty"`
+	ServiceReady *bool `json:"service_ready,omitempty"`
 }
 
 // PortMappingResponseBody is used to define fields on response body types.
 type PortMappingResponseBody struct {
 	// The name of the port (e.g., 'http', 'web-client').
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The port number inside the container.
-	ContainerPort *int `form:"container_port,omitempty" json:"container_port,omitempty" xml:"container_port,omitempty"`
+	ContainerPort *int `json:"container_port,omitempty"`
 	// The port number on the host (if port-forwarded).
-	HostPort *int `form:"host_port,omitempty" json:"host_port,omitempty" xml:"host_port,omitempty"`
+	HostPort *int `json:"host_port,omitempty"`
 }
 
 // HealthCheckResultResponseBody is used to define fields on response body
 // types.
 type HealthCheckResultResponseBody struct {
 	// The health status.
-	Status string `form:"status" json:"status" xml:"status"`
+	Status string `json:"status"`
 	// Optional message about the health status.
-	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	Message *string `json:"message,omitempty"`
 	// The time this health check was performed.
-	CheckedAt string `form:"checked_at" json:"checked_at" xml:"checked_at"`
+	CheckedAt string `json:"checked_at"`
 }
 
 // DatabaseSpecResponseBody is used to define fields on response body types.
 type DatabaseSpecResponseBody struct {
 	// The name of the Postgres database.
-	DatabaseName string `form:"database_name" json:"database_name" xml:"database_name"`
+	DatabaseName string `json:"database_name"`
 	// The Postgres version in 'major.minor' format.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
+	PostgresVersion *string `json:"postgres_version,omitempty"`
 	// The major version of the Spock extension.
-	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
+	SpockVersion *string `json:"spock_version,omitempty"`
 	// The port used by the Postgres database. If the port is 0, each instance will
 	// be assigned a random port. If the port is unspecified, the database will not
 	// be exposed on any port, dependent on orchestrator support for that feature.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	Port *int `json:"port,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
 	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
 	// depends on the orchestrator.
-	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	Cpus *string `json:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database and
 	// to use for tuning Postgres. Defaults to the total available memory on the
 	// host. Whether this limit is enforced depends on the orchestrator.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	Memory *string `json:"memory,omitempty"`
 	// The Spock nodes for this database.
-	Nodes []*DatabaseNodeSpecResponseBody `form:"nodes" json:"nodes" xml:"nodes"`
+	Nodes []*DatabaseNodeSpecResponseBody `json:"nodes"`
 	// The users to create for this database.
-	DatabaseUsers []*DatabaseUserSpecResponseBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
+	DatabaseUsers []*DatabaseUserSpecResponseBody `json:"database_users,omitempty"`
 	// Service instances to run alongside the database (e.g., MCP servers).
-	Services []*ServiceSpecResponseBody `form:"services,omitempty" json:"services,omitempty" xml:"services,omitempty"`
+	Services []*ServiceSpecResponseBody `json:"services,omitempty"`
 	// The backup configuration for this database.
-	BackupConfig *BackupConfigSpecResponseBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
+	BackupConfig *BackupConfigSpecResponseBody `json:"backup_config,omitempty"`
 	// The restore configuration for this database.
-	RestoreConfig *RestoreConfigSpecResponseBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
+	RestoreConfig *RestoreConfigSpecResponseBody `json:"restore_config,omitempty"`
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
-	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
+	PostgresqlConf map[string]any `json:"postgresql_conf,omitempty"`
 	// Orchestrator-specific configuration options.
-	OrchestratorOpts *OrchestratorOptsResponseBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+	OrchestratorOpts *OrchestratorOptsResponseBody `json:"orchestrator_opts,omitempty"`
 }
 
 // DatabaseNodeSpecResponseBody is used to define fields on response body types.
 type DatabaseNodeSpecResponseBody struct {
 	// The name of the database node.
-	Name string `form:"name" json:"name" xml:"name"`
+	Name string `json:"name"`
 	// The IDs of the hosts that should run this node. When multiple hosts are
 	// specified, one host will chosen as a primary, and the others will be read
 	// replicas.
-	HostIds []string `form:"host_ids" json:"host_ids" xml:"host_ids"`
+	HostIds []string `json:"host_ids"`
 	// The Postgres version for this node in 'major.minor' format. Overrides the
 	// Postgres version set in the DatabaseSpec.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
+	PostgresVersion *string `json:"postgres_version,omitempty"`
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	Port *int `json:"port,omitempty"`
 	// The number of CPUs to allocate for the database on this node and to use for
 	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
 	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
 	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
 	// than are available on the host. Whether this limit is enforced depends on
 	// the orchestrator.
-	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	Cpus *string `json:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database on
 	// this node and to use for tuning Postgres. Defaults to the total available
 	// memory on the host. Whether this limit is enforced depends on the
 	// orchestrator.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	Memory *string `json:"memory,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
 	// with the settings provided by control-plane.
-	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
+	PostgresqlConf map[string]any `json:"postgresql_conf,omitempty"`
 	// The backup configuration for this node. Overrides the backup configuration
 	// set in the DatabaseSpec.
-	BackupConfig *BackupConfigSpecResponseBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
+	BackupConfig *BackupConfigSpecResponseBody `json:"backup_config,omitempty"`
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
-	RestoreConfig *RestoreConfigSpecResponseBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
+	RestoreConfig *RestoreConfigSpecResponseBody `json:"restore_config,omitempty"`
 	// Orchestrator-specific configuration options.
-	OrchestratorOpts *OrchestratorOptsResponseBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+	OrchestratorOpts *OrchestratorOptsResponseBody `json:"orchestrator_opts,omitempty"`
 	// The name of the source node to use for sync. This is typically the node
 	// (like 'n1') from which the data will be copied to initialize this new node.
-	SourceNode *string `form:"source_node,omitempty" json:"source_node,omitempty" xml:"source_node,omitempty"`
+	SourceNode *string `json:"source_node,omitempty"`
 }
 
 // BackupConfigSpecResponseBody is used to define fields on response body types.
 type BackupConfigSpecResponseBody struct {
 	// The repositories for this backup configuration.
-	Repositories []*BackupRepositorySpecResponseBody `form:"repositories" json:"repositories" xml:"repositories"`
+	Repositories []*BackupRepositorySpecResponseBody `json:"repositories"`
 	// The schedules for this backup configuration.
-	Schedules []*BackupScheduleSpecResponseBody `form:"schedules,omitempty" json:"schedules,omitempty" xml:"schedules,omitempty"`
+	Schedules []*BackupScheduleSpecResponseBody `json:"schedules,omitempty"`
 }
 
 // BackupRepositorySpecResponseBody is used to define fields on response body
 // types.
 type BackupRepositorySpecResponseBody struct {
 	// The unique identifier of this repository.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	ID *string `json:"id,omitempty"`
 	// The type of this repository.
-	Type string `form:"type" json:"type" xml:"type"`
+	Type string `json:"type"`
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
-	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
+	S3Bucket *string `json:"s3_bucket,omitempty"`
 	// The region of the S3 bucket for this repository. Only applies when type =
 	// 's3'.
-	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
+	S3Region *string `json:"s3_region,omitempty"`
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
-	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	S3Endpoint *string `json:"s3_endpoint,omitempty"`
 	// An optional AWS access key ID to use for this repository. If not provided,
 	// pgbackrest will use the default credential provider chain. This field will
 	// be excluded from the response of all endpoints. It can also be omitted from
 	// update requests to keep the current value.
-	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	S3Key *string `json:"s3_key,omitempty"`
 	// The corresponding secret for the AWS access key ID in s3_key. This field
 	// will be excluded from the response of all endpoints. It can also be omitted
 	// from update requests to keep the current value.
-	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
+	S3KeySecret *string `json:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
-	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
+	GcsBucket *string `json:"gcs_bucket,omitempty"`
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
-	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	GcsEndpoint *string `json:"gcs_endpoint,omitempty"`
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
 	// the service account attached to the instance profile. This field will be
 	// excluded from the response of all endpoints. It can also be omitted from
 	// update requests to keep the current value.
-	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
+	GcsKey *string `json:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
-	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
+	AzureAccount *string `json:"azure_account,omitempty"`
 	// The Azure container name for this repository. Only applies when type =
 	// 'azure'.
-	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
+	AzureContainer *string `json:"azure_container,omitempty"`
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
-	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	AzureEndpoint *string `json:"azure_endpoint,omitempty"`
 	// The Azure storage account access key to use for this repository. This field
 	// will be excluded from the response of all endpoints. It can also be omitted
 	// from update requests to keep the current value.
-	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
+	AzureKey *string `json:"azure_key,omitempty"`
 	// The count of full backups to retain or the time to retain full backups.
-	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
+	RetentionFull *int `json:"retention_full,omitempty"`
 	// The type of measure used for retention_full.
-	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
+	RetentionFullType *string `json:"retention_full_type,omitempty"`
 	// The base path within the repository to store backups. Required for type =
 	// 'posix' and 'cifs'.
-	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	BasePath *string `json:"base_path,omitempty"`
 	// Additional options to apply to this repository.
-	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
+	CustomOptions map[string]string `json:"custom_options,omitempty"`
 }
 
 // BackupScheduleSpecResponseBody is used to define fields on response body
 // types.
 type BackupScheduleSpecResponseBody struct {
 	// The unique identifier for this backup schedule.
-	ID string `form:"id" json:"id" xml:"id"`
+	ID string `json:"id"`
 	// The type of backup to take on this schedule.
-	Type string `form:"type" json:"type" xml:"type"`
+	Type string `json:"type"`
 	// The cron expression for this schedule.
-	CronExpression string `form:"cron_expression" json:"cron_expression" xml:"cron_expression"`
+	CronExpression string `json:"cron_expression"`
 }
 
 // RestoreConfigSpecResponseBody is used to define fields on response body
 // types.
 type RestoreConfigSpecResponseBody struct {
 	// The ID of the database to restore this database from.
-	SourceDatabaseID string `form:"source_database_id" json:"source_database_id" xml:"source_database_id"`
+	SourceDatabaseID string `json:"source_database_id"`
 	// The name of the node to restore this database from.
-	SourceNodeName string `form:"source_node_name" json:"source_node_name" xml:"source_node_name"`
+	SourceNodeName string `json:"source_node_name"`
 	// The name of the database in this repository. The database will be renamed to
 	// the database_name in the DatabaseSpec after it's restored.
-	SourceDatabaseName string `form:"source_database_name" json:"source_database_name" xml:"source_database_name"`
+	SourceDatabaseName string `json:"source_database_name"`
 	// The repository to restore this database from.
-	Repository *RestoreRepositorySpecResponseBody `form:"repository" json:"repository" xml:"repository"`
+	Repository *RestoreRepositorySpecResponseBody `json:"repository"`
 	// Additional options to use when restoring this database. If omitted, the
 	// database will be restored to the latest point in the given repository.
-	RestoreOptions map[string]string `form:"restore_options,omitempty" json:"restore_options,omitempty" xml:"restore_options,omitempty"`
+	RestoreOptions map[string]string `json:"restore_options,omitempty"`
 }
 
 // RestoreRepositorySpecResponseBody is used to define fields on response body
 // types.
 type RestoreRepositorySpecResponseBody struct {
 	// The unique identifier of this repository.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	ID *string `json:"id,omitempty"`
 	// The type of this repository.
-	Type string `form:"type" json:"type" xml:"type"`
+	Type string `json:"type"`
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
-	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
+	S3Bucket *string `json:"s3_bucket,omitempty"`
 	// The region of the S3 bucket for this repository. Only applies when type =
 	// 's3'.
-	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
+	S3Region *string `json:"s3_region,omitempty"`
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
-	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	S3Endpoint *string `json:"s3_endpoint,omitempty"`
 	// An optional AWS access key ID to use for this repository. If not provided,
 	// pgbackrest will use the default credential provider chain.
-	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	S3Key *string `json:"s3_key,omitempty"`
 	// The corresponding secret for the AWS access key ID in s3_key.
-	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
+	S3KeySecret *string `json:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
-	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
+	GcsBucket *string `json:"gcs_bucket,omitempty"`
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
-	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	GcsEndpoint *string `json:"gcs_endpoint,omitempty"`
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
 	// the service account attached to the instance profile.
-	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
+	GcsKey *string `json:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
-	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
+	AzureAccount *string `json:"azure_account,omitempty"`
 	// The Azure container name for this repository. Only applies when type =
 	// 'azure'.
-	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
+	AzureContainer *string `json:"azure_container,omitempty"`
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
-	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	AzureEndpoint *string `json:"azure_endpoint,omitempty"`
 	// An optional Azure storage account access key to use for this repository. If
 	// not provided, pgbackrest will use the VM's managed identity.
-	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
+	AzureKey *string `json:"azure_key,omitempty"`
 	// The base path within the repository to store backups. Required for type =
 	// 'posix' and 'cifs'.
-	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	BasePath *string `json:"base_path,omitempty"`
 	// Additional options to apply to this repository.
-	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
+	CustomOptions map[string]string `json:"custom_options,omitempty"`
 }
 
 // OrchestratorOptsResponseBody is used to define fields on response body types.
 type OrchestratorOptsResponseBody struct {
 	// Swarm-specific configuration.
-	Swarm *SwarmOptsResponseBody `form:"swarm,omitempty" json:"swarm,omitempty" xml:"swarm,omitempty"`
+	Swarm *SwarmOptsResponseBody `json:"swarm,omitempty"`
 }
 
 // SwarmOptsResponseBody is used to define fields on response body types.
 type SwarmOptsResponseBody struct {
 	// A list of extra volumes to mount. Each entry defines a host and container
 	// path.
-	ExtraVolumes []*ExtraVolumesSpecResponseBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
+	ExtraVolumes []*ExtraVolumesSpecResponseBody `json:"extra_volumes,omitempty"`
 	// A list of additional Docker Swarm networks to attach containers in this
 	// database to.
-	ExtraNetworks []*ExtraNetworkSpecResponseBody `form:"extra_networks,omitempty" json:"extra_networks,omitempty" xml:"extra_networks,omitempty"`
+	ExtraNetworks []*ExtraNetworkSpecResponseBody `json:"extra_networks,omitempty"`
 	// Arbitrary labels to apply to the Docker Swarm service
-	ExtraLabels map[string]string `form:"extra_labels,omitempty" json:"extra_labels,omitempty" xml:"extra_labels,omitempty"`
+	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
 }
 
 // ExtraVolumesSpecResponseBody is used to define fields on response body types.
 type ExtraVolumesSpecResponseBody struct {
 	// The host path for the volume.
-	HostPath string `form:"host_path" json:"host_path" xml:"host_path"`
+	HostPath string `json:"host_path"`
 	// The path inside the container where the volume will be mounted.
-	DestinationPath string `form:"destination_path" json:"destination_path" xml:"destination_path"`
+	DestinationPath string `json:"destination_path"`
 }
 
 // ExtraNetworkSpecResponseBody is used to define fields on response body types.
 type ExtraNetworkSpecResponseBody struct {
 	// The name or ID of the network to connect to.
-	ID string `form:"id" json:"id" xml:"id"`
+	ID string `json:"id"`
 	// Optional network-scoped aliases for the container.
-	Aliases []string `form:"aliases,omitempty" json:"aliases,omitempty" xml:"aliases,omitempty"`
+	Aliases []string `json:"aliases,omitempty"`
 	// Optional driver options for the network connection.
-	DriverOpts map[string]string `form:"driver_opts,omitempty" json:"driver_opts,omitempty" xml:"driver_opts,omitempty"`
+	DriverOpts map[string]string `json:"driver_opts,omitempty"`
 }
 
 // DatabaseUserSpecResponseBody is used to define fields on response body types.
 type DatabaseUserSpecResponseBody struct {
 	// The username for this database user.
-	Username string `form:"username" json:"username" xml:"username"`
+	Username string `json:"username"`
 	// The password for this database user. This field will be excluded from the
 	// response of all endpoints. It can also be omitted from update requests to
 	// keep the current value.
-	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
+	Password *string `json:"password,omitempty"`
 	// If true, this user will be granted database ownership.
-	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
+	DbOwner *bool `json:"db_owner,omitempty"`
 	// The attributes to assign to this database user.
-	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
+	Attributes []string `json:"attributes,omitempty"`
 	// The roles to assign to this database user.
-	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
+	Roles []string `json:"roles,omitempty"`
 }
 
 // ServiceSpecResponseBody is used to define fields on response body types.
 type ServiceSpecResponseBody struct {
 	// The unique identifier for this service.
-	ServiceID string `form:"service_id" json:"service_id" xml:"service_id"`
+	ServiceID string `json:"service_id"`
 	// The type of service to run.
-	ServiceType string `form:"service_type" json:"service_type" xml:"service_type"`
+	ServiceType string `json:"service_type"`
 	// The version of the service in semver format (e.g., '1.0.0') or the literal
 	// 'latest'.
-	Version string `form:"version" json:"version" xml:"version"`
+	Version string `json:"version"`
 	// The IDs of the hosts that should run this service. One service instance will
 	// be created per host.
-	HostIds []string `form:"host_ids" json:"host_ids" xml:"host_ids"`
+	HostIds []string `json:"host_ids"`
 	// The port to publish the service on the host. If 0, Docker assigns a random
 	// port. If unspecified, no port is published and the service is not accessible
 	// from outside the Docker network.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	Port *int `json:"port,omitempty"`
 	// Service-specific configuration. For MCP services, this includes
 	// llm_provider, llm_model, and provider-specific API keys.
-	Config map[string]any `form:"config" json:"config" xml:"config"`
+	Config map[string]any `json:"config"`
 	// The number of CPUs to allocate for this service. It can include the SI
 	// suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if
 	// unspecified.
-	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	Cpus *string `json:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for this service.
 	// Defaults to container defaults if unspecified.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	Memory *string `json:"memory,omitempty"`
 }
 
 // TaskLogEntryResponseBody is used to define fields on response body types.
 type TaskLogEntryResponseBody struct {
 	// The timestamp of the log entry.
-	Timestamp string `form:"timestamp" json:"timestamp" xml:"timestamp"`
+	Timestamp string `json:"timestamp"`
 	// The log message.
-	Message string `form:"message" json:"message" xml:"message"`
+	Message string `json:"message"`
 	// Additional fields for the log entry.
-	Fields map[string]any `form:"fields,omitempty" json:"fields,omitempty" xml:"fields,omitempty"`
+	Fields map[string]any `json:"fields,omitempty"`
 }
 
 // DatabaseSpecRequestBody is used to define fields on request body types.
 type DatabaseSpecRequestBody struct {
 	// The name of the Postgres database.
-	DatabaseName *string `form:"database_name,omitempty" json:"database_name,omitempty" xml:"database_name,omitempty"`
+	DatabaseName *string `json:"database_name"`
 	// The Postgres version in 'major.minor' format.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
+	PostgresVersion *string `json:"postgres_version,omitempty"`
 	// The major version of the Spock extension.
-	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
+	SpockVersion *string `json:"spock_version,omitempty"`
 	// The port used by the Postgres database. If the port is 0, each instance will
 	// be assigned a random port. If the port is unspecified, the database will not
 	// be exposed on any port, dependent on orchestrator support for that feature.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	Port *int `json:"port,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
 	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
 	// depends on the orchestrator.
-	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	Cpus *string `json:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database and
 	// to use for tuning Postgres. Defaults to the total available memory on the
 	// host. Whether this limit is enforced depends on the orchestrator.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	Memory *string `json:"memory,omitempty"`
 	// The Spock nodes for this database.
-	Nodes []*DatabaseNodeSpecRequestBody `form:"nodes,omitempty" json:"nodes,omitempty" xml:"nodes,omitempty"`
+	Nodes []*DatabaseNodeSpecRequestBody `json:"nodes"`
 	// The users to create for this database.
-	DatabaseUsers []*DatabaseUserSpecRequestBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
+	DatabaseUsers []*DatabaseUserSpecRequestBody `json:"database_users,omitempty"`
 	// Service instances to run alongside the database (e.g., MCP servers).
-	Services []*ServiceSpecRequestBody `form:"services,omitempty" json:"services,omitempty" xml:"services,omitempty"`
+	Services []*ServiceSpecRequestBody `json:"services,omitempty"`
 	// The backup configuration for this database.
-	BackupConfig *BackupConfigSpecRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
+	BackupConfig *BackupConfigSpecRequestBody `json:"backup_config,omitempty"`
 	// The restore configuration for this database.
-	RestoreConfig *RestoreConfigSpecRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
+	RestoreConfig *RestoreConfigSpecRequestBody `json:"restore_config,omitempty"`
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
-	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
+	PostgresqlConf map[string]any `json:"postgresql_conf,omitempty"`
 	// Orchestrator-specific configuration options.
-	OrchestratorOpts *OrchestratorOptsRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+	OrchestratorOpts *OrchestratorOptsRequestBody `json:"orchestrator_opts,omitempty"`
 }
 
 // DatabaseNodeSpecRequestBody is used to define fields on request body types.
 type DatabaseNodeSpecRequestBody struct {
 	// The name of the database node.
-	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	Name *string `json:"name"`
 	// The IDs of the hosts that should run this node. When multiple hosts are
 	// specified, one host will chosen as a primary, and the others will be read
 	// replicas.
-	HostIds []string `form:"host_ids,omitempty" json:"host_ids,omitempty" xml:"host_ids,omitempty"`
+	HostIds []string `json:"host_ids"`
 	// The Postgres version for this node in 'major.minor' format. Overrides the
 	// Postgres version set in the DatabaseSpec.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
+	PostgresVersion *string `json:"postgres_version,omitempty"`
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	Port *int `json:"port,omitempty"`
 	// The number of CPUs to allocate for the database on this node and to use for
 	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
 	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
 	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
 	// than are available on the host. Whether this limit is enforced depends on
 	// the orchestrator.
-	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	Cpus *string `json:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database on
 	// this node and to use for tuning Postgres. Defaults to the total available
 	// memory on the host. Whether this limit is enforced depends on the
 	// orchestrator.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	Memory *string `json:"memory,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
 	// with the settings provided by control-plane.
-	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
+	PostgresqlConf map[string]any `json:"postgresql_conf,omitempty"`
 	// The backup configuration for this node. Overrides the backup configuration
 	// set in the DatabaseSpec.
-	BackupConfig *BackupConfigSpecRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
+	BackupConfig *BackupConfigSpecRequestBody `json:"backup_config,omitempty"`
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
-	RestoreConfig *RestoreConfigSpecRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
+	RestoreConfig *RestoreConfigSpecRequestBody `json:"restore_config,omitempty"`
 	// Orchestrator-specific configuration options.
-	OrchestratorOpts *OrchestratorOptsRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+	OrchestratorOpts *OrchestratorOptsRequestBody `json:"orchestrator_opts,omitempty"`
 	// The name of the source node to use for sync. This is typically the node
 	// (like 'n1') from which the data will be copied to initialize this new node.
-	SourceNode *string `form:"source_node,omitempty" json:"source_node,omitempty" xml:"source_node,omitempty"`
+	SourceNode *string `json:"source_node,omitempty"`
 }
 
 // BackupConfigSpecRequestBody is used to define fields on request body types.
 type BackupConfigSpecRequestBody struct {
 	// The repositories for this backup configuration.
-	Repositories []*BackupRepositorySpecRequestBody `form:"repositories,omitempty" json:"repositories,omitempty" xml:"repositories,omitempty"`
+	Repositories []*BackupRepositorySpecRequestBody `json:"repositories"`
 	// The schedules for this backup configuration.
-	Schedules []*BackupScheduleSpecRequestBody `form:"schedules,omitempty" json:"schedules,omitempty" xml:"schedules,omitempty"`
+	Schedules []*BackupScheduleSpecRequestBody `json:"schedules,omitempty"`
 }
 
 // BackupRepositorySpecRequestBody is used to define fields on request body
 // types.
 type BackupRepositorySpecRequestBody struct {
 	// The unique identifier of this repository.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	ID *string `json:"id,omitempty"`
 	// The type of this repository.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	Type *string `json:"type"`
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
-	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
+	S3Bucket *string `json:"s3_bucket,omitempty"`
 	// The region of the S3 bucket for this repository. Only applies when type =
 	// 's3'.
-	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
+	S3Region *string `json:"s3_region,omitempty"`
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
-	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	S3Endpoint *string `json:"s3_endpoint,omitempty"`
 	// An optional AWS access key ID to use for this repository. If not provided,
 	// pgbackrest will use the default credential provider chain. This field will
 	// be excluded from the response of all endpoints. It can also be omitted from
 	// update requests to keep the current value.
-	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	S3Key *string `json:"s3_key,omitempty"`
 	// The corresponding secret for the AWS access key ID in s3_key. This field
 	// will be excluded from the response of all endpoints. It can also be omitted
 	// from update requests to keep the current value.
-	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
+	S3KeySecret *string `json:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
-	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
+	GcsBucket *string `json:"gcs_bucket,omitempty"`
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
-	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	GcsEndpoint *string `json:"gcs_endpoint,omitempty"`
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
 	// the service account attached to the instance profile. This field will be
 	// excluded from the response of all endpoints. It can also be omitted from
 	// update requests to keep the current value.
-	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
+	GcsKey *string `json:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
-	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
+	AzureAccount *string `json:"azure_account,omitempty"`
 	// The Azure container name for this repository. Only applies when type =
 	// 'azure'.
-	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
+	AzureContainer *string `json:"azure_container,omitempty"`
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
-	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	AzureEndpoint *string `json:"azure_endpoint,omitempty"`
 	// The Azure storage account access key to use for this repository. This field
 	// will be excluded from the response of all endpoints. It can also be omitted
 	// from update requests to keep the current value.
-	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
+	AzureKey *string `json:"azure_key,omitempty"`
 	// The count of full backups to retain or the time to retain full backups.
-	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
+	RetentionFull *int `json:"retention_full,omitempty"`
 	// The type of measure used for retention_full.
-	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
+	RetentionFullType *string `json:"retention_full_type,omitempty"`
 	// The base path within the repository to store backups. Required for type =
 	// 'posix' and 'cifs'.
-	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	BasePath *string `json:"base_path,omitempty"`
 	// Additional options to apply to this repository.
-	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
+	CustomOptions map[string]string `json:"custom_options,omitempty"`
 }
 
 // BackupScheduleSpecRequestBody is used to define fields on request body types.
 type BackupScheduleSpecRequestBody struct {
 	// The unique identifier for this backup schedule.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	ID *string `json:"id"`
 	// The type of backup to take on this schedule.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	Type *string `json:"type"`
 	// The cron expression for this schedule.
-	CronExpression *string `form:"cron_expression,omitempty" json:"cron_expression,omitempty" xml:"cron_expression,omitempty"`
+	CronExpression *string `json:"cron_expression"`
 }
 
 // RestoreConfigSpecRequestBody is used to define fields on request body types.
 type RestoreConfigSpecRequestBody struct {
 	// The ID of the database to restore this database from.
-	SourceDatabaseID *string `form:"source_database_id,omitempty" json:"source_database_id,omitempty" xml:"source_database_id,omitempty"`
+	SourceDatabaseID *string `json:"source_database_id"`
 	// The name of the node to restore this database from.
-	SourceNodeName *string `form:"source_node_name,omitempty" json:"source_node_name,omitempty" xml:"source_node_name,omitempty"`
+	SourceNodeName *string `json:"source_node_name"`
 	// The name of the database in this repository. The database will be renamed to
 	// the database_name in the DatabaseSpec after it's restored.
-	SourceDatabaseName *string `form:"source_database_name,omitempty" json:"source_database_name,omitempty" xml:"source_database_name,omitempty"`
+	SourceDatabaseName *string `json:"source_database_name"`
 	// The repository to restore this database from.
-	Repository *RestoreRepositorySpecRequestBody `form:"repository,omitempty" json:"repository,omitempty" xml:"repository,omitempty"`
+	Repository *RestoreRepositorySpecRequestBody `json:"repository"`
 	// Additional options to use when restoring this database. If omitted, the
 	// database will be restored to the latest point in the given repository.
-	RestoreOptions map[string]string `form:"restore_options,omitempty" json:"restore_options,omitempty" xml:"restore_options,omitempty"`
+	RestoreOptions map[string]string `json:"restore_options,omitempty"`
 }
 
 // RestoreRepositorySpecRequestBody is used to define fields on request body
 // types.
 type RestoreRepositorySpecRequestBody struct {
 	// The unique identifier of this repository.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	ID *string `json:"id,omitempty"`
 	// The type of this repository.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	Type *string `json:"type"`
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
-	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
+	S3Bucket *string `json:"s3_bucket,omitempty"`
 	// The region of the S3 bucket for this repository. Only applies when type =
 	// 's3'.
-	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
+	S3Region *string `json:"s3_region,omitempty"`
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
-	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	S3Endpoint *string `json:"s3_endpoint,omitempty"`
 	// An optional AWS access key ID to use for this repository. If not provided,
 	// pgbackrest will use the default credential provider chain.
-	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	S3Key *string `json:"s3_key,omitempty"`
 	// The corresponding secret for the AWS access key ID in s3_key.
-	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
+	S3KeySecret *string `json:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
-	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
+	GcsBucket *string `json:"gcs_bucket,omitempty"`
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
-	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	GcsEndpoint *string `json:"gcs_endpoint,omitempty"`
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
 	// the service account attached to the instance profile.
-	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
+	GcsKey *string `json:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
-	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
+	AzureAccount *string `json:"azure_account,omitempty"`
 	// The Azure container name for this repository. Only applies when type =
 	// 'azure'.
-	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
+	AzureContainer *string `json:"azure_container,omitempty"`
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
-	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	AzureEndpoint *string `json:"azure_endpoint,omitempty"`
 	// An optional Azure storage account access key to use for this repository. If
 	// not provided, pgbackrest will use the VM's managed identity.
-	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
+	AzureKey *string `json:"azure_key,omitempty"`
 	// The base path within the repository to store backups. Required for type =
 	// 'posix' and 'cifs'.
-	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	BasePath *string `json:"base_path,omitempty"`
 	// Additional options to apply to this repository.
-	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
+	CustomOptions map[string]string `json:"custom_options,omitempty"`
 }
 
 // OrchestratorOptsRequestBody is used to define fields on request body types.
 type OrchestratorOptsRequestBody struct {
 	// Swarm-specific configuration.
-	Swarm *SwarmOptsRequestBody `form:"swarm,omitempty" json:"swarm,omitempty" xml:"swarm,omitempty"`
+	Swarm *SwarmOptsRequestBody `json:"swarm,omitempty"`
 }
 
 // SwarmOptsRequestBody is used to define fields on request body types.
 type SwarmOptsRequestBody struct {
 	// A list of extra volumes to mount. Each entry defines a host and container
 	// path.
-	ExtraVolumes []*ExtraVolumesSpecRequestBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
+	ExtraVolumes []*ExtraVolumesSpecRequestBody `json:"extra_volumes,omitempty"`
 	// A list of additional Docker Swarm networks to attach containers in this
 	// database to.
-	ExtraNetworks []*ExtraNetworkSpecRequestBody `form:"extra_networks,omitempty" json:"extra_networks,omitempty" xml:"extra_networks,omitempty"`
+	ExtraNetworks []*ExtraNetworkSpecRequestBody `json:"extra_networks,omitempty"`
 	// Arbitrary labels to apply to the Docker Swarm service
-	ExtraLabels map[string]string `form:"extra_labels,omitempty" json:"extra_labels,omitempty" xml:"extra_labels,omitempty"`
+	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
 }
 
 // ExtraVolumesSpecRequestBody is used to define fields on request body types.
 type ExtraVolumesSpecRequestBody struct {
 	// The host path for the volume.
-	HostPath *string `form:"host_path,omitempty" json:"host_path,omitempty" xml:"host_path,omitempty"`
+	HostPath *string `json:"host_path"`
 	// The path inside the container where the volume will be mounted.
-	DestinationPath *string `form:"destination_path,omitempty" json:"destination_path,omitempty" xml:"destination_path,omitempty"`
+	DestinationPath *string `json:"destination_path"`
 }
 
 // ExtraNetworkSpecRequestBody is used to define fields on request body types.
 type ExtraNetworkSpecRequestBody struct {
 	// The name or ID of the network to connect to.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	ID *string `json:"id"`
 	// Optional network-scoped aliases for the container.
-	Aliases []string `form:"aliases,omitempty" json:"aliases,omitempty" xml:"aliases,omitempty"`
+	Aliases []string `json:"aliases,omitempty"`
 	// Optional driver options for the network connection.
-	DriverOpts map[string]string `form:"driver_opts,omitempty" json:"driver_opts,omitempty" xml:"driver_opts,omitempty"`
+	DriverOpts map[string]string `json:"driver_opts,omitempty"`
 }
 
 // DatabaseUserSpecRequestBody is used to define fields on request body types.
 type DatabaseUserSpecRequestBody struct {
 	// The username for this database user.
-	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	Username *string `json:"username"`
 	// The password for this database user. This field will be excluded from the
 	// response of all endpoints. It can also be omitted from update requests to
 	// keep the current value.
-	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
+	Password *string `json:"password,omitempty"`
 	// If true, this user will be granted database ownership.
-	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
+	DbOwner *bool `json:"db_owner,omitempty"`
 	// The attributes to assign to this database user.
-	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
+	Attributes []string `json:"attributes,omitempty"`
 	// The roles to assign to this database user.
-	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
+	Roles []string `json:"roles,omitempty"`
 }
 
 // ServiceSpecRequestBody is used to define fields on request body types.
 type ServiceSpecRequestBody struct {
 	// The unique identifier for this service.
-	ServiceID *string `form:"service_id,omitempty" json:"service_id,omitempty" xml:"service_id,omitempty"`
+	ServiceID *string `json:"service_id"`
 	// The type of service to run.
-	ServiceType *string `form:"service_type,omitempty" json:"service_type,omitempty" xml:"service_type,omitempty"`
+	ServiceType *string `json:"service_type"`
 	// The version of the service in semver format (e.g., '1.0.0') or the literal
 	// 'latest'.
-	Version *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
+	Version *string `json:"version"`
 	// The IDs of the hosts that should run this service. One service instance will
 	// be created per host.
-	HostIds []string `form:"host_ids,omitempty" json:"host_ids,omitempty" xml:"host_ids,omitempty"`
+	HostIds []string `json:"host_ids"`
 	// The port to publish the service on the host. If 0, Docker assigns a random
 	// port. If unspecified, no port is published and the service is not accessible
 	// from outside the Docker network.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	Port *int `json:"port,omitempty"`
 	// Service-specific configuration. For MCP services, this includes
 	// llm_provider, llm_model, and provider-specific API keys.
-	Config map[string]any `form:"config,omitempty" json:"config,omitempty" xml:"config,omitempty"`
+	Config map[string]any `json:"config"`
 	// The number of CPUs to allocate for this service. It can include the SI
 	// suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if
 	// unspecified.
-	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	Cpus *string `json:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for this service.
 	// Defaults to container defaults if unspecified.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	Memory *string `json:"memory,omitempty"`
 }
 
 // DatabaseSpecRequestBodyRequestBody is used to define fields on request body
 // types.
 type DatabaseSpecRequestBodyRequestBody struct {
 	// The name of the Postgres database.
-	DatabaseName *string `form:"database_name,omitempty" json:"database_name,omitempty" xml:"database_name,omitempty"`
+	DatabaseName *string `json:"database_name"`
 	// The Postgres version in 'major.minor' format.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
+	PostgresVersion *string `json:"postgres_version,omitempty"`
 	// The major version of the Spock extension.
-	SpockVersion *string `form:"spock_version,omitempty" json:"spock_version,omitempty" xml:"spock_version,omitempty"`
+	SpockVersion *string `json:"spock_version,omitempty"`
 	// The port used by the Postgres database. If the port is 0, each instance will
 	// be assigned a random port. If the port is unspecified, the database will not
 	// be exposed on any port, dependent on orchestrator support for that feature.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	Port *int `json:"port,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
 	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
 	// depends on the orchestrator.
-	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	Cpus *string `json:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database and
 	// to use for tuning Postgres. Defaults to the total available memory on the
 	// host. Whether this limit is enforced depends on the orchestrator.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	Memory *string `json:"memory,omitempty"`
 	// The Spock nodes for this database.
-	Nodes []*DatabaseNodeSpecRequestBodyRequestBody `form:"nodes,omitempty" json:"nodes,omitempty" xml:"nodes,omitempty"`
+	Nodes []*DatabaseNodeSpecRequestBodyRequestBody `json:"nodes"`
 	// The users to create for this database.
-	DatabaseUsers []*DatabaseUserSpecRequestBodyRequestBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
+	DatabaseUsers []*DatabaseUserSpecRequestBodyRequestBody `json:"database_users,omitempty"`
 	// Service instances to run alongside the database (e.g., MCP servers).
-	Services []*ServiceSpecRequestBodyRequestBody `form:"services,omitempty" json:"services,omitempty" xml:"services,omitempty"`
+	Services []*ServiceSpecRequestBodyRequestBody `json:"services,omitempty"`
 	// The backup configuration for this database.
-	BackupConfig *BackupConfigSpecRequestBodyRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
+	BackupConfig *BackupConfigSpecRequestBodyRequestBody `json:"backup_config,omitempty"`
 	// The restore configuration for this database.
-	RestoreConfig *RestoreConfigSpecRequestBodyRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
+	RestoreConfig *RestoreConfigSpecRequestBodyRequestBody `json:"restore_config,omitempty"`
 	// Additional postgresql.conf settings. Will be merged with the settings
 	// provided by control-plane.
-	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
+	PostgresqlConf map[string]any `json:"postgresql_conf,omitempty"`
 	// Orchestrator-specific configuration options.
-	OrchestratorOpts *OrchestratorOptsRequestBodyRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+	OrchestratorOpts *OrchestratorOptsRequestBodyRequestBody `json:"orchestrator_opts,omitempty"`
 }
 
 // DatabaseNodeSpecRequestBodyRequestBody is used to define fields on request
 // body types.
 type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// The name of the database node.
-	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	Name *string `json:"name"`
 	// The IDs of the hosts that should run this node. When multiple hosts are
 	// specified, one host will chosen as a primary, and the others will be read
 	// replicas.
-	HostIds []string `form:"host_ids,omitempty" json:"host_ids,omitempty" xml:"host_ids,omitempty"`
+	HostIds []string `json:"host_ids"`
 	// The Postgres version for this node in 'major.minor' format. Overrides the
 	// Postgres version set in the DatabaseSpec.
-	PostgresVersion *string `form:"postgres_version,omitempty" json:"postgres_version,omitempty" xml:"postgres_version,omitempty"`
+	PostgresVersion *string `json:"postgres_version,omitempty"`
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	Port *int `json:"port,omitempty"`
 	// The number of CPUs to allocate for the database on this node and to use for
 	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
 	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
 	// available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs
 	// than are available on the host. Whether this limit is enforced depends on
 	// the orchestrator.
-	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	Cpus *string `json:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for the database on
 	// this node and to use for tuning Postgres. Defaults to the total available
 	// memory on the host. Whether this limit is enforced depends on the
 	// orchestrator.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	Memory *string `json:"memory,omitempty"`
 	// Additional postgresql.conf settings for this particular node. Will be merged
 	// with the settings provided by control-plane.
-	PostgresqlConf map[string]any `form:"postgresql_conf,omitempty" json:"postgresql_conf,omitempty" xml:"postgresql_conf,omitempty"`
+	PostgresqlConf map[string]any `json:"postgresql_conf,omitempty"`
 	// The backup configuration for this node. Overrides the backup configuration
 	// set in the DatabaseSpec.
-	BackupConfig *BackupConfigSpecRequestBodyRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
+	BackupConfig *BackupConfigSpecRequestBodyRequestBody `json:"backup_config,omitempty"`
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
-	RestoreConfig *RestoreConfigSpecRequestBodyRequestBody `form:"restore_config,omitempty" json:"restore_config,omitempty" xml:"restore_config,omitempty"`
+	RestoreConfig *RestoreConfigSpecRequestBodyRequestBody `json:"restore_config,omitempty"`
 	// Orchestrator-specific configuration options.
-	OrchestratorOpts *OrchestratorOptsRequestBodyRequestBody `form:"orchestrator_opts,omitempty" json:"orchestrator_opts,omitempty" xml:"orchestrator_opts,omitempty"`
+	OrchestratorOpts *OrchestratorOptsRequestBodyRequestBody `json:"orchestrator_opts,omitempty"`
 	// The name of the source node to use for sync. This is typically the node
 	// (like 'n1') from which the data will be copied to initialize this new node.
-	SourceNode *string `form:"source_node,omitempty" json:"source_node,omitempty" xml:"source_node,omitempty"`
+	SourceNode *string `json:"source_node,omitempty"`
 }
 
 // BackupConfigSpecRequestBodyRequestBody is used to define fields on request
 // body types.
 type BackupConfigSpecRequestBodyRequestBody struct {
 	// The repositories for this backup configuration.
-	Repositories []*BackupRepositorySpecRequestBodyRequestBody `form:"repositories,omitempty" json:"repositories,omitempty" xml:"repositories,omitempty"`
+	Repositories []*BackupRepositorySpecRequestBodyRequestBody `json:"repositories"`
 	// The schedules for this backup configuration.
-	Schedules []*BackupScheduleSpecRequestBodyRequestBody `form:"schedules,omitempty" json:"schedules,omitempty" xml:"schedules,omitempty"`
+	Schedules []*BackupScheduleSpecRequestBodyRequestBody `json:"schedules,omitempty"`
 }
 
 // BackupRepositorySpecRequestBodyRequestBody is used to define fields on
 // request body types.
 type BackupRepositorySpecRequestBodyRequestBody struct {
 	// The unique identifier of this repository.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	ID *string `json:"id,omitempty"`
 	// The type of this repository.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	Type *string `json:"type"`
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
-	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
+	S3Bucket *string `json:"s3_bucket,omitempty"`
 	// The region of the S3 bucket for this repository. Only applies when type =
 	// 's3'.
-	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
+	S3Region *string `json:"s3_region,omitempty"`
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
-	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	S3Endpoint *string `json:"s3_endpoint,omitempty"`
 	// An optional AWS access key ID to use for this repository. If not provided,
 	// pgbackrest will use the default credential provider chain. This field will
 	// be excluded from the response of all endpoints. It can also be omitted from
 	// update requests to keep the current value.
-	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	S3Key *string `json:"s3_key,omitempty"`
 	// The corresponding secret for the AWS access key ID in s3_key. This field
 	// will be excluded from the response of all endpoints. It can also be omitted
 	// from update requests to keep the current value.
-	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
+	S3KeySecret *string `json:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
-	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
+	GcsBucket *string `json:"gcs_bucket,omitempty"`
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
-	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	GcsEndpoint *string `json:"gcs_endpoint,omitempty"`
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
 	// the service account attached to the instance profile. This field will be
 	// excluded from the response of all endpoints. It can also be omitted from
 	// update requests to keep the current value.
-	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
+	GcsKey *string `json:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
-	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
+	AzureAccount *string `json:"azure_account,omitempty"`
 	// The Azure container name for this repository. Only applies when type =
 	// 'azure'.
-	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
+	AzureContainer *string `json:"azure_container,omitempty"`
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
-	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	AzureEndpoint *string `json:"azure_endpoint,omitempty"`
 	// The Azure storage account access key to use for this repository. This field
 	// will be excluded from the response of all endpoints. It can also be omitted
 	// from update requests to keep the current value.
-	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
+	AzureKey *string `json:"azure_key,omitempty"`
 	// The count of full backups to retain or the time to retain full backups.
-	RetentionFull *int `form:"retention_full,omitempty" json:"retention_full,omitempty" xml:"retention_full,omitempty"`
+	RetentionFull *int `json:"retention_full,omitempty"`
 	// The type of measure used for retention_full.
-	RetentionFullType *string `form:"retention_full_type,omitempty" json:"retention_full_type,omitempty" xml:"retention_full_type,omitempty"`
+	RetentionFullType *string `json:"retention_full_type,omitempty"`
 	// The base path within the repository to store backups. Required for type =
 	// 'posix' and 'cifs'.
-	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	BasePath *string `json:"base_path,omitempty"`
 	// Additional options to apply to this repository.
-	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
+	CustomOptions map[string]string `json:"custom_options,omitempty"`
 }
 
 // BackupScheduleSpecRequestBodyRequestBody is used to define fields on request
 // body types.
 type BackupScheduleSpecRequestBodyRequestBody struct {
 	// The unique identifier for this backup schedule.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	ID *string `json:"id"`
 	// The type of backup to take on this schedule.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	Type *string `json:"type"`
 	// The cron expression for this schedule.
-	CronExpression *string `form:"cron_expression,omitempty" json:"cron_expression,omitempty" xml:"cron_expression,omitempty"`
+	CronExpression *string `json:"cron_expression"`
 }
 
 // RestoreConfigSpecRequestBodyRequestBody is used to define fields on request
 // body types.
 type RestoreConfigSpecRequestBodyRequestBody struct {
 	// The ID of the database to restore this database from.
-	SourceDatabaseID *string `form:"source_database_id,omitempty" json:"source_database_id,omitempty" xml:"source_database_id,omitempty"`
+	SourceDatabaseID *string `json:"source_database_id"`
 	// The name of the node to restore this database from.
-	SourceNodeName *string `form:"source_node_name,omitempty" json:"source_node_name,omitempty" xml:"source_node_name,omitempty"`
+	SourceNodeName *string `json:"source_node_name"`
 	// The name of the database in this repository. The database will be renamed to
 	// the database_name in the DatabaseSpec after it's restored.
-	SourceDatabaseName *string `form:"source_database_name,omitempty" json:"source_database_name,omitempty" xml:"source_database_name,omitempty"`
+	SourceDatabaseName *string `json:"source_database_name"`
 	// The repository to restore this database from.
-	Repository *RestoreRepositorySpecRequestBodyRequestBody `form:"repository,omitempty" json:"repository,omitempty" xml:"repository,omitempty"`
+	Repository *RestoreRepositorySpecRequestBodyRequestBody `json:"repository"`
 	// Additional options to use when restoring this database. If omitted, the
 	// database will be restored to the latest point in the given repository.
-	RestoreOptions map[string]string `form:"restore_options,omitempty" json:"restore_options,omitempty" xml:"restore_options,omitempty"`
+	RestoreOptions map[string]string `json:"restore_options,omitempty"`
 }
 
 // RestoreRepositorySpecRequestBodyRequestBody is used to define fields on
 // request body types.
 type RestoreRepositorySpecRequestBodyRequestBody struct {
 	// The unique identifier of this repository.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	ID *string `json:"id,omitempty"`
 	// The type of this repository.
-	Type *string `form:"type,omitempty" json:"type,omitempty" xml:"type,omitempty"`
+	Type *string `json:"type"`
 	// The S3 bucket name for this repository. Only applies when type = 's3'.
-	S3Bucket *string `form:"s3_bucket,omitempty" json:"s3_bucket,omitempty" xml:"s3_bucket,omitempty"`
+	S3Bucket *string `json:"s3_bucket,omitempty"`
 	// The region of the S3 bucket for this repository. Only applies when type =
 	// 's3'.
-	S3Region *string `form:"s3_region,omitempty" json:"s3_region,omitempty" xml:"s3_region,omitempty"`
+	S3Region *string `json:"s3_region,omitempty"`
 	// The optional S3 endpoint for this repository. Only applies when type = 's3'.
-	S3Endpoint *string `form:"s3_endpoint,omitempty" json:"s3_endpoint,omitempty" xml:"s3_endpoint,omitempty"`
+	S3Endpoint *string `json:"s3_endpoint,omitempty"`
 	// An optional AWS access key ID to use for this repository. If not provided,
 	// pgbackrest will use the default credential provider chain.
-	S3Key *string `form:"s3_key,omitempty" json:"s3_key,omitempty" xml:"s3_key,omitempty"`
+	S3Key *string `json:"s3_key,omitempty"`
 	// The corresponding secret for the AWS access key ID in s3_key.
-	S3KeySecret *string `form:"s3_key_secret,omitempty" json:"s3_key_secret,omitempty" xml:"s3_key_secret,omitempty"`
+	S3KeySecret *string `json:"s3_key_secret,omitempty"`
 	// The GCS bucket name for this repository. Only applies when type = 'gcs'.
-	GcsBucket *string `form:"gcs_bucket,omitempty" json:"gcs_bucket,omitempty" xml:"gcs_bucket,omitempty"`
+	GcsBucket *string `json:"gcs_bucket,omitempty"`
 	// The optional GCS endpoint for this repository. Only applies when type =
 	// 'gcs'.
-	GcsEndpoint *string `form:"gcs_endpoint,omitempty" json:"gcs_endpoint,omitempty" xml:"gcs_endpoint,omitempty"`
+	GcsEndpoint *string `json:"gcs_endpoint,omitempty"`
 	// Optional base64-encoded private key data. If omitted, pgbackrest will use
 	// the service account attached to the instance profile.
-	GcsKey *string `form:"gcs_key,omitempty" json:"gcs_key,omitempty" xml:"gcs_key,omitempty"`
+	GcsKey *string `json:"gcs_key,omitempty"`
 	// The Azure account name for this repository. Only applies when type = 'azure'.
-	AzureAccount *string `form:"azure_account,omitempty" json:"azure_account,omitempty" xml:"azure_account,omitempty"`
+	AzureAccount *string `json:"azure_account,omitempty"`
 	// The Azure container name for this repository. Only applies when type =
 	// 'azure'.
-	AzureContainer *string `form:"azure_container,omitempty" json:"azure_container,omitempty" xml:"azure_container,omitempty"`
+	AzureContainer *string `json:"azure_container,omitempty"`
 	// The optional Azure endpoint for this repository. Only applies when type =
 	// 'azure'.
-	AzureEndpoint *string `form:"azure_endpoint,omitempty" json:"azure_endpoint,omitempty" xml:"azure_endpoint,omitempty"`
+	AzureEndpoint *string `json:"azure_endpoint,omitempty"`
 	// An optional Azure storage account access key to use for this repository. If
 	// not provided, pgbackrest will use the VM's managed identity.
-	AzureKey *string `form:"azure_key,omitempty" json:"azure_key,omitempty" xml:"azure_key,omitempty"`
+	AzureKey *string `json:"azure_key,omitempty"`
 	// The base path within the repository to store backups. Required for type =
 	// 'posix' and 'cifs'.
-	BasePath *string `form:"base_path,omitempty" json:"base_path,omitempty" xml:"base_path,omitempty"`
+	BasePath *string `json:"base_path,omitempty"`
 	// Additional options to apply to this repository.
-	CustomOptions map[string]string `form:"custom_options,omitempty" json:"custom_options,omitempty" xml:"custom_options,omitempty"`
+	CustomOptions map[string]string `json:"custom_options,omitempty"`
 }
 
 // OrchestratorOptsRequestBodyRequestBody is used to define fields on request
 // body types.
 type OrchestratorOptsRequestBodyRequestBody struct {
 	// Swarm-specific configuration.
-	Swarm *SwarmOptsRequestBodyRequestBody `form:"swarm,omitempty" json:"swarm,omitempty" xml:"swarm,omitempty"`
+	Swarm *SwarmOptsRequestBodyRequestBody `json:"swarm,omitempty"`
 }
 
 // SwarmOptsRequestBodyRequestBody is used to define fields on request body
@@ -2724,78 +2724,78 @@ type OrchestratorOptsRequestBodyRequestBody struct {
 type SwarmOptsRequestBodyRequestBody struct {
 	// A list of extra volumes to mount. Each entry defines a host and container
 	// path.
-	ExtraVolumes []*ExtraVolumesSpecRequestBodyRequestBody `form:"extra_volumes,omitempty" json:"extra_volumes,omitempty" xml:"extra_volumes,omitempty"`
+	ExtraVolumes []*ExtraVolumesSpecRequestBodyRequestBody `json:"extra_volumes,omitempty"`
 	// A list of additional Docker Swarm networks to attach containers in this
 	// database to.
-	ExtraNetworks []*ExtraNetworkSpecRequestBodyRequestBody `form:"extra_networks,omitempty" json:"extra_networks,omitempty" xml:"extra_networks,omitempty"`
+	ExtraNetworks []*ExtraNetworkSpecRequestBodyRequestBody `json:"extra_networks,omitempty"`
 	// Arbitrary labels to apply to the Docker Swarm service
-	ExtraLabels map[string]string `form:"extra_labels,omitempty" json:"extra_labels,omitempty" xml:"extra_labels,omitempty"`
+	ExtraLabels map[string]string `json:"extra_labels,omitempty"`
 }
 
 // ExtraVolumesSpecRequestBodyRequestBody is used to define fields on request
 // body types.
 type ExtraVolumesSpecRequestBodyRequestBody struct {
 	// The host path for the volume.
-	HostPath *string `form:"host_path,omitempty" json:"host_path,omitempty" xml:"host_path,omitempty"`
+	HostPath *string `json:"host_path"`
 	// The path inside the container where the volume will be mounted.
-	DestinationPath *string `form:"destination_path,omitempty" json:"destination_path,omitempty" xml:"destination_path,omitempty"`
+	DestinationPath *string `json:"destination_path"`
 }
 
 // ExtraNetworkSpecRequestBodyRequestBody is used to define fields on request
 // body types.
 type ExtraNetworkSpecRequestBodyRequestBody struct {
 	// The name or ID of the network to connect to.
-	ID *string `form:"id,omitempty" json:"id,omitempty" xml:"id,omitempty"`
+	ID *string `json:"id"`
 	// Optional network-scoped aliases for the container.
-	Aliases []string `form:"aliases,omitempty" json:"aliases,omitempty" xml:"aliases,omitempty"`
+	Aliases []string `json:"aliases,omitempty"`
 	// Optional driver options for the network connection.
-	DriverOpts map[string]string `form:"driver_opts,omitempty" json:"driver_opts,omitempty" xml:"driver_opts,omitempty"`
+	DriverOpts map[string]string `json:"driver_opts,omitempty"`
 }
 
 // DatabaseUserSpecRequestBodyRequestBody is used to define fields on request
 // body types.
 type DatabaseUserSpecRequestBodyRequestBody struct {
 	// The username for this database user.
-	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	Username *string `json:"username"`
 	// The password for this database user. This field will be excluded from the
 	// response of all endpoints. It can also be omitted from update requests to
 	// keep the current value.
-	Password *string `form:"password,omitempty" json:"password,omitempty" xml:"password,omitempty"`
+	Password *string `json:"password,omitempty"`
 	// If true, this user will be granted database ownership.
-	DbOwner *bool `form:"db_owner,omitempty" json:"db_owner,omitempty" xml:"db_owner,omitempty"`
+	DbOwner *bool `json:"db_owner,omitempty"`
 	// The attributes to assign to this database user.
-	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
+	Attributes []string `json:"attributes,omitempty"`
 	// The roles to assign to this database user.
-	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
+	Roles []string `json:"roles,omitempty"`
 }
 
 // ServiceSpecRequestBodyRequestBody is used to define fields on request body
 // types.
 type ServiceSpecRequestBodyRequestBody struct {
 	// The unique identifier for this service.
-	ServiceID *string `form:"service_id,omitempty" json:"service_id,omitempty" xml:"service_id,omitempty"`
+	ServiceID *string `json:"service_id"`
 	// The type of service to run.
-	ServiceType *string `form:"service_type,omitempty" json:"service_type,omitempty" xml:"service_type,omitempty"`
+	ServiceType *string `json:"service_type"`
 	// The version of the service in semver format (e.g., '1.0.0') or the literal
 	// 'latest'.
-	Version *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
+	Version *string `json:"version"`
 	// The IDs of the hosts that should run this service. One service instance will
 	// be created per host.
-	HostIds []string `form:"host_ids,omitempty" json:"host_ids,omitempty" xml:"host_ids,omitempty"`
+	HostIds []string `json:"host_ids"`
 	// The port to publish the service on the host. If 0, Docker assigns a random
 	// port. If unspecified, no port is published and the service is not accessible
 	// from outside the Docker network.
-	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	Port *int `json:"port,omitempty"`
 	// Service-specific configuration. For MCP services, this includes
 	// llm_provider, llm_model, and provider-specific API keys.
-	Config map[string]any `form:"config,omitempty" json:"config,omitempty" xml:"config,omitempty"`
+	Config map[string]any `json:"config"`
 	// The number of CPUs to allocate for this service. It can include the SI
 	// suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if
 	// unspecified.
-	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	Cpus *string `json:"cpus,omitempty"`
 	// The amount of memory in SI or IEC notation to allocate for this service.
 	// Defaults to container defaults if unspecified.
-	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+	Memory *string `json:"memory,omitempty"`
 }
 
 // NewInitClusterResponseBody builds the HTTP response body from the result of
