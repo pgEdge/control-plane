@@ -124,6 +124,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/cluster/init:
     get:
       tags:
@@ -188,6 +197,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/cluster/join:
     post:
       tags:
@@ -243,6 +261,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/cluster/join-token:
     get:
       tags:
@@ -271,6 +298,15 @@ paths:
                 name: error_name
         "500":
           description: 'server_error: Internal Server Error response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
+        default:
+          description: Unexpected error response
           content:
             application/json:
               schema:
@@ -465,6 +501,15 @@ paths:
                 name: error_name
         "500":
           description: 'server_error: Internal Server Error response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
+        default:
+          description: Unexpected error response
           content:
             application/json:
               schema:
@@ -776,6 +821,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/databases/{database_id}:
     delete:
       tags:
@@ -848,6 +902,15 @@ paths:
                 name: error_name
         "500":
           description: 'server_error: Internal Server Error response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
+        default:
+          description: Unexpected error response
           content:
             application/json:
               schema:
@@ -1011,6 +1074,15 @@ paths:
                 name: error_name
         "500":
           description: 'server_error: Internal Server Error response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
+        default:
+          description: Unexpected error response
           content:
             application/json:
               schema:
@@ -1269,6 +1341,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/databases/{database_id}/instances/{instance_id}/restart:
     post:
       tags:
@@ -1362,6 +1443,15 @@ paths:
                 name: error_name
         "500":
           description: 'server_error: Internal Server Error response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
+        default:
+          description: Unexpected error response
           content:
             application/json:
               schema:
@@ -1463,6 +1553,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/databases/{database_id}/instances/{instance_id}/stop-instance:
     post:
       tags:
@@ -1550,6 +1649,15 @@ paths:
                 name: error_name
         "500":
           description: 'server_error: Internal Server Error response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
+        default:
+          description: Unexpected error response
           content:
             application/json:
               schema:
@@ -1667,6 +1775,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/databases/{database_id}/nodes/{node_name}/failover:
     post:
       tags:
@@ -1755,6 +1872,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/databases/{database_id}/nodes/{node_name}/switchover:
     post:
       tags:
@@ -1836,6 +1962,15 @@ paths:
                 name: error_name
         "500":
           description: 'server_error: Internal Server Error response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
+        default:
+          description: Unexpected error response
           content:
             application/json:
               schema:
@@ -2077,6 +2212,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/databases/{database_id}/tasks:
     get:
       tags:
@@ -2210,6 +2354,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/databases/{database_id}/tasks/{task_id}:
     get:
       tags:
@@ -2291,6 +2444,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/databases/{database_id}/tasks/{task_id}/cancel:
     get:
       tags:
@@ -2357,6 +2519,15 @@ paths:
                 name: error_name
         "500":
           description: 'server_error: Internal Server Error response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
+        default:
+          description: Unexpected error response
           content:
             application/json:
               schema:
@@ -2537,6 +2708,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/hosts:
     get:
       tags:
@@ -2655,6 +2835,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/hosts/{host_id}:
     delete:
       tags:
@@ -2762,6 +2951,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
     get:
       tags:
         - Host
@@ -2849,6 +3047,15 @@ paths:
                 name: error_name
         "500":
           description: 'server_error: Internal Server Error response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
+        default:
+          description: Unexpected error response
           content:
             application/json:
               schema:
@@ -2964,6 +3171,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/hosts/{host_id}/tasks/{task_id}:
     get:
       tags:
@@ -3038,6 +3254,15 @@ paths:
                 name: error_name
         "500":
           description: 'server_error: Internal Server Error response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
+        default:
+          description: Unexpected error response
           content:
             application/json:
               schema:
@@ -3218,6 +3443,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/tasks:
     get:
       tags:
@@ -3338,6 +3572,15 @@ paths:
               example:
                 message: A longer description of the error.
                 name: error_name
+        default:
+          description: Unexpected error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
   /v1/version:
     get:
       tags:
@@ -3359,6 +3602,15 @@ paths:
                 version: 1.0.0
         "500":
           description: 'server_error: Internal Server Error response.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIError'
+              example:
+                message: A longer description of the error.
+                name: error_name
+        default:
+          description: Unexpected error response
           content:
             application/json:
               schema:

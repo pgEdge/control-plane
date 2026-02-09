@@ -182,6 +182,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       }
@@ -266,6 +280,20 @@
           },
           "500": {
             "description": "server_error: Internal Server Error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
             "content": {
               "application/json": {
                 "schema": {
@@ -362,6 +390,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       }
@@ -405,6 +447,20 @@
           },
           "500": {
             "description": "server_error: Internal Server Error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
             "content": {
               "application/json": {
                 "schema": {
@@ -685,6 +741,20 @@
           },
           "500": {
             "description": "server_error: Internal Server Error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
             "content": {
               "application/json": {
                 "schema": {
@@ -1202,6 +1272,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       }
@@ -1307,6 +1391,20 @@
           },
           "500": {
             "description": "server_error: Internal Server Error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
             "content": {
               "application/json": {
                 "schema": {
@@ -1548,6 +1646,20 @@
           },
           "500": {
             "description": "server_error: Internal Server Error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
             "content": {
               "application/json": {
                 "schema": {
@@ -1946,6 +2058,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       }
@@ -2093,6 +2219,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       }
@@ -2229,6 +2369,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       }
@@ -2354,6 +2508,20 @@
           },
           "500": {
             "description": "server_error: Internal Server Error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
             "content": {
               "application/json": {
                 "schema": {
@@ -2526,6 +2694,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       }
@@ -2656,6 +2838,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       }
@@ -2775,6 +2971,20 @@
           },
           "500": {
             "description": "server_error: Internal Server Error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
             "content": {
               "application/json": {
                 "schema": {
@@ -3125,6 +3335,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       }
@@ -3310,6 +3534,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       }
@@ -3427,6 +3665,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       }
@@ -3520,6 +3772,20 @@
           },
           "500": {
             "description": "server_error: Internal Server Error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
             "content": {
               "application/json": {
                 "schema": {
@@ -3795,6 +4061,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       }
@@ -3971,6 +4251,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       }
@@ -4122,6 +4416,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       },
@@ -4251,6 +4559,20 @@
           },
           "500": {
             "description": "server_error: Internal Server Error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
             "content": {
               "application/json": {
                 "schema": {
@@ -4416,6 +4738,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       }
@@ -4522,6 +4858,20 @@
           },
           "500": {
             "description": "server_error: Internal Server Error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
             "content": {
               "application/json": {
                 "schema": {
@@ -4797,6 +5147,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       }
@@ -4964,6 +5328,20 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
           }
         }
       }
@@ -4995,6 +5373,20 @@
           },
           "500": {
             "description": "server_error: Internal Server Error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "example": {
+                  "message": "A longer description of the error.",
+                  "name": "error_name"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
             "content": {
               "application/json": {
                 "schema": {

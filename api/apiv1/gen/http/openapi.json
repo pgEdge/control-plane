@@ -56,6 +56,12 @@
                 "message"
               ]
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
+            }
           }
         },
         "schemes": [
@@ -119,6 +125,12 @@
                 "name",
                 "message"
               ]
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
             }
           }
         },
@@ -192,6 +204,12 @@
                 "message"
               ]
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
+            }
           }
         },
         "schemes": [
@@ -237,6 +255,12 @@
                 "message"
               ]
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
+            }
           }
         },
         "schemes": [
@@ -280,6 +304,12 @@
                 "name",
                 "message"
               ]
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
             }
           }
         },
@@ -346,6 +376,12 @@
                 "name",
                 "message"
               ]
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
             }
           }
         },
@@ -422,6 +458,12 @@
                 "name",
                 "message"
               ]
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
             }
           }
         },
@@ -511,6 +553,12 @@
                 "message"
               ]
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
+            }
           }
         },
         "schemes": [
@@ -589,6 +637,12 @@
                 "name",
                 "message"
               ]
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
             }
           }
         },
@@ -686,6 +740,12 @@
                 "message"
               ]
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
+            }
           }
         },
         "schemes": [
@@ -774,6 +834,12 @@
                 "message"
               ]
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
+            }
           }
         },
         "schemes": [
@@ -861,6 +927,12 @@
                 "name",
                 "message"
               ]
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
             }
           }
         },
@@ -959,6 +1031,12 @@
                 "message"
               ]
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
+            }
           }
         },
         "schemes": [
@@ -1048,6 +1126,12 @@
                 "message"
               ]
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
+            }
           }
         },
         "schemes": [
@@ -1136,6 +1220,12 @@
                 "name",
                 "message"
               ]
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
             }
           }
         },
@@ -1227,6 +1317,12 @@
                 "name",
                 "message"
               ]
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
             }
           }
         },
@@ -1331,6 +1427,12 @@
                 "message"
               ]
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
+            }
           }
         },
         "schemes": [
@@ -1417,6 +1519,12 @@
                 "message"
               ]
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
+            }
           }
         },
         "schemes": [
@@ -1491,6 +1599,12 @@
                 "name",
                 "message"
               ]
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
             }
           }
         },
@@ -1592,6 +1706,12 @@
                 "message"
               ]
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
+            }
           }
         },
         "schemes": [
@@ -1635,6 +1755,12 @@
                 "name",
                 "message"
               ]
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
             }
           }
         },
@@ -1713,6 +1839,12 @@
                 "name",
                 "message"
               ]
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
             }
           }
         },
@@ -1793,6 +1925,12 @@
                 "name",
                 "message"
               ]
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
             }
           }
         },
@@ -1897,6 +2035,12 @@
                 "message"
               ]
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
+            }
           }
         },
         "schemes": [
@@ -1982,6 +2126,12 @@
                 "name",
                 "message"
               ]
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
             }
           }
         },
@@ -2082,6 +2232,12 @@
                 "name",
                 "message"
               ]
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
             }
           }
         },
@@ -2187,6 +2343,12 @@
                 "message"
               ]
             }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
+            }
           }
         },
         "schemes": [
@@ -2223,6 +2385,12 @@
                 "name",
                 "message"
               ]
+            }
+          },
+          "default": {
+            "description": "Unexpected error response",
+            "schema": {
+              "$ref": "#/definitions/APIError"
             }
           }
         },
