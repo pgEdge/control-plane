@@ -23,10 +23,7 @@ func NewServiceVersions(cfg config.Config) *ServiceVersions {
 	}
 
 	// MCP service versions
-	// TODO: there is no "1.0.0" image yet - the latest is something like "1.0.0-beta3"
-	versions.addServiceImage("mcp", "1.0.0", &ServiceImages{
-		Image: serviceImageTag(cfg, "postgres-mcp:1.0.0"),
-	})
+	// TODO: Register semver versions when official releases are published.
 	versions.addServiceImage("mcp", "latest", &ServiceImages{
 		Image: serviceImageTag(cfg, "postgres-mcp:latest"),
 	})
@@ -84,6 +81,9 @@ func serviceImageTag(cfg config.Config, imageRef string) string {
 		}
 	}
 
-	// Prepend repository host
+	// Prepend repository host if configured
+	if cfg.DockerSwarm.ImageRepositoryHost == "" {
+		return imageRef
+	}
 	return fmt.Sprintf("%s/%s", cfg.DockerSwarm.ImageRepositoryHost, imageRef)
 }

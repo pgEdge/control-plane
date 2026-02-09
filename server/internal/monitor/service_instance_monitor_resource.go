@@ -69,7 +69,7 @@ func (m *ServiceInstanceMonitorResource) Create(ctx context.Context, rc *resourc
 		return err
 	}
 
-	err = service.CreateServiceInstanceMonitor(ctx, m.DatabaseID, m.ServiceInstanceID, m.HostID)
+	err = service.CreateServiceInstanceMonitor(ctx, m.DatabaseID, m.ServiceInstanceID)
 	if err != nil {
 		return fmt.Errorf("failed to create service instance monitor: %w", err)
 	}

@@ -19,6 +19,24 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
+// isSensitiveConfigKey returns true if the given config key name likely
+// contains a secret value that should not be returned in API responses.
+func isSensitiveConfigKey(key string) bool {
+	k := strings.ToLower(key)
+	patterns := []string{
+		"password", "secret", "token",
+		"api_key", "apikey", "api-key",
+		"credential", "private_key", "private-key",
+		"access_key", "access-key",
+	}
+	for _, p := range patterns {
+		if strings.Contains(k, p) {
+			return true
+		}
+	}
+	return false
+}
+
 func hostToAPI(h *host.Host) *api.Host {
 	components := make(map[string]*api.ComponentStatus, len(h.Status.Components))
 	for name, status := range h.Status.Components {
@@ -196,8 +214,7 @@ func serviceSpecToAPI(svc *database.ServiceSpec) *api.ServiceSpec {
 	if svc.Config != nil {
 		filteredConfig = make(map[string]any, len(svc.Config))
 		for k, v := range svc.Config {
-			kLower := strings.ToLower(k)
-			if strings.Contains(kLower, "api_key") || strings.Contains(kLower, "secret") || strings.Contains(kLower, "password") {
+			if isSensitiveConfigKey(k) {
 				continue
 			}
 			filteredConfig[k] = v

@@ -22,15 +22,22 @@ func TestGetServiceImage(t *testing.T) {
 		wantErr     bool
 	}{
 		{
-			name:        "valid mcp 1.0.0",
+			name:        "valid mcp latest",
 			serviceType: "mcp",
-			version:     "1.0.0",
-			want:        "ghcr.io/pgedge/postgres-mcp:1.0.0",
+			version:     "latest",
+			want:        "ghcr.io/pgedge/postgres-mcp:latest",
 			wantErr:     false,
 		},
 		{
 			name:        "unsupported service type",
 			serviceType: "unknown",
+			version:     "latest",
+			want:        "",
+			wantErr:     true,
+		},
+		{
+			name:        "unregistered version",
+			serviceType: "mcp",
 			version:     "1.0.0",
 			want:        "",
 			wantErr:     true,
@@ -75,7 +82,7 @@ func TestSupportedServiceVersions(t *testing.T) {
 		{
 			name:        "mcp service has versions",
 			serviceType: "mcp",
-			wantLen:     2, // "1.0.0" and "latest"
+			wantLen:     1, // "latest"
 			wantErr:     false,
 		},
 		{
@@ -108,10 +115,16 @@ func TestServiceImageTag(t *testing.T) {
 		want     string
 	}{
 		{
-			name:     "image without registry",
-			imageRef: "pgedge/postgres-mcp:1.0.0",
+			name:     "bare image name",
+			imageRef: "postgres-mcp:latest",
 			repoHost: "ghcr.io/pgedge",
-			want:     "ghcr.io/pgedge/pgedge/postgres-mcp:1.0.0",
+			want:     "ghcr.io/pgedge/postgres-mcp:latest",
+		},
+		{
+			name:     "empty repository host",
+			imageRef: "postgres-mcp:latest",
+			repoHost: "",
+			want:     "postgres-mcp:latest",
 		},
 		{
 			name:     "image with registry",

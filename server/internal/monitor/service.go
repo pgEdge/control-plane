@@ -167,7 +167,7 @@ func (s *Service) addInstanceMonitor(databaseID, instanceID, dbName string) {
 	s.instances[instanceID] = mon
 }
 
-func (s *Service) CreateServiceInstanceMonitor(ctx context.Context, databaseID, serviceInstanceID, hostID string) error {
+func (s *Service) CreateServiceInstanceMonitor(ctx context.Context, databaseID, serviceInstanceID string) error {
 	if s.HasServiceInstanceMonitor(serviceInstanceID) {
 		err := s.DeleteServiceInstanceMonitor(ctx, serviceInstanceID)
 		if err != nil {
@@ -176,7 +176,7 @@ func (s *Service) CreateServiceInstanceMonitor(ctx context.Context, databaseID, 
 	}
 
 	err := s.store.ServiceInstanceMonitor.Put(&StoredServiceInstanceMonitor{
-		HostID:            hostID,
+		HostID:            s.cfg.HostID,
 		DatabaseID:        databaseID,
 		ServiceInstanceID: serviceInstanceID,
 	}).Exec(ctx)
@@ -184,7 +184,7 @@ func (s *Service) CreateServiceInstanceMonitor(ctx context.Context, databaseID, 
 		return fmt.Errorf("failed to persist service instance monitor: %w", err)
 	}
 
-	s.addServiceInstanceMonitor(databaseID, serviceInstanceID, hostID)
+	s.addServiceInstanceMonitor(databaseID, serviceInstanceID, s.cfg.HostID)
 
 	return nil
 }

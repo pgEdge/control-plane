@@ -50,7 +50,18 @@ The username format provides the following benefits:
 ### PostgreSQL Compatibility
 
 PostgreSQL limits identifier length to 63 characters.
-The system truncates the username to 63 characters when the combined values exceed that limit.
+When the full `svc_{service_id}_{host_id}` username fits within 63 characters, it is used as-is.
+
+When the combined values exceed 63 characters, the system appends a deterministic 8-character
+hex hash (derived from the SHA-256 of the full untruncated username) to a truncated prefix:
+
+```text
+Short name format: svc_{service_id}_{host_id}
+Long name format:  svc_{first 50 chars of service_id_host_id}_{8-hex-hash}
+```
+
+The hash suffix guarantees uniqueness even when two long inputs share a common prefix, because
+different full usernames produce different SHA-256 digests.
 
 ## Password Generation
 

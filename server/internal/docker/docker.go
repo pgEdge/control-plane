@@ -462,8 +462,8 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 				Strs("task_states", taskStates).
 				Msg("checking service task status")
 
-			// If we have failed tasks and no running tasks, the service won't start
-			if failed > 0 && running == 0 {
+			// If we have failed tasks and no running or transitional tasks, the service won't start
+			if failed > 0 && running == 0 && preparing == 0 && pending == 0 {
 				if lastFailureMsg != "" {
 					return fmt.Errorf("service tasks failed: %s", lastFailureMsg)
 				}

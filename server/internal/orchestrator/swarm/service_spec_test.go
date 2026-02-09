@@ -47,7 +47,7 @@ func TestServiceContainerSpec(t *testing.T) {
 				Hostname:          "mcp-server-host1",
 				CohortMemberID:    "swarm-node-123",
 				ServiceImages: &ServiceImages{
-					Image: "ghcr.io/pgedge/postgres-mcp:1.0.0",
+					Image: "ghcr.io/pgedge/postgres-mcp:latest",
 				},
 				Credentials: &database.ServiceUser{
 					Username: "svc_db1mcp",
@@ -175,7 +175,7 @@ func TestServiceContainerSpec(t *testing.T) {
 				Hostname:          "mcp-server-host1",
 				CohortMemberID:    "swarm-node-123",
 				ServiceImages: &ServiceImages{
-					Image: "ghcr.io/pgedge/postgres-mcp:1.0.0",
+					Image: "ghcr.io/pgedge/postgres-mcp:latest",
 				},
 				DatabaseNetworkID: "db1-database",
 				DatabaseHost:      "postgres-instance-1",
@@ -220,7 +220,7 @@ func TestServiceContainerSpec(t *testing.T) {
 				Hostname:          "mcp-server-host1",
 				CohortMemberID:    "swarm-node-123",
 				ServiceImages: &ServiceImages{
-					Image: "ghcr.io/pgedge/postgres-mcp:1.0.0",
+					Image: "ghcr.io/pgedge/postgres-mcp:latest",
 				},
 				DatabaseNetworkID: "db1-database",
 				DatabaseHost:      "postgres-instance-1",
@@ -268,7 +268,7 @@ func TestServiceContainerSpec(t *testing.T) {
 				Hostname:          "mcp-server-host1",
 				CohortMemberID:    "swarm-node-123",
 				ServiceImages: &ServiceImages{
-					Image: "ghcr.io/pgedge/postgres-mcp:1.0.0",
+					Image: "ghcr.io/pgedge/postgres-mcp:latest",
 				},
 				DatabaseNetworkID: "db1-database",
 				DatabaseHost:      "postgres-instance-1",
@@ -316,7 +316,7 @@ func TestServiceContainerSpec(t *testing.T) {
 				Hostname:          "mcp-server-host1",
 				CohortMemberID:    "swarm-node-123",
 				ServiceImages: &ServiceImages{
-					Image: "ghcr.io/pgedge/postgres-mcp:1.0.0",
+					Image: "ghcr.io/pgedge/postgres-mcp:latest",
 				},
 				Credentials:       nil, // No credentials
 				DatabaseNetworkID: "db1-database",
