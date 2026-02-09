@@ -2,6 +2,7 @@ package swarm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -107,9 +108,11 @@ func (r *ServiceUserRole) Delete(ctx context.Context, rc *resource.Context) erro
 
 	db, err := dbSvc.GetDatabase(ctx, r.DatabaseID)
 	if err != nil {
-		// Database might already be deleted - this is not an error
-		logger.Info().Msg("database not found, skipping user deletion")
-		return nil
+		if errors.Is(err, database.ErrDatabaseNotFound) {
+			logger.Info().Msg("database not found, skipping user deletion")
+			return nil
+		}
+		return fmt.Errorf("failed to get database: %w", err)
 	}
 
 	if len(db.Instances) == 0 {
