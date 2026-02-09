@@ -154,8 +154,8 @@ func (w *Workflows) ProvisionServices(ctx workflow.Context, input *ProvisionServ
 			// database network connectivity. We prefer an instance on the same host for
 			// lower latency, but any instance will work.
 			var instanceHostname string
-			var instancePort int = 5432 // Default Postgres port
-			var instanceHostID string   // Host where the instance is running (needed for CreateServiceUser)
+			var instancePort = 5432   // Default Postgres port
+			var instanceHostID string // Host where the instance is running (needed for CreateServiceUser)
 			instanceResources := accumulatedState.GetAll(database.ResourceTypeInstance)
 
 			// First try to find an instance on the same host (preferred for latency)

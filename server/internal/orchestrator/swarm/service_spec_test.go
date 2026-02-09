@@ -375,8 +375,8 @@ func TestServiceContainerSpec(t *testing.T) {
 			}
 
 			// Check service name
-			if got.Annotations.Name != tt.opts.ServiceName {
-				t.Errorf("service name = %v, want %v", got.Annotations.Name, tt.opts.ServiceName)
+			if got.Name != tt.opts.ServiceName {
+				t.Errorf("service name = %v, want %v", got.Name, tt.opts.ServiceName)
 			}
 
 			// Check hostname

@@ -428,14 +428,14 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 			var taskStates []string
 			for _, t := range tasks {
 				taskStates = append(taskStates, string(t.Status.State))
-				if t.Status.State == swarm.TaskStateRunning {
+				switch t.Status.State {
+				case swarm.TaskStateRunning:
 					if t.DesiredState == swarm.TaskStateRunning {
 						running++
 					} else {
 						stopping++
 					}
-				} else if t.Status.State == swarm.TaskStateFailed ||
-					t.Status.State == swarm.TaskStateRejected {
+				case swarm.TaskStateFailed, swarm.TaskStateRejected:
 					failed++
 					// Capture the error message from the most recent failed task
 					if t.Status.Err != "" {
@@ -443,11 +443,9 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 					} else if t.Status.Message != "" {
 						lastFailureMsg = t.Status.Message
 					}
-				} else if t.Status.State == swarm.TaskStatePreparing {
+				case swarm.TaskStatePreparing:
 					preparing++
-				} else if t.Status.State == swarm.TaskStatePending ||
-					t.Status.State == swarm.TaskStateAssigned ||
-					t.Status.State == swarm.TaskStateAccepted {
+				case swarm.TaskStatePending, swarm.TaskStateAssigned, swarm.TaskStateAccepted:
 					pending++
 				}
 			}
