@@ -562,13 +562,19 @@ func (o *Orchestrator) GetServiceInstanceStatus(ctx context.Context, serviceInst
 		})
 	}
 
+	// Determine readiness from container state and health info
+	ready := inspect.State != nil && inspect.State.Running
+	if ready && inspect.State.Health != nil {
+		ready = inspect.State.Health.Status == "healthy"
+	}
+
 	return &database.ServiceInstanceStatus{
 		ContainerID:  utils.PointerTo(inspect.ID),
 		ImageVersion: utils.PointerTo(inspect.Config.Image),
 		Hostname:     utils.PointerTo(inspect.Config.Hostname),
 		IPv4Address:  utils.PointerTo(o.cfg.IPv4Address),
 		Ports:        ports,
-		ServiceReady: utils.PointerTo(true),
+		ServiceReady: utils.PointerTo(ready),
 	}, nil
 }
 

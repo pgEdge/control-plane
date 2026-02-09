@@ -84,7 +84,7 @@ func TestProvisionMCPService(t *testing.T) {
 	if serviceInstance.State == "creating" {
 		t.Log("Service is still creating, waiting for it to become running...")
 
-		maxWait := 2 * time.Minute
+		maxWait := 5 * time.Minute
 		pollInterval := 5 * time.Second
 		deadline := time.Now().Add(maxWait)
 
@@ -496,7 +496,7 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 	if serviceInstance.State != "running" {
 		t.Log("Service is not yet running, waiting...")
 
-		maxWait := 2 * time.Minute
+		maxWait := 5 * time.Minute
 		pollInterval := 5 * time.Second
 		deadline := time.Now().Add(maxWait)
 

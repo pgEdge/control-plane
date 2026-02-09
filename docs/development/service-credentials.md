@@ -197,11 +197,11 @@ The following sections describe common credential-related issues and their solut
 
 Verify the following items when a service cannot connect to the database:
 
-1. Confirm the service instance state is "running" via `GET /v1/databases/{id}`.
-2. Confirm the database credentials exist in etcd.
-3. Confirm the database user exists by running `'SELECT * FROM pg_user WHERE usename LIKE 'svc_%';'`.
-4. Confirm network connectivity from the service container to the database.
-5. Check the service logs for connection error messages.
+1. Verify the service instance state is "running" via `GET /v1/databases/{id}`.
+2. Ensure the database credentials exist in etcd.
+3. Check that the database user exists by running `SELECT * FROM pg_user WHERE usename LIKE 'svc_%'`.
+4. Test network connectivity from the service container to the database.
+5. Inspect the service logs for connection error messages.
 
 ### Permission Denied Errors
 
@@ -223,8 +223,8 @@ Username collisions are rare because the service instance ID is unique within ea
 
 Verify the following items when a collision is suspected:
 
-- Check for duplicate service instance IDs in etcd.
-- Run `'SELECT * FROM pg_user WHERE usename = 'svc_<prefix>';'` to confirm the user exists.
+- Verify there are no duplicate service instance IDs in etcd.
+- Run `SELECT * FROM pg_user WHERE usename = 'svc_<prefix>'` to check whether the user exists.
 
 ## Future Enhancements
 

@@ -393,7 +393,7 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 				return fmt.Errorf("failed to inspect service: %w", errTranslate(err))
 			}
 			if service.Spec.Mode.Replicated == nil {
-				return fmt.Errorf("WaitForService is only usable for replicated services: %w", err)
+				return fmt.Errorf("WaitForService is only usable for replicated services")
 			}
 			if service.UpdateStatus != nil && service.UpdateStatus.State != swarm.UpdateStateCompleted {
 				d.logger.Debug().

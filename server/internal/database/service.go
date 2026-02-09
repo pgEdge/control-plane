@@ -602,6 +602,9 @@ func (s *Service) SetServiceInstanceState(
 		GetByKey(databaseID, serviceInstanceID).
 		Exec(ctx)
 	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return ErrServiceInstanceNotFound
+		}
 		return fmt.Errorf("failed to get service instance: %w", err)
 	}
 	stored.State = state
@@ -711,6 +714,9 @@ func (s *Service) UpdateServiceInstanceState(
 			GetByKey(update.DatabaseID, serviceInstanceID).
 			Exec(ctx)
 		if err != nil {
+			if errors.Is(err, storage.ErrNotFound) {
+				return ErrServiceInstanceNotFound
+			}
 			return fmt.Errorf("failed to get service instance: %w", err)
 		}
 		databaseID = stored.DatabaseID
@@ -732,7 +738,7 @@ func (s *Service) UpdateServiceInstanceState(
 			}
 		}
 		if databaseID == "" {
-			return fmt.Errorf("service instance %s not found", serviceInstanceID)
+			return ErrServiceInstanceNotFound
 		}
 	}
 

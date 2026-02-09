@@ -1,6 +1,7 @@
 package swarm
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/docker/docker/api/types/swarm"
@@ -326,7 +327,7 @@ func TestServiceContainerSpec(t *testing.T) {
 			checkEnv: func(t *testing.T, env []string) {
 				// Should not have PGUSER or PGPASSWORD
 				for _, e := range env {
-					if e == "PGUSER" || e == "PGPASSWORD" {
+					if strings.HasPrefix(e, "PGUSER=") || strings.HasPrefix(e, "PGPASSWORD=") {
 						t.Errorf("unexpected credential env var: %s", e)
 					}
 				}

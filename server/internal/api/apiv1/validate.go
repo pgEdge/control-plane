@@ -293,29 +293,35 @@ func validateMCPServiceConfig(config map[string]any, path []string) []error {
 	}
 
 	// Validate llm_provider
-	if provider, ok := config["llm_provider"].(string); ok {
-		validProviders := []string{"anthropic", "openai", "ollama"}
-		if !slices.Contains(validProviders, provider) {
-			err := fmt.Errorf("unsupported llm_provider '%s' (must be one of: %s)", provider, strings.Join(validProviders, ", "))
+	if val, exists := config["llm_provider"]; exists {
+		provider, ok := val.(string)
+		if !ok {
+			err := errors.New("llm_provider must be a string")
 			errs = append(errs, newValidationError(err, appendPath(path, mapKeyPath("llm_provider"))))
-		}
+		} else {
+			validProviders := []string{"anthropic", "openai", "ollama"}
+			if !slices.Contains(validProviders, provider) {
+				err := fmt.Errorf("unsupported llm_provider '%s' (must be one of: %s)", provider, strings.Join(validProviders, ", "))
+				errs = append(errs, newValidationError(err, appendPath(path, mapKeyPath("llm_provider"))))
+			}
 
-		// Provider-specific API key validation
-		switch provider {
-		case "anthropic":
-			if _, ok := config["anthropic_api_key"]; !ok {
-				err := errors.New("missing required field 'anthropic_api_key' for anthropic provider")
-				errs = append(errs, newValidationError(err, path))
-			}
-		case "openai":
-			if _, ok := config["openai_api_key"]; !ok {
-				err := errors.New("missing required field 'openai_api_key' for openai provider")
-				errs = append(errs, newValidationError(err, path))
-			}
-		case "ollama":
-			if _, ok := config["ollama_url"]; !ok {
-				err := errors.New("missing required field 'ollama_url' for ollama provider")
-				errs = append(errs, newValidationError(err, path))
+			// Provider-specific API key validation
+			switch provider {
+			case "anthropic":
+				if _, ok := config["anthropic_api_key"]; !ok {
+					err := errors.New("missing required field 'anthropic_api_key' for anthropic provider")
+					errs = append(errs, newValidationError(err, path))
+				}
+			case "openai":
+				if _, ok := config["openai_api_key"]; !ok {
+					err := errors.New("missing required field 'openai_api_key' for openai provider")
+					errs = append(errs, newValidationError(err, path))
+				}
+			case "ollama":
+				if _, ok := config["ollama_url"]; !ok {
+					err := errors.New("missing required field 'ollama_url' for ollama provider")
+					errs = append(errs, newValidationError(err, path))
+				}
 			}
 		}
 	}
