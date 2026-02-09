@@ -16,15 +16,16 @@ import (
 var _ do.Shutdownable = (*Service)(nil)
 
 type Service struct {
-	appCtx      context.Context
-	cfg         config.Config
-	logger      zerolog.Logger
-	dbSvc       *database.Service
-	certSvc     *certificates.Service
-	dbOrch      database.Orchestrator
-	store       *Store
-	hostMoniter *HostMonitor
-	instances   map[string]*InstanceMonitor
+	appCtx           context.Context
+	cfg              config.Config
+	logger           zerolog.Logger
+	dbSvc            *database.Service
+	certSvc          *certificates.Service
+	dbOrch           database.Orchestrator
+	store            *Store
+	hostMoniter      *HostMonitor
+	instances        map[string]*InstanceMonitor
+	serviceInstances map[string]*ServiceInstanceMonitor
 }
 
 func NewService(
@@ -37,14 +38,15 @@ func NewService(
 	hostSvc *host.Service,
 ) *Service {
 	return &Service{
-		cfg:         cfg,
-		logger:      logger,
-		dbSvc:       dbSvc,
-		certSvc:     certSvc,
-		dbOrch:      dbOrch,
-		store:       store,
-		instances:   map[string]*InstanceMonitor{},
-		hostMoniter: NewHostMonitor(logger, hostSvc),
+		cfg:              cfg,
+		logger:           logger,
+		dbSvc:            dbSvc,
+		certSvc:          certSvc,
+		dbOrch:           dbOrch,
+		store:            store,
+		instances:        map[string]*InstanceMonitor{},
+		serviceInstances: map[string]*ServiceInstanceMonitor{},
+		hostMoniter:      NewHostMonitor(logger, hostSvc),
 	}
 }
 
@@ -70,6 +72,21 @@ func (s *Service) Start(ctx context.Context) error {
 		)
 	}
 
+	storedSvcInst, err := s.store.ServiceInstanceMonitor.
+		GetAllByHostID(s.cfg.HostID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve existing service instance monitors: %w", err)
+	}
+
+	for _, svcInst := range storedSvcInst {
+		s.addServiceInstanceMonitor(
+			svcInst.DatabaseID,
+			svcInst.ServiceInstanceID,
+			svcInst.HostID,
+		)
+	}
+
 	return nil
 }
 
@@ -81,6 +98,12 @@ func (s *Service) Shutdown() error {
 	}
 
 	s.instances = map[string]*InstanceMonitor{}
+
+	for _, mon := range s.serviceInstances {
+		mon.Stop()
+	}
+
+	s.serviceInstances = map[string]*ServiceInstanceMonitor{}
 
 	return nil
 }
@@ -142,4 +165,61 @@ func (s *Service) addInstanceMonitor(databaseID, instanceID, dbName string) {
 	)
 	mon.Start(s.appCtx)
 	s.instances[instanceID] = mon
+}
+
+func (s *Service) CreateServiceInstanceMonitor(ctx context.Context, databaseID, serviceInstanceID, hostID string) error {
+	if s.HasServiceInstanceMonitor(serviceInstanceID) {
+		err := s.DeleteServiceInstanceMonitor(ctx, serviceInstanceID)
+		if err != nil {
+			return fmt.Errorf("failed to delete existing service instance monitor: %w", err)
+		}
+	}
+
+	err := s.store.ServiceInstanceMonitor.Put(&StoredServiceInstanceMonitor{
+		HostID:            hostID,
+		DatabaseID:        databaseID,
+		ServiceInstanceID: serviceInstanceID,
+	}).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to persist service instance monitor: %w", err)
+	}
+
+	s.addServiceInstanceMonitor(databaseID, serviceInstanceID, hostID)
+
+	return nil
+}
+
+func (s *Service) DeleteServiceInstanceMonitor(ctx context.Context, serviceInstanceID string) error {
+	mon, ok := s.serviceInstances[serviceInstanceID]
+	if ok {
+		mon.Stop()
+		delete(s.serviceInstances, serviceInstanceID)
+	}
+
+	_, err := s.store.ServiceInstanceMonitor.
+		DeleteByKey(s.cfg.HostID, serviceInstanceID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete service instance monitor: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) HasServiceInstanceMonitor(serviceInstanceID string) bool {
+	_, ok := s.serviceInstances[serviceInstanceID]
+	return ok
+}
+
+func (s *Service) addServiceInstanceMonitor(databaseID, serviceInstanceID, hostID string) {
+	mon := NewServiceInstanceMonitor(
+		s.dbOrch,
+		s.dbSvc,
+		s.logger,
+		databaseID,
+		serviceInstanceID,
+		hostID,
+	)
+	mon.Start(s.appCtx)
+	s.serviceInstances[serviceInstanceID] = mon
 }

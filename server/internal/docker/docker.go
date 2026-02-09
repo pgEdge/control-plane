@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rs/zerolog"
+
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pgEdge/control-plane/server/internal/common"
 	"github.com/samber/do"
@@ -33,14 +35,18 @@ var _ do.Shutdownable = (*Docker)(nil)
 
 type Docker struct {
 	client *client.Client
+	logger zerolog.Logger
 }
 
-func NewDocker() (*Docker, error) {
+func NewDocker(logger zerolog.Logger) (*Docker, error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create docker client: %w", err)
 	}
-	return &Docker{client: cli}, nil
+	return &Docker{
+		client: cli,
+		logger: logger.With().Str("component", "docker").Logger(),
+	}, nil
 }
 
 func (d *Docker) Exec(ctx context.Context, w io.Writer, containerID string, command []string) error {
@@ -353,6 +359,16 @@ func (d *Docker) TasksByServiceID(ctx context.Context) (map[string][]swarm.Task,
 	return tasksByServiceID, nil
 }
 
+func (d *Docker) TaskList(ctx context.Context, filter filters.Args) ([]swarm.Task, error) {
+	tasks, err := d.client.TaskList(ctx, types.TaskListOptions{
+		Filters: filter,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list tasks: %w", errTranslate(err))
+	}
+	return tasks, nil
+}
+
 // WaitForService waits until the given service achieves the desired state and
 // number of tasks. The Swarm API can return stale data before the updated spec
 // has propagated to all manager nodes, so the optional 'previous swarm.Version'
@@ -380,10 +396,18 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 				return fmt.Errorf("WaitForService is only usable for replicated services: %w", err)
 			}
 			if service.UpdateStatus != nil && service.UpdateStatus.State != swarm.UpdateStateCompleted {
+				d.logger.Debug().
+					Str("service_id", serviceID).
+					Str("update_status", string(service.UpdateStatus.State)).
+					Msg("service update in progress, waiting")
 				continue
 			}
 			if service.Version.Index == previous.Index {
 				// The old service version was returned
+				d.logger.Debug().
+					Str("service_id", serviceID).
+					Uint64("version_index", service.Version.Index).
+					Msg("old service version returned, waiting")
 				continue
 			}
 			var desired uint64
@@ -399,17 +423,60 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 			if err != nil {
 				return fmt.Errorf("failed to list tasks for service: %w", errTranslate(err))
 			}
-			var running, stopping uint64
+			var running, stopping, failed, preparing, pending uint64
+			var lastFailureMsg string
+			var taskStates []string
 			for _, t := range tasks {
+				taskStates = append(taskStates, string(t.Status.State))
 				if t.Status.State == swarm.TaskStateRunning {
 					if t.DesiredState == swarm.TaskStateRunning {
 						running++
 					} else {
 						stopping++
 					}
+				} else if t.Status.State == swarm.TaskStateFailed ||
+					t.Status.State == swarm.TaskStateRejected {
+					failed++
+					// Capture the error message from the most recent failed task
+					if t.Status.Err != "" {
+						lastFailureMsg = t.Status.Err
+					} else if t.Status.Message != "" {
+						lastFailureMsg = t.Status.Message
+					}
+				} else if t.Status.State == swarm.TaskStatePreparing {
+					preparing++
+				} else if t.Status.State == swarm.TaskStatePending ||
+					t.Status.State == swarm.TaskStateAssigned ||
+					t.Status.State == swarm.TaskStateAccepted {
+					pending++
 				}
 			}
+
+			d.logger.Debug().
+				Str("service_id", serviceID).
+				Uint64("desired", desired).
+				Uint64("running", running).
+				Uint64("stopping", stopping).
+				Uint64("failed", failed).
+				Uint64("preparing", preparing).
+				Uint64("pending", pending).
+				Int("total_tasks", len(tasks)).
+				Strs("task_states", taskStates).
+				Msg("checking service task status")
+
+			// If we have failed tasks and no running tasks, the service won't start
+			if failed > 0 && running == 0 {
+				if lastFailureMsg != "" {
+					return fmt.Errorf("service tasks failed: %s", lastFailureMsg)
+				}
+				return fmt.Errorf("service has %d failed task(s), expected %d running", failed, desired)
+			}
+
 			if running == desired && stopping == 0 {
+				d.logger.Info().
+					Str("service_id", serviceID).
+					Uint64("running_tasks", running).
+					Msg("service tasks ready")
 				return nil
 			}
 		}

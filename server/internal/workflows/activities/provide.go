@@ -22,16 +22,21 @@ func provideActivities(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
+		dbSvc, err := do.Invoke[*database.Service](i)
+		if err != nil {
+			return nil, err
+		}
 		taskSvc, err := do.Invoke[*task.Service](i)
 		if err != nil {
 			return nil, err
 		}
 
 		return &Activities{
-			Config:       cfg,
-			Injector:     i,
-			Orchestrator: orch,
-			TaskSvc:      taskSvc,
+			Config:          cfg,
+			Injector:        i,
+			Orchestrator:    orch,
+			DatabaseService: dbSvc,
+			TaskSvc:         taskSvc,
 		}, nil
 	})
 }

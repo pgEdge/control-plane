@@ -22,7 +22,7 @@ func NewHostMonitor(
 	}
 	m.monitor = NewMonitor(
 		logger,
-		database.InstanceMoniterRefreshInterval,
+		database.InstanceMonitorRefreshInterval,
 		m.checkStatus,
 	)
 	return m

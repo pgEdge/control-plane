@@ -13,13 +13,14 @@ import (
 )
 
 var (
-	ErrDatabaseAlreadyExists = errors.New("database already exists")
-	ErrDatabaseNotFound      = errors.New("database not found")
-	ErrDatabaseNotModifiable = errors.New("database not modifiable")
-	ErrInstanceNotFound      = errors.New("instance not found")
-	ErrInstanceStopped       = errors.New("instance stopped")
-	ErrInvalidDatabaseUpdate = errors.New("invalid database update")
-	ErrInvalidSourceNode     = errors.New("invalid source node")
+	ErrDatabaseAlreadyExists   = errors.New("database already exists")
+	ErrDatabaseNotFound        = errors.New("database not found")
+	ErrDatabaseNotModifiable   = errors.New("database not modifiable")
+	ErrInstanceNotFound        = errors.New("instance not found")
+	ErrInstanceStopped         = errors.New("instance stopped")
+	ErrInvalidDatabaseUpdate   = errors.New("invalid database update")
+	ErrInvalidSourceNode       = errors.New("invalid source node")
+	ErrServiceInstanceNotFound = errors.New("service instance not found")
 )
 
 type Service struct {
@@ -96,6 +97,11 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 		return nil, fmt.Errorf("failed to get database instances: %w", err)
 	}
 
+	serviceInstances, err := s.GetServiceInstances(ctx, spec.DatabaseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get service instances: %w", err)
+	}
+
 	currentSpec.Spec = spec
 	currentDB.UpdatedAt = time.Now()
 	currentDB.State = state
@@ -107,12 +113,20 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 		return nil, fmt.Errorf("failed to persist database: %w", err)
 	}
 
-	db := storedToDatabase(currentDB, currentSpec, instances)
+	db := storedToDatabase(currentDB, currentSpec, instances, serviceInstances)
 
 	return db, nil
 }
 
 func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) error {
+	// Note: This method only deletes the database spec and database state from etcd.
+	// Instances and service instances are deleted via their resource lifecycle
+	// in the DeleteDatabase workflow (which calls resource.Delete() on each resource).
+	// The workflow ensures proper cleanup order:
+	// 1. Scale down and remove Docker containers (via resource Delete methods)
+	// 2. Delete etcd state (via DeleteInstance/DeleteServiceInstance in resource Delete)
+	// 3. Delete database spec and state (this method)
+
 	var ops []storage.TxnOperation
 
 	spec, err := s.store.Spec.GetByKey(databaseID).Exec(ctx)
@@ -158,7 +172,12 @@ func (s *Service) GetDatabase(ctx context.Context, databaseID string) (*Database
 		return nil, fmt.Errorf("failed to get database instances: %w", err)
 	}
 
-	return storedToDatabase(storedDb, storedSpec, instances), nil
+	serviceInstances, err := s.GetServiceInstances(ctx, databaseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get service instances: %w", err)
+	}
+
+	return storedToDatabase(storedDb, storedSpec, instances, serviceInstances), nil
 }
 
 func (s *Service) GetDatabases(ctx context.Context) ([]*Database, error) {
@@ -177,7 +196,12 @@ func (s *Service) GetDatabases(ctx context.Context) ([]*Database, error) {
 		return nil, err
 	}
 
-	databases := storedToDatabases(storedDbs, storedSpecs, instances)
+	serviceInstances, err := s.GetAllServiceInstances(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	databases := storedToDatabases(storedDbs, storedSpecs, instances, serviceInstances)
 
 	return databases, nil
 }
@@ -355,6 +379,25 @@ func (s *Service) GetAllInstances(ctx context.Context) ([]*Instance, error) {
 	return instances, nil
 }
 
+func (s *Service) GetAllServiceInstances(ctx context.Context) ([]*ServiceInstance, error) {
+	storedServiceInstances, err := s.store.ServiceInstance.
+		GetAll().
+		Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stored service instances: %w", err)
+	}
+	storedStatuses, err := s.store.ServiceInstanceStatus.
+		GetAll().
+		Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stored service instance statuses: %w", err)
+	}
+
+	serviceInstances := storedToServiceInstances(storedServiceInstances, storedStatuses)
+
+	return serviceInstances, nil
+}
+
 func (s *Service) InstanceCountForHost(ctx context.Context, hostID string) (int, error) {
 	storedInstances, err := s.store.Instance.
 		GetAll().
@@ -376,6 +419,9 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 	// First pass to build out hostID list
 	for _, node := range spec.Nodes {
 		hostIDs = append(hostIDs, node.HostIDs...)
+	}
+	for _, svc := range spec.Services {
+		hostIDs = append(hostIDs, svc.HostIDs...)
 	}
 	hosts, err := s.hostSvc.GetHosts(ctx, hostIDs)
 	if err != nil {
@@ -418,6 +464,15 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 				if !h.Supports(nodeVersion) {
 					return fmt.Errorf("host %s does not support version combination: postgres=%s, spock=%s", h.ID, nodeVersion.PostgresVersion, nodeVersion.SpockVersion)
 				}
+			}
+		}
+	}
+
+	// Validate that all service host IDs refer to registered hosts
+	for _, svc := range spec.Services {
+		for _, hostID := range svc.HostIDs {
+			if _, ok := hostsByID[hostID]; !ok {
+				return fmt.Errorf("service %q: host %s not found", svc.ServiceID, hostID)
 			}
 		}
 	}
@@ -510,4 +565,197 @@ func tenantIDsMatch(a, b *string) bool {
 	default:
 		return false
 	}
+}
+
+// Service Instance Management Methods
+
+func (s *Service) UpdateServiceInstance(ctx context.Context, opts *ServiceInstanceUpdateOptions) error {
+	serviceInstance, err := s.store.ServiceInstance.
+		GetByKey(opts.DatabaseID, opts.ServiceInstanceID).
+		Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		serviceInstance = NewStoredServiceInstance(opts)
+	} else if err != nil {
+		return fmt.Errorf("failed to get stored service instance: %w", err)
+	} else {
+		serviceInstance.Update(opts)
+	}
+
+	err = s.store.ServiceInstance.
+		Put(serviceInstance).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to update stored service instance: %w", err)
+	}
+
+	return nil
+}
+
+// SetServiceInstanceState performs a targeted state update using a direct
+// key lookup instead of scanning all service instances.
+func (s *Service) SetServiceInstanceState(
+	ctx context.Context,
+	databaseID, serviceInstanceID string,
+	state ServiceInstanceState,
+) error {
+	stored, err := s.store.ServiceInstance.
+		GetByKey(databaseID, serviceInstanceID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get service instance: %w", err)
+	}
+	stored.State = state
+	stored.Error = ""
+	stored.UpdatedAt = time.Now()
+	return s.store.ServiceInstance.Put(stored).Exec(ctx)
+}
+
+func (s *Service) DeleteServiceInstance(ctx context.Context, databaseID, serviceInstanceID string) error {
+	_, err := s.store.ServiceInstance.
+		DeleteByKey(databaseID, serviceInstanceID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete stored service instance: %w", err)
+	}
+	_, err = s.store.ServiceInstanceStatus.
+		DeleteByKey(databaseID, serviceInstanceID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete stored service instance status: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) UpdateServiceInstanceStatus(
+	ctx context.Context,
+	databaseID string,
+	serviceInstanceID string,
+	status *ServiceInstanceStatus,
+) error {
+	stored := &StoredServiceInstanceStatus{
+		DatabaseID:        databaseID,
+		ServiceInstanceID: serviceInstanceID,
+		Status:            status,
+	}
+	err := s.store.ServiceInstanceStatus.
+		Put(stored).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to update stored service instance status: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) GetServiceInstances(ctx context.Context, databaseID string) ([]*ServiceInstance, error) {
+	storedServiceInstances, err := s.store.ServiceInstance.
+		GetByDatabaseID(databaseID).
+		Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stored service instances: %w", err)
+	}
+	storedStatuses, err := s.store.ServiceInstanceStatus.
+		GetByDatabaseID(databaseID).
+		Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stored service instance statuses: %w", err)
+	}
+
+	serviceInstances := storedToServiceInstances(storedServiceInstances, storedStatuses)
+
+	return serviceInstances, nil
+}
+
+func (s *Service) GetServiceInstance(ctx context.Context, databaseID, serviceInstanceID string) (*ServiceInstance, error) {
+	storedServiceInstance, err := s.store.ServiceInstance.
+		GetByKey(databaseID, serviceInstanceID).
+		Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrServiceInstanceNotFound
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get stored service instance: %w", err)
+	}
+
+	storedStatus, err := s.store.ServiceInstanceStatus.
+		GetByKey(databaseID, serviceInstanceID).
+		Exec(ctx)
+	if err != nil && !errors.Is(err, storage.ErrNotFound) {
+		return nil, fmt.Errorf("failed to get stored service instance status: %w", err)
+	}
+
+	serviceInstance := storedToServiceInstance(storedServiceInstance, storedStatus)
+
+	return serviceInstance, nil
+}
+
+type ServiceInstanceStateUpdate struct {
+	DatabaseID string                 `json:"database_id,omitempty"`
+	State      ServiceInstanceState   `json:"state"`
+	Status     *ServiceInstanceStatus `json:"status,omitempty"`
+	Error      string                 `json:"error,omitempty"`
+}
+
+func (s *Service) UpdateServiceInstanceState(
+	ctx context.Context,
+	serviceInstanceID string,
+	update *ServiceInstanceStateUpdate,
+) error {
+	var databaseID string
+	var serviceID string
+	var hostID string
+
+	if update.DatabaseID != "" {
+		// Use targeted lookup when DatabaseID is provided
+		stored, err := s.store.ServiceInstance.
+			GetByKey(update.DatabaseID, serviceInstanceID).
+			Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get service instance: %w", err)
+		}
+		databaseID = stored.DatabaseID
+		serviceID = stored.ServiceID
+		hostID = stored.HostID
+	} else {
+		// Fall back to full scan when DatabaseID is not provided
+		serviceInstances, err := s.GetAllServiceInstances(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get service instances: %w", err)
+		}
+
+		for _, si := range serviceInstances {
+			if si.ServiceInstanceID == serviceInstanceID {
+				databaseID = si.DatabaseID
+				serviceID = si.ServiceID
+				hostID = si.HostID
+				break
+			}
+		}
+		if databaseID == "" {
+			return fmt.Errorf("service instance %s not found", serviceInstanceID)
+		}
+	}
+
+	// Update the service instance state
+	err := s.UpdateServiceInstance(ctx, &ServiceInstanceUpdateOptions{
+		ServiceInstanceID: serviceInstanceID,
+		ServiceID:         serviceID,
+		DatabaseID:        databaseID,
+		HostID:            hostID,
+		State:             update.State,
+		Error:             update.Error,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update service instance: %w", err)
+	}
+
+	// Update the service instance status if provided
+	if update.Status != nil {
+		err = s.UpdateServiceInstanceStatus(ctx, databaseID, serviceInstanceID, update.Status)
+		if err != nil {
+			return fmt.Errorf("failed to update service instance status: %w", err)
+		}
+	}
+
+	return nil
 }

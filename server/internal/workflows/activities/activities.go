@@ -12,10 +12,11 @@ import (
 )
 
 type Activities struct {
-	Config       config.Config
-	Injector     *do.Injector
-	Orchestrator database.Orchestrator
-	TaskSvc      *task.Service
+	Config          config.Config
+	Injector        *do.Injector
+	Orchestrator    database.Orchestrator
+	DatabaseService *database.Service
+	TaskSvc         *task.Service
 }
 
 func (a *Activities) Register(work *worker.Worker) error {
@@ -24,8 +25,11 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.CancelSwitchover),
 		work.RegisterActivity(a.CheckClusterHealth),
 		work.RegisterActivity(a.CreatePgBackRestBackup),
+		work.RegisterActivity(a.CreateServiceUser),
 		work.RegisterActivity(a.DeleteDbEntities),
+		work.RegisterActivity(a.GenerateServiceInstanceResources),
 		work.RegisterActivity(a.GetCurrentState),
+		work.RegisterActivity(a.GetServiceInstanceStatus),
 		work.RegisterActivity(a.GetInstanceResources),
 		work.RegisterActivity(a.GetPrimaryInstance),
 		work.RegisterActivity(a.GetRestoreResources),
@@ -40,7 +44,9 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.SelectCandidate),
 		work.RegisterActivity(a.StartInstance),
 		work.RegisterActivity(a.StopInstance),
+		work.RegisterActivity(a.StoreServiceInstance),
 		work.RegisterActivity(a.UpdateDbState),
+		work.RegisterActivity(a.UpdateServiceInstanceState),
 		work.RegisterActivity(a.UpdateTask),
 		work.RegisterActivity(a.ValidateInstanceSpecs),
 	}

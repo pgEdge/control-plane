@@ -3569,6 +3569,8 @@ func marshalControlplaneviewsDatabaseViewToDatabaseResponseBodyAbbreviated(v *co
 			}
 			res.Instances[i] = marshalControlplaneviewsInstanceViewToInstanceResponseBodyAbbreviated(val)
 		}
+	} else {
+		res.Instances = []*InstanceResponseBodyAbbreviated{}
 	}
 
 	return res
@@ -3578,9 +3580,6 @@ func marshalControlplaneviewsDatabaseViewToDatabaseResponseBodyAbbreviated(v *co
 // a value of type *InstanceResponseBodyAbbreviated from a value of type
 // *controlplaneviews.InstanceView.
 func marshalControlplaneviewsInstanceViewToInstanceResponseBodyAbbreviated(v *controlplaneviews.InstanceView) *InstanceResponseBodyAbbreviated {
-	if v == nil {
-		return nil
-	}
 	res := &InstanceResponseBodyAbbreviated{
 		ID:       *v.ID,
 		HostID:   *v.HostID,
@@ -3619,6 +3618,16 @@ func unmarshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecR
 				continue
 			}
 			res.DatabaseUsers[i] = unmarshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec(val)
+		}
+	}
+	if v.Services != nil {
+		res.Services = make([]*controlplane.ServiceSpec, len(v.Services))
+		for i, val := range v.Services {
+			if val == nil {
+				res.Services[i] = nil
+				continue
+			}
+			res.Services[i] = unmarshalServiceSpecRequestBodyToControlplaneServiceSpec(val)
 		}
 	}
 	if v.BackupConfig != nil {
@@ -3949,6 +3958,34 @@ func unmarshalDatabaseUserSpecRequestBodyToControlplaneDatabaseUserSpec(v *Datab
 	return res
 }
 
+// unmarshalServiceSpecRequestBodyToControlplaneServiceSpec builds a value of
+// type *controlplane.ServiceSpec from a value of type *ServiceSpecRequestBody.
+func unmarshalServiceSpecRequestBodyToControlplaneServiceSpec(v *ServiceSpecRequestBody) *controlplane.ServiceSpec {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.ServiceSpec{
+		ServiceID:   controlplane.Identifier(*v.ServiceID),
+		ServiceType: *v.ServiceType,
+		Version:     *v.Version,
+		Port:        v.Port,
+		Cpus:        v.Cpus,
+		Memory:      v.Memory,
+	}
+	res.HostIds = make([]controlplane.Identifier, len(v.HostIds))
+	for i, val := range v.HostIds {
+		res.HostIds[i] = controlplane.Identifier(val)
+	}
+	res.Config = make(map[string]any, len(v.Config))
+	for key, val := range v.Config {
+		tk := key
+		tv := val
+		res.Config[tk] = tv
+	}
+
+	return res
+}
+
 // marshalControlplaneDatabaseToDatabaseResponseBody builds a value of type
 // *DatabaseResponseBody from a value of type *controlplane.Database.
 func marshalControlplaneDatabaseToDatabaseResponseBody(v *controlplane.Database) *DatabaseResponseBody {
@@ -3971,6 +4008,20 @@ func marshalControlplaneDatabaseToDatabaseResponseBody(v *controlplane.Database)
 			}
 			res.Instances[i] = marshalControlplaneInstanceToInstanceResponseBody(val)
 		}
+	} else {
+		res.Instances = []*InstanceResponseBody{}
+	}
+	if v.ServiceInstances != nil {
+		res.ServiceInstances = make([]*ServiceinstanceResponseBody, len(v.ServiceInstances))
+		for i, val := range v.ServiceInstances {
+			if val == nil {
+				res.ServiceInstances[i] = nil
+				continue
+			}
+			res.ServiceInstances[i] = marshalControlplaneServiceinstanceToServiceinstanceResponseBody(val)
+		}
+	} else {
+		res.ServiceInstances = []*ServiceinstanceResponseBody{}
 	}
 	if v.Spec != nil {
 		res.Spec = marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody(v.Spec)
@@ -3982,9 +4033,6 @@ func marshalControlplaneDatabaseToDatabaseResponseBody(v *controlplane.Database)
 // marshalControlplaneInstanceToInstanceResponseBody builds a value of type
 // *InstanceResponseBody from a value of type *controlplane.Instance.
 func marshalControlplaneInstanceToInstanceResponseBody(v *controlplane.Instance) *InstanceResponseBody {
-	if v == nil {
-		return nil
-	}
 	res := &InstanceResponseBody{
 		ID:              v.ID,
 		HostID:          v.HostID,
@@ -4083,6 +4131,90 @@ func marshalControlplaneInstanceSubscriptionToInstanceSubscriptionResponseBody(v
 	return res
 }
 
+// marshalControlplaneServiceinstanceToServiceinstanceResponseBody builds a
+// value of type *ServiceinstanceResponseBody from a value of type
+// *controlplane.Serviceinstance.
+func marshalControlplaneServiceinstanceToServiceinstanceResponseBody(v *controlplane.Serviceinstance) *ServiceinstanceResponseBody {
+	res := &ServiceinstanceResponseBody{
+		ServiceInstanceID: v.ServiceInstanceID,
+		ServiceID:         v.ServiceID,
+		DatabaseID:        string(v.DatabaseID),
+		HostID:            v.HostID,
+		State:             v.State,
+		CreatedAt:         v.CreatedAt,
+		UpdatedAt:         v.UpdatedAt,
+		Error:             v.Error,
+	}
+	if v.Status != nil {
+		res.Status = marshalControlplaneServiceInstanceStatusToServiceInstanceStatusResponseBody(v.Status)
+	}
+
+	return res
+}
+
+// marshalControlplaneServiceInstanceStatusToServiceInstanceStatusResponseBody
+// builds a value of type *ServiceInstanceStatusResponseBody from a value of
+// type *controlplane.ServiceInstanceStatus.
+func marshalControlplaneServiceInstanceStatusToServiceInstanceStatusResponseBody(v *controlplane.ServiceInstanceStatus) *ServiceInstanceStatusResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &ServiceInstanceStatusResponseBody{
+		ContainerID:  v.ContainerID,
+		ImageVersion: v.ImageVersion,
+		Hostname:     v.Hostname,
+		Ipv4Address:  v.Ipv4Address,
+		LastHealthAt: v.LastHealthAt,
+		ServiceReady: v.ServiceReady,
+	}
+	if v.Ports != nil {
+		res.Ports = make([]*PortMappingResponseBody, len(v.Ports))
+		for i, val := range v.Ports {
+			if val == nil {
+				res.Ports[i] = nil
+				continue
+			}
+			res.Ports[i] = marshalControlplanePortMappingToPortMappingResponseBody(val)
+		}
+	}
+	if v.HealthCheck != nil {
+		res.HealthCheck = marshalControlplaneHealthCheckResultToHealthCheckResultResponseBody(v.HealthCheck)
+	}
+
+	return res
+}
+
+// marshalControlplanePortMappingToPortMappingResponseBody builds a value of
+// type *PortMappingResponseBody from a value of type *controlplane.PortMapping.
+func marshalControlplanePortMappingToPortMappingResponseBody(v *controlplane.PortMapping) *PortMappingResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &PortMappingResponseBody{
+		Name:          v.Name,
+		ContainerPort: v.ContainerPort,
+		HostPort:      v.HostPort,
+	}
+
+	return res
+}
+
+// marshalControlplaneHealthCheckResultToHealthCheckResultResponseBody builds a
+// value of type *HealthCheckResultResponseBody from a value of type
+// *controlplane.HealthCheckResult.
+func marshalControlplaneHealthCheckResultToHealthCheckResultResponseBody(v *controlplane.HealthCheckResult) *HealthCheckResultResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &HealthCheckResultResponseBody{
+		Status:    v.Status,
+		Message:   v.Message,
+		CheckedAt: v.CheckedAt,
+	}
+
+	return res
+}
+
 // marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody builds a value of
 // type *DatabaseSpecResponseBody from a value of type
 // *controlplane.DatabaseSpec.
@@ -4118,6 +4250,16 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody(v *controlplane.D
 				continue
 			}
 			res.DatabaseUsers[i] = marshalControlplaneDatabaseUserSpecToDatabaseUserSpecResponseBody(val)
+		}
+	}
+	if v.Services != nil {
+		res.Services = make([]*ServiceSpecResponseBody, len(v.Services))
+		for i, val := range v.Services {
+			if val == nil {
+				res.Services[i] = nil
+				continue
+			}
+			res.Services[i] = marshalControlplaneServiceSpecToServiceSpecResponseBody(val)
 		}
 	}
 	if v.BackupConfig != nil {
@@ -4458,13 +4600,44 @@ func marshalControlplaneDatabaseUserSpecToDatabaseUserSpecResponseBody(v *contro
 	return res
 }
 
+// marshalControlplaneServiceSpecToServiceSpecResponseBody builds a value of
+// type *ServiceSpecResponseBody from a value of type *controlplane.ServiceSpec.
+func marshalControlplaneServiceSpecToServiceSpecResponseBody(v *controlplane.ServiceSpec) *ServiceSpecResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &ServiceSpecResponseBody{
+		ServiceID:   string(v.ServiceID),
+		ServiceType: v.ServiceType,
+		Version:     v.Version,
+		Port:        v.Port,
+		Cpus:        v.Cpus,
+		Memory:      v.Memory,
+	}
+	if v.HostIds != nil {
+		res.HostIds = make([]string, len(v.HostIds))
+		for i, val := range v.HostIds {
+			res.HostIds[i] = string(val)
+		}
+	} else {
+		res.HostIds = []string{}
+	}
+	if v.Config != nil {
+		res.Config = make(map[string]any, len(v.Config))
+		for key, val := range v.Config {
+			tk := key
+			tv := val
+			res.Config[tk] = tv
+		}
+	}
+
+	return res
+}
+
 // marshalControlplaneviewsInstanceViewToInstanceResponseBody builds a value of
 // type *InstanceResponseBody from a value of type
 // *controlplaneviews.InstanceView.
 func marshalControlplaneviewsInstanceViewToInstanceResponseBody(v *controlplaneviews.InstanceView) *InstanceResponseBody {
-	if v == nil {
-		return nil
-	}
 	res := &InstanceResponseBody{
 		ID:              *v.ID,
 		HostID:          *v.HostID,
@@ -4563,6 +4736,91 @@ func marshalControlplaneviewsInstanceSubscriptionViewToInstanceSubscriptionRespo
 	return res
 }
 
+// marshalControlplaneviewsServiceinstanceViewToServiceinstanceResponseBody
+// builds a value of type *ServiceinstanceResponseBody from a value of type
+// *controlplaneviews.ServiceinstanceView.
+func marshalControlplaneviewsServiceinstanceViewToServiceinstanceResponseBody(v *controlplaneviews.ServiceinstanceView) *ServiceinstanceResponseBody {
+	res := &ServiceinstanceResponseBody{
+		ServiceInstanceID: *v.ServiceInstanceID,
+		ServiceID:         *v.ServiceID,
+		DatabaseID:        string(*v.DatabaseID),
+		HostID:            *v.HostID,
+		State:             *v.State,
+		CreatedAt:         *v.CreatedAt,
+		UpdatedAt:         *v.UpdatedAt,
+		Error:             v.Error,
+	}
+	if v.Status != nil {
+		res.Status = marshalControlplaneviewsServiceInstanceStatusViewToServiceInstanceStatusResponseBody(v.Status)
+	}
+
+	return res
+}
+
+// marshalControlplaneviewsServiceInstanceStatusViewToServiceInstanceStatusResponseBody
+// builds a value of type *ServiceInstanceStatusResponseBody from a value of
+// type *controlplaneviews.ServiceInstanceStatusView.
+func marshalControlplaneviewsServiceInstanceStatusViewToServiceInstanceStatusResponseBody(v *controlplaneviews.ServiceInstanceStatusView) *ServiceInstanceStatusResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &ServiceInstanceStatusResponseBody{
+		ContainerID:  v.ContainerID,
+		ImageVersion: v.ImageVersion,
+		Hostname:     v.Hostname,
+		Ipv4Address:  v.Ipv4Address,
+		LastHealthAt: v.LastHealthAt,
+		ServiceReady: v.ServiceReady,
+	}
+	if v.Ports != nil {
+		res.Ports = make([]*PortMappingResponseBody, len(v.Ports))
+		for i, val := range v.Ports {
+			if val == nil {
+				res.Ports[i] = nil
+				continue
+			}
+			res.Ports[i] = marshalControlplaneviewsPortMappingViewToPortMappingResponseBody(val)
+		}
+	}
+	if v.HealthCheck != nil {
+		res.HealthCheck = marshalControlplaneviewsHealthCheckResultViewToHealthCheckResultResponseBody(v.HealthCheck)
+	}
+
+	return res
+}
+
+// marshalControlplaneviewsPortMappingViewToPortMappingResponseBody builds a
+// value of type *PortMappingResponseBody from a value of type
+// *controlplaneviews.PortMappingView.
+func marshalControlplaneviewsPortMappingViewToPortMappingResponseBody(v *controlplaneviews.PortMappingView) *PortMappingResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &PortMappingResponseBody{
+		Name:          *v.Name,
+		ContainerPort: *v.ContainerPort,
+		HostPort:      v.HostPort,
+	}
+
+	return res
+}
+
+// marshalControlplaneviewsHealthCheckResultViewToHealthCheckResultResponseBody
+// builds a value of type *HealthCheckResultResponseBody from a value of type
+// *controlplaneviews.HealthCheckResultView.
+func marshalControlplaneviewsHealthCheckResultViewToHealthCheckResultResponseBody(v *controlplaneviews.HealthCheckResultView) *HealthCheckResultResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &HealthCheckResultResponseBody{
+		Status:    *v.Status,
+		Message:   v.Message,
+		CheckedAt: *v.CheckedAt,
+	}
+
+	return res
+}
+
 // marshalControlplaneviewsDatabaseSpecViewToDatabaseSpecResponseBody builds a
 // value of type *DatabaseSpecResponseBody from a value of type
 // *controlplaneviews.DatabaseSpecView.
@@ -4598,6 +4856,16 @@ func marshalControlplaneviewsDatabaseSpecViewToDatabaseSpecResponseBody(v *contr
 				continue
 			}
 			res.DatabaseUsers[i] = marshalControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpecResponseBody(val)
+		}
+	}
+	if v.Services != nil {
+		res.Services = make([]*ServiceSpecResponseBody, len(v.Services))
+		for i, val := range v.Services {
+			if val == nil {
+				res.Services[i] = nil
+				continue
+			}
+			res.Services[i] = marshalControlplaneviewsServiceSpecViewToServiceSpecResponseBody(val)
 		}
 	}
 	if v.BackupConfig != nil {
@@ -4939,6 +5207,41 @@ func marshalControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpecResponseBody(
 	return res
 }
 
+// marshalControlplaneviewsServiceSpecViewToServiceSpecResponseBody builds a
+// value of type *ServiceSpecResponseBody from a value of type
+// *controlplaneviews.ServiceSpecView.
+func marshalControlplaneviewsServiceSpecViewToServiceSpecResponseBody(v *controlplaneviews.ServiceSpecView) *ServiceSpecResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &ServiceSpecResponseBody{
+		ServiceID:   string(*v.ServiceID),
+		ServiceType: *v.ServiceType,
+		Version:     *v.Version,
+		Port:        v.Port,
+		Cpus:        v.Cpus,
+		Memory:      v.Memory,
+	}
+	if v.HostIds != nil {
+		res.HostIds = make([]string, len(v.HostIds))
+		for i, val := range v.HostIds {
+			res.HostIds[i] = string(val)
+		}
+	} else {
+		res.HostIds = []string{}
+	}
+	if v.Config != nil {
+		res.Config = make(map[string]any, len(v.Config))
+		for key, val := range v.Config {
+			tk := key
+			tv := val
+			res.Config[tk] = tv
+		}
+	}
+
+	return res
+}
+
 // unmarshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec builds
 // a value of type *controlplane.DatabaseSpec from a value of type
 // *DatabaseSpecRequestBodyRequestBody.
@@ -4967,6 +5270,16 @@ func unmarshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Da
 				continue
 			}
 			res.DatabaseUsers[i] = unmarshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSpec(val)
+		}
+	}
+	if v.Services != nil {
+		res.Services = make([]*controlplane.ServiceSpec, len(v.Services))
+		for i, val := range v.Services {
+			if val == nil {
+				res.Services[i] = nil
+				continue
+			}
+			res.Services[i] = unmarshalServiceSpecRequestBodyRequestBodyToControlplaneServiceSpec(val)
 		}
 	}
 	if v.BackupConfig != nil {
@@ -5293,6 +5606,35 @@ func unmarshalDatabaseUserSpecRequestBodyRequestBodyToControlplaneDatabaseUserSp
 		for i, val := range v.Roles {
 			res.Roles[i] = val
 		}
+	}
+
+	return res
+}
+
+// unmarshalServiceSpecRequestBodyRequestBodyToControlplaneServiceSpec builds a
+// value of type *controlplane.ServiceSpec from a value of type
+// *ServiceSpecRequestBodyRequestBody.
+func unmarshalServiceSpecRequestBodyRequestBodyToControlplaneServiceSpec(v *ServiceSpecRequestBodyRequestBody) *controlplane.ServiceSpec {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.ServiceSpec{
+		ServiceID:   controlplane.Identifier(*v.ServiceID),
+		ServiceType: *v.ServiceType,
+		Version:     *v.Version,
+		Port:        v.Port,
+		Cpus:        v.Cpus,
+		Memory:      v.Memory,
+	}
+	res.HostIds = make([]controlplane.Identifier, len(v.HostIds))
+	for i, val := range v.HostIds {
+		res.HostIds[i] = controlplane.Identifier(val)
+	}
+	res.Config = make(map[string]any, len(v.Config))
+	for key, val := range v.Config {
+		tk := key
+		tv := val
+		res.Config[tk] = tv
 	}
 
 	return res
