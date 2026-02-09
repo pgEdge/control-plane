@@ -188,12 +188,7 @@ func NewRemoveHostEndpoint(s Service) goa.Endpoint {
 // "list-databases" of service "control-plane".
 func NewListDatabasesEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
-		res, err := s.ListDatabases(ctx)
-		if err != nil {
-			return nil, err
-		}
-		vres := NewViewedListDatabasesResponse(res, "default")
-		return vres, nil
+		return s.ListDatabases(ctx)
 	}
 }
 
@@ -211,12 +206,7 @@ func NewCreateDatabaseEndpoint(s Service) goa.Endpoint {
 func NewGetDatabaseEndpoint(s Service) goa.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		p := req.(*GetDatabasePayload)
-		res, err := s.GetDatabase(ctx, p)
-		if err != nil {
-			return nil, err
-		}
-		vres := NewViewedDatabase(res, "default")
-		return vres, nil
+		return s.GetDatabase(ctx, p)
 	}
 }
 

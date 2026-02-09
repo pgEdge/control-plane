@@ -273,14 +273,14 @@ func (s *PostInitHandlers) ListDatabases(ctx context.Context) (*api.ListDatabase
 	// Ensure we return an empty (non-nil) slice if no databases found
 	if len(databases) == 0 {
 		return &api.ListDatabasesResponse{
-			Databases: []*api.Database{},
+			Databases: []*api.DatabaseSummary{},
 		}, nil
 	}
 
 	// Preallocate the output slice with the length of the databases
-	apiDatabases := make(api.DatabaseCollection, 0, len(databases))
+	apiDatabases := make([]*api.DatabaseSummary, 0, len(databases))
 	for _, db := range databases {
-		apiDB := databaseToAPI(db)
+		apiDB := databaseToSummaryAPI(db)
 		if apiDB != nil {
 			// Only append non-nil API databases
 			apiDatabases = append(apiDatabases, apiDB)
