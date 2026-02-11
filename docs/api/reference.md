@@ -34,4 +34,4 @@ hide:
 
 </style>
 
-<redoc src="https://raw.githubusercontent.com/pgEdge/control-plane/refs/tags/<< control_plane_version >>/api/apiv1/gen/http/openapi3.json"/>
+<redoc src="https://raw.githubusercontent.com/pgEdge/control-plane/refs/tags/v0.6.2/api/apiv1/gen/http/openapi3.json"/>
