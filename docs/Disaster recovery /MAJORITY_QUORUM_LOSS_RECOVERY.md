@@ -19,7 +19,7 @@ Recovery guide for when **quorum is lost** but **at least one server-mode host i
 **How to verify:**
 ```bash
 # Try to access Control Plane API on server-mode hosts
-curl -sS "http://<server-host-ip>:<api-port>/v1/cluster" | jq '.'
+curl -sS "http://<server-host-ip>:<api-port>/v1/cluster"
 ```
 
 If API is accessible on at least one host, use this guide.
@@ -77,18 +77,78 @@ if [ -d "${PGEDGE_DATA_DIR}/etcd" ]; then
 fi
 ```
 
-### Step 3: Restore Snapshot
+### Step 3: Restore etcd Data
+
+**When to use each approach:**
+- **Restore from existing data directory (typical):** Use this when you're recovering from losing other machines in the cluster and the recovery host still has its etcd data directory intact.
+- **Restore from snapshot:** Use this when you have a previously-created snapshot file, or when you want to restore to a specific point in time.
+
+#### Install etcdutl
 
 ```bash
 # On recovery host
+# Install etcdutl if not present
+ARCH=$(uname -m)
+if [ "$ARCH" = "x86_64" ]; then ARCH="amd64"; elif [ "$ARCH" = "aarch64" ]; then ARCH="arm64"; fi
+curl -L https://github.com/etcd-io/etcd/releases/download/v3.6.5/etcd-v3.6.5-linux-${ARCH}.tar.gz | tar --strip-components 1 -xz -C /tmp etcd-v3.6.5-linux-${ARCH}/etcdutl
+sudo mv /tmp/etcdutl /usr/local/bin/ && sudo chmod +x /usr/local/bin/etcdutl
+```
+
+#### Option A: Restore from Existing Data Directory (Typical)
+
+**Use this when:** The recovery host still has its etcd data directory intact from before the outage. This is the typical scenario when recovering from losing other machines in the cluster.
+
+**Note:** Even though you're using the existing data directory, you still need to use `etcdutl snapshot restore` to reset the cluster membership to a single node. You'll need a snapshot file - either:
+- Use a pre-existing snapshot file from your backups (recommended - use Option B)
+- Create a snapshot from the existing directory if etcd is still accessible (see below)
+
+**If etcd is still accessible** (Control Plane service is running, even if quorum is lost), you can create a snapshot from the existing directory:
+
+```bash
+# On recovery host
+# Extract credentials from config (manually parse JSON or use available tools)
+# ETCD_USER="<etcd-username-from-generated.config.json>"
+# ETCD_PASS="<etcd-password-from-generated.config.json>"
+
+# Create snapshot from existing etcd directory
+# Note: This requires etcd to be accessible. If etcd is not running, use Option B with a pre-existing snapshot.
+ETCDCTL_API=3 etcdctl snapshot save "${PGEDGE_DATA_DIR}/snapshot.db" \
+    --endpoints "https://localhost:${ETCD_CLIENT_PORT}" \
+    --cacert "${PGEDGE_DATA_DIR}/certificates/ca.crt" \
+    --cert "${PGEDGE_DATA_DIR}/certificates/etcd-user.crt" \
+    --key "${PGEDGE_DATA_DIR}/certificates/etcd-user.key" \
+    --user "${ETCD_USER}" \
+    --password "${ETCD_PASS}"
+
+# Now restore from the snapshot to reset cluster membership
+etcdutl snapshot restore "${PGEDGE_DATA_DIR}/snapshot.db" \
+    --name "${RECOVERY_HOST_ID}" \
+    --initial-cluster "${RECOVERY_HOST_ID}=https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
+    --initial-advertise-peer-urls "https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
+    --bump-revision 1000000000 \
+    --mark-compacted \
+    --data-dir "${PGEDGE_DATA_DIR}/etcd"
+```
+
+**If etcd is not accessible** (service stopped or quorum lost), use Option B with a pre-existing snapshot file from your backups.
+
+#### Option B: Restore from Snapshot File
+
+If you have a previously-created snapshot file:
+
+```bash
+# On recovery host
+# Restore snapshot and reset cluster membership to single node
 etcdutl snapshot restore "${SNAPSHOT_PATH}" \
     --name "${RECOVERY_HOST_ID}" \
     --initial-cluster "${RECOVERY_HOST_ID}=https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
     --initial-advertise-peer-urls "https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
+    --bump-revision 1000000000 \
+    --mark-compacted \
     --data-dir "${PGEDGE_DATA_DIR}/etcd"
 ```
 
-**Optional (recommended for production):** Add `--bump-revision <revision-bump-value> --mark-compacted` to prevent revision issues with clients using watches.
+**Note:** The `--bump-revision` and `--mark-compacted` flags are recommended for production to prevent revision issues with clients using watches.
 
 ### Step 4: Start Control Plane
 
@@ -104,8 +164,8 @@ sleep 10
 
 ```bash
 # Check cluster
-curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/cluster" | jq '.'
-curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts" | jq '.'
+curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/cluster"
+curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts"
 ```
 
 **Status:** You now have **1 server-mode host online**. Quorum is **NOT YET RESTORED**. Continue to restore quorum.
@@ -119,14 +179,17 @@ Remove stale host records **one at a time**, waiting for each task to complete:
 LOST_HOST_ID="<lost-host-id>"
 
 RESP=$(curl -sS -X DELETE "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts/${LOST_HOST_ID}?force=true")
-TASK_ID=$(echo "${RESP}" | jq -r '.task.task_id // .task.id // .id // empty')
+echo "${RESP}"
+# Extract task_id from the response (look for "task_id" or "id" field in the JSON)
+# TASK_ID="<task-id-from-response>"
 
 # Wait for completion
+# Check task status by calling the tasks endpoint and looking for "status": "completed" or "status": "failed"
 while true; do
-    STATUS=$(curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/tasks/${TASK_ID}" | jq -r '.task.status // .status // empty')
-    if [ "${STATUS}" = "completed" ] || [ "${STATUS}" = "failed" ]; then
-        break
-    fi
+    STATUS_RESP=$(curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/tasks/${TASK_ID}")
+    echo "${STATUS_RESP}"
+    # Look for "status": "completed" or "status": "failed" in the response
+    # If found, break
     sleep 5
 done
 ```
@@ -163,7 +226,10 @@ sleep 10
 
 #### 7d. Get Join Token
 ```bash
-JOIN_TOKEN=$(curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/cluster/join-token" | jq -r ".token")
+JOIN_TOKEN_RESP=$(curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/cluster/join-token")
+echo "${JOIN_TOKEN_RESP}"
+# Extract token from the response (look for "token" field in the JSON)
+# JOIN_TOKEN="<token-from-response>"
 SERVER_URL="http://${RECOVERY_HOST_IP}:${API_PORT}"
 ```
 
@@ -179,10 +245,12 @@ curl -sS -X POST "http://${LOST_SERVER_HOST_IP}:${API_PORT}/v1/cluster/join" \
 ```bash
 TOTAL_SERVER_HOSTS=<total-server-mode-hosts>
 QUORUM_THRESHOLD=$(( (TOTAL_SERVER_HOSTS / 2) + 1 ))
-ETCD_USER=$(jq -r ".etcd_username" "${PGEDGE_DATA_DIR}/generated.config.json")
-ETCD_PASS=$(jq -r ".etcd_password" "${PGEDGE_DATA_DIR}/generated.config.json")
-SERVER_COUNT=$(ETCDCTL_API=3 etcdctl endpoint status --endpoints "https://${RECOVERY_HOST_IP}:${ETCD_CLIENT_PORT}" --cacert "${PGEDGE_DATA_DIR}/certificates/ca.crt" --cert "${PGEDGE_DATA_DIR}/certificates/etcd-user.crt" --key "${PGEDGE_DATA_DIR}/certificates/etcd-user.key" --user "${ETCD_USER}" --password "${ETCD_PASS}" -w json | jq 'length')
-[ "${SERVER_COUNT}" -ge "${QUORUM_THRESHOLD}" ] && echo "✅ Quorum RESTORED!" || echo "⚠️  Continue rejoining server-mode hosts"
+
+# Check hosts endpoint to count server-mode hosts
+HOSTS_RESP=$(curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts")
+echo "${HOSTS_RESP}"
+# Count the number of hosts with "etcd_mode": "server" in the response
+# If count >= QUORUM_THRESHOLD, quorum is restored
 ```
 
 **Decision:**
@@ -219,7 +287,10 @@ sleep 10
 
 #### 9d. Get Join Token
 ```bash
-JOIN_TOKEN=$(curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/cluster/join-token" | jq -r ".token")
+JOIN_TOKEN_RESP=$(curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/cluster/join-token")
+echo "${JOIN_TOKEN_RESP}"
+# Extract token from the response (look for "token" field in the JSON)
+# JOIN_TOKEN="<token-from-response>"
 SERVER_URL="http://${RECOVERY_HOST_IP}:${API_PORT}"
 ```
 
@@ -251,29 +322,15 @@ sleep 30
 
 ```bash
 # Check hosts
-curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts" | jq '.[] | {id, status, etcd_mode}'
+curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts"
 
 # Check databases
-curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/databases" | jq '.[] | {id, state}'
-
-# Check etcd cluster
-ETCD_USER=$(jq -r ".etcd_username" "${PGEDGE_DATA_DIR}/generated.config.json")
-ETCD_PASS=$(jq -r ".etcd_password" "${PGEDGE_DATA_DIR}/generated.config.json")
-
-ETCDCTL_API=3 etcdctl endpoint status \
-    --endpoints "https://${RECOVERY_HOST_IP}:${ETCD_CLIENT_PORT}" \
-    --cacert "${PGEDGE_DATA_DIR}/certificates/ca.crt" \
-    --cert "${PGEDGE_DATA_DIR}/certificates/etcd-user.crt" \
-    --key "${PGEDGE_DATA_DIR}/certificates/etcd-user.key" \
-    --user "${ETCD_USER}" \
-    --password "${ETCD_PASS}" \
-    -w table
+curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/databases"
 ```
 
 **Expected:**
 - All hosts: `status: "reachable"`
 - All databases: `state: "available"`
-- etcd shows all server-mode hosts
 
 ## Recovery Order Summary
 

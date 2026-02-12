@@ -35,96 +35,27 @@ Use this guide when:
 
 **Key Point:** As long as you have at least the quorum threshold of server-mode hosts online, quorum is intact and you can use this guide.
 
-## Scenario 1: Client-Mode Host Recovery
+## Host Recovery (Client-Mode or Server-Mode)
 
 ### When This Applies
 
-- One or more client-mode hosts are lost
-- Quorum remains intact (server-mode hosts are still online)
+- One or more hosts are lost (client-mode or server-mode)
+- Quorum remains intact (enough server-mode hosts are still online)
 - Control Plane API is accessible
+- **The lost host is accessible** (you can SSH to it and run Docker commands)
+
+**Important:** This recovery process requires SSH access to the lost host to clear state and restart services. If the host is truly unreachable (no SSH access), this process does not apply. You would need to restore the host first (e.g., from a backup or recreate it), then follow these steps.
 
 ### Impact
 
 - Lost hosts are unreachable
 - Database instances on lost hosts are offline
 - Cluster continues operating with remaining hosts
-- No impact on etcd quorum
+- Quorum remains intact (if server-mode hosts are lost, enough others remain)
 
 ### Recovery Steps
 
-Use this flow for each lost client-mode host.
-
-#### Set Variables
-
-```bash
-PGEDGE_DATA_DIR="<path-to-data-dir>"
-API_PORT=<api-port>
-SERVER_HOST="http://<server-mode-host-ip>:${API_PORT}"
-CLIENT_HOST="http://<client-mode-host-ip>:${API_PORT}"
-```
-
-#### Step 1: Stop the Control Plane Service
-
-```bash
-# On Swarm manager node
-docker service scale control-plane_<lost-client-host-id>=0
-```
-
-#### Step 2: Remove generated.config.json
-
-```bash
-# On lost client-mode host node
-rm -f ${PGEDGE_DATA_DIR}/generated.config.json
-```
-
-#### Step 3: Start the Control Plane Service
-
-```bash
-# On Swarm manager node
-docker service scale control-plane_<lost-client-host-id>=1
-sleep 10
-```
-
-#### Step 4: Request a Join Token
-
-```bash
-JOIN_TOKEN=$(curl -sS ${SERVER_HOST}/v1/cluster/join-token | jq -r ".token")
-```
-
-#### Step 5: Join the Host to the Cluster
-
-```bash
-curl -sS -X POST ${CLIENT_HOST}/v1/cluster/join \
-    -H "Content-Type: application/json" \
-    -d "{\"token\":\"${JOIN_TOKEN}\",\"server_url\":\"${SERVER_HOST}\"}"
-```
-
-#### Repeat for Each Lost Client-Mode Host
-
-Update `CLIENT_HOST` for the next host, then repeat steps 1 to 5.
-
-## Scenario 2: Server-Mode Host Recovery (Quorum Intact)
-
-### When This Applies
-
-- One server-mode host is lost
-- Quorum remains intact (enough other server-mode hosts are online)
-- Control Plane API is accessible
-
-### Impact
-
-- Lost server-mode host is unreachable
-- Database instances on lost host are offline
-- Quorum remains intact (other server-mode hosts maintain quorum)
-- Cluster continues operating
-
-### Assumptions
-
-- You lost the host and its Control Plane data volume
-- You will remove the host record before you attempt join
-- You will restore any database instances that lived on the lost host
-
-### Recovery Steps
+Use this flow for each lost host. The steps are identical for both client-mode and server-mode hosts.
 
 #### Set Variables
 
@@ -132,36 +63,51 @@ Update `CLIENT_HOST` for the next host, then repeat steps 1 to 5.
 PGEDGE_DATA_DIR="<path-to-data-dir>"
 API_PORT=<api-port>
 SERVER_HOST="http://<healthy-server-mode-host-ip>:${API_PORT}"
-LOST_SERVER_HOST="http://<lost-server-mode-host-ip>:${API_PORT}"
-LOST_HOST_ID="<lost-server-host-id>"
-LOST_SERVICE="control-plane_<lost-server-host-id>"
+LOST_HOST="http://<lost-host-ip>:${API_PORT}"
+LOST_HOST_ID="<lost-host-id>"
+LOST_SERVICE="control-plane_<lost-host-id>"
 ```
 
 #### Step 1: Remove the Lost Host Record
+
+**Important:** You must remove the host record before rejoining, as host IDs must be unique.
 
 **Run from a node with API access:**
 
 ```bash
 RESP=$(curl -sS -X DELETE "${SERVER_HOST}/v1/hosts/${LOST_HOST_ID}?force=true")
-TASK_ID=$(echo "${RESP}" | jq -r '.task.task_id // .task.id // .id // empty')
-echo "${RESP}" | jq '.'
+echo "${RESP}"
+# Extract task_id from the response (look for "task_id" or "id" field in the JSON)
+# TASK_ID="<task-id-from-response>"
+
+# Wait for the remove_host task to complete
+# Check task status by calling the tasks endpoint and looking for "status": "completed" or "status": "failed"
+sleep 5
 ```
 
 #### Step 2: Stop the Host Service
 
 **Run on a Swarm manager node. Skip this step if the service name does not exist.**
 
+**Note:** This step stops the Control Plane service that may still be running on the lost host. We stop it, clear state, and restart to rejoin cleanly. If the host is truly unreachable, you can't SSH to run Step 3, so this recovery process doesn't apply.
+
 ```bash
 docker service scale "${LOST_SERVICE}=0"
 ```
 
-#### Step 3: Clear Server-Mode State
+#### Step 3: Clear Host State
 
-**Run on the lost host node. These paths exist only when some data survived.**
+**Run on the lost host node.**
 
+**For server-mode hosts:**
 ```bash
 rm -rf "${PGEDGE_DATA_DIR}/etcd"
 rm -rf "${PGEDGE_DATA_DIR}/certificates"
+rm -f "${PGEDGE_DATA_DIR}/generated.config.json"
+```
+
+**For client-mode hosts:**
+```bash
 rm -f "${PGEDGE_DATA_DIR}/generated.config.json"
 ```
 
@@ -188,7 +134,10 @@ sleep 10
 **Run from a node with API access:**
 
 ```bash
-JOIN_TOKEN=$(curl -sS "${SERVER_HOST}/v1/cluster/join-token" | jq -r ".token")
+JOIN_TOKEN_RESP=$(curl -sS "${SERVER_HOST}/v1/cluster/join-token")
+echo "${JOIN_TOKEN_RESP}"
+# Extract token from the response (look for "token" field in the JSON)
+# JOIN_TOKEN="<token-from-response>"
 SERVER_URL="${SERVER_HOST}"
 ```
 
@@ -197,7 +146,7 @@ SERVER_URL="${SERVER_HOST}"
 **Run from a node with API access:**
 
 ```bash
-curl -sS -X POST "${LOST_SERVER_HOST}/v1/cluster/join" \
+curl -sS -X POST "${LOST_HOST}/v1/cluster/join" \
     -H "Content-Type: application/json" \
     -d "{\"token\":\"${JOIN_TOKEN}\",\"server_url\":\"${SERVER_URL}\"}"
 ```
@@ -207,26 +156,22 @@ curl -sS -X POST "${LOST_SERVER_HOST}/v1/cluster/join" \
 **Run from a node with API access:**
 
 ```bash
-curl -sS "${SERVER_HOST}/v1/hosts" | jq \
-    'if type=="array" then .[] else to_entries[].value end | select(.id=="'"${LOST_HOST_ID}"'") | {id, status, etcd_mode}'
+curl -sS "${SERVER_HOST}/v1/hosts"
+# Look for the host with id matching ${LOST_HOST_ID} in the response
+# Verify it shows status: "reachable" and the correct etcd_mode
 ```
 
 **Expected fields:**
 - `status` equals `"reachable"`
-- `etcd_mode` equals `"server"`
+- `etcd_mode` equals `"server"` for server-mode hosts or `"client"` for client-mode hosts
 
-#### Step 8: Restore Database Instances
+#### Step 8: Restore Database Instances (If Needed)
 
 **List databases and node placement:**
 
 ```bash
-curl -sS "${SERVER_HOST}/v1/databases" | jq '.[] | {id, nodes: .spec.nodes}'
-```
-
-**Fetch one database spec before you change it:**
-
-```bash
-curl -sS "${SERVER_HOST}/v1/databases/<database-id>" | jq '.spec'
+curl -sS "${SERVER_HOST}/v1/databases"
+# Look for databases that had instances on the lost host
 ```
 
 **Update the database spec to place a node back on the recovered host:**
@@ -244,12 +189,6 @@ curl -sS -X PUT "${SERVER_HOST}/v1/databases/<database-id>" \
             ]
         }
     }'
-```
-
-**Check database state after the update:**
-
-```bash
-curl -sS "${SERVER_HOST}/v1/databases/<database-id>" | jq '.'
 ```
 
 **Note:** Control Plane automatically uses **Zero Downtime Add Node (ZODAN)** when you update the database spec to include the recovered host. This means:
@@ -275,6 +214,10 @@ curl -sS -X PUT "${SERVER_HOST}/v1/databases/<database-id>" \
         }
     }'
 ```
+
+#### Repeat for Each Lost Host
+
+Update the variables for the next host, then repeat steps 1 to 7.
 
 ## Recovery Order for Multiple Hosts
 
@@ -304,7 +247,7 @@ After recovery, verify:
 
 **Cause:** Host record still exists in etcd.
 
-**Solution:** Remove the host record first (Step 1 for server-mode, or use API for client-mode) and wait for the task to complete before rejoining.
+**Solution:** Remove the host record first (Step 1) and wait for the task to complete before rejoining.
 
 ### Issue: Host joins but shows as unreachable
 
