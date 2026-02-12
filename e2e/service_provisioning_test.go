@@ -125,13 +125,13 @@ func TestProvisionMCPService(t *testing.T) {
 		if len(serviceInstance.Status.Ports) > 0 {
 			t.Logf("Service has %d ports configured", len(serviceInstance.Status.Ports))
 			for _, port := range serviceInstance.Status.Ports {
-				t.Logf("  - %s: container_port=%d", port.Name, port.ContainerPort)
+				t.Logf("  - %s: container_port=%v", port.Name, port.ContainerPort)
 			}
 
 			// Verify HTTP port (8080) is exposed
 			foundHTTPPort := false
 			for _, port := range serviceInstance.Status.Ports {
-				if port.Name == "http" && port.ContainerPort == 8080 {
+				if port.Name == "http" && port.ContainerPort != nil && *port.ContainerPort == 8080 {
 					foundHTTPPort = true
 					break
 				}
