@@ -38,7 +38,7 @@ Format: svc_{service_id}_{host_id}
 Example:
   Service ID:         "mcp-server"
   Host ID:            "host1"
-  Generated Username: "svc_mcp-server_host1"
+  Generated Username: "svc_mcp_server_host1"
 ```
 
 The username format provides the following benefits:
@@ -113,7 +113,7 @@ In the following example, the credentials appear within the service instance rec
 {
   "service_instance_id": "...",
   "credentials": {
-    "username": "svc_mcp-server_host1",
+    "username": "svc_mcp_server_host1",
     "password": "<plaintext-base64url>",
     "role": "pgedge_application_read_only"
   }
@@ -129,7 +129,7 @@ The system injects credentials as environment variables into service containers 
 In the following example, the container receives standard PostgreSQL connection variables:
 
 ```bash
-PGUSER=svc_mcp-server_host1
+PGUSER=svc_mcp_server_host1
 PGPASSWORD=<44-char-base64url-password>
 PGHOST=postgres-instance-hostname
 PGPORT=5432

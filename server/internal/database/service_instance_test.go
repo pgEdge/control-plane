@@ -15,25 +15,25 @@ func TestGenerateServiceUsername(t *testing.T) {
 			name:      "standard service instance",
 			serviceID: "mcp-server",
 			hostID:    "host1",
-			want:      "svc_mcp-server_host1",
+			want:      "svc_mcp_server_host1",
 		},
 		{
 			name:      "multiple services on same database - service 1",
 			serviceID: "appmcp-1",
 			hostID:    "host1",
-			want:      "svc_appmcp-1_host1",
+			want:      "svc_appmcp_1_host1",
 		},
 		{
 			name:      "multiple services on same database - service 2",
 			serviceID: "appmcp-2",
 			hostID:    "host1",
-			want:      "svc_appmcp-2_host1",
+			want:      "svc_appmcp_2_host1",
 		},
 		{
 			name:      "service with multi-part service ID",
 			serviceID: "my-mcp-service",
 			hostID:    "host2",
-			want:      "svc_my-mcp-service_host2",
+			want:      "svc_my_mcp_service_host2",
 		},
 		{
 			name:      "simple service and host IDs",
@@ -45,19 +45,19 @@ func TestGenerateServiceUsername(t *testing.T) {
 			name:      "long service ID uses hash suffix",
 			serviceID: "very-long-service-name-that-exceeds-postgres-limit-significantly",
 			hostID:    "host1",
-			want:      "svc_very-long-service-name-that-exceeds-postgres-limit_175de8cf",
+			want:      "svc_very_long_service_name_that_exceeds_postgres_limit_27b9b83d",
 		},
 		{
 			name:      "long names with shared prefix produce different usernames (case A)",
 			serviceID: "very-long-service-name-that-exceeds-postgres-limit-AAA",
 			hostID:    "host1",
-			want:      "svc_very-long-service-name-that-exceeds-postgres-limit_860c8613",
+			want:      "svc_very_long_service_name_that_exceeds_postgres_limit_1fe3f2fe",
 		},
 		{
 			name:      "long names with shared prefix produce different usernames (case B)",
 			serviceID: "very-long-service-name-that-exceeds-postgres-limit-BBB",
 			hostID:    "host1",
-			want:      "svc_very-long-service-name-that-exceeds-postgres-limit_c9cb0bb2",
+			want:      "svc_very_long_service_name_that_exceeds_postgres_limit_abca469b",
 		},
 	}
 
@@ -147,37 +147,6 @@ func TestGenerateServiceName(t *testing.T) {
 			got := GenerateServiceName(tt.serviceType, tt.databaseID, tt.serviceID, tt.hostID)
 			if got != tt.want {
 				t.Errorf("GenerateServiceName() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestGenerateServiceHostname(t *testing.T) {
-	tests := []struct {
-		name      string
-		serviceID string
-		hostID    string
-		want      string
-	}{
-		{
-			name:      "standard service instance",
-			serviceID: "mcp-server",
-			hostID:    "host1",
-			want:      "mcp-server-host1",
-		},
-		{
-			name:      "simple identifiers",
-			serviceID: "svc",
-			hostID:    "h1",
-			want:      "svc-h1",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := GenerateServiceHostname(tt.serviceID, tt.hostID)
-			if got != tt.want {
-				t.Errorf("GenerateServiceHostname() = %v, want %v", got, tt.want)
 			}
 		})
 	}

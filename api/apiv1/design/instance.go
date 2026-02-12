@@ -207,7 +207,7 @@ var PortMapping = g.Type("PortMapping", func() {
 		g.Example(8080)
 	})
 
-	g.Required("name", "container_port")
+	g.Required("name")
 })
 
 var HealthCheckResult = g.Type("HealthCheckResult", func() {

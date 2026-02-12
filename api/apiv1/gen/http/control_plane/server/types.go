@@ -1900,7 +1900,7 @@ type PortMappingResponseBody struct {
 	// The name of the port (e.g., 'http', 'web-client').
 	Name string `form:"name" json:"name" xml:"name"`
 	// The port number inside the container.
-	ContainerPort int `form:"container_port" json:"container_port" xml:"container_port"`
+	ContainerPort *int `form:"container_port,omitempty" json:"container_port,omitempty" xml:"container_port,omitempty"`
 	// The port number on the host (if port-forwarded).
 	HostPort *int `form:"host_port,omitempty" json:"host_port,omitempty" xml:"host_port,omitempty"`
 }

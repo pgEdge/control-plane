@@ -767,7 +767,7 @@ type PortMapping struct {
 	// The name of the port (e.g., 'http', 'web-client').
 	Name string
 	// The port number inside the container.
-	ContainerPort int
+	ContainerPort *int
 	// The port number on the host (if port-forwarded).
 	HostPort *int
 }
@@ -1703,7 +1703,7 @@ func transformControlplaneviewsPortMappingViewToPortMapping(v *controlplaneviews
 	}
 	res := &PortMapping{
 		Name:          *v.Name,
-		ContainerPort: *v.ContainerPort,
+		ContainerPort: v.ContainerPort,
 		HostPort:      v.HostPort,
 	}
 
@@ -2206,7 +2206,7 @@ func transformPortMappingToControlplaneviewsPortMappingView(v *PortMapping) *con
 	}
 	res := &controlplaneviews.PortMappingView{
 		Name:          &v.Name,
-		ContainerPort: &v.ContainerPort,
+		ContainerPort: v.ContainerPort,
 		HostPort:      v.HostPort,
 	}
 

@@ -224,7 +224,7 @@ func (w *Workflows) ProvisionServices(ctx workflow.Context, input *ProvisionServ
 				DatabaseName:      input.Spec.DatabaseName,
 				HostID:            hostID,
 				ServiceName:       database.GenerateServiceName(serviceSpec.ServiceType, input.Spec.DatabaseID, serviceSpec.ServiceID, hostID),
-				Hostname:          database.GenerateServiceHostname(serviceSpec.ServiceID, hostID),
+				Hostname:          database.GenerateServiceName(serviceSpec.ServiceType, input.Spec.DatabaseID, serviceSpec.ServiceID, hostID),
 				Credentials:       createUserOutput.Credentials,
 				DatabaseNetworkID: database.GenerateDatabaseNetworkID(input.Spec.DatabaseID),
 				DatabaseHost:      instanceHostname,

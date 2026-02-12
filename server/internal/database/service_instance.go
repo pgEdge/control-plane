@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -124,6 +125,10 @@ type ServiceUser struct {
 // Short name format: svc_{service_id}_{host_id}
 // Long name format:  svc_{first 50 chars of service_id_host_id}_{8-hex-hash}
 func GenerateServiceUsername(serviceID, hostID string) string {
+	// Sanitize hyphens to underscores for PostgreSQL compatibility.
+	// Hyphens in identifiers require double-quoting in SQL.
+	serviceID = strings.ReplaceAll(serviceID, "-", "_")
+	hostID = strings.ReplaceAll(hostID, "-", "_")
 	username := fmt.Sprintf("svc_%s_%s", serviceID, hostID)
 
 	if len(username) <= 63 {
@@ -153,12 +158,6 @@ func GenerateServiceInstanceID(databaseID, serviceID, hostID string) string {
 // Format: {service_type}-{database_id}-{service_id}-{host_id}
 func GenerateServiceName(serviceType, databaseID, serviceID, hostID string) string {
 	return fmt.Sprintf("%s-%s-%s-%s", serviceType, databaseID, serviceID, hostID)
-}
-
-// GenerateServiceHostname creates a container hostname for a service instance.
-// Format: {service_id}-{host_id}
-func GenerateServiceHostname(serviceID, hostID string) string {
-	return fmt.Sprintf("%s-%s", serviceID, hostID)
 }
 
 // GenerateDatabaseNetworkID creates the overlay network ID for a database.

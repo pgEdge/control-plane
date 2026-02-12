@@ -4798,7 +4798,7 @@ func marshalControlplaneviewsPortMappingViewToPortMappingResponseBody(v *control
 	}
 	res := &PortMappingResponseBody{
 		Name:          *v.Name,
-		ContainerPort: *v.ContainerPort,
+		ContainerPort: v.ContainerPort,
 		HostPort:      v.HostPort,
 	}
 

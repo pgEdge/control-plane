@@ -7,7 +7,10 @@ import (
 
 func Provide(i *do.Injector) {
 	do.Provide(i, func(i *do.Injector) (*Docker, error) {
-		logger := do.MustInvoke[zerolog.Logger](i)
+		logger, err := do.Invoke[zerolog.Logger](i)
+		if err != nil {
+			return nil, err
+		}
 		cli, err := NewDocker(logger)
 		if err != nil {
 			return nil, err

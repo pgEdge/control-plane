@@ -1104,9 +1104,6 @@ func ValidatePortMappingView(result *PortMappingView) (err error) {
 	if result.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "result"))
 	}
-	if result.ContainerPort == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("container_port", "result"))
-	}
 	if result.ContainerPort != nil {
 		if *result.ContainerPort < 1 {
 			err = goa.MergeErrors(err, goa.InvalidRangeError("result.container_port", *result.ContainerPort, 1, true))

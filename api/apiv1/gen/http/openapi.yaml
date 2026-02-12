@@ -4999,7 +4999,6 @@ definitions:
       name: web-client
     required:
       - name
-      - container_port
   RemoveHostResponse:
     title: RemoveHostResponse
     type: object

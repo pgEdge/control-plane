@@ -15538,8 +15538,7 @@
           "name": "web-client"
         },
         "required": [
-          "name",
-          "container_port"
+          "name"
         ]
       },
       "RemoveHostResponse": {

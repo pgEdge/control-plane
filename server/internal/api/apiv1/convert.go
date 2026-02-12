@@ -266,7 +266,7 @@ func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 func portMappingToAPI(pm database.PortMapping) *api.PortMapping {
 	return &api.PortMapping{
 		Name:          pm.Name,
-		ContainerPort: pm.ContainerPort,
+		ContainerPort: &pm.ContainerPort,
 		HostPort:      pm.HostPort,
 	}
 }

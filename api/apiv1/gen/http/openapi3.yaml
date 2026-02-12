@@ -10959,7 +10959,6 @@ components:
         name: web-client
       required:
         - name
-        - container_port
     RemoveHostResponse:
       type: object
       properties:
