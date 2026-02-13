@@ -18,6 +18,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/server/v3/embed"
 	"go.etcd.io/etcd/server/v3/etcdserver"
+	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 
 	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/common"
@@ -157,6 +158,9 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 
 func (e *EmbeddedEtcd) start(ctx context.Context) error {
 	appCfg := e.cfg.Config()
+	if appCfg.EtcdServer.ForceNewCluster {
+		e.logger.Warn().Msg("force-new-cluster enabled — starting etcd as a new single-member cluster from existing data")
+	}
 	e.logger.Info().
 		Int("peer_port", appCfg.EtcdServer.PeerPort).
 		Int("client_port", appCfg.EtcdServer.ClientPort).
@@ -401,7 +405,20 @@ func (e *EmbeddedEtcd) GetClient() (*clientv3.Client, error) {
 	}
 
 	cfg := e.cfg.Config()
-	clientCfg, err := clientConfig(cfg, e.logger, e.etcd.Server.Cluster().ClientURLs()...)
+
+	// After ForceNewCluster, the etcd Authenticate RPC hangs because it
+	// requires a linearizable read, which in turn requires the Raft apply
+	// loop to be fully caught up. ForceNewCluster can leave pending Raft
+	// entries that prevent this. Use the in-process v3client which bypasses
+	// gRPC (and therefore auth interceptors and linearizable reads).
+	if cfg.EtcdServer.ForceNewCluster {
+		e.logger.Info().Msg("using in-process etcd client for ForceNewCluster recovery")
+		e.client = v3client.New(e.etcd.Server)
+		return e.client, nil
+	}
+
+	endpoints := e.ClientEndpoints()
+	clientCfg, err := clientConfig(cfg, e.logger, endpoints...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get client config: %w", err)
 	}
@@ -690,6 +707,7 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 	c.MaxTxnOps = 2048
 	c.MaxRequestBytes = 10 * 1024 * 1024 // 10MB
 	c.QuotaBackendBytes = quotaBackendBytes
+	c.ForceNewCluster = cfg.EtcdServer.ForceNewCluster
 
 	return c, nil
 }

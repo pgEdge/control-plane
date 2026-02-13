@@ -275,6 +275,9 @@ var _ = g.Service("control-plane", func() {
 				g.Default(false)
 				g.Example(true)
 			})
+			g.Attribute("remove_host", g.ArrayOf(g.String), func() {
+				g.Description("Remove hosts from the database.")
+			})
 			g.Attribute("request", UpdateDatabaseRequest)
 
 			g.Required("database_id", "request")
@@ -289,6 +292,7 @@ var _ = g.Service("control-plane", func() {
 		g.HTTP(func() {
 			g.POST("/v1/databases/{database_id}")
 			g.Param("force_update")
+			g.Param("remove_host")
 			g.Body("request")
 
 			g.Meta("openapi:tag:Database")

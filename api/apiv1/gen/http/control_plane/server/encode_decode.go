@@ -1040,6 +1040,7 @@ func DecodeUpdateDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 		var (
 			databaseID  string
 			forceUpdate bool
+			removeHost  []string
 
 			params = mux.Vars(r)
 		)
@@ -1050,8 +1051,9 @@ func DecodeUpdateDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 		if utf8.RuneCountInString(databaseID) > 63 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("database_id", databaseID, utf8.RuneCountInString(databaseID), 63, false))
 		}
+		qp := r.URL.Query()
 		{
-			forceUpdateRaw := r.URL.Query().Get("force_update")
+			forceUpdateRaw := qp.Get("force_update")
 			if forceUpdateRaw != "" {
 				v, err2 := strconv.ParseBool(forceUpdateRaw)
 				if err2 != nil {
@@ -1060,10 +1062,11 @@ func DecodeUpdateDatabaseRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 				forceUpdate = v
 			}
 		}
+		removeHost = qp["remove_host"]
 		if err != nil {
 			return nil, err
 		}
-		payload := NewUpdateDatabasePayload(&body, databaseID, forceUpdate)
+		payload := NewUpdateDatabasePayload(&body, databaseID, forceUpdate, removeHost)
 
 		return payload, nil
 	}

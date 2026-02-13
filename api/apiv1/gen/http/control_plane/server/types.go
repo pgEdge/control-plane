@@ -4443,7 +4443,7 @@ func NewGetDatabasePayload(databaseID string) *controlplane.GetDatabasePayload {
 
 // NewUpdateDatabasePayload builds a control-plane service update-database
 // endpoint payload.
-func NewUpdateDatabasePayload(body *UpdateDatabaseRequestBody, databaseID string, forceUpdate bool) *controlplane.UpdateDatabasePayload {
+func NewUpdateDatabasePayload(body *UpdateDatabaseRequestBody, databaseID string, forceUpdate bool, removeHost []string) *controlplane.UpdateDatabasePayload {
 	v := &controlplane.UpdateDatabaseRequest{}
 	if body.TenantID != nil {
 		tenantID := controlplane.Identifier(*body.TenantID)
@@ -4455,6 +4455,7 @@ func NewUpdateDatabasePayload(body *UpdateDatabaseRequestBody, databaseID string
 	}
 	res.DatabaseID = controlplane.Identifier(databaseID)
 	res.ForceUpdate = forceUpdate
+	res.RemoveHost = removeHost
 
 	return res
 }
