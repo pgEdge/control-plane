@@ -385,14 +385,20 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 
 func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
 	// Get service image based on service type and version
-	imageStr, err := o.serviceVersions.GetServiceImage(spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version)
+	serviceImage, err := o.serviceVersions.GetServiceImage(spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get service image: %w", err)
 	}
 
-	// Create ServiceImages struct
-	images := &ServiceImages{
-		Image: imageStr,
+	// Validate compatibility with database version
+	if spec.PgEdgeVersion != nil {
+		if err := serviceImage.ValidateCompatibility(
+			spec.PgEdgeVersion.PostgresVersion,
+			spec.PgEdgeVersion.SpockVersion,
+		); err != nil {
+			return nil, fmt.Errorf("service %q version %q is not compatible with this database: %w",
+				spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version, err)
+		}
 	}
 
 	// Database network (shared with postgres instances)
@@ -422,7 +428,7 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		ServiceName:       spec.ServiceName,
 		Hostname:          spec.Hostname,
 		CohortMemberID:    o.swarmNodeID, // Use orchestrator's swarm node ID (same as Postgres instances)
-		ServiceImages:     images,
+		ServiceImage:      serviceImage,
 		Credentials:       spec.Credentials,
 		DatabaseNetworkID: databaseNetwork.Name,
 		DatabaseHost:      spec.DatabaseHost,

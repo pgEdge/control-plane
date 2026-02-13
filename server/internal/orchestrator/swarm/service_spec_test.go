@@ -46,8 +46,8 @@ func TestServiceContainerSpec(t *testing.T) {
 				ServiceName:       "db1-mcp-server-host1",
 				Hostname:          "mcp-server-host1",
 				CohortMemberID:    "swarm-node-123",
-				ServiceImages: &ServiceImages{
-					Image: "ghcr.io/pgedge/postgres-mcp:latest",
+				ServiceImage: &ServiceImage{
+					Tag: "ghcr.io/pgedge/postgres-mcp:latest",
 				},
 				Credentials: &database.ServiceUser{
 					Username: "svc_db1mcp",
@@ -174,8 +174,8 @@ func TestServiceContainerSpec(t *testing.T) {
 				ServiceName:       "db1-mcp-server-host1",
 				Hostname:          "mcp-server-host1",
 				CohortMemberID:    "swarm-node-123",
-				ServiceImages: &ServiceImages{
-					Image: "ghcr.io/pgedge/postgres-mcp:latest",
+				ServiceImage: &ServiceImage{
+					Tag: "ghcr.io/pgedge/postgres-mcp:latest",
 				},
 				DatabaseNetworkID: "db1-database",
 				DatabaseHost:      "postgres-instance-1",
@@ -219,8 +219,8 @@ func TestServiceContainerSpec(t *testing.T) {
 				ServiceName:       "db1-mcp-server-host1",
 				Hostname:          "mcp-server-host1",
 				CohortMemberID:    "swarm-node-123",
-				ServiceImages: &ServiceImages{
-					Image: "ghcr.io/pgedge/postgres-mcp:latest",
+				ServiceImage: &ServiceImage{
+					Tag: "ghcr.io/pgedge/postgres-mcp:latest",
 				},
 				DatabaseNetworkID: "db1-database",
 				DatabaseHost:      "postgres-instance-1",
@@ -267,8 +267,8 @@ func TestServiceContainerSpec(t *testing.T) {
 				ServiceName:       "db1-mcp-server-host1",
 				Hostname:          "mcp-server-host1",
 				CohortMemberID:    "swarm-node-123",
-				ServiceImages: &ServiceImages{
-					Image: "ghcr.io/pgedge/postgres-mcp:latest",
+				ServiceImage: &ServiceImage{
+					Tag: "ghcr.io/pgedge/postgres-mcp:latest",
 				},
 				DatabaseNetworkID: "db1-database",
 				DatabaseHost:      "postgres-instance-1",
@@ -315,8 +315,8 @@ func TestServiceContainerSpec(t *testing.T) {
 				ServiceName:       "db1-mcp-server-host1",
 				Hostname:          "mcp-server-host1",
 				CohortMemberID:    "swarm-node-123",
-				ServiceImages: &ServiceImages{
-					Image: "ghcr.io/pgedge/postgres-mcp:latest",
+				ServiceImage: &ServiceImage{
+					Tag: "ghcr.io/pgedge/postgres-mcp:latest",
 				},
 				Credentials:       nil, // No credentials
 				DatabaseNetworkID: "db1-database",
@@ -371,8 +371,8 @@ func TestServiceContainerSpec(t *testing.T) {
 			}
 
 			// Check image
-			if got.TaskTemplate.ContainerSpec.Image != tt.opts.ServiceImages.Image {
-				t.Errorf("image = %v, want %v", got.TaskTemplate.ContainerSpec.Image, tt.opts.ServiceImages.Image)
+			if got.TaskTemplate.ContainerSpec.Image != tt.opts.ServiceImage.Tag {
+				t.Errorf("image = %v, want %v", got.TaskTemplate.ContainerSpec.Image, tt.opts.ServiceImage.Tag)
 			}
 
 			// Check service name

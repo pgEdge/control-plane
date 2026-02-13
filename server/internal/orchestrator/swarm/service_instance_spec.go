@@ -30,7 +30,7 @@ type ServiceInstanceSpecResource struct {
 	ServiceName       string                `json:"service_name"`
 	Hostname          string                `json:"hostname"`
 	CohortMemberID    string                `json:"cohort_member_id"`
-	ServiceImages     *ServiceImages        `json:"service_images"`
+	ServiceImage      *ServiceImage         `json:"service_image"`
 	Credentials       *database.ServiceUser `json:"credentials"`
 	DatabaseNetworkID string                `json:"database_network_id"`
 	DatabaseHost      string                `json:"database_host"` // Postgres instance hostname
@@ -84,7 +84,7 @@ func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.
 		ServiceName:       s.ServiceName,
 		Hostname:          s.Hostname,
 		CohortMemberID:    s.CohortMemberID,
-		ServiceImages:     s.ServiceImages,
+		ServiceImage:      s.ServiceImage,
 		Credentials:       s.Credentials,
 		DatabaseNetworkID: network.NetworkID,
 		DatabaseHost:      s.DatabaseHost,

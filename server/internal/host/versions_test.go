@@ -10,6 +10,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestMustParseVersion(t *testing.T) {
+	t.Run("valid version", func(t *testing.T) {
+		v := host.MustParseVersion("17.6")
+		assert.Equal(t, &host.Version{Components: []uint64{17, 6}}, v)
+	})
+
+	t.Run("valid semver", func(t *testing.T) {
+		v := host.MustParseVersion("4.0.0")
+		assert.Equal(t, &host.Version{Components: []uint64{4, 0, 0}}, v)
+	})
+
+	t.Run("single component", func(t *testing.T) {
+		v := host.MustParseVersion("14")
+		assert.Equal(t, &host.Version{Components: []uint64{14}}, v)
+	})
+
+	t.Run("invalid version panics", func(t *testing.T) {
+		assert.Panics(t, func() {
+			host.MustParseVersion("invalid")
+		})
+	})
+}
+
 func TestParseVersion(t *testing.T) {
 	for _, tc := range []struct {
 		input       string
@@ -292,6 +315,143 @@ func TestPgEdgeVersion(t *testing.T) {
 			SpockVersion:    &host.Version{Components: []uint64{5, 0, 0}},
 		}, out)
 	})
+}
+
+func TestVersionConstraint_IsSatisfied(t *testing.T) {
+	v := func(s string) *host.Version {
+		v, err := host.ParseVersion(s)
+		require.NoError(t, err)
+		return v
+	}
+
+	for _, tc := range []struct {
+		name       string
+		constraint *host.VersionConstraint
+		version    *host.Version
+		expected   bool
+	}{
+		{
+			name:       "nil min and max is always satisfied",
+			constraint: &host.VersionConstraint{},
+			version:    v("5.0.0"),
+			expected:   true,
+		},
+		{
+			name:       "min only - satisfied",
+			constraint: &host.VersionConstraint{Min: v("16")},
+			version:    v("17"),
+			expected:   true,
+		},
+		{
+			name:       "min only - exactly at min",
+			constraint: &host.VersionConstraint{Min: v("17")},
+			version:    v("17"),
+			expected:   true,
+		},
+		{
+			name:       "min only - below min",
+			constraint: &host.VersionConstraint{Min: v("17")},
+			version:    v("16"),
+			expected:   false,
+		},
+		{
+			name:       "max only - satisfied",
+			constraint: &host.VersionConstraint{Max: v("18")},
+			version:    v("17"),
+			expected:   true,
+		},
+		{
+			name:       "max only - exactly at max",
+			constraint: &host.VersionConstraint{Max: v("17")},
+			version:    v("17"),
+			expected:   true,
+		},
+		{
+			name:       "max only - above max",
+			constraint: &host.VersionConstraint{Max: v("17")},
+			version:    v("18"),
+			expected:   false,
+		},
+		{
+			name:       "range - within bounds",
+			constraint: &host.VersionConstraint{Min: v("16"), Max: v("18")},
+			version:    v("17"),
+			expected:   true,
+		},
+		{
+			name:       "range - at min boundary",
+			constraint: &host.VersionConstraint{Min: v("16"), Max: v("18")},
+			version:    v("16"),
+			expected:   true,
+		},
+		{
+			name:       "range - at max boundary",
+			constraint: &host.VersionConstraint{Min: v("16"), Max: v("18")},
+			version:    v("18"),
+			expected:   true,
+		},
+		{
+			name:       "range - below min",
+			constraint: &host.VersionConstraint{Min: v("16"), Max: v("18")},
+			version:    v("15"),
+			expected:   false,
+		},
+		{
+			name:       "range - above max",
+			constraint: &host.VersionConstraint{Min: v("16"), Max: v("18")},
+			version:    v("19"),
+			expected:   false,
+		},
+		{
+			name:       "semver min and max",
+			constraint: &host.VersionConstraint{Min: v("4.0.0"), Max: v("5.0.0")},
+			version:    v("4.10.0"),
+			expected:   true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, tc.constraint.IsSatisfied(tc.version))
+		})
+	}
+}
+
+func TestVersionConstraint_String(t *testing.T) {
+	v := func(s string) *host.Version {
+		v, err := host.ParseVersion(s)
+		require.NoError(t, err)
+		return v
+	}
+
+	for _, tc := range []struct {
+		name       string
+		constraint *host.VersionConstraint
+		expected   string
+	}{
+		{
+			name:       "no constraints",
+			constraint: &host.VersionConstraint{},
+			expected:   "any",
+		},
+		{
+			name:       "min only",
+			constraint: &host.VersionConstraint{Min: v("16")},
+			expected:   ">= 16",
+		},
+		{
+			name:       "max only",
+			constraint: &host.VersionConstraint{Max: v("18")},
+			expected:   "<= 18",
+		},
+		{
+			name:       "min and max",
+			constraint: &host.VersionConstraint{Min: v("16"), Max: v("18")},
+			expected:   ">= 16 and <= 18",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, tc.constraint.String())
+		})
+	}
 }
 
 func TestGreatestCommonDefaultVersion(t *testing.T) {

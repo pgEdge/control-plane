@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/pgEdge/control-plane/server/internal/host"
 )
 
 type ServiceInstanceState string
@@ -170,6 +172,7 @@ func GenerateDatabaseNetworkID(databaseID string) string {
 type ServiceInstanceSpec struct {
 	ServiceInstanceID string
 	ServiceSpec       *ServiceSpec
+	PgEdgeVersion     *host.PgEdgeVersion // Database version, used for compatibility validation
 	DatabaseID        string
 	DatabaseName      string
 	HostID            string

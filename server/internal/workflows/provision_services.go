@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/monitor"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/task"
@@ -44,9 +45,15 @@ func (w *Workflows) ProvisionServices(ctx workflow.Context, input *ProvisionServ
 		return &ProvisionServicesOutput{}, nil
 	}
 
+	// Parse database version for service compatibility validation
+	pgEdgeVersion, err := host.NewPgEdgeVersion(input.Spec.PostgresVersion, input.Spec.SpockVersion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse pgedge version: %w", err)
+	}
+
 	// Log task start
 	start := workflow.Now(ctx)
-	err := w.logTaskEvent(ctx,
+	err = w.logTaskEvent(ctx,
 		task.ScopeDatabase,
 		input.Spec.DatabaseID,
 		input.TaskID,
@@ -220,6 +227,7 @@ func (w *Workflows) ProvisionServices(ctx workflow.Context, input *ProvisionServ
 			serviceInstanceSpec := &database.ServiceInstanceSpec{
 				ServiceInstanceID: serviceInstanceID,
 				ServiceSpec:       serviceSpec,
+				PgEdgeVersion:     pgEdgeVersion,
 				DatabaseID:        input.Spec.DatabaseID,
 				DatabaseName:      input.Spec.DatabaseName,
 				HostID:            hostID,

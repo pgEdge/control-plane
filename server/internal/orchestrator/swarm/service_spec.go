@@ -21,7 +21,7 @@ type ServiceContainerSpecOptions struct {
 	ServiceName       string
 	Hostname          string
 	CohortMemberID    string
-	ServiceImages     *ServiceImages
+	ServiceImage      *ServiceImage
 	Credentials       *database.ServiceUser
 	DatabaseNetworkID string
 	// Database connection info
@@ -61,8 +61,8 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 	// Build environment variables for database connection and LLM config
 	env := buildServiceEnvVars(opts)
 
-	// Get container image (already resolved in ServiceImages)
-	image := opts.ServiceImages.Image
+	// Get container image (already resolved in ServiceImage)
+	image := opts.ServiceImage.Tag
 
 	// Build port configuration (expose 8080 for HTTP API)
 	ports := buildServicePortConfig(opts.Port)
