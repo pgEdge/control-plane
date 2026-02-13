@@ -9,6 +9,7 @@ const (
 	cpuPattern             = `^[0-9]+(\.[0-9]{1,3}|m)?$`
 	postgresVersionPattern = `^\d{2}\.\d{1,2}$`
 	spockVersionPattern    = `^\d{1}$`
+	serviceVersionPattern  = `^(\d+\.\d+\.\d+|latest)$`
 )
 
 var HostIDs = g.ArrayOf(Identifier, func() {
@@ -103,6 +104,66 @@ var DatabaseUserSpec = g.Type("DatabaseUserSpec", func() {
 	})
 
 	g.Required("username")
+})
+
+var ServiceSpec = g.Type("ServiceSpec", func() {
+	g.Attribute("service_id", Identifier, func() {
+		g.Description("The unique identifier for this service.")
+		g.Example("mcp-server")
+		g.Example("analytics-service")
+	})
+	g.Attribute("service_type", g.String, func() {
+		g.Description("The type of service to run.")
+		g.Enum("mcp")
+		g.Example("mcp")
+	})
+	g.Attribute("version", g.String, func() {
+		g.Description("The version of the service in semver format (e.g., '1.0.0') or the literal 'latest'.")
+		g.Pattern(serviceVersionPattern)
+		g.Example("1.0.0")
+		g.Example("1.2.3")
+		g.Example("latest")
+	})
+	g.Attribute("host_ids", HostIDs, func() {
+		g.Description("The IDs of the hosts that should run this service. One service instance will be created per host.")
+		g.MinLength(1)
+	})
+	g.Attribute("port", g.Int, func() {
+		g.Description("The port to publish the service on the host. If 0, Docker assigns a random port. If unspecified, no port is published and the service is not accessible from outside the Docker network.")
+		g.Minimum(0)
+		g.Maximum(65535)
+		g.Example(8080)
+		g.Example(9000)
+		g.Example(0)
+	})
+	g.Attribute("config", g.MapOf(g.String, g.Any), func() {
+		g.Description("Service-specific configuration. For MCP services, this includes llm_provider, llm_model, and provider-specific API keys.")
+		g.Example(map[string]any{
+			"llm_provider":      "anthropic",
+			"llm_model":         "claude-sonnet-4-5",
+			"anthropic_api_key": "sk-ant-...",
+		})
+		g.Example(map[string]any{
+			"llm_provider":   "openai",
+			"llm_model":      "gpt-4",
+			"openai_api_key": "sk-...",
+		})
+	})
+	g.Attribute("cpus", g.String, func() {
+		g.Description("The number of CPUs to allocate for this service. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if unspecified.")
+		g.Pattern(cpuPattern)
+		g.Example("1")
+		g.Example("0.5")
+		g.Example("500m")
+	})
+	g.Attribute("memory", g.String, func() {
+		g.Description("The amount of memory in SI or IEC notation to allocate for this service. Defaults to container defaults if unspecified.")
+		g.MaxLength(16)
+		g.Example("1GiB")
+		g.Example("512M")
+	})
+
+	g.Required("service_id", "service_type", "version", "host_ids", "config")
 })
 
 var BackupRepositorySpec = g.Type("BackupRepositorySpec", func() {
@@ -425,6 +486,9 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 		g.Description("The users to create for this database.")
 		g.MaxLength(16)
 	})
+	g.Attribute("services", g.ArrayOf(ServiceSpec), func() {
+		g.Description("Service instances to run alongside the database (e.g., MCP servers).")
+	})
 	g.Attribute("backup_config", BackupConfigSpec, func() {
 		g.Description("The backup configuration for this database.")
 	})
@@ -485,6 +549,9 @@ var Database = g.ResultType("Database", func() {
 		g.Attribute("instances", g.CollectionOf(Instance), func() {
 			g.Description("All of the instances in the database.")
 		})
+		g.Attribute("service_instances", g.CollectionOf(ServiceInstance), func() {
+			g.Description("Service instances running alongside this database.")
+		})
 		g.Attribute("spec", DatabaseSpec, func() {
 			g.Description("The user-provided specification for the database.")
 		})
@@ -497,6 +564,9 @@ var Database = g.ResultType("Database", func() {
 		g.Attribute("updated_at")
 		g.Attribute("state")
 		g.Attribute("instances", func() {
+			g.View("default")
+		})
+		g.Attribute("service_instances", func() {
 			g.View("default")
 		})
 		g.Attribute("spec")
@@ -515,7 +585,7 @@ var Database = g.ResultType("Database", func() {
 		})
 	})
 
-	g.Required("id", "created_at", "updated_at", "state")
+	g.Required("id", "created_at", "updated_at", "state", "instances", "service_instances")
 })
 
 var CreateDatabaseRequest = g.Type("CreateDatabaseRequest", func() {

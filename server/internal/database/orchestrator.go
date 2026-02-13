@@ -14,9 +14,19 @@ import (
 
 const pgEdgeUser = "pgedge"
 
+// ResourceTypeServiceInstance is the resource type identifier for service instances.
+// This constant is defined here to avoid import cycles between the orchestrator
+// and workflow packages.
+const ResourceTypeServiceInstance = "swarm.service_instance"
+
 type InstanceResources struct {
 	Instance  *InstanceResource
 	Resources []*resource.ResourceData
+}
+
+type ServiceInstanceResources struct {
+	ServiceInstance *ServiceInstance
+	Resources       []*resource.ResourceData
 }
 
 func (r *InstanceResources) InstanceID() string {
@@ -120,7 +130,9 @@ func (c *ConnectionInfo) PeerDSN(dbName string) *postgres.DSN {
 type Orchestrator interface {
 	GenerateInstanceResources(spec *InstanceSpec) (*InstanceResources, error)
 	GenerateInstanceRestoreResources(spec *InstanceSpec, taskID uuid.UUID) (*InstanceResources, error)
+	GenerateServiceInstanceResources(spec *ServiceInstanceSpec) (*ServiceInstanceResources, error)
 	GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*ConnectionInfo, error)
+	GetServiceInstanceStatus(ctx context.Context, serviceInstanceID string) (*ServiceInstanceStatus, error)
 	CreatePgBackRestBackup(ctx context.Context, w io.Writer, instanceID string, options *pgbackrest.BackupOptions) error
 	ValidateInstanceSpecs(ctx context.Context, changes []*InstanceSpecChange) ([]*ValidationResult, error)
 	StopInstance(ctx context.Context, instanceID string) error

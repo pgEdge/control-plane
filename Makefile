@@ -368,10 +368,15 @@ dev-down:
 
 .PHONY: dev-teardown
 dev-teardown: dev-down
-	docker service ls \
-		--filter=label=pgedge.component=postgres \
-		--format '{{ .ID }}' \
-		| xargs docker service rm
+	# remove postgres and supported services
+	ids=$$(docker service ls -q); \
+	if [ -n "$$ids" ]; then \
+		echo "$$ids" \
+			| xargs docker service inspect \
+			--format '{{.ID}} {{index .Spec.Labels "pgedge.component"}}' \
+			| awk '$$2=="postgres" || $$2=="service" {print $$1}' \
+			| xargs docker service rm; \
+	fi
 	docker network ls \
 		--filter=scope=swarm \
 		--format '{{ .Name }}' \

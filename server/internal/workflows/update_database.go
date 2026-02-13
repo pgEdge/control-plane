@@ -119,6 +119,39 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		return nil, handleError(err)
 	}
 
+	// Provision services after database resources are applied
+	logger.With("service_count_in_spec", len(input.Spec.Services)).Info("checking if we need to provision services")
+	if len(input.Spec.Services) > 0 {
+		provisionServicesInput := &ProvisionServicesInput{
+			TaskID: input.TaskID,
+			Spec:   input.Spec,
+		}
+
+		logger.With("service_count", len(input.Spec.Services)).Info("calling ProvisionServices workflow")
+
+		_, err = w.ExecuteProvisionServices(ctx, provisionServicesInput).Get(ctx)
+		if err != nil {
+			// Log service provisioning failure but allow database to succeed
+			// Service instances will be marked as "failed" with error details
+			logger.With("error", err).Error("failed to provision services - database will be available but services degraded")
+
+			err = w.logTaskEvent(ctx,
+				task.ScopeDatabase,
+				input.Spec.DatabaseID,
+				input.TaskID,
+				task.LogEntry{
+					Message: "service provisioning failed - database available but services unavailable",
+					Fields: map[string]any{
+						"error": err.Error(),
+					},
+				},
+			)
+			if err != nil {
+				logger.With("error", err).Warn("failed to log service provisioning error")
+			}
+		}
+	}
+
 	updateStateInput := &activities.UpdateDbStateInput{
 		DatabaseID: input.Spec.DatabaseID,
 		State:      database.DatabaseStateAvailable,

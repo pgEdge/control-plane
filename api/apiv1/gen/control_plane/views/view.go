@@ -53,6 +53,8 @@ type DatabaseView struct {
 	State *string
 	// All of the instances in the database.
 	Instances InstanceCollectionView
+	// Service instances running alongside this database.
+	ServiceInstances ServiceinstanceCollectionView
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecView
 }
@@ -132,6 +134,73 @@ type InstanceSubscriptionView struct {
 	Status *string
 }
 
+// ServiceinstanceCollectionView is a type that runs validations on a projected
+// type.
+type ServiceinstanceCollectionView []*ServiceinstanceView
+
+// ServiceinstanceView is a type that runs validations on a projected type.
+type ServiceinstanceView struct {
+	// Unique identifier for the service instance.
+	ServiceInstanceID *string
+	// The service ID from the DatabaseSpec.
+	ServiceID *string
+	// The ID of the database this service belongs to.
+	DatabaseID *IdentifierView
+	// The ID of the host this service instance is running on.
+	HostID *string
+	// Current state of the service instance.
+	State *string
+	// Runtime status information for the service instance.
+	Status *ServiceInstanceStatusView
+	// The time that the service instance was created.
+	CreatedAt *string
+	// The time that the service instance was last updated.
+	UpdatedAt *string
+	// An error message if the service instance is in an error state.
+	Error *string
+}
+
+// ServiceInstanceStatusView is a type that runs validations on a projected
+// type.
+type ServiceInstanceStatusView struct {
+	// The Docker container ID.
+	ContainerID *string
+	// The container image version currently running.
+	ImageVersion *string
+	// The hostname of the service instance.
+	Hostname *string
+	// The IPv4 address of the service instance.
+	Ipv4Address *string
+	// Port mappings for this service instance.
+	Ports []*PortMappingView
+	// Most recent health check result.
+	HealthCheck *HealthCheckResultView
+	// The time of the last health check attempt.
+	LastHealthAt *string
+	// Whether the service is ready to accept requests.
+	ServiceReady *bool
+}
+
+// PortMappingView is a type that runs validations on a projected type.
+type PortMappingView struct {
+	// The name of the port (e.g., 'http', 'web-client').
+	Name *string
+	// The port number inside the container.
+	ContainerPort *int
+	// The port number on the host (if port-forwarded).
+	HostPort *int
+}
+
+// HealthCheckResultView is a type that runs validations on a projected type.
+type HealthCheckResultView struct {
+	// The health status.
+	Status *string
+	// Optional message about the health status.
+	Message *string
+	// The time this health check was performed.
+	CheckedAt *string
+}
+
 // DatabaseSpecView is a type that runs validations on a projected type.
 type DatabaseSpecView struct {
 	// The name of the Postgres database.
@@ -157,6 +226,8 @@ type DatabaseSpecView struct {
 	Nodes []*DatabaseNodeSpecView
 	// The users to create for this database.
 	DatabaseUsers []*DatabaseUserSpecView
+	// Service instances to run alongside the database (e.g., MCP servers).
+	Services []*ServiceSpecView
 	// The backup configuration for this database.
 	BackupConfig *BackupConfigSpecView
 	// The restore configuration for this database.
@@ -396,6 +467,34 @@ type DatabaseUserSpecView struct {
 	Roles []string
 }
 
+// ServiceSpecView is a type that runs validations on a projected type.
+type ServiceSpecView struct {
+	// The unique identifier for this service.
+	ServiceID *IdentifierView
+	// The type of service to run.
+	ServiceType *string
+	// The version of the service in semver format (e.g., '1.0.0') or the literal
+	// 'latest'.
+	Version *string
+	// The IDs of the hosts that should run this service. One service instance will
+	// be created per host.
+	HostIds []IdentifierView
+	// The port to publish the service on the host. If 0, Docker assigns a random
+	// port. If unspecified, no port is published and the service is not accessible
+	// from outside the Docker network.
+	Port *int
+	// Service-specific configuration. For MCP services, this includes
+	// llm_provider, llm_model, and provider-specific API keys.
+	Config map[string]any
+	// The number of CPUs to allocate for this service. It can include the SI
+	// suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if
+	// unspecified.
+	Cpus *string
+	// The amount of memory in SI or IEC notation to allocate for this service.
+	// Defaults to container defaults if unspecified.
+	Memory *string
+}
+
 // CreateDatabaseResponseView is a type that runs validations on a projected
 // type.
 type CreateDatabaseResponseView struct {
@@ -472,6 +571,7 @@ var (
 			"updated_at",
 			"state",
 			"instances",
+			"service_instances",
 			"spec",
 		},
 		"abbreviated": {
@@ -493,6 +593,7 @@ var (
 			"updated_at",
 			"state",
 			"instances",
+			"service_instances",
 			"spec",
 		},
 		"abbreviated": {
@@ -547,6 +648,36 @@ var (
 			"host_id",
 			"node_name",
 			"state",
+		},
+	}
+	// ServiceinstanceCollectionMap is a map indexing the attribute names of
+	// ServiceinstanceCollection by view name.
+	ServiceinstanceCollectionMap = map[string][]string{
+		"default": {
+			"service_instance_id",
+			"service_id",
+			"database_id",
+			"host_id",
+			"state",
+			"status",
+			"created_at",
+			"updated_at",
+			"error",
+		},
+	}
+	// ServiceinstanceMap is a map indexing the attribute names of Serviceinstance
+	// by view name.
+	ServiceinstanceMap = map[string][]string{
+		"default": {
+			"service_instance_id",
+			"service_id",
+			"database_id",
+			"host_id",
+			"state",
+			"status",
+			"created_at",
+			"updated_at",
+			"error",
 		},
 	}
 )
@@ -664,6 +795,11 @@ func ValidateDatabaseView(result *DatabaseView) (err error) {
 	}
 	if result.Instances != nil {
 		if err2 := ValidateInstanceCollectionView(result.Instances); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if result.ServiceInstances != nil {
+		if err2 := ValidateServiceinstanceCollectionView(result.ServiceInstances); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -875,6 +1011,142 @@ func ValidateInstanceSubscriptionView(result *InstanceSubscriptionView) (err err
 	return
 }
 
+// ValidateServiceinstanceCollectionView runs the validations defined on
+// ServiceinstanceCollectionView using the "default" view.
+func ValidateServiceinstanceCollectionView(result ServiceinstanceCollectionView) (err error) {
+	for _, item := range result {
+		if err2 := ValidateServiceinstanceView(item); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateServiceinstanceView runs the validations defined on
+// ServiceinstanceView using the "default" view.
+func ValidateServiceinstanceView(result *ServiceinstanceView) (err error) {
+	if result.ServiceInstanceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("service_instance_id", "result"))
+	}
+	if result.ServiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("service_id", "result"))
+	}
+	if result.DatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("database_id", "result"))
+	}
+	if result.HostID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "result"))
+	}
+	if result.State == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("state", "result"))
+	}
+	if result.CreatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("created_at", "result"))
+	}
+	if result.UpdatedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("updated_at", "result"))
+	}
+	if result.DatabaseID != nil {
+		if utf8.RuneCountInString(string(*result.DatabaseID)) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.database_id", string(*result.DatabaseID), utf8.RuneCountInString(string(*result.DatabaseID)), 1, true))
+		}
+	}
+	if result.DatabaseID != nil {
+		if utf8.RuneCountInString(string(*result.DatabaseID)) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.database_id", string(*result.DatabaseID), utf8.RuneCountInString(string(*result.DatabaseID)), 63, false))
+		}
+	}
+	if result.State != nil {
+		if !(*result.State == "creating" || *result.State == "running" || *result.State == "failed" || *result.State == "deleting") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.state", *result.State, []any{"creating", "running", "failed", "deleting"}))
+		}
+	}
+	if result.Status != nil {
+		if err2 := ValidateServiceInstanceStatusView(result.Status); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if result.CreatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.created_at", *result.CreatedAt, goa.FormatDateTime))
+	}
+	if result.UpdatedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.updated_at", *result.UpdatedAt, goa.FormatDateTime))
+	}
+	return
+}
+
+// ValidateServiceInstanceStatusView runs the validations defined on
+// ServiceInstanceStatusView.
+func ValidateServiceInstanceStatusView(result *ServiceInstanceStatusView) (err error) {
+	if result.Ipv4Address != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.ipv4_address", *result.Ipv4Address, goa.FormatIPv4))
+	}
+	for _, e := range result.Ports {
+		if e != nil {
+			if err2 := ValidatePortMappingView(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if result.HealthCheck != nil {
+		if err2 := ValidateHealthCheckResultView(result.HealthCheck); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if result.LastHealthAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.last_health_at", *result.LastHealthAt, goa.FormatDateTime))
+	}
+	return
+}
+
+// ValidatePortMappingView runs the validations defined on PortMappingView.
+func ValidatePortMappingView(result *PortMappingView) (err error) {
+	if result.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "result"))
+	}
+	if result.ContainerPort != nil {
+		if *result.ContainerPort < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("result.container_port", *result.ContainerPort, 1, true))
+		}
+	}
+	if result.ContainerPort != nil {
+		if *result.ContainerPort > 65535 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("result.container_port", *result.ContainerPort, 65535, false))
+		}
+	}
+	if result.HostPort != nil {
+		if *result.HostPort < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("result.host_port", *result.HostPort, 1, true))
+		}
+	}
+	if result.HostPort != nil {
+		if *result.HostPort > 65535 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("result.host_port", *result.HostPort, 65535, false))
+		}
+	}
+	return
+}
+
+// ValidateHealthCheckResultView runs the validations defined on
+// HealthCheckResultView.
+func ValidateHealthCheckResultView(result *HealthCheckResultView) (err error) {
+	if result.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "result"))
+	}
+	if result.CheckedAt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("checked_at", "result"))
+	}
+	if result.Status != nil {
+		if !(*result.Status == "healthy" || *result.Status == "unhealthy" || *result.Status == "unknown") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.status", *result.Status, []any{"healthy", "unhealthy", "unknown"}))
+		}
+	}
+	if result.CheckedAt != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("result.checked_at", *result.CheckedAt, goa.FormatDateTime))
+	}
+	return
+}
+
 // ValidateDatabaseSpecView runs the validations defined on DatabaseSpecView.
 func ValidateDatabaseSpecView(result *DatabaseSpecView) (err error) {
 	if result.DatabaseName == nil {
@@ -936,6 +1208,13 @@ func ValidateDatabaseSpecView(result *DatabaseSpecView) (err error) {
 	for _, e := range result.DatabaseUsers {
 		if e != nil {
 			if err2 := ValidateDatabaseUserSpecView(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range result.Services {
+		if e != nil {
+			if err2 := ValidateServiceSpecView(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -1495,6 +1774,73 @@ func ValidateDatabaseUserSpecView(result *DatabaseUserSpecView) (err error) {
 	}
 	if len(result.Roles) > 16 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("result.roles", result.Roles, len(result.Roles), 16, false))
+	}
+	return
+}
+
+// ValidateServiceSpecView runs the validations defined on ServiceSpecView.
+func ValidateServiceSpecView(result *ServiceSpecView) (err error) {
+	if result.ServiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("service_id", "result"))
+	}
+	if result.ServiceType == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("service_type", "result"))
+	}
+	if result.Version == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("version", "result"))
+	}
+	if result.HostIds == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "result"))
+	}
+	if result.Config == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("config", "result"))
+	}
+	if result.ServiceID != nil {
+		if utf8.RuneCountInString(string(*result.ServiceID)) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.service_id", string(*result.ServiceID), utf8.RuneCountInString(string(*result.ServiceID)), 1, true))
+		}
+	}
+	if result.ServiceID != nil {
+		if utf8.RuneCountInString(string(*result.ServiceID)) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.service_id", string(*result.ServiceID), utf8.RuneCountInString(string(*result.ServiceID)), 63, false))
+		}
+	}
+	if result.ServiceType != nil {
+		if !(*result.ServiceType == "mcp") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("result.service_type", *result.ServiceType, []any{"mcp"}))
+		}
+	}
+	if result.Version != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.version", *result.Version, "^(\\d+\\.\\d+\\.\\d+|latest)$"))
+	}
+	if len(result.HostIds) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("result.host_ids", result.HostIds, len(result.HostIds), 1, true))
+	}
+	for _, e := range result.HostIds {
+		if utf8.RuneCountInString(string(e)) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.host_ids[*]", string(e), utf8.RuneCountInString(string(e)), 1, true))
+		}
+		if utf8.RuneCountInString(string(e)) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.host_ids[*]", string(e), utf8.RuneCountInString(string(e)), 63, false))
+		}
+	}
+	if result.Port != nil {
+		if *result.Port < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("result.port", *result.Port, 0, true))
+		}
+	}
+	if result.Port != nil {
+		if *result.Port > 65535 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("result.port", *result.Port, 65535, false))
+		}
+	}
+	if result.Cpus != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("result.cpus", *result.Cpus, "^[0-9]+(\\.[0-9]{1,3}|m)?$"))
+	}
+	if result.Memory != nil {
+		if utf8.RuneCountInString(*result.Memory) > 16 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("result.memory", *result.Memory, utf8.RuneCountInString(*result.Memory), 16, false))
+		}
 	}
 	return
 }

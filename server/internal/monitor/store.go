@@ -7,14 +7,16 @@ import (
 )
 
 type Store struct {
-	client          *clientv3.Client
-	InstanceMonitor *InstanceMonitorStore
+	client                 *clientv3.Client
+	InstanceMonitor        *InstanceMonitorStore
+	ServiceInstanceMonitor *ServiceInstanceMonitorStore
 }
 
 func NewStore(client *clientv3.Client, root string) *Store {
 	return &Store{
-		client:          client,
-		InstanceMonitor: NewInstanceMonitorStore(client, root),
+		client:                 client,
+		InstanceMonitor:        NewInstanceMonitorStore(client, root),
+		ServiceInstanceMonitor: NewServiceInstanceMonitorStore(client, root),
 	}
 }
 

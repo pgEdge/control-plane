@@ -113,6 +113,33 @@ func (u *User) DefaultOptionalFieldsFrom(other *User) {
 	}
 }
 
+type ServiceSpec struct {
+	ServiceID   string         `json:"service_id"`
+	ServiceType string         `json:"service_type"`
+	Version     string         `json:"version"`
+	HostIDs     []string       `json:"host_ids"`
+	Config      map[string]any `json:"config"`
+	Port        *int           `json:"port,omitempty"`
+	CPUs        *float64       `json:"cpus,omitempty"`
+	MemoryBytes *uint64        `json:"memory,omitempty"`
+}
+
+func (s *ServiceSpec) Clone() *ServiceSpec {
+	if s == nil {
+		return nil
+	}
+	return &ServiceSpec{
+		ServiceID:   s.ServiceID,
+		ServiceType: s.ServiceType,
+		Version:     s.Version,
+		HostIDs:     slices.Clone(s.HostIDs),
+		Config:      maps.Clone(s.Config),
+		Port:        utils.ClonePointer(s.Port),
+		CPUs:        utils.ClonePointer(s.CPUs),
+		MemoryBytes: utils.ClonePointer(s.MemoryBytes),
+	}
+}
+
 type Extension struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
@@ -260,6 +287,7 @@ type Spec struct {
 	MemoryBytes      uint64            `json:"memory"`
 	Nodes            []*Node           `json:"nodes"`
 	DatabaseUsers    []*User           `json:"database_users"`
+	Services         []*ServiceSpec    `json:"services,omitempty"`
 	BackupConfig     *BackupConfig     `json:"backup_config"`
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
 	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
@@ -329,6 +357,10 @@ func (s *Spec) Clone() *Spec {
 	for i, user := range s.DatabaseUsers {
 		users[i] = user.Clone()
 	}
+	services := make([]*ServiceSpec, len(s.Services))
+	for i, service := range s.Services {
+		services[i] = service.Clone()
+	}
 
 	return &Spec{
 		DatabaseID:       s.DatabaseID,
@@ -342,6 +374,7 @@ func (s *Spec) Clone() *Spec {
 		PostgreSQLConf:   maps.Clone(s.PostgreSQLConf),
 		Nodes:            nodes,
 		DatabaseUsers:    users,
+		Services:         services,
 		BackupConfig:     s.BackupConfig.Clone(),
 		RestoreConfig:    s.RestoreConfig.Clone(),
 		OrchestratorOpts: s.OrchestratorOpts.Clone(),

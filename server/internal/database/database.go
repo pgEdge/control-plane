@@ -29,13 +29,14 @@ func DatabaseStateModifiable(state DatabaseState) bool {
 }
 
 type Database struct {
-	DatabaseID string
-	TenantID   *string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	State      DatabaseState
-	Spec       *Spec
-	Instances  []*Instance
+	DatabaseID       string
+	TenantID         *string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	State            DatabaseState
+	Spec             *Spec
+	Instances        []*Instance
+	ServiceInstances []*ServiceInstance
 }
 
 func databaseToStored(d *Database) *StoredDatabase {
@@ -48,19 +49,20 @@ func databaseToStored(d *Database) *StoredDatabase {
 	}
 }
 
-func storedToDatabase(d *StoredDatabase, storedSpec *StoredSpec, instances []*Instance) *Database {
+func storedToDatabase(d *StoredDatabase, storedSpec *StoredSpec, instances []*Instance, serviceInstances []*ServiceInstance) *Database {
 	return &Database{
-		DatabaseID: d.DatabaseID,
-		TenantID:   d.TenantID,
-		CreatedAt:  d.CreatedAt,
-		UpdatedAt:  d.UpdatedAt,
-		State:      d.State,
-		Spec:       storedSpec.Spec,
-		Instances:  instances,
+		DatabaseID:       d.DatabaseID,
+		TenantID:         d.TenantID,
+		CreatedAt:        d.CreatedAt,
+		UpdatedAt:        d.UpdatedAt,
+		State:            d.State,
+		Spec:             storedSpec.Spec,
+		Instances:        instances,
+		ServiceInstances: serviceInstances,
 	}
 }
 
-func storedToDatabases(storedDbs []*StoredDatabase, storedSpecs []*StoredSpec, allInstances []*Instance) []*Database {
+func storedToDatabases(storedDbs []*StoredDatabase, storedSpecs []*StoredSpec, allInstances []*Instance, allServiceInstances []*ServiceInstance) []*Database {
 	specsByID := make(map[string]*StoredSpec, len(storedSpecs))
 	for _, spec := range storedSpecs {
 		specsByID[spec.DatabaseID] = spec
@@ -71,11 +73,17 @@ func storedToDatabases(storedDbs []*StoredDatabase, storedSpecs []*StoredSpec, a
 		instancesByID[instance.DatabaseID] = append(instancesByID[instance.DatabaseID], instance)
 	}
 
+	serviceInstancesByID := make(map[string][]*ServiceInstance, len(allServiceInstances))
+	for _, serviceInstance := range allServiceInstances {
+		serviceInstancesByID[serviceInstance.DatabaseID] = append(serviceInstancesByID[serviceInstance.DatabaseID], serviceInstance)
+	}
+
 	databases := make([]*Database, len(storedDbs))
 	for i, stored := range storedDbs {
 		spec := specsByID[stored.DatabaseID]
 		instances := instancesByID[stored.DatabaseID]
-		databases[i] = storedToDatabase(stored, spec, instances)
+		serviceInstances := serviceInstancesByID[stored.DatabaseID]
+		databases[i] = storedToDatabase(stored, spec, instances, serviceInstances)
 	}
 
 	return databases
