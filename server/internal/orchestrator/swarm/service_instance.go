@@ -13,7 +13,6 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/docker"
-	"github.com/pgEdge/control-plane/server/internal/monitor"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
@@ -203,18 +202,6 @@ func (s *ServiceInstanceResource) Delete(ctx context.Context, rc *resource.Conte
 		// Only try to remove the service if it exists
 		if err := client.ServiceRemove(ctx, s.ServiceName); err != nil {
 			return fmt.Errorf("failed to remove service instance: %w", err)
-		}
-	}
-
-	// Remove service instance monitor
-	// Note: This is best-effort cleanup. If the monitor doesn't exist or deletion fails,
-	// we still proceed with service instance deletion. Monitors will be cleaned up on restart.
-	if monitorSvc, err := do.Invoke[*monitor.Service](rc.Injector); err == nil {
-		if err := monitorSvc.DeleteServiceInstanceMonitor(ctx, s.ServiceInstanceID); err != nil {
-			if logger, logErr := do.Invoke[zerolog.Logger](rc.Injector); logErr == nil {
-				logger.Warn().Err(err).Str("service_instance_id", s.ServiceInstanceID).Msg("failed to delete service instance monitor during cleanup")
-			}
-			// Continue - not critical for deletion
 		}
 	}
 
