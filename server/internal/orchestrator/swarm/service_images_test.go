@@ -30,13 +30,6 @@ func TestGetServiceImage(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name:        "valid pganalyze 1.0.0",
-			serviceType: "pganalyze",
-			version:     "1.0.0",
-			wantTag:     "ghcr.io/pgedge/pganalyze-collector:1.0.0",
-			wantErr:     false,
-		},
-		{
 			name:        "unsupported service type",
 			serviceType: "unknown",
 			version:     "latest",
@@ -97,12 +90,6 @@ func TestSupportedServiceVersions(t *testing.T) {
 			name:        "mcp service has versions",
 			serviceType: "mcp",
 			wantLen:     1, // "latest"
-			wantErr:     false,
-		},
-		{
-			name:        "pganalyze service has versions",
-			serviceType: "pganalyze",
-			wantLen:     1, // "1.0.0"
 			wantErr:     false,
 		},
 		{
@@ -196,56 +183,6 @@ func TestGetServiceImage_ConstraintsPopulated(t *testing.T) {
 		}
 	})
 
-	t.Run("pganalyze has constraints", func(t *testing.T) {
-		img, err := sv.GetServiceImage("pganalyze", "1.0.0")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if img.PostgresConstraint == nil {
-			t.Fatal("expected non-nil PostgresConstraint for pganalyze")
-		}
-		if img.PostgresConstraint.Min == nil || img.PostgresConstraint.Max == nil {
-			t.Fatal("expected both Min and Max on PostgresConstraint")
-		}
-		if img.SpockConstraint == nil {
-			t.Fatal("expected non-nil SpockConstraint for pganalyze")
-		}
-		if img.SpockConstraint.Min == nil {
-			t.Fatal("expected Min on SpockConstraint")
-		}
-	})
-
-	t.Run("pganalyze compatible with pg16 spock5", func(t *testing.T) {
-		img, _ := sv.GetServiceImage("pganalyze", "1.0.0")
-		err := img.ValidateCompatibility(mustVersion(t, "16"), mustVersion(t, "5.0.0"))
-		if err != nil {
-			t.Errorf("expected compatibility, got: %v", err)
-		}
-	})
-
-	t.Run("pganalyze incompatible with pg18", func(t *testing.T) {
-		img, _ := sv.GetServiceImage("pganalyze", "1.0.0")
-		err := img.ValidateCompatibility(mustVersion(t, "18"), mustVersion(t, "5.0.0"))
-		if err == nil {
-			t.Error("expected incompatibility error for pg18")
-		}
-	})
-
-	t.Run("pganalyze incompatible with pg13", func(t *testing.T) {
-		img, _ := sv.GetServiceImage("pganalyze", "1.0.0")
-		err := img.ValidateCompatibility(mustVersion(t, "13"), mustVersion(t, "5.0.0"))
-		if err == nil {
-			t.Error("expected incompatibility error for pg13")
-		}
-	})
-
-	t.Run("pganalyze incompatible with spock3", func(t *testing.T) {
-		img, _ := sv.GetServiceImage("pganalyze", "1.0.0")
-		err := img.ValidateCompatibility(mustVersion(t, "16"), mustVersion(t, "3.0.0"))
-		if err == nil {
-			t.Error("expected incompatibility error for spock 3.0.0")
-		}
-	})
 }
 
 func mustVersion(t *testing.T, s string) *host.Version {
