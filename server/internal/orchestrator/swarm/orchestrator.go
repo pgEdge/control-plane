@@ -3,10 +3,12 @@ package swarm
 import (
 	"bytes"
 	"context"
+	"crypto/sha1"
 	"errors"
 	"fmt"
 	"io"
 	"maps"
+	"math/big"
 	"net/netip"
 	"path/filepath"
 	"slices"
@@ -151,6 +153,16 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		return nil, fmt.Errorf("failed to create instance resources: %w", err)
 	}
 	return resources, nil
+}
+
+// ServiceInstanceName generates a Docker Swarm service name for a service instance.
+// It follows the same host ID hashing convention used for Postgres instance IDs
+// (see database.InstanceIDFor), producing shorter, more readable names when host
+// IDs are UUIDs.
+func ServiceInstanceName(serviceType, databaseID, serviceID, hostID string) string {
+	hash := sha1.Sum([]byte(hostID))
+	base36 := new(big.Int).SetBytes(hash[:]).Text(36)
+	return fmt.Sprintf("%s-%s-%s-%s", serviceType, databaseID, serviceID, base36[:8])
 }
 
 func (o *Orchestrator) instanceResources(spec *database.InstanceSpec) (*database.InstanceResource, []resource.Resource, error) {
@@ -419,14 +431,15 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 	}
 
 	// Service instance spec resource
+	serviceName := ServiceInstanceName(spec.ServiceSpec.ServiceType, spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
 	serviceInstanceSpec := &ServiceInstanceSpecResource{
 		ServiceInstanceID: spec.ServiceInstanceID,
 		ServiceSpec:       spec.ServiceSpec,
 		DatabaseID:        spec.DatabaseID,
 		DatabaseName:      spec.DatabaseName,
 		HostID:            spec.HostID,
-		ServiceName:       spec.ServiceName,
-		Hostname:          spec.Hostname,
+		ServiceName:       serviceName,
+		Hostname:          serviceName,
 		CohortMemberID:    o.swarmNodeID, // Use orchestrator's swarm node ID (same as Postgres instances)
 		ServiceImage:      serviceImage,
 		Credentials:       spec.Credentials,
@@ -440,7 +453,7 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 	serviceInstance := &ServiceInstanceResource{
 		ServiceInstanceID: spec.ServiceInstanceID,
 		DatabaseID:        spec.DatabaseID,
-		ServiceName:       spec.ServiceName,
+		ServiceName:       serviceName,
 	}
 
 	orchestratorResources := []resource.Resource{

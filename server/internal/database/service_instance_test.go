@@ -115,43 +115,6 @@ func TestGenerateServiceInstanceID(t *testing.T) {
 	}
 }
 
-func TestGenerateServiceName(t *testing.T) {
-	tests := []struct {
-		name        string
-		serviceType string
-		databaseID  string
-		serviceID   string
-		hostID      string
-		want        string
-	}{
-		{
-			name:        "mcp service",
-			serviceType: "mcp",
-			databaseID:  "db1",
-			serviceID:   "mcp-server",
-			hostID:      "host1",
-			want:        "mcp-db1-mcp-server-host1",
-		},
-		{
-			name:        "simple identifiers",
-			serviceType: "svc",
-			databaseID:  "db",
-			serviceID:   "s1",
-			hostID:      "h1",
-			want:        "svc-db-s1-h1",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := GenerateServiceName(tt.serviceType, tt.databaseID, tt.serviceID, tt.hostID)
-			if got != tt.want {
-				t.Errorf("GenerateServiceName() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestGenerateDatabaseNetworkID(t *testing.T) {
 	tests := []struct {
 		name       string

@@ -156,12 +156,6 @@ func GenerateServiceInstanceID(databaseID, serviceID, hostID string) string {
 	return fmt.Sprintf("%s-%s-%s", databaseID, serviceID, hostID)
 }
 
-// GenerateServiceName creates a Docker Swarm service name for a service instance.
-// Format: {service_type}-{database_id}-{service_id}-{host_id}
-func GenerateServiceName(serviceType, databaseID, serviceID, hostID string) string {
-	return fmt.Sprintf("%s-%s-%s-%s", serviceType, databaseID, serviceID, hostID)
-}
-
 // GenerateDatabaseNetworkID creates the overlay network ID for a database.
 // Format: {database_id}
 func GenerateDatabaseNetworkID(databaseID string) string {
@@ -176,8 +170,6 @@ type ServiceInstanceSpec struct {
 	DatabaseID        string
 	DatabaseName      string
 	HostID            string
-	ServiceName       string
-	Hostname          string
 	CohortMemberID    string
 	Credentials       *ServiceUser
 	DatabaseNetworkID string
