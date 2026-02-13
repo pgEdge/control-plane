@@ -141,9 +141,10 @@ var httpDefault = HTTP{
 }
 
 type EtcdServer struct {
-	LogLevel   string `koanf:"log_level" json:"log_level,omitempty"`
-	PeerPort   int    `koanf:"peer_port" json:"peer_port,omitempty"`
-	ClientPort int    `koanf:"client_port" json:"client_port,omitempty"`
+	LogLevel        string `koanf:"log_level" json:"log_level,omitempty"`
+	PeerPort        int    `koanf:"peer_port" json:"peer_port,omitempty"`
+	ClientPort      int    `koanf:"client_port" json:"client_port,omitempty"`
+	ForceNewCluster bool   `koanf:"force_new_cluster" json:"force_new_cluster,omitempty"`
 }
 
 func (e EtcdServer) validate() []error {

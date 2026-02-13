@@ -246,7 +246,7 @@ func BuildGetDatabasePayload(controlPlaneGetDatabaseDatabaseID string) (*control
 
 // BuildUpdateDatabasePayload builds the payload for the control-plane
 // update-database endpoint from CLI flags.
-func BuildUpdateDatabasePayload(controlPlaneUpdateDatabaseBody string, controlPlaneUpdateDatabaseDatabaseID string, controlPlaneUpdateDatabaseForceUpdate string) (*controlplane.UpdateDatabasePayload, error) {
+func BuildUpdateDatabasePayload(controlPlaneUpdateDatabaseBody string, controlPlaneUpdateDatabaseDatabaseID string, controlPlaneUpdateDatabaseForceUpdate string, controlPlaneUpdateDatabaseRemoveHost string) (*controlplane.UpdateDatabasePayload, error) {
 	var err error
 	var body UpdateDatabaseRequestBody
 	{
@@ -298,6 +298,15 @@ func BuildUpdateDatabasePayload(controlPlaneUpdateDatabaseBody string, controlPl
 			}
 		}
 	}
+	var removeHost []string
+	{
+		if controlPlaneUpdateDatabaseRemoveHost != "" {
+			err = json.Unmarshal([]byte(controlPlaneUpdateDatabaseRemoveHost), &removeHost)
+			if err != nil {
+				return nil, fmt.Errorf("invalid JSON for removeHost, \nerror: %s, \nexample of valid JSON:\n%s", err, "'[\n      \"Beatae provident est et.\",\n      \"Sed illum ad culpa dolor.\"\n   ]'")
+			}
+		}
+	}
 	v := &controlplane.UpdateDatabaseRequest{}
 	if body.TenantID != nil {
 		tenantID := controlplane.Identifier(*body.TenantID)
@@ -311,6 +320,7 @@ func BuildUpdateDatabasePayload(controlPlaneUpdateDatabaseBody string, controlPl
 	}
 	res.DatabaseID = controlplane.Identifier(databaseID)
 	res.ForceUpdate = forceUpdate
+	res.RemoveHost = removeHost
 
 	return res, nil
 }

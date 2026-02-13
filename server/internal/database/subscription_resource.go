@@ -63,15 +63,15 @@ func (s *SubscriptionResource) Dependencies() []resource.Identifier {
 func (s *SubscriptionResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	subscriber, err := GetPrimaryInstance(ctx, rc, s.SubscriberNode)
 	if err != nil {
-		return fmt.Errorf("failed to get subscriber instance: %w", err)
+		return resource.ErrNotFound
 	}
 	providerDSN, err := s.providerDSN(ctx, rc)
 	if err != nil {
-		return err
+		return resource.ErrNotFound
 	}
 	conn, err := subscriber.Connection(ctx, rc, subscriber.Spec.DatabaseName)
 	if err != nil {
-		return fmt.Errorf("failed to connect to database %q: %w", subscriber.Spec.DatabaseName, err)
+		return resource.ErrNotFound
 	}
 	defer conn.Close(ctx)
 

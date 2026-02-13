@@ -79,6 +79,7 @@ func ParseEndpoint(
 		controlPlaneUpdateDatabaseBodyFlag        = controlPlaneUpdateDatabaseFlags.String("body", "REQUIRED", "")
 		controlPlaneUpdateDatabaseDatabaseIDFlag  = controlPlaneUpdateDatabaseFlags.String("database-id", "REQUIRED", "ID of the database to update.")
 		controlPlaneUpdateDatabaseForceUpdateFlag = controlPlaneUpdateDatabaseFlags.String("force-update", "", "")
+		controlPlaneUpdateDatabaseRemoveHostFlag  = controlPlaneUpdateDatabaseFlags.String("remove-host", "", "")
 
 		controlPlaneDeleteDatabaseFlags          = flag.NewFlagSet("delete-database", flag.ExitOnError)
 		controlPlaneDeleteDatabaseDatabaseIDFlag = controlPlaneDeleteDatabaseFlags.String("database-id", "REQUIRED", "ID of the database to delete.")
@@ -373,7 +374,7 @@ func ParseEndpoint(
 				data, err = controlplanec.BuildGetDatabasePayload(*controlPlaneGetDatabaseDatabaseIDFlag)
 			case "update-database":
 				endpoint = c.UpdateDatabase()
-				data, err = controlplanec.BuildUpdateDatabasePayload(*controlPlaneUpdateDatabaseBodyFlag, *controlPlaneUpdateDatabaseDatabaseIDFlag, *controlPlaneUpdateDatabaseForceUpdateFlag)
+				data, err = controlplanec.BuildUpdateDatabasePayload(*controlPlaneUpdateDatabaseBodyFlag, *controlPlaneUpdateDatabaseDatabaseIDFlag, *controlPlaneUpdateDatabaseForceUpdateFlag, *controlPlaneUpdateDatabaseRemoveHostFlag)
 			case "delete-database":
 				endpoint = c.DeleteDatabase()
 				data, err = controlplanec.BuildDeleteDatabasePayload(*controlPlaneDeleteDatabaseDatabaseIDFlag, *controlPlaneDeleteDatabaseForceFlag)
@@ -671,6 +672,7 @@ func controlPlaneUpdateDatabaseUsage() {
 	fmt.Fprint(os.Stderr, " -body JSON")
 	fmt.Fprint(os.Stderr, " -database-id STRING")
 	fmt.Fprint(os.Stderr, " -force-update BOOL")
+	fmt.Fprint(os.Stderr, " -remove-host JSON")
 	fmt.Fprintln(os.Stderr)
 
 	// Description
@@ -681,10 +683,11 @@ func controlPlaneUpdateDatabaseUsage() {
 	fmt.Fprintln(os.Stderr, `    -body JSON: `)
 	fmt.Fprintln(os.Stderr, `    -database-id STRING: ID of the database to update.`)
 	fmt.Fprintln(os.Stderr, `    -force-update BOOL: `)
+	fmt.Fprintln(os.Stderr, `    -remove-host JSON: `)
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane update-database --body '{\n      \"spec\": {\n         \"database_name\": \"storefront\",\n         \"database_users\": [\n            {\n               \"attributes\": [\n                  \"LOGIN\",\n                  \"SUPERUSER\"\n               ],\n               \"db_owner\": true,\n               \"username\": \"admin\"\n            }\n         ],\n         \"nodes\": [\n            {\n               \"backup_config\": {\n                  \"repositories\": [\n                     {\n                        \"s3_bucket\": \"storefront-db-backups-us-east-1\",\n                        \"type\": \"s3\"\n                     }\n                  ]\n               },\n               \"host_ids\": [\n                  \"us-east-1\"\n               ],\n               \"name\": \"n1\"\n            },\n            {\n               \"backup_config\": {\n                  \"repositories\": [\n                     {\n                        \"s3_bucket\": \"storefront-db-backups-ap-south-1\",\n                        \"type\": \"s3\"\n                     }\n                  ]\n               },\n               \"host_ids\": [\n                  \"ap-south-1\"\n               ],\n               \"name\": \"n2\"\n            },\n            {\n               \"backup_config\": {\n                  \"repositories\": [\n                     {\n                        \"s3_bucket\": \"storefront-db-backups-eu-central-1\",\n                        \"type\": \"s3\"\n                     }\n                  ]\n               },\n               \"host_ids\": [\n                  \"eu-central-1\"\n               ],\n               \"name\": \"n3\",\n               \"restore_config\": {\n                  \"repository\": {\n                     \"s3_bucket\": \"storefront-db-backups-us-east-1\",\n                     \"type\": \"s3\"\n                  },\n                  \"source_database_id\": \"storefront\",\n                  \"source_database_name\": \"storefront\",\n                  \"source_node_name\": \"n1\"\n               }\n            }\n         ],\n         \"port\": 5432\n      }\n   }' --database-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\" --force-update true")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane update-database --body '{\n      \"spec\": {\n         \"database_name\": \"storefront\",\n         \"database_users\": [\n            {\n               \"attributes\": [\n                  \"LOGIN\",\n                  \"SUPERUSER\"\n               ],\n               \"db_owner\": true,\n               \"username\": \"admin\"\n            }\n         ],\n         \"nodes\": [\n            {\n               \"backup_config\": {\n                  \"repositories\": [\n                     {\n                        \"s3_bucket\": \"storefront-db-backups-us-east-1\",\n                        \"type\": \"s3\"\n                     }\n                  ]\n               },\n               \"host_ids\": [\n                  \"us-east-1\"\n               ],\n               \"name\": \"n1\"\n            },\n            {\n               \"backup_config\": {\n                  \"repositories\": [\n                     {\n                        \"s3_bucket\": \"storefront-db-backups-ap-south-1\",\n                        \"type\": \"s3\"\n                     }\n                  ]\n               },\n               \"host_ids\": [\n                  \"ap-south-1\"\n               ],\n               \"name\": \"n2\"\n            },\n            {\n               \"backup_config\": {\n                  \"repositories\": [\n                     {\n                        \"s3_bucket\": \"storefront-db-backups-eu-central-1\",\n                        \"type\": \"s3\"\n                     }\n                  ]\n               },\n               \"host_ids\": [\n                  \"eu-central-1\"\n               ],\n               \"name\": \"n3\",\n               \"restore_config\": {\n                  \"repository\": {\n                     \"s3_bucket\": \"storefront-db-backups-us-east-1\",\n                     \"type\": \"s3\"\n                  },\n                  \"source_database_id\": \"storefront\",\n                  \"source_database_name\": \"storefront\",\n                  \"source_node_name\": \"n1\"\n               }\n            }\n         ],\n         \"port\": 5432\n      }\n   }' --database-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\" --force-update true --remove-host '[\n      \"Beatae provident est et.\",\n      \"Sed illum ad culpa dolor.\"\n   ]'")
 }
 
 func controlPlaneDeleteDatabaseUsage() {
