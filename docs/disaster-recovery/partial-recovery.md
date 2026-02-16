@@ -1,17 +1,17 @@
-# Partial Quorum Loss Recovery Guide
+# Partial Recovery
 
-## Overview
-
-Recovery guide for when **quorum remains intact** but one or more hosts are lost. In these scenarios, the etcd cluster can still accept writes and elect leaders, making recovery simpler than total quorum loss.
+This guide covers recovery procedures when **quorum remains intact** but one or more hosts are lost. In these scenarios, the etcd cluster can still accept writes and elect leaders, making recovery simpler than quorum loss scenarios.
 
 ## When to Use This Guide
 
 Use this guide when:
+
 - ✅ **Quorum is intact** (majority of server-mode hosts are still online)
 - ✅ **Control Plane API is accessible** (you can make API calls)
 - ✅ **etcd cluster is operational** (can accept writes)
 
 **Examples:**
+
 - Single client-mode host down
 - Multiple client-mode hosts down
 - Single server-mode host down (when you have 3+ server-mode hosts)
@@ -61,7 +61,7 @@ RESP=$(curl -sS -X DELETE "${SERVER_HOST}/v1/hosts/${LOST_HOST_ID}?force=true")
 echo "${RESP}"
 ```
 
-**Important:** The delete operation is asynchronous and returns a task. Monitor the task status using the [Tasks and Logs](../../using/tasks-logs.md) documentation. Wait for the deletion task to complete before proceeding to Step 2.
+**Important:** The delete operation is asynchronous and returns a task. Monitor the task status using the [Tasks and Logs](../using/tasks-logs.md) documentation. Wait for the deletion task to complete before proceeding to Step 2.
 
 #### Step 2: Stop the Host Service
 
@@ -107,7 +107,7 @@ docker stack deploy -c <path-to-stack-yaml> control-plane
 
 #### Step 5: Join the Lost Host to the Cluster
 
-Join the lost host to the cluster. See [Initializing the Control Plane](../../installation/installation.md#initializing-the-control-plane).
+Join the lost host to the cluster. See [Initializing the Control Plane](../installation/installation.md#initializing-the-control-plane).
 
 #### Step 6: Verify Host Health
 
@@ -125,11 +125,11 @@ curl -sS "${SERVER_HOST}/v1/hosts"
 
 #### Step 7: Restore Database Instances (If Needed)
 
-Update the database spec to include the recovered host in the node's `host_ids` array. Control Plane automatically uses [zero downtime add node](../../using/update-db.md) when you update the database. See [Updating a Database](../../using/update-db.md) for details.
+Update the database spec to include the recovered host in the node's `host_ids` array. Control Plane automatically uses [zero downtime add node](../using/update-db.md) when you update the database. See [Updating a Database](../using/update-db.md) for details.
 
 #### Repeat for Each Lost Host
 
-Update the variables for the next host, then repeat steps 1 to 6. If you need to restore database instances on the recovered host, also complete Step 7.
+Update the variables for the next host, then repeat steps 1 to 6 (use Step 4A or Step 4B as appropriate). If you need to restore database instances on the recovered host, also complete Step 7.
 
 ## Recovery Order for Multiple Hosts
 
@@ -174,4 +174,4 @@ After recovery, verify:
 
 **Cause:** Database spec doesn't include the recovered host.
 
-**Solution:** Update the database spec (Step 7) to include the recovered host in the node's `host_ids` array. Control Plane will automatically use [zero downtime add node](../../using/update-db.md).
+**Solution:** Update the database spec (Step 7) to include the recovered host in the node's `host_ids` array. Control Plane will automatically use [zero downtime add node](../using/update-db.md).

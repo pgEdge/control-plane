@@ -1,6 +1,8 @@
 # Quorum Loss Recovery
 
-This guide covers recovery procedures when **etcd quorum is lost** in a Control Plane cluster. Quorum loss can occur in two scenarios:
+This guide covers recovery procedures when **etcd quorum is lost** in a Control Plane cluster. Quorum loss occurs when the majority of server-mode hosts are offline, preventing etcd from accepting writes and blocking database operations.
+
+Quorum loss can occur in two scenarios:
 
 1. **[Total Quorum Loss](#total-quorum-loss-recovery)** - All server-mode hosts are offline (100% loss)
 2. **[Majority Quorum Loss](#majority-quorum-loss-recovery)** - More than 50% of server-mode hosts are offline, but at least one server-mode host remains online
@@ -231,7 +233,7 @@ curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts"
 
 ## Next Steps
 
-After restoring one server-mode host, you now have the same situation as **Majority Quorum Loss** (one host online, but quorum not yet fully restored for multi-node clusters). Continue with the [Majority Quorum Loss Recovery](#majority-quorum-loss-recovery) section starting from **Step 5: Remove Lost Hosts from Database Specs** to restore the remaining hosts.
+After restoring one server-mode host, you now have the same situation as **Majority Quorum Loss** (one host online, but quorum not yet fully restored for multi-node clusters). Continue with the [Majority Quorum Loss Recovery](#step-5-remove-lost-hosts-from-database-specs) section starting from **Step 5: Remove Lost Hosts from Database Specs** to restore the remaining hosts.
 
 ## Majority Quorum Loss Recovery
 
@@ -347,9 +349,9 @@ See [Step 6: Verify Recovery Host](#step-6-verify-recovery-host).
 
 Before removing host records, update all databases to remove lost hosts from their node's `host_ids` arrays. This ensures databases only reference hosts that are available or will be recovered.
 
-For each database, update the spec to remove lost host IDs from each node's `host_ids` array. Only include hosts that are currently online or will be recovered. See [Updating a Database](../../using/update-db.md) for details.
+For each database, update the spec to remove lost host IDs from each node's `host_ids` array. Only include hosts that are currently online or will be recovered. See [Updating a Database](../using/update-db.md) for details.
 
-**Important:** Wait for each database update task to complete before proceeding. Monitor task status using the [Tasks and Logs](../../using/tasks-logs.md) documentation.
+**Important:** Wait for each database update task to complete before proceeding. Monitor task status using the [Tasks and Logs](../using/tasks-logs.md) documentation.
 
 #### Step 6: Remove Lost Host Records
 
@@ -363,7 +365,7 @@ RESP=$(curl -sS -X DELETE "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts/${LOS
 echo "${RESP}"
 ```
 
-**Important:** The delete operation is asynchronous and returns a task. Monitor the task status using the [Tasks and Logs](../../using/tasks-logs.md) documentation. Wait for each deletion task to complete before proceeding to the next host.
+**Important:** The delete operation is asynchronous and returns a task. Monitor the task status using the [Tasks and Logs](../using/tasks-logs.md) documentation. Wait for each deletion task to complete before proceeding to the next host.
 
 !!! important "Remove Hosts in Order"
 
@@ -401,7 +403,7 @@ docker service scale control-plane_${LOST_SERVER_HOST_ID}=1
 
 ##### 7d. Join the Lost Host to the Cluster
 
-Join the lost host to the cluster. See [Initializing the Control Plane](../../installation/installation.md#initializing-the-control-plane).
+Join the lost host to the cluster. See [Initializing the Control Plane](../installation/installation.md#initializing-the-control-plane).
 
 ##### 7e. Verify Host Joined
 
@@ -440,7 +442,7 @@ After quorum is restored, rejoin any remaining server-mode hosts using Steps 7a-
 
     Only proceed with rejoining client-mode hosts after Step 7f confirms quorum is restored.
 
-For client-mode host recovery, see the [Partial Quorum Recovery](../Partial-Failure-Recovery-Guide(Quorum-Intact)/PARTIAL_RECOVERY.md) guide. The process for rejoining client-mode hosts is the same whether quorum is intact or was lost and restored.
+For client-mode host recovery, see the [Partial Recovery](partial-recovery.md) guide. The process for rejoining client-mode hosts is the same whether quorum is intact or was lost and restored.
 
 #### Step 10: Restart All Hosts
 
@@ -502,5 +504,7 @@ curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/databases"
 **Fix:**
 - Stop all Control Plane services: `docker service scale control-plane_<host-id>=0`
 - Verify services are stopped: `docker service ls --filter name=control-plane`
-- Clear host state (Step 7b for Majority Quorum Loss, Step 3 for Total Quorum Loss)
+- Clear host state:
+  - For Majority Quorum Loss: See Step 7b (Clear State)
+  - For Total Quorum Loss: Remove the etcd directory, certificates, and generated.config.json, then repeat Steps 3-6
 - Restart the service: `docker service scale control-plane_<host-id>=1`
