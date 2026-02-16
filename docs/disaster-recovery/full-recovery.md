@@ -1,17 +1,11 @@
 # Quorum Loss Recovery
 
-This guide covers recovery procedures when **etcd quorum is lost** in a Control Plane cluster. Quorum loss occurs when the majority of server-mode hosts are offline, preventing etcd from accepting writes and blocking database operations.
+Quorum loss occurs when the majority of server-mode hosts are offline, preventing etcd from accepting writes and blocking database operations.
 
 Quorum loss can occur in two scenarios:
 
 1. **[Total Quorum Loss](#total-quorum-loss-recovery)** - All server-mode hosts are offline (100% loss)
 2. **[Majority Quorum Loss](#majority-quorum-loss-recovery)** - More than 50% of server-mode hosts are offline, but at least one server-mode host remains online
-
-In both scenarios, etcd cannot accept writes and database operations cannot proceed until quorum is restored.
-
-!!! warning
-
-    This is a critical disaster scenario. Ensure you have recent backups before proceeding with recovery.
 
 ## Prerequisites
 
