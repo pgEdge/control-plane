@@ -303,6 +303,14 @@ paths:
           required: false
           type: boolean
           default: false
+        - name: remove_host
+          in: query
+          description: Host IDs to treat as removed during this update. Events targeting these hosts will be skipped.
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
         - name: database_id
           in: path
           description: A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.
@@ -1672,6 +1680,46 @@ definitions:
           s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
           s3_region: us-east-1
           type: s3
+        - azure_account: pgedge-backups
+          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+          azure_endpoint: blob.core.usgovcloudapi.net
+          azure_key: YXpLZXk=
+          base_path: /backups
+          custom_options:
+            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+            storage-upload-chunk-size: 5MiB
+          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+          gcs_endpoint: localhost
+          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+          id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+          retention_full: 2
+          retention_full_type: count
+          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+          s3_endpoint: s3.us-east-1.amazonaws.com
+          s3_key: AKIAIOSFODNN7EXAMPLE
+          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          s3_region: us-east-1
+          type: s3
+        - azure_account: pgedge-backups
+          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+          azure_endpoint: blob.core.usgovcloudapi.net
+          azure_key: YXpLZXk=
+          base_path: /backups
+          custom_options:
+            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+            storage-upload-chunk-size: 5MiB
+          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+          gcs_endpoint: localhost
+          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+          id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+          retention_full: 2
+          retention_full_type: count
+          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+          s3_endpoint: s3.us-east-1.amazonaws.com
+          s3_key: AKIAIOSFODNN7EXAMPLE
+          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          s3_region: us-east-1
+          type: s3
       schedules:
         - cron_expression: 0 6 * * ?
           id: daily-full-backup
@@ -1710,7 +1758,7 @@ definitions:
           key: value
         additionalProperties:
           type: string
-          example: Eos aut dignissimos cum voluptate modi consequatur.
+          example: Repellat quas nostrum eos.
       backup_options:
         type: object
         description: Options for the backup.
@@ -1718,7 +1766,7 @@ definitions:
           archive-check: "n"
         additionalProperties:
           type: string
-          example: At esse ut possimus error eligendi.
+          example: Harum sapiente qui ullam qui quam.
       type:
         type: string
         description: The type of backup.
@@ -1775,7 +1823,7 @@ definitions:
           storage-upload-chunk-size: 5MiB
         additionalProperties:
           type: string
-          example: Ab sed exercitationem rerum animi et itaque.
+          example: Placeat illo dolore totam accusamus alias ipsa.
       gcs_bucket:
         type: string
         description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -2087,7 +2135,7 @@ definitions:
               spock_version: "5"
       id: 76f9b8c0-4958-11f0-a489-3bb29577c696
       status:
-        state: available
+        state: error
     required:
       - id
       - status
@@ -2437,7 +2485,7 @@ definitions:
       state:
         type: string
         description: Current state of the database.
-        example: deleting
+        example: restoring
         enum:
           - creating
           - modifying
@@ -2590,6 +2638,8 @@ definitions:
         description: The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.
         example:
           - 76f9b8c0-4958-11f0-a489-3bb29577c696
+          - 76f9b8c0-4958-11f0-a489-3bb29577c696
+          - 76f9b8c0-4958-11f0-a489-3bb29577c696
         minItems: 1
       memory:
         type: string
@@ -2650,6 +2700,26 @@ definitions:
             s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
             s3_region: us-east-1
             type: s3
+          - azure_account: pgedge-backups
+            azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+            azure_endpoint: blob.core.usgovcloudapi.net
+            azure_key: YXpLZXk=
+            base_path: /backups
+            custom_options:
+              s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+              storage-upload-chunk-size: 5MiB
+            gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+            gcs_endpoint: localhost
+            gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+            id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+            retention_full: 2
+            retention_full_type: count
+            s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+            s3_endpoint: s3.us-east-1.amazonaws.com
+            s3_key: AKIAIOSFODNN7EXAMPLE
+            s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+            s3_region: us-east-1
+            type: s3
         schedules:
           - cron_expression: 0 6 * * ?
             id: daily-full-backup
@@ -2662,8 +2732,6 @@ definitions:
             type: full
       cpus: 500m
       host_ids:
-        - 76f9b8c0-4958-11f0-a489-3bb29577c696
-        - 76f9b8c0-4958-11f0-a489-3bb29577c696
         - 76f9b8c0-4958-11f0-a489-3bb29577c696
       memory: 500M
       name: n1
@@ -2752,7 +2820,7 @@ definitions:
       state:
         type: string
         description: Current state of the database.
-        example: unknown
+        example: available
         enum:
           - creating
           - modifying
@@ -2782,20 +2850,20 @@ definitions:
         - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
           id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
           node_name: n1
-          state: available
+          state: stopped
         - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
           id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
           node_name: n1
-          state: available
+          state: stopped
         - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
           id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
           node_name: n1
-          state: available
+          state: stopped
         - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
           id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
           node_name: n1
-          state: available
-      state: creating
+          state: stopped
+      state: backing_up
       tenant_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
       updated_at: "2025-01-01T02:30:00Z"
     required:
@@ -2817,20 +2885,20 @@ definitions:
           - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: available
+            state: stopped
           - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: available
+            state: stopped
           - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: available
+            state: stopped
           - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: available
-        state: failed
+            state: stopped
+        state: degraded
         tenant_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
         updated_at: "2025-01-01T02:30:00Z"
       - created_at: "2025-01-01T01:30:00Z"
@@ -2839,20 +2907,20 @@ definitions:
           - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: available
+            state: stopped
           - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: available
+            state: stopped
           - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: available
+            state: stopped
           - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: available
-        state: failed
+            state: stopped
+        state: degraded
         tenant_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
         updated_at: "2025-01-01T02:30:00Z"
       - created_at: "2025-01-01T01:30:00Z"
@@ -2861,20 +2929,20 @@ definitions:
           - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: available
+            state: stopped
           - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: available
+            state: stopped
           - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: available
+            state: stopped
           - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: available
-        state: failed
+            state: stopped
+        state: degraded
         tenant_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
         updated_at: "2025-01-01T02:30:00Z"
       - created_at: "2025-01-01T01:30:00Z"
@@ -2883,20 +2951,20 @@ definitions:
           - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: available
+            state: stopped
           - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: available
+            state: stopped
           - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: available
+            state: stopped
           - host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
             id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
             node_name: n1
-            state: available
-        state: failed
+            state: stopped
+        state: degraded
         tenant_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
         updated_at: "2025-01-01T02:30:00Z"
   DatabaseSpec:
@@ -2963,6 +3031,26 @@ definitions:
         example:
           - backup_config:
               repositories:
+                - azure_account: pgedge-backups
+                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  azure_endpoint: blob.core.usgovcloudapi.net
+                  azure_key: YXpLZXk=
+                  base_path: /backups
+                  custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                    storage-upload-chunk-size: 5MiB
+                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  gcs_endpoint: localhost
+                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                  retention_full: 2
+                  retention_full_type: count
+                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  s3_endpoint: s3.us-east-1.amazonaws.com
+                  s3_key: AKIAIOSFODNN7EXAMPLE
+                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                  s3_region: us-east-1
+                  type: s3
                 - azure_account: pgedge-backups
                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                   azure_endpoint: blob.core.usgovcloudapi.net
@@ -3063,6 +3151,146 @@ definitions:
             source_node: n1
           - backup_config:
               repositories:
+                - azure_account: pgedge-backups
+                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  azure_endpoint: blob.core.usgovcloudapi.net
+                  azure_key: YXpLZXk=
+                  base_path: /backups
+                  custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                    storage-upload-chunk-size: 5MiB
+                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  gcs_endpoint: localhost
+                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                  retention_full: 2
+                  retention_full_type: count
+                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  s3_endpoint: s3.us-east-1.amazonaws.com
+                  s3_key: AKIAIOSFODNN7EXAMPLE
+                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                  s3_region: us-east-1
+                  type: s3
+                - azure_account: pgedge-backups
+                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  azure_endpoint: blob.core.usgovcloudapi.net
+                  azure_key: YXpLZXk=
+                  base_path: /backups
+                  custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                    storage-upload-chunk-size: 5MiB
+                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  gcs_endpoint: localhost
+                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                  retention_full: 2
+                  retention_full_type: count
+                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  s3_endpoint: s3.us-east-1.amazonaws.com
+                  s3_key: AKIAIOSFODNN7EXAMPLE
+                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                  s3_region: us-east-1
+                  type: s3
+              schedules:
+                - cron_expression: 0 6 * * ?
+                  id: daily-full-backup
+                  type: full
+                - cron_expression: 0 6 * * ?
+                  id: daily-full-backup
+                  type: full
+                - cron_expression: 0 6 * * ?
+                  id: daily-full-backup
+                  type: full
+            cpus: 500m
+            host_ids:
+              - 76f9b8c0-4958-11f0-a489-3bb29577c696
+              - 76f9b8c0-4958-11f0-a489-3bb29577c696
+            memory: 500M
+            name: n1
+            orchestrator_opts:
+              swarm:
+                extra_labels:
+                  traefik.enable: "true"
+                  traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
+                extra_networks:
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                extra_volumes:
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+            port: 5432
+            postgres_version: "17.6"
+            postgresql_conf:
+              max_connections: 1000
+            restore_config:
+              repository:
+                azure_account: pgedge-backups
+                azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                azure_endpoint: blob.core.usgovcloudapi.net
+                azure_key: YXpLZXk=
+                base_path: /backups
+                custom_options:
+                  s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                gcs_endpoint: localhost
+                gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                s3_endpoint: s3.us-east-1.amazonaws.com
+                s3_key: AKIAIOSFODNN7EXAMPLE
+                s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                s3_region: us-east-1
+                type: s3
+              restore_options:
+                set: 20250505-153628F
+                target: "123456"
+                type: xid
+              source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+              source_database_name: northwind
+              source_node_name: n1
+            source_node: n1
+          - backup_config:
+              repositories:
+                - azure_account: pgedge-backups
+                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  azure_endpoint: blob.core.usgovcloudapi.net
+                  azure_key: YXpLZXk=
+                  base_path: /backups
+                  custom_options:
+                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+                    storage-upload-chunk-size: 5MiB
+                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  gcs_endpoint: localhost
+                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+                  retention_full: 2
+                  retention_full_type: count
+                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+                  s3_endpoint: s3.us-east-1.amazonaws.com
+                  s3_key: AKIAIOSFODNN7EXAMPLE
+                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+                  s3_region: us-east-1
+                  type: s3
                 - azure_account: pgedge-backups
                   azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                   azure_endpoint: blob.core.usgovcloudapi.net
@@ -3200,6 +3428,7 @@ definitions:
             host_ids:
               - 76f9b8c0-4958-11f0-a489-3bb29577c696
               - 76f9b8c0-4958-11f0-a489-3bb29577c696
+              - 76f9b8c0-4958-11f0-a489-3bb29577c696
             memory: 512M
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -3211,6 +3440,35 @@ definitions:
               openai_api_key: sk-...
             cpus: 500m
             host_ids:
+              - 76f9b8c0-4958-11f0-a489-3bb29577c696
+              - 76f9b8c0-4958-11f0-a489-3bb29577c696
+              - 76f9b8c0-4958-11f0-a489-3bb29577c696
+            memory: 512M
+            port: 0
+            service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+            service_type: mcp
+            version: latest
+          - config:
+              llm_model: gpt-4
+              llm_provider: openai
+              openai_api_key: sk-...
+            cpus: 500m
+            host_ids:
+              - 76f9b8c0-4958-11f0-a489-3bb29577c696
+              - 76f9b8c0-4958-11f0-a489-3bb29577c696
+              - 76f9b8c0-4958-11f0-a489-3bb29577c696
+            memory: 512M
+            port: 0
+            service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+            service_type: mcp
+            version: latest
+          - config:
+              llm_model: gpt-4
+              llm_provider: openai
+              openai_api_key: sk-...
+            cpus: 500m
+            host_ids:
+              - 76f9b8c0-4958-11f0-a489-3bb29577c696
               - 76f9b8c0-4958-11f0-a489-3bb29577c696
               - 76f9b8c0-4958-11f0-a489-3bb29577c696
             memory: 512M
@@ -3226,6 +3484,26 @@ definitions:
     example:
       backup_config:
         repositories:
+          - azure_account: pgedge-backups
+            azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+            azure_endpoint: blob.core.usgovcloudapi.net
+            azure_key: YXpLZXk=
+            base_path: /backups
+            custom_options:
+              s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+              storage-upload-chunk-size: 5MiB
+            gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+            gcs_endpoint: localhost
+            gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+            id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+            retention_full: 2
+            retention_full_type: count
+            s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+            s3_endpoint: s3.us-east-1.amazonaws.com
+            s3_key: AKIAIOSFODNN7EXAMPLE
+            s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+            s3_region: us-east-1
+            type: s3
           - azure_account: pgedge-backups
             azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
             azure_endpoint: blob.core.usgovcloudapi.net
@@ -3310,86 +3588,6 @@ definitions:
                 s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
                 s3_region: us-east-1
                 type: s3
-            schedules:
-              - cron_expression: 0 6 * * ?
-                id: daily-full-backup
-                type: full
-              - cron_expression: 0 6 * * ?
-                id: daily-full-backup
-                type: full
-              - cron_expression: 0 6 * * ?
-                id: daily-full-backup
-                type: full
-          cpus: 500m
-          host_ids:
-            - 76f9b8c0-4958-11f0-a489-3bb29577c696
-            - 76f9b8c0-4958-11f0-a489-3bb29577c696
-          memory: 500M
-          name: n1
-          orchestrator_opts:
-            swarm:
-              extra_labels:
-                traefik.enable: "true"
-                traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
-              extra_networks:
-                - aliases:
-                    - pg-db
-                    - db-alias
-                  driver_opts:
-                    com.docker.network.endpoint.expose: "true"
-                  id: traefik-public
-                - aliases:
-                    - pg-db
-                    - db-alias
-                  driver_opts:
-                    com.docker.network.endpoint.expose: "true"
-                  id: traefik-public
-                - aliases:
-                    - pg-db
-                    - db-alias
-                  driver_opts:
-                    com.docker.network.endpoint.expose: "true"
-                  id: traefik-public
-              extra_volumes:
-                - destination_path: /backups/container
-                  host_path: /Users/user/backups/host
-                - destination_path: /backups/container
-                  host_path: /Users/user/backups/host
-                - destination_path: /backups/container
-                  host_path: /Users/user/backups/host
-          port: 5432
-          postgres_version: "17.6"
-          postgresql_conf:
-            max_connections: 1000
-          restore_config:
-            repository:
-              azure_account: pgedge-backups
-              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-              azure_endpoint: blob.core.usgovcloudapi.net
-              azure_key: YXpLZXk=
-              base_path: /backups
-              custom_options:
-                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-              gcs_endpoint: localhost
-              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-              id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-              s3_endpoint: s3.us-east-1.amazonaws.com
-              s3_key: AKIAIOSFODNN7EXAMPLE
-              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-              s3_region: us-east-1
-              type: s3
-            restore_options:
-              set: 20250505-153628F
-              target: "123456"
-              type: xid
-            source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            source_database_name: northwind
-            source_node_name: n1
-          source_node: n1
-        - backup_config:
-            repositories:
               - azure_account: pgedge-backups
                 azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
                 azure_endpoint: blob.core.usgovcloudapi.net
@@ -3558,6 +3756,7 @@ definitions:
           host_ids:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
+            - 76f9b8c0-4958-11f0-a489-3bb29577c696
           memory: 512M
           port: 0
           service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -3569,6 +3768,7 @@ definitions:
             openai_api_key: sk-...
           cpus: 500m
           host_ids:
+            - 76f9b8c0-4958-11f0-a489-3bb29577c696
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
           memory: 512M
@@ -3588,7 +3788,7 @@ definitions:
         type: array
         items:
           type: string
-          example: Alias ipsa qui ut et.
+          example: Non atque.
         description: The attributes to assign to this database user.
         example:
           - LOGIN
@@ -3608,7 +3808,7 @@ definitions:
         type: array
         items:
           type: string
-          example: Aut doloribus rem culpa ullam minus dolore.
+          example: Non modi explicabo illum alias qui.
         description: The roles to assign to this database user.
         example:
           - pgedge_superuser
@@ -3653,7 +3853,7 @@ definitions:
         type: array
         items:
           type: string
-          example: Dolor autem eum.
+          example: Aliquid cupiditate sapiente eos aut dignissimos cum.
         description: Optional network-scoped aliases for the container.
         example:
           - pg-db
@@ -3666,7 +3866,7 @@ definitions:
           com.docker.network.endpoint.expose: "true"
         additionalProperties:
           type: string
-          example: Et eius.
+          example: Modi consequatur non at.
       id:
         type: string
         description: The name or ID of the network to connect to.
@@ -3714,10 +3914,10 @@ definitions:
         type: boolean
         description: If true, skip the health validations that prevent running failover on a healthy cluster.
         default: false
-        example: true
+        example: false
     example:
       candidate_instance_id: 68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi
-      skip_validation: false
+      skip_validation: true
   FailoverDatabaseNodeResponse:
     title: FailoverDatabaseNodeResponse
     type: object
@@ -3823,8 +4023,6 @@ definitions:
             spock_version: "5"
           - postgres_version: "17.6"
             spock_version: "5"
-          - postgres_version: "17.6"
-            spock_version: "5"
     example:
       cohort:
         control_available: true
@@ -3843,19 +4041,19 @@ definitions:
       orchestrator: swarm
       status:
         components:
-          Cum possimus minima.:
+          Eveniet possimus dicta laudantium.:
             details:
               alarms:
                 - '3: NOSPACE'
             error: failed to connect to etcd
             healthy: false
-          Et et.:
+          Repellendus in doloremque.:
             details:
               alarms:
                 - '3: NOSPACE'
             error: failed to connect to etcd
             healthy: false
-          Pariatur praesentium.:
+          Rerum exercitationem laborum dignissimos incidunt in quas.:
             details:
               alarms:
                 - '3: NOSPACE'
@@ -3907,19 +4105,13 @@ definitions:
         type: object
         description: The status of each component of the host.
         example:
-          Ipsa sunt est dolor blanditiis.:
+          Quis excepturi blanditiis.:
             details:
               alarms:
                 - '3: NOSPACE'
             error: failed to connect to etcd
             healthy: false
-          Omnis sit est.:
-            details:
-              alarms:
-                - '3: NOSPACE'
-            error: failed to connect to etcd
-            healthy: false
-          Qui sed illum ad culpa dolor.:
+          Ut at aut neque tenetur.:
             details:
               alarms:
                 - '3: NOSPACE'
@@ -3942,7 +4134,7 @@ definitions:
         format: date-time
     example:
       components:
-        Laborum corporis ducimus itaque vel ea eaque.:
+        Deleniti est voluptatibus minima accusamus impedit.:
           details:
             alarms:
               - '3: NOSPACE'
@@ -3984,7 +4176,7 @@ definitions:
       patroni_paused:
         type: boolean
         description: True if Patroni is paused for this instance.
-        example: true
+        example: false
       patroni_state:
         type: string
         example: unknown
@@ -4003,7 +4195,7 @@ definitions:
     example:
       patroni_paused: false
       patroni_state: unknown
-      pending_restart: false
+      pending_restart: true
       role: primary
       version: "18.1"
   InstanceResponseBody:
@@ -4015,7 +4207,7 @@ definitions:
       created_at:
         type: string
         description: The time that the instance was created.
-        example: "1997-10-16T04:36:33Z"
+        example: "1989-11-23T15:19:47Z"
         format: date-time
       error:
         type: string
@@ -4039,7 +4231,7 @@ definitions:
         $ref: '#/definitions/InstanceSpockStatus'
       state:
         type: string
-        example: backing_up
+        example: unknown
         enum:
           - creating
           - modifying
@@ -4052,12 +4244,12 @@ definitions:
       status_updated_at:
         type: string
         description: The time that the instance status information was last updated.
-        example: "1993-01-27T22:30:34Z"
+        example: "1980-12-18T10:07:58Z"
         format: date-time
       updated_at:
         type: string
         description: The time that the instance was last modified.
-        example: "2014-01-05T11:54:57Z"
+        example: "1985-09-02T23:18:20Z"
         format: date-time
     description: An instance of pgEdge Postgres running on a host. (default view)
     example:
@@ -4065,13 +4257,13 @@ definitions:
         hostname: i-0123456789abcdef.ec2.internal
         ipv4_address: 10.24.34.2
         port: 5432
-      created_at: "1970-12-08T13:31:37Z"
+      created_at: "2013-05-17T03:08:23Z"
       error: 'failed to get patroni status: connection refused'
       host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
       node_name: n1
       postgres:
-        patroni_paused: false
+        patroni_paused: true
         patroni_state: unknown
         pending_restart: true
         role: primary
@@ -4088,13 +4280,10 @@ definitions:
           - name: sub_n1n2
             provider_node: n2
             status: down
-          - name: sub_n1n2
-            provider_node: n2
-            status: down
         version: 4.10.0
-      state: modifying
-      status_updated_at: "1987-12-06T22:00:59Z"
-      updated_at: "1978-01-28T05:17:31Z"
+      state: stopped
+      status_updated_at: "1999-08-04T13:18:37Z"
+      updated_at: "2001-08-17T01:21:22Z"
     required:
       - id
       - host_id
@@ -4135,7 +4324,7 @@ definitions:
       host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
       node_name: n1
-      state: modifying
+      state: backing_up
     required:
       - id
       - host_id
@@ -4152,13 +4341,13 @@ definitions:
           hostname: i-0123456789abcdef.ec2.internal
           ipv4_address: 10.24.34.2
           port: 5432
-        created_at: "1995-05-15T08:45:56Z"
+        created_at: "1978-12-28T17:33:35Z"
         error: 'failed to get patroni status: connection refused'
         host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
         id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
         node_name: n1
         postgres:
-          patroni_paused: false
+          patroni_paused: true
           patroni_state: unknown
           pending_restart: true
           role: primary
@@ -4175,24 +4364,21 @@ definitions:
             - name: sub_n1n2
               provider_node: n2
               status: down
-            - name: sub_n1n2
-              provider_node: n2
-              status: down
           version: 4.10.0
         state: modifying
-        status_updated_at: "2010-12-24T23:39:10Z"
-        updated_at: "2014-01-25T23:48:24Z"
+        status_updated_at: "2001-10-17T14:50:56Z"
+        updated_at: "2013-05-14T14:25:56Z"
       - connection_info:
           hostname: i-0123456789abcdef.ec2.internal
           ipv4_address: 10.24.34.2
           port: 5432
-        created_at: "1995-05-15T08:45:56Z"
+        created_at: "1978-12-28T17:33:35Z"
         error: 'failed to get patroni status: connection refused'
         host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
         id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
         node_name: n1
         postgres:
-          patroni_paused: false
+          patroni_paused: true
           patroni_state: unknown
           pending_restart: true
           role: primary
@@ -4209,24 +4395,21 @@ definitions:
             - name: sub_n1n2
               provider_node: n2
               status: down
-            - name: sub_n1n2
-              provider_node: n2
-              status: down
           version: 4.10.0
         state: modifying
-        status_updated_at: "2010-12-24T23:39:10Z"
-        updated_at: "2014-01-25T23:48:24Z"
+        status_updated_at: "2001-10-17T14:50:56Z"
+        updated_at: "2013-05-14T14:25:56Z"
       - connection_info:
           hostname: i-0123456789abcdef.ec2.internal
           ipv4_address: 10.24.34.2
           port: 5432
-        created_at: "1995-05-15T08:45:56Z"
+        created_at: "1978-12-28T17:33:35Z"
         error: 'failed to get patroni status: connection refused'
         host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
         id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
         node_name: n1
         postgres:
-          patroni_paused: false
+          patroni_paused: true
           patroni_state: unknown
           pending_restart: true
           role: primary
@@ -4243,13 +4426,41 @@ definitions:
             - name: sub_n1n2
               provider_node: n2
               status: down
+          version: 4.10.0
+        state: modifying
+        status_updated_at: "2001-10-17T14:50:56Z"
+        updated_at: "2013-05-14T14:25:56Z"
+      - connection_info:
+          hostname: i-0123456789abcdef.ec2.internal
+          ipv4_address: 10.24.34.2
+          port: 5432
+        created_at: "1978-12-28T17:33:35Z"
+        error: 'failed to get patroni status: connection refused'
+        host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+        id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+        node_name: n1
+        postgres:
+          patroni_paused: true
+          patroni_state: unknown
+          pending_restart: true
+          role: primary
+          version: "18.1"
+        spock:
+          read_only: "off"
+          subscriptions:
+            - name: sub_n1n2
+              provider_node: n2
+              status: down
+            - name: sub_n1n2
+              provider_node: n2
+              status: down
             - name: sub_n1n2
               provider_node: n2
               status: down
           version: 4.10.0
         state: modifying
-        status_updated_at: "2010-12-24T23:39:10Z"
-        updated_at: "2014-01-25T23:48:24Z"
+        status_updated_at: "2001-10-17T14:50:56Z"
+        updated_at: "2013-05-14T14:25:56Z"
   InstanceResponseBodyCollection:
     title: 'Mediatype identifier: instance; type=collection; view=default'
     type: array
@@ -4261,13 +4472,13 @@ definitions:
           hostname: i-0123456789abcdef.ec2.internal
           ipv4_address: 10.24.34.2
           port: 5432
-        created_at: "1995-05-15T08:45:56Z"
+        created_at: "1978-12-28T17:33:35Z"
         error: 'failed to get patroni status: connection refused'
         host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
         id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
         node_name: n1
         postgres:
-          patroni_paused: false
+          patroni_paused: true
           patroni_state: unknown
           pending_restart: true
           role: primary
@@ -4284,24 +4495,21 @@ definitions:
             - name: sub_n1n2
               provider_node: n2
               status: down
-            - name: sub_n1n2
-              provider_node: n2
-              status: down
           version: 4.10.0
         state: modifying
-        status_updated_at: "2010-12-24T23:39:10Z"
-        updated_at: "2014-01-25T23:48:24Z"
+        status_updated_at: "2001-10-17T14:50:56Z"
+        updated_at: "2013-05-14T14:25:56Z"
       - connection_info:
           hostname: i-0123456789abcdef.ec2.internal
           ipv4_address: 10.24.34.2
           port: 5432
-        created_at: "1995-05-15T08:45:56Z"
+        created_at: "1978-12-28T17:33:35Z"
         error: 'failed to get patroni status: connection refused'
         host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
         id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
         node_name: n1
         postgres:
-          patroni_paused: false
+          patroni_paused: true
           patroni_state: unknown
           pending_restart: true
           role: primary
@@ -4318,47 +4526,10 @@ definitions:
             - name: sub_n1n2
               provider_node: n2
               status: down
-            - name: sub_n1n2
-              provider_node: n2
-              status: down
           version: 4.10.0
         state: modifying
-        status_updated_at: "2010-12-24T23:39:10Z"
-        updated_at: "2014-01-25T23:48:24Z"
-      - connection_info:
-          hostname: i-0123456789abcdef.ec2.internal
-          ipv4_address: 10.24.34.2
-          port: 5432
-        created_at: "1995-05-15T08:45:56Z"
-        error: 'failed to get patroni status: connection refused'
-        host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-        id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-        node_name: n1
-        postgres:
-          patroni_paused: false
-          patroni_state: unknown
-          pending_restart: true
-          role: primary
-          version: "18.1"
-        spock:
-          read_only: "off"
-          subscriptions:
-            - name: sub_n1n2
-              provider_node: n2
-              status: down
-            - name: sub_n1n2
-              provider_node: n2
-              status: down
-            - name: sub_n1n2
-              provider_node: n2
-              status: down
-            - name: sub_n1n2
-              provider_node: n2
-              status: down
-          version: 4.10.0
-        state: modifying
-        status_updated_at: "2010-12-24T23:39:10Z"
-        updated_at: "2014-01-25T23:48:24Z"
+        status_updated_at: "2001-10-17T14:50:56Z"
+        updated_at: "2013-05-14T14:25:56Z"
   InstanceSpockStatus:
     title: InstanceSpockStatus
     type: object
@@ -4393,9 +4564,6 @@ definitions:
     example:
       read_only: "off"
       subscriptions:
-        - name: sub_n1n2
-          provider_node: n2
-          status: down
         - name: sub_n1n2
           provider_node: n2
           status: down
@@ -4438,6 +4606,14 @@ definitions:
         items:
           $ref: '#/definitions/Task'
         example:
+          - completed_at: "2025-06-18T16:52:35Z"
+            created_at: "2025-06-18T16:52:05Z"
+            database_id: storefront
+            entity_id: storefront
+            scope: database
+            status: completed
+            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+            type: create
           - completed_at: "2025-06-18T16:52:35Z"
             created_at: "2025-06-18T16:52:05Z"
             database_id: storefront
@@ -4522,22 +4698,6 @@ definitions:
             status: completed
             task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
             type: create
-          - completed_at: "2025-06-18T16:52:35Z"
-            created_at: "2025-06-18T16:52:05Z"
-            database_id: storefront
-            entity_id: storefront
-            scope: database
-            status: completed
-            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
-            type: create
-          - completed_at: "2025-06-18T16:52:35Z"
-            created_at: "2025-06-18T16:52:05Z"
-            database_id: storefront
-            entity_id: storefront
-            scope: database
-            status: completed
-            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
-            type: create
     example:
       tasks:
         - completed_at: "2025-06-18T17:54:36Z"
@@ -4575,19 +4735,19 @@ definitions:
             orchestrator: swarm
             status:
               components:
-                Cum possimus minima.:
+                Eveniet possimus dicta laudantium.:
                   details:
                     alarms:
                       - '3: NOSPACE'
                   error: failed to connect to etcd
                   healthy: false
-                Et et.:
+                Repellendus in doloremque.:
                   details:
                     alarms:
                       - '3: NOSPACE'
                   error: failed to connect to etcd
                   healthy: false
-                Pariatur praesentium.:
+                Rerum exercitationem laborum dignissimos incidunt in quas.:
                   details:
                     alarms:
                       - '3: NOSPACE'
@@ -4596,10 +4756,6 @@ definitions:
               state: available
               updated_at: "2021-07-01T12:34:56Z"
             supported_pgedge_versions:
-              - postgres_version: "17.6"
-                spock_version: "5"
-              - postgres_version: "17.6"
-                spock_version: "5"
               - postgres_version: "17.6"
                 spock_version: "5"
               - postgres_version: "17.6"
@@ -4621,19 +4777,19 @@ definitions:
             orchestrator: swarm
             status:
               components:
-                Cum possimus minima.:
+                Eveniet possimus dicta laudantium.:
                   details:
                     alarms:
                       - '3: NOSPACE'
                   error: failed to connect to etcd
                   healthy: false
-                Et et.:
+                Repellendus in doloremque.:
                   details:
                     alarms:
                       - '3: NOSPACE'
                   error: failed to connect to etcd
                   healthy: false
-                Pariatur praesentium.:
+                Rerum exercitationem laborum dignissimos incidunt in quas.:
                   details:
                     alarms:
                       - '3: NOSPACE'
@@ -4642,10 +4798,6 @@ definitions:
               state: available
               updated_at: "2021-07-01T12:34:56Z"
             supported_pgedge_versions:
-              - postgres_version: "17.6"
-                spock_version: "5"
-              - postgres_version: "17.6"
-                spock_version: "5"
               - postgres_version: "17.6"
                 spock_version: "5"
               - postgres_version: "17.6"
@@ -4667,19 +4819,19 @@ definitions:
             orchestrator: swarm
             status:
               components:
-                Cum possimus minima.:
+                Eveniet possimus dicta laudantium.:
                   details:
                     alarms:
                       - '3: NOSPACE'
                   error: failed to connect to etcd
                   healthy: false
-                Et et.:
+                Repellendus in doloremque.:
                   details:
                     alarms:
                       - '3: NOSPACE'
                   error: failed to connect to etcd
                   healthy: false
-                Pariatur praesentium.:
+                Rerum exercitationem laborum dignissimos incidunt in quas.:
                   details:
                     alarms:
                       - '3: NOSPACE'
@@ -4688,10 +4840,6 @@ definitions:
               state: available
               updated_at: "2021-07-01T12:34:56Z"
             supported_pgedge_versions:
-              - postgres_version: "17.6"
-                spock_version: "5"
-              - postgres_version: "17.6"
-                spock_version: "5"
               - postgres_version: "17.6"
                 spock_version: "5"
               - postgres_version: "17.6"
@@ -4713,19 +4861,19 @@ definitions:
             orchestrator: swarm
             status:
               components:
-                Cum possimus minima.:
+                Eveniet possimus dicta laudantium.:
                   details:
                     alarms:
                       - '3: NOSPACE'
                   error: failed to connect to etcd
                   healthy: false
-                Et et.:
+                Repellendus in doloremque.:
                   details:
                     alarms:
                       - '3: NOSPACE'
                   error: failed to connect to etcd
                   healthy: false
-                Pariatur praesentium.:
+                Rerum exercitationem laborum dignissimos incidunt in quas.:
                   details:
                     alarms:
                       - '3: NOSPACE'
@@ -4734,10 +4882,6 @@ definitions:
               state: available
               updated_at: "2021-07-01T12:34:56Z"
             supported_pgedge_versions:
-              - postgres_version: "17.6"
-                spock_version: "5"
-              - postgres_version: "17.6"
-                spock_version: "5"
               - postgres_version: "17.6"
                 spock_version: "5"
               - postgres_version: "17.6"
@@ -5027,22 +5171,6 @@ definitions:
             status: completed
             task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
             type: create
-          - completed_at: "2025-06-18T16:52:35Z"
-            created_at: "2025-06-18T16:52:05Z"
-            database_id: storefront
-            entity_id: storefront
-            scope: database
-            status: completed
-            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
-            type: create
-          - completed_at: "2025-06-18T16:52:35Z"
-            created_at: "2025-06-18T16:52:05Z"
-            database_id: storefront
-            entity_id: storefront
-            scope: database
-            status: completed
-            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
-            type: create
     example:
       task:
         completed_at: "2025-06-18T16:52:35Z"
@@ -5054,14 +5182,6 @@ definitions:
         task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
         type: create
       update_database_tasks:
-        - completed_at: "2025-06-18T16:52:35Z"
-          created_at: "2025-06-18T16:52:05Z"
-          database_id: storefront
-          entity_id: storefront
-          scope: database
-          status: completed
-          task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
-          type: create
         - completed_at: "2025-06-18T16:52:35Z"
           created_at: "2025-06-18T16:52:05Z"
           database_id: storefront
@@ -5122,7 +5242,7 @@ definitions:
         maxLength: 32
         additionalProperties:
           type: string
-          example: Occaecati itaque.
+          example: Minus dolore eos et sunt culpa animi.
       source_database_id:
         type: string
         description: The ID of the database to restore this database from.
@@ -5181,7 +5301,7 @@ definitions:
         type: array
         items:
           type: string
-          example: Atque facilis non modi explicabo illum.
+          example: Nihil qui non quae sint ea.
         description: The nodes to restore. Defaults to all nodes if empty or unspecified.
         example:
           - n1
@@ -5210,14 +5330,6 @@ definitions:
           $ref: '#/definitions/Task'
         description: The tasks that will restore each database node.
         example:
-          - completed_at: "2025-06-18T16:52:35Z"
-            created_at: "2025-06-18T16:52:05Z"
-            database_id: storefront
-            entity_id: storefront
-            scope: database
-            status: completed
-            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
-            type: create
           - completed_at: "2025-06-18T16:52:35Z"
             created_at: "2025-06-18T16:52:05Z"
             database_id: storefront
@@ -5410,7 +5522,7 @@ definitions:
           s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
         additionalProperties:
           type: string
-          example: Voluptates maxime hic aut omnis magnam.
+          example: Doloribus rem culpa.
       gcs_bucket:
         type: string
         description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -5532,9 +5644,6 @@ definitions:
           - container_port: 8080
             host_port: 8080
             name: web-client
-          - container_port: 8080
-            host_port: 8080
-            name: web-client
       service_ready:
         type: boolean
         description: Whether the service is ready to accept requests.
@@ -5590,6 +5699,7 @@ definitions:
           maxLength: 63
         description: The IDs of the hosts that should run this service. One service instance will be created per host.
         example:
+          - 76f9b8c0-4958-11f0-a489-3bb29577c696
           - 76f9b8c0-4958-11f0-a489-3bb29577c696
           - 76f9b8c0-4958-11f0-a489-3bb29577c696
         minItems: 1
@@ -5718,6 +5828,9 @@ definitions:
           - container_port: 8080
             host_port: 8080
             name: web-client
+          - container_port: 8080
+            host_port: 8080
+            name: web-client
         service_ready: true
       updated_at: "2025-01-28T10:05:00Z"
     required:
@@ -5762,32 +5875,6 @@ definitions:
             - container_port: 8080
               host_port: 8080
               name: web-client
-          service_ready: true
-        updated_at: "2025-01-28T10:05:00Z"
-      - created_at: "2025-01-28T10:00:00Z"
-        database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-        error: 'failed to start container: image not found'
-        host_id: host-1
-        service_id: mcp-server
-        service_instance_id: mcp-server-host-1
-        state: running
-        status:
-          container_id: a1b2c3d4e5f6
-          health_check:
-            checked_at: "2025-01-28T10:00:00Z"
-            message: Connection refused
-            status: healthy
-          hostname: mcp-server-host-1.internal
-          image_version: 1.0.0
-          ipv4_address: 10.0.1.5
-          last_health_at: "2025-01-28T10:00:00Z"
-          ports:
-            - container_port: 8080
-              host_port: 8080
-              name: web-client
-            - container_port: 8080
-              host_port: 8080
-              name: web-client
             - container_port: 8080
               host_port: 8080
               name: web-client
@@ -5811,6 +5898,41 @@ definitions:
           ipv4_address: 10.0.1.5
           last_health_at: "2025-01-28T10:00:00Z"
           ports:
+            - container_port: 8080
+              host_port: 8080
+              name: web-client
+            - container_port: 8080
+              host_port: 8080
+              name: web-client
+            - container_port: 8080
+              host_port: 8080
+              name: web-client
+            - container_port: 8080
+              host_port: 8080
+              name: web-client
+          service_ready: true
+        updated_at: "2025-01-28T10:05:00Z"
+      - created_at: "2025-01-28T10:00:00Z"
+        database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+        error: 'failed to start container: image not found'
+        host_id: host-1
+        service_id: mcp-server
+        service_instance_id: mcp-server-host-1
+        state: running
+        status:
+          container_id: a1b2c3d4e5f6
+          health_check:
+            checked_at: "2025-01-28T10:00:00Z"
+            message: Connection refused
+            status: healthy
+          hostname: mcp-server-host-1.internal
+          image_version: 1.0.0
+          ipv4_address: 10.0.1.5
+          last_health_at: "2025-01-28T10:00:00Z"
+          ports:
+            - container_port: 8080
+              host_port: 8080
+              name: web-client
             - container_port: 8080
               host_port: 8080
               name: web-client
@@ -5868,7 +5990,7 @@ definitions:
           traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
         additionalProperties:
           type: string
-          example: Ut dolorem.
+          example: Possimus error eligendi recusandae.
       extra_networks:
         type: array
         items:
@@ -6058,6 +6180,11 @@ definitions:
           $ref: '#/definitions/TaskLogEntry'
         description: Entries in the task log.
         example:
+          - fields:
+              option.enabled: true
+              status: creating
+            message: task started
+            timestamp: "2025-05-29T15:43:13Z"
           - fields:
               option.enabled: true
               status: creating

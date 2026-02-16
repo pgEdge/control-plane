@@ -46,6 +46,22 @@ func (w *Workflows) applyEvents(
 					// The host is removed, so we want to just remove it from
 					// the state.
 					state.Remove(event.Resource)
+
+					// TODO(PLAT-398): Remove this workaround once instance records
+					// are managed outside of the instance resource lifecycle.
+					//
+					// If this is an instance resource, we also need to clean up
+					// the instance record from etcd since the normal Delete()
+					// lifecycle method couldn't run on the removed host.
+					if event.Resource.Identifier.Type == database.ResourceTypeInstance {
+						cleanupIn := &activities.CleanupInstanceInput{
+							DatabaseID: databaseID,
+							InstanceID: event.Resource.Identifier.ID,
+						}
+						if _, err := w.Activities.ExecuteCleanupInstance(ctx, cleanupIn).Get(ctx); err != nil {
+							return fmt.Errorf("failed to cleanup orphaned instance %s: %w", event.Resource.Identifier.ID, err)
+						}
+					}
 				} else if event.Type != resource.EventTypeRefresh {
 					// In the case of a refresh event, we'll just leave the
 					// state alone so that we can plan dependent operations. All
@@ -229,4 +245,43 @@ func (w *Workflows) getNodeResources(
 		InstanceResources: resources,
 		RestoreConfig:     node.RestoreConfig,
 	}, nil
+}
+
+// cleanupOrphanedSlots drops replication slots on surviving provider nodes
+// that were serving subscriptions to removed subscriber nodes. Without this,
+// orphaned slots accumulate WAL and can fill up disk on surviving hosts.
+func (w *Workflows) cleanupOrphanedSlots(
+	ctx workflow.Context,
+	spec *database.Spec,
+	state *resource.State,
+	removedNodeNames []string,
+) error {
+	logger := workflow.Logger(ctx).With("database_id", spec.DatabaseID)
+
+	// For each surviving node (provider), for each removed node (subscriber),
+	// drop the replication slot that was serving the subscription.
+	var futures []workflow.Future[*activities.CleanupOrphanedSlotsOutput]
+	for _, node := range spec.Nodes {
+		for _, removedNode := range removedNodeNames {
+			logger.Info("scheduling orphaned slot cleanup",
+				"provider_node", node.Name,
+				"removed_subscriber", removedNode,
+			)
+			in := &activities.CleanupOrphanedSlotsInput{
+				State:          state,
+				DatabaseName:   spec.DatabaseName,
+				ProviderNode:   node.Name,
+				SubscriberNode: removedNode,
+			}
+			futures = append(futures, w.Activities.ExecuteCleanupOrphanedSlots(ctx, in))
+		}
+	}
+
+	var errs []error
+	for _, future := range futures {
+		if _, err := future.Get(ctx); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
 }

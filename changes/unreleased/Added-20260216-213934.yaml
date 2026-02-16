@@ -1,0 +1,3 @@
+kind: Added
+body: 'mprove quorum loss recovery: ForceNewCluster sentinel and auth handling, continue-on-error host removal, replication slot cleanup, quorum health checks'
+time: 2026-02-16T21:39:34.163309+05:30

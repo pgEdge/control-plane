@@ -66,6 +66,61 @@ func TestUpdateDatabase(t *testing.T) {
 		),
 	)
 
+	threeNodeState := makeState(t,
+		[]resource.Resource{
+			n1Instance1.Instance,
+			makeMonitorResource(n1Instance1),
+			&database.NodeResource{
+				Name:              "n1",
+				PrimaryInstanceID: n1Instance1.InstanceID(),
+				InstanceIDs:       []string{n1Instance1.InstanceID()},
+			},
+			n2Instance1.Instance,
+			makeMonitorResource(n2Instance1),
+			&database.NodeResource{
+				Name:              "n2",
+				PrimaryInstanceID: n2Instance1.InstanceID(),
+				InstanceIDs:       []string{n2Instance1.InstanceID()},
+			},
+			n3Instance1.Instance,
+			makeMonitorResource(n3Instance1),
+			&database.NodeResource{
+				Name:              "n3",
+				PrimaryInstanceID: n3Instance1.InstanceID(),
+				InstanceIDs:       []string{n3Instance1.InstanceID()},
+			},
+			&database.SubscriptionResource{
+				SubscriberNode: "n1",
+				ProviderNode:   "n2",
+			},
+			&database.SubscriptionResource{
+				SubscriberNode: "n2",
+				ProviderNode:   "n1",
+			},
+			&database.SubscriptionResource{
+				SubscriberNode: "n1",
+				ProviderNode:   "n3",
+			},
+			&database.SubscriptionResource{
+				SubscriberNode: "n3",
+				ProviderNode:   "n1",
+			},
+			&database.SubscriptionResource{
+				SubscriberNode: "n2",
+				ProviderNode:   "n3",
+			},
+			&database.SubscriptionResource{
+				SubscriberNode: "n3",
+				ProviderNode:   "n2",
+			},
+		},
+		slices.Concat(
+			n1Instance1.Resources,
+			n2Instance1.Resources,
+			n3Instance1.Resources,
+		),
+	)
+
 	for _, tc := range []struct {
 		name        string
 		options     operations.UpdateDatabaseOptions
@@ -323,6 +378,32 @@ func TestUpdateDatabase(t *testing.T) {
 						n2Instance1,
 						n2Instance2,
 					},
+				},
+			},
+		},
+		{
+			name:    "remove one node from three node database",
+			options: operations.UpdateDatabaseOptions{},
+			start:   threeNodeState,
+			nodes: []*operations.NodeResources{
+				{
+					NodeName:          "n1",
+					InstanceResources: []*database.InstanceResources{n1Instance1},
+				},
+				{
+					NodeName:          "n2",
+					InstanceResources: []*database.InstanceResources{n2Instance1},
+				},
+			},
+		},
+		{
+			name:    "remove two nodes from three node database",
+			options: operations.UpdateDatabaseOptions{},
+			start:   threeNodeState,
+			nodes: []*operations.NodeResources{
+				{
+					NodeName:          "n2",
+					InstanceResources: []*database.InstanceResources{n2Instance1},
 				},
 			},
 		},

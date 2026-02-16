@@ -286,6 +286,21 @@ func CreateReplicationSlot(databaseName, providerNode, subscriberNode string) Co
 	}
 }
 
+func DropReplicationSlot(databaseName, providerNode, subscriberNode string) ConditionalStatement {
+	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
+
+	return ConditionalStatement{
+		If: Query[bool]{
+			SQL:  "SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = @slot_name);",
+			Args: pgx.NamedArgs{"slot_name": slotName},
+		},
+		Then: Statement{
+			SQL:  "SELECT pg_drop_replication_slot(@slot_name);",
+			Args: pgx.NamedArgs{"slot_name": slotName},
+		},
+	}
+}
+
 func LagTrackerCommitTimestamp(originNode, receiverNode string) Query[time.Time] {
 	return Query[time.Time]{
 		SQL: `
@@ -306,6 +321,19 @@ func CurrentReplicationSlotLSN(databaseName, providerNode, subscriberNode string
 
 	return Query[string]{
 		SQL: "SELECT restart_lsn FROM pg_replication_slots WHERE slot_name = @slot_name;",
+		Args: pgx.NamedArgs{
+			"slot_name": slotName,
+		},
+	}
+}
+
+// IsReplicationSlotActive checks if a replication slot is currently being used
+// by an active walsender process. Returns true if active_pid is not null.
+func IsReplicationSlotActive(databaseName, providerNode, subscriberNode string) Query[bool] {
+	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
+
+	return Query[bool]{
+		SQL: "SELECT active_pid IS NOT NULL FROM pg_replication_slots WHERE slot_name = @slot_name;",
 		Args: pgx.NamedArgs{
 			"slot_name": slotName,
 		},

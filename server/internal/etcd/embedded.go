@@ -18,6 +18,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/server/v3/embed"
 	"go.etcd.io/etcd/server/v3/etcdserver"
+	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 
 	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/common"
@@ -31,14 +32,17 @@ var _ do.Shutdownable = (*EmbeddedEtcd)(nil)
 // Sets the maximum size of the database. This is the largest suggested maximum.
 const quotaBackendBytes = 8 * 1024 * 1024 * 1024 // 8GB
 
+const forceNewClusterSentinel = ".force_new_cluster_applied"
+
 type EmbeddedEtcd struct {
-	mu          sync.Mutex
-	certSvc     *certificates.Service
-	client      *clientv3.Client
-	etcd        *embed.Etcd
-	logger      zerolog.Logger
-	cfg         *config.Manager
-	initialized chan struct{}
+	mu               sync.Mutex
+	certSvc          *certificates.Service
+	client           *clientv3.Client
+	etcd             *embed.Etcd
+	logger           zerolog.Logger
+	cfg              *config.Manager
+	initialized      chan struct{}
+	forcedNewCluster bool // tracks whether ForceNewCluster was actually applied this startup
 }
 
 func NewEmbeddedEtcd(cfg *config.Manager, logger zerolog.Logger) *EmbeddedEtcd {
@@ -157,6 +161,17 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 
 func (e *EmbeddedEtcd) start(ctx context.Context) error {
 	appCfg := e.cfg.Config()
+
+	forceNew := appCfg.EtcdServer.ForceNewCluster
+	if forceNew {
+		if e.forceNewClusterAlreadyApplied() {
+			e.logger.Warn().Msg("force-new-cluster was already applied in a previous startup; ignoring to prevent data corruption")
+			forceNew = false
+		} else {
+			e.logger.Warn().Msg("force-new-cluster enabled — starting etcd as a new single-member cluster from existing data")
+		}
+	}
+
 	e.logger.Info().
 		Int("peer_port", appCfg.EtcdServer.PeerPort).
 		Int("client_port", appCfg.EtcdServer.ClientPort).
@@ -166,11 +181,27 @@ func (e *EmbeddedEtcd) start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize embedded etcd config: %w", err)
 	}
+	// Override ForceNewCluster based on sentinel check
+	etcdCfg.ForceNewCluster = forceNew
+
 	etcd, err := startEmbedded(ctx, etcdCfg)
 	if err != nil {
 		return fmt.Errorf("failed to start etcd: %w", err)
 	}
 	e.etcd = etcd
+	e.forcedNewCluster = forceNew
+
+	// ForceNewCluster uses an in-process v3client that bypasses gRPC auth
+	// interceptors. Since etcd auth is enabled, API calls fail with "user
+	// name is empty". Temporarily disable auth so the v3client can perform
+	// initialization (peer URL update, certificate service). After init is
+	// complete, re-enable auth and swap the in-process client for a proper
+	// authenticated gRPC client so that subsequent callers (migrations,
+	// workflows, etc.) use the regular path.
+	if forceNew && e.etcd.Server.AuthStore().IsAuthEnabled() {
+		e.logger.Info().Msg("temporarily disabling etcd auth for ForceNewCluster initialization")
+		e.etcd.Server.AuthStore().AuthDisable()
+	}
 
 	client, err := e.GetClient()
 	if err != nil {
@@ -187,6 +218,33 @@ func (e *EmbeddedEtcd) start(ctx context.Context) error {
 	e.certSvc, err = certificateService(ctx, e.cfg.Config(), client)
 	if err != nil {
 		return err
+	}
+
+	// Mark ForceNewCluster as applied after successful startup
+	if forceNew {
+		if err := e.markForceNewClusterApplied(); err != nil {
+			e.logger.Error().Err(err).Msg("failed to write force-new-cluster sentinel file")
+		}
+
+		// Re-enable auth through the v3client API so it goes through the
+		// raft proposal path (AuthStore direct calls bypass raft and leave
+		// the auth state inconsistent). Since auth is currently disabled,
+		// the v3client can call AuthEnable without credentials.
+		if _, err := client.AuthEnable(ctx); err != nil {
+			return fmt.Errorf("failed to re-enable etcd auth: %w", err)
+		}
+		e.logger.Info().Msg("re-enabled etcd auth via raft after ForceNewCluster initialization")
+
+		// Swap the in-process v3client for a proper authenticated gRPC
+		// client. By this point the raft apply loop is caught up and auth
+		// is properly committed, so the Authenticate RPC will succeed.
+		e.client.Close()
+		e.client = nil
+		e.forcedNewCluster = false
+		if _, err := e.GetClient(); err != nil {
+			return fmt.Errorf("failed to create authenticated etcd client after ForceNewCluster: %w", err)
+		}
+		e.logger.Info().Msg("switched to authenticated gRPC client after ForceNewCluster recovery")
 	}
 
 	return nil
@@ -352,6 +410,19 @@ func (e *EmbeddedEtcd) etcdDir() string {
 	return filepath.Join(e.cfg.Config().DataDir, "etcd")
 }
 
+func (e *EmbeddedEtcd) forceNewClusterSentinelPath() string {
+	return filepath.Join(e.etcdDir(), forceNewClusterSentinel)
+}
+
+func (e *EmbeddedEtcd) forceNewClusterAlreadyApplied() bool {
+	_, err := os.Stat(e.forceNewClusterSentinelPath())
+	return err == nil
+}
+
+func (e *EmbeddedEtcd) markForceNewClusterApplied() error {
+	return os.WriteFile(e.forceNewClusterSentinelPath(), []byte("applied"), 0o644)
+}
+
 func (e *EmbeddedEtcd) Leader(ctx context.Context) (*ClusterMember, error) {
 	client, err := e.GetClient()
 	if err != nil {
@@ -401,7 +472,20 @@ func (e *EmbeddedEtcd) GetClient() (*clientv3.Client, error) {
 	}
 
 	cfg := e.cfg.Config()
-	clientCfg, err := clientConfig(cfg, e.logger, e.etcd.Server.Cluster().ClientURLs()...)
+
+	// After ForceNewCluster, the etcd Authenticate RPC hangs because it
+	// requires a linearizable read, which in turn requires the Raft apply
+	// loop to be fully caught up. ForceNewCluster can leave pending Raft
+	// entries that prevent this. Use the in-process v3client which bypasses
+	// gRPC (and therefore auth interceptors and linearizable reads).
+	if e.forcedNewCluster {
+		e.logger.Info().Msg("using in-process etcd client for ForceNewCluster recovery")
+		e.client = v3client.New(e.etcd.Server)
+		return e.client, nil
+	}
+
+	endpoints := e.ClientEndpoints()
+	clientCfg, err := clientConfig(cfg, e.logger, endpoints...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get client config: %w", err)
 	}
@@ -467,13 +551,32 @@ func (e *EmbeddedEtcd) HealthCheck() common.ComponentStatus {
 		alarmStrs[i] = fmt.Sprintf("%d: %s", a.MemberID, a.Alarm.String())
 	}
 
+	details := map[string]interface{}{
+		"errors": status.Errors,
+		"alarms": alarmStrs,
+	}
+
+	// Check cluster membership and quorum status
+	members, memberErr := e.client.MemberList(ctx)
+	if memberErr == nil {
+		totalMembers := len(members.Members)
+		startedMembers := 0
+		for _, m := range members.Members {
+			if m.Name != "" {
+				startedMembers++
+			}
+		}
+		details["total_members"] = totalMembers
+		details["started_members"] = startedMembers
+		details["has_quorum"] = startedMembers > totalMembers/2
+	} else {
+		details["member_list_error"] = memberErr.Error()
+	}
+
 	return common.ComponentStatus{
 		Name:    "etcd",
 		Healthy: len(status.Errors) == 0 && len(alarmStrs) == 0,
-		Details: map[string]interface{}{
-			"errors": status.Errors,
-			"alarms": alarmStrs,
-		},
+		Details: details,
 	}
 }
 
@@ -690,6 +793,7 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 	c.MaxTxnOps = 2048
 	c.MaxRequestBytes = 10 * 1024 * 1024 // 10MB
 	c.QuotaBackendBytes = quotaBackendBytes
+	c.ForceNewCluster = cfg.EtcdServer.ForceNewCluster
 
 	return c, nil
 }
