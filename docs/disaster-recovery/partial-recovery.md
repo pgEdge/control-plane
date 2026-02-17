@@ -56,14 +56,14 @@ The response contains task IDs for the removal and each database update:
 ```json
 {
   "task": {
-    "task_id": "019c243c-1eac-719e-9688-575dfb981c15",
+    "task_id": "<TASK-ID>",
     "type": "remove_host",
     "status": "pending"
   },
   "update_database_tasks": [
     {
-      "task_id": "019c243c-1eaf-7416-ac13-489b7b40f66a",
-      "database_id": "example",
+      "task_id": "<TASK-ID>",
+      "database_id": "<DB_NAME>",
       "type": "update",
       "status": "pending"
     }
@@ -94,17 +94,17 @@ curl http://<HEALTHY_HOST>:3000/v1/databases/<DB>/tasks/<TASK_ID>/log
 If permanently removing the node, update each affected database to exclude nodes on the failed host:
 
 ```sh
-curl http://<HEALTHY_HOST>:3000/v1/databases/example
+curl http://<HEALTHY_HOST>:3000/v1/databases/<DB>
 ```
 
 Then submit an update with only healthy nodes:
 
 ```sh
-curl -X POST http://<HEALTHY_HOST>:3000/v1/databases/example \
+curl -X POST http://<HEALTHY_HOST>:3000/v1/databases/<DB> \
     -H 'Content-Type:application/json' \
     --data '{
         "spec": {
-            "database_name": "example",
+            "database_name": "<DB_NAME>",
             "database_users": [
                 {
                     "username": "admin",
@@ -162,7 +162,7 @@ The failed host should no longer appear in the list.
 ### Step 2.2: Verify Database Health
 
 ```sh
-curl http://<HEALTHY_HOST>:3000/v1/databases/example
+curl http://<HEALTHY_HOST>:3000/v1/databases/<DB>
 ```
 
 Verify that:
@@ -351,11 +351,11 @@ The restored host should appear with `status: reachable` and the correct `etcd_m
 Update your database spec to include the restored node. Control Plane will automatically create instances, configure replication, and synchronize data:
 
 ```sh
-curl -X POST http://<HEALTHY_HOST>:3000/v1/databases/example \
+curl -X POST http://<HEALTHY_HOST>:3000/v1/databases/<DB> \
     -H 'Content-Type:application/json' \
     --data '{
         "spec": {
-            "database_name": "example",
+            "database_name": "<DB_NAME>",
             "database_users": [
                 {
                     "username": "admin",
@@ -382,14 +382,14 @@ To use a specific source node for data synchronization:
 ### Step 5.2: Monitor Database Update
 
 ```sh
-curl http://<HEALTHY_HOST>:3000/v1/databases/example/tasks/<TASK_ID>
-curl http://<HEALTHY_HOST>:3000/v1/databases/example/tasks/<TASK_ID>/log
+curl http://<HEALTHY_HOST>:3000/v1/databases/<DB>/tasks/<TASK_ID>
+curl http://<HEALTHY_HOST>:3000/v1/databases/<DB>/tasks/<TASK_ID>/log
 ```
 
 ### Step 5.3: Verify Full Recovery
 
 ```sh
-curl http://<HEALTHY_HOST>:3000/v1/databases/example
+curl http://<HEALTHY_HOST>:3000/v1/databases/<DB>
 ```
 
 Confirm:
