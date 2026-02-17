@@ -286,6 +286,25 @@ func CreateReplicationSlot(databaseName, providerNode, subscriberNode string) Co
 	}
 }
 
+// TerminateReplicationSlot terminates the walsender process using a
+// replication slot, if one is active. This must be called before dropping a
+// slot whose subscriber has gone down, since pg_drop_replication_slot fails
+// on active slots.
+func TerminateReplicationSlot(databaseName, providerNode, subscriberNode string) ConditionalStatement {
+	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
+
+	return ConditionalStatement{
+		If: Query[bool]{
+			SQL:  "SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = @slot_name AND active);",
+			Args: pgx.NamedArgs{"slot_name": slotName},
+		},
+		Then: Statement{
+			SQL:  "SELECT pg_terminate_backend(active_pid) FROM pg_replication_slots WHERE slot_name = @slot_name AND active;",
+			Args: pgx.NamedArgs{"slot_name": slotName},
+		},
+	}
+}
+
 func DropReplicationSlot(databaseName, providerNode, subscriberNode string) ConditionalStatement {
 	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
 

@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
@@ -77,10 +76,17 @@ func (r *ReplicationSlotResource) Delete(ctx context.Context, rc *resource.Conte
 	}
 	defer conn.Close(ctx)
 
-	stmt := postgres.DropReplicationSlot(provider.Spec.DatabaseName, r.ProviderNode, r.SubscriberNode)
-	if err := stmt.Exec(ctx, conn); err != nil {
-		return fmt.Errorf("failed to drop replication slot for subscription %s->%s: %w", r.ProviderNode, r.SubscriberNode, err)
-	}
+	dbName := provider.Spec.DatabaseName
+
+	// Terminate any active walsender using this slot. This is necessary
+	// when the subscriber has gone down and the walsender hasn't detected
+	// the broken connection yet — pg_drop_replication_slot fails on active
+	// slots.
+	_ = postgres.TerminateReplicationSlot(dbName, r.ProviderNode, r.SubscriberNode).
+		Exec(ctx, conn)
+
+	_ = postgres.DropReplicationSlot(dbName, r.ProviderNode, r.SubscriberNode).
+		Exec(ctx, conn)
 
 	return nil
 }
