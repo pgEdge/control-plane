@@ -3,10 +3,12 @@ package swarm
 import (
 	"bytes"
 	"context"
+	"crypto/sha1"
 	"errors"
 	"fmt"
 	"io"
 	"maps"
+	"math/big"
 	"net/netip"
 	"path/filepath"
 	"slices"
@@ -43,6 +45,7 @@ const (
 type Orchestrator struct {
 	cfg                config.Config
 	versions           *Versions
+	serviceVersions    *ServiceVersions
 	docker             *docker.Docker
 	logger             zerolog.Logger
 	dbNetworkAllocator Allocator
@@ -86,10 +89,11 @@ func NewOrchestrator(
 	}
 
 	return &Orchestrator{
-		cfg:      cfg,
-		versions: NewVersions(cfg),
-		docker:   d,
-		logger:   logger,
+		cfg:             cfg,
+		versions:        NewVersions(cfg),
+		serviceVersions: NewServiceVersions(cfg),
+		docker:          d,
+		logger:          logger,
 		dbNetworkAllocator: Allocator{
 			Prefix: dbNetworkPrefix,
 			Bits:   cfg.DockerSwarm.DatabaseNetworksSubnetBits,
@@ -149,6 +153,16 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		return nil, fmt.Errorf("failed to create instance resources: %w", err)
 	}
 	return resources, nil
+}
+
+// ServiceInstanceName generates a Docker Swarm service name for a service instance.
+// It follows the same host ID hashing convention used for Postgres instance IDs
+// (see database.InstanceIDFor), producing shorter, more readable names when host
+// IDs are UUIDs.
+func ServiceInstanceName(serviceType, databaseID, serviceID, hostID string) string {
+	hash := sha1.Sum([]byte(hostID))
+	base36 := new(big.Int).SetBytes(hash[:]).Text(36)
+	return fmt.Sprintf("%s-%s-%s-%s", serviceType, databaseID, serviceID, base36[:8])
 }
 
 func (o *Orchestrator) instanceResources(spec *database.InstanceSpec) (*database.InstanceResource, []resource.Resource, error) {
@@ -381,6 +395,96 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 	return instanceResources, nil
 }
 
+func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
+	// Get service image based on service type and version
+	serviceImage, err := o.serviceVersions.GetServiceImage(spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get service image: %w", err)
+	}
+
+	// Validate compatibility with database version
+	if spec.PgEdgeVersion != nil {
+		if err := serviceImage.ValidateCompatibility(
+			spec.PgEdgeVersion.PostgresVersion,
+			spec.PgEdgeVersion.SpockVersion,
+		); err != nil {
+			return nil, fmt.Errorf("service %q version %q is not compatible with this database: %w",
+				spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version, err)
+		}
+	}
+
+	// Database network (shared with postgres instances)
+	databaseNetwork := &Network{
+		Scope:     "swarm",
+		Driver:    OverlayDriver,
+		Name:      fmt.Sprintf("%s-database", spec.DatabaseID),
+		Allocator: o.dbNetworkAllocator,
+	}
+
+	// Service user role resource (manages database user lifecycle)
+	serviceUserRole := &ServiceUserRole{
+		ServiceInstanceID: spec.ServiceInstanceID,
+		DatabaseID:        spec.DatabaseID,
+		DatabaseName:      spec.DatabaseName,
+		Username:          spec.Credentials.Username,
+		HostID:            spec.HostID,
+	}
+
+	// Service instance spec resource
+	serviceName := ServiceInstanceName(spec.ServiceSpec.ServiceType, spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
+	serviceInstanceSpec := &ServiceInstanceSpecResource{
+		ServiceInstanceID: spec.ServiceInstanceID,
+		ServiceSpec:       spec.ServiceSpec,
+		DatabaseID:        spec.DatabaseID,
+		DatabaseName:      spec.DatabaseName,
+		HostID:            spec.HostID,
+		ServiceName:       serviceName,
+		Hostname:          serviceName,
+		CohortMemberID:    o.swarmNodeID, // Use orchestrator's swarm node ID (same as Postgres instances)
+		ServiceImage:      serviceImage,
+		Credentials:       spec.Credentials,
+		DatabaseNetworkID: databaseNetwork.Name,
+		DatabaseHost:      spec.DatabaseHost,
+		DatabasePort:      spec.DatabasePort,
+		Port:              spec.Port,
+	}
+
+	// Service instance resource (actual Docker service)
+	serviceInstance := &ServiceInstanceResource{
+		ServiceInstanceID: spec.ServiceInstanceID,
+		DatabaseID:        spec.DatabaseID,
+		ServiceName:       serviceName,
+	}
+
+	orchestratorResources := []resource.Resource{
+		databaseNetwork,
+		serviceUserRole,
+		serviceInstanceSpec,
+		serviceInstance,
+	}
+
+	// Convert to resource data
+	data := make([]*resource.ResourceData, len(orchestratorResources))
+	for i, res := range orchestratorResources {
+		d, err := resource.ToResourceData(res)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert resource to resource data: %w", err)
+		}
+		data[i] = d
+	}
+
+	return &database.ServiceInstanceResources{
+		ServiceInstance: &database.ServiceInstance{
+			ServiceInstanceID: spec.ServiceInstanceID,
+			ServiceID:         spec.ServiceSpec.ServiceID,
+			DatabaseID:        spec.DatabaseID,
+			HostID:            spec.HostID,
+			State:             database.ServiceInstanceStateCreating,
+		},
+		Resources: data,
+	}, nil
+}
+
 func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*database.ConnectionInfo, error) {
 	container, err := GetPostgresContainer(ctx, o.docker, instanceID)
 	if err != nil {
@@ -427,6 +531,69 @@ func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID
 		ClientIPv4Address: o.cfg.IPv4Address,
 		ClientPort:        clientPort,
 		InstanceHostname:  inspect.Config.Hostname,
+	}, nil
+}
+
+func (o *Orchestrator) GetServiceInstanceStatus(ctx context.Context, serviceInstanceID string) (*database.ServiceInstanceStatus, error) {
+	// Get the service container to retrieve network info and ports
+	// This activity is routed to the specific host where the service is constrained
+	container, err := GetServiceContainer(ctx, o.docker, serviceInstanceID)
+	if err != nil {
+		if errors.Is(err, ErrNoServiceContainer) {
+			// Container not found - service is still starting up
+			// Return nil status (not an error) so the workflow can continue
+			// The status will be populated later by monitoring or retry
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get service container: %w", err)
+	}
+
+	// Inspect the container to get network information and ports
+	inspect, err := o.docker.ContainerInspect(ctx, container.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to inspect service container: %w", err)
+	}
+
+	// Extract ports from container port bindings
+	var ports []database.PortMapping
+	for portStr, bindings := range inspect.NetworkSettings.Ports {
+		// Skip if no bindings (unpublished ports)
+		if len(bindings) == 0 {
+			continue
+		}
+
+		// Parse container port
+		containerPort, err := strconv.Atoi(portStr.Port())
+		if err != nil {
+			continue // Skip malformed port
+		}
+
+		// Get host port from first binding
+		hostPort, err := strconv.Atoi(bindings[0].HostPort)
+		if err != nil {
+			continue // Skip malformed port
+		}
+
+		ports = append(ports, database.PortMapping{
+			Name:          portStr.Proto(),
+			ContainerPort: containerPort,
+			HostPort:      utils.PointerTo(hostPort),
+		})
+	}
+
+	// Determine readiness from container state and health info
+	ready := inspect.State != nil && inspect.State.Running
+	if ready && inspect.State.Health != nil {
+		ready = inspect.State.Health.Status == "healthy"
+	}
+
+	return &database.ServiceInstanceStatus{
+		ContainerID:  utils.PointerTo(inspect.ID),
+		ImageVersion: utils.PointerTo(inspect.Config.Image),
+		Hostname:     utils.PointerTo(inspect.Config.Hostname),
+		IPv4Address:  utils.PointerTo(o.cfg.IPv4Address),
+		Ports:        ports,
+		ServiceReady: utils.PointerTo(ready),
 	}, nil
 }
 

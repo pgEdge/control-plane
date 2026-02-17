@@ -13,6 +13,38 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
+// VersionConstraint defines an optional minimum and/or maximum version bound.
+// A nil Min or Max means no restriction on that end of the range.
+type VersionConstraint struct {
+	Min *Version `json:"min,omitempty"`
+	Max *Version `json:"max,omitempty"`
+}
+
+// IsSatisfied returns true if v falls within the constraint's bounds.
+func (c *VersionConstraint) IsSatisfied(v *Version) bool {
+	if c.Min != nil && c.Min.Compare(v) > 0 {
+		return false
+	}
+	if c.Max != nil && c.Max.Compare(v) < 0 {
+		return false
+	}
+	return true
+}
+
+func (c *VersionConstraint) String() string {
+	var parts []string
+	if c.Min != nil {
+		parts = append(parts, fmt.Sprintf(">= %s", c.Min))
+	}
+	if c.Max != nil {
+		parts = append(parts, fmt.Sprintf("<= %s", c.Max))
+	}
+	if len(parts) == 0 {
+		return "any"
+	}
+	return strings.Join(parts, " and ")
+}
+
 var _ encoding.TextMarshaler = (*Version)(nil)
 var _ encoding.TextUnmarshaler = (*Version)(nil)
 
@@ -87,6 +119,14 @@ func (v *Version) Compare(other *Version) int {
 }
 
 var semverRegexp = regexp.MustCompile(`^\d+(.\d+){0,2}$`)
+
+func MustParseVersion(s string) *Version {
+	v, err := ParseVersion(s)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
 
 func ParseVersion(s string) (*Version, error) {
 	if !semverRegexp.MatchString(s) {

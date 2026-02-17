@@ -124,6 +124,21 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 		errs = append(errs, validateRestoreConfig(spec.RestoreConfig, []string{"restore_config"})...)
 	}
 
+	// Validate services
+	seenServiceIDs := make(ds.Set[string], len(spec.Services))
+	for i, svc := range spec.Services {
+		svcPath := []string{"services", arrayIndexPath(i)}
+
+		// Check for duplicate service IDs
+		if seenServiceIDs.Has(string(svc.ServiceID)) {
+			err := errors.New("service IDs must be unique within a database")
+			errs = append(errs, newValidationError(err, svcPath))
+		}
+		seenServiceIDs.Add(string(svc.ServiceID))
+
+		errs = append(errs, validateServiceSpec(svc, svcPath)...)
+	}
+
 	return errors.Join(errs...)
 }
 
@@ -206,6 +221,109 @@ func validateNode(node *api.DatabaseNodeSpec, path []string) []error {
 	if node.RestoreConfig != nil {
 		restoreConfigPath := appendPath(path, "restore_config")
 		errs = append(errs, validateRestoreConfig(node.RestoreConfig, restoreConfigPath)...)
+	}
+
+	return errs
+}
+
+func validateServiceSpec(svc *api.ServiceSpec, path []string) []error {
+	var errs []error
+
+	// Validate service_id
+	serviceIDPath := appendPath(path, "service_id")
+	errs = append(errs, validateIdentifier(string(svc.ServiceID), serviceIDPath))
+
+	// Validate service_type (must be "mcp" for now)
+	if svc.ServiceType != "mcp" {
+		err := fmt.Errorf("unsupported service type '%s' (only 'mcp' is currently supported)", svc.ServiceType)
+		errs = append(errs, newValidationError(err, appendPath(path, "service_type")))
+	}
+
+	// Validate version (semver pattern or "latest")
+	if svc.Version != "latest" && !semverPattern.MatchString(svc.Version) {
+		err := errors.New("version must be in semver format (e.g., '1.0.0') or 'latest'")
+		errs = append(errs, newValidationError(err, appendPath(path, "version")))
+	}
+
+	// Validate host_ids (uniqueness and format)
+	seenHostIDs := make(ds.Set[string], len(svc.HostIds))
+	for i, hostID := range svc.HostIds {
+		hostIDStr := string(hostID)
+		hostIDPath := appendPath(path, "host_ids", arrayIndexPath(i))
+
+		errs = append(errs, validateIdentifier(hostIDStr, hostIDPath))
+
+		// may need to relax this if there is a use-case for multiple service instances on the same host
+		if seenHostIDs.Has(hostIDStr) {
+			err := errors.New("host IDs must be unique within a service")
+			errs = append(errs, newValidationError(err, hostIDPath))
+		}
+		seenHostIDs.Add(hostIDStr)
+	}
+
+	// Validate config based on service_type
+	if svc.ServiceType == "mcp" {
+		errs = append(errs, validateMCPServiceConfig(svc.Config, appendPath(path, "config"))...)
+	}
+
+	// Validate cpus if provided
+	if svc.Cpus != nil {
+		errs = append(errs, validateCPUs(svc.Cpus, appendPath(path, "cpus"))...)
+	}
+
+	// Validate memory if provided
+	if svc.Memory != nil {
+		errs = append(errs, validateMemory(svc.Memory, appendPath(path, "memory"))...)
+	}
+
+	return errs
+}
+
+// TODO: this is still a WIP based on use-case reqs...
+func validateMCPServiceConfig(config map[string]any, path []string) []error {
+	var errs []error
+
+	// Required fields for MCP service
+	requiredFields := []string{"llm_provider", "llm_model"}
+	for _, field := range requiredFields {
+		if _, ok := config[field]; !ok {
+			err := fmt.Errorf("missing required field '%s'", field)
+			errs = append(errs, newValidationError(err, path))
+		}
+	}
+
+	// Validate llm_provider
+	if val, exists := config["llm_provider"]; exists {
+		provider, ok := val.(string)
+		if !ok {
+			err := errors.New("llm_provider must be a string")
+			errs = append(errs, newValidationError(err, appendPath(path, mapKeyPath("llm_provider"))))
+		} else {
+			validProviders := []string{"anthropic", "openai", "ollama"}
+			if !slices.Contains(validProviders, provider) {
+				err := fmt.Errorf("unsupported llm_provider '%s' (must be one of: %s)", provider, strings.Join(validProviders, ", "))
+				errs = append(errs, newValidationError(err, appendPath(path, mapKeyPath("llm_provider"))))
+			}
+
+			// Provider-specific API key validation
+			switch provider {
+			case "anthropic":
+				if _, ok := config["anthropic_api_key"]; !ok {
+					err := errors.New("missing required field 'anthropic_api_key' for anthropic provider")
+					errs = append(errs, newValidationError(err, path))
+				}
+			case "openai":
+				if _, ok := config["openai_api_key"]; !ok {
+					err := errors.New("missing required field 'openai_api_key' for openai provider")
+					errs = append(errs, newValidationError(err, path))
+				}
+			case "ollama":
+				if _, ok := config["ollama_url"]; !ok {
+					err := errors.New("missing required field 'ollama_url' for ollama provider")
+					errs = append(errs, newValidationError(err, path))
+				}
+			}
+		}
 	}
 
 	return errs
@@ -400,6 +518,7 @@ func validateS3RepoProperties(props repoProperties, path []string) []error {
 }
 
 var pgBackRestOptionPattern = regexp.MustCompile(`^[a-z0-9-]+$`)
+var semverPattern = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
 
 func validatePgBackRestOptions(opts map[string]string, path []string) []error {
 	var errs []error

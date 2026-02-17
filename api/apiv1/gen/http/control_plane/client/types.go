@@ -213,6 +213,8 @@ type GetDatabaseResponseBody struct {
 	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
 	// All of the instances in the database.
 	Instances InstanceResponseBodyCollection `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	// Service instances running alongside this database.
+	ServiceInstances ServiceinstanceResponseBodyCollection `form:"service_instances,omitempty" json:"service_instances,omitempty" xml:"service_instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
 }
@@ -1732,6 +1734,8 @@ type DatabaseResponseBody struct {
 	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
 	// All of the instances in the database.
 	Instances InstanceCollectionResponseBody `form:"instances,omitempty" json:"instances,omitempty" xml:"instances,omitempty"`
+	// Service instances running alongside this database.
+	ServiceInstances ServiceinstanceCollectionResponseBody `form:"service_instances,omitempty" json:"service_instances,omitempty" xml:"service_instances,omitempty"`
 	// The user-provided specification for the database.
 	Spec *DatabaseSpecResponseBody `form:"spec,omitempty" json:"spec,omitempty" xml:"spec,omitempty"`
 }
@@ -1811,6 +1815,74 @@ type InstanceSubscriptionResponseBody struct {
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 }
 
+// ServiceinstanceCollectionResponseBody is used to define fields on response
+// body types.
+type ServiceinstanceCollectionResponseBody []*ServiceinstanceResponseBody
+
+// ServiceinstanceResponseBody is used to define fields on response body types.
+type ServiceinstanceResponseBody struct {
+	// Unique identifier for the service instance.
+	ServiceInstanceID *string `form:"service_instance_id,omitempty" json:"service_instance_id,omitempty" xml:"service_instance_id,omitempty"`
+	// The service ID from the DatabaseSpec.
+	ServiceID *string `form:"service_id,omitempty" json:"service_id,omitempty" xml:"service_id,omitempty"`
+	// The ID of the database this service belongs to.
+	DatabaseID *string `form:"database_id,omitempty" json:"database_id,omitempty" xml:"database_id,omitempty"`
+	// The ID of the host this service instance is running on.
+	HostID *string `form:"host_id,omitempty" json:"host_id,omitempty" xml:"host_id,omitempty"`
+	// Current state of the service instance.
+	State *string `form:"state,omitempty" json:"state,omitempty" xml:"state,omitempty"`
+	// Runtime status information for the service instance.
+	Status *ServiceInstanceStatusResponseBody `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// The time that the service instance was created.
+	CreatedAt *string `form:"created_at,omitempty" json:"created_at,omitempty" xml:"created_at,omitempty"`
+	// The time that the service instance was last updated.
+	UpdatedAt *string `form:"updated_at,omitempty" json:"updated_at,omitempty" xml:"updated_at,omitempty"`
+	// An error message if the service instance is in an error state.
+	Error *string `form:"error,omitempty" json:"error,omitempty" xml:"error,omitempty"`
+}
+
+// ServiceInstanceStatusResponseBody is used to define fields on response body
+// types.
+type ServiceInstanceStatusResponseBody struct {
+	// The Docker container ID.
+	ContainerID *string `form:"container_id,omitempty" json:"container_id,omitempty" xml:"container_id,omitempty"`
+	// The container image version currently running.
+	ImageVersion *string `form:"image_version,omitempty" json:"image_version,omitempty" xml:"image_version,omitempty"`
+	// The hostname of the service instance.
+	Hostname *string `form:"hostname,omitempty" json:"hostname,omitempty" xml:"hostname,omitempty"`
+	// The IPv4 address of the service instance.
+	Ipv4Address *string `form:"ipv4_address,omitempty" json:"ipv4_address,omitempty" xml:"ipv4_address,omitempty"`
+	// Port mappings for this service instance.
+	Ports []*PortMappingResponseBody `form:"ports,omitempty" json:"ports,omitempty" xml:"ports,omitempty"`
+	// Most recent health check result.
+	HealthCheck *HealthCheckResultResponseBody `form:"health_check,omitempty" json:"health_check,omitempty" xml:"health_check,omitempty"`
+	// The time of the last health check attempt.
+	LastHealthAt *string `form:"last_health_at,omitempty" json:"last_health_at,omitempty" xml:"last_health_at,omitempty"`
+	// Whether the service is ready to accept requests.
+	ServiceReady *bool `form:"service_ready,omitempty" json:"service_ready,omitempty" xml:"service_ready,omitempty"`
+}
+
+// PortMappingResponseBody is used to define fields on response body types.
+type PortMappingResponseBody struct {
+	// The name of the port (e.g., 'http', 'web-client').
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// The port number inside the container.
+	ContainerPort *int `form:"container_port,omitempty" json:"container_port,omitempty" xml:"container_port,omitempty"`
+	// The port number on the host (if port-forwarded).
+	HostPort *int `form:"host_port,omitempty" json:"host_port,omitempty" xml:"host_port,omitempty"`
+}
+
+// HealthCheckResultResponseBody is used to define fields on response body
+// types.
+type HealthCheckResultResponseBody struct {
+	// The health status.
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// Optional message about the health status.
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// The time this health check was performed.
+	CheckedAt *string `form:"checked_at,omitempty" json:"checked_at,omitempty" xml:"checked_at,omitempty"`
+}
+
 // DatabaseSpecResponseBody is used to define fields on response body types.
 type DatabaseSpecResponseBody struct {
 	// The name of the Postgres database.
@@ -1836,6 +1908,8 @@ type DatabaseSpecResponseBody struct {
 	Nodes []*DatabaseNodeSpecResponseBody `form:"nodes,omitempty" json:"nodes,omitempty" xml:"nodes,omitempty"`
 	// The users to create for this database.
 	DatabaseUsers []*DatabaseUserSpecResponseBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
+	// Service instances to run alongside the database (e.g., MCP servers).
+	Services []*ServiceSpecResponseBody `form:"services,omitempty" json:"services,omitempty" xml:"services,omitempty"`
 	// The backup configuration for this database.
 	BackupConfig *BackupConfigSpecResponseBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
 	// The restore configuration for this database.
@@ -2078,6 +2152,34 @@ type DatabaseUserSpecResponseBody struct {
 	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
 }
 
+// ServiceSpecResponseBody is used to define fields on response body types.
+type ServiceSpecResponseBody struct {
+	// The unique identifier for this service.
+	ServiceID *string `form:"service_id,omitempty" json:"service_id,omitempty" xml:"service_id,omitempty"`
+	// The type of service to run.
+	ServiceType *string `form:"service_type,omitempty" json:"service_type,omitempty" xml:"service_type,omitempty"`
+	// The version of the service in semver format (e.g., '1.0.0') or the literal
+	// 'latest'.
+	Version *string `form:"version,omitempty" json:"version,omitempty" xml:"version,omitempty"`
+	// The IDs of the hosts that should run this service. One service instance will
+	// be created per host.
+	HostIds []string `form:"host_ids,omitempty" json:"host_ids,omitempty" xml:"host_ids,omitempty"`
+	// The port to publish the service on the host. If 0, Docker assigns a random
+	// port. If unspecified, no port is published and the service is not accessible
+	// from outside the Docker network.
+	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	// Service-specific configuration. For MCP services, this includes
+	// llm_provider, llm_model, and provider-specific API keys.
+	Config map[string]any `form:"config,omitempty" json:"config,omitempty" xml:"config,omitempty"`
+	// The number of CPUs to allocate for this service. It can include the SI
+	// suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if
+	// unspecified.
+	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory in SI or IEC notation to allocate for this service.
+	// Defaults to container defaults if unspecified.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+}
+
 // DatabaseSpecRequestBody is used to define fields on request body types.
 type DatabaseSpecRequestBody struct {
 	// The name of the Postgres database.
@@ -2103,6 +2205,8 @@ type DatabaseSpecRequestBody struct {
 	Nodes []*DatabaseNodeSpecRequestBody `form:"nodes" json:"nodes" xml:"nodes"`
 	// The users to create for this database.
 	DatabaseUsers []*DatabaseUserSpecRequestBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
+	// Service instances to run alongside the database (e.g., MCP servers).
+	Services []*ServiceSpecRequestBody `form:"services,omitempty" json:"services,omitempty" xml:"services,omitempty"`
 	// The backup configuration for this database.
 	BackupConfig *BackupConfigSpecRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
 	// The restore configuration for this database.
@@ -2343,9 +2447,41 @@ type DatabaseUserSpecRequestBody struct {
 	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
 }
 
+// ServiceSpecRequestBody is used to define fields on request body types.
+type ServiceSpecRequestBody struct {
+	// The unique identifier for this service.
+	ServiceID string `form:"service_id" json:"service_id" xml:"service_id"`
+	// The type of service to run.
+	ServiceType string `form:"service_type" json:"service_type" xml:"service_type"`
+	// The version of the service in semver format (e.g., '1.0.0') or the literal
+	// 'latest'.
+	Version string `form:"version" json:"version" xml:"version"`
+	// The IDs of the hosts that should run this service. One service instance will
+	// be created per host.
+	HostIds []string `form:"host_ids" json:"host_ids" xml:"host_ids"`
+	// The port to publish the service on the host. If 0, Docker assigns a random
+	// port. If unspecified, no port is published and the service is not accessible
+	// from outside the Docker network.
+	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	// Service-specific configuration. For MCP services, this includes
+	// llm_provider, llm_model, and provider-specific API keys.
+	Config map[string]any `form:"config" json:"config" xml:"config"`
+	// The number of CPUs to allocate for this service. It can include the SI
+	// suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if
+	// unspecified.
+	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory in SI or IEC notation to allocate for this service.
+	// Defaults to container defaults if unspecified.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
+}
+
 // InstanceResponseBodyCollection is used to define fields on response body
 // types.
 type InstanceResponseBodyCollection []*InstanceResponseBody
+
+// ServiceinstanceResponseBodyCollection is used to define fields on response
+// body types.
+type ServiceinstanceResponseBodyCollection []*ServiceinstanceResponseBody
 
 // DatabaseSpecRequestBodyRequestBody is used to define fields on request body
 // types.
@@ -2373,6 +2509,8 @@ type DatabaseSpecRequestBodyRequestBody struct {
 	Nodes []*DatabaseNodeSpecRequestBodyRequestBody `form:"nodes" json:"nodes" xml:"nodes"`
 	// The users to create for this database.
 	DatabaseUsers []*DatabaseUserSpecRequestBodyRequestBody `form:"database_users,omitempty" json:"database_users,omitempty" xml:"database_users,omitempty"`
+	// Service instances to run alongside the database (e.g., MCP servers).
+	Services []*ServiceSpecRequestBodyRequestBody `form:"services,omitempty" json:"services,omitempty" xml:"services,omitempty"`
 	// The backup configuration for this database.
 	BackupConfig *BackupConfigSpecRequestBodyRequestBody `form:"backup_config,omitempty" json:"backup_config,omitempty" xml:"backup_config,omitempty"`
 	// The restore configuration for this database.
@@ -2620,6 +2758,35 @@ type DatabaseUserSpecRequestBodyRequestBody struct {
 	Attributes []string `form:"attributes,omitempty" json:"attributes,omitempty" xml:"attributes,omitempty"`
 	// The roles to assign to this database user.
 	Roles []string `form:"roles,omitempty" json:"roles,omitempty" xml:"roles,omitempty"`
+}
+
+// ServiceSpecRequestBodyRequestBody is used to define fields on request body
+// types.
+type ServiceSpecRequestBodyRequestBody struct {
+	// The unique identifier for this service.
+	ServiceID string `form:"service_id" json:"service_id" xml:"service_id"`
+	// The type of service to run.
+	ServiceType string `form:"service_type" json:"service_type" xml:"service_type"`
+	// The version of the service in semver format (e.g., '1.0.0') or the literal
+	// 'latest'.
+	Version string `form:"version" json:"version" xml:"version"`
+	// The IDs of the hosts that should run this service. One service instance will
+	// be created per host.
+	HostIds []string `form:"host_ids" json:"host_ids" xml:"host_ids"`
+	// The port to publish the service on the host. If 0, Docker assigns a random
+	// port. If unspecified, no port is published and the service is not accessible
+	// from outside the Docker network.
+	Port *int `form:"port,omitempty" json:"port,omitempty" xml:"port,omitempty"`
+	// Service-specific configuration. For MCP services, this includes
+	// llm_provider, llm_model, and provider-specific API keys.
+	Config map[string]any `form:"config" json:"config" xml:"config"`
+	// The number of CPUs to allocate for this service. It can include the SI
+	// suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if
+	// unspecified.
+	Cpus *string `form:"cpus,omitempty" json:"cpus,omitempty" xml:"cpus,omitempty"`
+	// The amount of memory in SI or IEC notation to allocate for this service.
+	// Defaults to container defaults if unspecified.
+	Memory *string `form:"memory,omitempty" json:"memory,omitempty" xml:"memory,omitempty"`
 }
 
 // TaskLogEntryResponseBody is used to define fields on response body types.
@@ -3269,15 +3436,21 @@ func NewGetDatabaseDatabaseOK(body *GetDatabaseResponseBody) *controlplaneviews.
 		tenantID := controlplaneviews.IdentifierView(*body.TenantID)
 		v.TenantID = &tenantID
 	}
-	if body.Instances != nil {
-		v.Instances = make([]*controlplaneviews.InstanceView, len(body.Instances))
-		for i, val := range body.Instances {
-			if val == nil {
-				v.Instances[i] = nil
-				continue
-			}
-			v.Instances[i] = unmarshalInstanceResponseBodyToControlplaneviewsInstanceView(val)
+	v.Instances = make([]*controlplaneviews.InstanceView, len(body.Instances))
+	for i, val := range body.Instances {
+		if val == nil {
+			v.Instances[i] = nil
+			continue
 		}
+		v.Instances[i] = unmarshalInstanceResponseBodyToControlplaneviewsInstanceView(val)
+	}
+	v.ServiceInstances = make([]*controlplaneviews.ServiceinstanceView, len(body.ServiceInstances))
+	for i, val := range body.ServiceInstances {
+		if val == nil {
+			v.ServiceInstances[i] = nil
+			continue
+		}
+		v.ServiceInstances[i] = unmarshalServiceinstanceResponseBodyToControlplaneviewsServiceinstanceView(val)
 	}
 	if body.Spec != nil {
 		v.Spec = unmarshalDatabaseSpecResponseBodyToControlplaneviewsDatabaseSpecView(body.Spec)
@@ -5410,6 +5583,36 @@ func ValidateInstanceSubscriptionResponseBody(body *InstanceSubscriptionResponse
 	return
 }
 
+// ValidateServiceinstanceCollectionResponseBody runs a no-op validation on
+// ServiceinstanceCollectionResponseBody
+func ValidateServiceinstanceCollectionResponseBody(body ServiceinstanceCollectionResponseBody) (err error) {
+	return
+}
+
+// ValidateServiceinstanceResponseBody runs a no-op validation on
+// ServiceinstanceResponseBody
+func ValidateServiceinstanceResponseBody(body *ServiceinstanceResponseBody) (err error) {
+	return
+}
+
+// ValidateServiceInstanceStatusResponseBody runs a no-op validation on
+// ServiceInstanceStatusResponseBody
+func ValidateServiceInstanceStatusResponseBody(body *ServiceInstanceStatusResponseBody) (err error) {
+	return
+}
+
+// ValidatePortMappingResponseBody runs a no-op validation on
+// PortMappingResponseBody
+func ValidatePortMappingResponseBody(body *PortMappingResponseBody) (err error) {
+	return
+}
+
+// ValidateHealthCheckResultResponseBody runs a no-op validation on
+// HealthCheckResultResponseBody
+func ValidateHealthCheckResultResponseBody(body *HealthCheckResultResponseBody) (err error) {
+	return
+}
+
 // ValidateDatabaseSpecResponseBody runs a no-op validation on
 // DatabaseSpecResponseBody
 func ValidateDatabaseSpecResponseBody(body *DatabaseSpecResponseBody) (err error) {
@@ -5482,6 +5685,12 @@ func ValidateDatabaseUserSpecResponseBody(body *DatabaseUserSpecResponseBody) (e
 	return
 }
 
+// ValidateServiceSpecResponseBody runs a no-op validation on
+// ServiceSpecResponseBody
+func ValidateServiceSpecResponseBody(body *ServiceSpecResponseBody) (err error) {
+	return
+}
+
 // ValidateDatabaseSpecRequestBody runs the validations defined on
 // DatabaseSpecRequestBody
 func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) {
@@ -5537,6 +5746,13 @@ func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) 
 	for _, e := range body.DatabaseUsers {
 		if e != nil {
 			if err2 := ValidateDatabaseUserSpecRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.Services {
+		if e != nil {
+			if err2 := ValidateServiceSpecRequestBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -6034,12 +6250,76 @@ func ValidateDatabaseUserSpecRequestBody(body *DatabaseUserSpecRequestBody) (err
 	return
 }
 
+// ValidateServiceSpecRequestBody runs the validations defined on
+// ServiceSpecRequestBody
+func ValidateServiceSpecRequestBody(body *ServiceSpecRequestBody) (err error) {
+	if body.HostIds == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
+	}
+	if body.Config == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("config", "body"))
+	}
+	if utf8.RuneCountInString(body.ServiceID) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", body.ServiceID, utf8.RuneCountInString(body.ServiceID), 1, true))
+	}
+	if utf8.RuneCountInString(body.ServiceID) > 63 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", body.ServiceID, utf8.RuneCountInString(body.ServiceID), 63, false))
+	}
+	if !(body.ServiceType == "mcp") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", body.ServiceType, []any{"mcp"}))
+	}
+	err = goa.MergeErrors(err, goa.ValidatePattern("body.version", body.Version, "^(\\d+\\.\\d+\\.\\d+|latest)$"))
+	if len(body.HostIds) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
+	}
+	for _, e := range body.HostIds {
+		if utf8.RuneCountInString(e) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 1, true))
+		}
+		if utf8.RuneCountInString(e) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 63, false))
+		}
+	}
+	if body.Port != nil {
+		if *body.Port < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 0, true))
+		}
+	}
+	if body.Port != nil {
+		if *body.Port > 65535 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 65535, false))
+		}
+	}
+	if body.Cpus != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.cpus", *body.Cpus, "^[0-9]+(\\.[0-9]{1,3}|m)?$"))
+	}
+	if body.Memory != nil {
+		if utf8.RuneCountInString(*body.Memory) > 16 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.memory", *body.Memory, utf8.RuneCountInString(*body.Memory), 16, false))
+		}
+	}
+	return
+}
+
 // ValidateInstanceResponseBodyCollection runs the validations defined on
 // InstanceResponseBodyCollection
 func ValidateInstanceResponseBodyCollection(body InstanceResponseBodyCollection) (err error) {
 	for _, e := range body {
 		if e != nil {
 			if err2 := ValidateInstanceResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateServiceinstanceResponseBodyCollection runs the validations defined
+// on ServiceinstanceResponseBodyCollection
+func ValidateServiceinstanceResponseBodyCollection(body ServiceinstanceResponseBodyCollection) (err error) {
+	for _, e := range body {
+		if e != nil {
+			if err2 := ValidateServiceinstanceResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -6102,6 +6382,13 @@ func ValidateDatabaseSpecRequestBodyRequestBody(body *DatabaseSpecRequestBodyReq
 	for _, e := range body.DatabaseUsers {
 		if e != nil {
 			if err2 := ValidateDatabaseUserSpecRequestBodyRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.Services {
+		if e != nil {
+			if err2 := ValidateServiceSpecRequestBodyRequestBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -6595,6 +6882,57 @@ func ValidateDatabaseUserSpecRequestBodyRequestBody(body *DatabaseUserSpecReques
 	}
 	if len(body.Roles) > 16 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.roles", body.Roles, len(body.Roles), 16, false))
+	}
+	return
+}
+
+// ValidateServiceSpecRequestBodyRequestBody runs the validations defined on
+// ServiceSpecRequestBodyRequestBody
+func ValidateServiceSpecRequestBodyRequestBody(body *ServiceSpecRequestBodyRequestBody) (err error) {
+	if body.HostIds == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("host_ids", "body"))
+	}
+	if body.Config == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("config", "body"))
+	}
+	if utf8.RuneCountInString(body.ServiceID) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", body.ServiceID, utf8.RuneCountInString(body.ServiceID), 1, true))
+	}
+	if utf8.RuneCountInString(body.ServiceID) > 63 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", body.ServiceID, utf8.RuneCountInString(body.ServiceID), 63, false))
+	}
+	if !(body.ServiceType == "mcp") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", body.ServiceType, []any{"mcp"}))
+	}
+	err = goa.MergeErrors(err, goa.ValidatePattern("body.version", body.Version, "^(\\d+\\.\\d+\\.\\d+|latest)$"))
+	if len(body.HostIds) < 1 {
+		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
+	}
+	for _, e := range body.HostIds {
+		if utf8.RuneCountInString(e) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 1, true))
+		}
+		if utf8.RuneCountInString(e) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids[*]", e, utf8.RuneCountInString(e), 63, false))
+		}
+	}
+	if body.Port != nil {
+		if *body.Port < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 0, true))
+		}
+	}
+	if body.Port != nil {
+		if *body.Port > 65535 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 65535, false))
+		}
+	}
+	if body.Cpus != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.cpus", *body.Cpus, "^[0-9]+(\\.[0-9]{1,3}|m)?$"))
+	}
+	if body.Memory != nil {
+		if utf8.RuneCountInString(*body.Memory) > 16 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.memory", *body.Memory, utf8.RuneCountInString(*body.Memory), 16, false))
+		}
 	}
 	return
 }

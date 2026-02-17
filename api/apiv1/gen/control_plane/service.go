@@ -317,6 +317,8 @@ type Database struct {
 	State string
 	// All of the instances in the database.
 	Instances InstanceCollection
+	// Service instances running alongside this database.
+	ServiceInstances ServiceinstanceCollection
 	// The user-provided specification for the database.
 	Spec *DatabaseSpec
 }
@@ -388,6 +390,8 @@ type DatabaseSpec struct {
 	Nodes []*DatabaseNodeSpec
 	// The users to create for this database.
 	DatabaseUsers []*DatabaseUserSpec
+	// Service instances to run alongside the database (e.g., MCP servers).
+	Services []*ServiceSpec
 	// The backup configuration for this database.
 	BackupConfig *BackupConfigSpec
 	// The restore configuration for this database.
@@ -535,6 +539,16 @@ type GetHostTaskPayload struct {
 	HostID Identifier
 	// ID of the task to get.
 	TaskID string
+}
+
+// Health check result for a service instance.
+type HealthCheckResult struct {
+	// The health status.
+	Status string
+	// Optional message about the health status.
+	Message *string
+	// The time this health check was performed.
+	CheckedAt string
 }
 
 // Host is the result type of the control-plane service get-host method.
@@ -748,6 +762,16 @@ type PgEdgeVersion struct {
 	SpockVersion string
 }
 
+// Port mapping information for a service instance.
+type PortMapping struct {
+	// The name of the port (e.g., 'http', 'web-client').
+	Name string
+	// The port number inside the container.
+	ContainerPort *int
+	// The port number on the host (if port-forwarded).
+	HostPort *int
+}
+
 // RemoveHostPayload is the payload type of the control-plane service
 // remove-host method.
 type RemoveHostPayload struct {
@@ -869,6 +893,77 @@ type RestoreRepositorySpec struct {
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string
 }
+
+// Runtime status information for a service instance.
+type ServiceInstanceStatus struct {
+	// The Docker container ID.
+	ContainerID *string
+	// The container image version currently running.
+	ImageVersion *string
+	// The hostname of the service instance.
+	Hostname *string
+	// The IPv4 address of the service instance.
+	Ipv4Address *string
+	// Port mappings for this service instance.
+	Ports []*PortMapping
+	// Most recent health check result.
+	HealthCheck *HealthCheckResult
+	// The time of the last health check attempt.
+	LastHealthAt *string
+	// Whether the service is ready to accept requests.
+	ServiceReady *bool
+}
+
+type ServiceSpec struct {
+	// The unique identifier for this service.
+	ServiceID Identifier
+	// The type of service to run.
+	ServiceType string
+	// The version of the service in semver format (e.g., '1.0.0') or the literal
+	// 'latest'.
+	Version string
+	// The IDs of the hosts that should run this service. One service instance will
+	// be created per host.
+	HostIds []Identifier
+	// The port to publish the service on the host. If 0, Docker assigns a random
+	// port. If unspecified, no port is published and the service is not accessible
+	// from outside the Docker network.
+	Port *int
+	// Service-specific configuration. For MCP services, this includes
+	// llm_provider, llm_model, and provider-specific API keys.
+	Config map[string]any
+	// The number of CPUs to allocate for this service. It can include the SI
+	// suffix 'm', e.g. '500m' for 500 millicpus. Defaults to container defaults if
+	// unspecified.
+	Cpus *string
+	// The amount of memory in SI or IEC notation to allocate for this service.
+	// Defaults to container defaults if unspecified.
+	Memory *string
+}
+
+// A service instance running on a host alongside the database.
+type Serviceinstance struct {
+	// Unique identifier for the service instance.
+	ServiceInstanceID string
+	// The service ID from the DatabaseSpec.
+	ServiceID string
+	// The ID of the database this service belongs to.
+	DatabaseID Identifier
+	// The ID of the host this service instance is running on.
+	HostID string
+	// Current state of the service instance.
+	State string
+	// Runtime status information for the service instance.
+	Status *ServiceInstanceStatus
+	// The time that the service instance was created.
+	CreatedAt string
+	// The time that the service instance was last updated.
+	UpdatedAt string
+	// An error message if the service instance is in an error state.
+	Error *string
+}
+
+type ServiceinstanceCollection []*Serviceinstance
 
 // StartInstancePayload is the payload type of the control-plane service
 // start-instance method.
@@ -1238,6 +1333,16 @@ func newDatabase(vres *controlplaneviews.DatabaseView) *Database {
 	if vres.State != nil {
 		res.State = *vres.State
 	}
+	if vres.ServiceInstances != nil {
+		res.ServiceInstances = make([]*Serviceinstance, len(vres.ServiceInstances))
+		for i, val := range vres.ServiceInstances {
+			if val == nil {
+				res.ServiceInstances[i] = nil
+				continue
+			}
+			res.ServiceInstances[i] = transformControlplaneviewsServiceinstanceViewToServiceinstance(val)
+		}
+	}
 	if vres.Spec != nil {
 		res.Spec = transformControlplaneviewsDatabaseSpecViewToDatabaseSpec(vres.Spec)
 	}
@@ -1286,6 +1391,18 @@ func newDatabaseView(res *Database) *controlplaneviews.DatabaseView {
 	if res.TenantID != nil {
 		tenantID := controlplaneviews.IdentifierView(*res.TenantID)
 		vres.TenantID = &tenantID
+	}
+	if res.ServiceInstances != nil {
+		vres.ServiceInstances = make([]*controlplaneviews.ServiceinstanceView, len(res.ServiceInstances))
+		for i, val := range res.ServiceInstances {
+			if val == nil {
+				vres.ServiceInstances[i] = nil
+				continue
+			}
+			vres.ServiceInstances[i] = transformServiceinstanceToControlplaneviewsServiceinstanceView(val)
+		}
+	} else {
+		vres.ServiceInstances = []*controlplaneviews.ServiceinstanceView{}
 	}
 	if res.Spec != nil {
 		vres.Spec = transformDatabaseSpecToControlplaneviewsDatabaseSpecView(res.Spec)
@@ -1448,6 +1565,167 @@ func newInstanceViewAbbreviated(res *Instance) *controlplaneviews.InstanceView {
 	return vres
 }
 
+// newServiceinstanceCollection converts projected type
+// ServiceinstanceCollection to service type ServiceinstanceCollection.
+func newServiceinstanceCollection(vres controlplaneviews.ServiceinstanceCollectionView) ServiceinstanceCollection {
+	res := make(ServiceinstanceCollection, len(vres))
+	for i, n := range vres {
+		res[i] = newServiceinstance(n)
+	}
+	return res
+}
+
+// newServiceinstanceCollectionView projects result type
+// ServiceinstanceCollection to projected type ServiceinstanceCollectionView
+// using the "default" view.
+func newServiceinstanceCollectionView(res ServiceinstanceCollection) controlplaneviews.ServiceinstanceCollectionView {
+	vres := make(controlplaneviews.ServiceinstanceCollectionView, len(res))
+	for i, n := range res {
+		vres[i] = newServiceinstanceView(n)
+	}
+	return vres
+}
+
+// newServiceinstance converts projected type Serviceinstance to service type
+// Serviceinstance.
+func newServiceinstance(vres *controlplaneviews.ServiceinstanceView) *Serviceinstance {
+	res := &Serviceinstance{
+		Error: vres.Error,
+	}
+	if vres.ServiceInstanceID != nil {
+		res.ServiceInstanceID = *vres.ServiceInstanceID
+	}
+	if vres.ServiceID != nil {
+		res.ServiceID = *vres.ServiceID
+	}
+	if vres.DatabaseID != nil {
+		res.DatabaseID = Identifier(*vres.DatabaseID)
+	}
+	if vres.HostID != nil {
+		res.HostID = *vres.HostID
+	}
+	if vres.State != nil {
+		res.State = *vres.State
+	}
+	if vres.CreatedAt != nil {
+		res.CreatedAt = *vres.CreatedAt
+	}
+	if vres.UpdatedAt != nil {
+		res.UpdatedAt = *vres.UpdatedAt
+	}
+	if vres.Status != nil {
+		res.Status = transformControlplaneviewsServiceInstanceStatusViewToServiceInstanceStatus(vres.Status)
+	}
+	return res
+}
+
+// newServiceinstanceView projects result type Serviceinstance to projected
+// type ServiceinstanceView using the "default" view.
+func newServiceinstanceView(res *Serviceinstance) *controlplaneviews.ServiceinstanceView {
+	vres := &controlplaneviews.ServiceinstanceView{
+		ServiceInstanceID: &res.ServiceInstanceID,
+		ServiceID:         &res.ServiceID,
+		HostID:            &res.HostID,
+		State:             &res.State,
+		CreatedAt:         &res.CreatedAt,
+		UpdatedAt:         &res.UpdatedAt,
+		Error:             res.Error,
+	}
+	databaseID := controlplaneviews.IdentifierView(res.DatabaseID)
+	vres.DatabaseID = &databaseID
+	if res.Status != nil {
+		vres.Status = transformServiceInstanceStatusToControlplaneviewsServiceInstanceStatusView(res.Status)
+	}
+	return vres
+}
+
+// transformControlplaneviewsServiceinstanceViewToServiceinstance builds a
+// value of type *Serviceinstance from a value of type
+// *controlplaneviews.ServiceinstanceView.
+func transformControlplaneviewsServiceinstanceViewToServiceinstance(v *controlplaneviews.ServiceinstanceView) *Serviceinstance {
+	if v == nil {
+		return nil
+	}
+	res := &Serviceinstance{
+		ServiceInstanceID: *v.ServiceInstanceID,
+		ServiceID:         *v.ServiceID,
+		DatabaseID:        Identifier(*v.DatabaseID),
+		HostID:            *v.HostID,
+		State:             *v.State,
+		CreatedAt:         *v.CreatedAt,
+		UpdatedAt:         *v.UpdatedAt,
+		Error:             v.Error,
+	}
+	if v.Status != nil {
+		res.Status = transformControlplaneviewsServiceInstanceStatusViewToServiceInstanceStatus(v.Status)
+	}
+
+	return res
+}
+
+// transformControlplaneviewsServiceInstanceStatusViewToServiceInstanceStatus
+// builds a value of type *ServiceInstanceStatus from a value of type
+// *controlplaneviews.ServiceInstanceStatusView.
+func transformControlplaneviewsServiceInstanceStatusViewToServiceInstanceStatus(v *controlplaneviews.ServiceInstanceStatusView) *ServiceInstanceStatus {
+	if v == nil {
+		return nil
+	}
+	res := &ServiceInstanceStatus{
+		ContainerID:  v.ContainerID,
+		ImageVersion: v.ImageVersion,
+		Hostname:     v.Hostname,
+		Ipv4Address:  v.Ipv4Address,
+		LastHealthAt: v.LastHealthAt,
+		ServiceReady: v.ServiceReady,
+	}
+	if v.Ports != nil {
+		res.Ports = make([]*PortMapping, len(v.Ports))
+		for i, val := range v.Ports {
+			if val == nil {
+				res.Ports[i] = nil
+				continue
+			}
+			res.Ports[i] = transformControlplaneviewsPortMappingViewToPortMapping(val)
+		}
+	}
+	if v.HealthCheck != nil {
+		res.HealthCheck = transformControlplaneviewsHealthCheckResultViewToHealthCheckResult(v.HealthCheck)
+	}
+
+	return res
+}
+
+// transformControlplaneviewsPortMappingViewToPortMapping builds a value of
+// type *PortMapping from a value of type *controlplaneviews.PortMappingView.
+func transformControlplaneviewsPortMappingViewToPortMapping(v *controlplaneviews.PortMappingView) *PortMapping {
+	if v == nil {
+		return nil
+	}
+	res := &PortMapping{
+		Name:          *v.Name,
+		ContainerPort: v.ContainerPort,
+		HostPort:      v.HostPort,
+	}
+
+	return res
+}
+
+// transformControlplaneviewsHealthCheckResultViewToHealthCheckResult builds a
+// value of type *HealthCheckResult from a value of type
+// *controlplaneviews.HealthCheckResultView.
+func transformControlplaneviewsHealthCheckResultViewToHealthCheckResult(v *controlplaneviews.HealthCheckResultView) *HealthCheckResult {
+	if v == nil {
+		return nil
+	}
+	res := &HealthCheckResult{
+		Status:    *v.Status,
+		Message:   v.Message,
+		CheckedAt: *v.CheckedAt,
+	}
+
+	return res
+}
+
 // transformControlplaneviewsDatabaseSpecViewToDatabaseSpec builds a value of
 // type *DatabaseSpec from a value of type *controlplaneviews.DatabaseSpecView.
 func transformControlplaneviewsDatabaseSpecViewToDatabaseSpec(v *controlplaneviews.DatabaseSpecView) *DatabaseSpec {
@@ -1482,6 +1760,16 @@ func transformControlplaneviewsDatabaseSpecViewToDatabaseSpec(v *controlplanevie
 				continue
 			}
 			res.DatabaseUsers[i] = transformControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpec(val)
+		}
+	}
+	if v.Services != nil {
+		res.Services = make([]*ServiceSpec, len(v.Services))
+		for i, val := range v.Services {
+			if val == nil {
+				res.Services[i] = nil
+				continue
+			}
+			res.Services[i] = transformControlplaneviewsServiceSpecViewToServiceSpec(val)
 		}
 	}
 	if v.BackupConfig != nil {
@@ -1822,6 +2110,125 @@ func transformControlplaneviewsDatabaseUserSpecViewToDatabaseUserSpec(v *control
 	return res
 }
 
+// transformControlplaneviewsServiceSpecViewToServiceSpec builds a value of
+// type *ServiceSpec from a value of type *controlplaneviews.ServiceSpecView.
+func transformControlplaneviewsServiceSpecViewToServiceSpec(v *controlplaneviews.ServiceSpecView) *ServiceSpec {
+	if v == nil {
+		return nil
+	}
+	res := &ServiceSpec{
+		ServiceID:   Identifier(*v.ServiceID),
+		ServiceType: *v.ServiceType,
+		Version:     *v.Version,
+		Port:        v.Port,
+		Cpus:        v.Cpus,
+		Memory:      v.Memory,
+	}
+	if v.HostIds != nil {
+		res.HostIds = make([]Identifier, len(v.HostIds))
+		for i, val := range v.HostIds {
+			res.HostIds[i] = Identifier(val)
+		}
+	} else {
+		res.HostIds = []Identifier{}
+	}
+	if v.Config != nil {
+		res.Config = make(map[string]any, len(v.Config))
+		for key, val := range v.Config {
+			tk := key
+			tv := val
+			res.Config[tk] = tv
+		}
+	}
+
+	return res
+}
+
+// transformServiceinstanceToControlplaneviewsServiceinstanceView builds a
+// value of type *controlplaneviews.ServiceinstanceView from a value of type
+// *Serviceinstance.
+func transformServiceinstanceToControlplaneviewsServiceinstanceView(v *Serviceinstance) *controlplaneviews.ServiceinstanceView {
+	res := &controlplaneviews.ServiceinstanceView{
+		ServiceInstanceID: &v.ServiceInstanceID,
+		ServiceID:         &v.ServiceID,
+		HostID:            &v.HostID,
+		State:             &v.State,
+		CreatedAt:         &v.CreatedAt,
+		UpdatedAt:         &v.UpdatedAt,
+		Error:             v.Error,
+	}
+	databaseID := controlplaneviews.IdentifierView(v.DatabaseID)
+	res.DatabaseID = &databaseID
+	if v.Status != nil {
+		res.Status = transformServiceInstanceStatusToControlplaneviewsServiceInstanceStatusView(v.Status)
+	}
+
+	return res
+}
+
+// transformServiceInstanceStatusToControlplaneviewsServiceInstanceStatusView
+// builds a value of type *controlplaneviews.ServiceInstanceStatusView from a
+// value of type *ServiceInstanceStatus.
+func transformServiceInstanceStatusToControlplaneviewsServiceInstanceStatusView(v *ServiceInstanceStatus) *controlplaneviews.ServiceInstanceStatusView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.ServiceInstanceStatusView{
+		ContainerID:  v.ContainerID,
+		ImageVersion: v.ImageVersion,
+		Hostname:     v.Hostname,
+		Ipv4Address:  v.Ipv4Address,
+		LastHealthAt: v.LastHealthAt,
+		ServiceReady: v.ServiceReady,
+	}
+	if v.Ports != nil {
+		res.Ports = make([]*controlplaneviews.PortMappingView, len(v.Ports))
+		for i, val := range v.Ports {
+			if val == nil {
+				res.Ports[i] = nil
+				continue
+			}
+			res.Ports[i] = transformPortMappingToControlplaneviewsPortMappingView(val)
+		}
+	}
+	if v.HealthCheck != nil {
+		res.HealthCheck = transformHealthCheckResultToControlplaneviewsHealthCheckResultView(v.HealthCheck)
+	}
+
+	return res
+}
+
+// transformPortMappingToControlplaneviewsPortMappingView builds a value of
+// type *controlplaneviews.PortMappingView from a value of type *PortMapping.
+func transformPortMappingToControlplaneviewsPortMappingView(v *PortMapping) *controlplaneviews.PortMappingView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.PortMappingView{
+		Name:          &v.Name,
+		ContainerPort: v.ContainerPort,
+		HostPort:      v.HostPort,
+	}
+
+	return res
+}
+
+// transformHealthCheckResultToControlplaneviewsHealthCheckResultView builds a
+// value of type *controlplaneviews.HealthCheckResultView from a value of type
+// *HealthCheckResult.
+func transformHealthCheckResultToControlplaneviewsHealthCheckResultView(v *HealthCheckResult) *controlplaneviews.HealthCheckResultView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.HealthCheckResultView{
+		Status:    &v.Status,
+		Message:   v.Message,
+		CheckedAt: &v.CheckedAt,
+	}
+
+	return res
+}
+
 // transformDatabaseSpecToControlplaneviewsDatabaseSpecView builds a value of
 // type *controlplaneviews.DatabaseSpecView from a value of type *DatabaseSpec.
 func transformDatabaseSpecToControlplaneviewsDatabaseSpecView(v *DatabaseSpec) *controlplaneviews.DatabaseSpecView {
@@ -1856,6 +2263,16 @@ func transformDatabaseSpecToControlplaneviewsDatabaseSpecView(v *DatabaseSpec) *
 				continue
 			}
 			res.DatabaseUsers[i] = transformDatabaseUserSpecToControlplaneviewsDatabaseUserSpecView(val)
+		}
+	}
+	if v.Services != nil {
+		res.Services = make([]*controlplaneviews.ServiceSpecView, len(v.Services))
+		for i, val := range v.Services {
+			if val == nil {
+				res.Services[i] = nil
+				continue
+			}
+			res.Services[i] = transformServiceSpecToControlplaneviewsServiceSpecView(val)
 		}
 	}
 	if v.BackupConfig != nil {
@@ -2191,6 +2608,41 @@ func transformDatabaseUserSpecToControlplaneviewsDatabaseUserSpecView(v *Databas
 		res.Roles = make([]string, len(v.Roles))
 		for i, val := range v.Roles {
 			res.Roles[i] = val
+		}
+	}
+
+	return res
+}
+
+// transformServiceSpecToControlplaneviewsServiceSpecView builds a value of
+// type *controlplaneviews.ServiceSpecView from a value of type *ServiceSpec.
+func transformServiceSpecToControlplaneviewsServiceSpecView(v *ServiceSpec) *controlplaneviews.ServiceSpecView {
+	if v == nil {
+		return nil
+	}
+	res := &controlplaneviews.ServiceSpecView{
+		ServiceType: &v.ServiceType,
+		Version:     &v.Version,
+		Port:        v.Port,
+		Cpus:        v.Cpus,
+		Memory:      v.Memory,
+	}
+	serviceID := controlplaneviews.IdentifierView(v.ServiceID)
+	res.ServiceID = &serviceID
+	if v.HostIds != nil {
+		res.HostIds = make([]controlplaneviews.IdentifierView, len(v.HostIds))
+		for i, val := range v.HostIds {
+			res.HostIds[i] = controlplaneviews.IdentifierView(val)
+		}
+	} else {
+		res.HostIds = []controlplaneviews.IdentifierView{}
+	}
+	if v.Config != nil {
+		res.Config = make(map[string]any, len(v.Config))
+		for key, val := range v.Config {
+			tk := key
+			tv := val
+			res.Config[tk] = tv
 		}
 	}
 

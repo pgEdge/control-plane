@@ -1,0 +1,144 @@
+package database
+
+import (
+	"testing"
+)
+
+func TestGenerateServiceUsername(t *testing.T) {
+	tests := []struct {
+		name      string
+		serviceID string
+		hostID    string
+		want      string
+	}{
+		{
+			name:      "standard service instance",
+			serviceID: "mcp-server",
+			hostID:    "host1",
+			want:      "svc_mcp_server_host1",
+		},
+		{
+			name:      "multiple services on same database - service 1",
+			serviceID: "appmcp-1",
+			hostID:    "host1",
+			want:      "svc_appmcp_1_host1",
+		},
+		{
+			name:      "multiple services on same database - service 2",
+			serviceID: "appmcp-2",
+			hostID:    "host1",
+			want:      "svc_appmcp_2_host1",
+		},
+		{
+			name:      "service with multi-part service ID",
+			serviceID: "my-mcp-service",
+			hostID:    "host2",
+			want:      "svc_my_mcp_service_host2",
+		},
+		{
+			name:      "simple service and host IDs",
+			serviceID: "mcp",
+			hostID:    "n1",
+			want:      "svc_mcp_n1",
+		},
+		{
+			name:      "long service ID uses hash suffix",
+			serviceID: "very-long-service-name-that-exceeds-postgres-limit-significantly",
+			hostID:    "host1",
+			want:      "svc_very_long_service_name_that_exceeds_postgres_limit_27b9b83d",
+		},
+		{
+			name:      "long names with shared prefix produce different usernames (case A)",
+			serviceID: "very-long-service-name-that-exceeds-postgres-limit-AAA",
+			hostID:    "host1",
+			want:      "svc_very_long_service_name_that_exceeds_postgres_limit_1fe3f2fe",
+		},
+		{
+			name:      "long names with shared prefix produce different usernames (case B)",
+			serviceID: "very-long-service-name-that-exceeds-postgres-limit-BBB",
+			hostID:    "host1",
+			want:      "svc_very_long_service_name_that_exceeds_postgres_limit_abca469b",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := GenerateServiceUsername(tt.serviceID, tt.hostID)
+			if got != tt.want {
+				t.Errorf("GenerateServiceUsername() = %v, want %v", got, tt.want)
+			}
+			if len(got) > 63 {
+				t.Errorf("GenerateServiceUsername() length = %d, must be <= 63", len(got))
+			}
+		})
+	}
+}
+
+func TestGenerateServiceInstanceID(t *testing.T) {
+	tests := []struct {
+		name       string
+		databaseID string
+		serviceID  string
+		hostID     string
+		want       string
+	}{
+		{
+			name:       "standard service instance",
+			databaseID: "db1",
+			serviceID:  "mcp-server",
+			hostID:     "host1",
+			want:       "db1-mcp-server-host1",
+		},
+		{
+			name:       "multi-part identifiers",
+			databaseID: "my-database",
+			serviceID:  "my-service",
+			hostID:     "my-host",
+			want:       "my-database-my-service-my-host",
+		},
+		{
+			name:       "simple identifiers",
+			databaseID: "db",
+			serviceID:  "svc",
+			hostID:     "h1",
+			want:       "db-svc-h1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := GenerateServiceInstanceID(tt.databaseID, tt.serviceID, tt.hostID)
+			if got != tt.want {
+				t.Errorf("GenerateServiceInstanceID() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGenerateDatabaseNetworkID(t *testing.T) {
+	tests := []struct {
+		name       string
+		databaseID string
+		want       string
+	}{
+		{
+			name:       "standard database",
+			databaseID: "db1",
+			want:       "db1",
+		},
+		{
+			name:       "multi-part database ID",
+			databaseID: "my-database",
+			want:       "my-database",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := GenerateDatabaseNetworkID(tt.databaseID)
+			if got != tt.want {
+				t.Errorf("GenerateDatabaseNetworkID() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

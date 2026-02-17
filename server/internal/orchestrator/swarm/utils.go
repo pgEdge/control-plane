@@ -19,6 +19,7 @@ import (
 var (
 	ErrNoPostgresContainer = errors.New("no postgres container found")
 	ErrNoPostgresService   = errors.New("no postgres service found")
+	ErrNoServiceContainer  = errors.New("no service container found")
 )
 
 func GetPostgresContainer(ctx context.Context, dockerClient *docker.Docker, instanceID string) (types.Container, error) {
@@ -34,6 +35,22 @@ func GetPostgresContainer(ctx context.Context, dockerClient *docker.Docker, inst
 	}
 	if len(matches) == 0 {
 		return types.Container{}, fmt.Errorf("%w: %q", ErrNoPostgresContainer, instanceID)
+	}
+	return matches[0], nil
+}
+
+func GetServiceContainer(ctx context.Context, dockerClient *docker.Docker, serviceInstanceID string) (types.Container, error) {
+	matches, err := dockerClient.ContainerList(ctx, container.ListOptions{
+		Filters: filters.NewArgs(
+			filters.Arg("label", fmt.Sprintf("pgedge.service.instance.id=%s", serviceInstanceID)),
+			filters.Arg("label", "pgedge.component=service"),
+		),
+	})
+	if err != nil {
+		return types.Container{}, fmt.Errorf("failed to list containers: %w", err)
+	}
+	if len(matches) == 0 {
+		return types.Container{}, fmt.Errorf("%w: %q", ErrNoServiceContainer, serviceInstanceID)
 	}
 	return matches[0], nil
 }

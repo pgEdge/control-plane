@@ -6,12 +6,14 @@ import (
 	"github.com/cschleiden/go-workflows/worker"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
 
 type Workflows struct {
-	Config     config.Config
-	Activities *activities.Activities
+	Config       config.Config
+	Activities   *activities.Activities
+	Orchestrator database.Orchestrator
 }
 
 func (w *Workflows) Register(work *worker.Worker) error {
@@ -25,6 +27,7 @@ func (w *Workflows) Register(work *worker.Worker) error {
 		work.RegisterWorkflow(w.PgBackRestRestore),
 		work.RegisterWorkflow(w.PlanRestore),
 		work.RegisterWorkflow(w.PlanUpdate),
+		work.RegisterWorkflow(w.ProvisionServices),
 		work.RegisterWorkflow(w.RefreshCurrentState),
 		work.RegisterWorkflow(w.RemoveHost),
 		work.RegisterWorkflow(w.RestartInstance),

@@ -772,7 +772,7 @@ func controlPlaneFailoverDatabaseNodeUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane failover-database-node --body '{\n      \"candidate_instance_id\": \"68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi\",\n      \"skip_validation\": true\n   }' --database-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\" --node-name \"n1\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane failover-database-node --body '{\n      \"candidate_instance_id\": \"68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi\",\n      \"skip_validation\": false\n   }' --database-id \"76f9b8c0-4958-11f0-a489-3bb29577c696\" --node-name \"n1\"")
 }
 
 func controlPlaneListDatabaseTasksUsage() {

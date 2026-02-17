@@ -19,6 +19,24 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
+// isSensitiveConfigKey returns true if the given config key name likely
+// contains a secret value that should not be returned in API responses.
+func isSensitiveConfigKey(key string) bool {
+	k := strings.ToLower(key)
+	patterns := []string{
+		"password", "secret", "token",
+		"api_key", "apikey", "api-key",
+		"credential", "private_key", "private-key",
+		"access_key", "access-key",
+	}
+	for _, p := range patterns {
+		if strings.Contains(k, p) {
+			return true
+		}
+	}
+	return false
+}
+
 func hostToAPI(h *host.Host) *api.Host {
 	components := make(map[string]*api.ComponentStatus, len(h.Status.Components))
 	for name, status := range h.Status.Components {
@@ -181,6 +199,52 @@ func restoreConfigToAPI(config *database.RestoreConfig) *api.RestoreConfigSpec {
 	return out
 }
 
+func serviceSpecToAPI(svc *database.ServiceSpec) *api.ServiceSpec {
+	if svc == nil {
+		return nil
+	}
+
+	hostIDs := make([]api.Identifier, len(svc.HostIDs))
+	for i, hostID := range svc.HostIDs {
+		hostIDs[i] = api.Identifier(hostID)
+	}
+
+	// Strip sensitive keys from config before returning to API
+	var filteredConfig map[string]any
+	if svc.Config != nil {
+		filteredConfig = make(map[string]any, len(svc.Config))
+		for k, v := range svc.Config {
+			if isSensitiveConfigKey(k) {
+				continue
+			}
+			filteredConfig[k] = v
+		}
+	}
+
+	return &api.ServiceSpec{
+		ServiceID:   api.Identifier(svc.ServiceID),
+		ServiceType: svc.ServiceType,
+		Version:     svc.Version,
+		HostIds:     hostIDs,
+		Port:        svc.Port,
+		Config:      filteredConfig,
+		Cpus:        utils.NillablePointerTo(humanizeCPUs(utils.FromPointer(svc.CPUs))),
+		Memory:      utils.NillablePointerTo(humanizeBytes(utils.FromPointer(svc.MemoryBytes))),
+	}
+}
+
+func serviceSpecsToAPI(services []*database.ServiceSpec) []*api.ServiceSpec {
+	if len(services) == 0 {
+		return nil
+	}
+
+	apiServices := make([]*api.ServiceSpec, len(services))
+	for i, svc := range services {
+		apiServices[i] = serviceSpecToAPI(svc)
+	}
+	return apiServices
+}
+
 func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 	return &api.DatabaseSpec{
 		DatabaseName:     d.DatabaseName,
@@ -191,10 +255,75 @@ func databaseSpecToAPI(d *database.Spec) *api.DatabaseSpec {
 		Memory:           utils.NillablePointerTo(humanizeBytes(d.MemoryBytes)),
 		Nodes:            databaseNodesToAPI(d.Nodes),
 		DatabaseUsers:    databaseUsersToAPI(d.DatabaseUsers),
+		Services:         serviceSpecsToAPI(d.Services),
 		BackupConfig:     backupConfigToAPI(d.BackupConfig),
 		RestoreConfig:    restoreConfigToAPI(d.RestoreConfig),
 		PostgresqlConf:   d.PostgreSQLConf,
 		OrchestratorOpts: orchestratorOptsToAPI(d.OrchestratorOpts),
+	}
+}
+
+func portMappingToAPI(pm database.PortMapping) *api.PortMapping {
+	return &api.PortMapping{
+		Name:          pm.Name,
+		ContainerPort: &pm.ContainerPort,
+		HostPort:      pm.HostPort,
+	}
+}
+
+func healthCheckResultToAPI(hc *database.HealthCheckResult) *api.HealthCheckResult {
+	if hc == nil {
+		return nil
+	}
+	return &api.HealthCheckResult{
+		Status:    hc.Status,
+		Message:   utils.NillablePointerTo(hc.Message),
+		CheckedAt: hc.CheckedAt.Format(time.RFC3339),
+	}
+}
+
+func serviceInstanceStatusToAPI(status *database.ServiceInstanceStatus) *api.ServiceInstanceStatus {
+	if status == nil {
+		return nil
+	}
+
+	ports := make([]*api.PortMapping, len(status.Ports))
+	for i, pm := range status.Ports {
+		ports[i] = portMappingToAPI(pm)
+	}
+
+	var lastHealthAt *string
+	if status.LastHealthAt != nil {
+		lastHealthAt = utils.PointerTo(status.LastHealthAt.Format(time.RFC3339))
+	}
+
+	return &api.ServiceInstanceStatus{
+		ContainerID:  status.ContainerID,
+		ImageVersion: status.ImageVersion,
+		Hostname:     status.Hostname,
+		Ipv4Address:  status.IPv4Address,
+		Ports:        ports,
+		HealthCheck:  healthCheckResultToAPI(status.HealthCheck),
+		LastHealthAt: lastHealthAt,
+		ServiceReady: status.ServiceReady,
+	}
+}
+
+func serviceInstanceToAPI(si *database.ServiceInstance) *api.Serviceinstance {
+	if si == nil {
+		return nil
+	}
+
+	return &api.Serviceinstance{
+		ServiceInstanceID: si.ServiceInstanceID,
+		ServiceID:         si.ServiceID,
+		DatabaseID:        api.Identifier(si.DatabaseID),
+		HostID:            si.HostID,
+		State:             string(si.State),
+		Status:            serviceInstanceStatusToAPI(si.Status),
+		CreatedAt:         si.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:         si.UpdatedAt.Format(time.RFC3339),
+		Error:             utils.NillablePointerTo(si.Error),
 	}
 }
 
@@ -220,19 +349,32 @@ func databaseToAPI(d *database.Database) *api.Database {
 		return strings.Compare(a.ID, b.ID)
 	})
 
+	serviceInstances := make([]*api.Serviceinstance, len(d.ServiceInstances))
+	for i, si := range d.ServiceInstances {
+		serviceInstances[i] = serviceInstanceToAPI(si)
+	}
+	// Sort by service ID, host ID asc
+	slices.SortStableFunc(serviceInstances, func(a, b *api.Serviceinstance) int {
+		if svcEq := strings.Compare(a.ServiceID, b.ServiceID); svcEq != 0 {
+			return svcEq
+		}
+		return strings.Compare(a.HostID, b.HostID)
+	})
+
 	var tenantID *api.Identifier
 	if d.TenantID != nil {
 		tenantID = utils.PointerTo(api.Identifier(*d.TenantID))
 	}
 
 	return &api.Database{
-		ID:        api.Identifier(d.DatabaseID),
-		TenantID:  tenantID,
-		CreatedAt: d.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: d.UpdatedAt.Format(time.RFC3339),
-		State:     string(d.State),
-		Spec:      spec,
-		Instances: instances,
+		ID:               api.Identifier(d.DatabaseID),
+		TenantID:         tenantID,
+		CreatedAt:        d.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:        d.UpdatedAt.Format(time.RFC3339),
+		State:            string(d.State),
+		Spec:             spec,
+		Instances:        instances,
+		ServiceInstances: serviceInstances,
 	}
 }
 
@@ -452,6 +594,62 @@ func apiToRestoreConfig(apiConfig *api.RestoreConfigSpec) (*database.RestoreConf
 	}, nil
 }
 
+func apiToServiceSpec(apiSvc *api.ServiceSpec) (*database.ServiceSpec, error) {
+	if apiSvc == nil {
+		return nil, nil
+	}
+
+	hostIDs := make([]string, len(apiSvc.HostIds))
+	for i, hostID := range apiSvc.HostIds {
+		hostIDs[i] = string(hostID)
+	}
+
+	var cpus *float64
+	if apiSvc.Cpus != nil {
+		c, err := parseCPUs(apiSvc.Cpus)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse service CPUs: %w", err)
+		}
+		cpus = &c
+	}
+
+	var memory *uint64
+	if apiSvc.Memory != nil {
+		m, err := parseBytes(apiSvc.Memory)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse service memory: %w", err)
+		}
+		memory = &m
+	}
+
+	return &database.ServiceSpec{
+		ServiceID:   string(apiSvc.ServiceID),
+		ServiceType: apiSvc.ServiceType,
+		Version:     apiSvc.Version,
+		HostIDs:     hostIDs,
+		Port:        apiSvc.Port,
+		Config:      apiSvc.Config,
+		CPUs:        cpus,
+		MemoryBytes: memory,
+	}, nil
+}
+
+func apiToServiceSpecs(apiServices []*api.ServiceSpec) ([]*database.ServiceSpec, error) {
+	if len(apiServices) == 0 {
+		return nil, nil
+	}
+
+	services := make([]*database.ServiceSpec, len(apiServices))
+	for i, apiSvc := range apiServices {
+		svc, err := apiToServiceSpec(apiSvc)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert service %d: %w", i, err)
+		}
+		services[i] = svc
+	}
+	return services, nil
+}
+
 func apiToDatabaseSpec(id, tID *api.Identifier, apiSpec *api.DatabaseSpec) (*database.Spec, error) {
 	var databaseID string
 	var err error
@@ -497,6 +695,10 @@ func apiToDatabaseSpec(id, tID *api.Identifier, apiSpec *api.DatabaseSpec) (*dat
 			Roles:      apiUser.Roles,
 		}
 	}
+	services, err := apiToServiceSpecs(apiSpec.Services)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse services: %w", err)
+	}
 	backupConfig, err := apiToBackupConfig(apiSpec.BackupConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse backup configs: %w", err)
@@ -517,6 +719,7 @@ func apiToDatabaseSpec(id, tID *api.Identifier, apiSpec *api.DatabaseSpec) (*dat
 		MemoryBytes:      memory,
 		Nodes:            nodes,
 		DatabaseUsers:    users,
+		Services:         services,
 		BackupConfig:     backupConfig,
 		PostgreSQLConf:   apiSpec.PostgresqlConf,
 		RestoreConfig:    restoreConfig,
