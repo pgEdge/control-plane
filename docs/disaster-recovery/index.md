@@ -2,9 +2,9 @@
 
 The Control Plane provides disaster recovery procedures for different failure scenarios. Choose the appropriate guide based on your situation:
 
-* **[Quorum Loss Recovery](full-recovery.md)** - Use when etcd quorum is lost (all or majority of server-mode hosts are offline). This is the most critical scenario requiring immediate recovery.
+* **[Partial Failure Recovery (Quorum Intact)](partial-recovery.md)** - Use when quorum remains intact but one or more hosts are lost. The Control Plane API remains accessible throughout recovery.
 
-* **[Partial Recovery](partial-recovery.md)** - Use when quorum remains intact but one or more hosts are lost. This scenario is simpler as the Control Plane API remains accessible.
+* **[Complete Failure Recovery (No Quorum)](full-recovery.md)** - Use when etcd quorum, Docker Swarm quorum, or both are lost. Covers etcd snapshot restore, Docker Swarm re-initialization, and combined etcd + Swarm recovery scenarios.
 
 !!! warning
 

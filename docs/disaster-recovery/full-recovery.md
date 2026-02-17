@@ -1,11 +1,20 @@
-# Quorum Loss Recovery
+# Complete Failure Recovery (No Quorum)
 
-Quorum loss occurs when the majority of server-mode hosts are offline, preventing etcd from accepting writes and blocking database operations.
+This guide covers recovery when **etcd quorum**, **Docker Swarm quorum**, or **both** are lost. When quorum is lost, the Control Plane API becomes unavailable and database operations are blocked until recovery is complete.
 
-Quorum loss can occur in two scenarios:
+Quorum loss can occur in three scenarios:
 
-1. **[Total Quorum Loss](#total-quorum-loss-recovery)** - All server-mode hosts are offline (100% loss)
-2. **[Majority Quorum Loss](#majority-quorum-loss-recovery)** - More than 50% of server-mode hosts are offline, but at least one server-mode host remains online
+1. **[Total Quorum Loss](#phase-1a-total-quorum-loss)** — All server-mode hosts are offline (100% loss). Docker Swarm is still functional.
+2. **[Majority Quorum Loss](#phase-1b-majority-quorum-loss)** — More than 50% of server-mode hosts are offline, but at least one remains online. Docker Swarm is still functional.
+3. **[etcd and Docker Swarm Quorum Loss](#phase-1c-etcd-and-docker-swarm-quorum-loss)** — Both etcd and Docker Swarm have lost quorum (majority of hosts destroyed). Requires Swarm re-initialization, registry recreation, and image rebuild before etcd recovery.
+
+All three scenarios follow the same overall recovery flow:
+
+1. **Phase 1** — Restore one server-mode host to a working state *(scenario-specific)*
+2. **Phase 2** — Remove dead hosts and clean up databases *(common)*
+3. **Phase 3** — Rejoin or provision replacement hosts *(common, with branching for existing vs new hosts)*
+4. **Phase 4** — Restore database capacity *(common)*
+5. **Phase 5** — Final verification *(common)*
 
 ## Prerequisites
 
@@ -29,48 +38,54 @@ Before proceeding, set the following variables with values appropriate for your 
 PGEDGE_DATA_DIR="<path-to-control-plane-data-dir>"
 RECOVERY_HOST_IP="<recovery-host-ip>"
 RECOVERY_HOST_ID="<recovery-host-id>"
+RECOVERY_HOSTNAME="<recovery-docker-hostname>"   # e.g., lima-host-2
+API_PORT=<api-port>
 SNAPSHOT_PATH="${PGEDGE_DATA_DIR}/snapshot.db"
 ETCD_CLIENT_PORT=<etcd-client-port>
 ETCD_PEER_PORT=<etcd-peer-port>
-API_PORT=<api-port>
 ```
 
-## Total Quorum Loss Recovery
+**Additional variables for etcd and Docker Swarm Quorum Loss (Phase 1C only):**
 
-This section covers recovery when **all server-mode hosts are lost** (100% loss). In this scenario, the Control Plane API is not accessible on any host.
+```bash
+RECOVERY_HOST_EXTERNAL_IP="<recovery-host-external-ip>"  # e.g., 192.168.105.4
+ARCHIVE_VERSION="<control-plane-version>"                  # e.g., 0.6.2
+```
 
-### When to Use This Section
+### Determine Your Scenario
 
-Use this section when:
+| Condition | Scenario |
+|-----------|----------|
+| All server-mode hosts are offline, Docker Swarm works | [Phase 1A: Total Quorum Loss](#phase-1a-total-quorum-loss) |
+| At least one server-mode host online, Docker Swarm works | [Phase 1B: Majority Quorum Loss](#phase-1b-majority-quorum-loss) |
+| Both etcd and Docker Swarm quorum lost (hosts destroyed) | [Phase 1C: etcd and Docker Swarm Quorum Loss](#phase-1c-etcd-and-docker-swarm-quorum-loss) |
 
-- ❌ **All server-mode hosts are offline** (100% loss)
-- ❌ **Control Plane API is not accessible** on any host
-- ❌ **etcd quorum is completely lost**
+---
 
-**Example:** A cluster with 3 server-mode hosts (`host-1`, `host-2`, `host-3`) where all three hosts have failed.
+## Phase 1: Restore the Recovery Host
 
-### Prerequisites for Total Quorum Loss
+Complete **one** of the three paths below to get a single server-mode host running with the Control Plane API accessible. Then proceed to [Phase 2](#phase-2-remove-dead-hosts).
 
-Before beginning recovery, ensure you have:
+---
 
-- A snapshot or other backup of the Control Plane data volume from before the outage
-- Access to a recovery host (either a restored host or a new server-mode host)
-- The recovery host must have matching certificates and configuration files from the backup
+### Phase 1A: Total Quorum Loss
+
+**Use when all server-mode hosts are offline (100% loss) but Docker Swarm is still functional.**
+
+#### Prerequisites
+
+- A snapshot or backup of the Control Plane data volume from before the outage
+- Access to a recovery host with matching certificates and configuration from the backup
 
 !!! important "Reset Cluster Membership for Multi-Node Clusters"
 
-    If your cluster previously had more than one node, you **must** use `etcdutl snapshot restore` to reset cluster membership. Simply copying the etcd directory will not work—the cluster membership needs to be reset to a single node.
+    If your cluster previously had more than one node, you **must** use `etcdutl snapshot restore` to reset cluster membership. Simply copying the etcd directory will not work.
 
-### Recovery Steps for Total Quorum Loss
-
-#### Step 1: Stop All Control Plane Services
-
-Stop all Control Plane services across all hosts to prevent conflicts during recovery:
+#### Step 1A.1: Stop All Control Plane Services
 
 ```bash
 # On Swarm manager node
 docker service scale control-plane_<host-id-1>=0 control-plane_<host-id-2>=0 control-plane_<host-id-3>=0
-# ... repeat for all hosts
 
 # Verify stopped
 docker service ls --filter name=control-plane
@@ -78,35 +93,19 @@ docker service ls --filter name=control-plane
 
 !!! warning "Expected Errors During Quorum Loss"
 
-    You may see "cannot elect leader" errors when stopping services during quorum loss. These errors are expected and safe to ignore. If Docker Swarm commands fail, you can manually stop containers:
+    You may see "cannot elect leader" errors when stopping services. These are expected. If Docker Swarm commands fail, stop containers directly:
 
     ```bash
-    # Alternative: Stop containers directly on each host
     docker ps --filter label=com.docker.swarm.service.name=control-plane_<host-id> --format "{{.ID}}" | xargs docker stop
     ```
 
-#### Step 2: Restore Data Volume
+#### Step 1A.2: Restore Data Volume
 
-Restore the Control Plane data volume from your backup. The method depends on your backup solution.
+Restore the Control Plane data volume from your backup.
 
-!!! tip "When to Restore the Entire Volume"
-
-    **Recommended:** Restore the entire data volume when:
-    - You want to recover Postgres instance data along with Control Plane state
-    - You're using volume-level snapshots (e.g., AWS EBS, Azure disk snapshots)
-    - The backup is from the same host or a compatible host
-
-    **Selective restoration:** Only restore specific files when:
-    - You only need to recover Control Plane cluster state, not Postgres data
-    - The backup volume contains data from a different cluster
-    - You're recovering to a different host with a different host ID
-
-**Restore the entire volume:**
+**Restore the entire volume (recommended):**
 
 ```bash
-# Restore the entire data volume from your backup/snapshot
-# The exact method depends on your backup solution
-# Example for a file-based backup:
 BACKUP_VOLUME_PATH="<path-to-restored-backup-volume>"
 cp -r "${BACKUP_VOLUME_PATH}"/* "${PGEDGE_DATA_DIR}/"
 ```
@@ -114,19 +113,13 @@ cp -r "${BACKUP_VOLUME_PATH}"/* "${PGEDGE_DATA_DIR}/"
 **Selective restoration (only if you cannot restore the entire volume):**
 
 ```bash
-# Only restore essential Control Plane files
-# Note: This approach will NOT preserve Postgres instance data
 cp -r <backup-path>/certificates "${PGEDGE_DATA_DIR}/certificates"
 cp <backup-path>/generated.config.json "${PGEDGE_DATA_DIR}/generated.config.json"
-# Extract etcd snapshot if available
 ```
 
-#### Step 3: Backup Existing etcd Data
-
-Before restoring, create a backup of any existing etcd data on the recovery host:
+#### Step 1A.3: Backup Existing etcd Data
 
 ```bash
-# On recovery host
 if [ -d "${PGEDGE_DATA_DIR}/etcd" ]; then
     mv "${PGEDGE_DATA_DIR}/etcd" "${PGEDGE_DATA_DIR}/etcd.backup.$(date +%s)"
 fi
@@ -138,36 +131,24 @@ if [ -f "${PGEDGE_DATA_DIR}/generated.config.json" ]; then
 fi
 ```
 
-#### Step 4: Restore etcd Data
-
-You can restore etcd data using one of two approaches:
-
-- **Option A: Restore from Snapshot File** - Use this when you have a previously-created snapshot file (recommended)
-- **Option B: Restore from Existing Data Directory** - Use this only if you have the etcd directory from your volume backup
+#### Step 1A.4: Restore etcd from Snapshot
 
 ##### Install etcdutl
 
 ```bash
-# On recovery host
-# Install etcdutl if not present
 ARCH=$(uname -m)
 if [ "$ARCH" = "x86_64" ]; then ARCH="amd64"; elif [ "$ARCH" = "aarch64" ]; then ARCH="arm64"; fi
 curl -L https://github.com/etcd-io/etcd/releases/download/v3.6.5/etcd-v3.6.5-linux-${ARCH}.tar.gz | tar --strip-components 1 -xz -C /tmp etcd-v3.6.5-linux-${ARCH}/etcdutl
 sudo mv /tmp/etcdutl /usr/local/bin/ && sudo chmod +x /usr/local/bin/etcdutl
 ```
 
-##### Option A: Restore from Snapshot File (Recommended)
-
-If you have a previously-created snapshot file:
+##### Restore Snapshot
 
 ```bash
-# On recovery host
-# Backup the restored etcd directory if it exists
 if [ -d "${PGEDGE_DATA_DIR}/etcd" ]; then
     mv "${PGEDGE_DATA_DIR}/etcd" "${PGEDGE_DATA_DIR}/etcd.restored.$(date +%s)"
 fi
 
-# Restore snapshot and reset cluster membership to single node
 etcdutl snapshot restore "${SNAPSHOT_PATH}" \
     --name "${RECOVERY_HOST_ID}" \
     --initial-cluster "${RECOVERY_HOST_ID}=https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
@@ -176,135 +157,71 @@ etcdutl snapshot restore "${SNAPSHOT_PATH}" \
     --mark-compacted \
     --data-dir "${PGEDGE_DATA_DIR}/etcd"
 
-# Verify restore
 ls -la "${PGEDGE_DATA_DIR}/etcd"
 ```
 
-##### Option B: Restore from Existing Data Directory
-
 !!! warning
 
-    For multi-node clusters, you need to create a snapshot file first. However, this typically requires etcd to be running, which may not be possible during total quorum loss. **Best practice: Include snapshot files (`.db`) in your volume backups.**
+    For multi-node clusters, you need a snapshot file. **Best practice: Include snapshot files (`.db`) in your volume backups.**
 
-    If your original cluster was single-node, the restored etcd directory may work, but using `etcdutl snapshot restore` is still recommended for consistency.
-
-#### Step 5: Start Control Plane on Recovery Host
-
-Start the Control Plane service on the recovery host:
+#### Step 1A.5: Start Control Plane
 
 ```bash
-# On Swarm manager node
-# Start only the recovery host (one server-mode host)
 docker service scale control-plane_${RECOVERY_HOST_ID}=1
-
-# Verify service is running
 docker service ps control-plane_${RECOVERY_HOST_ID} --no-trunc
 ```
 
 !!! note "Embedded etcd Handles Initialization Automatically"
 
-    Control Plane automatically detects the restored snapshot and initializes etcd. No manual etcd commands are needed. The recovery host will start as a single-node etcd cluster.
+    Control Plane automatically detects the restored snapshot and initializes etcd. No manual etcd commands are needed.
 
-#### Step 6: Verify Recovery Host
-
-Verify that the recovery host is online and accessible:
+#### Step 1A.6: Verify Recovery Host
 
 ```bash
-# Verify API is accessible
 curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/cluster"
-
-# Verify host is online and check host count
 curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts"
 ```
 
-**Expected Result:**
+**Expected:** API accessible, one host with `status: "reachable"` and `etcd_mode: "server"`.
 
-- API should be accessible
-- One host should show `status: "reachable"` and `etcd_mode: "server"`
-- Server count should be **1**
+Now proceed to [Phase 2: Remove Dead Hosts](#phase-2-remove-dead-hosts).
 
-**Status:** You now have **1 server-mode host online** with quorum restored (1 of 1 = quorum). You need to re-add the other Control Plane server-mode hosts to restore redundancy and full cluster functionality.
+---
 
-## Next Steps
+### Phase 1B: Majority Quorum Loss
 
-After restoring one server-mode host, you now have the same situation as **Majority Quorum Loss** (one host online, but quorum not yet fully restored for multi-node clusters). Continue with the [Majority Quorum Loss Recovery](#step-5-remove-lost-hosts-from-database-specs) section starting from **Step 5: Remove Lost Hosts from Database Specs** to restore the remaining hosts.
+**Use when at least one server-mode host is still online but quorum is lost. Docker Swarm is still functional.**
 
-## Majority Quorum Loss Recovery
+#### Prerequisites
 
-This section covers recovery when **quorum is lost** but **at least one server-mode host is still online**. In this scenario, the Control Plane API may be accessible, but etcd cannot accept writes and database operations cannot proceed until quorum is restored.
-
-### When to Use This Section
-
-Use this section when:
-
-- ✅ **At least one server-mode host is still online**
-- ✅ **Control Plane API is accessible** on at least one host
-- ❌ **Quorum is lost** (more than floor(N/2) server-mode hosts are offline)
-
-**Example:** A cluster with 3 server-mode hosts where 2 hosts have failed. Quorum requires 2 hosts (floor(3/2) + 1 = 2), but only 1 is online, so quorum is lost.
-
-**How to verify:**
-
-```bash
-# Try to access Control Plane API on server-mode hosts
-curl -sS "http://<server-host-ip>:<api-port>/v1/cluster"
-```
-
-If the API is accessible on at least one host, use this section.
-
-### Prerequisites for Majority Quorum Loss
-
-Before beginning recovery, ensure you have:
-
-- **etcd snapshot** (taken before outage)
-- **Recovery host:** One of the remaining online server-mode hosts (already has certificates/config)
+- **etcd snapshot** (taken before outage) or ability to create one from the surviving host
+- **Recovery host:** One of the remaining online server-mode hosts
 
 !!! important "Reset Cluster Membership for Multi-Node Clusters"
 
-    If your cluster previously had more than one node, you **must** use `etcdutl snapshot restore` to reset cluster membership. Simply copying the etcd directory will not work—the cluster membership needs to be reset to a single node.
+    If your cluster previously had more than one node, you **must** use `etcdutl snapshot restore` to reset cluster membership.
 
-### Recovery Steps for Majority Quorum Loss
-
-#### Step 1: Backup Existing etcd Data
-
-Before restoring, create a backup of any existing etcd data on the recovery host:
+#### Step 1B.1: Backup Existing etcd Data
 
 ```bash
-# On recovery host
 if [ -d "${PGEDGE_DATA_DIR}/etcd" ]; then
     mv "${PGEDGE_DATA_DIR}/etcd" "${PGEDGE_DATA_DIR}/etcd.backup.$(date +%s)"
 fi
 ```
 
-#### Step 2: Restore etcd Data
-
-You can restore etcd data using one of two approaches:
-
-- **Option A: Restore from Existing Data Directory** - Use this when the recovery host still has its etcd data directory intact from before the outage (typical scenario)
-- **Option B: Restore from Snapshot File** - Use this when you have a previously-created snapshot file
+#### Step 1B.2: Restore etcd from Snapshot
 
 ##### Install etcdutl
 
-See [Install etcdutl](#install-etcdutl) in the Total Quorum Loss Recovery section.
+See [Install etcdutl](#install-etcdutl) in Phase 1A.
 
-##### Option A: Restore from Existing Data Directory
-
-Use this when the recovery host still has its etcd data directory intact from before the outage. This is the typical scenario when recovering from losing other machines in the cluster.
-
-!!! note
-
-    Even though you're using the existing data directory, you still need to use `etcdutl snapshot restore` to reset the cluster membership to a single node. You'll need a snapshot file—either use a pre-existing snapshot file from your backups (recommended—use Option B), or create a snapshot from the existing directory if etcd is still accessible.
-
-**If etcd is still accessible** (Control Plane service is running, even if quorum is lost), you can create a snapshot from the existing directory:
+##### Option A: Create Snapshot from Existing Data (if etcd is accessible)
 
 ```bash
-# On recovery host
-# Extract credentials from config (manually parse JSON or use available tools)
-# ETCD_USER="<etcd-username-from-generated.config.json>"
-# ETCD_PASS="<etcd-password-from-generated.config.json>"
+# Extract credentials from generated.config.json
+# ETCD_USER="<etcd-username>"
+# ETCD_PASS="<etcd-password>"
 
-# Create snapshot from existing etcd directory
-# Note: This requires etcd to be accessible. If etcd is not running, use Option B with a pre-existing snapshot.
 ETCDCTL_API=3 etcdctl snapshot save "${PGEDGE_DATA_DIR}/snapshot.db" \
     --endpoints "https://localhost:${ETCD_CLIENT_PORT}" \
     --cacert "${PGEDGE_DATA_DIR}/certificates/ca.crt" \
@@ -313,7 +230,6 @@ ETCDCTL_API=3 etcdctl snapshot save "${PGEDGE_DATA_DIR}/snapshot.db" \
     --user "${ETCD_USER}" \
     --password "${ETCD_PASS}"
 
-# Now restore from the snapshot to reset cluster membership
 etcdutl snapshot restore "${PGEDGE_DATA_DIR}/snapshot.db" \
     --name "${RECOVERY_HOST_ID}" \
     --initial-cluster "${RECOVERY_HOST_ID}=https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
@@ -323,153 +239,513 @@ etcdutl snapshot restore "${PGEDGE_DATA_DIR}/snapshot.db" \
     --data-dir "${PGEDGE_DATA_DIR}/etcd"
 ```
 
-**If etcd is not accessible** (service stopped or quorum lost), use Option B with a pre-existing snapshot file from your backups.
+##### Option B: Use Pre-existing Snapshot File
 
-##### Option B: Restore from Snapshot File
+If you have a snapshot file from your backups, follow the [Restore Snapshot](#restore-snapshot) steps in Phase 1A.
 
-If you have a previously-created snapshot file, see [Option A: Restore from Snapshot File (Recommended)](#option-a-restore-from-snapshot-file-recommended).
+#### Step 1B.3: Start Control Plane
 
-#### Step 3: Start Control Plane
+```bash
+docker service scale control-plane_${RECOVERY_HOST_ID}=1
+docker service ps control-plane_${RECOVERY_HOST_ID} --no-trunc
+```
 
-See [Step 5: Start Control Plane on Recovery Host](#step-5-start-control-plane-on-recovery-host).
+#### Step 1B.4: Verify Recovery Host
 
-#### Step 4: Verify Recovery Host
+```bash
+curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/cluster"
+curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts"
+```
 
-See [Step 6: Verify Recovery Host](#step-6-verify-recovery-host).
+**Expected:** API accessible, one host with `status: "reachable"` and `etcd_mode: "server"`.
 
-**Status:** You now have **1 server-mode host online**. Quorum is **not yet restored**. Continue to restore quorum.
+Now proceed to [Phase 2: Remove Dead Hosts](#phase-2-remove-dead-hosts).
 
-#### Step 5: Remove Lost Hosts from Database Specs
+---
 
-Before removing host records, update all databases to remove lost hosts from their node's `host_ids` arrays. This ensures databases only reference hosts that are available or will be recovered.
+### Phase 1C: etcd and Docker Swarm Quorum Loss
 
-For each database, update the spec to remove lost host IDs from each node's `host_ids` array. Only include hosts that are currently online or will be recovered. See [Updating a Database](../using/update-db.md) for details.
+**Use when both etcd and Docker Swarm have lost quorum because the majority of hosts are destroyed.**
+
+!!! note
+
+    If Docker Swarm is still functional (only etcd lost quorum), use [Phase 1B](#phase-1b-majority-quorum-loss) instead.
+
+#### Step 1C.1: Recover Docker Swarm
+
+Re-initialize Swarm as a single-node cluster on the surviving host:
+
+```bash
+sudo docker swarm init --force-new-cluster --advertise-addr ${RECOVERY_HOST_IP}
+```
+
+Verify:
+
+```bash
+sudo docker node ls
+```
+
+Example output:
+
+```
+ID                            HOSTNAME      STATUS    AVAILABILITY   MANAGER STATUS
+4aoqjp3q8jcny4kec5nadcn6x     lima-host-1   Down      Active         Unreachable
+959g9937i62judknmr40kcw9r *   lima-host-2   Ready     Active         Leader
+l0l51d890edg3f0ccd0xppw06     lima-host-3   Down      Active         Unreachable
+```
+
+#### Step 1C.2: Remove Dead Swarm Nodes
+
+```bash
+# Demote dead managers first (if they were managers)
+docker node demote <DEAD_HOSTNAME_1> <DEAD_HOSTNAME_2>
+
+# Force remove dead nodes
+docker node rm --force <DEAD_HOSTNAME_1> <DEAD_HOSTNAME_2>
+```
+
+Example:
+
+```bash
+docker node demote lima-host-1 lima-host-3
+docker node rm --force lima-host-1 lima-host-3
+```
+
+#### Step 1C.3: Clean Up Orphaned Services
+
+Remove services constrained to destroyed nodes:
+
+```bash
+# Remove Control Plane services for dead hosts
+sudo docker service rm control-plane_<DEAD_HOST_ID_1> control-plane_<DEAD_HOST_ID_2>
+
+# List and remove orphaned Postgres services
+sudo docker service ls
+sudo docker service rm <orphaned-postgres-service-1> <orphaned-postgres-service-2>
+```
+
+Example:
+
+```bash
+sudo docker service rm control-plane_host-1 control-plane_host-3
+sudo docker service rm postgres-storefront-n1-689qacsi postgres-storefront-n3-ant97dj4
+```
+
+#### Step 1C.4: Restore Container Registry
+
+The registry may have been on a destroyed host. Recreate it:
+
+```bash
+sudo docker service rm registry ghcr-mirror 2>/dev/null
+
+sudo docker service create --name registry \
+    --constraint "node.hostname==${RECOVERY_HOSTNAME}" \
+    --publish published=5000,target=5000 \
+    --mount type=volume,source=registry-data,target=/var/lib/registry \
+    registry:2
+```
+
+#### Step 1C.5: Build and Push Control Plane Image
+
+On the surviving host:
+
+```bash
+mkdir -p /tmp/control-plane-build
+```
+
+From your **build machine**, copy files to the surviving host:
+
+```bash
+scp -F <ssh-config-file> <path-to>/Dockerfile <remote-host>:/tmp/control-plane-build/
+scp -F <ssh-config-file> <path-to>/control-plane_${ARCHIVE_VERSION}_linux_<arch>.tar.gz <remote-host>:/tmp/control-plane-build/
+```
+
+Example:
+
+```bash
+scp -F ~/.lima/host-2/ssh.config control-plane/docker/control-plane/Dockerfile lima-host-2:/tmp/control-plane-build/
+scp -F ~/.lima/host-2/ssh.config control-plane/dist/control-plane_0.6.2_linux_arm64.tar.gz lima-host-2:/tmp/control-plane-build/
+```
+
+Build and push:
+
+```bash
+cd /tmp/control-plane-build
+sudo docker build . \
+    --build-arg=ARCHIVE_VERSION=${ARCHIVE_VERSION} \
+    --tag=127.0.0.1:5000/control-plane:latest \
+    --push
+```
+
+#### Step 1C.6: Start Control Plane with ForceNewCluster
+
+```bash
+sudo docker service rm control-plane_${RECOVERY_HOST_ID}
+
+sudo docker service create \
+    --name control-plane_${RECOVERY_HOST_ID} \
+    --constraint "node.hostname==${RECOVERY_HOSTNAME}" \
+    --env PGEDGE_IPV4_ADDRESS=${RECOVERY_HOST_IP} \
+    --env PGEDGE_HOST_ID=${RECOVERY_HOST_ID} \
+    --env PGEDGE_DATA_DIR=/data/control-plane \
+    --env PGEDGE_DOCKER_SWARM__IMAGE_REPOSITORY_HOST=127.0.0.1:5001/pgedge \
+    --env PGEDGE_ETCD_SERVER__FORCE_NEW_CLUSTER=true \
+    --mount type=bind,source=/data/control-plane,destination=/data/control-plane \
+    --mount type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock \
+    --network host \
+    127.0.0.1:5000/control-plane:latest run
+```
+
+!!! note
+
+    `PGEDGE_ETCD_SERVER__FORCE_NEW_CLUSTER=true` tells etcd to discard old cluster membership and start as a single-node cluster using existing data. A sentinel file prevents re-application on subsequent restarts.
+
+#### Step 1C.7: Verify Recovery Host
+
+```sh
+curl http://${RECOVERY_HOST_EXTERNAL_IP}:${API_PORT}/v1/databases
+```
+
+Example response:
+
+```json
+{
+  "databases": [
+    {
+      "id": "storefront",
+      "state": "available",
+      "instances": [
+        { "host_id": "host-1", "node_name": "n1", "state": "unknown" },
+        { "host_id": "host-2", "node_name": "n2", "state": "available" },
+        { "host_id": "host-3", "node_name": "n3", "state": "unknown" }
+      ]
+    }
+  ]
+}
+```
+
+Instances on destroyed hosts show `state: "unknown"`, surviving instances show `state: "available"`.
+
+Now proceed to [Phase 2: Remove Dead Hosts](#phase-2-remove-dead-hosts).
+
+---
+
+## Phase 2: Remove Dead Hosts
+
+After Phase 1, you have one server-mode host running. Now remove dead host records and clean up databases.
+
+### Step 2.1: Update Databases to Remove Dead Hosts
+
+Use the `remove_host` query parameter to remove instances from destroyed hosts:
+
+```sh
+curl -X POST "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/databases/<DB_ID>?remove_host=<DEAD_HOST_1>&remove_host=<DEAD_HOST_2>" \
+    -H "Content-Type: application/json" \
+    -d '<updated-database-spec>'
+```
+
+Example:
+
+```sh
+curl -X POST "http://${RECOVERY_HOST_IP}:3000/v1/databases/storefront?remove_host=host-1&remove_host=host-3" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "spec": {
+            "database_name": "storefront",
+            "database_users": [
+                {
+                    "username": "admin",
+                    "db_owner": true,
+                    "attributes": ["SUPERUSER", "LOGIN"]
+                }
+            ],
+            "nodes": [
+                { "name": "n2", "host_ids": ["host-2"] }
+            ]
+        }
+    }'
+```
 
 **Important:** Wait for each database update task to complete before proceeding. Monitor task status using the [Tasks and Logs](../using/tasks-logs.md) documentation.
 
-#### Step 6: Remove Lost Host Records
+### Step 2.2: Force Remove Dead Host Records
 
 Remove stale host records **one at a time**, waiting for each task to complete:
 
-```bash
-# For each lost host
-LOST_HOST_ID="<lost-host-id>"
-
-RESP=$(curl -sS -X DELETE "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts/${LOST_HOST_ID}?force=true")
-echo "${RESP}"
+```sh
+curl -X DELETE "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts/<DEAD_HOST_1>?force=true"
+curl -X DELETE "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts/<DEAD_HOST_2>?force=true"
 ```
-
-**Important:** The delete operation is asynchronous and returns a task. Monitor the task status using the [Tasks and Logs](../using/tasks-logs.md) documentation. Wait for each deletion task to complete before proceeding to the next host.
 
 !!! important "Remove Hosts in Order"
 
-    Remove server-mode hosts first, then client-mode hosts. Work **one host at a time** and wait for each deletion task to complete before proceeding.
+    Remove server-mode hosts first, then client-mode hosts. Work **one host at a time** and wait for each deletion task to complete.
 
-#### Step 7: Rejoin Server-Mode Hosts Until Quorum Restored
+### Step 2.3: Verify Cleanup
 
-Rejoin server-mode hosts **one at a time** until quorum threshold is reached.
-
-For each lost server-mode host:
-
-##### 7a. Stop Service
-
-```bash
-# On Swarm manager node
-LOST_SERVER_HOST_ID="<lost-server-host-id>"
-docker service scale control-plane_${LOST_SERVER_HOST_ID}=0
+```sh
+curl http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts
+curl http://${RECOVERY_HOST_IP}:${API_PORT}/v1/databases
 ```
 
-##### 7b. Clear State
+Example databases response after cleanup:
+
+```json
+{
+  "databases": [
+    {
+      "id": "storefront",
+      "state": "available",
+      "instances": [
+        { "host_id": "host-2", "node_name": "n2", "state": "available" }
+      ]
+    }
+  ]
+}
+```
+
+Expected:
+
+- Only the recovery host remains in the hosts list with `etcd_mode: "server"`, `has_quorum: true`, `total_members: 1`, `started_members: 1`
+- Databases show `state: "available"` with only surviving instances
+
+---
+
+## Phase 3: Rejoin or Provision Hosts
+
+Determine which path applies for each host being restored:
+
+| Condition | Path |
+|-----------|------|
+| Host is accessible (SSH works, Docker running, still in Swarm) | [Path A: Rejoin Existing Host](#phase-3a-rejoin-existing-host) |
+| Host is destroyed (needs new infrastructure) | [Path B: Provision New Host](#phase-3b-provision-new-host) |
+
+### Phase 3A: Rejoin Existing Host
+
+**Use when the lost host is still reachable and part of Docker Swarm.**
+
+#### Step 3A.1: Stop the Host Service
 
 ```bash
-# On lost host node
+LOST_HOST_ID="<lost-host-id>"
+docker service scale control-plane_${LOST_HOST_ID}=0
+```
+
+#### Step 3A.2: Clear Host State
+
+SSH to the lost host:
+
+**For server-mode hosts:**
+
+```bash
 rm -rf "${PGEDGE_DATA_DIR}/etcd"
 rm -rf "${PGEDGE_DATA_DIR}/certificates"
 rm -f "${PGEDGE_DATA_DIR}/generated.config.json"
 ```
 
-##### 7c. Start Service
+**For client-mode hosts:**
 
 ```bash
-# On Swarm manager node
-docker service scale control-plane_${LOST_SERVER_HOST_ID}=1
+rm -f "${PGEDGE_DATA_DIR}/generated.config.json"
 ```
 
-##### 7d. Join the Lost Host to the Cluster
-
-Join the lost host to the cluster. See [Initializing the Control Plane](../installation/installation.md#initializing-the-control-plane).
-
-##### 7e. Verify Host Joined
+#### Step 3A.3: Start the Host Service
 
 ```bash
-# Verify the host is online and reachable
-curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts"
-# Look for the host with id matching ${LOST_SERVER_HOST_ID}
-# Verify it shows status: "reachable" and etcd_mode: "server"
+docker service scale control-plane_${LOST_HOST_ID}=1
 ```
 
-##### 7f. Check Quorum Status
+If Swarm no longer has the service definition:
 
 ```bash
-TOTAL_SERVER_HOSTS=<total-server-mode-hosts>
-QUORUM_THRESHOLD=$(( (TOTAL_SERVER_HOSTS / 2) + 1 ))
-
-# Check hosts endpoint to count server-mode hosts
-HOSTS_RESP=$(curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts")
-echo "${HOSTS_RESP}"
-# Count the number of hosts with "etcd_mode": "server" in the response
-# If count >= QUORUM_THRESHOLD, quorum is restored
+docker stack deploy -c <path-to-stack-yaml> control-plane
 ```
 
-**Decision:**
+Now proceed to [Phase 3C: Join Control Plane Cluster](#phase-3c-join-control-plane-cluster).
 
-- If count < threshold: Repeat 7a-7f for next server-mode host
-- If count >= threshold: Quorum restored! Proceed to Step 8
+---
 
-#### Step 8: Rejoin Remaining Server-Mode Hosts
+### Phase 3B: Provision New Host
 
-After quorum is restored, rejoin any remaining server-mode hosts using Steps 7a-7e (skip 7f, as quorum is already restored).
+**Use when the host is destroyed and must be recreated from scratch.**
 
-#### Step 9: Rejoin Client-Mode Hosts
+#### Step 3B.1: Create New Host
 
-!!! important "Only After Quorum is Restored"
-
-    Only proceed with rejoining client-mode hosts after Step 7f confirms quorum is restored.
-
-For client-mode host recovery, see the [Partial Recovery](partial-recovery.md) guide. The process for rejoining client-mode hosts is the same whether quorum is intact or was lost and restored.
-
-#### Step 10: Restart All Hosts
-
-Restart all Control Plane services to ensure everything is synchronized:
+Provision the replacement host. For Lima-based environments:
 
 ```bash
-# Scale all to zero
-docker service scale control-plane_<host-id-1>=0
-docker service scale control-plane_<host-id-2>=0
-# ... repeat for all hosts
-
-# Scale all to one
-docker service scale control-plane_<host-id-1>=1
-docker service scale control-plane_<host-id-2>=1
-# ... repeat for all hosts
+cd e2e/fixtures
+ansible-playbook \
+    --extra-vars='@vars/lima.yaml' \
+    --extra-vars='@vars/small.yaml' \
+    --extra-vars='target_host=<host-id>' \
+    setup_new_host.yaml
 ```
 
-#### Step 11: Final Verification
+#### Step 3B.2: Join Docker Swarm
 
-Verify that all hosts are online and all databases are available:
+On the recovery host, get the Swarm join token:
 
 ```bash
-# Check hosts
-curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts"
-
-# Check databases
-curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/databases"
+docker swarm join-token manager   # for manager nodes
+docker swarm join-token worker    # for worker nodes
 ```
 
-**Expected:**
+On the new host:
 
-- All hosts: `status: "reachable"`
-- All databases: `state: "available"`
+```bash
+docker swarm join --token SWMTKN-1-xxx...xxx ${RECOVERY_HOST_IP}:2377
+```
+
+Verify:
+
+```bash
+docker node ls
+```
+
+#### Step 3B.3: Deploy Control Plane Service
+
+On the new host:
+
+```bash
+sudo mkdir -p /data/control-plane
+```
+
+On any manager node:
+
+```bash
+docker stack deploy -c <path-to-stack-yaml> control-plane
+```
+
+Verify:
+
+```bash
+docker service ps control-plane_<HOST_ID>
+```
+
+Now proceed to [Phase 3C: Join Control Plane Cluster](#phase-3c-join-control-plane-cluster).
+
+---
+
+### Phase 3C: Join Control Plane Cluster
+
+This step is the same regardless of whether the host was rejoined (3A) or provisioned new (3B).
+
+#### Step 3C.1: Get Join Token
+
+```sh
+JOIN_TOKEN="$(curl http://${RECOVERY_HOST_IP}:${API_PORT}/v1/cluster/join-token)"
+```
+
+#### Step 3C.2: Join the Cluster
+
+Call the join API **on the host being added** (not on an existing member):
+
+```sh
+curl -X POST http://<NEW_HOST_IP>:${API_PORT}/v1/cluster/join \
+    -H 'Content-Type:application/json' \
+    --data "${JOIN_TOKEN}"
+```
+
+!!! important
+
+    The join-cluster API must be called on the host being added, not on an existing cluster member.
+
+#### Step 3C.3: Verify Host Joined
+
+```sh
+curl http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts
+```
+
+The host should appear with `status: "reachable"` and the correct `etcd_mode`.
+
+#### Repeat for Each Host
+
+Repeat Phase 3 (A or B, then C) for each lost host. Recover **server-mode hosts first**, then client-mode hosts.
+
+---
+
+## Phase 4: Restore Database Capacity
+
+### Step 4.1: Update Database with All Nodes
+
+Add the restored hosts back to the database spec:
+
+```sh
+curl -X POST http://${RECOVERY_HOST_IP}:${API_PORT}/v1/databases/<DB_ID> \
+    -H 'Content-Type:application/json' \
+    --data '{
+        "spec": {
+            "database_name": "<DB_NAME>",
+            "database_users": [
+                {
+                    "username": "admin",
+                    "db_owner": true,
+                    "attributes": ["SUPERUSER", "LOGIN"]
+                }
+            ],
+            "nodes": [
+                { "name": "n1", "host_ids": ["host-1"] },
+                { "name": "n2", "host_ids": ["host-2"] },
+                { "name": "n3", "host_ids": ["host-3"] }
+            ]
+        }
+    }'
+```
+
+To use a specific source node for data synchronization:
+
+```json
+{ "name": "n3", "host_ids": ["host-3"], "source_node": "n2" }
+```
+
+### Step 4.2: Monitor Database Update
+
+```sh
+curl http://${RECOVERY_HOST_IP}:${API_PORT}/v1/databases/<DB_ID>/tasks/<TASK_ID>
+curl http://${RECOVERY_HOST_IP}:${API_PORT}/v1/databases/<DB_ID>/tasks/<TASK_ID>/log
+```
+
+---
+
+## Phase 5: Final Verification
+
+```sh
+curl http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts
+curl http://${RECOVERY_HOST_IP}:${API_PORT}/v1/databases
+```
+
+Example databases response after full recovery:
+
+```json
+{
+  "databases": [
+    {
+      "id": "storefront",
+      "state": "available",
+      "instances": [
+        { "host_id": "host-1", "node_name": "n1", "state": "available" },
+        { "host_id": "host-2", "node_name": "n2", "state": "available" },
+        { "host_id": "host-3", "node_name": "n3", "state": "available" }
+      ]
+    }
+  ]
+}
+```
+
+Confirm:
+
+- [ ] All hosts show `status: "reachable"`
+- [ ] Server-mode hosts show `etcd_mode: "server"`
+- [ ] Client-mode hosts show `etcd_mode: "client"`
+- [ ] etcd health shows `has_quorum: true` with correct member count
+- [ ] All databases show `state: "available"`
+- [ ] All database instances show `state: "available"`
+- [ ] All subscriptions show `status: "replicating"`
+- [ ] Docker Swarm shows all nodes `Ready` with correct manager status
+- [ ] Data replicates correctly across all nodes
+
+---
 
 ## Common Issues
 
@@ -477,7 +753,7 @@ curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/databases"
 
 **Cause:** Host record still exists in etcd.
 
-**Fix:** Remove lost hosts from database specs (Step 5 for Majority Quorum Loss), then remove host record (Step 6 for Majority Quorum Loss) and wait for task completion before rejoining. For Total Quorum Loss, follow the Next Steps section which directs you to Majority Quorum Loss Step 5.
+**Fix:** Complete Phase 2 (remove dead hosts) and wait for tasks to complete before rejoining.
 
 ### etcd certificate errors
 
@@ -491,14 +767,64 @@ curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/databases"
 
 **Fix:** Verify you've rejoined enough hosts to meet quorum threshold. Count only server-mode hosts.
 
+### Docker Swarm commands hang
+
+**Cause:** Swarm quorum is lost.
+
+**Fix:** Run `docker swarm init --force-new-cluster` on the surviving manager (Phase 1C, Step 1C.1).
+
+### "service already exists" when deploying stack
+
+**Cause:** Manually created services conflict with the stack deployment.
+
+**Fix:** Remove the conflicting service first (`docker service rm <service-name>`), then redeploy the stack.
+
+### Control Plane API hangs after ForceNewCluster
+
+**Cause:** etcd auth may not have been properly re-enabled during ForceNewCluster recovery.
+
+**Fix:** Check service logs (`docker service logs control-plane_<HOST_ID>`). The service handles auth disable/re-enable automatically. If issues persist, restart the service.
+
+### Image pull fails on new hosts
+
+**Cause:** Container registry was running on a destroyed host.
+
+**Fix:** Recreate the registry on the surviving host (Phase 1C, Step 1C.4) and ensure new hosts can reach it.
+
+### "etcd already initialized" error
+
+**Cause:** Stale etcd data on a host being joined.
+
+**Fix:** Clear the data directory before joining:
+
+```bash
+rm -rf ${PGEDGE_DATA_DIR}/etcd
+rm -rf ${PGEDGE_DATA_DIR}/certificates
+rm -f ${PGEDGE_DATA_DIR}/generated.config.json
+```
+
 ### Control Plane fails to start
 
 **Cause:** Old etcd processes still running or conflicting state.
 
 **Fix:**
-- Stop all Control Plane services: `docker service scale control-plane_<host-id>=0`
-- Verify services are stopped: `docker service ls --filter name=control-plane`
-- Clear host state:
-  - For Majority Quorum Loss: See Step 7b (Clear State)
-  - For Total Quorum Loss: Remove the etcd directory, certificates, and generated.config.json, then repeat Steps 3-6
-- Restart the service: `docker service scale control-plane_<host-id>=1`
+
+- Stop service: `docker service scale control-plane_<host-id>=0`
+- Clear host state (see Step 3A.2)
+- Restart: `docker service scale control-plane_<host-id>=1`
+
+---
+
+## Summary
+
+| Phase | Step | Action | Applies To |
+|-------|------|--------|------------|
+| 1A | 1A.1–1A.6 | Restore from snapshot, start CP | Total Quorum Loss |
+| 1B | 1B.1–1B.4 | Snapshot from existing data, start CP | Majority Quorum Loss |
+| 1C | 1C.1–1C.7 | Recover Swarm, registry, ForceNewCluster | etcd + Swarm Loss |
+| 2 | 2.1–2.3 | Remove dead hosts and clean databases | All |
+| 3A | 3A.1–3A.3 | Clear state and restart existing host | Host Accessible |
+| 3B | 3B.1–3B.3 | Provision new host, join Swarm, deploy | Host Destroyed |
+| 3C | 3C.1–3C.3 | Join Control Plane cluster | All |
+| 4 | 4.1–4.2 | Restore database capacity | All |
+| 5 | — | Final verification | All |

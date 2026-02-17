@@ -1,4 +1,4 @@
-# Partial Recovery — etcd and Docker Swarm (Quorum Intact)
+# Partial Failure Recovery (Quorum Intact)
 
 This guide covers recovery of both the **etcd cluster** and **Docker Swarm** when quorum remains intact but one or more hosts are lost. Because the etcd cluster can still accept writes and Docker Swarm has enough managers, the Control Plane API and service orchestration remain operational throughout recovery.
 
