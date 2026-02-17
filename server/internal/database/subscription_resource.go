@@ -55,6 +55,7 @@ func (s *SubscriptionResource) Dependencies() []resource.Identifier {
 	deps := []resource.Identifier{
 		NodeResourceIdentifier(s.SubscriberNode),
 		NodeResourceIdentifier(s.ProviderNode),
+		ReplicationSlotResourceIdentifier(s.ProviderNode, s.SubscriberNode),
 	}
 	deps = append(deps, s.ExtraDependencies...)
 	return deps
@@ -210,14 +211,12 @@ func (s *SubscriptionResource) Update(ctx context.Context, rc *resource.Context)
 func (s *SubscriptionResource) Delete(ctx context.Context, rc *resource.Context) error {
 	subscriber, err := GetPrimaryInstance(ctx, rc, s.SubscriberNode)
 	if err != nil {
-		// Subscriber instance doesn't exist - subscription is already gone
-		return nil
+		return fmt.Errorf("failed to get subscriber instance: %w", err)
 	}
 
 	conn, err := subscriber.Connection(ctx, rc, subscriber.Spec.DatabaseName)
 	if err != nil {
-		// Can't connect to subscriber - subscription is already gone
-		return nil
+		return fmt.Errorf("failed to connect to database %q: %w", subscriber.Spec.DatabaseName, err)
 	}
 	defer conn.Close(ctx)
 
@@ -226,36 +225,7 @@ func (s *SubscriptionResource) Delete(ctx context.Context, rc *resource.Context)
 		return fmt.Errorf("failed to drop subscription %q: %w", s.SubscriberNode, err)
 	}
 
-	// Best-effort: clean up the replication slot on the provider side.
-	// When the provider node is being removed, this will fail gracefully.
-	// When the provider is alive, this prevents orphaned slots from
-	// accumulating WAL.
-	s.cleanupProviderSlot(ctx, rc)
-
 	return nil
-}
-
-// cleanupProviderSlot drops the replication slot on the provider node that was
-// serving this subscription. This is best-effort — if the provider is
-// unreachable (e.g., it's the node being removed), we skip silently since the
-// slot will be gone with the node.
-func (s *SubscriptionResource) cleanupProviderSlot(ctx context.Context, rc *resource.Context) {
-	provider, err := GetPrimaryInstance(ctx, rc, s.ProviderNode)
-	if err != nil {
-		return // Provider gone, slot gone with it
-	}
-
-	conn, err := provider.Connection(ctx, rc, provider.Spec.DatabaseName)
-	if err != nil {
-		return // Can't reach provider, best effort
-	}
-	defer conn.Close(ctx)
-
-	_ = postgres.DropReplicationSlot(
-		provider.Spec.DatabaseName,
-		s.ProviderNode,
-		s.SubscriberNode,
-	).Exec(ctx, conn)
 }
 
 func GetPrimaryInstance(ctx context.Context, rc *resource.Context, nodeName string) (*InstanceResource, error) {

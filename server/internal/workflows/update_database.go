@@ -114,22 +114,6 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		return nil, handleError(err)
 	}
 
-	// Capture removed node names before applyPlans mutates the state.
-	// The spec has already had removed hosts filtered out, so nodes in
-	// the current state that are NOT in the spec are being removed.
-	var removedNodeNames []string
-	if len(input.RemoveHosts) > 0 {
-		survivingNodes := make(map[string]bool, len(input.Spec.Nodes))
-		for _, node := range input.Spec.Nodes {
-			survivingNodes[node.Name] = true
-		}
-		for _, rd := range current.GetAll(database.ResourceTypeNode) {
-			if !survivingNodes[rd.Identifier.ID] {
-				removedNodeNames = append(removedNodeNames, rd.Identifier.ID)
-			}
-		}
-	}
-
 	err = w.applyPlans(ctx, input.Spec.DatabaseID, input.TaskID, current, planOutput.Plans, input.RemoveHosts...)
 	if err != nil {
 		return nil, handleError(err)
@@ -168,54 +152,15 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 		}
 	}
 
-	// Clean up orphaned replication slots on surviving provider nodes.
-	// When a subscriber node is removed, the slots on each surviving
-	// provider that were serving that subscriber need to be dropped to
-	// prevent WAL accumulation.
-	if len(removedNodeNames) > 0 {
-		if err := w.cleanupOrphanedSlots(ctx, input.Spec, current, removedNodeNames); err != nil {
-			// Slot cleanup failure is non-fatal — log and continue.
-			// Slots can be cleaned up manually or by future monitoring.
-			logger.With("error", err).Warn("failed to clean up some orphaned replication slots")
-		}
-	}
-
-	// Determine the final database state. After a host removal, validate
-	// that surviving subscriptions are healthy before declaring available.
-	finalState := database.DatabaseStateAvailable
-	if len(removedNodeNames) > 0 {
-		refreshInput := &RefreshCurrentStateInput{
-			DatabaseID: input.Spec.DatabaseID,
-			TaskID:     input.TaskID,
-		}
-		refreshOutput, refreshErr := w.ExecuteRefreshCurrentState(ctx, refreshInput).Get(ctx)
-		if refreshErr != nil {
-			logger.With("error", refreshErr).Warn("post-removal validation refresh failed, setting state to degraded")
-			finalState = database.DatabaseStateDegraded
-		} else {
-			// Check if any subscription resources have errors
-			for _, rd := range refreshOutput.State.GetAll(database.ResourceTypeSubscription) {
-				if rd.Error != "" {
-					logger.Warn("subscription has error after recovery",
-						"subscription", rd.Identifier.ID,
-						"error", rd.Error,
-					)
-					finalState = database.DatabaseStateDegraded
-					break
-				}
-			}
-		}
-	}
-
 	updateStateInput := &activities.UpdateDbStateInput{
 		DatabaseID: input.Spec.DatabaseID,
-		State:      finalState,
+		State:      database.DatabaseStateAvailable,
 	}
 	_, err = w.Activities.
 		ExecuteUpdateDbState(ctx, updateStateInput).
 		Get(ctx)
 	if err != nil {
-		return nil, handleError(fmt.Errorf("failed to update database state to %s: %w", finalState, err))
+		return nil, handleError(fmt.Errorf("failed to update database state to available: %w", err))
 	}
 
 	updateTaskInput = &activities.UpdateTaskInput{

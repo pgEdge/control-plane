@@ -51,9 +51,17 @@ func TestUpdateDatabase(t *testing.T) {
 				PrimaryInstanceID: n2Instance1.InstanceID(),
 				InstanceIDs:       []string{n2Instance1.InstanceID()},
 			},
+			&database.ReplicationSlotResource{
+				ProviderNode:   "n2",
+				SubscriberNode: "n1",
+			},
 			&database.SubscriptionResource{
 				SubscriberNode: "n1",
 				ProviderNode:   "n2",
+			},
+			&database.ReplicationSlotResource{
+				ProviderNode:   "n1",
+				SubscriberNode: "n2",
 			},
 			&database.SubscriptionResource{
 				SubscriberNode: "n2",
@@ -89,25 +97,49 @@ func TestUpdateDatabase(t *testing.T) {
 				PrimaryInstanceID: n3Instance1.InstanceID(),
 				InstanceIDs:       []string{n3Instance1.InstanceID()},
 			},
+			&database.ReplicationSlotResource{
+				ProviderNode:   "n2",
+				SubscriberNode: "n1",
+			},
 			&database.SubscriptionResource{
 				SubscriberNode: "n1",
 				ProviderNode:   "n2",
+			},
+			&database.ReplicationSlotResource{
+				ProviderNode:   "n1",
+				SubscriberNode: "n2",
 			},
 			&database.SubscriptionResource{
 				SubscriberNode: "n2",
 				ProviderNode:   "n1",
 			},
+			&database.ReplicationSlotResource{
+				ProviderNode:   "n3",
+				SubscriberNode: "n1",
+			},
 			&database.SubscriptionResource{
 				SubscriberNode: "n1",
 				ProviderNode:   "n3",
+			},
+			&database.ReplicationSlotResource{
+				ProviderNode:   "n1",
+				SubscriberNode: "n3",
 			},
 			&database.SubscriptionResource{
 				SubscriberNode: "n3",
 				ProviderNode:   "n1",
 			},
+			&database.ReplicationSlotResource{
+				ProviderNode:   "n3",
+				SubscriberNode: "n2",
+			},
 			&database.SubscriptionResource{
 				SubscriberNode: "n2",
 				ProviderNode:   "n3",
+			},
+			&database.ReplicationSlotResource{
+				ProviderNode:   "n2",
+				SubscriberNode: "n3",
 			},
 			&database.SubscriptionResource{
 				SubscriberNode: "n3",

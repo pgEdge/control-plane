@@ -25,7 +25,6 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.CancelSwitchover),
 		work.RegisterActivity(a.CheckClusterHealth),
 		work.RegisterActivity(a.CleanupInstance),
-		work.RegisterActivity(a.CleanupOrphanedSlots),
 		work.RegisterActivity(a.CreatePgBackRestBackup),
 		work.RegisterActivity(a.CreateServiceUser),
 		work.RegisterActivity(a.DeleteDbEntities),

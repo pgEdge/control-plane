@@ -61,6 +61,14 @@
     [
       {
         "type": "create",
+        "resource_id": "database.replication_slot::n1n2",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
         "resource_id": "database.subscription::n1n2",
         "reason": "does_not_exist",
         "diff": null
@@ -84,6 +92,14 @@
     ]
   ],
   [
+    [
+      {
+        "type": "create",
+        "resource_id": "database.replication_slot::n2n1",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
     [
       {
         "type": "update",

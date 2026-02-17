@@ -45,6 +45,38 @@
     [
       {
         "type": "delete",
+        "resource_id": "database.replication_slot::n1n2",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.replication_slot::n1n3",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.replication_slot::n2n1",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.replication_slot::n2n3",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.replication_slot::n3n1",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.replication_slot::n3n2",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
         "resource_id": "database.node::n1",
         "diff": null
       },

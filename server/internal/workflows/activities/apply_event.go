@@ -38,16 +38,8 @@ func (a *Activities) ExecuteApplyEvent(
 		return nil, fmt.Errorf("failed to resolve executor for %s resource %s: %w", identifier.Type, identifier.ID, err)
 	}
 
-	// For events targeting removed hosts:
-	// - Refresh/Create/Update: Skip (host unreachable)
-	// - Delete: Execute on local host (just cleans up state, doesn't need the actual host)
 	for _, id := range input.RemoveHosts {
 		if queue == utils.HostQueue(id) {
-			if input.Event.Type == resource.EventTypeDelete {
-				// Delete events just remove from etcd - execute on local host
-				queue = utils.HostQueue(a.Config.HostID)
-				break
-			}
 			return nil, ErrHostRemoved
 		}
 	}

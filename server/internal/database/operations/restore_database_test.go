@@ -53,9 +53,17 @@ func TestRestoreDatabase(t *testing.T) {
 				PrimaryInstanceID: n2Instance1.InstanceID(),
 				InstanceIDs:       []string{n2Instance1.InstanceID()},
 			},
+			&database.ReplicationSlotResource{
+				ProviderNode:   "n2",
+				SubscriberNode: "n1",
+			},
 			&database.SubscriptionResource{
 				SubscriberNode: "n1",
 				ProviderNode:   "n2",
+			},
+			&database.ReplicationSlotResource{
+				ProviderNode:   "n1",
+				SubscriberNode: "n2",
 			},
 			&database.SubscriptionResource{
 				SubscriberNode: "n2",
@@ -88,9 +96,17 @@ func TestRestoreDatabase(t *testing.T) {
 				PrimaryInstanceID: n2Instance1.InstanceID(),
 				InstanceIDs:       []string{n2Instance1.InstanceID()},
 			},
+			&database.ReplicationSlotResource{
+				ProviderNode:   "n2",
+				SubscriberNode: "n1",
+			},
 			&database.SubscriptionResource{
 				SubscriberNode: "n1",
 				ProviderNode:   "n2",
+			},
+			&database.ReplicationSlotResource{
+				ProviderNode:   "n1",
+				SubscriberNode: "n2",
 			},
 			&database.SubscriptionResource{
 				SubscriberNode: "n2",

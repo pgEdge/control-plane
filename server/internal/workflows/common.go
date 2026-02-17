@@ -8,8 +8,9 @@ import (
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
 
-	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/database/operations"
+
+	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
@@ -245,43 +246,4 @@ func (w *Workflows) getNodeResources(
 		InstanceResources: resources,
 		RestoreConfig:     node.RestoreConfig,
 	}, nil
-}
-
-// cleanupOrphanedSlots drops replication slots on surviving provider nodes
-// that were serving subscriptions to removed subscriber nodes. Without this,
-// orphaned slots accumulate WAL and can fill up disk on surviving hosts.
-func (w *Workflows) cleanupOrphanedSlots(
-	ctx workflow.Context,
-	spec *database.Spec,
-	state *resource.State,
-	removedNodeNames []string,
-) error {
-	logger := workflow.Logger(ctx).With("database_id", spec.DatabaseID)
-
-	// For each surviving node (provider), for each removed node (subscriber),
-	// drop the replication slot that was serving the subscription.
-	var futures []workflow.Future[*activities.CleanupOrphanedSlotsOutput]
-	for _, node := range spec.Nodes {
-		for _, removedNode := range removedNodeNames {
-			logger.Info("scheduling orphaned slot cleanup",
-				"provider_node", node.Name,
-				"removed_subscriber", removedNode,
-			)
-			in := &activities.CleanupOrphanedSlotsInput{
-				State:          state,
-				DatabaseName:   spec.DatabaseName,
-				ProviderNode:   node.Name,
-				SubscriberNode: removedNode,
-			}
-			futures = append(futures, w.Activities.ExecuteCleanupOrphanedSlots(ctx, in))
-		}
-	}
-
-	var errs []error
-	for _, future := range futures {
-		if _, err := future.Get(ctx); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	return errors.Join(errs...)
 }
