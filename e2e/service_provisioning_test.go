@@ -666,6 +666,20 @@ func TestUpdateDatabaseServiceStable(t *testing.T) {
 	})
 
 	require.Len(t, db.ServiceInstances, 1, "Expected 1 service instance")
+
+	// Wait for service to reach "running" state before recording baseline
+	if db.ServiceInstances[0].State != "running" {
+		t.Log("Service not yet running, waiting...")
+		deadline := time.Now().Add(5 * time.Minute)
+		for time.Now().Before(deadline) {
+			time.Sleep(5 * time.Second)
+			err := db.Refresh(ctx)
+			require.NoError(t, err, "Failed to refresh database")
+			if len(db.ServiceInstances) > 0 && db.ServiceInstances[0].State == "running" {
+				break
+			}
+		}
+	}
 	require.Equal(t, "running", db.ServiceInstances[0].State, "Service should be running")
 
 	// Record identifiers before the update to verify stability after
