@@ -6,7 +6,7 @@ Quorum loss can occur in three scenarios:
 
 1. **[Total Quorum Loss](#phase-1a-total-quorum-loss)** — All server-mode hosts are offline (100% loss). Docker Swarm is still functional.
 2. **[Majority Quorum Loss](#phase-1b-majority-quorum-loss)** — More than 50% of server-mode hosts are offline, but at least one remains online. Docker Swarm is still functional.
-3. **[etcd and Docker Swarm Quorum Loss](#phase-1c-etcd-and-docker-swarm-quorum-loss)** — Both etcd and Docker Swarm have lost quorum (majority of hosts destroyed). Requires Swarm re-initialization, registry recreation, and image rebuild before etcd recovery.
+3. **[etcd and Docker Swarm Quorum Loss](#phase-1c-etcd-and-docker-swarm-quorum-loss)** — Both etcd and Docker Swarm have lost quorum (majority of hosts destroyed). Requires Swarm re-initialization.
 
 All three scenarios follow the same overall recovery flow:
 
@@ -37,10 +37,6 @@ Before proceeding, set the following variables with values appropriate for your 
 ```bash
 PGEDGE_DATA_DIR="<path-to-control-plane-data-dir>"
 RECOVERY_HOST_IP="<recovery-host-ip>"
-RECOVERY_HOST_ID="<recovery-host-id>"
-RECOVERY_HOSTNAME="<recovery-docker-hostname>"   # e.g., lima-host-2
-API_PORT=<api-port>
-SNAPSHOT_PATH="${PGEDGE_DATA_DIR}/snapshot.db"
 ETCD_CLIENT_PORT=<etcd-client-port>
 ETCD_PEER_PORT=<etcd-peer-port>
 ```
@@ -51,7 +47,8 @@ ETCD_PEER_PORT=<etcd-peer-port>
 RECOVERY_HOST_EXTERNAL_IP="<recovery-host-external-ip>"  # e.g., 192.168.105.4
 ARCHIVE_VERSION="<control-plane-version>"                  # e.g., 0.6.2
 ```
-
+### Creating the Stack Definition File
+    // TO DO link the installation.md file section here
 ### Determine Your Scenario
 
 | Condition | Scenario |
@@ -90,14 +87,6 @@ docker service scale control-plane_<host-id-1>=0 control-plane_<host-id-2>=0 con
 # Verify stopped
 docker service ls --filter name=control-plane
 ```
-
-!!! warning "Expected Errors During Quorum Loss"
-
-    You may see "cannot elect leader" errors when stopping services. These are expected. If Docker Swarm commands fail, stop containers directly:
-
-    ```bash
-    docker ps --filter label=com.docker.swarm.service.name=control-plane_<host-id> --format "{{.ID}}" | xargs docker stop
-    ```
 
 #### Step 1A.2: Restore Data Volume
 
@@ -138,23 +127,20 @@ fi
 ```bash
 ARCH=$(uname -m)
 if [ "$ARCH" = "x86_64" ]; then ARCH="amd64"; elif [ "$ARCH" = "aarch64" ]; then ARCH="arm64"; fi
-curl -L https://github.com/etcd-io/etcd/releases/download/v3.6.5/etcd-v3.6.5-linux-${ARCH}.tar.gz | tar --strip-components 1 -xz -C /tmp etcd-v3.6.5-linux-${ARCH}/etcdutl
+curl -L https://github.com/etcd-io/etcd/releases/download/v3.6.5/etcd-v3.6.5-linux-${ARCH}.tar.gz \ 
+    | tar --strip-components 1 -xz -C /tmp etcd-v3.6.5-linux-${ARCH}/etcdutl
 sudo mv /tmp/etcdutl /usr/local/bin/ && sudo chmod +x /usr/local/bin/etcdutl
 ```
 
 ##### Restore Snapshot
 
 ```bash
-if [ -d "${PGEDGE_DATA_DIR}/etcd" ]; then
-    mv "${PGEDGE_DATA_DIR}/etcd" "${PGEDGE_DATA_DIR}/etcd.restored.$(date +%s)"
-fi
 
-etcdutl snapshot restore "${SNAPSHOT_PATH}" \
-    --name "${RECOVERY_HOST_ID}" \
+etcdutl snapshot restore <old etcd dir>/member/snap/db \
+	--name "${RECOVERY_HOST_ID}" \
     --initial-cluster "${RECOVERY_HOST_ID}=https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
     --initial-advertise-peer-urls "https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
-    --bump-revision 1000000000 \
-    --mark-compacted \
+    --skip-hash-check \
     --data-dir "${PGEDGE_DATA_DIR}/etcd"
 
 ls -la "${PGEDGE_DATA_DIR}/etcd"
@@ -163,6 +149,7 @@ ls -la "${PGEDGE_DATA_DIR}/etcd"
 !!! warning
 
     For multi-node clusters, you need a snapshot file. **Best practice: Include snapshot files (`.db`) in your volume backups.**
+// To Do A snapshot file is optional. It's mainly useful when you're recovering from some type of database corruption. This best practice note would be much more helpful in the installation steps.
 
 #### Step 1A.5: Start Control Plane
 
@@ -170,10 +157,6 @@ ls -la "${PGEDGE_DATA_DIR}/etcd"
 docker service scale control-plane_${RECOVERY_HOST_ID}=1
 docker service ps control-plane_${RECOVERY_HOST_ID} --no-trunc
 ```
-
-!!! note "Embedded etcd Handles Initialization Automatically"
-
-    Control Plane automatically detects the restored snapshot and initializes etcd. No manual etcd commands are needed.
 
 #### Step 1A.6: Verify Recovery Host
 
@@ -194,7 +177,6 @@ Now proceed to [Phase 2: Remove Dead Hosts](#phase-2-remove-dead-hosts).
 
 #### Prerequisites
 
-- **etcd snapshot** (taken before outage) or ability to create one from the surviving host
 - **Recovery host:** One of the remaining online server-mode hosts
 
 !!! important "Reset Cluster Membership for Multi-Node Clusters"
@@ -216,7 +198,7 @@ fi
 See [Install etcdutl](#install-etcdutl) in Phase 1A.
 
 ##### Option A: Create Snapshot from Existing Data (if etcd is accessible)
-
+// To Do The title of this section, "Majority Quorum Loss", implies that Etcd is unavailable. Please remove this step.
 ```bash
 # Extract credentials from generated.config.json
 # ETCD_USER="<etcd-username>"
@@ -229,6 +211,7 @@ ETCDCTL_API=3 etcdctl snapshot save "${PGEDGE_DATA_DIR}/snapshot.db" \
     --key "${PGEDGE_DATA_DIR}/certificates/etcd-user.key" \
     --user "${ETCD_USER}" \
     --password "${ETCD_PASS}"
+// To Do a snapshot is optional and useful for a very specific situation. In the scenarios that you're describing in this document, I would just use the existing data directory.
 
 etcdutl snapshot restore "${PGEDGE_DATA_DIR}/snapshot.db" \
     --name "${RECOVERY_HOST_ID}" \
@@ -254,7 +237,6 @@ docker service ps control-plane_${RECOVERY_HOST_ID} --no-trunc
 
 ```bash
 curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/cluster"
-curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts"
 ```
 
 **Expected:** API accessible, one host with `status: "reachable"` and `etcd_mode: "server"`.
@@ -331,74 +313,9 @@ sudo docker service rm control-plane_host-1 control-plane_host-3
 sudo docker service rm postgres-storefront-n1-689qacsi postgres-storefront-n3-ant97dj4
 ```
 
-#### Step 1C.4: Restore Container Registry
-
-The registry may have been on a destroyed host. Recreate it:
-
-```bash
-sudo docker service rm registry ghcr-mirror 2>/dev/null
-
-sudo docker service create --name registry \
-    --constraint "node.hostname==${RECOVERY_HOSTNAME}" \
-    --publish published=5000,target=5000 \
-    --mount type=volume,source=registry-data,target=/var/lib/registry \
-    registry:2
-```
-
-#### Step 1C.5: Build and Push Control Plane Image
-
-On the surviving host:
-
-```bash
-mkdir -p /tmp/control-plane-build
-```
-
-From your **build machine**, copy files to the surviving host:
-
-```bash
-scp -F <ssh-config-file> <path-to>/Dockerfile <remote-host>:/tmp/control-plane-build/
-scp -F <ssh-config-file> <path-to>/control-plane_${ARCHIVE_VERSION}_linux_<arch>.tar.gz <remote-host>:/tmp/control-plane-build/
-```
-
-Example:
-
-```bash
-scp -F ~/.lima/host-2/ssh.config control-plane/docker/control-plane/Dockerfile lima-host-2:/tmp/control-plane-build/
-scp -F ~/.lima/host-2/ssh.config control-plane/dist/control-plane_0.6.2_linux_arm64.tar.gz lima-host-2:/tmp/control-plane-build/
-```
-
-Build and push:
-
-```bash
-cd /tmp/control-plane-build
-sudo docker build . \
-    --build-arg=ARCHIVE_VERSION=${ARCHIVE_VERSION} \
-    --tag=127.0.0.1:5000/control-plane:latest \
-    --push
-```
-
 #### Step 1C.6: Start Control Plane with ForceNewCluster
 
-```bash
-sudo docker service rm control-plane_${RECOVERY_HOST_ID}
-
-sudo docker service create \
-    --name control-plane_${RECOVERY_HOST_ID} \
-    --constraint "node.hostname==${RECOVERY_HOSTNAME}" \
-    --env PGEDGE_IPV4_ADDRESS=${RECOVERY_HOST_IP} \
-    --env PGEDGE_HOST_ID=${RECOVERY_HOST_ID} \
-    --env PGEDGE_DATA_DIR=/data/control-plane \
-    --env PGEDGE_DOCKER_SWARM__IMAGE_REPOSITORY_HOST=127.0.0.1:5001/pgedge \
-    --env PGEDGE_ETCD_SERVER__FORCE_NEW_CLUSTER=true \
-    --mount type=bind,source=/data/control-plane,destination=/data/control-plane \
-    --mount type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock \
-    --network host \
-    127.0.0.1:5000/control-plane:latest run
-```
-
-!!! note
-
-    `PGEDGE_ETCD_SERVER__FORCE_NEW_CLUSTER=true` tells etcd to discard old cluster membership and start as a single-node cluster using existing data. A sentinel file prevents re-application on subsequent restarts.
+// To Do use etcdutl snapshot restore
 
 #### Step 1C.7: Verify Recovery Host
 
@@ -430,7 +347,8 @@ Now proceed to [Phase 2: Remove Dead Hosts](#phase-2-remove-dead-hosts).
 
 ---
 
-## Phase 2: Remove Dead Hosts
+## Phase 2: Remove Dead Hosts 
+// To Do we will keep one section in final doc 
 
 After Phase 1, you have one server-mode host running. Now remove dead host records and clean up databases.
 
@@ -473,13 +391,9 @@ curl -X POST "http://${RECOVERY_HOST_IP}:3000/v1/databases/storefront?remove_hos
 Remove stale host records **one at a time**, waiting for each task to complete:
 
 ```sh
-curl -X DELETE "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts/<DEAD_HOST_1>?force=true"
-curl -X DELETE "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts/<DEAD_HOST_2>?force=true"
+curl -X DELETE "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts/<DEAD_HOST_1>"
+curl -X DELETE "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts/<DEAD_HOST_2>"
 ```
-
-!!! important "Remove Hosts in Order"
-
-    Remove server-mode hosts first, then client-mode hosts. Work **one host at a time** and wait for each deletion task to complete.
 
 ### Step 2.3: Verify Cleanup
 
@@ -543,12 +457,6 @@ rm -rf "${PGEDGE_DATA_DIR}/certificates"
 rm -f "${PGEDGE_DATA_DIR}/generated.config.json"
 ```
 
-**For client-mode hosts:**
-
-```bash
-rm -f "${PGEDGE_DATA_DIR}/generated.config.json"
-```
-
 #### Step 3A.3: Start the Host Service
 
 ```bash
@@ -571,16 +479,7 @@ Now proceed to [Phase 3C: Join Control Plane Cluster](#phase-3c-join-control-pla
 
 #### Step 3B.1: Create New Host
 
-Provision the replacement host. For Lima-based environments:
-
-```bash
-cd e2e/fixtures
-ansible-playbook \
-    --extra-vars='@vars/lima.yaml' \
-    --extra-vars='@vars/small.yaml' \
-    --extra-vars='target_host=<host-id>' \
-    setup_new_host.yaml
-```
+Create and deploy a new host.
 
 #### Step 3B.2: Join Docker Swarm
 

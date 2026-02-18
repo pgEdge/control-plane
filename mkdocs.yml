@@ -64,9 +64,6 @@ nav:
   - Managing a High-Availability Environment:
       - Best Practices for Deploying a High-Availability Cluster: using-ha/index.md
       - Connecting to a High-Availability Cluster: using-ha/ha-connections.md
-  - Disaster Recovery:
-      - Partial Failure Recovery (Quorum Intact): disaster-recovery/partial-recovery.md
-      - Complete Failure Recovery (No Quorum): disaster-recovery/full-recovery.md
   - Using Control Plane:
       - Using Control Plane API Calls: using/index.md
       - Creating a Database: using/create-db.md
