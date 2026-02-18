@@ -60,8 +60,14 @@ func (w *Workflows) PlanUpdate(ctx workflow.Context, input *PlanUpdateInput) (*P
 	// Determine a Postgres host for ServiceUserRole executor routing —
 	// ServiceUserRole.Create() needs local Docker access to the Postgres container.
 	var postgresHostID string
-	if len(nodeInstances) > 0 && len(nodeInstances[0].Instances) > 0 {
-		postgresHostID = nodeInstances[0].Instances[0].HostID
+	for _, node := range nodeInstances {
+		if len(node.Instances) > 0 {
+			postgresHostID = node.Instances[0].HostID
+			break
+		}
+	}
+	if postgresHostID == "" && len(input.Spec.Services) > 0 {
+		return nil, fmt.Errorf("no postgres instances available for service role routing")
 	}
 
 	var serviceResources []*operations.ServiceResources
