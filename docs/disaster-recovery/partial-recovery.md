@@ -40,69 +40,23 @@ Determine which recovery path applies to your situation:
 
 ## Phase 1: Remove the Failed Host
 
-### Step 1.1: Force Remove the Host from Control Plane
+Update each affected database to remove the lost host, then remove the host from the Control Plane. The host removal will fail if any database still has instances on that host, so complete Step 1.1 before Step 1.2.
 
-Use the `force` query parameter to remove the lost host. This will:
+### Step 1.1: Update Affected Databases to Remove the Lost Host
 
-- Remove the host from the etcd cluster membership
-- Update each database to remove all instances on the failed host
-
-```sh
-curl -X DELETE http://<HEALTHY_HOST>:3000/v1/hosts/<LOST_HOST_ID>?force=true
-```
-
-The response contains task IDs for the removal and each database update:
-
-```json
-{
-  "task": {
-    "task_id": "<TASK-ID>",
-    "type": "remove_host",
-    "status": "pending"
-  },
-  "update_database_tasks": [
-    {
-      "task_id": "<TASK-ID>",
-      "database_id": "<DB_NAME>",
-      "type": "update",
-      "status": "pending"
-    }
-  ]
-}
-```
-
-Monitor progress:
+For each database that has instances on the failed host, submit an update with the `remove_host` query parameter and a spec that excludes the failed host. This removes those instances from the database and allows the host to be removed in Step 1.2.
 
 ```sh
-# Monitor host removal task
-curl http://<HEALTHY_HOST>:3000/v1/hosts/<LOST_HOST_ID>/tasks/<TASK_ID>
-
-# Monitor database update task logs
-curl http://<HEALTHY_HOST>:3000/v1/databases/<DB>/tasks/<TASK_ID>/log
-```
-
-!!! warning
-
-    The `force` parameter bypasses health checks. Only use it when the host is confirmed lost. Using it on a healthy host can cause data inconsistencies.
-
-### Step 1.2: Update Affected Databases (Optional)
-
-!!! note
-
-    Skip this step if you plan to restore the host later. The force remove in Step 1.1 is sufficient to keep databases operational. Only do this if you are permanently reducing cluster size.
-
-If permanently removing the node, update each affected database to exclude nodes on the failed host:
-
-```sh
+# Get the current database spec, then submit an update with remove_host and the desired spec (only healthy nodes)
 curl http://<HEALTHY_HOST>:3000/v1/databases/<DB>
 ```
 
-Then submit an update with only healthy nodes:
+Example: remove `host-3` from a database that had nodes on host-1, host-2, and host-3:
 
 ```sh
-curl -X POST http://<HEALTHY_HOST>:3000/v1/databases/<DB> \
-    -H 'Content-Type:application/json' \
-    --data '{
+curl -X POST "http://<HEALTHY_HOST>:3000/v1/databases/<DB>?remove_host=<LOST_HOST_ID>" \
+    -H 'Content-Type: application/json' \
+    -d '{
         "spec": {
             "database_name": "<DB_NAME>",
             "database_users": [
@@ -119,6 +73,22 @@ curl -X POST http://<HEALTHY_HOST>:3000/v1/databases/<DB> \
             ]
         }
     }'
+```
+
+Wait for each database update task to complete. Monitor task status using the [Tasks and Logs](../using/tasks-logs.md) documentation.
+
+### Step 1.2: Remove the Host from Control Plane
+
+After all affected databases have been updated, remove the host from the Control Plane:
+
+```sh
+curl -X DELETE "http://<HEALTHY_HOST>:3000/v1/hosts/<LOST_HOST_ID>"
+```
+
+Monitor the removal task:
+
+```sh
+curl http://<HEALTHY_HOST>:3000/v1/hosts/<LOST_HOST_ID>/tasks/<TASK_ID>
 ```
 
 ### Step 1.3: Clean Up Docker Swarm
@@ -460,8 +430,8 @@ After recovery, verify:
 
 | Phase | Step | Action | Path |
 |-------|------|--------|------|
-| 1 | 1.1 | Force remove host from Control Plane | Both |
-| 1 | 1.2 | Update affected databases (optional) | Both |
+| 1 | 1.1 | Update databases to remove lost host | Both |
+| 1 | 1.2 | Remove host from Control Plane | Both |
 | 1 | 1.3 | Clean up Docker Swarm | Both |
 | 2 | 2.1 | Verify host removed | Both |
 | 2 | 2.2 | Verify database health | Both |

@@ -36,7 +36,9 @@ Before proceeding, set the following variables with values appropriate for your 
 
 ```bash
 PGEDGE_DATA_DIR="<path-to-control-plane-data-dir>"
+RECOVERY_HOST_ID="<recovery-host-id>"
 RECOVERY_HOST_IP="<recovery-host-ip>"
+API_PORT=<api-port>
 ETCD_CLIENT_PORT=<etcd-client-port>
 ETCD_PEER_PORT=<etcd-peer-port>
 ```
@@ -47,8 +49,15 @@ ETCD_PEER_PORT=<etcd-peer-port>
 RECOVERY_HOST_EXTERNAL_IP="<recovery-host-external-ip>"  # e.g., 192.168.105.4
 ARCHIVE_VERSION="<control-plane-version>"                  # e.g., 0.6.2
 ```
+
+!!! note "Using a pre-created snapshot is optional"
+
+    The procedures below restore etcd from the **existing data directory** on the recovery host (after moving it aside in the backup step). That data is guaranteed to be up-to-date. Use a **pre-created snapshot file** only when the Control Plane database is corrupted; otherwise prefer the existing data directory.
+
 ### Creating the Stack Definition File
-    // TO DO link the installation.md file section here
+
+Ensure you have a Control Plane stack definition file (e.g. from your initial deployment). See [Creating the stack definition file](../installation/installation.md#creating-the-stack-definition-file) in the installation documentation.
+
 ### Determine Your Scenario
 
 | Condition | Scenario |
@@ -90,27 +99,14 @@ docker service ls --filter name=control-plane
 
 #### Step 1A.2: Restore Data Volume
 
-Restore the Control Plane data volume from your backup.
-
-**Restore the entire volume (recommended):**
-
-```bash
-BACKUP_VOLUME_PATH="<path-to-restored-backup-volume>"
-cp -r "${BACKUP_VOLUME_PATH}"/* "${PGEDGE_DATA_DIR}/"
-```
-
-**Selective restoration (only if you cannot restore the entire volume):**
-
-```bash
-cp -r <backup-path>/certificates "${PGEDGE_DATA_DIR}/certificates"
-cp <backup-path>/generated.config.json "${PGEDGE_DATA_DIR}/generated.config.json"
-```
+Restore the Control Plane data volume from your backup. The procedure depends on your environment (e.g. cloud backup restore, VM snapshot restore, or local copy). For example, see your provider's documentation: [AWS](https://docs.aws.amazon.com/prescriptive-guidance/latest/backup-recovery/restore.html), [VMware](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/container-storage-plugin/3-0/getting-started-with-vmware-vsphere-container-storage-plug-in-3-0/using-vsphere-container-storage-plug-in/volume-snapshot-and-restore.html), [Azure](https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms), [GCP](https://docs.cloud.google.com/compute/docs/disks/restore-snapshot).
 
 #### Step 1A.3: Backup Existing etcd Data
 
 ```bash
 if [ -d "${PGEDGE_DATA_DIR}/etcd" ]; then
-    mv "${PGEDGE_DATA_DIR}/etcd" "${PGEDGE_DATA_DIR}/etcd.backup.$(date +%s)"
+    ETCD_BACKUP_DIR="${PGEDGE_DATA_DIR}/etcd.backup.$(date +%s)"
+    mv "${PGEDGE_DATA_DIR}/etcd" "${ETCD_BACKUP_DIR}"
 fi
 if [ -d "${PGEDGE_DATA_DIR}/certificates" ]; then
     cp -r "${PGEDGE_DATA_DIR}/certificates" "${PGEDGE_DATA_DIR}/certificates.backup.$(date +%s)"
@@ -120,24 +116,26 @@ if [ -f "${PGEDGE_DATA_DIR}/generated.config.json" ]; then
 fi
 ```
 
-#### Step 1A.4: Restore etcd from Snapshot
+#### Step 1A.4: Restore etcd from Existing Data
 
 ##### Install etcdutl
 
 ```bash
+ETCD_VERSION="v3.6.8"
 ARCH=$(uname -m)
 if [ "$ARCH" = "x86_64" ]; then ARCH="amd64"; elif [ "$ARCH" = "aarch64" ]; then ARCH="arm64"; fi
-curl -L https://github.com/etcd-io/etcd/releases/download/v3.6.5/etcd-v3.6.5-linux-${ARCH}.tar.gz \ 
-    | tar --strip-components 1 -xz -C /tmp etcd-v3.6.5-linux-${ARCH}/etcdutl
+curl -L "https://github.com/etcd-io/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-${ARCH}.tar.gz" \
+    | tar --strip-components 1 -xz -C /tmp "etcd-${ETCD_VERSION}-linux-${ARCH}/etcdutl"
 sudo mv /tmp/etcdutl /usr/local/bin/ && sudo chmod +x /usr/local/bin/etcdutl
 ```
 
-##### Restore Snapshot
+##### Restore
+
+Restore from the etcd data you moved in Step 1A.3. If you have no existing etcd directory and are using a snapshot file from backups instead, use that file path as the first argument.
 
 ```bash
-
-etcdutl snapshot restore <old etcd dir>/member/snap/db \
-	--name "${RECOVERY_HOST_ID}" \
+etcdutl snapshot restore "${ETCD_BACKUP_DIR}/member/snap/db" \
+    --name "${RECOVERY_HOST_ID}" \
     --initial-cluster "${RECOVERY_HOST_ID}=https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
     --initial-advertise-peer-urls "https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
     --skip-hash-check \
@@ -146,10 +144,9 @@ etcdutl snapshot restore <old etcd dir>/member/snap/db \
 ls -la "${PGEDGE_DATA_DIR}/etcd"
 ```
 
-!!! warning
+!!! note
 
-    For multi-node clusters, you need a snapshot file. **Best practice: Include snapshot files (`.db`) in your volume backups.**
-// To Do A snapshot file is optional. It's mainly useful when you're recovering from some type of database corruption. This best practice note would be much more helpful in the installation steps.
+    For multi-node clusters, you must use `etcdutl snapshot restore` to reset cluster membership (copying the etcd directory is not sufficient). A snapshot file is optional but useful when recovering from quorum loss or data corruption; see the [installation documentation](../installation/installation.md) for backup best practices.
 
 #### Step 1A.5: Start Control Plane
 
@@ -161,7 +158,6 @@ docker service ps control-plane_${RECOVERY_HOST_ID} --no-trunc
 #### Step 1A.6: Verify Recovery Host
 
 ```bash
-curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/cluster"
 curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts"
 ```
 
@@ -178,6 +174,7 @@ Now proceed to [Phase 2: Remove Dead Hosts](#phase-2-remove-dead-hosts).
 #### Prerequisites
 
 - **Recovery host:** One of the remaining online server-mode hosts
+- An etcd snapshot file is not required for this scenario; you will restore from the existing etcd data on the recovery host. A snapshot file is only needed when recovering from Control Plane database corruption.
 
 !!! important "Reset Cluster Membership for Multi-Node Clusters"
 
@@ -187,44 +184,31 @@ Now proceed to [Phase 2: Remove Dead Hosts](#phase-2-remove-dead-hosts).
 
 ```bash
 if [ -d "${PGEDGE_DATA_DIR}/etcd" ]; then
-    mv "${PGEDGE_DATA_DIR}/etcd" "${PGEDGE_DATA_DIR}/etcd.backup.$(date +%s)"
+    ETCD_BACKUP_DIR="${PGEDGE_DATA_DIR}/etcd.backup.$(date +%s)"
+    mv "${PGEDGE_DATA_DIR}/etcd" "${ETCD_BACKUP_DIR}"
 fi
 ```
 
-#### Step 1B.2: Restore etcd from Snapshot
+#### Step 1B.2: Restore etcd from Existing Data
 
 ##### Install etcdutl
 
 See [Install etcdutl](#install-etcdutl) in Phase 1A.
 
-##### Option A: Create Snapshot from Existing Data (if etcd is accessible)
-// To Do The title of this section, "Majority Quorum Loss", implies that Etcd is unavailable. Please remove this step.
+##### Restore
+
+Restore from the etcd data you moved in Step 1B.1 (using a pre-created snapshot file is optional; see the [installation documentation](../installation/installation.md) for backup best practices):
+
 ```bash
-# Extract credentials from generated.config.json
-# ETCD_USER="<etcd-username>"
-# ETCD_PASS="<etcd-password>"
-
-ETCDCTL_API=3 etcdctl snapshot save "${PGEDGE_DATA_DIR}/snapshot.db" \
-    --endpoints "https://localhost:${ETCD_CLIENT_PORT}" \
-    --cacert "${PGEDGE_DATA_DIR}/certificates/ca.crt" \
-    --cert "${PGEDGE_DATA_DIR}/certificates/etcd-user.crt" \
-    --key "${PGEDGE_DATA_DIR}/certificates/etcd-user.key" \
-    --user "${ETCD_USER}" \
-    --password "${ETCD_PASS}"
-// To Do a snapshot is optional and useful for a very specific situation. In the scenarios that you're describing in this document, I would just use the existing data directory.
-
-etcdutl snapshot restore "${PGEDGE_DATA_DIR}/snapshot.db" \
+etcdutl snapshot restore "${ETCD_BACKUP_DIR}/member/snap/db" \
     --name "${RECOVERY_HOST_ID}" \
     --initial-cluster "${RECOVERY_HOST_ID}=https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
     --initial-advertise-peer-urls "https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
-    --bump-revision 1000000000 \
-    --mark-compacted \
+    --skip-hash-check \
     --data-dir "${PGEDGE_DATA_DIR}/etcd"
+
+ls -la "${PGEDGE_DATA_DIR}/etcd"
 ```
-
-##### Option B: Use Pre-existing Snapshot File
-
-If you have a snapshot file from your backups, follow the [Restore Snapshot](#restore-snapshot) steps in Phase 1A.
 
 #### Step 1B.3: Start Control Plane
 
@@ -313,11 +297,41 @@ sudo docker service rm control-plane_host-1 control-plane_host-3
 sudo docker service rm postgres-storefront-n1-689qacsi postgres-storefront-n3-ant97dj4
 ```
 
-#### Step 1C.6: Start Control Plane with ForceNewCluster
+#### Step 1C.4: Restore Data Volume (if needed)
 
-// To Do use etcdutl snapshot restore
+If the surviving host's Control Plane data volume was lost or re-provisioned, restore it from your backup (see [Phase 1A, Step 1A.2](#step-1a2-restore-data-volume)). If the data volume is already present from before the outage, skip to Step 1C.5.
 
-#### Step 1C.7: Verify Recovery Host
+#### Step 1C.5: Backup Existing etcd Data
+
+On the surviving host:
+
+```bash
+if [ -d "${PGEDGE_DATA_DIR}/etcd" ]; then
+    ETCD_BACKUP_DIR="${PGEDGE_DATA_DIR}/etcd.backup.$(date +%s)"
+    mv "${PGEDGE_DATA_DIR}/etcd" "${ETCD_BACKUP_DIR}"
+fi
+```
+
+#### Step 1C.6: Restore etcd from Existing Data
+
+Install etcdutl (see [Install etcdutl](#install-etcdutl) in Phase 1A), then restore from the etcd data you moved in Step 1C.5:
+
+```bash
+etcdutl snapshot restore "${ETCD_BACKUP_DIR}/member/snap/db" \
+    --name "${RECOVERY_HOST_ID}" \
+    --initial-cluster "${RECOVERY_HOST_ID}=https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
+    --initial-advertise-peer-urls "https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
+    --skip-hash-check \
+    --data-dir "${PGEDGE_DATA_DIR}/etcd"
+
+ls -la "${PGEDGE_DATA_DIR}/etcd"
+```
+
+#### Step 1C.7: Start Control Plane
+
+If the container registry or Control Plane image was on a destroyed host, recreate the registry and build/push the Control Plane image on the surviving host before starting the service. Then start the Control Plane service using your normal deployment method (e.g. `docker stack deploy` or `docker service create`). Do not use `PGEDGE_ETCD_SERVER__FORCE_NEW_CLUSTER`; cluster membership was already reset in Step 1C.6 with `etcdutl snapshot restore`.
+
+#### Step 1C.8: Verify Recovery Host
 
 ```sh
 curl http://${RECOVERY_HOST_EXTERNAL_IP}:${API_PORT}/v1/databases
@@ -347,10 +361,9 @@ Now proceed to [Phase 2: Remove Dead Hosts](#phase-2-remove-dead-hosts).
 
 ---
 
-## Phase 2: Remove Dead Hosts 
-// To Do we will keep one section in final doc 
+## Phase 2: Remove Dead Hosts
 
-After Phase 1, you have one server-mode host running. Now remove dead host records and clean up databases.
+After Phase 1, you have one server-mode host running. The steps from here (Phase 2 through 5) follow the same pattern as [Partial Failure Recovery](partial-recovery.md): remove dead host records and clean up databases, then rejoin or provision hosts, restore database capacity, and verify.
 
 ### Step 2.1: Update Databases to Remove Dead Hosts
 
@@ -365,7 +378,7 @@ curl -X POST "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/databases/<DB_ID>?remove
 Example:
 
 ```sh
-curl -X POST "http://${RECOVERY_HOST_IP}:3000/v1/databases/storefront?remove_host=host-1&remove_host=host-3" \
+curl -X POST "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/databases/storefront?remove_host=host-1&remove_host=host-3" \
     -H "Content-Type: application/json" \
     -d '{
         "spec": {
@@ -386,7 +399,7 @@ curl -X POST "http://${RECOVERY_HOST_IP}:3000/v1/databases/storefront?remove_hos
 
 **Important:** Wait for each database update task to complete before proceeding. Monitor task status using the [Tasks and Logs](../using/tasks-logs.md) documentation.
 
-### Step 2.2: Force Remove Dead Host Records
+### Step 2.2: Remove Dead Host Records
 
 Remove stale host records **one at a time**, waiting for each task to complete:
 
@@ -447,9 +460,7 @@ docker service scale control-plane_${LOST_HOST_ID}=0
 
 #### Step 3A.2: Clear Host State
 
-SSH to the lost host:
-
-**For server-mode hosts:**
+SSH to the lost host and clear Control Plane state so the host can rejoin cleanly:
 
 ```bash
 rm -rf "${PGEDGE_DATA_DIR}/etcd"
@@ -678,9 +689,9 @@ Confirm:
 
 **Fix:** Remove the conflicting service first (`docker service rm <service-name>`), then redeploy the stack.
 
-### Control Plane API hangs after ForceNewCluster
+### Control Plane API hangs after etcd restore
 
-**Cause:** etcd auth may not have been properly re-enabled during ForceNewCluster recovery.
+**Cause:** etcd auth may not have been properly re-enabled after restoring from snapshot.
 
 **Fix:** Check service logs (`docker service logs control-plane_<HOST_ID>`). The service handles auth disable/re-enable automatically. If issues persist, restart the service.
 
@@ -688,7 +699,7 @@ Confirm:
 
 **Cause:** Container registry was running on a destroyed host.
 
-**Fix:** Recreate the registry on the surviving host (Phase 1C, Step 1C.4) and ensure new hosts can reach it.
+**Fix:** Recreate the registry on the surviving host before starting Control Plane (Phase 1C) and ensure new hosts can reach it.
 
 ### "etcd already initialized" error
 
@@ -720,7 +731,7 @@ rm -f ${PGEDGE_DATA_DIR}/generated.config.json
 |-------|------|--------|------------|
 | 1A | 1A.1–1A.6 | Restore from snapshot, start CP | Total Quorum Loss |
 | 1B | 1B.1–1B.4 | Snapshot from existing data, start CP | Majority Quorum Loss |
-| 1C | 1C.1–1C.7 | Recover Swarm, registry, ForceNewCluster | etcd + Swarm Loss |
+| 1C | 1C.1–1C.8 | Recover Swarm, restore etcd via snapshot, start CP | etcd + Swarm Loss |
 | 2 | 2.1–2.3 | Remove dead hosts and clean databases | All |
 | 3A | 3A.1–3A.3 | Clear state and restart existing host | Host Accessible |
 | 3B | 3B.1–3B.3 | Provision new host, join Swarm, deploy | Host Destroyed |
