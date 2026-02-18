@@ -617,6 +617,130 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 	t.Log("Service recovery test completed successfully")
 }
 
+// TestUpdateDatabaseServiceStable tests that updating a database without changing
+// the service spec does not delete or recreate the service instance. This is the
+// core behavior that PLAT-412 fixes: service resources participate in the normal
+// reconciliation cycle and are left untouched when unchanged.
+func TestUpdateDatabaseServiceStable(t *testing.T) {
+	t.Parallel()
+
+	host1 := fixture.HostIDs()[0]
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	t.Log("Creating database with MCP service")
+
+	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
+		Spec: &controlplane.DatabaseSpec{
+			DatabaseName: "test_service_stable",
+			DatabaseUsers: []*controlplane.DatabaseUserSpec{
+				{
+					Username:   "admin",
+					Password:   pointerTo("testpassword"),
+					DbOwner:    pointerTo(true),
+					Attributes: []string{"LOGIN", "SUPERUSER"},
+				},
+			},
+			Port: pointerTo(0),
+			Nodes: []*controlplane.DatabaseNodeSpec{
+				{
+					Name:    "n1",
+					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+				},
+			},
+			Services: []*controlplane.ServiceSpec{
+				{
+					ServiceID:   "mcp-server",
+					ServiceType: "mcp",
+					Version:     "latest",
+					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Config: map[string]any{
+						"llm_provider":      "anthropic",
+						"llm_model":         "claude-sonnet-4-5",
+						"anthropic_api_key": "sk-ant-test-key-stable",
+					},
+				},
+			},
+		},
+	})
+
+	require.Len(t, db.ServiceInstances, 1, "Expected 1 service instance")
+	require.Equal(t, "running", db.ServiceInstances[0].State, "Service should be running")
+
+	// Record identifiers before the update to verify stability after
+	serviceInstanceID := db.ServiceInstances[0].ServiceInstanceID
+	createdAtBefore := db.ServiceInstances[0].CreatedAt
+	var containerIDBefore string
+	if db.ServiceInstances[0].Status != nil && db.ServiceInstances[0].Status.ContainerID != nil {
+		containerIDBefore = *db.ServiceInstances[0].Status.ContainerID
+	}
+
+	t.Logf("Service instance %s: created_at=%s, container_id=%s", serviceInstanceID, createdAtBefore, containerIDBefore)
+
+	t.Log("Updating database with a postgres config change (service unchanged)")
+
+	// Update database with a non-service change (add a postgresql_conf setting).
+	// The service spec is identical — the service should not be touched.
+	err := db.Update(ctx, UpdateOptions{
+		Spec: &controlplane.DatabaseSpec{
+			DatabaseName: "test_service_stable",
+			DatabaseUsers: []*controlplane.DatabaseUserSpec{
+				{
+					Username:   "admin",
+					Password:   pointerTo("testpassword"),
+					DbOwner:    pointerTo(true),
+					Attributes: []string{"LOGIN", "SUPERUSER"},
+				},
+			},
+			Port: pointerTo(0),
+			Nodes: []*controlplane.DatabaseNodeSpec{
+				{
+					Name:    "n1",
+					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+					PostgresqlConf: map[string]any{
+						"log_min_duration_statement": "1000",
+					},
+				},
+			},
+			Services: []*controlplane.ServiceSpec{
+				{
+					ServiceID:   "mcp-server",
+					ServiceType: "mcp",
+					Version:     "latest",
+					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Config: map[string]any{
+						"llm_provider":      "anthropic",
+						"llm_model":         "claude-sonnet-4-5",
+						"anthropic_api_key": "sk-ant-test-key-stable",
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err, "Failed to update database")
+
+	t.Log("Database updated, verifying service instance was not restarted")
+
+	// Verify the service instance still exists and is running
+	require.Len(t, db.ServiceInstances, 1, "Should still have 1 service instance")
+	assert.Equal(t, "running", db.ServiceInstances[0].State, "Service should still be running")
+	assert.Equal(t, serviceInstanceID, db.ServiceInstances[0].ServiceInstanceID, "Service instance ID should be unchanged")
+
+	// The key assertions: created_at and container ID should be unchanged,
+	// proving the service was not deleted/recreated during the database update.
+	// (updated_at is NOT checked because the service instance monitor
+	// periodically writes health status, which legitimately bumps it.)
+	assert.Equal(t, createdAtBefore, db.ServiceInstances[0].CreatedAt, "Service created_at should be unchanged (service was not recreated)")
+
+	if containerIDBefore != "" && db.ServiceInstances[0].Status != nil && db.ServiceInstances[0].Status.ContainerID != nil {
+		assert.Equal(t, containerIDBefore, *db.ServiceInstances[0].Status.ContainerID, "Container ID should be unchanged (container was not restarted)")
+	}
+
+	t.Logf("Service instance %s stable after database update", serviceInstanceID)
+	t.Log("Service stability test completed successfully")
+}
+
 // TestUpdateDatabaseRemoveService tests removing a service from a database.
 func TestUpdateDatabaseRemoveService(t *testing.T) {
 	t.Parallel()
