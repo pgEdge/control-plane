@@ -347,12 +347,12 @@ func CurrentReplicationSlotLSN(databaseName, providerNode, subscriberNode string
 }
 
 // IsReplicationSlotActive checks if a replication slot is currently being used
-// by an active walsender process. Returns true if active_pid is not null.
+// by an active walsender process. Uses EXISTS to always return exactly one row.
 func IsReplicationSlotActive(databaseName, providerNode, subscriberNode string) Query[bool] {
 	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
 
 	return Query[bool]{
-		SQL: "SELECT active_pid IS NOT NULL FROM pg_replication_slots WHERE slot_name = @slot_name;",
+		SQL: "SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = @slot_name AND active_pid IS NOT NULL);",
 		Args: pgx.NamedArgs{
 			"slot_name": slotName,
 		},
