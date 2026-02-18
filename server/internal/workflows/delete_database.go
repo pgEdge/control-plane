@@ -88,7 +88,7 @@ func (w *Workflows) DeleteDatabase(ctx workflow.Context, input *DeleteDatabaseIn
 	}
 	current := refreshCurrentOutput.State
 
-	plans, err := operations.UpdateDatabase(operations.UpdateDatabaseOptions{}, current, nil)
+	plans, err := operations.UpdateDatabase(operations.UpdateDatabaseOptions{}, current, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to plan database delete: %w", err)
 	}

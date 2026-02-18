@@ -337,6 +337,7 @@ func TestUpdateDatabase(t *testing.T) {
 				tc.options,
 				tc.start,
 				tc.nodes,
+				nil,
 			)
 			if tc.expectedErr != "" {
 				assert.Nil(t, plans)

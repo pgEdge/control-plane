@@ -426,8 +426,16 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		ServiceInstanceID: spec.ServiceInstanceID,
 		DatabaseID:        spec.DatabaseID,
 		DatabaseName:      spec.DatabaseName,
-		Username:          spec.Credentials.Username,
 		HostID:            spec.HostID,
+		PostgresHostID:    spec.PostgresHostID,
+		ServiceID:         spec.ServiceSpec.ServiceID,
+	}
+	// Username and Password are populated from existing state during Refresh,
+	// or generated during Create. Only set if credentials exist (backward
+	// compatibility with existing state).
+	if spec.Credentials != nil {
+		serviceUserRole.Username = spec.Credentials.Username
+		serviceUserRole.Password = spec.Credentials.Password
 	}
 
 	// Service instance spec resource
@@ -454,6 +462,8 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		ServiceInstanceID: spec.ServiceInstanceID,
 		DatabaseID:        spec.DatabaseID,
 		ServiceName:       serviceName,
+		ServiceID:         spec.ServiceSpec.ServiceID,
+		HostID:            spec.HostID,
 	}
 
 	orchestratorResources := []resource.Resource{

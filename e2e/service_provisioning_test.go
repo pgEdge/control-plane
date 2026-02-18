@@ -4,11 +4,12 @@ package e2e
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	controlplane "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
+	"github.com/pgEdge/control-plane/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -315,11 +316,11 @@ func TestUpdateDatabaseAddService(t *testing.T) {
 	t.Log("Add service to existing database test completed successfully")
 }
 
-// TestProvisionMCPServiceUnsupportedVersion tests that database creation succeeds
-// even when service provisioning fails due to an unsupported image version.
+// TestProvisionMCPServiceUnsupportedVersion tests that database creation fails
+// when service provisioning fails due to an unsupported image version.
 // Version "99.99.99" passes API validation (semver pattern) but is not registered
-// in ServiceVersions, so GenerateServiceInstanceResources fails. The database
-// should still become available and Postgres should be accessible.
+// in ServiceVersions, so getServiceResources fails fatally. The workflow should
+// fail and the database should be in a "failed" state.
 func TestProvisionMCPServiceUnsupportedVersion(t *testing.T) {
 	t.Parallel()
 
@@ -330,7 +331,7 @@ func TestProvisionMCPServiceUnsupportedVersion(t *testing.T) {
 
 	t.Log("Creating database with MCP service using unsupported version")
 
-	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
+	createResp, err := fixture.Client.CreateDatabase(ctx, &controlplane.CreateDatabaseRequest{
 		Spec: &controlplane.DatabaseSpec{
 			DatabaseName: "test_mcp_unsupported_ver",
 			DatabaseUsers: []*controlplane.DatabaseUserSpec{
@@ -363,36 +364,65 @@ func TestProvisionMCPServiceUnsupportedVersion(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err, "CreateDatabase API call should succeed")
+	require.NotNil(t, createResp.Task, "CreateDatabase should return a task")
+	require.NotNil(t, createResp.Database, "CreateDatabase should return a database")
 
-	t.Log("Database created, verifying database is available despite service failure")
+	dbID := createResp.Database.ID
 
-	// Database should be available even though service provisioning failed
-	assert.Equal(t, "available", db.State, "Database should be available despite service provisioning failure")
+	// Register cleanup to force-delete the database
+	t.Cleanup(func() {
+		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cleanupCancel()
 
-	// Verify Postgres instances exist and are accessible
-	require.NotEmpty(t, db.Instances, "Database should have at least one Postgres instance")
-
-	db.WithConnection(ctx, ConnectionOptions{
-		Matcher:  WithRole("primary"),
-		Username: "admin",
-		Password: "testpassword",
-	}, t, func(conn *pgx.Conn) {
-		var result int
-		row := conn.QueryRow(ctx, "SELECT 1")
-		require.NoError(t, row.Scan(&result))
-		assert.Equal(t, 1, result)
-		t.Log("Postgres is accessible despite service provisioning failure")
+		t.Logf("cleaning up database %s", dbID)
+		resp, err := fixture.Client.DeleteDatabase(cleanupCtx, &controlplane.DeleteDatabasePayload{
+			DatabaseID: dbID,
+			Force:      true,
+		})
+		if err != nil {
+			if !errors.Is(err, client.ErrNotFound) {
+				t.Logf("failed to cleanup database %s: %s", dbID, err)
+			}
+			return
+		}
+		_, _ = fixture.Client.WaitForDatabaseTask(cleanupCtx, &controlplane.GetDatabaseTaskPayload{
+			DatabaseID: dbID,
+			TaskID:     resp.Task.TaskID,
+		})
 	})
+
+	t.Log("Waiting for creation task to complete")
+
+	task, err := fixture.Client.WaitForDatabaseTask(ctx, &controlplane.GetDatabaseTaskPayload{
+		DatabaseID: dbID,
+		TaskID:     createResp.Task.TaskID,
+	})
+	require.NoError(t, err, "WaitForDatabaseTask should not return a transport error")
+
+	// The task should have failed due to the unsupported service version
+	assert.Equal(t, client.TaskStatusFailed, task.Status, "Task should have failed")
+	require.NotNil(t, task.Error, "Task should have an error message")
+	assert.Contains(t, *task.Error, "unsupported version", "Task error should mention unsupported version")
+
+	t.Logf("Task failed as expected: %s", *task.Error)
+
+	// Verify the database is in a "failed" state
+	db, err := fixture.Client.GetDatabase(ctx, &controlplane.GetDatabasePayload{
+		DatabaseID: dbID,
+	})
+	require.NoError(t, err, "GetDatabase should succeed")
+	assert.Equal(t, "failed", db.State, "Database should be in failed state")
 
 	t.Log("Unsupported version test completed successfully")
 }
 
 // TestProvisionMCPServiceRecovery tests that a failed service can be recovered
 // by updating the database with a corrected service version. The sequence is:
-//  1. Create database with an unsupported service version (provisioning fails)
-//  2. Verify database is available and Postgres is accessible
+//  1. Create database with an unsupported service version (workflow fails, database goes to "failed")
+//  2. Verify database is in "failed" state
 //  3. Update database with a corrected service version
-//  4. Verify the service instance is created and transitions to running
+//  4. Verify the database recovers to "available" and service instances are created and running
 func TestProvisionMCPServiceRecovery(t *testing.T) {
 	t.Parallel()
 
@@ -401,9 +431,11 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
+	// --- Step 1: Create database with unsupported service version (expect failure) ---
+
 	t.Log("Creating database with MCP service using unsupported version")
 
-	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
+	createResp, err := fixture.Client.CreateDatabase(ctx, &controlplane.CreateDatabaseRequest{
 		Spec: &controlplane.DatabaseSpec{
 			DatabaseName: "test_mcp_recovery",
 			DatabaseUsers: []*controlplane.DatabaseUserSpec{
@@ -425,7 +457,7 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 				{
 					ServiceID:   "mcp-server",
 					ServiceType: "mcp",
-					Version:     "99.99.99", // Unsupported version - service provisioning will fail
+					Version:     "99.99.99", // Unsupported version - workflow will fail
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Config: map[string]any{
 						"llm_provider":      "anthropic",
@@ -436,51 +468,114 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err, "CreateDatabase API call should succeed")
+	require.NotNil(t, createResp.Task, "CreateDatabase should return a task")
+	require.NotNil(t, createResp.Database, "CreateDatabase should return a database")
 
-	// Database should be available despite service failure
-	assert.Equal(t, "available", db.State, "Database should be available despite service provisioning failure")
-	t.Log("Database available, now updating with corrected service version")
+	dbID := createResp.Database.ID
 
-	// Update database with corrected service version
-	err := db.Update(ctx, UpdateOptions{
-		Spec: &controlplane.DatabaseSpec{
-			DatabaseName: "test_mcp_recovery",
-			DatabaseUsers: []*controlplane.DatabaseUserSpec{
-				{
-					Username:   "admin",
-					Password:   pointerTo("testpassword"),
-					DbOwner:    pointerTo(true),
-					Attributes: []string{"LOGIN", "SUPERUSER"},
+	// Register cleanup to force-delete the database
+	t.Cleanup(func() {
+		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cleanupCancel()
+
+		t.Logf("cleaning up database %s", dbID)
+		resp, err := fixture.Client.DeleteDatabase(cleanupCtx, &controlplane.DeleteDatabasePayload{
+			DatabaseID: dbID,
+			Force:      true,
+		})
+		if err != nil {
+			if !errors.Is(err, client.ErrNotFound) {
+				t.Logf("failed to cleanup database %s: %s", dbID, err)
+			}
+			return
+		}
+		_, _ = fixture.Client.WaitForDatabaseTask(cleanupCtx, &controlplane.GetDatabaseTaskPayload{
+			DatabaseID: dbID,
+			TaskID:     resp.Task.TaskID,
+		})
+	})
+
+	t.Log("Waiting for creation task to complete (expecting failure)")
+
+	task, err := fixture.Client.WaitForDatabaseTask(ctx, &controlplane.GetDatabaseTaskPayload{
+		DatabaseID: dbID,
+		TaskID:     createResp.Task.TaskID,
+	})
+	require.NoError(t, err, "WaitForDatabaseTask should not return a transport error")
+
+	// The task should have failed due to the unsupported service version
+	assert.Equal(t, client.TaskStatusFailed, task.Status, "Task should have failed")
+	require.NotNil(t, task.Error, "Task should have an error message")
+	t.Logf("Task failed as expected: %s", *task.Error)
+
+	// Verify the database is in a "failed" state
+	db, err := fixture.Client.GetDatabase(ctx, &controlplane.GetDatabasePayload{
+		DatabaseID: dbID,
+	})
+	require.NoError(t, err, "GetDatabase should succeed")
+	assert.Equal(t, "failed", db.State, "Database should be in failed state after unsupported version")
+
+	// --- Step 2: Update database with corrected service version (expect recovery) ---
+
+	t.Log("Updating database with corrected service version")
+
+	updateResp, err := fixture.Client.UpdateDatabase(ctx, &controlplane.UpdateDatabasePayload{
+		DatabaseID: dbID,
+		Request: &controlplane.UpdateDatabaseRequest{
+			Spec: &controlplane.DatabaseSpec{
+				DatabaseName: "test_mcp_recovery",
+				DatabaseUsers: []*controlplane.DatabaseUserSpec{
+					{
+						Username:   "admin",
+						Password:   pointerTo("testpassword"),
+						DbOwner:    pointerTo(true),
+						Attributes: []string{"LOGIN", "SUPERUSER"},
+					},
 				},
-			},
-			Port: pointerTo(0),
-			Nodes: []*controlplane.DatabaseNodeSpec{
-				{
-					Name:    "n1",
-					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+				Port: pointerTo(0),
+				Nodes: []*controlplane.DatabaseNodeSpec{
+					{
+						Name:    "n1",
+						HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+					},
 				},
-			},
-			Services: []*controlplane.ServiceSpec{
-				{
-					ServiceID:   "mcp-server",
-					ServiceType: "mcp",
-					Version:     "latest", // Corrected version
-					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
-					Config: map[string]any{
-						"llm_provider":      "anthropic",
-						"llm_model":         "claude-sonnet-4-5",
-						"anthropic_api_key": "sk-ant-test-key-12345",
+				Services: []*controlplane.ServiceSpec{
+					{
+						ServiceID:   "mcp-server",
+						ServiceType: "mcp",
+						Version:     "latest", // Corrected version
+						HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+						Config: map[string]any{
+							"llm_provider":      "anthropic",
+							"llm_model":         "claude-sonnet-4-5",
+							"anthropic_api_key": "sk-ant-test-key-12345",
+						},
 					},
 				},
 			},
 		},
 	})
-	require.NoError(t, err, "Failed to update database with corrected service version")
+	require.NoError(t, err, "UpdateDatabase API call should succeed")
+	require.NotNil(t, updateResp.Task, "UpdateDatabase should return a task")
 
-	t.Log("Database updated, verifying service instance recovered")
+	t.Log("Waiting for update task to complete")
 
-	// Database should still be available
-	assert.Equal(t, "available", db.State, "Database should remain available after update")
+	updateTask, err := fixture.Client.WaitForDatabaseTask(ctx, &controlplane.GetDatabaseTaskPayload{
+		DatabaseID: dbID,
+		TaskID:     updateResp.Task.TaskID,
+	})
+	require.NoError(t, err, "WaitForDatabaseTask should not return a transport error")
+	require.Equal(t, client.TaskStatusCompleted, updateTask.Status, "Update task should have completed successfully")
+
+	t.Log("Update task completed, verifying database recovered")
+
+	// Verify the database is now available
+	db, err = fixture.Client.GetDatabase(ctx, &controlplane.GetDatabasePayload{
+		DatabaseID: dbID,
+	})
+	require.NoError(t, err, "GetDatabase should succeed after update")
+	assert.Equal(t, "available", db.State, "Database should be available after recovery update")
 
 	// Service instance should now exist
 	require.NotNil(t, db.ServiceInstances, "ServiceInstances should not be nil after recovery")
@@ -488,7 +583,7 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 
 	serviceInstance := db.ServiceInstances[0]
 	assert.Equal(t, "mcp-server", serviceInstance.ServiceID, "Service ID should match")
-	assert.Equal(t, host1, serviceInstance.HostID, "Host ID should match")
+	assert.Equal(t, string(host1), serviceInstance.HostID, "Host ID should match")
 
 	t.Logf("Service instance created: %s (state: %s)", serviceInstance.ServiceInstanceID, serviceInstance.State)
 
@@ -501,7 +596,9 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 		deadline := time.Now().Add(maxWait)
 
 		for time.Now().Before(deadline) {
-			err := db.Refresh(ctx)
+			db, err = fixture.Client.GetDatabase(ctx, &controlplane.GetDatabasePayload{
+				DatabaseID: dbID,
+			})
 			require.NoError(t, err, "Failed to refresh database")
 
 			if len(db.ServiceInstances) > 0 && db.ServiceInstances[0].State == "running" {
