@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -22,9 +25,28 @@ func WaitForSyncEventResourceIdentifier(providerNode, subscriberNode string) res
 	}
 }
 
+const defaultSyncTimeout = 1 * time.Hour
+
+// syncTimeout returns the effective sync timeout. Priority:
+//  1. Per-resource Timeout field (if set)
+//  2. PGEDGE_SYNC_TIMEOUT_SECONDS env var (if set)
+//  3. defaultSyncTimeout (1 hour)
+func syncTimeout(resourceTimeout time.Duration) time.Duration {
+	if resourceTimeout > 0 {
+		return resourceTimeout
+	}
+	if v := os.Getenv("PGEDGE_SYNC_TIMEOUT_SECONDS"); v != "" {
+		if seconds, err := strconv.Atoi(v); err == nil && seconds > 0 {
+			return time.Duration(seconds) * time.Second
+		}
+	}
+	return defaultSyncTimeout
+}
+
 type WaitForSyncEventResource struct {
-	SubscriberNode string `json:"subscriber_node"`
-	ProviderNode   string `json:"provider_node"`
+	SubscriberNode string        `json:"subscriber_node"`
+	ProviderNode   string        `json:"provider_node"`
+	Timeout        time.Duration `json:"timeout,omitempty"`
 }
 
 func (r *WaitForSyncEventResource) ResourceVersion() string {
@@ -72,23 +94,55 @@ func (r *WaitForSyncEventResource) Refresh(ctx context.Context, rc *resource.Con
 		return fmt.Errorf("sync event LSN is empty on resource %q", syncEvent.Identifier())
 	}
 
-	// TODO: Set wait limit
-	synced, err := postgres.WaitForSyncEvent(r.ProviderNode, syncEvent.SyncEventLsn, 100).Scalar(ctx, subscriberConn)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return resource.ErrNotFound
-	} else if err != nil {
-		return fmt.Errorf("failed to wait for sync event on subscriber: %w", err)
-	}
-	if !synced {
-		return fmt.Errorf("replication sync not confirmed: provider=%s subscriber=%s lsn=%s timeout_seconds=%d",
-			r.ProviderNode,
-			r.SubscriberNode,
-			syncEvent.SyncEventLsn,
-			100,
-		)
-	}
+	const pollInterval = 10 * time.Second
 
-	return nil
+	timeout := syncTimeout(r.Timeout)
+
+	deadline := time.Now().Add(timeout)
+
+	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		if time.Now().After(deadline) {
+			return fmt.Errorf("replication sync timed out after %s: provider=%s subscriber=%s lsn=%s",
+				timeout, r.ProviderNode, r.SubscriberNode, syncEvent.SyncEventLsn)
+		}
+
+		// Check subscription health first — fail early if broken.
+		// Only statuses where the spock worker is running can make
+		// progress. The others ("disabled", "down") mean sync will
+		// never complete.
+		status, err := postgres.GetSubscriptionStatus(r.ProviderNode, r.SubscriberNode).
+			Scalar(ctx, subscriberConn)
+		if err != nil {
+			return fmt.Errorf("failed to check subscription status: %w", err)
+		}
+		switch status {
+		case postgres.SubStatusInitializing, postgres.SubStatusReplicating, postgres.SubStatusUnknown:
+			// Worker is running — continue waiting
+		default:
+			return fmt.Errorf("subscription has unhealthy status %q: provider=%s subscriber=%s",
+				status, r.ProviderNode, r.SubscriberNode)
+		}
+
+		// Try short wait for sync event with poll interval as timeout
+		synced, err := postgres.WaitForSyncEvent(
+			r.ProviderNode, syncEvent.SyncEventLsn, int(pollInterval.Seconds()),
+		).Scalar(ctx, subscriberConn)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return resource.ErrNotFound
+		}
+		if err != nil {
+			return fmt.Errorf("failed to wait for sync event on subscriber: %w", err)
+		}
+		if synced {
+			return nil
+		}
+
+		// Not yet synced, but subscription is healthy — continue waiting
+	}
 }
 
 func (r *WaitForSyncEventResource) Create(ctx context.Context, rc *resource.Context) error {

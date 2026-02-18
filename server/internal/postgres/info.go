@@ -18,6 +18,16 @@ func GetSpockReadOnly() Query[string] {
 	}
 }
 
+// Spock subscription statuses returned by spock.sub_show_status().
+// See: https://github.com/pgEdge/spock/blob/main/src/spock_functions.c
+const (
+	SubStatusInitializing = "initializing" // Worker running, sync in progress
+	SubStatusReplicating  = "replicating"  // Worker running, sync ready
+	SubStatusUnknown      = "unknown"      // Worker running, no sync status record
+	SubStatusDisabled     = "disabled"     // Worker not running, subscription disabled
+	SubStatusDown         = "down"         // Worker not running, subscription enabled
+)
+
 type SubscriptionStatus struct {
 	SubscriptionName string   `json:"subscription_name"`
 	Status           string   `json:"status"`

@@ -1,0 +1,3 @@
+kind: Fixed
+body: Replace fixed 100-second sync wait with configurable health-based polling mechanism
+time: 2026-02-18T23:03:20.105537+05:30
