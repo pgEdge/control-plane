@@ -400,7 +400,7 @@ After recovery, verify:
 
 **Cause:** Host record still exists in etcd.
 
-**Solution:** Complete Step 1.1 (force remove) and wait for the task to finish before rejoining.
+**Solution:** Complete Step 1.1 and Step 1.2 (update databases, then remove host) and wait for the removal task to finish before rejoining.
 
 ### Host joins but shows as unreachable
 
@@ -422,7 +422,7 @@ After recovery, verify:
 
 **Cause:** Stale etcd data on the host.
 
-**Solution:** Clear the data directory (Step 3A.2 or Step 3B.5) before rejoining.
+**Solution:** Clear the data directory before joining (see Step 3A.2 for the rejoin path; on a newly provisioned host, remove any existing etcd data in the data directory).
 
 ---
 

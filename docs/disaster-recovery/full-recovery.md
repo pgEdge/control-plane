@@ -220,7 +220,7 @@ docker service ps control-plane_${RECOVERY_HOST_ID} --no-trunc
 #### Step 1B.4: Verify Recovery Host
 
 ```bash
-curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/cluster"
+curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts"
 ```
 
 **Expected:** API accessible, one host with `status: "reachable"` and `etcd_mode: "server"`.
