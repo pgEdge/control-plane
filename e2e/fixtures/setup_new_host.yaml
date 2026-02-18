@@ -1,0 +1,62 @@
+---
+# Playbook for setting up a new host from scratch.
+# Creates the VM (if Lima) and installs prerequisites (Docker, etcdctl, etc.).
+# After this playbook completes, manually join Docker Swarm and the Control Plane cluster.
+#
+# Usage:
+#   ansible-playbook \
+#     --extra-vars='@vars/lima.yaml' \
+#     --extra-vars='@vars/small.yaml' \
+#     --extra-vars='target_host=host-3' \
+#     setup_new_host.yaml
+
+- name: Deploy and setup new host
+  hosts: localhost
+  gather_facts: true
+  tasks:
+    - name: Deploy VM using lima_deploy role
+      include_role:
+        name: lima_deploy
+      vars:
+        machine: "{{ machines | selectattr('name', 'equalto', target_host) | first }}"
+      when: provider == 'lima'
+
+    - name: Add target host to inventory
+      add_host:
+        name: "{{ target_host }}"
+        groups: new_host
+        ansible_ssh_common_args: "-F {{ ansible_env.HOME }}/.lima/{{ target_host }}/ssh.config"
+        ansible_host: "lima-{{ target_host }}"
+      when: provider == 'lima'
+
+    - name: Wait for SSH to be available
+      command: ssh -F {{ ansible_env.HOME }}/.lima/{{ target_host }}/ssh.config lima-{{ target_host }} echo ok
+      register: ssh_result
+      until: ssh_result.rc == 0
+      retries: 24
+      delay: 5
+      changed_when: false
+      when: provider == 'lima'
+
+- name: Gather facts on new host
+  hosts: new_host
+  gather_facts: true
+  tasks:
+    - name: Set peer_ip (Lima)
+      set_fact:
+        peer_ip: "{{ ansible_facts.eth0.ipv4.address }}"
+      when: "'eth0' in ansible_facts"
+
+    - name: Wait for DNS to be available
+      command: getent hosts mirrors.rockylinux.org
+      register: dns_result
+      until: dns_result.rc == 0
+      retries: 12
+      delay: 5
+      changed_when: false
+
+- name: Install prerequisites
+  hosts: new_host
+  become: true
+  roles:
+    - role: install_prerequisites

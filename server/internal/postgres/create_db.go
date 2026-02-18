@@ -286,6 +286,40 @@ func CreateReplicationSlot(databaseName, providerNode, subscriberNode string) Co
 	}
 }
 
+// TerminateReplicationSlot terminates the walsender process using a
+// replication slot, if one is active. This must be called before dropping a
+// slot whose subscriber has gone down, since pg_drop_replication_slot fails
+// on active slots.
+func TerminateReplicationSlot(databaseName, providerNode, subscriberNode string) ConditionalStatement {
+	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
+
+	return ConditionalStatement{
+		If: Query[bool]{
+			SQL:  "SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = @slot_name AND active);",
+			Args: pgx.NamedArgs{"slot_name": slotName},
+		},
+		Then: Statement{
+			SQL:  "SELECT pg_terminate_backend(active_pid) FROM pg_replication_slots WHERE slot_name = @slot_name AND active;",
+			Args: pgx.NamedArgs{"slot_name": slotName},
+		},
+	}
+}
+
+func DropReplicationSlot(databaseName, providerNode, subscriberNode string) ConditionalStatement {
+	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
+
+	return ConditionalStatement{
+		If: Query[bool]{
+			SQL:  "SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = @slot_name);",
+			Args: pgx.NamedArgs{"slot_name": slotName},
+		},
+		Then: Statement{
+			SQL:  "SELECT pg_drop_replication_slot(@slot_name);",
+			Args: pgx.NamedArgs{"slot_name": slotName},
+		},
+	}
+}
+
 func LagTrackerCommitTimestamp(originNode, receiverNode string) Query[time.Time] {
 	return Query[time.Time]{
 		SQL: `
@@ -306,6 +340,19 @@ func CurrentReplicationSlotLSN(databaseName, providerNode, subscriberNode string
 
 	return Query[string]{
 		SQL: "SELECT restart_lsn FROM pg_replication_slots WHERE slot_name = @slot_name;",
+		Args: pgx.NamedArgs{
+			"slot_name": slotName,
+		},
+	}
+}
+
+// IsReplicationSlotActive checks if a replication slot is currently being used
+// by an active walsender process. Uses EXISTS to always return exactly one row.
+func IsReplicationSlotActive(databaseName, providerNode, subscriberNode string) Query[bool] {
+	slotName := ReplicationSlotName(databaseName, providerNode, subscriberNode)
+
+	return Query[bool]{
+		SQL: "SELECT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = @slot_name AND active_pid IS NOT NULL);",
 		Args: pgx.NamedArgs{
 			"slot_name": slotName,
 		},

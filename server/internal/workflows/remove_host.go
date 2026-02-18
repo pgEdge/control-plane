@@ -135,25 +135,32 @@ func (w *Workflows) removeHostFromDatabases(ctx workflow.Context, logger *slog.L
 		)
 	}
 
+	var errs []error
 	for i, future := range futures {
 		_, err := future.Get(ctx)
 		if err != nil {
 			dbID := inputs[i].Spec.DatabaseID
 
 			logTaskEvent(task.LogEntry{
-				Message: fmt.Sprintf("failed to update database '%s'", inputs[i].Spec.DatabaseID),
+				Message: fmt.Sprintf("failed to update database '%s'", dbID),
 				Fields: map[string]any{
 					"error": err.Error(),
 				},
 			})
 
 			logger.With("error", err, "database_id", dbID).Error("database update sub-workflow failed")
-			return err
+			errs = append(errs, fmt.Errorf("database %s: %w", dbID, err))
+			continue
 		}
 
 		logTaskEvent(task.LogEntry{
 			Message: fmt.Sprintf("successfully removing host from database '%s'", inputs[i].Spec.DatabaseID),
 		})
+	}
+
+	if err := errors.Join(errs...); err != nil {
+		logger.Info("some database update workflows failed", "failed_count", len(errs), "total_count", len(inputs))
+		return err
 	}
 
 	logger.Info("all database update workflows completed successfully")

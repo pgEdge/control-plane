@@ -1098,7 +1098,10 @@ type UpdateDatabasePayload struct {
 	DatabaseID Identifier
 	// Force update the database even if the spec is the same.
 	ForceUpdate bool
-	Request     *UpdateDatabaseRequest
+	// Host IDs to treat as removed during this update. Events targeting these
+	// hosts will be skipped.
+	RemoveHost []string
+	Request    *UpdateDatabaseRequest
 }
 
 type UpdateDatabaseRequest struct {

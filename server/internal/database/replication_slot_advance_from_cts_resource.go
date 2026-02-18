@@ -2,8 +2,10 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
@@ -79,6 +81,22 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *
 		return fmt.Errorf("failed to connect to provider %q: %w", r.ProviderNode, err)
 	}
 	defer conn.Close(ctx)
+
+	// Check if the slot is actively being used by a subscription. If so, the
+	// subscription is already replicating and we don't need to advance the slot.
+	isActive, err := postgres.
+		IsReplicationSlotActive(
+			provider.Spec.DatabaseName,
+			r.ProviderNode,
+			r.SubscriberNode).
+		Scalar(ctx, conn)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("failed to check if replication slot is active: %w", err)
+	}
+	if err == nil && isActive {
+		// Slot is in use by an active subscription, skip advancing
+		return nil
+	}
 
 	currentLSN, err := postgres.
 		CurrentReplicationSlotLSN(

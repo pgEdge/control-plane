@@ -1,0 +1,74 @@
+[
+  [
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.subscription::n1n3",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.subscription::n2n3",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.subscription::n3n1",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.subscription::n3n2",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "monitor.instance::n3-instance-1-id",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.replication_slot::n1n3",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.replication_slot::n2n3",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.replication_slot::n3n1",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.replication_slot::n3n2",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.node::n3",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.instance::n3-instance-1-id",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "orchestrator.resource::n3-instance-1-dep-1-id",
+        "diff": null
+      }
+    ]
+  ]
+]

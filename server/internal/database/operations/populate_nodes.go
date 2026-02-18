@@ -84,6 +84,10 @@ func addPeerResources(
 	newNode string,
 ) error {
 	return state.AddResource(
+		&database.ReplicationSlotResource{
+			ProviderNode:   peerNode,
+			SubscriberNode: newNode,
+		},
 		&database.SubscriptionResource{
 			SubscriberNode: newNode,
 			ProviderNode:   peerNode,
@@ -135,6 +139,10 @@ func addSyncResources(
 	newNode string,
 ) error {
 	return state.AddResource(
+		&database.ReplicationSlotResource{
+			ProviderNode:   sourceNode,
+			SubscriberNode: newNode,
+		},
 		&database.SubscriptionResource{
 			SubscriberNode:    newNode,
 			ProviderNode:      sourceNode,

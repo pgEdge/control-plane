@@ -35,10 +35,24 @@
     [
       {
         "type": "create",
-        "resource_id": "database.replication_slot_create::spk_test_n2_sub_n2_n3",
+        "resource_id": "database.replication_slot::n1n3",
         "reason": "does_not_exist",
         "diff": null
       },
+      {
+        "type": "create",
+        "resource_id": "database.replication_slot::n2n3",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "database.replication_slot_create::spk_test_n2_sub_n2_n3",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
       {
         "type": "create",
         "resource_id": "database.subscription::n2n3",
@@ -104,6 +118,20 @@
     ]
   ],
   [
+    [
+      {
+        "type": "create",
+        "resource_id": "database.replication_slot::n3n1",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "database.replication_slot::n3n2",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
     [
       {
         "type": "update",

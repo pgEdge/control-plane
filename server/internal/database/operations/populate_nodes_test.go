@@ -32,6 +32,10 @@ func TestPopulateNode(t *testing.T) {
 			// source node, this will just have the sync resources.
 			expected: makeState(t,
 				[]resource.Resource{
+					&database.ReplicationSlotResource{
+						ProviderNode:   "n1",
+						SubscriberNode: "n2",
+					},
 					&database.SubscriptionResource{
 						SubscriberNode: "n2",
 						ProviderNode:   "n1",
@@ -64,6 +68,10 @@ func TestPopulateNode(t *testing.T) {
 			existingNodeNames: []string{"n1", "n2"},
 			expected: makeState(t,
 				[]resource.Resource{
+					&database.ReplicationSlotResource{
+						ProviderNode:   "n2",
+						SubscriberNode: "n3",
+					},
 					&database.SubscriptionResource{
 						SubscriberNode: "n3",
 						ProviderNode:   "n2",
@@ -88,6 +96,10 @@ func TestPopulateNode(t *testing.T) {
 					&database.WaitForSyncEventResource{
 						ProviderNode:   "n2",
 						SubscriberNode: "n1",
+					},
+					&database.ReplicationSlotResource{
+						ProviderNode:   "n1",
+						SubscriberNode: "n3",
 					},
 					&database.SubscriptionResource{
 						SubscriberNode: "n3",
@@ -172,6 +184,10 @@ func TestPopulateNodes(t *testing.T) {
 			// output.
 			expected: makeState(t,
 				[]resource.Resource{
+					&database.ReplicationSlotResource{
+						ProviderNode:   "n1",
+						SubscriberNode: "n2",
+					},
 					&database.SubscriptionResource{
 						SubscriberNode: "n2",
 						ProviderNode:   "n1",
@@ -219,6 +235,10 @@ func TestPopulateNodes(t *testing.T) {
 			// output.
 			expected: makeState(t,
 				[]resource.Resource{
+					&database.ReplicationSlotResource{
+						ProviderNode:   "n2",
+						SubscriberNode: "n3",
+					},
 					&database.SubscriptionResource{
 						SubscriberNode: "n3",
 						ProviderNode:   "n2",
@@ -243,6 +263,10 @@ func TestPopulateNodes(t *testing.T) {
 					&database.WaitForSyncEventResource{
 						ProviderNode:   "n2",
 						SubscriberNode: "n1",
+					},
+					&database.ReplicationSlotResource{
+						ProviderNode:   "n1",
+						SubscriberNode: "n3",
 					},
 					&database.SubscriptionResource{
 						SubscriberNode: "n3",
@@ -309,10 +333,18 @@ func TestPopulateNodes(t *testing.T) {
 			// Should have additional sync resources for each peer.
 			expected: makeState(t,
 				[]resource.Resource{
+					&database.ReplicationSlotResource{
+						ProviderNode:   "n2",
+						SubscriberNode: "n4",
+					},
 					&database.SubscriptionResource{
 						SubscriberNode: "n4",
 						ProviderNode:   "n2",
 						Disabled:       true,
+					},
+					&database.ReplicationSlotResource{
+						ProviderNode:   "n3",
+						SubscriberNode: "n4",
 					},
 					&database.SubscriptionResource{
 						SubscriberNode: "n4",
@@ -358,6 +390,10 @@ func TestPopulateNodes(t *testing.T) {
 					&database.WaitForSyncEventResource{
 						ProviderNode:   "n3",
 						SubscriberNode: "n1",
+					},
+					&database.ReplicationSlotResource{
+						ProviderNode:   "n1",
+						SubscriberNode: "n4",
 					},
 					&database.SubscriptionResource{
 						SubscriberNode: "n4",
@@ -432,6 +468,10 @@ func TestPopulateNodes(t *testing.T) {
 			// Should only have sync resources
 			expected: makeState(t,
 				[]resource.Resource{
+					&database.ReplicationSlotResource{
+						ProviderNode:   "n1",
+						SubscriberNode: "n2",
+					},
 					&database.SubscriptionResource{
 						SubscriberNode: "n2",
 						ProviderNode:   "n1",
@@ -448,6 +488,10 @@ func TestPopulateNodes(t *testing.T) {
 					&database.WaitForSyncEventResource{
 						ProviderNode:   "n1",
 						SubscriberNode: "n2",
+					},
+					&database.ReplicationSlotResource{
+						ProviderNode:   "n1",
+						SubscriberNode: "n3",
 					},
 					&database.SubscriptionResource{
 						SubscriberNode: "n3",

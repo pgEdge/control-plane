@@ -1330,6 +1330,9 @@ func EncodeUpdateDatabaseRequest(encoder func(*http.Request) goahttp.Encoder) fu
 		}
 		values := req.URL.Query()
 		values.Add("force_update", fmt.Sprintf("%v", p.ForceUpdate))
+		for _, value := range p.RemoveHost {
+			values.Add("remove_host", value)
+		}
 		req.URL.RawQuery = values.Encode()
 		body := NewUpdateDatabaseRequestBody(p)
 		if err := encoder(req).Encode(&body); err != nil {

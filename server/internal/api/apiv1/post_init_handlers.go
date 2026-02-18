@@ -391,7 +391,7 @@ func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDa
 	}
 
 	prevState := db.State
-	t, err := s.workflowSvc.UpdateDatabase(ctx, spec, req.ForceUpdate)
+	t, err := s.workflowSvc.UpdateDatabase(ctx, spec, req.ForceUpdate, req.RemoveHost...)
 	if err != nil {
 		restorationErr := s.dbSvc.UpdateDatabaseState(ctx, db.DatabaseID, db.State, prevState)
 		if restorationErr != nil {

@@ -48,10 +48,16 @@ func EndState(nodes []*NodeResources) (*resource.State, error) {
 			if peer.NodeName == node.NodeName {
 				continue
 			}
-			resources = append(resources, &database.SubscriptionResource{
-				SubscriberNode: peer.NodeName,
-				ProviderNode:   node.NodeName,
-			})
+			resources = append(resources,
+				&database.ReplicationSlotResource{
+					ProviderNode:   node.NodeName,
+					SubscriberNode: peer.NodeName,
+				},
+				&database.SubscriptionResource{
+					SubscriberNode: peer.NodeName,
+					ProviderNode:   node.NodeName,
+				},
+			)
 		}
 
 		if err := end.AddResource(resources...); err != nil {

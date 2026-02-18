@@ -149,7 +149,7 @@
                   ],
                   "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
                   "status": {
-                    "state": "available"
+                    "state": "error"
                   }
                 }
               }
@@ -1410,6 +1410,30 @@
             "example": true
           },
           {
+            "name": "remove_host",
+            "in": "query",
+            "description": "Host IDs to treat as removed during this update. Events targeting these hosts will be skipped.",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "example": "Et architecto."
+              },
+              "description": "Host IDs to treat as removed during this update. Events targeting these hosts will be skipped.",
+              "example": [
+                "Fuga qui id libero dignissimos.",
+                "Est numquam perspiciatis."
+              ]
+            },
+            "example": [
+              "Sequi saepe velit.",
+              "Ex sint dolorum vel.",
+              "Laboriosam aut dolorum est.",
+              "Consequatur mollitia illo delectus dolorum aut ducimus."
+            ]
+          },
+          {
             "name": "database_id",
             "in": "path",
             "description": "ID of the database to update.",
@@ -2402,7 +2426,7 @@
               },
               "example": {
                 "candidate_instance_id": "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi",
-                "skip_validation": false
+                "skip_validation": true
               }
             }
           }
@@ -3887,6 +3911,16 @@
                       "status": "completed",
                       "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
                       "type": "create"
+                    },
+                    {
+                      "completed_at": "2025-06-18T16:52:35Z",
+                      "created_at": "2025-06-18T16:52:05Z",
+                      "database_id": "storefront",
+                      "entity_id": "storefront",
+                      "scope": "database",
+                      "status": "completed",
+                      "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
+                      "type": "create"
                     }
                   ]
                 }
@@ -4002,7 +4036,7 @@
                   "orchestrator": "swarm",
                   "status": {
                     "components": {
-                      "Cum possimus minima.": {
+                      "Eveniet possimus dicta laudantium.": {
                         "details": {
                           "alarms": [
                             "3: NOSPACE"
@@ -4011,7 +4045,7 @@
                         "error": "failed to connect to etcd",
                         "healthy": false
                       },
-                      "Et et.": {
+                      "Repellendus in doloremque.": {
                         "details": {
                           "alarms": [
                             "3: NOSPACE"
@@ -4020,7 +4054,7 @@
                         "error": "failed to connect to etcd",
                         "healthy": false
                       },
-                      "Pariatur praesentium.": {
+                      "Rerum exercitationem laborum dignissimos incidunt in quas.": {
                         "details": {
                           "alarms": [
                             "3: NOSPACE"
@@ -4034,10 +4068,6 @@
                     "updated_at": "2021-07-01T12:34:56Z"
                   },
                   "supported_pgedge_versions": [
-                    {
-                      "postgres_version": "17.6",
-                      "spock_version": "5"
-                    },
                     {
                       "postgres_version": "17.6",
                       "spock_version": "5"
@@ -4936,6 +4966,29 @@
                 "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                 "s3_region": "us-east-1",
                 "type": "s3"
+              },
+              {
+                "azure_account": "pgedge-backups",
+                "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "azure_endpoint": "blob.core.usgovcloudapi.net",
+                "azure_key": "YXpLZXk=",
+                "base_path": "/backups",
+                "custom_options": {
+                  "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "storage-upload-chunk-size": "5MiB"
+                },
+                "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "gcs_endpoint": "localhost",
+                "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
+                "retention_full": 2,
+                "retention_full_type": "count",
+                "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                "s3_region": "us-east-1",
+                "type": "s3"
               }
             ],
             "minItems": 1
@@ -4968,29 +5021,6 @@
         },
         "example": {
           "repositories": [
-            {
-              "azure_account": "pgedge-backups",
-              "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-              "azure_endpoint": "blob.core.usgovcloudapi.net",
-              "azure_key": "YXpLZXk=",
-              "base_path": "/backups",
-              "custom_options": {
-                "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                "storage-upload-chunk-size": "5MiB"
-              },
-              "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-              "gcs_endpoint": "localhost",
-              "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-              "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-              "retention_full": 2,
-              "retention_full_type": "count",
-              "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-              "s3_endpoint": "s3.us-east-1.amazonaws.com",
-              "s3_key": "AKIAIOSFODNN7EXAMPLE",
-              "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-              "s3_region": "us-east-1",
-              "type": "s3"
-            },
             {
               "azure_account": "pgedge-backups",
               "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -5091,7 +5121,7 @@
             },
             "additionalProperties": {
               "type": "string",
-              "example": "Qui et eius reiciendis accusamus."
+              "example": "Ut dolor dolorem impedit."
             }
           },
           "backup_options": {
@@ -5102,7 +5132,7 @@
             },
             "additionalProperties": {
               "type": "string",
-              "example": "Quo recusandae quibusdam fuga molestiae."
+              "example": "Et quia commodi consequatur ex possimus."
             }
           },
           "type": {
@@ -5174,7 +5204,7 @@
             },
             "additionalProperties": {
               "type": "string",
-              "example": "Impedit laudantium et quia commodi consequatur."
+              "example": "Aut facere eius."
             }
           },
           "gcs_bucket": {
@@ -5880,7 +5910,7 @@
           "state": {
             "type": "string",
             "description": "Current state of the database.",
-            "example": "unknown",
+            "example": "creating",
             "enum": [
               "creating",
               "modifying",
@@ -6292,7 +6322,7 @@
           "state": {
             "type": "string",
             "description": "Current state of the database.",
-            "example": "modifying",
+            "example": "restoring",
             "enum": [
               "creating",
               "modifying",
@@ -6957,7 +6987,7 @@
             ],
             "spock_version": "5"
           },
-          "state": "failed",
+          "state": "restoring",
           "tenant_id": "8210ec10-2dca-406c-ac4a-0661d2189954",
           "updated_at": "2025-01-01T02:30:00Z"
         },
@@ -6976,6 +7006,648 @@
           "$ref": "#/components/schemas/Database"
         },
         "example": [
+          {
+            "created_at": "2025-01-01T01:30:00Z",
+            "id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
+            "instances": [
+              {
+                "connection_info": {
+                  "hostname": "i-0123456789abcdef.ec2.internal",
+                  "ipv4_address": "10.24.34.2",
+                  "port": 5432
+                },
+                "created_at": "1987-03-24T21:22:02Z",
+                "error": "failed to get patroni status: connection refused",
+                "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
+                "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
+                "node_name": "n1",
+                "postgres": {
+                  "patroni_paused": true,
+                  "patroni_state": "unknown",
+                  "pending_restart": false,
+                  "role": "primary",
+                  "version": "18.1"
+                },
+                "spock": {
+                  "read_only": "off",
+                  "subscriptions": [
+                    {
+                      "name": "sub_n1n2",
+                      "provider_node": "n2",
+                      "status": "down"
+                    },
+                    {
+                      "name": "sub_n1n2",
+                      "provider_node": "n2",
+                      "status": "down"
+                    }
+                  ],
+                  "version": "4.10.0"
+                },
+                "state": "creating",
+                "status_updated_at": "1974-12-13T04:15:04Z",
+                "updated_at": "2006-10-18T16:07:16Z"
+              },
+              {
+                "connection_info": {
+                  "hostname": "i-0123456789abcdef.ec2.internal",
+                  "ipv4_address": "10.24.34.2",
+                  "port": 5432
+                },
+                "created_at": "1987-03-24T21:22:02Z",
+                "error": "failed to get patroni status: connection refused",
+                "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
+                "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
+                "node_name": "n1",
+                "postgres": {
+                  "patroni_paused": true,
+                  "patroni_state": "unknown",
+                  "pending_restart": false,
+                  "role": "primary",
+                  "version": "18.1"
+                },
+                "spock": {
+                  "read_only": "off",
+                  "subscriptions": [
+                    {
+                      "name": "sub_n1n2",
+                      "provider_node": "n2",
+                      "status": "down"
+                    },
+                    {
+                      "name": "sub_n1n2",
+                      "provider_node": "n2",
+                      "status": "down"
+                    }
+                  ],
+                  "version": "4.10.0"
+                },
+                "state": "creating",
+                "status_updated_at": "1974-12-13T04:15:04Z",
+                "updated_at": "2006-10-18T16:07:16Z"
+              },
+              {
+                "connection_info": {
+                  "hostname": "i-0123456789abcdef.ec2.internal",
+                  "ipv4_address": "10.24.34.2",
+                  "port": 5432
+                },
+                "created_at": "1987-03-24T21:22:02Z",
+                "error": "failed to get patroni status: connection refused",
+                "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
+                "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
+                "node_name": "n1",
+                "postgres": {
+                  "patroni_paused": true,
+                  "patroni_state": "unknown",
+                  "pending_restart": false,
+                  "role": "primary",
+                  "version": "18.1"
+                },
+                "spock": {
+                  "read_only": "off",
+                  "subscriptions": [
+                    {
+                      "name": "sub_n1n2",
+                      "provider_node": "n2",
+                      "status": "down"
+                    },
+                    {
+                      "name": "sub_n1n2",
+                      "provider_node": "n2",
+                      "status": "down"
+                    }
+                  ],
+                  "version": "4.10.0"
+                },
+                "state": "creating",
+                "status_updated_at": "1974-12-13T04:15:04Z",
+                "updated_at": "2006-10-18T16:07:16Z"
+              },
+              {
+                "connection_info": {
+                  "hostname": "i-0123456789abcdef.ec2.internal",
+                  "ipv4_address": "10.24.34.2",
+                  "port": 5432
+                },
+                "created_at": "1987-03-24T21:22:02Z",
+                "error": "failed to get patroni status: connection refused",
+                "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
+                "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
+                "node_name": "n1",
+                "postgres": {
+                  "patroni_paused": true,
+                  "patroni_state": "unknown",
+                  "pending_restart": false,
+                  "role": "primary",
+                  "version": "18.1"
+                },
+                "spock": {
+                  "read_only": "off",
+                  "subscriptions": [
+                    {
+                      "name": "sub_n1n2",
+                      "provider_node": "n2",
+                      "status": "down"
+                    },
+                    {
+                      "name": "sub_n1n2",
+                      "provider_node": "n2",
+                      "status": "down"
+                    }
+                  ],
+                  "version": "4.10.0"
+                },
+                "state": "creating",
+                "status_updated_at": "1974-12-13T04:15:04Z",
+                "updated_at": "2006-10-18T16:07:16Z"
+              }
+            ],
+            "service_instances": [
+              {
+                "created_at": "2025-01-28T10:00:00Z",
+                "database_id": "production",
+                "error": "failed to start container: image not found",
+                "host_id": "host-1",
+                "service_id": "mcp-server",
+                "service_instance_id": "mcp-server-host-1",
+                "state": "running",
+                "status": {
+                  "container_id": "a1b2c3d4e5f6",
+                  "health_check": {
+                    "checked_at": "2025-01-28T10:00:00Z",
+                    "message": "Connection refused",
+                    "status": "healthy"
+                  },
+                  "hostname": "mcp-server-host-1.internal",
+                  "image_version": "1.0.0",
+                  "ipv4_address": "10.0.1.5",
+                  "last_health_at": "2025-01-28T10:00:00Z",
+                  "ports": [
+                    {
+                      "container_port": 8080,
+                      "host_port": 8080,
+                      "name": "web-client"
+                    },
+                    {
+                      "container_port": 8080,
+                      "host_port": 8080,
+                      "name": "web-client"
+                    }
+                  ],
+                  "service_ready": true
+                },
+                "updated_at": "2025-01-28T10:05:00Z"
+              },
+              {
+                "created_at": "2025-01-28T10:00:00Z",
+                "database_id": "production",
+                "error": "failed to start container: image not found",
+                "host_id": "host-1",
+                "service_id": "mcp-server",
+                "service_instance_id": "mcp-server-host-1",
+                "state": "running",
+                "status": {
+                  "container_id": "a1b2c3d4e5f6",
+                  "health_check": {
+                    "checked_at": "2025-01-28T10:00:00Z",
+                    "message": "Connection refused",
+                    "status": "healthy"
+                  },
+                  "hostname": "mcp-server-host-1.internal",
+                  "image_version": "1.0.0",
+                  "ipv4_address": "10.0.1.5",
+                  "last_health_at": "2025-01-28T10:00:00Z",
+                  "ports": [
+                    {
+                      "container_port": 8080,
+                      "host_port": 8080,
+                      "name": "web-client"
+                    },
+                    {
+                      "container_port": 8080,
+                      "host_port": 8080,
+                      "name": "web-client"
+                    }
+                  ],
+                  "service_ready": true
+                },
+                "updated_at": "2025-01-28T10:05:00Z"
+              },
+              {
+                "created_at": "2025-01-28T10:00:00Z",
+                "database_id": "production",
+                "error": "failed to start container: image not found",
+                "host_id": "host-1",
+                "service_id": "mcp-server",
+                "service_instance_id": "mcp-server-host-1",
+                "state": "running",
+                "status": {
+                  "container_id": "a1b2c3d4e5f6",
+                  "health_check": {
+                    "checked_at": "2025-01-28T10:00:00Z",
+                    "message": "Connection refused",
+                    "status": "healthy"
+                  },
+                  "hostname": "mcp-server-host-1.internal",
+                  "image_version": "1.0.0",
+                  "ipv4_address": "10.0.1.5",
+                  "last_health_at": "2025-01-28T10:00:00Z",
+                  "ports": [
+                    {
+                      "container_port": 8080,
+                      "host_port": 8080,
+                      "name": "web-client"
+                    },
+                    {
+                      "container_port": 8080,
+                      "host_port": 8080,
+                      "name": "web-client"
+                    }
+                  ],
+                  "service_ready": true
+                },
+                "updated_at": "2025-01-28T10:05:00Z"
+              }
+            ],
+            "spec": {
+              "backup_config": {
+                "repositories": [
+                  {
+                    "azure_account": "pgedge-backups",
+                    "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "azure_endpoint": "blob.core.usgovcloudapi.net",
+                    "azure_key": "YXpLZXk=",
+                    "base_path": "/backups",
+                    "custom_options": {
+                      "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                      "storage-upload-chunk-size": "5MiB"
+                    },
+                    "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "gcs_endpoint": "localhost",
+                    "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                    "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
+                    "retention_full": 2,
+                    "retention_full_type": "count",
+                    "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                    "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                    "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                    "s3_region": "us-east-1",
+                    "type": "s3"
+                  }
+                ],
+                "schedules": [
+                  {
+                    "cron_expression": "0 6 * * ?",
+                    "id": "daily-full-backup",
+                    "type": "full"
+                  },
+                  {
+                    "cron_expression": "0 6 * * ?",
+                    "id": "daily-full-backup",
+                    "type": "full"
+                  },
+                  {
+                    "cron_expression": "0 6 * * ?",
+                    "id": "daily-full-backup",
+                    "type": "full"
+                  }
+                ]
+              },
+              "cpus": "500m",
+              "database_name": "northwind",
+              "database_users": [
+                {
+                  "attributes": [
+                    "LOGIN",
+                    "CREATEDB",
+                    "CREATEROLE"
+                  ],
+                  "db_owner": true,
+                  "password": "secret",
+                  "roles": [
+                    "pgedge_superuser"
+                  ],
+                  "username": "admin"
+                },
+                {
+                  "attributes": [
+                    "LOGIN",
+                    "CREATEDB",
+                    "CREATEROLE"
+                  ],
+                  "db_owner": true,
+                  "password": "secret",
+                  "roles": [
+                    "pgedge_superuser"
+                  ],
+                  "username": "admin"
+                },
+                {
+                  "attributes": [
+                    "LOGIN",
+                    "CREATEDB",
+                    "CREATEROLE"
+                  ],
+                  "db_owner": true,
+                  "password": "secret",
+                  "roles": [
+                    "pgedge_superuser"
+                  ],
+                  "username": "admin"
+                }
+              ],
+              "memory": "500M",
+              "nodes": [
+                {
+                  "backup_config": {
+                    "repositories": [
+                      {
+                        "azure_account": "pgedge-backups",
+                        "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                        "azure_endpoint": "blob.core.usgovcloudapi.net",
+                        "azure_key": "YXpLZXk=",
+                        "base_path": "/backups",
+                        "custom_options": {
+                          "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                          "storage-upload-chunk-size": "5MiB"
+                        },
+                        "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                        "gcs_endpoint": "localhost",
+                        "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                        "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
+                        "retention_full": 2,
+                        "retention_full_type": "count",
+                        "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                        "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                        "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                        "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                        "s3_region": "us-east-1",
+                        "type": "s3"
+                      }
+                    ],
+                    "schedules": [
+                      {
+                        "cron_expression": "0 6 * * ?",
+                        "id": "daily-full-backup",
+                        "type": "full"
+                      },
+                      {
+                        "cron_expression": "0 6 * * ?",
+                        "id": "daily-full-backup",
+                        "type": "full"
+                      },
+                      {
+                        "cron_expression": "0 6 * * ?",
+                        "id": "daily-full-backup",
+                        "type": "full"
+                      }
+                    ]
+                  },
+                  "cpus": "500m",
+                  "host_ids": [
+                    "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  ],
+                  "memory": "500M",
+                  "name": "n1",
+                  "orchestrator_opts": {
+                    "swarm": {
+                      "extra_labels": {
+                        "traefik.enable": "true",
+                        "traefik.tcp.routers.mydb.rule": "HostSNI(`mydb.example.com`)"
+                      },
+                      "extra_networks": [
+                        {
+                          "aliases": [
+                            "pg-db",
+                            "db-alias"
+                          ],
+                          "driver_opts": {
+                            "com.docker.network.endpoint.expose": "true"
+                          },
+                          "id": "traefik-public"
+                        },
+                        {
+                          "aliases": [
+                            "pg-db",
+                            "db-alias"
+                          ],
+                          "driver_opts": {
+                            "com.docker.network.endpoint.expose": "true"
+                          },
+                          "id": "traefik-public"
+                        },
+                        {
+                          "aliases": [
+                            "pg-db",
+                            "db-alias"
+                          ],
+                          "driver_opts": {
+                            "com.docker.network.endpoint.expose": "true"
+                          },
+                          "id": "traefik-public"
+                        }
+                      ],
+                      "extra_volumes": [
+                        {
+                          "destination_path": "/backups/container",
+                          "host_path": "/Users/user/backups/host"
+                        },
+                        {
+                          "destination_path": "/backups/container",
+                          "host_path": "/Users/user/backups/host"
+                        },
+                        {
+                          "destination_path": "/backups/container",
+                          "host_path": "/Users/user/backups/host"
+                        }
+                      ]
+                    }
+                  },
+                  "port": 5432,
+                  "postgres_version": "17.6",
+                  "postgresql_conf": {
+                    "max_connections": 1000
+                  },
+                  "restore_config": {
+                    "repository": {
+                      "azure_account": "pgedge-backups",
+                      "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                      "azure_endpoint": "blob.core.usgovcloudapi.net",
+                      "azure_key": "YXpLZXk=",
+                      "base_path": "/backups",
+                      "custom_options": {
+                        "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
+                      },
+                      "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                      "gcs_endpoint": "localhost",
+                      "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                      "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
+                      "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                      "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                      "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                      "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                      "s3_region": "us-east-1",
+                      "type": "s3"
+                    },
+                    "restore_options": {
+                      "set": "20250505-153628F",
+                      "target": "123456",
+                      "type": "xid"
+                    },
+                    "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
+                    "source_database_name": "northwind",
+                    "source_node_name": "n1"
+                  },
+                  "source_node": "n1"
+                }
+              ],
+              "orchestrator_opts": {
+                "swarm": {
+                  "extra_labels": {
+                    "traefik.enable": "true",
+                    "traefik.tcp.routers.mydb.rule": "HostSNI(`mydb.example.com`)"
+                  },
+                  "extra_networks": [
+                    {
+                      "aliases": [
+                        "pg-db",
+                        "db-alias"
+                      ],
+                      "driver_opts": {
+                        "com.docker.network.endpoint.expose": "true"
+                      },
+                      "id": "traefik-public"
+                    },
+                    {
+                      "aliases": [
+                        "pg-db",
+                        "db-alias"
+                      ],
+                      "driver_opts": {
+                        "com.docker.network.endpoint.expose": "true"
+                      },
+                      "id": "traefik-public"
+                    },
+                    {
+                      "aliases": [
+                        "pg-db",
+                        "db-alias"
+                      ],
+                      "driver_opts": {
+                        "com.docker.network.endpoint.expose": "true"
+                      },
+                      "id": "traefik-public"
+                    }
+                  ],
+                  "extra_volumes": [
+                    {
+                      "destination_path": "/backups/container",
+                      "host_path": "/Users/user/backups/host"
+                    },
+                    {
+                      "destination_path": "/backups/container",
+                      "host_path": "/Users/user/backups/host"
+                    },
+                    {
+                      "destination_path": "/backups/container",
+                      "host_path": "/Users/user/backups/host"
+                    }
+                  ]
+                }
+              },
+              "port": 5432,
+              "postgres_version": "17.6",
+              "postgresql_conf": {
+                "max_connections": 1000
+              },
+              "restore_config": {
+                "repository": {
+                  "azure_account": "pgedge-backups",
+                  "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                  "azure_endpoint": "blob.core.usgovcloudapi.net",
+                  "azure_key": "YXpLZXk=",
+                  "base_path": "/backups",
+                  "custom_options": {
+                    "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
+                  },
+                  "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                  "gcs_endpoint": "localhost",
+                  "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                  "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
+                  "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                  "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                  "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                  "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                  "s3_region": "us-east-1",
+                  "type": "s3"
+                },
+                "restore_options": {
+                  "set": "20250505-153628F",
+                  "target": "123456",
+                  "type": "xid"
+                },
+                "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
+                "source_database_name": "northwind",
+                "source_node_name": "n1"
+              },
+              "services": [
+                {
+                  "config": {
+                    "llm_model": "gpt-4",
+                    "llm_provider": "openai",
+                    "openai_api_key": "sk-..."
+                  },
+                  "cpus": "500m",
+                  "host_ids": [
+                    "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  ],
+                  "memory": "512M",
+                  "port": 0,
+                  "service_id": "analytics-service",
+                  "service_type": "mcp",
+                  "version": "latest"
+                },
+                {
+                  "config": {
+                    "llm_model": "gpt-4",
+                    "llm_provider": "openai",
+                    "openai_api_key": "sk-..."
+                  },
+                  "cpus": "500m",
+                  "host_ids": [
+                    "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  ],
+                  "memory": "512M",
+                  "port": 0,
+                  "service_id": "analytics-service",
+                  "service_type": "mcp",
+                  "version": "latest"
+                },
+                {
+                  "config": {
+                    "llm_model": "gpt-4",
+                    "llm_provider": "openai",
+                    "openai_api_key": "sk-..."
+                  },
+                  "cpus": "500m",
+                  "host_ids": [
+                    "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                  ],
+                  "memory": "512M",
+                  "port": 0,
+                  "service_id": "analytics-service",
+                  "service_type": "mcp",
+                  "version": "latest"
+                }
+              ],
+              "spock_version": "5"
+            },
+            "state": "creating",
+            "tenant_id": "8210ec10-2dca-406c-ac4a-0661d2189954",
+            "updated_at": "2025-01-01T02:30:00Z"
+          },
           {
             "created_at": "2025-01-01T01:30:00Z",
             "id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
@@ -8928,7 +9600,6 @@
             "description": "The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.",
             "example": [
               "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-              "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
               "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
             ],
             "minItems": 1
@@ -9026,6 +9697,8 @@
           },
           "cpus": "500m",
           "host_ids": [
+            "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
+            "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
             "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
           ],
           "memory": "500M",
@@ -9148,6 +9821,7 @@
             },
             "description": "The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.",
             "example": [
+              "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "76f9b8c0-4958-11f0-a489-3bb29577c696"
             ],
             "minItems": 1
@@ -9223,6 +9897,52 @@
                 "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                 "s3_region": "us-east-1",
                 "type": "s3"
+              },
+              {
+                "azure_account": "pgedge-backups",
+                "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "azure_endpoint": "blob.core.usgovcloudapi.net",
+                "azure_key": "YXpLZXk=",
+                "base_path": "/backups",
+                "custom_options": {
+                  "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "storage-upload-chunk-size": "5MiB"
+                },
+                "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "gcs_endpoint": "localhost",
+                "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "retention_full": 2,
+                "retention_full_type": "count",
+                "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                "s3_region": "us-east-1",
+                "type": "s3"
+              },
+              {
+                "azure_account": "pgedge-backups",
+                "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "azure_endpoint": "blob.core.usgovcloudapi.net",
+                "azure_key": "YXpLZXk=",
+                "base_path": "/backups",
+                "custom_options": {
+                  "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "storage-upload-chunk-size": "5MiB"
+                },
+                "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "gcs_endpoint": "localhost",
+                "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "retention_full": 2,
+                "retention_full_type": "count",
+                "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                "s3_region": "us-east-1",
+                "type": "s3"
               }
             ],
             "schedules": [
@@ -9245,6 +9965,7 @@
           },
           "cpus": "500m",
           "host_ids": [
+            "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "76f9b8c0-4958-11f0-a489-3bb29577c696"
           ],
@@ -9444,6 +10165,29 @@
                 "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                 "s3_region": "us-east-1",
                 "type": "s3"
+              },
+              {
+                "azure_account": "pgedge-backups",
+                "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "azure_endpoint": "blob.core.usgovcloudapi.net",
+                "azure_key": "YXpLZXk=",
+                "base_path": "/backups",
+                "custom_options": {
+                  "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "storage-upload-chunk-size": "5MiB"
+                },
+                "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "gcs_endpoint": "localhost",
+                "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "retention_full": 2,
+                "retention_full_type": "count",
+                "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                "s3_region": "us-east-1",
+                "type": "s3"
               }
             ],
             "schedules": [
@@ -9466,6 +10210,7 @@
           },
           "cpus": "500m",
           "host_ids": [
+            "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "76f9b8c0-4958-11f0-a489-3bb29577c696"
           ],
@@ -9687,6 +10432,29 @@
                 "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                 "s3_region": "us-east-1",
                 "type": "s3"
+              },
+              {
+                "azure_account": "pgedge-backups",
+                "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "azure_endpoint": "blob.core.usgovcloudapi.net",
+                "azure_key": "YXpLZXk=",
+                "base_path": "/backups",
+                "custom_options": {
+                  "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "storage-upload-chunk-size": "5MiB"
+                },
+                "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "gcs_endpoint": "localhost",
+                "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "retention_full": 2,
+                "retention_full_type": "count",
+                "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                "s3_region": "us-east-1",
+                "type": "s3"
               }
             ],
             "schedules": [
@@ -9709,6 +10477,8 @@
           },
           "cpus": "500m",
           "host_ids": [
+            "76f9b8c0-4958-11f0-a489-3bb29577c696",
+            "76f9b8c0-4958-11f0-a489-3bb29577c696",
             "76f9b8c0-4958-11f0-a489-3bb29577c696"
           ],
           "memory": "500M",
@@ -10031,148 +10801,6 @@
                   "source_node_name": "n1"
                 },
                 "source_node": "n1"
-              },
-              {
-                "backup_config": {
-                  "repositories": [
-                    {
-                      "azure_account": "pgedge-backups",
-                      "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                      "azure_endpoint": "blob.core.usgovcloudapi.net",
-                      "azure_key": "YXpLZXk=",
-                      "base_path": "/backups",
-                      "custom_options": {
-                        "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                        "storage-upload-chunk-size": "5MiB"
-                      },
-                      "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                      "gcs_endpoint": "localhost",
-                      "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                      "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                      "retention_full": 2,
-                      "retention_full_type": "count",
-                      "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                      "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                      "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                      "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                      "s3_region": "us-east-1",
-                      "type": "s3"
-                    }
-                  ],
-                  "schedules": [
-                    {
-                      "cron_expression": "0 6 * * ?",
-                      "id": "daily-full-backup",
-                      "type": "full"
-                    },
-                    {
-                      "cron_expression": "0 6 * * ?",
-                      "id": "daily-full-backup",
-                      "type": "full"
-                    },
-                    {
-                      "cron_expression": "0 6 * * ?",
-                      "id": "daily-full-backup",
-                      "type": "full"
-                    }
-                  ]
-                },
-                "cpus": "500m",
-                "host_ids": [
-                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
-                ],
-                "memory": "500M",
-                "name": "n1",
-                "orchestrator_opts": {
-                  "swarm": {
-                    "extra_labels": {
-                      "traefik.enable": "true",
-                      "traefik.tcp.routers.mydb.rule": "HostSNI(`mydb.example.com`)"
-                    },
-                    "extra_networks": [
-                      {
-                        "aliases": [
-                          "pg-db",
-                          "db-alias"
-                        ],
-                        "driver_opts": {
-                          "com.docker.network.endpoint.expose": "true"
-                        },
-                        "id": "traefik-public"
-                      },
-                      {
-                        "aliases": [
-                          "pg-db",
-                          "db-alias"
-                        ],
-                        "driver_opts": {
-                          "com.docker.network.endpoint.expose": "true"
-                        },
-                        "id": "traefik-public"
-                      },
-                      {
-                        "aliases": [
-                          "pg-db",
-                          "db-alias"
-                        ],
-                        "driver_opts": {
-                          "com.docker.network.endpoint.expose": "true"
-                        },
-                        "id": "traefik-public"
-                      }
-                    ],
-                    "extra_volumes": [
-                      {
-                        "destination_path": "/backups/container",
-                        "host_path": "/Users/user/backups/host"
-                      },
-                      {
-                        "destination_path": "/backups/container",
-                        "host_path": "/Users/user/backups/host"
-                      },
-                      {
-                        "destination_path": "/backups/container",
-                        "host_path": "/Users/user/backups/host"
-                      }
-                    ]
-                  }
-                },
-                "port": 5432,
-                "postgres_version": "17.6",
-                "postgresql_conf": {
-                  "max_connections": 1000
-                },
-                "restore_config": {
-                  "repository": {
-                    "azure_account": "pgedge-backups",
-                    "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                    "azure_endpoint": "blob.core.usgovcloudapi.net",
-                    "azure_key": "YXpLZXk=",
-                    "base_path": "/backups",
-                    "custom_options": {
-                      "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
-                    },
-                    "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                    "gcs_endpoint": "localhost",
-                    "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                    "id": "f6b84a99-5e91-4203-be1e-131fe82e5984",
-                    "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                    "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                    "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                    "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                    "s3_region": "us-east-1",
-                    "type": "s3"
-                  },
-                  "restore_options": {
-                    "set": "20250505-153628F",
-                    "target": "123456",
-                    "type": "xid"
-                  },
-                  "source_database_id": "02f1a7db-fca8-4521-b57a-2a375c1ced51",
-                  "source_database_name": "northwind",
-                  "source_node_name": "n1"
-                },
-                "source_node": "n1"
               }
             ],
             "minItems": 1,
@@ -10214,6 +10842,38 @@
             },
             "description": "Service instances to run alongside the database (e.g., MCP servers).",
             "example": [
+              {
+                "config": {
+                  "llm_model": "gpt-4",
+                  "llm_provider": "openai",
+                  "openai_api_key": "sk-..."
+                },
+                "cpus": "500m",
+                "host_ids": [
+                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                ],
+                "memory": "512M",
+                "port": 0,
+                "service_id": "analytics-service",
+                "service_type": "mcp",
+                "version": "latest"
+              },
+              {
+                "config": {
+                  "llm_model": "gpt-4",
+                  "llm_provider": "openai",
+                  "openai_api_key": "sk-..."
+                },
+                "cpus": "500m",
+                "host_ids": [
+                  "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+                ],
+                "memory": "512M",
+                "port": 0,
+                "service_id": "analytics-service",
+                "service_type": "mcp",
+                "version": "latest"
+              },
               {
                 "config": {
                   "llm_model": "gpt-4",
@@ -10609,6 +11269,22 @@
               "service_id": "analytics-service",
               "service_type": "mcp",
               "version": "latest"
+            },
+            {
+              "config": {
+                "llm_model": "gpt-4",
+                "llm_provider": "openai",
+                "openai_api_key": "sk-..."
+              },
+              "cpus": "500m",
+              "host_ids": [
+                "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
+              ],
+              "memory": "512M",
+              "port": 0,
+              "service_id": "analytics-service",
+              "service_type": "mcp",
+              "version": "latest"
             }
           ],
           "spock_version": "5"
@@ -10702,6 +11378,52 @@
               {
                 "backup_config": {
                   "repositories": [
+                    {
+                      "azure_account": "pgedge-backups",
+                      "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                      "azure_endpoint": "blob.core.usgovcloudapi.net",
+                      "azure_key": "YXpLZXk=",
+                      "base_path": "/backups",
+                      "custom_options": {
+                        "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                        "storage-upload-chunk-size": "5MiB"
+                      },
+                      "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                      "gcs_endpoint": "localhost",
+                      "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                      "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                      "retention_full": 2,
+                      "retention_full_type": "count",
+                      "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                      "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                      "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                      "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                      "s3_region": "us-east-1",
+                      "type": "s3"
+                    },
+                    {
+                      "azure_account": "pgedge-backups",
+                      "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                      "azure_endpoint": "blob.core.usgovcloudapi.net",
+                      "azure_key": "YXpLZXk=",
+                      "base_path": "/backups",
+                      "custom_options": {
+                        "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                        "storage-upload-chunk-size": "5MiB"
+                      },
+                      "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                      "gcs_endpoint": "localhost",
+                      "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                      "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                      "retention_full": 2,
+                      "retention_full_type": "count",
+                      "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                      "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                      "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                      "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                      "s3_region": "us-east-1",
+                      "type": "s3"
+                    },
                     {
                       "azure_account": "pgedge-backups",
                       "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -10844,6 +11566,52 @@
               {
                 "backup_config": {
                   "repositories": [
+                    {
+                      "azure_account": "pgedge-backups",
+                      "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                      "azure_endpoint": "blob.core.usgovcloudapi.net",
+                      "azure_key": "YXpLZXk=",
+                      "base_path": "/backups",
+                      "custom_options": {
+                        "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                        "storage-upload-chunk-size": "5MiB"
+                      },
+                      "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                      "gcs_endpoint": "localhost",
+                      "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                      "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                      "retention_full": 2,
+                      "retention_full_type": "count",
+                      "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                      "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                      "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                      "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                      "s3_region": "us-east-1",
+                      "type": "s3"
+                    },
+                    {
+                      "azure_account": "pgedge-backups",
+                      "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                      "azure_endpoint": "blob.core.usgovcloudapi.net",
+                      "azure_key": "YXpLZXk=",
+                      "base_path": "/backups",
+                      "custom_options": {
+                        "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                        "storage-upload-chunk-size": "5MiB"
+                      },
+                      "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                      "gcs_endpoint": "localhost",
+                      "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                      "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                      "retention_full": 2,
+                      "retention_full_type": "count",
+                      "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                      "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                      "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                      "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                      "s3_region": "us-east-1",
+                      "type": "s3"
+                    },
                     {
                       "azure_account": "pgedge-backups",
                       "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -11093,6 +11861,52 @@
                 "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                 "s3_region": "us-east-1",
                 "type": "s3"
+              },
+              {
+                "azure_account": "pgedge-backups",
+                "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "azure_endpoint": "blob.core.usgovcloudapi.net",
+                "azure_key": "YXpLZXk=",
+                "base_path": "/backups",
+                "custom_options": {
+                  "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "storage-upload-chunk-size": "5MiB"
+                },
+                "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "gcs_endpoint": "localhost",
+                "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "retention_full": 2,
+                "retention_full_type": "count",
+                "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                "s3_region": "us-east-1",
+                "type": "s3"
+              },
+              {
+                "azure_account": "pgedge-backups",
+                "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "azure_endpoint": "blob.core.usgovcloudapi.net",
+                "azure_key": "YXpLZXk=",
+                "base_path": "/backups",
+                "custom_options": {
+                  "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "storage-upload-chunk-size": "5MiB"
+                },
+                "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "gcs_endpoint": "localhost",
+                "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "retention_full": 2,
+                "retention_full_type": "count",
+                "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                "s3_region": "us-east-1",
+                "type": "s3"
               }
             ],
             "schedules": [
@@ -11183,126 +11997,30 @@
                     "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                     "s3_region": "us-east-1",
                     "type": "s3"
-                  }
-                ],
-                "schedules": [
-                  {
-                    "cron_expression": "0 6 * * ?",
-                    "id": "daily-full-backup",
-                    "type": "full"
                   },
                   {
-                    "cron_expression": "0 6 * * ?",
-                    "id": "daily-full-backup",
-                    "type": "full"
+                    "azure_account": "pgedge-backups",
+                    "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "azure_endpoint": "blob.core.usgovcloudapi.net",
+                    "azure_key": "YXpLZXk=",
+                    "base_path": "/backups",
+                    "custom_options": {
+                      "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                      "storage-upload-chunk-size": "5MiB"
+                    },
+                    "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "gcs_endpoint": "localhost",
+                    "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                    "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                    "retention_full": 2,
+                    "retention_full_type": "count",
+                    "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                    "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                    "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                    "s3_region": "us-east-1",
+                    "type": "s3"
                   },
-                  {
-                    "cron_expression": "0 6 * * ?",
-                    "id": "daily-full-backup",
-                    "type": "full"
-                  }
-                ]
-              },
-              "cpus": "500m",
-              "host_ids": [
-                "76f9b8c0-4958-11f0-a489-3bb29577c696"
-              ],
-              "memory": "500M",
-              "name": "n1",
-              "orchestrator_opts": {
-                "swarm": {
-                  "extra_labels": {
-                    "traefik.enable": "true",
-                    "traefik.tcp.routers.mydb.rule": "HostSNI(`mydb.example.com`)"
-                  },
-                  "extra_networks": [
-                    {
-                      "aliases": [
-                        "pg-db",
-                        "db-alias"
-                      ],
-                      "driver_opts": {
-                        "com.docker.network.endpoint.expose": "true"
-                      },
-                      "id": "traefik-public"
-                    },
-                    {
-                      "aliases": [
-                        "pg-db",
-                        "db-alias"
-                      ],
-                      "driver_opts": {
-                        "com.docker.network.endpoint.expose": "true"
-                      },
-                      "id": "traefik-public"
-                    },
-                    {
-                      "aliases": [
-                        "pg-db",
-                        "db-alias"
-                      ],
-                      "driver_opts": {
-                        "com.docker.network.endpoint.expose": "true"
-                      },
-                      "id": "traefik-public"
-                    }
-                  ],
-                  "extra_volumes": [
-                    {
-                      "destination_path": "/backups/container",
-                      "host_path": "/Users/user/backups/host"
-                    },
-                    {
-                      "destination_path": "/backups/container",
-                      "host_path": "/Users/user/backups/host"
-                    },
-                    {
-                      "destination_path": "/backups/container",
-                      "host_path": "/Users/user/backups/host"
-                    }
-                  ]
-                }
-              },
-              "port": 5432,
-              "postgres_version": "17.6",
-              "postgresql_conf": {
-                "max_connections": 1000
-              },
-              "restore_config": {
-                "repository": {
-                  "azure_account": "pgedge-backups",
-                  "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "azure_endpoint": "blob.core.usgovcloudapi.net",
-                  "azure_key": "YXpLZXk=",
-                  "base_path": "/backups",
-                  "custom_options": {
-                    "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
-                  },
-                  "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "gcs_endpoint": "localhost",
-                  "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                  "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                  "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                  "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                  "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                  "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                  "s3_region": "us-east-1",
-                  "type": "s3"
-                },
-                "restore_options": {
-                  "set": "20250505-153628F",
-                  "target": "123456",
-                  "type": "xid"
-                },
-                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "source_database_name": "northwind",
-                "source_node_name": "n1"
-              },
-              "source_node": "n1"
-            },
-            {
-              "backup_config": {
-                "repositories": [
                   {
                     "azure_account": "pgedge-backups",
                     "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -11533,24 +12251,6 @@
             "source_node_name": "n1"
           },
           "services": [
-            {
-              "config": {
-                "llm_model": "gpt-4",
-                "llm_provider": "openai",
-                "openai_api_key": "sk-..."
-              },
-              "cpus": "500m",
-              "host_ids": [
-                "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "76f9b8c0-4958-11f0-a489-3bb29577c696"
-              ],
-              "memory": "512M",
-              "port": 0,
-              "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
-              "version": "latest"
-            },
             {
               "config": {
                 "llm_model": "gpt-4",
@@ -11719,270 +12419,7 @@
                       "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                       "s3_region": "us-east-1",
                       "type": "s3"
-                    }
-                  ],
-                  "schedules": [
-                    {
-                      "cron_expression": "0 6 * * ?",
-                      "id": "daily-full-backup",
-                      "type": "full"
                     },
-                    {
-                      "cron_expression": "0 6 * * ?",
-                      "id": "daily-full-backup",
-                      "type": "full"
-                    },
-                    {
-                      "cron_expression": "0 6 * * ?",
-                      "id": "daily-full-backup",
-                      "type": "full"
-                    }
-                  ]
-                },
-                "cpus": "500m",
-                "host_ids": [
-                  "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                  "76f9b8c0-4958-11f0-a489-3bb29577c696"
-                ],
-                "memory": "500M",
-                "name": "n1",
-                "orchestrator_opts": {
-                  "swarm": {
-                    "extra_labels": {
-                      "traefik.enable": "true",
-                      "traefik.tcp.routers.mydb.rule": "HostSNI(`mydb.example.com`)"
-                    },
-                    "extra_networks": [
-                      {
-                        "aliases": [
-                          "pg-db",
-                          "db-alias"
-                        ],
-                        "driver_opts": {
-                          "com.docker.network.endpoint.expose": "true"
-                        },
-                        "id": "traefik-public"
-                      },
-                      {
-                        "aliases": [
-                          "pg-db",
-                          "db-alias"
-                        ],
-                        "driver_opts": {
-                          "com.docker.network.endpoint.expose": "true"
-                        },
-                        "id": "traefik-public"
-                      },
-                      {
-                        "aliases": [
-                          "pg-db",
-                          "db-alias"
-                        ],
-                        "driver_opts": {
-                          "com.docker.network.endpoint.expose": "true"
-                        },
-                        "id": "traefik-public"
-                      }
-                    ],
-                    "extra_volumes": [
-                      {
-                        "destination_path": "/backups/container",
-                        "host_path": "/Users/user/backups/host"
-                      },
-                      {
-                        "destination_path": "/backups/container",
-                        "host_path": "/Users/user/backups/host"
-                      },
-                      {
-                        "destination_path": "/backups/container",
-                        "host_path": "/Users/user/backups/host"
-                      }
-                    ]
-                  }
-                },
-                "port": 5432,
-                "postgres_version": "17.6",
-                "postgresql_conf": {
-                  "max_connections": 1000
-                },
-                "restore_config": {
-                  "repository": {
-                    "azure_account": "pgedge-backups",
-                    "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                    "azure_endpoint": "blob.core.usgovcloudapi.net",
-                    "azure_key": "YXpLZXk=",
-                    "base_path": "/backups",
-                    "custom_options": {
-                      "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
-                    },
-                    "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                    "gcs_endpoint": "localhost",
-                    "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                    "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                    "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                    "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                    "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                    "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                    "s3_region": "us-east-1",
-                    "type": "s3"
-                  },
-                  "restore_options": {
-                    "set": "20250505-153628F",
-                    "target": "123456",
-                    "type": "xid"
-                  },
-                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                  "source_database_name": "northwind",
-                  "source_node_name": "n1"
-                },
-                "source_node": "n1"
-              },
-              {
-                "backup_config": {
-                  "repositories": [
-                    {
-                      "azure_account": "pgedge-backups",
-                      "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                      "azure_endpoint": "blob.core.usgovcloudapi.net",
-                      "azure_key": "YXpLZXk=",
-                      "base_path": "/backups",
-                      "custom_options": {
-                        "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                        "storage-upload-chunk-size": "5MiB"
-                      },
-                      "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                      "gcs_endpoint": "localhost",
-                      "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                      "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                      "retention_full": 2,
-                      "retention_full_type": "count",
-                      "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                      "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                      "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                      "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                      "s3_region": "us-east-1",
-                      "type": "s3"
-                    }
-                  ],
-                  "schedules": [
-                    {
-                      "cron_expression": "0 6 * * ?",
-                      "id": "daily-full-backup",
-                      "type": "full"
-                    },
-                    {
-                      "cron_expression": "0 6 * * ?",
-                      "id": "daily-full-backup",
-                      "type": "full"
-                    },
-                    {
-                      "cron_expression": "0 6 * * ?",
-                      "id": "daily-full-backup",
-                      "type": "full"
-                    }
-                  ]
-                },
-                "cpus": "500m",
-                "host_ids": [
-                  "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                  "76f9b8c0-4958-11f0-a489-3bb29577c696"
-                ],
-                "memory": "500M",
-                "name": "n1",
-                "orchestrator_opts": {
-                  "swarm": {
-                    "extra_labels": {
-                      "traefik.enable": "true",
-                      "traefik.tcp.routers.mydb.rule": "HostSNI(`mydb.example.com`)"
-                    },
-                    "extra_networks": [
-                      {
-                        "aliases": [
-                          "pg-db",
-                          "db-alias"
-                        ],
-                        "driver_opts": {
-                          "com.docker.network.endpoint.expose": "true"
-                        },
-                        "id": "traefik-public"
-                      },
-                      {
-                        "aliases": [
-                          "pg-db",
-                          "db-alias"
-                        ],
-                        "driver_opts": {
-                          "com.docker.network.endpoint.expose": "true"
-                        },
-                        "id": "traefik-public"
-                      },
-                      {
-                        "aliases": [
-                          "pg-db",
-                          "db-alias"
-                        ],
-                        "driver_opts": {
-                          "com.docker.network.endpoint.expose": "true"
-                        },
-                        "id": "traefik-public"
-                      }
-                    ],
-                    "extra_volumes": [
-                      {
-                        "destination_path": "/backups/container",
-                        "host_path": "/Users/user/backups/host"
-                      },
-                      {
-                        "destination_path": "/backups/container",
-                        "host_path": "/Users/user/backups/host"
-                      },
-                      {
-                        "destination_path": "/backups/container",
-                        "host_path": "/Users/user/backups/host"
-                      }
-                    ]
-                  }
-                },
-                "port": 5432,
-                "postgres_version": "17.6",
-                "postgresql_conf": {
-                  "max_connections": 1000
-                },
-                "restore_config": {
-                  "repository": {
-                    "azure_account": "pgedge-backups",
-                    "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                    "azure_endpoint": "blob.core.usgovcloudapi.net",
-                    "azure_key": "YXpLZXk=",
-                    "base_path": "/backups",
-                    "custom_options": {
-                      "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
-                    },
-                    "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                    "gcs_endpoint": "localhost",
-                    "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                    "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                    "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                    "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                    "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                    "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                    "s3_region": "us-east-1",
-                    "type": "s3"
-                  },
-                  "restore_options": {
-                    "set": "20250505-153628F",
-                    "target": "123456",
-                    "type": "xid"
-                  },
-                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                  "source_database_name": "northwind",
-                  "source_node_name": "n1"
-                },
-                "source_node": "n1"
-              },
-              {
-                "backup_config": {
-                  "repositories": [
                     {
                       "azure_account": "pgedge-backups",
                       "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -12172,22 +12609,6 @@
                 "cpus": "500m",
                 "host_ids": [
                   "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                  "76f9b8c0-4958-11f0-a489-3bb29577c696"
-                ],
-                "memory": "512M",
-                "port": 0,
-                "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
-                "version": "latest"
-              },
-              {
-                "config": {
-                  "llm_model": "gpt-4",
-                  "llm_provider": "openai",
-                  "openai_api_key": "sk-..."
-                },
-                "cpus": "500m",
-                "host_ids": [
                   "76f9b8c0-4958-11f0-a489-3bb29577c696",
                   "76f9b8c0-4958-11f0-a489-3bb29577c696"
                 ],
@@ -12206,6 +12627,7 @@
                 "cpus": "500m",
                 "host_ids": [
                   "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "76f9b8c0-4958-11f0-a489-3bb29577c696",
                   "76f9b8c0-4958-11f0-a489-3bb29577c696"
                 ],
                 "memory": "512M",
@@ -12222,6 +12644,7 @@
                 },
                 "cpus": "500m",
                 "host_ids": [
+                  "76f9b8c0-4958-11f0-a489-3bb29577c696",
                   "76f9b8c0-4958-11f0-a489-3bb29577c696",
                   "76f9b8c0-4958-11f0-a489-3bb29577c696"
                 ],
@@ -12243,6 +12666,29 @@
         "example": {
           "backup_config": {
             "repositories": [
+              {
+                "azure_account": "pgedge-backups",
+                "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "azure_endpoint": "blob.core.usgovcloudapi.net",
+                "azure_key": "YXpLZXk=",
+                "base_path": "/backups",
+                "custom_options": {
+                  "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "storage-upload-chunk-size": "5MiB"
+                },
+                "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "gcs_endpoint": "localhost",
+                "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "retention_full": 2,
+                "retention_full_type": "count",
+                "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                "s3_region": "us-east-1",
+                "type": "s3"
+              },
               {
                 "azure_account": "pgedge-backups",
                 "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -12333,6 +12779,361 @@
             {
               "backup_config": {
                 "repositories": [
+                  {
+                    "azure_account": "pgedge-backups",
+                    "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "azure_endpoint": "blob.core.usgovcloudapi.net",
+                    "azure_key": "YXpLZXk=",
+                    "base_path": "/backups",
+                    "custom_options": {
+                      "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                      "storage-upload-chunk-size": "5MiB"
+                    },
+                    "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "gcs_endpoint": "localhost",
+                    "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                    "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                    "retention_full": 2,
+                    "retention_full_type": "count",
+                    "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                    "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                    "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                    "s3_region": "us-east-1",
+                    "type": "s3"
+                  },
+                  {
+                    "azure_account": "pgedge-backups",
+                    "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "azure_endpoint": "blob.core.usgovcloudapi.net",
+                    "azure_key": "YXpLZXk=",
+                    "base_path": "/backups",
+                    "custom_options": {
+                      "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                      "storage-upload-chunk-size": "5MiB"
+                    },
+                    "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "gcs_endpoint": "localhost",
+                    "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                    "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                    "retention_full": 2,
+                    "retention_full_type": "count",
+                    "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                    "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                    "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                    "s3_region": "us-east-1",
+                    "type": "s3"
+                  }
+                ],
+                "schedules": [
+                  {
+                    "cron_expression": "0 6 * * ?",
+                    "id": "daily-full-backup",
+                    "type": "full"
+                  },
+                  {
+                    "cron_expression": "0 6 * * ?",
+                    "id": "daily-full-backup",
+                    "type": "full"
+                  },
+                  {
+                    "cron_expression": "0 6 * * ?",
+                    "id": "daily-full-backup",
+                    "type": "full"
+                  }
+                ]
+              },
+              "cpus": "500m",
+              "host_ids": [
+                "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "76f9b8c0-4958-11f0-a489-3bb29577c696"
+              ],
+              "memory": "500M",
+              "name": "n1",
+              "orchestrator_opts": {
+                "swarm": {
+                  "extra_labels": {
+                    "traefik.enable": "true",
+                    "traefik.tcp.routers.mydb.rule": "HostSNI(`mydb.example.com`)"
+                  },
+                  "extra_networks": [
+                    {
+                      "aliases": [
+                        "pg-db",
+                        "db-alias"
+                      ],
+                      "driver_opts": {
+                        "com.docker.network.endpoint.expose": "true"
+                      },
+                      "id": "traefik-public"
+                    },
+                    {
+                      "aliases": [
+                        "pg-db",
+                        "db-alias"
+                      ],
+                      "driver_opts": {
+                        "com.docker.network.endpoint.expose": "true"
+                      },
+                      "id": "traefik-public"
+                    },
+                    {
+                      "aliases": [
+                        "pg-db",
+                        "db-alias"
+                      ],
+                      "driver_opts": {
+                        "com.docker.network.endpoint.expose": "true"
+                      },
+                      "id": "traefik-public"
+                    }
+                  ],
+                  "extra_volumes": [
+                    {
+                      "destination_path": "/backups/container",
+                      "host_path": "/Users/user/backups/host"
+                    },
+                    {
+                      "destination_path": "/backups/container",
+                      "host_path": "/Users/user/backups/host"
+                    },
+                    {
+                      "destination_path": "/backups/container",
+                      "host_path": "/Users/user/backups/host"
+                    }
+                  ]
+                }
+              },
+              "port": 5432,
+              "postgres_version": "17.6",
+              "postgresql_conf": {
+                "max_connections": 1000
+              },
+              "restore_config": {
+                "repository": {
+                  "azure_account": "pgedge-backups",
+                  "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                  "azure_endpoint": "blob.core.usgovcloudapi.net",
+                  "azure_key": "YXpLZXk=",
+                  "base_path": "/backups",
+                  "custom_options": {
+                    "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
+                  },
+                  "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                  "gcs_endpoint": "localhost",
+                  "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                  "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                  "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                  "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                  "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                  "s3_region": "us-east-1",
+                  "type": "s3"
+                },
+                "restore_options": {
+                  "set": "20250505-153628F",
+                  "target": "123456",
+                  "type": "xid"
+                },
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_database_name": "northwind",
+                "source_node_name": "n1"
+              },
+              "source_node": "n1"
+            },
+            {
+              "backup_config": {
+                "repositories": [
+                  {
+                    "azure_account": "pgedge-backups",
+                    "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "azure_endpoint": "blob.core.usgovcloudapi.net",
+                    "azure_key": "YXpLZXk=",
+                    "base_path": "/backups",
+                    "custom_options": {
+                      "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                      "storage-upload-chunk-size": "5MiB"
+                    },
+                    "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "gcs_endpoint": "localhost",
+                    "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                    "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                    "retention_full": 2,
+                    "retention_full_type": "count",
+                    "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                    "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                    "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                    "s3_region": "us-east-1",
+                    "type": "s3"
+                  },
+                  {
+                    "azure_account": "pgedge-backups",
+                    "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "azure_endpoint": "blob.core.usgovcloudapi.net",
+                    "azure_key": "YXpLZXk=",
+                    "base_path": "/backups",
+                    "custom_options": {
+                      "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                      "storage-upload-chunk-size": "5MiB"
+                    },
+                    "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "gcs_endpoint": "localhost",
+                    "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                    "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                    "retention_full": 2,
+                    "retention_full_type": "count",
+                    "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                    "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                    "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                    "s3_region": "us-east-1",
+                    "type": "s3"
+                  }
+                ],
+                "schedules": [
+                  {
+                    "cron_expression": "0 6 * * ?",
+                    "id": "daily-full-backup",
+                    "type": "full"
+                  },
+                  {
+                    "cron_expression": "0 6 * * ?",
+                    "id": "daily-full-backup",
+                    "type": "full"
+                  },
+                  {
+                    "cron_expression": "0 6 * * ?",
+                    "id": "daily-full-backup",
+                    "type": "full"
+                  }
+                ]
+              },
+              "cpus": "500m",
+              "host_ids": [
+                "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "76f9b8c0-4958-11f0-a489-3bb29577c696"
+              ],
+              "memory": "500M",
+              "name": "n1",
+              "orchestrator_opts": {
+                "swarm": {
+                  "extra_labels": {
+                    "traefik.enable": "true",
+                    "traefik.tcp.routers.mydb.rule": "HostSNI(`mydb.example.com`)"
+                  },
+                  "extra_networks": [
+                    {
+                      "aliases": [
+                        "pg-db",
+                        "db-alias"
+                      ],
+                      "driver_opts": {
+                        "com.docker.network.endpoint.expose": "true"
+                      },
+                      "id": "traefik-public"
+                    },
+                    {
+                      "aliases": [
+                        "pg-db",
+                        "db-alias"
+                      ],
+                      "driver_opts": {
+                        "com.docker.network.endpoint.expose": "true"
+                      },
+                      "id": "traefik-public"
+                    },
+                    {
+                      "aliases": [
+                        "pg-db",
+                        "db-alias"
+                      ],
+                      "driver_opts": {
+                        "com.docker.network.endpoint.expose": "true"
+                      },
+                      "id": "traefik-public"
+                    }
+                  ],
+                  "extra_volumes": [
+                    {
+                      "destination_path": "/backups/container",
+                      "host_path": "/Users/user/backups/host"
+                    },
+                    {
+                      "destination_path": "/backups/container",
+                      "host_path": "/Users/user/backups/host"
+                    },
+                    {
+                      "destination_path": "/backups/container",
+                      "host_path": "/Users/user/backups/host"
+                    }
+                  ]
+                }
+              },
+              "port": 5432,
+              "postgres_version": "17.6",
+              "postgresql_conf": {
+                "max_connections": 1000
+              },
+              "restore_config": {
+                "repository": {
+                  "azure_account": "pgedge-backups",
+                  "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                  "azure_endpoint": "blob.core.usgovcloudapi.net",
+                  "azure_key": "YXpLZXk=",
+                  "base_path": "/backups",
+                  "custom_options": {
+                    "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
+                  },
+                  "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                  "gcs_endpoint": "localhost",
+                  "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                  "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                  "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                  "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                  "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                  "s3_region": "us-east-1",
+                  "type": "s3"
+                },
+                "restore_options": {
+                  "set": "20250505-153628F",
+                  "target": "123456",
+                  "type": "xid"
+                },
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_database_name": "northwind",
+                "source_node_name": "n1"
+              },
+              "source_node": "n1"
+            },
+            {
+              "backup_config": {
+                "repositories": [
+                  {
+                    "azure_account": "pgedge-backups",
+                    "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "azure_endpoint": "blob.core.usgovcloudapi.net",
+                    "azure_key": "YXpLZXk=",
+                    "base_path": "/backups",
+                    "custom_options": {
+                      "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                      "storage-upload-chunk-size": "5MiB"
+                    },
+                    "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "gcs_endpoint": "localhost",
+                    "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                    "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                    "retention_full": 2,
+                    "retention_full_type": "count",
+                    "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                    "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                    "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                    "s3_region": "us-east-1",
+                    "type": "s3"
+                  },
                   {
                     "azure_account": "pgedge-backups",
                     "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -12573,6 +13374,7 @@
               "cpus": "500m",
               "host_ids": [
                 "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "76f9b8c0-4958-11f0-a489-3bb29577c696",
                 "76f9b8c0-4958-11f0-a489-3bb29577c696"
               ],
               "memory": "512M",
@@ -12589,6 +13391,25 @@
               },
               "cpus": "500m",
               "host_ids": [
+                "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "76f9b8c0-4958-11f0-a489-3bb29577c696"
+              ],
+              "memory": "512M",
+              "port": 0,
+              "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+              "service_type": "mcp",
+              "version": "latest"
+            },
+            {
+              "config": {
+                "llm_model": "gpt-4",
+                "llm_provider": "openai",
+                "openai_api_key": "sk-..."
+              },
+              "cpus": "500m",
+              "host_ids": [
+                "76f9b8c0-4958-11f0-a489-3bb29577c696",
                 "76f9b8c0-4958-11f0-a489-3bb29577c696",
                 "76f9b8c0-4958-11f0-a489-3bb29577c696"
               ],
@@ -12638,7 +13459,7 @@
                   "CREATEDB",
                   "CREATEROLE"
                 ],
-                "db_owner": true,
+                "db_owner": false,
                 "password": "secret",
                 "roles": [
                   "pgedge_superuser"
@@ -12651,7 +13472,7 @@
                   "CREATEDB",
                   "CREATEROLE"
                 ],
-                "db_owner": true,
+                "db_owner": false,
                 "password": "secret",
                 "roles": [
                   "pgedge_superuser"
@@ -12664,7 +13485,7 @@
                   "CREATEDB",
                   "CREATEROLE"
                 ],
-                "db_owner": true,
+                "db_owner": false,
                 "password": "secret",
                 "roles": [
                   "pgedge_superuser"
@@ -12735,150 +13556,6 @@
                       "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                       "s3_region": "us-east-1",
                       "type": "s3"
-                    }
-                  ],
-                  "schedules": [
-                    {
-                      "cron_expression": "0 6 * * ?",
-                      "id": "daily-full-backup",
-                      "type": "full"
-                    },
-                    {
-                      "cron_expression": "0 6 * * ?",
-                      "id": "daily-full-backup",
-                      "type": "full"
-                    },
-                    {
-                      "cron_expression": "0 6 * * ?",
-                      "id": "daily-full-backup",
-                      "type": "full"
-                    }
-                  ]
-                },
-                "cpus": "500m",
-                "host_ids": [
-                  "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                  "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                  "76f9b8c0-4958-11f0-a489-3bb29577c696"
-                ],
-                "memory": "500M",
-                "name": "n1",
-                "orchestrator_opts": {
-                  "swarm": {
-                    "extra_labels": {
-                      "traefik.enable": "true",
-                      "traefik.tcp.routers.mydb.rule": "HostSNI(`mydb.example.com`)"
-                    },
-                    "extra_networks": [
-                      {
-                        "aliases": [
-                          "pg-db",
-                          "db-alias"
-                        ],
-                        "driver_opts": {
-                          "com.docker.network.endpoint.expose": "true"
-                        },
-                        "id": "traefik-public"
-                      },
-                      {
-                        "aliases": [
-                          "pg-db",
-                          "db-alias"
-                        ],
-                        "driver_opts": {
-                          "com.docker.network.endpoint.expose": "true"
-                        },
-                        "id": "traefik-public"
-                      },
-                      {
-                        "aliases": [
-                          "pg-db",
-                          "db-alias"
-                        ],
-                        "driver_opts": {
-                          "com.docker.network.endpoint.expose": "true"
-                        },
-                        "id": "traefik-public"
-                      }
-                    ],
-                    "extra_volumes": [
-                      {
-                        "destination_path": "/backups/container",
-                        "host_path": "/Users/user/backups/host"
-                      },
-                      {
-                        "destination_path": "/backups/container",
-                        "host_path": "/Users/user/backups/host"
-                      },
-                      {
-                        "destination_path": "/backups/container",
-                        "host_path": "/Users/user/backups/host"
-                      }
-                    ]
-                  }
-                },
-                "port": 5432,
-                "postgres_version": "17.6",
-                "postgresql_conf": {
-                  "max_connections": 1000
-                },
-                "restore_config": {
-                  "repository": {
-                    "azure_account": "pgedge-backups",
-                    "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                    "azure_endpoint": "blob.core.usgovcloudapi.net",
-                    "azure_key": "YXpLZXk=",
-                    "base_path": "/backups",
-                    "custom_options": {
-                      "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab"
-                    },
-                    "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                    "gcs_endpoint": "localhost",
-                    "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                    "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                    "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                    "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                    "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                    "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                    "s3_region": "us-east-1",
-                    "type": "s3"
-                  },
-                  "restore_options": {
-                    "set": "20250505-153628F",
-                    "target": "123456",
-                    "type": "xid"
-                  },
-                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                  "source_database_name": "northwind",
-                  "source_node_name": "n1"
-                },
-                "source_node": "n1"
-              },
-              {
-                "backup_config": {
-                  "repositories": [
-                    {
-                      "azure_account": "pgedge-backups",
-                      "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                      "azure_endpoint": "blob.core.usgovcloudapi.net",
-                      "azure_key": "YXpLZXk=",
-                      "base_path": "/backups",
-                      "custom_options": {
-                        "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
-                        "storage-upload-chunk-size": "5MiB"
-                      },
-                      "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                      "gcs_endpoint": "localhost",
-                      "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
-                      "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                      "retention_full": 2,
-                      "retention_full_type": "count",
-                      "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
-                      "s3_endpoint": "s3.us-east-1.amazonaws.com",
-                      "s3_key": "AKIAIOSFODNN7EXAMPLE",
-                      "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-                      "s3_region": "us-east-1",
-                      "type": "s3"
                     },
                     {
                       "azure_account": "pgedge-backups",
@@ -13150,6 +13827,29 @@
                 "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                 "s3_region": "us-east-1",
                 "type": "s3"
+              },
+              {
+                "azure_account": "pgedge-backups",
+                "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "azure_endpoint": "blob.core.usgovcloudapi.net",
+                "azure_key": "YXpLZXk=",
+                "base_path": "/backups",
+                "custom_options": {
+                  "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                  "storage-upload-chunk-size": "5MiB"
+                },
+                "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "gcs_endpoint": "localhost",
+                "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "retention_full": 2,
+                "retention_full_type": "count",
+                "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                "s3_region": "us-east-1",
+                "type": "s3"
               }
             ],
             "schedules": [
@@ -13179,7 +13879,7 @@
                 "CREATEDB",
                 "CREATEROLE"
               ],
-              "db_owner": true,
+              "db_owner": false,
               "password": "secret",
               "roles": [
                 "pgedge_superuser"
@@ -13192,7 +13892,7 @@
                 "CREATEDB",
                 "CREATEROLE"
               ],
-              "db_owner": true,
+              "db_owner": false,
               "password": "secret",
               "roles": [
                 "pgedge_superuser"
@@ -13205,7 +13905,7 @@
                 "CREATEDB",
                 "CREATEROLE"
               ],
-              "db_owner": true,
+              "db_owner": false,
               "password": "secret",
               "roles": [
                 "pgedge_superuser"
@@ -13218,6 +13918,29 @@
             {
               "backup_config": {
                 "repositories": [
+                  {
+                    "azure_account": "pgedge-backups",
+                    "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "azure_endpoint": "blob.core.usgovcloudapi.net",
+                    "azure_key": "YXpLZXk=",
+                    "base_path": "/backups",
+                    "custom_options": {
+                      "s3-kms-key-id": "1234abcd-12ab-34cd-56ef-1234567890ab",
+                      "storage-upload-chunk-size": "5MiB"
+                    },
+                    "gcs_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "gcs_endpoint": "localhost",
+                    "gcs_key": "ZXhhbXBsZSBnY3Mga2V5Cg==",
+                    "id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                    "retention_full": 2,
+                    "retention_full_type": "count",
+                    "s3_bucket": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
+                    "s3_endpoint": "s3.us-east-1.amazonaws.com",
+                    "s3_key": "AKIAIOSFODNN7EXAMPLE",
+                    "s3_key_secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+                    "s3_region": "us-east-1",
+                    "type": "s3"
+                  },
                   {
                     "azure_account": "pgedge-backups",
                     "azure_container": "pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1",
@@ -13504,38 +14227,6 @@
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
               "service_type": "mcp",
               "version": "latest"
-            },
-            {
-              "config": {
-                "llm_model": "gpt-4",
-                "llm_provider": "openai",
-                "openai_api_key": "sk-..."
-              },
-              "cpus": "500m",
-              "host_ids": [
-                "76f9b8c0-4958-11f0-a489-3bb29577c696"
-              ],
-              "memory": "512M",
-              "port": 0,
-              "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
-              "version": "latest"
-            },
-            {
-              "config": {
-                "llm_model": "gpt-4",
-                "llm_provider": "openai",
-                "openai_api_key": "sk-..."
-              },
-              "cpus": "500m",
-              "host_ids": [
-                "76f9b8c0-4958-11f0-a489-3bb29577c696"
-              ],
-              "memory": "512M",
-              "port": 0,
-              "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
-              "version": "latest"
             }
           ],
           "spock_version": "5"
@@ -13552,7 +14243,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "example": "Sint iure eum ducimus quia deserunt animi."
+              "example": "Molestiae voluptates laborum."
             },
             "description": "The attributes to assign to this database user.",
             "example": [
@@ -13577,7 +14268,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "example": "Nihil qui non quae sint ea."
+              "example": "Illo aut et corporis harum."
             },
             "description": "The roles to assign to this database user.",
             "example": [
@@ -13598,7 +14289,7 @@
             "CREATEDB",
             "CREATEROLE"
           ],
-          "db_owner": false,
+          "db_owner": true,
           "password": "secret",
           "roles": [
             "pgedge_superuser"
@@ -13636,7 +14327,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "example": "Sapiente qui ullam."
+              "example": "Et labore in dolor quisquam placeat."
             },
             "description": "The Etcd client endpoint for this cluster member.",
             "example": [
@@ -13652,7 +14343,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "example": "Eos reprehenderit."
+              "example": "Quam id aut."
             },
             "description": "The Etcd peer endpoint for this cluster member.",
             "example": [
@@ -13682,7 +14373,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "example": "Harum voluptatum nulla commodi quo."
+              "example": "Nesciunt consequuntur reprehenderit esse id."
             },
             "description": "Optional network-scoped aliases for the container.",
             "example": [
@@ -13699,7 +14390,7 @@
             },
             "additionalProperties": {
               "type": "string",
-              "example": "Facere eius totam."
+              "example": "Et qui quod veniam."
             }
           },
           "id": {
@@ -13774,14 +14465,14 @@
             "type": "boolean",
             "description": "If true, skip the health validations that prevent running failover on a healthy cluster.",
             "default": false,
-            "example": false
+            "example": true
           }
         },
         "example": {
           "candidate_instance_id": "68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi",
           "database_id": "my-app",
           "node_name": "n1",
-          "skip_validation": false
+          "skip_validation": true
         },
         "required": [
           "database_id",
@@ -13800,7 +14491,7 @@
             "type": "boolean",
             "description": "If true, skip the health validations that prevent running failover on a healthy cluster.",
             "default": false,
-            "example": false
+            "example": true
           }
         },
         "example": {
@@ -13938,6 +14629,14 @@
               {
                 "postgres_version": "17.6",
                 "spock_version": "5"
+              },
+              {
+                "postgres_version": "17.6",
+                "spock_version": "5"
+              },
+              {
+                "postgres_version": "17.6",
+                "spock_version": "5"
               }
             ]
           }
@@ -13985,6 +14684,10 @@
             "updated_at": "2021-07-01T12:34:56Z"
           },
           "supported_pgedge_versions": [
+            {
+              "postgres_version": "17.6",
+              "spock_version": "5"
+            },
             {
               "postgres_version": "17.6",
               "spock_version": "5"
@@ -14041,25 +14744,7 @@
             "type": "object",
             "description": "The status of each component of the host.",
             "example": {
-              "Eaque eos quos autem perspiciatis.": {
-                "details": {
-                  "alarms": [
-                    "3: NOSPACE"
-                  ]
-                },
-                "error": "failed to connect to etcd",
-                "healthy": false
-              },
-              "Labore et qui quod veniam.": {
-                "details": {
-                  "alarms": [
-                    "3: NOSPACE"
-                  ]
-                },
-                "error": "failed to connect to etcd",
-                "healthy": false
-              },
-              "Omnis non nesciunt consequuntur reprehenderit esse.": {
+              "Rerum ipsam nemo ut nemo.": {
                 "details": {
                   "alarms": [
                     "3: NOSPACE"
@@ -14092,7 +14777,7 @@
         },
         "example": {
           "components": {
-            "Quae in cumque rerum ipsam.": {
+            "Et animi laborum et.": {
               "details": {
                 "alarms": [
                   "3: NOSPACE"
@@ -14101,7 +14786,7 @@
               "error": "failed to connect to etcd",
               "healthy": false
             },
-            "Quis ut.": {
+            "Eum officia similique non.": {
               "details": {
                 "alarms": [
                   "3: NOSPACE"
@@ -14110,7 +14795,7 @@
               "error": "failed to connect to etcd",
               "healthy": false
             },
-            "Quisquam dolores veritatis odio voluptatem dicta.": {
+            "Quisquam quibusdam id est.": {
               "details": {
                 "alarms": [
                   "3: NOSPACE"
@@ -14154,7 +14839,7 @@
           "created_at": {
             "type": "string",
             "description": "The time that the instance was created.",
-            "example": "1975-10-10T05:27:56Z",
+            "example": "1988-06-18T10:35:35Z",
             "format": "date-time"
           },
           "error": {
@@ -14185,7 +14870,7 @@
           },
           "state": {
             "type": "string",
-            "example": "available",
+            "example": "creating",
             "enum": [
               "creating",
               "modifying",
@@ -14200,13 +14885,13 @@
           "status_updated_at": {
             "type": "string",
             "description": "The time that the instance status information was last updated.",
-            "example": "1987-12-22T17:07:25Z",
+            "example": "1981-11-30T17:32:33Z",
             "format": "date-time"
           },
           "updated_at": {
             "type": "string",
             "description": "The time that the instance was last modified.",
-            "example": "1984-06-21T18:43:23Z",
+            "example": "1972-02-06T12:03:40Z",
             "format": "date-time"
           }
         },
@@ -14217,7 +14902,7 @@
             "ipv4_address": "10.24.34.2",
             "port": 5432
           },
-          "created_at": "2008-02-03T11:21:30Z",
+          "created_at": "1985-07-21T07:05:35Z",
           "error": "failed to get patroni status: connection refused",
           "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
           "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
@@ -14245,9 +14930,9 @@
             ],
             "version": "4.10.0"
           },
-          "state": "available",
-          "status_updated_at": "2010-07-06T06:39:04Z",
-          "updated_at": "1976-11-29T11:38:34Z"
+          "state": "creating",
+          "status_updated_at": "1970-02-13T01:14:37Z",
+          "updated_at": "1991-04-04T09:33:29Z"
         },
         "required": [
           "id",
@@ -14264,6 +14949,82 @@
           "$ref": "#/components/schemas/Instance"
         },
         "example": [
+          {
+            "connection_info": {
+              "hostname": "i-0123456789abcdef.ec2.internal",
+              "ipv4_address": "10.24.34.2",
+              "port": 5432
+            },
+            "created_at": "1987-03-24T21:22:02Z",
+            "error": "failed to get patroni status: connection refused",
+            "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
+            "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
+            "node_name": "n1",
+            "postgres": {
+              "patroni_paused": true,
+              "patroni_state": "unknown",
+              "pending_restart": false,
+              "role": "primary",
+              "version": "18.1"
+            },
+            "spock": {
+              "read_only": "off",
+              "subscriptions": [
+                {
+                  "name": "sub_n1n2",
+                  "provider_node": "n2",
+                  "status": "down"
+                },
+                {
+                  "name": "sub_n1n2",
+                  "provider_node": "n2",
+                  "status": "down"
+                }
+              ],
+              "version": "4.10.0"
+            },
+            "state": "creating",
+            "status_updated_at": "1974-12-13T04:15:04Z",
+            "updated_at": "2006-10-18T16:07:16Z"
+          },
+          {
+            "connection_info": {
+              "hostname": "i-0123456789abcdef.ec2.internal",
+              "ipv4_address": "10.24.34.2",
+              "port": 5432
+            },
+            "created_at": "1987-03-24T21:22:02Z",
+            "error": "failed to get patroni status: connection refused",
+            "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
+            "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
+            "node_name": "n1",
+            "postgres": {
+              "patroni_paused": true,
+              "patroni_state": "unknown",
+              "pending_restart": false,
+              "role": "primary",
+              "version": "18.1"
+            },
+            "spock": {
+              "read_only": "off",
+              "subscriptions": [
+                {
+                  "name": "sub_n1n2",
+                  "provider_node": "n2",
+                  "status": "down"
+                },
+                {
+                  "name": "sub_n1n2",
+                  "provider_node": "n2",
+                  "status": "down"
+                }
+              ],
+              "version": "4.10.0"
+            },
+            "state": "creating",
+            "status_updated_at": "1974-12-13T04:15:04Z",
+            "updated_at": "2006-10-18T16:07:16Z"
+          },
           {
             "connection_info": {
               "hostname": "i-0123456789abcdef.ec2.internal",
@@ -14399,7 +15160,7 @@
         },
         "description": "Postgres status information for a pgEdge instance.",
         "example": {
-          "patroni_paused": false,
+          "patroni_paused": true,
           "patroni_state": "unknown",
           "pending_restart": false,
           "role": "primary",
@@ -14415,7 +15176,7 @@
           "created_at": {
             "type": "string",
             "description": "The time that the instance was created.",
-            "example": "1970-08-02T22:23:02Z",
+            "example": "1996-05-27T17:04:41Z",
             "format": "date-time"
           },
           "error": {
@@ -14461,13 +15222,13 @@
           "status_updated_at": {
             "type": "string",
             "description": "The time that the instance status information was last updated.",
-            "example": "1986-12-16T22:41:27Z",
+            "example": "1977-03-14T09:54:12Z",
             "format": "date-time"
           },
           "updated_at": {
             "type": "string",
             "description": "The time that the instance was last modified.",
-            "example": "1991-12-26T07:39:17Z",
+            "example": "1976-03-01T20:13:25Z",
             "format": "date-time"
           }
         },
@@ -14478,13 +15239,13 @@
             "ipv4_address": "10.24.34.2",
             "port": 5432
           },
-          "created_at": "2008-07-30T07:06:38Z",
+          "created_at": "2002-03-20T15:42:21Z",
           "error": "failed to get patroni status: connection refused",
           "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
           "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
           "node_name": "n1",
           "postgres": {
-            "patroni_paused": false,
+            "patroni_paused": true,
             "patroni_state": "unknown",
             "pending_restart": true,
             "role": "primary",
@@ -14507,18 +15268,13 @@
                 "name": "sub_n1n2",
                 "provider_node": "n2",
                 "status": "down"
-              },
-              {
-                "name": "sub_n1n2",
-                "provider_node": "n2",
-                "status": "down"
               }
             ],
             "version": "4.10.0"
           },
-          "state": "failed",
-          "status_updated_at": "1987-08-24T17:24:39Z",
-          "updated_at": "2015-05-08T21:09:57Z"
+          "state": "backing_up",
+          "status_updated_at": "1999-12-24T18:19:13Z",
+          "updated_at": "1988-02-08T05:38:12Z"
         },
         "required": [
           "id",
@@ -14542,13 +15298,13 @@
               "ipv4_address": "10.24.34.2",
               "port": 5432
             },
-            "created_at": "1995-05-15T08:45:56Z",
+            "created_at": "1978-12-28T17:33:35Z",
             "error": "failed to get patroni status: connection refused",
             "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
             "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
             "node_name": "n1",
             "postgres": {
-              "patroni_paused": false,
+              "patroni_paused": true,
               "patroni_state": "unknown",
               "pending_restart": true,
               "role": "primary",
@@ -14571,18 +15327,13 @@
                   "name": "sub_n1n2",
                   "provider_node": "n2",
                   "status": "down"
-                },
-                {
-                  "name": "sub_n1n2",
-                  "provider_node": "n2",
-                  "status": "down"
                 }
               ],
               "version": "4.10.0"
             },
             "state": "modifying",
-            "status_updated_at": "2010-12-24T23:39:10Z",
-            "updated_at": "2014-01-25T23:48:24Z"
+            "status_updated_at": "2001-10-17T14:50:56Z",
+            "updated_at": "2013-05-14T14:25:56Z"
           },
           {
             "connection_info": {
@@ -14590,13 +15341,13 @@
               "ipv4_address": "10.24.34.2",
               "port": 5432
             },
-            "created_at": "1995-05-15T08:45:56Z",
+            "created_at": "1978-12-28T17:33:35Z",
             "error": "failed to get patroni status: connection refused",
             "host_id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
             "id": "a67cbb36-c3c3-49c9-8aac-f4a0438a883d",
             "node_name": "n1",
             "postgres": {
-              "patroni_paused": false,
+              "patroni_paused": true,
               "patroni_state": "unknown",
               "pending_restart": true,
               "role": "primary",
@@ -14619,18 +15370,13 @@
                   "name": "sub_n1n2",
                   "provider_node": "n2",
                   "status": "down"
-                },
-                {
-                  "name": "sub_n1n2",
-                  "provider_node": "n2",
-                  "status": "down"
                 }
               ],
               "version": "4.10.0"
             },
             "state": "modifying",
-            "status_updated_at": "2010-12-24T23:39:10Z",
-            "updated_at": "2014-01-25T23:48:24Z"
+            "status_updated_at": "2001-10-17T14:50:56Z",
+            "updated_at": "2013-05-14T14:25:56Z"
           }
         ]
       },
@@ -14760,6 +15506,16 @@
                 "status": "completed",
                 "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
                 "type": "create"
+              },
+              {
+                "completed_at": "2025-06-18T16:52:35Z",
+                "created_at": "2025-06-18T16:52:05Z",
+                "database_id": "storefront",
+                "entity_id": "storefront",
+                "scope": "database",
+                "status": "completed",
+                "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
+                "type": "create"
               }
             ]
           }
@@ -14819,26 +15575,6 @@
               "$ref": "#/components/schemas/Task"
             },
             "example": [
-              {
-                "completed_at": "2025-06-18T16:52:35Z",
-                "created_at": "2025-06-18T16:52:05Z",
-                "database_id": "storefront",
-                "entity_id": "storefront",
-                "scope": "database",
-                "status": "completed",
-                "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
-                "type": "create"
-              },
-              {
-                "completed_at": "2025-06-18T16:52:35Z",
-                "created_at": "2025-06-18T16:52:05Z",
-                "database_id": "storefront",
-                "entity_id": "storefront",
-                "scope": "database",
-                "status": "completed",
-                "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
-                "type": "create"
-              },
               {
                 "completed_at": "2025-06-18T16:52:35Z",
                 "created_at": "2025-06-18T16:52:05Z",
@@ -15057,6 +15793,63 @@
                     "spock_version": "5"
                   }
                 ]
+              },
+              {
+                "cohort": {
+                  "control_available": true,
+                  "member_id": "lah4bsznw6kc0hp7biylmmmll",
+                  "type": "swarm"
+                },
+                "cpus": 4,
+                "data_dir": "/data",
+                "default_pgedge_version": {
+                  "postgres_version": "17.6",
+                  "spock_version": "5"
+                },
+                "etcd_mode": "server",
+                "hostname": "i-0123456789abcdef.ec2.internal",
+                "id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
+                "ipv4_address": "10.24.34.2",
+                "memory": "16GiB",
+                "orchestrator": "swarm",
+                "status": {
+                  "components": {
+                    "Enim et voluptatum ex ea dolore.": {
+                      "details": {
+                        "alarms": [
+                          "3: NOSPACE"
+                        ]
+                      },
+                      "error": "failed to connect to etcd",
+                      "healthy": false
+                    },
+                    "Tenetur nostrum repellendus sint qui.": {
+                      "details": {
+                        "alarms": [
+                          "3: NOSPACE"
+                        ]
+                      },
+                      "error": "failed to connect to etcd",
+                      "healthy": false
+                    }
+                  },
+                  "state": "available",
+                  "updated_at": "2021-07-01T12:34:56Z"
+                },
+                "supported_pgedge_versions": [
+                  {
+                    "postgres_version": "17.6",
+                    "spock_version": "5"
+                  },
+                  {
+                    "postgres_version": "17.6",
+                    "spock_version": "5"
+                  },
+                  {
+                    "postgres_version": "17.6",
+                    "spock_version": "5"
+                  }
+                ]
               }
             ]
           }
@@ -15064,63 +15857,6 @@
         "description": "Response containing the list of hosts",
         "example": {
           "hosts": [
-            {
-              "cohort": {
-                "control_available": true,
-                "member_id": "lah4bsznw6kc0hp7biylmmmll",
-                "type": "swarm"
-              },
-              "cpus": 4,
-              "data_dir": "/data",
-              "default_pgedge_version": {
-                "postgres_version": "17.6",
-                "spock_version": "5"
-              },
-              "etcd_mode": "server",
-              "hostname": "i-0123456789abcdef.ec2.internal",
-              "id": "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-              "ipv4_address": "10.24.34.2",
-              "memory": "16GiB",
-              "orchestrator": "swarm",
-              "status": {
-                "components": {
-                  "Enim et voluptatum ex ea dolore.": {
-                    "details": {
-                      "alarms": [
-                        "3: NOSPACE"
-                      ]
-                    },
-                    "error": "failed to connect to etcd",
-                    "healthy": false
-                  },
-                  "Tenetur nostrum repellendus sint qui.": {
-                    "details": {
-                      "alarms": [
-                        "3: NOSPACE"
-                      ]
-                    },
-                    "error": "failed to connect to etcd",
-                    "healthy": false
-                  }
-                },
-                "state": "available",
-                "updated_at": "2021-07-01T12:34:56Z"
-              },
-              "supported_pgedge_versions": [
-                {
-                  "postgres_version": "17.6",
-                  "spock_version": "5"
-                },
-                {
-                  "postgres_version": "17.6",
-                  "spock_version": "5"
-                },
-                {
-                  "postgres_version": "17.6",
-                  "spock_version": "5"
-                }
-              ]
-            },
             {
               "cohort": {
                 "control_available": true,
@@ -15573,6 +16309,16 @@
                 "status": "completed",
                 "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
                 "type": "create"
+              },
+              {
+                "completed_at": "2025-06-18T16:52:35Z",
+                "created_at": "2025-06-18T16:52:05Z",
+                "database_id": "storefront",
+                "entity_id": "storefront",
+                "scope": "database",
+                "status": "completed",
+                "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
+                "type": "create"
               }
             ]
           }
@@ -15667,7 +16413,7 @@
             "maxLength": 32,
             "additionalProperties": {
               "type": "string",
-              "example": "Et labore in dolor quisquam placeat."
+              "example": "Quis ipsa."
             }
           },
           "source_database_id": {
@@ -15738,7 +16484,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "example": "Voluptates laborum earum illo aut et."
+              "example": "Tenetur iure quisquam dignissimos veritatis et omnis."
             },
             "description": "The nodes to restore. Defaults to all nodes if empty or unspecified.",
             "example": [
@@ -15778,26 +16524,6 @@
             },
             "description": "The tasks that will restore each database node.",
             "example": [
-              {
-                "completed_at": "2025-06-18T16:52:35Z",
-                "created_at": "2025-06-18T16:52:05Z",
-                "database_id": "storefront",
-                "entity_id": "storefront",
-                "scope": "database",
-                "status": "completed",
-                "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
-                "type": "create"
-              },
-              {
-                "completed_at": "2025-06-18T16:52:35Z",
-                "created_at": "2025-06-18T16:52:05Z",
-                "database_id": "storefront",
-                "entity_id": "storefront",
-                "scope": "database",
-                "status": "completed",
-                "task_id": "019783f4-75f4-71e7-85a3-c9b96b345d77",
-                "type": "create"
-              },
               {
                 "completed_at": "2025-06-18T16:52:35Z",
                 "created_at": "2025-06-18T16:52:05Z",
@@ -16061,7 +16787,7 @@
             },
             "additionalProperties": {
               "type": "string",
-              "example": "Quam id aut."
+              "example": "Cupiditate sunt."
             }
           },
           "gcs_bucket": {
@@ -16210,11 +16936,6 @@
                 "container_port": 8080,
                 "host_port": 8080,
                 "name": "web-client"
-              },
-              {
-                "container_port": 8080,
-                "host_port": 8080,
-                "name": "web-client"
               }
             ]
           },
@@ -16237,6 +16958,16 @@
           "ipv4_address": "10.0.1.5",
           "last_health_at": "2025-01-28T10:00:00Z",
           "ports": [
+            {
+              "container_port": 8080,
+              "host_port": 8080,
+              "name": "web-client"
+            },
+            {
+              "container_port": 8080,
+              "host_port": 8080,
+              "name": "web-client"
+            },
             {
               "container_port": 8080,
               "host_port": 8080,
@@ -16281,7 +17012,6 @@
             },
             "description": "The IDs of the hosts that should run this service. One service instance will be created per host.",
             "example": [
-              "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
               "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
             ],
             "minItems": 1
@@ -16330,8 +17060,6 @@
           },
           "cpus": "500m",
           "host_ids": [
-            "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
-            "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
             "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
           ],
           "memory": "512M",
@@ -16561,41 +17289,6 @@
               "service_ready": true
             },
             "updated_at": "2025-01-28T10:05:00Z"
-          },
-          {
-            "created_at": "2025-01-28T10:00:00Z",
-            "database_id": "production",
-            "error": "failed to start container: image not found",
-            "host_id": "host-1",
-            "service_id": "mcp-server",
-            "service_instance_id": "mcp-server-host-1",
-            "state": "running",
-            "status": {
-              "container_id": "a1b2c3d4e5f6",
-              "health_check": {
-                "checked_at": "2025-01-28T10:00:00Z",
-                "message": "Connection refused",
-                "status": "healthy"
-              },
-              "hostname": "mcp-server-host-1.internal",
-              "image_version": "1.0.0",
-              "ipv4_address": "10.0.1.5",
-              "last_health_at": "2025-01-28T10:00:00Z",
-              "ports": [
-                {
-                  "container_port": 8080,
-                  "host_port": 8080,
-                  "name": "web-client"
-                },
-                {
-                  "container_port": 8080,
-                  "host_port": 8080,
-                  "name": "web-client"
-                }
-              ],
-              "service_ready": true
-            },
-            "updated_at": "2025-01-28T10:05:00Z"
           }
         ]
       },
@@ -16691,6 +17384,11 @@
                 "container_port": 8080,
                 "host_port": 8080,
                 "name": "web-client"
+              },
+              {
+                "container_port": 8080,
+                "host_port": 8080,
+                "name": "web-client"
               }
             ],
             "service_ready": true
@@ -16748,41 +17446,6 @@
                   "container_port": 8080,
                   "host_port": 8080,
                   "name": "web-client"
-                }
-              ],
-              "service_ready": true
-            },
-            "updated_at": "2025-01-28T10:05:00Z"
-          },
-          {
-            "created_at": "2025-01-28T10:00:00Z",
-            "database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-            "error": "failed to start container: image not found",
-            "host_id": "host-1",
-            "service_id": "mcp-server",
-            "service_instance_id": "mcp-server-host-1",
-            "state": "running",
-            "status": {
-              "container_id": "a1b2c3d4e5f6",
-              "health_check": {
-                "checked_at": "2025-01-28T10:00:00Z",
-                "message": "Connection refused",
-                "status": "healthy"
-              },
-              "hostname": "mcp-server-host-1.internal",
-              "image_version": "1.0.0",
-              "ipv4_address": "10.0.1.5",
-              "last_health_at": "2025-01-28T10:00:00Z",
-              "ports": [
-                {
-                  "container_port": 8080,
-                  "host_port": 8080,
-                  "name": "web-client"
-                },
-                {
-                  "container_port": 8080,
-                  "host_port": 8080,
-                  "name": "web-client"
                 },
                 {
                   "container_port": 8080,
@@ -16828,6 +17491,11 @@
                   "container_port": 8080,
                   "host_port": 8080,
                   "name": "web-client"
+                },
+                {
+                  "container_port": 8080,
+                  "host_port": 8080,
+                  "name": "web-client"
                 }
               ],
               "service_ready": true
@@ -16854,6 +17522,56 @@
               "ipv4_address": "10.0.1.5",
               "last_health_at": "2025-01-28T10:00:00Z",
               "ports": [
+                {
+                  "container_port": 8080,
+                  "host_port": 8080,
+                  "name": "web-client"
+                },
+                {
+                  "container_port": 8080,
+                  "host_port": 8080,
+                  "name": "web-client"
+                },
+                {
+                  "container_port": 8080,
+                  "host_port": 8080,
+                  "name": "web-client"
+                },
+                {
+                  "container_port": 8080,
+                  "host_port": 8080,
+                  "name": "web-client"
+                }
+              ],
+              "service_ready": true
+            },
+            "updated_at": "2025-01-28T10:05:00Z"
+          },
+          {
+            "created_at": "2025-01-28T10:00:00Z",
+            "database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+            "error": "failed to start container: image not found",
+            "host_id": "host-1",
+            "service_id": "mcp-server",
+            "service_instance_id": "mcp-server-host-1",
+            "state": "running",
+            "status": {
+              "container_id": "a1b2c3d4e5f6",
+              "health_check": {
+                "checked_at": "2025-01-28T10:00:00Z",
+                "message": "Connection refused",
+                "status": "healthy"
+              },
+              "hostname": "mcp-server-host-1.internal",
+              "image_version": "1.0.0",
+              "ipv4_address": "10.0.1.5",
+              "last_health_at": "2025-01-28T10:00:00Z",
+              "ports": [
+                {
+                  "container_port": 8080,
+                  "host_port": 8080,
+                  "name": "web-client"
+                },
                 {
                   "container_port": 8080,
                   "host_port": 8080,
@@ -16936,7 +17654,7 @@
             },
             "additionalProperties": {
               "type": "string",
-              "example": "Aut cupiditate sunt."
+              "example": "Quos autem perspiciatis odit iusto quis."
             }
           },
           "extra_networks": {
@@ -17260,14 +17978,6 @@
             },
             "description": "Entries in the task log.",
             "example": [
-              {
-                "fields": {
-                  "option.enabled": true,
-                  "status": "creating"
-                },
-                "message": "task started",
-                "timestamp": "2025-05-29T15:43:13Z"
-              },
               {
                 "fields": {
                   "option.enabled": true,

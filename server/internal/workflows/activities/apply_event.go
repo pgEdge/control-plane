@@ -37,6 +37,7 @@ func (a *Activities) ExecuteApplyEvent(
 		identifier := input.Event.Resource.Identifier
 		return nil, fmt.Errorf("failed to resolve executor for %s resource %s: %w", identifier.Type, identifier.ID, err)
 	}
+
 	for _, id := range input.RemoveHosts {
 		if queue == utils.HostQueue(id) {
 			return nil, ErrHostRemoved

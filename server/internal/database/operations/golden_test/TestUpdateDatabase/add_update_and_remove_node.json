@@ -67,6 +67,14 @@
     [
       {
         "type": "create",
+        "resource_id": "database.replication_slot::n1n3",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
         "resource_id": "database.subscription::n1n3",
         "reason": "does_not_exist",
         "diff": null
@@ -90,6 +98,14 @@
     ]
   ],
   [
+    [
+      {
+        "type": "create",
+        "resource_id": "database.replication_slot::n3n1",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
     [
       {
         "type": "update",
@@ -140,12 +156,24 @@
     [
       {
         "type": "delete",
-        "resource_id": "database.node::n2",
+        "resource_id": "database.replication_slot::n1n2",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.replication_slot::n2n1",
         "diff": null
       },
       {
         "type": "delete",
         "resource_id": "database.sync_event::n1n3",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.node::n2",
         "diff": null
       }
     ],

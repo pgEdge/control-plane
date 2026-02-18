@@ -55,6 +55,7 @@ func (s *SubscriptionResource) Dependencies() []resource.Identifier {
 	deps := []resource.Identifier{
 		NodeResourceIdentifier(s.SubscriberNode),
 		NodeResourceIdentifier(s.ProviderNode),
+		ReplicationSlotResourceIdentifier(s.ProviderNode, s.SubscriberNode),
 	}
 	deps = append(deps, s.ExtraDependencies...)
 	return deps
