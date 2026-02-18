@@ -94,11 +94,17 @@ func (w *Workflows) getServiceResources(
 	nodeInstances []*database.NodeInstances,
 ) (*operations.ServiceResources, error) {
 	serviceInstanceID := database.GenerateServiceInstanceID(spec.DatabaseID, serviceSpec.ServiceID, hostID)
-	pgEdgeVersion, _ := host.NewPgEdgeVersion(spec.PostgresVersion, spec.SpockVersion)
+	pgEdgeVersion, err := host.NewPgEdgeVersion(spec.PostgresVersion, spec.SpockVersion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse pgedge version: %w", err)
+	}
 
 	// Resolve Postgres connection info for the service container.
 	// Services connect to Postgres via the overlay network using the instance hostname.
-	databaseHost, databasePort := findPostgresInstance(nodeInstances, hostID)
+	databaseHost, databasePort, err := findPostgresInstance(nodeInstances, hostID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve postgres instance for service: %w", err)
+	}
 
 	serviceInstanceSpec := &database.ServiceInstanceSpec{
 		ServiceInstanceID: serviceInstanceID,
@@ -136,7 +142,7 @@ func (w *Workflows) getServiceResources(
 // container from the database spec. It prefers a co-located instance (same host
 // as the service) for lower latency, falling back to any instance in the database.
 // The hostname follows the swarm orchestrator convention: "postgres-{instanceID}".
-func findPostgresInstance(nodeInstances []*database.NodeInstances, serviceHostID string) (string, int) {
+func findPostgresInstance(nodeInstances []*database.NodeInstances, serviceHostID string) (string, int, error) {
 	const defaultPort = 5432
 
 	instancePort := func(inst *database.InstanceSpec) int {
@@ -153,14 +159,14 @@ func findPostgresInstance(nodeInstances []*database.NodeInstances, serviceHostID
 				fallback = inst
 			}
 			if inst.HostID == serviceHostID {
-				return fmt.Sprintf("postgres-%s", inst.InstanceID), instancePort(inst)
+				return fmt.Sprintf("postgres-%s", inst.InstanceID), instancePort(inst), nil
 			}
 		}
 	}
 
 	if fallback != nil {
-		return fmt.Sprintf("postgres-%s", fallback.InstanceID), instancePort(fallback)
+		return fmt.Sprintf("postgres-%s", fallback.InstanceID), instancePort(fallback), nil
 	}
 
-	return "", defaultPort
+	return "", 0, fmt.Errorf("no postgres instances found for service host %s", serviceHostID)
 }
