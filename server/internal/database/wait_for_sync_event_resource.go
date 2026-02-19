@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -25,28 +23,9 @@ func WaitForSyncEventResourceIdentifier(providerNode, subscriberNode string) res
 	}
 }
 
-const defaultSyncTimeout = 1 * time.Hour
-
-// syncTimeout returns the effective sync timeout. Priority:
-//  1. Per-resource Timeout field (if set)
-//  2. PGEDGE_SYNC_TIMEOUT_SECONDS env var (if set)
-//  3. defaultSyncTimeout (1 hour)
-func syncTimeout(resourceTimeout time.Duration) time.Duration {
-	if resourceTimeout > 0 {
-		return resourceTimeout
-	}
-	if v := os.Getenv("PGEDGE_SYNC_TIMEOUT_SECONDS"); v != "" {
-		if seconds, err := strconv.Atoi(v); err == nil && seconds > 0 {
-			return time.Duration(seconds) * time.Second
-		}
-	}
-	return defaultSyncTimeout
-}
-
 type WaitForSyncEventResource struct {
-	SubscriberNode string        `json:"subscriber_node"`
-	ProviderNode   string        `json:"provider_node"`
-	Timeout        time.Duration `json:"timeout,omitempty"`
+	SubscriberNode string `json:"subscriber_node"`
+	ProviderNode   string `json:"provider_node"`
 }
 
 func (r *WaitForSyncEventResource) ResourceVersion() string {
@@ -96,18 +75,9 @@ func (r *WaitForSyncEventResource) Refresh(ctx context.Context, rc *resource.Con
 
 	const pollInterval = 10 * time.Second
 
-	timeout := syncTimeout(r.Timeout)
-
-	deadline := time.Now().Add(timeout)
-
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
-		}
-
-		if time.Now().After(deadline) {
-			return fmt.Errorf("replication sync timed out after %s: provider=%s subscriber=%s lsn=%s",
-				timeout, r.ProviderNode, r.SubscriberNode, syncEvent.SyncEventLsn)
 		}
 
 		// Check subscription health first — fail early if broken.
