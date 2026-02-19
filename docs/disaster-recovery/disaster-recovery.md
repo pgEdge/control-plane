@@ -177,7 +177,7 @@ Then on the recovery host, perform the following steps once.
 
 4. **Start the Control Plane** and verify:
 
-   - If Control Plane is already deployed as Swarm services (e.g. after Path 1A/1B):  
+   - If Control Plane is already deployed as Swarm services (e.g. when only etcd quorum was lost and you did not run [Restoring Docker Swarm](#restoring-docker-swarm)):  
      `docker service scale control-plane_${RECOVERY_HOST_ID}=1`
    - If you completed [Restoring Docker Swarm](#restoring-docker-swarm) and deploy via stack:  
      `docker stack deploy -c <path-to-stack-yaml> control-plane` (do not set `PGEDGE_ETCD_SERVER__FORCE_NEW_CLUSTER`).
