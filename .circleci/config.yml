@@ -1,4 +1,8 @@
 version: 2.1
+parameters:
+  build_ref:
+    type: string
+    default: ""
 orbs:
   go: circleci/go@3.0.2
 executors:
@@ -137,8 +141,36 @@ jobs:
             CONTROL_PLANE_VERSION="${CIRCLE_TAG}" \
             make control-plane-images
 
+  build_image:
+    executor: common
+    steps:
+      - common_setup
+      - run:
+          name: Checkout build ref and rebuild deps
+          command: |
+            git checkout << pipeline.parameters.build_ref >>
+            go mod download
+      - run:
+          name: Build and publish image
+          command: |
+            git checkout -- .
+
+            short_sha=$(git rev-parse --short HEAD)
+            version="v0.0.0-${short_sha}"
+
+            make buildx-init
+            make goreleaser-build CONTROL_PLANE_VERSION="${version}"
+
+            echo "${IMAGE_PUBLISH_TOKEN}" \
+              | docker login ghcr.io --username "${IMAGE_PUBLISH_USER}" --password-stdin
+
+            CONTROL_PLANE_IMAGE_REPO='ghcr.io/pgedge/control-plane' \
+            CONTROL_PLANE_VERSION="${version}" \
+            make control-plane-images
+
 workflows:
   test:
+    unless: << pipeline.parameters.build_ref >>
     jobs:
       - test
 
@@ -151,3 +183,9 @@ workflows:
               ignore: /.*/
             tags:
               only: /v[0-9]+(\.[0-9]+)*(-.*)*/
+
+  build_image:
+    when: << pipeline.parameters.build_ref >>
+    jobs:
+      - build_image:
+          context: control-plane-release
