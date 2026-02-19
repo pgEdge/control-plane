@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -72,23 +73,46 @@ func (r *WaitForSyncEventResource) Refresh(ctx context.Context, rc *resource.Con
 		return fmt.Errorf("sync event LSN is empty on resource %q", syncEvent.Identifier())
 	}
 
-	// TODO: Set wait limit
-	synced, err := postgres.WaitForSyncEvent(r.ProviderNode, syncEvent.SyncEventLsn, 100).Scalar(ctx, subscriberConn)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return resource.ErrNotFound
-	} else if err != nil {
-		return fmt.Errorf("failed to wait for sync event on subscriber: %w", err)
-	}
-	if !synced {
-		return fmt.Errorf("replication sync not confirmed: provider=%s subscriber=%s lsn=%s timeout_seconds=%d",
-			r.ProviderNode,
-			r.SubscriberNode,
-			syncEvent.SyncEventLsn,
-			100,
-		)
-	}
+	const pollInterval = 10 * time.Second
 
-	return nil
+	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		// Check subscription health first — fail early if broken.
+		// Only statuses where the spock worker is running can make
+		// progress. The others ("disabled", "down") mean sync will
+		// never complete.
+		status, err := postgres.GetSubscriptionStatus(r.ProviderNode, r.SubscriberNode).
+			Scalar(ctx, subscriberConn)
+		if err != nil {
+			return fmt.Errorf("failed to check subscription status: %w", err)
+		}
+		switch status {
+		case postgres.SubStatusInitializing, postgres.SubStatusReplicating, postgres.SubStatusUnknown:
+			// Worker is running — continue waiting
+		default:
+			return fmt.Errorf("subscription has unhealthy status %q: provider=%s subscriber=%s",
+				status, r.ProviderNode, r.SubscriberNode)
+		}
+
+		// Try short wait for sync event with poll interval as timeout
+		synced, err := postgres.WaitForSyncEvent(
+			r.ProviderNode, syncEvent.SyncEventLsn, int(pollInterval.Seconds()),
+		).Scalar(ctx, subscriberConn)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return resource.ErrNotFound
+		}
+		if err != nil {
+			return fmt.Errorf("failed to wait for sync event on subscriber: %w", err)
+		}
+		if synced {
+			return nil
+		}
+
+		// Not yet synced, but subscription is healthy — continue waiting
+	}
 }
 
 func (r *WaitForSyncEventResource) Create(ctx context.Context, rc *resource.Context) error {

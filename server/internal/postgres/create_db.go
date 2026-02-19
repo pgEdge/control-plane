@@ -395,6 +395,16 @@ func AdvanceReplicationSlotToLSN(databaseName, providerNode, subscriberNode stri
 	}
 }
 
+// GetSubscriptionStatus returns the current status of a specific subscription
+func GetSubscriptionStatus(providerNode, subscriberNode string) Query[string] {
+	return Query[string]{
+		SQL: `SELECT (spock.sub_show_status(@sub_name)).status;`,
+		Args: pgx.NamedArgs{
+			"sub_name": subName(providerNode, subscriberNode),
+		},
+	}
+}
+
 func EnableSubscription(providerNode, subscriberNode string, disabled bool) ConditionalStatement {
 	return ConditionalStatement{
 		If: SubscriptionNeedsEnable(providerNode, subscriberNode, disabled),
