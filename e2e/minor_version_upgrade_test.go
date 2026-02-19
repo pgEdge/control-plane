@@ -23,8 +23,8 @@ func TestMinorVersionUpgrade(t *testing.T) {
 	username := "admin"
 	password := "password"
 
-	fromVersion := "18.0"
-	toVersion := "18.1"
+	fromVersion := "18.1"
+	toVersion := "18.2"
 
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Minute)
 	defer cancel()
