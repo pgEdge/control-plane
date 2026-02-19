@@ -10,7 +10,7 @@ import (
 
 // EndState computes the end state for the database, containing only the given
 // nodes.
-func EndState(nodes []*NodeResources) (*resource.State, error) {
+func EndState(nodes []*NodeResources, services []*ServiceResources) (*resource.State, error) {
 	end := resource.NewState()
 	for _, node := range nodes {
 		var resources []resource.Resource
@@ -63,6 +63,14 @@ func EndState(nodes []*NodeResources) (*resource.State, error) {
 		if err := end.AddResource(resources...); err != nil {
 			return nil, fmt.Errorf("failed to add end state resource: %w", err)
 		}
+	}
+
+	for _, svc := range services {
+		state, err := svc.State()
+		if err != nil {
+			return nil, err
+		}
+		end.Merge(state)
 	}
 
 	return end, nil

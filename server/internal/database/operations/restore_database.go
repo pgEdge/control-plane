@@ -91,7 +91,7 @@ func RestoreDatabase(
 	targets []*NodeRestoreResources,
 ) ([]resource.Plan, error) {
 	// The other states will be applied on top of this base state.
-	base, err := EndState(nodes)
+	base, err := EndState(nodes, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func RestoreDatabase(
 		states[i] = merged
 	}
 
-	end, err := EndState(allNodes)
+	end, err := EndState(allNodes, nil)
 	if err != nil {
 		return nil, err
 	}

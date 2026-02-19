@@ -33,6 +33,7 @@ type ServiceInstanceResource struct {
 	DatabaseID        string `json:"database_id"`
 	ServiceName       string `json:"service_name"`
 	ServiceID         string `json:"service_id"`
+	HostID            string `json:"host_id"`
 	NeedsUpdate       bool   `json:"needs_update"`
 }
 
@@ -44,6 +45,7 @@ func (s *ServiceInstanceResource) DiffIgnore() []string {
 	return []string{
 		"/database_id",
 		"/service_id",
+		"/host_id",
 	}
 }
 
@@ -90,6 +92,57 @@ func (s *ServiceInstanceResource) Refresh(ctx context.Context, rc *resource.Cont
 }
 
 func (s *ServiceInstanceResource) Create(ctx context.Context, rc *resource.Context) error {
+	dbSvc, err := do.Invoke[*database.Service](rc.Injector)
+	if err != nil {
+		return fmt.Errorf("failed to get database service: %w", err)
+	}
+
+	// Store initial service instance record in etcd with state="creating".
+	// This ensures the service instance is visible in the API even if deployment
+	// fails later. Previously this was done by the StoreServiceInstance activity
+	// in ProvisionServices.
+	err = dbSvc.UpdateServiceInstance(ctx, &database.ServiceInstanceUpdateOptions{
+		ServiceInstanceID: s.ServiceInstanceID,
+		ServiceID:         s.ServiceID,
+		DatabaseID:        s.DatabaseID,
+		HostID:            s.HostID,
+		State:             database.ServiceInstanceStateCreating,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to store initial service instance: %w", err)
+	}
+
+	return s.deploy(ctx, rc)
+}
+
+func (s *ServiceInstanceResource) Update(ctx context.Context, rc *resource.Context) error {
+	client, err := do.Invoke[*docker.Docker](rc.Injector)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.ServiceInspectByLabels(ctx, map[string]string{
+		"pgedge.component":           "service",
+		"pgedge.service.instance.id": s.ServiceInstanceID,
+	})
+	if err != nil && !errors.Is(err, docker.ErrNotFound) {
+		return fmt.Errorf("failed to inspect service instance: %w", err)
+	}
+	if err == nil && resp.Spec.Name != s.ServiceName {
+		// If the service name has changed, we need to remove the service with
+		// the old name so that it can be recreated with the new name.
+		if err := client.ServiceRemove(ctx, resp.Spec.Name); err != nil {
+			return fmt.Errorf("failed to remove service instance for service name update: %w", err)
+		}
+	}
+
+	return s.deploy(ctx, rc)
+}
+
+// deploy handles the shared Docker service deployment logic used by both
+// Create and Update. It deploys the service, waits for it to start, and
+// transitions the etcd state to "running".
+func (s *ServiceInstanceResource) deploy(ctx context.Context, rc *resource.Context) error {
 	client, err := do.Invoke[*docker.Docker](rc.Injector)
 	if err != nil {
 		return err
@@ -98,6 +151,11 @@ func (s *ServiceInstanceResource) Create(ctx context.Context, rc *resource.Conte
 	logger, err := do.Invoke[zerolog.Logger](rc.Injector)
 	if err != nil {
 		return err
+	}
+
+	dbSvc, err := do.Invoke[*database.Service](rc.Injector)
+	if err != nil {
+		return fmt.Errorf("failed to get database service: %w", err)
 	}
 
 	specResourceID := ServiceInstanceSpecResourceIdentifier(s.ServiceInstanceID)
@@ -140,42 +198,13 @@ func (s *ServiceInstanceResource) Create(ctx context.Context, rc *resource.Conte
 	// Transition state to "running" immediately after successful deployment.
 	// This mirrors the database instance pattern where state is set
 	// deterministically within the resource activity, not deferred to the monitor.
-	dbSvc, err := do.Invoke[*database.Service](rc.Injector)
-	if err != nil {
-		logger.Warn().Err(err).Msg("failed to get database service for state update")
-	} else {
-		if err := dbSvc.SetServiceInstanceState(ctx, s.DatabaseID, s.ServiceInstanceID, database.ServiceInstanceStateRunning); err != nil {
-			logger.Warn().Err(err).
-				Str("service_instance_id", s.ServiceInstanceID).
-				Msg("failed to update service instance state to running (monitor will handle it)")
-		}
+	if err := dbSvc.SetServiceInstanceState(ctx, s.DatabaseID, s.ServiceInstanceID, database.ServiceInstanceStateRunning); err != nil {
+		logger.Warn().Err(err).
+			Str("service_instance_id", s.ServiceInstanceID).
+			Msg("failed to update service instance state to running (monitor will handle it)")
 	}
 
 	return nil
-}
-
-func (s *ServiceInstanceResource) Update(ctx context.Context, rc *resource.Context) error {
-	client, err := do.Invoke[*docker.Docker](rc.Injector)
-	if err != nil {
-		return err
-	}
-
-	resp, err := client.ServiceInspectByLabels(ctx, map[string]string{
-		"pgedge.component":           "service",
-		"pgedge.service.instance.id": s.ServiceInstanceID,
-	})
-	if err != nil && !errors.Is(err, docker.ErrNotFound) {
-		return fmt.Errorf("failed to inspect service instance: %w", err)
-	}
-	if err == nil && resp.Spec.Name != s.ServiceName {
-		// If the service name has changed, we need to remove the service with
-		// the old name so that it can be recreated with the new name.
-		if err := client.ServiceRemove(ctx, resp.Spec.Name); err != nil {
-			return fmt.Errorf("failed to remove service instance for service name update: %w", err)
-		}
-	}
-
-	return s.Create(ctx, rc)
 }
 
 func (s *ServiceInstanceResource) Delete(ctx context.Context, rc *resource.Context) error {

@@ -36,6 +36,7 @@ func UpdateDatabase(
 	options UpdateDatabaseOptions,
 	start *resource.State,
 	nodes []*NodeResources,
+	services []*ServiceResources,
 ) ([]resource.Plan, error) {
 	update, err := updateFunc(options)
 	if err != nil {
@@ -65,7 +66,7 @@ func UpdateDatabase(
 	}
 
 	// Auto-select source node ONLY when both SourceNode and RestoreConfig are empty.
-	// If no existing nodes (fresh cluster), skip auto-select (don’t error).
+	// If no existing nodes (fresh cluster), skip auto-select (don't error).
 	if len(adds) > 0 {
 		var defaultSource string
 		if len(updates) > 0 {
@@ -112,7 +113,7 @@ func UpdateDatabase(
 		}
 	}
 
-	end, err := EndState(nodes)
+	end, err := EndState(nodes, services)
 	if err != nil {
 		return nil, err
 	}

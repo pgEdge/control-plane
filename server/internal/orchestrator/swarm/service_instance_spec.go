@@ -58,10 +58,24 @@ func (s *ServiceInstanceSpecResource) Executor() resource.Executor {
 }
 
 func (s *ServiceInstanceSpecResource) Dependencies() []resource.Identifier {
-	// Service instances depend on the database network existing
+	// Service instances depend on the database network and service user role
 	return []resource.Identifier{
 		NetworkResourceIdentifier(s.DatabaseNetworkID),
+		ServiceUserRoleIdentifier(s.ServiceInstanceID),
 	}
+}
+
+func (s *ServiceInstanceSpecResource) populateCredentials(rc *resource.Context) error {
+	userRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(s.ServiceInstanceID))
+	if err != nil {
+		return fmt.Errorf("failed to get service user role from state: %w", err)
+	}
+	s.Credentials = &database.ServiceUser{
+		Username: userRole.Username,
+		Password: userRole.Password,
+		Role:     "pgedge_application_read_only",
+	}
+	return nil
 }
 
 func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.Context) error {
@@ -70,10 +84,10 @@ func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.
 		return fmt.Errorf("failed to get database network from state: %w", err)
 	}
 
-	// DatabaseHost and DatabasePort are populated by the ProvisionServices workflow,
-	// which prefers a co-located instance for lower latency but falls back to any
-	// instance in the database when no local instance exists.
-	// TODO: consider alternatives and discuss with the team
+	// Populate credentials from the ServiceUserRole resource
+	if err := s.populateCredentials(rc); err != nil {
+		return err
+	}
 
 	spec, err := ServiceContainerSpec(&ServiceContainerSpecOptions{
 		ServiceSpec:       s.ServiceSpec,

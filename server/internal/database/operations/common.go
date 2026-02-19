@@ -67,3 +67,21 @@ func mergePartialStates(in [][]*resource.State) []*resource.State {
 
 	return out
 }
+
+// ServiceResources represents the resources for a single service instance.
+type ServiceResources struct {
+	ServiceInstanceID string
+	Resources         []*resource.ResourceData
+	MonitorResource   resource.Resource
+}
+
+func (s *ServiceResources) State() (*resource.State, error) {
+	state := resource.NewState()
+	state.Add(s.Resources...)
+	if s.MonitorResource != nil {
+		if err := state.AddResource(s.MonitorResource); err != nil {
+			return nil, err
+		}
+	}
+	return state, nil
+}
