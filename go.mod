@@ -44,7 +44,10 @@ require (
 	gopkg.in/ini.v1 v1.67.0
 )
 
-require github.com/gohugoio/hashstructure v0.6.0 // indirect
+require (
+	github.com/gohugoio/hashstructure v0.6.0 // indirect
+	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6 // indirect
+)
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
