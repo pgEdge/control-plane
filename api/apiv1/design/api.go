@@ -248,9 +248,7 @@ var _ = g.Service("control-plane", func() {
 
 			g.Required("database_id")
 		})
-		g.Result(Database, func() {
-			g.View("default")
-		})
+		g.Result(Database)
 		g.Error("cluster_not_initialized")
 		g.Error("invalid_input")
 		g.Error("not_found")
@@ -943,10 +941,12 @@ var APIError = g.Type("APIError", func() {
 	g.ErrorName("name", g.String, func() {
 		g.Description("The name of the error.")
 		g.Example("error_name")
+		g.Meta("struct:tag:json", "name")
 	})
 	g.Attribute("message", g.String, func() {
 		g.Description("The error message.")
 		g.Example("A longer description of the error.")
+		g.Meta("struct:tag:json", "message")
 	})
 
 	g.Required("name", "message")

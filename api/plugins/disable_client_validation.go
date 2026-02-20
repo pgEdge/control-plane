@@ -8,10 +8,10 @@ import (
 )
 
 func init() {
-	codegen.RegisterPlugin("disable-client-side-response-validation", "gen", nil, Generate)
+	codegen.RegisterPlugin("disable-client-side-response-validation", "gen", nil, DisableClientValidation)
 }
 
-func Generate(genpkg string, roots []eval.Root, files []*codegen.File) ([]*codegen.File, error) {
+func DisableClientValidation(genpkg string, roots []eval.Root, files []*codegen.File) ([]*codegen.File, error) {
 	for _, file := range files {
 		if strings.HasSuffix(file.Path, "types.go") {
 			for _, s := range file.Section("client-validate") {
