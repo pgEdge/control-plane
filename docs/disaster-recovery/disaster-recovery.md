@@ -19,7 +19,7 @@ This guide describes how to recover the Control Plane and Docker Swarm after hos
 - Host ID(s) of the lost host(s)
 - SSH access to remaining cluster hosts (for Docker Swarm and host operations)
 - The Control Plane stack definition file (YAML) from your initial deployment
-- If etcd quorum was lost: a backup of the Control Plane data volume and (optionally) an etcd snapshot file
+- If **every** server-mode host was lost (total etcd loss): a backup of the Control Plane data volume and (optionally) an etcd snapshot file. If at least one server-mode host remains, you can recover using that host's existing data; a backup is not required.
 
 See [Creating the stack definition file](../installation/installation.md#creating-the-stack-definition-file) in the installation documentation.
 
@@ -34,13 +34,6 @@ RECOVERY_HOST_IP="<recovery-host-ip>"
 API_PORT=<api-port>
 ETCD_CLIENT_PORT=<etcd-client-port>
 ETCD_PEER_PORT=<etcd-peer-port>
-```
-
-When both etcd and Docker Swarm quorum were lost (you will complete [Restoring Docker Swarm](#restoring-docker-swarm) first):
-
-```bash
-RECOVERY_HOST_EXTERNAL_IP="<recovery-host-external-ip>"
-ARCHIVE_VERSION="<control-plane-version>"
 ```
 
 !!! note "Pre-created etcd snapshot is optional"
@@ -58,12 +51,11 @@ ARCHIVE_VERSION="<control-plane-version>"
 
 ## Data volume restore
 
-Restoring the Control Plane data volume from your backup is environment-specific; we cannot document every possible procedure. For examples, see your provider's documentation:
+You will need to restore from a previously created backup if you have lost 100% of your Control Plane servers configured to serve etcd. This could be a snapshot of the data volume or any other type of backup that includes the Control Plane data directory for one of the lost servers. Only one Control Plane server backup is needed to restore the cluster.
 
-- [AWS](https://docs.aws.amazon.com/prescriptive-guidance/latest/backup-recovery/restore.html)
-- [VMware vSphere](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/container-storage-plugin/3-0/getting-started-with-vmware-vsphere-container-storage-plug-in-3-0/using-vsphere-container-storage-plug-in/volume-snapshot-and-restore.html)
-- [Azure](https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms)
-- [Google Cloud](https://docs.cloud.google.com/compute/docs/disks/restore-snapshot)
+If you have lost 100% of your database instances, you will need the data directory from at least one instance from each database. Your data volume backup will also include this data if you are restoring a host that was running an instance of each database. If not, you will also need to restore at least one more host that has this instance data.
+
+If you do not have any data volume backups that include your database instances, we recommend creating a new Control Plane cluster and restoring your databases from pgBackRest backups instead. See [Creating a new database from a backup](../using/backup-restore.md#creating-a-new-database-from-a-backup) for more information.
 
 ---
 
@@ -76,13 +68,13 @@ Restoring the Control Plane data volume from your backup is environment-specific
 On a surviving manager:
 
 ```bash
-sudo docker swarm init --force-new-cluster --advertise-addr ${RECOVERY_HOST_IP}
+docker swarm init --force-new-cluster --advertise-addr ${RECOVERY_HOST_IP}
 ```
 
 Verify:
 
 ```bash
-sudo docker node ls
+docker node ls
 ```
 
 ### Joining hosts to the new Swarm
@@ -114,9 +106,9 @@ docker node rm --force <LOST_HOSTNAME_1> <LOST_HOSTNAME_2>
 Remove Control Plane and Postgres services that were pinned to the lost nodes:
 
 ```bash
-sudo docker service rm control-plane_<LOST_HOST_ID_1> control-plane_<LOST_HOST_ID_2>
-sudo docker service ls
-sudo docker service rm <orphaned-postgres-service-1> <orphaned-postgres-service-2>
+docker service rm control-plane_<LOST_HOST_ID_1> control-plane_<LOST_HOST_ID_2>
+docker service ls
+docker service rm <orphaned-postgres-service-1> <orphaned-postgres-service-2>
 ```
 
 If the container registry or Control Plane image resided on a lost host, recreate the registry and image on a surviving host before starting the Control Plane (see [Upgrading the Control Plane](../installation/upgrading.md)).
@@ -125,9 +117,9 @@ If the container registry or Control Plane image resided on a lost host, recreat
 
 ## Restoring the Control Plane
 
-**Do this section only when etcd quorum was lost** (Control Plane API unavailable). If the API is already accessible, go to [Updating databases to remove old hosts](#updating-databases-to-remove-old-hosts).
+### Reinitializing the Control Plane Etcd Cluster
 
-### Reinitializing the Control Plane etcd cluster
+**Do this section only when Etcd quorum was lost** (Control Plane API unavailable). If the API is already accessible, go to [Updating databases to remove old hosts](#updating-databases-to-remove-old-hosts).
 
 Use one server-mode host as the recovery host. What you do first depends on the situation:
 
@@ -163,7 +155,7 @@ Then on the recovery host, perform the following steps once.
    sudo mv /tmp/etcdutl /usr/local/bin/ && sudo chmod +x /usr/local/bin/etcdutl
    ```
 
-3. **Restore etcd** from the backup directory (step 1 sets `ETCD_BACKUP_DIR`). If you have no existing etcd directory and are using a snapshot file instead, use that file path in place of `"${ETCD_BACKUP_DIR}/member/snap/db"`:
+3. **Restore etcd** from the backup directory (step 1 sets `ETCD_BACKUP_DIR`). If you have no existing etcd directory and are using a snapshot file instead, use that file path in place of `"${ETCD_BACKUP_DIR}/member/snap/db"`. This will restore quorum by reinitializing Etcd with a single cluster member:
 
    ```bash
    etcdutl snapshot restore "${ETCD_BACKUP_DIR}/member/snap/db" \
@@ -187,7 +179,6 @@ Then on the recovery host, perform the following steps once.
    ```bash
    docker service ps control-plane_${RECOVERY_HOST_ID} --no-trunc
    curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts"
-   # or, if using RECOVERY_HOST_EXTERNAL_IP: curl "http://${RECOVERY_HOST_EXTERNAL_IP}:${API_PORT}/v1/databases"
    ```
 
    You should see one host with `status: "reachable"` and `etcd_mode: "server"`. Then continue with [Updating databases to remove old hosts](#updating-databases-to-remove-old-hosts).
@@ -315,8 +306,6 @@ Confirm: all hosts have `status: "reachable"`; server-mode hosts have `etcd_mode
 | Quorum not restored | Too few server-mode hosts rejoined | Rejoin enough server-mode hosts to reach quorum (e.g. 2 of 3 for a 3-node cluster). |
 | Docker Swarm commands hang | Swarm has lost quorum | Run [Reinitializing the Swarm](#reinitializing-the-swarm) on a surviving manager. |
 | "service already exists" when deploying stack | Manually created service conflicts with stack | Run `docker service rm <service-name>`, then redeploy the stack. |
-| Control Plane API hangs after etcd restore | etcd auth not fully re-enabled after restore | Check `docker service logs control-plane_<HOST_ID>`. Restart the service if necessary. |
-| Image pull fails on new hosts | Registry was on a lost host | Recreate the registry on a surviving host and ensure new hosts can reach it. |
 | "etcd already initialized" | Stale etcd data on host being joined | Clear the data directory on that host before joining (see [Re-adding hosts](#re-adding-hosts), rejoin step 2). |
 | Control Plane fails to start | Stale etcd processes or conflicting state | Stop the service (`docker service scale control-plane_<host-id>=0`), clear host state (etcd, certificates, generated.config.json), then start again. |
 | Database instances do not restore | Database spec does not include recovered host | [Updating databases to re-add hosts](#updating-databases-to-re-add-hosts) for that database. |
