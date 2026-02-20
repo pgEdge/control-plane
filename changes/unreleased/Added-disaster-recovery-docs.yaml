@@ -1,3 +1,0 @@
-kind: Added
-body: Added disaster recovery documentation (index, partial-recovery, and full-recovery guides) so operators can recover the Control Plane when hosts or etcd/Swarm quorum are lost.
-time: 2026-02-17T00:00:00Z
