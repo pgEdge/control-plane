@@ -232,6 +232,11 @@ type serviceInstanceSpecResource struct {
 	orchestratorResource
 	networkID         string
 	serviceInstanceID string
+	hostID            string
+}
+
+func (r *serviceInstanceSpecResource) Executor() resource.Executor {
+	return resource.HostExecutor(r.hostID)
 }
 
 func (r *serviceInstanceSpecResource) Identifier() resource.Identifier {
@@ -292,6 +297,7 @@ func makeServiceResources(t testing.TB, databaseID, serviceID, hostID string, no
 			orchestratorResource: orchestratorResource{ID: serviceInstanceID},
 			networkID:            databaseNetworkID,
 			serviceInstanceID:    serviceInstanceID,
+			hostID:               hostID,
 		},
 		&serviceInstanceResource{
 			orchestratorResource: orchestratorResource{ID: serviceInstanceID},
