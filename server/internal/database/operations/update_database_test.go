@@ -153,11 +153,31 @@ func TestUpdateDatabase(t *testing.T) {
 		),
 	)
 
+	svcRes := makeServiceResources(t, "database-id", "test-svc", "host-1-id", nil)
+
+	singleNodeWithServiceState := makeState(t,
+		[]resource.Resource{
+			n1Instance1.Instance,
+			makeMonitorResource(n1Instance1),
+			&database.NodeResource{
+				Name:              "n1",
+				PrimaryInstanceID: n1Instance1.InstanceID(),
+				InstanceIDs:       []string{n1Instance1.InstanceID()},
+			},
+			svcRes.MonitorResource,
+		},
+		slices.Concat(
+			n1Instance1.Resources,
+			svcRes.Resources,
+		),
+	)
+
 	for _, tc := range []struct {
 		name        string
 		options     operations.UpdateDatabaseOptions
 		start       *resource.State
 		nodes       []*operations.NodeResources
+		services    []*operations.ServiceResources
 		expectedErr string
 	}{
 		{
@@ -444,13 +464,77 @@ func TestUpdateDatabase(t *testing.T) {
 			options: operations.UpdateDatabaseOptions{},
 			start:   twoNodeState,
 		},
+		{
+			name:    "single node with service from empty",
+			options: operations.UpdateDatabaseOptions{},
+			start:   resource.NewState(),
+			nodes: []*operations.NodeResources{
+				{
+					NodeName:          "n1",
+					InstanceResources: []*database.InstanceResources{n1Instance1},
+				},
+			},
+			services: []*operations.ServiceResources{
+				makeServiceResources(t, "database-id", "test-svc", "host-1-id", nil),
+			},
+		},
+		{
+			name:    "single node with service no-op",
+			options: operations.UpdateDatabaseOptions{},
+			start:   singleNodeWithServiceState,
+			nodes: []*operations.NodeResources{
+				{
+					NodeName:          "n1",
+					InstanceResources: []*database.InstanceResources{n1Instance1},
+				},
+			},
+			services: []*operations.ServiceResources{svcRes},
+		},
+		{
+			name:    "add service to existing database",
+			options: operations.UpdateDatabaseOptions{},
+			start:   singleNodeState,
+			nodes: []*operations.NodeResources{
+				{
+					NodeName:          "n1",
+					InstanceResources: []*database.InstanceResources{n1Instance1},
+				},
+			},
+			services: []*operations.ServiceResources{
+				makeServiceResources(t, "database-id", "test-svc", "host-1-id", nil),
+			},
+		},
+		{
+			name:    "remove service from existing database",
+			options: operations.UpdateDatabaseOptions{},
+			start:   singleNodeWithServiceState,
+			nodes: []*operations.NodeResources{
+				{
+					NodeName:          "n1",
+					InstanceResources: []*database.InstanceResources{n1Instance1},
+				},
+			},
+			services: nil,
+		},
+		{
+			name:    "update database node with unchanged service",
+			options: operations.UpdateDatabaseOptions{},
+			start:   singleNodeWithServiceState,
+			nodes: []*operations.NodeResources{
+				{
+					NodeName:          "n1",
+					InstanceResources: []*database.InstanceResources{n1Instance1WithNewDependency},
+				},
+			},
+			services: []*operations.ServiceResources{svcRes},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			plans, err := operations.UpdateDatabase(
 				tc.options,
 				tc.start,
 				tc.nodes,
-				nil,
+				tc.services,
 			)
 			if tc.expectedErr != "" {
 				assert.Nil(t, plans)
