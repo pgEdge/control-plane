@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/database/operations"
 	"github.com/pgEdge/control-plane/server/internal/monitor"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/stretchr/testify/assert"
@@ -174,5 +175,154 @@ func (r *restoreResource) Identifier() resource.Identifier {
 	return resource.Identifier{
 		ID:   r.ID,
 		Type: "orchestrator.restore_resource",
+	}
+}
+
+// Service resource stubs using the orchestratorResource embedding pattern.
+// These mirror the real resource types' Identifier/Dependencies/DiffIgnore
+// without importing the swarm package.
+
+type serviceNetworkResource struct {
+	orchestratorResource
+	nodeNames []string
+}
+
+func (r *serviceNetworkResource) Identifier() resource.Identifier {
+	return resource.Identifier{ID: r.ID, Type: "swarm.network"}
+}
+
+func (r *serviceNetworkResource) DiffIgnore() []string {
+	return []string{"/network_id", "/subnet", "/gateway"}
+}
+
+func (r *serviceNetworkResource) Executor() resource.Executor {
+	return resource.ManagerExecutor()
+}
+
+func (r *serviceNetworkResource) Dependencies() []resource.Identifier {
+	var deps []resource.Identifier
+	for _, name := range r.nodeNames {
+		deps = append(deps, database.NodeResourceIdentifier(name))
+	}
+	return deps
+}
+
+type serviceUserRoleResource struct {
+	orchestratorResource
+	nodeNames []string
+}
+
+func (r *serviceUserRoleResource) Identifier() resource.Identifier {
+	return resource.Identifier{ID: r.ID, Type: "swarm.service_user_role"}
+}
+
+func (r *serviceUserRoleResource) DiffIgnore() []string {
+	return []string{"/postgres_host_id", "/username", "/password"}
+}
+
+func (r *serviceUserRoleResource) Dependencies() []resource.Identifier {
+	var deps []resource.Identifier
+	for _, name := range r.nodeNames {
+		deps = append(deps, database.NodeResourceIdentifier(name))
+	}
+	return deps
+}
+
+type serviceInstanceSpecResource struct {
+	orchestratorResource
+	networkID         string
+	serviceInstanceID string
+	hostID            string
+}
+
+func (r *serviceInstanceSpecResource) Executor() resource.Executor {
+	return resource.HostExecutor(r.hostID)
+}
+
+func (r *serviceInstanceSpecResource) Identifier() resource.Identifier {
+	return resource.Identifier{ID: r.ID, Type: "swarm.service_instance_spec"}
+}
+
+func (r *serviceInstanceSpecResource) DiffIgnore() []string {
+	return []string{"/spec"}
+}
+
+func (r *serviceInstanceSpecResource) Dependencies() []resource.Identifier {
+	return []resource.Identifier{
+		{ID: r.networkID, Type: "swarm.network"},
+		{ID: r.serviceInstanceID, Type: "swarm.service_user_role"},
+	}
+}
+
+type serviceInstanceResource struct {
+	orchestratorResource
+	serviceInstanceID string
+}
+
+func (r *serviceInstanceResource) Identifier() resource.Identifier {
+	return resource.Identifier{ID: r.ID, Type: "swarm.service_instance"}
+}
+
+func (r *serviceInstanceResource) DiffIgnore() []string {
+	return []string{"/database_id", "/service_id", "/host_id"}
+}
+
+func (r *serviceInstanceResource) Executor() resource.Executor {
+	return resource.ManagerExecutor()
+}
+
+func (r *serviceInstanceResource) Dependencies() []resource.Identifier {
+	return []resource.Identifier{
+		{ID: r.serviceInstanceID, Type: "swarm.service_user_role"},
+		{ID: r.serviceInstanceID, Type: "swarm.service_instance_spec"},
+	}
+}
+
+func makeServiceResources(t testing.TB, databaseID, serviceID, hostID string, nodeNames []string) *operations.ServiceResources {
+	t.Helper()
+
+	serviceInstanceID := database.GenerateServiceInstanceID(databaseID, serviceID, hostID)
+	databaseNetworkID := database.GenerateDatabaseNetworkID(databaseID)
+
+	resources := []resource.Resource{
+		&serviceNetworkResource{
+			orchestratorResource: orchestratorResource{ID: databaseNetworkID},
+			nodeNames:            nodeNames,
+		},
+		&serviceUserRoleResource{
+			orchestratorResource: orchestratorResource{ID: serviceInstanceID},
+			nodeNames:            nodeNames,
+		},
+		&serviceInstanceSpecResource{
+			orchestratorResource: orchestratorResource{ID: serviceInstanceID},
+			networkID:            databaseNetworkID,
+			serviceInstanceID:    serviceInstanceID,
+			hostID:               hostID,
+		},
+		&serviceInstanceResource{
+			orchestratorResource: orchestratorResource{ID: serviceInstanceID},
+			serviceInstanceID:    serviceInstanceID,
+		},
+	}
+
+	resourceData := make([]*resource.ResourceData, len(resources))
+	for i, res := range resources {
+		rd, err := resource.ToResourceData(res)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resourceData[i] = rd
+	}
+
+	monitorResource := &monitor.ServiceInstanceMonitorResource{
+		DatabaseID:        databaseID,
+		ServiceInstanceID: serviceInstanceID,
+		HostID:            hostID,
+	}
+
+	return &operations.ServiceResources{
+		ServiceInstanceID: serviceInstanceID,
+		Resources:         resourceData,
+		MonitorResource:   monitorResource,
 	}
 }
