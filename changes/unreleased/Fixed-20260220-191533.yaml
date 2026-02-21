@@ -1,0 +1,3 @@
+kind: Fixed
+body: Fix sync_event and wait_for_sync_event refresh blocking updates when the database is not configured as a spock node.
+time: 2026-02-20T19:15:33.547678+05:30

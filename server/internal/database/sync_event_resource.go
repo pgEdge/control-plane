@@ -68,7 +68,10 @@ func (r *SyncEventResource) Refresh(ctx context.Context, rc *resource.Context) e
 	// Send sync event from provider
 	lsn, err := postgres.SyncEvent().Scalar(ctx, providerConn)
 	if err != nil {
-		return fmt.Errorf("failed to send sync event %q from provider: %w", lsn, err)
+		if postgres.IsSpockNodeNotConfigured(err) {
+			return resource.ErrNotFound
+		}
+		return fmt.Errorf("failed to send sync event from provider: %w", err)
 	}
 
 	r.SyncEventLsn = lsn

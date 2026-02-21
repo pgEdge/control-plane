@@ -70,7 +70,7 @@ func (r *WaitForSyncEventResource) Refresh(ctx context.Context, rc *resource.Con
 		return fmt.Errorf("failed to get sync event: %w", err)
 	}
 	if syncEvent.SyncEventLsn == "" {
-		return fmt.Errorf("sync event LSN is empty on resource %q", syncEvent.Identifier())
+		return resource.ErrNotFound
 	}
 
 	const pollInterval = 10 * time.Second
@@ -87,6 +87,9 @@ func (r *WaitForSyncEventResource) Refresh(ctx context.Context, rc *resource.Con
 		status, err := postgres.GetSubscriptionStatus(r.ProviderNode, r.SubscriberNode).
 			Scalar(ctx, subscriberConn)
 		if err != nil {
+			if postgres.IsSpockNodeNotConfigured(err) {
+				return resource.ErrNotFound
+			}
 			return fmt.Errorf("failed to check subscription status: %w", err)
 		}
 		switch status {
@@ -105,6 +108,9 @@ func (r *WaitForSyncEventResource) Refresh(ctx context.Context, rc *resource.Con
 			return resource.ErrNotFound
 		}
 		if err != nil {
+			if postgres.IsSpockNodeNotConfigured(err) {
+				return resource.ErrNotFound
+			}
 			return fmt.Errorf("failed to wait for sync event on subscriber: %w", err)
 		}
 		if synced {
