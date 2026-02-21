@@ -2,6 +2,7 @@ package postgres_test
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/jackc/pgerrcode"
@@ -42,11 +43,8 @@ func TestIsSpockNodeNotConfigured(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "returns true when wrapped with fmt.Errorf",
-			err: func() error {
-				pgErr := &pgconn.PgError{Code: pgerrcode.ObjectNotInPrerequisiteState}
-				return pgErr
-			}(),
+			name:     "returns true when wrapped with fmt.Errorf",
+			err:      fmt.Errorf("outer: %w", &pgconn.PgError{Code: pgerrcode.ObjectNotInPrerequisiteState}),
 			expected: true,
 		},
 	} {

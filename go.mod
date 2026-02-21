@@ -46,7 +46,7 @@ require (
 
 require (
 	github.com/gohugoio/hashstructure v0.6.0 // indirect
-	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6 // indirect
+	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6
 )
 
 require (
