@@ -1,31 +1,53 @@
 # Disaster Recovery
 
-This guide describes how to recover the Control Plane and Docker Swarm after host loss or etcd quorum loss. Follow the sections in order; skip **Restoring Docker Swarm** if Swarm still has quorum, and skip **Restoring the Control Plane** if the API is already accessible.
+This guide describes how to recover the Control Plane and Docker Swarm after
+host loss or etcd quorum loss. Follow the sections in order, skipping:
 
-## When to Use This Guide
+- [Restoring Docker Swarm](#restoring-docker-swarm) if the Swarm still has
+  quorum.
+- [Restoring the Control Plane](#restoring-the-control-plane) if the API is
+  already accessible.
+
+The following table will direct you to your recovery starting point; find
+the `Scenario` that describes the condition of your Swarm, and navigate to
+the corresponding section in the `Start at` column to begin:
 
 | Scenario | API accessible? | Start at |
 |----------|------------------|----------|
-| Quorum intact — one or more hosts lost | Yes | [Updating databases to remove old hosts](#updating-databases-to-remove-old-hosts) |
+| Quorum intact — one or more hosts lost | Yes | [Updating Databases to Remove Old Hosts](#updating-databases-to-remove-old-hosts) |
 | etcd quorum lost — Swarm still works | No | [Restoring the Control Plane](#restoring-the-control-plane) |
 | etcd and Swarm quorum lost | No | [Restoring Docker Swarm](#restoring-docker-swarm), then [Restoring the Control Plane](#restoring-the-control-plane) |
 
 !!! warning
 
-    Ensure you have a recent backup of the Control Plane data volume before starting any recovery procedure.
+    Ensure you have a recent backup of the Control Plane data volume before
+    starting any recovery procedure.
 
+    
 ## Prerequisites
 
-- Host ID(s) of the lost host(s)
-- SSH access to remaining cluster hosts (for Docker Swarm and host operations)
-- The Control Plane stack definition file (YAML) from your initial deployment
-- If **every** server-mode host was lost (total etcd loss): a backup of the Control Plane data volume and (optionally) an etcd snapshot file. If at least one server-mode host remains, you can recover using that host's existing data; a backup is not required.
+Before starting the recovery process, ensure you have:
 
-See [Creating the stack definition file](../installation/installation.md#creating-the-stack-definition-file) in the installation documentation.
+- the host ID(s) of the lost host(s).
+- SSH access to remaining cluster hosts (for Docker Swarm and host
+  operations).
+- the Control Plane stack definition file (YAML) from your initial
+  deployment.
+- a current backup.  If **every** server-mode host was lost (total etcd
+  loss), you need a backup of the Control Plane data volume and
+  (optionally) an etcd snapshot file. If at least one server-mode host
+  remains, you can recover using that host's existing data; a backup is not
+  required.
+
+See
+[Creating the stack definition file](../installation/installation.md#creating-the-stack-definition-file)
+in the installation documentation.
 
 ## Set Variables
 
-Set the following variables for all recovery steps. When the API is already accessible, use a healthy host for `RECOVERY_HOST_IP` and the host being recovered (or the first restored host) for `RECOVERY_HOST_ID`.
+Set the following variables for all recovery steps. If the API is already
+accessible, use a healthy host for the `RECOVERY_HOST_IP` and the host
+being recovered (or the first restored host) for `RECOVERY_HOST_ID`.
 
 ```bash
 PGEDGE_DATA_DIR="<path-to-control-plane-data-dir>"
@@ -38,24 +60,43 @@ ETCD_PEER_PORT=<etcd-peer-port>
 
 !!! note "Pre-created etcd snapshot is optional"
 
-    The procedure below restores etcd from the **existing data directory** on the recovery host (after moving it aside). Use a **pre-created snapshot file** only when that data is corrupted.
+    The procedure below restores etcd from the **existing data directory**
+    on the recovery host (after moving it aside). Use a pre-created
+    snapshot file only when that data is corrupted.
 
-### Quorum reference
+### Quorum Reference
 
-**Formula:** `Quorum = floor(N/2) + 1`, where N = number of server-mode hosts.
+Use the following formula and table to determine if quorum has been
+lost:
+
+**Formula:** `Quorum = floor(N/2) + 1`, where N = number of server-mode
+hosts.
 
 | Server-mode hosts | Quorum | Quorum lost when |
 |-------------------|--------|------------------|
 | 3 | 2 | 2 or more hosts lost |
 | 5 | 3 | 3 or more hosts lost |
 
-## Data volume restore
 
-You will need to restore from a previously created backup if you have lost 100% of your Control Plane servers configured to serve etcd. This could be a snapshot of the data volume or any other type of backup that includes the Control Plane data directory for one of the lost servers. Only one Control Plane server backup is needed to restore the cluster.
+## Data Volume Restore
 
-If you have lost 100% of your database instances, you will need the data directory from at least one instance from each database. Your data volume backup will also include this data if you are restoring a host that was running an instance of each database. If not, you will also need to restore at least one more host that has this instance data.
+You will need to restore from a previously created backup if you have
+lost 100% of your Control Plane servers configured to serve etcd. This
+could be a snapshot of the data volume or any other type of backup that
+includes the Control Plane data directory for one of the lost servers.
+Only one Control Plane server backup is needed to restore the cluster.
 
-If you do not have any data volume backups that include your database instances, we recommend creating a new Control Plane cluster and restoring your databases from pgBackRest backups instead. See [Creating a new database from a backup](../using/backup-restore.md#creating-a-new-database-from-a-backup) for more information.
+If you have lost 100% of your database instances, you will need the
+data directory from at least one instance from each database. Your data
+volume backup will also include this data if you are restoring a host
+that was running an instance of each database. If not, you will also need
+to restore at least one more host that has this instance data.
+
+If you do not have any data volume backups that include your database
+instances, we recommend creating a new Control Plane cluster and
+restoring your databases from pgBackRest backups instead. See
+[Creating a new database from a backup](../using/backup-restore.md#creating-a-new-database-from-a-backup)
+for more information.
 
 ---
 
