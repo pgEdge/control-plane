@@ -161,14 +161,15 @@ func (n *Network) Delete(ctx context.Context, rc *resource.Context) error {
 		return err
 	}
 
-	// TODO: need to add a deallocate method to the ipam service
-
 	err = client.NetworkRemove(ctx, n.Name)
-	if errors.Is(err, docker.ErrNotFound) {
-		return nil
-	} else if err != nil {
+	if err != nil && !errors.Is(err, docker.ErrNotFound) {
 		return fmt.Errorf("failed to remove network %q: %w", n.Name, err)
 	}
 
+	if n.Subnet.IsValid() && n.Allocator.Prefix.IsValid() {
+		if ipamSvc, err := do.Invoke[*ipam.Service](rc.Injector); err == nil {
+			_ = ipamSvc.ReleaseSubnet(ctx, n.Allocator.Prefix, n.Allocator.Bits, n.Subnet)
+		}
+	}
 	return nil
 }

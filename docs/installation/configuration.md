@@ -46,3 +46,14 @@ This reference uses a JSON-path like syntax to denote a nested property; for exa
 | `docker_swarm.database_networks_cidr`        | `PGEDGE_DOCKER_SWARM__DATABASE_NETWORKS_CIDR`        | string  | `10.128.128.0/18`      | The CIDR used to allocate per-database networks.                                                                  | Must not be changed after creating databases.                               |
 | `docker_swarm.database_networks_subnet_bits` | `PGEDGE_DOCKER_SWARM__DATABASE_NETWORKS_SUBNET_BITS` | int     | `26`                   | The subnet size for per-database networks.                                                                        | Must not be changed after creating databases.                               |
 | `database_owner_uid`                         | `PGEDGE_DATABASE_OWNER_UID`                          | int     | `26`                   | The UID to use for database configuration and data.                                                               | Must match the UID that owns the Postgres server processes.                 |
+
+To avoid subnet range conflicts, use a non-overlapping CIDR. Restart the Control Plane after changing.
+
+```json
+{
+  "docker_swarm": {
+    "database_networks_cidr": "10.129.0.0/18",
+    "database_networks_subnet_bits": 26
+  }
+}
+```
