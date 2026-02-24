@@ -432,7 +432,7 @@ across nodes.
 | Host joins but shows unreachable | Network or service not fully up | Check `docker service logs control-plane_<HOST_ID>`, verify connectivity, allow service to finish initializing. |
 | etcd certificate errors | Certificates do not match restored data | Use the same certificate files that were in use when the snapshot or data was created. |
 | Quorum not restored | Too few server-mode hosts rejoined | Rejoin enough server-mode hosts to reach quorum (e.g. 2 of 3 for a 3-node cluster). |
-| Docker Swarm commands hang | Swarm has lost quorum | Run [Reinitializing the Swarm](#reinitializing-the-swarm) on a surviving manager. |
+| Docker Swarm commands hang | Swarm has lost quorum | Run [Reinitializing the Swarm](#restoring-docker-swarm) on a surviving manager. |
 | "service already exists" when deploying stack | Manually created service conflicts with stack | Run `docker service rm <service-name>`, then redeploy the stack. |
 | "etcd already initialized" | Stale etcd data on host being joined | Clear the data directory on that host before joining (see [Re-adding Hosts](#re-adding-hosts), rejoin step 2). |
 | Control Plane fails to start | Stale etcd processes or conflicting state | Stop the service (`docker service scale control-plane_<host-id>=0`), clear host state (etcd, certificates, generated.config.json), then start again. |
