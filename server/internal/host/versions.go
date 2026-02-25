@@ -59,6 +59,20 @@ func (v *Version) Major() (uint64, bool) {
 	return v.Components[0], true
 }
 
+func (v *Version) MajorString() (string, bool) {
+	major, ok := v.Major()
+	if !ok {
+		return "", false
+	}
+	return strconv.FormatUint(major, 10), true
+}
+
+func (v *Version) MajorVersion() *Version {
+	return &Version{
+		Components: v.Components[:1],
+	}
+}
+
 func (v *Version) String() string {
 	components := make([]string, len(v.Components))
 	for i, c := range v.Components {
@@ -118,7 +132,7 @@ func (v *Version) Compare(other *Version) int {
 	return slices.Compare(v.Components, other.Components)
 }
 
-var semverRegexp = regexp.MustCompile(`^\d+(.\d+){0,2}$`)
+var semverRegexp = regexp.MustCompile(`^\d+(\.\d+){0,2}$`)
 
 func MustParseVersion(s string) *Version {
 	v, err := ParseVersion(s)

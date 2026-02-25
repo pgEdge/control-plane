@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
+	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
@@ -678,7 +679,11 @@ func apiToServiceSpecs(apiServices []*api.ServiceSpec) ([]*database.ServiceSpec,
 	return services, nil
 }
 
-func apiToDatabaseSpec(id, tID *api.Identifier, apiSpec *api.DatabaseSpec) (*database.Spec, error) {
+func apiToDatabaseSpec(
+	orchestrator config.Orchestrator,
+	id, tID *api.Identifier,
+	apiSpec *api.DatabaseSpec,
+) (*database.Spec, error) {
 	var databaseID string
 	var err error
 	if id != nil {
@@ -697,7 +702,7 @@ func apiToDatabaseSpec(id, tID *api.Identifier, apiSpec *api.DatabaseSpec) (*dat
 		}
 		tenantID = &t
 	}
-	if err := validateDatabaseSpec(apiSpec); err != nil {
+	if err := validateDatabaseSpec(orchestrator, apiSpec); err != nil {
 		return nil, err
 	}
 

@@ -93,6 +93,11 @@ func (w *Workflows) DeleteDatabase(ctx workflow.Context, input *DeleteDatabaseIn
 		return nil, fmt.Errorf("failed to plan database delete: %w", err)
 	}
 
+	err = w.persistPlans(ctx, input.DatabaseID, input.TaskID, plans)
+	if err != nil {
+		return nil, handleError(err)
+	}
+
 	err = w.applyPlans(ctx, input.DatabaseID, input.TaskID, current, plans)
 	if err != nil {
 		return nil, handleError(err)
