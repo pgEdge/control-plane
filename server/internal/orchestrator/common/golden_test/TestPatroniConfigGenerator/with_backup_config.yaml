@@ -1,0 +1,113 @@
+name: storefront-n1-689qacsi
+namespace: /patroni/
+scope: storefront:n1
+log:
+  type: json
+  level: INFO
+  static_fields:
+    database_id: storefront
+    instance_id: storefront-n1-689qacsi
+    node_name: n1
+bootstrap:
+  dcs:
+    loop_wait: 10
+    ttl: 30
+    retry_timeout: 10
+    postgresql:
+      parameters:
+        max_connections: 901
+        max_replication_slots: 16
+        max_wal_senders: 16
+        max_worker_processes: 12
+        track_commit_timestamp: "on"
+        wal_level: logical
+    ignore_slots:
+    - plugin: spock_output
+  initdb:
+  - data-checksums
+etcd3:
+  hosts:
+  - i-0123456789abcdef.ec2.internal:2379
+  protocol: https
+  username: instance.storefront-n1-689qacsi
+  password: password
+  cacert: /opt/pgedge/certificates/etcd/ca.crt
+  cert: /opt/pgedge/certificates/etcd/client.crt
+  key: /opt/pgedge/certificates/etcd/client.key
+postgresql:
+  authentication:
+    superuser:
+      username: pgedge
+      sslmode: verify-full
+      sslkey: /opt/pgedge/certificates/postgres/superuser.key
+      sslcert: /opt/pgedge/certificates/postgres/superuser.crt
+      sslrootcert: /opt/pgedge/certificates/postgres/ca.crt
+    replication:
+      username: patroni_replicator
+      sslmode: verify-full
+      sslkey: /opt/pgedge/certificates/postgres/replication.key
+      sslcert: /opt/pgedge/certificates/postgres/replication.crt
+      sslrootcert: /opt/pgedge/certificates/postgres/ca.crt
+  connect_address: storefront-n1-689qacsi.storefront-database:5432
+  data_dir: /opt/pgedge/data/pgdata
+  listen: "*:5432"
+  parameters:
+    archive_command: /usr/bin/pgbackrest --config /opt/pgedge/configs/pgbackrest.backup.conf --stanza db archive-push "%p"
+    archive_mode: "on"
+    autovacuum_max_workers: 3
+    autovacuum_vacuum_cost_limit: 200
+    autovacuum_work_mem: 262144
+    checkpoint_completion_target: "0.9"
+    checkpoint_timeout: 15min
+    dynamic_shared_memory_type: posix
+    effective_cache_size: 524288
+    hot_standby_feedback: "on"
+    lolor.node: 1
+    maintenance_work_mem: 137518
+    max_parallel_workers: 8
+    password_encryption: md5
+    shared_buffers: 262144
+    shared_preload_libraries: pg_stat_statements,snowflake,spock,postgis-3
+    snowflake.node: 1
+    spock.allow_ddl_from_functions: "on"
+    spock.conflict_log_level: DEBUG
+    spock.conflict_resolution: last_update_wins
+    spock.enable_ddl_replication: "on"
+    spock.include_ddl_repset: "on"
+    spock.save_resolutions: "on"
+    ssl: "on"
+    ssl_ca_file: /opt/pgedge/certificates/postgres/ca.crt
+    ssl_cert_file: /opt/pgedge/certificates/postgres/server.crt
+    ssl_key_file: /opt/pgedge/certificates/postgres/server.key
+    track_io_timing: "on"
+    wal_log_hints: "on"
+    wal_sender_timeout: 5s
+  pg_hba:
+  - local   all             all                                     trust
+  - host    all             all             127.0.0.1/32            trust
+  - host    all             all             ::1/128                 trust
+  - local   replication     all                                     trust
+  - host    replication     all             127.0.0.1/32            trust
+  - host    replication     all             ::1/128                 trust
+  - hostssl all             pgedge,patroni_replicator 172.17.0.1/32           cert clientcert=verify-full
+  - hostssl replication     pgedge,patroni_replicator 172.17.0.1/32           cert clientcert=verify-full
+  - hostssl all             pgedge,patroni_replicator 10.128.165.128/26       cert clientcert=verify-full
+  - hostssl replication     pgedge,patroni_replicator 10.128.165.128/26       cert clientcert=verify-full
+  - host    all             pgedge,patroni_replicator 0.0.0.0/0               reject
+  - host    all             pgedge,patroni_replicator ::/0                    reject
+  - host    all             all             172.17.0.1/32           md5
+  - host    all             all             172.17.0.1/16           reject
+  - host    all             all             0.0.0.0/0               md5
+  use_pg_rewind: true
+  remove_data_directory_on_rewind_failure: true
+  remove_data_directory_on_diverged_timelines: true
+restapi:
+  connect_address: storefront-n1-689qacsi.storefront-database:8888
+  listen: 0.0.0.0:8888
+  allowlist:
+  - 172.17.0.1/32
+  - 10.128.165.128/26
+  - 127.0.0.1
+  - localhost
+watchdog:
+  mode: "off"
