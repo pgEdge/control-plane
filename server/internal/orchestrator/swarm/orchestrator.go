@@ -106,6 +106,10 @@ func NewOrchestrator(
 	}, nil
 }
 
+func (o *Orchestrator) Start(_ context.Context) error {
+	return nil
+}
+
 func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
 	h.CPUs = o.cpus
 	h.MemBytes = o.memBytes
@@ -495,8 +499,8 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 	}, nil
 }
 
-func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*database.ConnectionInfo, error) {
-	container, err := GetPostgresContainer(ctx, o.docker, instanceID)
+func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, spec *database.InstanceSpec) (*database.ConnectionInfo, error) {
+	container, err := GetPostgresContainer(ctx, o.docker, spec.InstanceID)
 	if err != nil {
 		if errors.Is(err, ErrNoPostgresContainer) {
 			return nil, fmt.Errorf("%w: %v", database.ErrInstanceStopped, err)
@@ -531,7 +535,7 @@ func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID
 	return &database.ConnectionInfo{
 		AdminHost:         bridge.IPAddress,
 		AdminPort:         5432,
-		PeerHost:          fmt.Sprintf("%s.%s-database", inspect.Config.Hostname, databaseID),
+		PeerHost:          fmt.Sprintf("%s.%s-database", inspect.Config.Hostname, spec.DatabaseID),
 		PeerPort:          5432,
 		PeerSSLCert:       "/opt/pgedge/certificates/postgres/superuser.crt",
 		PeerSSLKey:        "/opt/pgedge/certificates/postgres/superuser.key",
@@ -618,10 +622,10 @@ func (o *Orchestrator) WorkerQueues() ([]workflow.Queue, error) {
 	return queues, nil
 }
 
-func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, instanceID string, options *pgbackrest.BackupOptions) error {
+func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, spec *database.InstanceSpec, options *pgbackrest.BackupOptions) error {
 	backupCmd := PgBackRestBackupCmd("backup", options.StringSlice()...)
 
-	err := PostgresContainerExec(ctx, w, o.docker, instanceID, backupCmd.StringSlice())
+	err := PostgresContainerExec(ctx, w, o.docker, spec.InstanceID, backupCmd.StringSlice())
 	if err != nil {
 		return fmt.Errorf("failed to exec backup command: %w", err)
 	}

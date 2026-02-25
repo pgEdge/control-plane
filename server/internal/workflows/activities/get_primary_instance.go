@@ -7,7 +7,6 @@ import (
 
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/workflow"
-	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
@@ -41,12 +40,7 @@ func (a *Activities) GetPrimaryInstance(ctx context.Context, input *GetPrimaryIn
 	logger := activity.Logger(ctx).With("instance_id", input.InstanceID)
 	logger.Info("determining primary instance")
 
-	orch, err := do.Invoke[database.Orchestrator](a.Injector)
-	if err != nil {
-		return nil, err
-	}
-
-	connInfo, err := orch.GetInstanceConnectionInfo(ctx, input.DatabaseID, input.InstanceID)
+	connInfo, err := a.DatabaseService.GetInstanceConnectionInfo(ctx, input.DatabaseID, input.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance connection info: %w", err)
 	}

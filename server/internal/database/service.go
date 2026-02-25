@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
@@ -396,6 +398,52 @@ func (s *Service) GetAllServiceInstances(ctx context.Context) ([]*ServiceInstanc
 	serviceInstances := storedToServiceInstances(storedServiceInstances, storedStatuses)
 
 	return serviceInstances, nil
+}
+
+func (s *Service) CreatePgBackRestBackup(ctx context.Context, w io.Writer, databaseID, instanceID string, options *pgbackrest.BackupOptions) error {
+	instance, err := s.GetInstanceSpec(ctx, databaseID, instanceID)
+	if err != nil {
+		return err
+	}
+	return s.orchestrator.CreatePgBackRestBackup(ctx, w, instance, options)
+}
+
+func (s *Service) GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*ConnectionInfo, error) {
+	instance, err := s.GetInstanceSpec(ctx, databaseID, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	return s.orchestrator.GetInstanceConnectionInfo(ctx, instance)
+}
+
+func (s *Service) GetInstanceSpec(ctx context.Context, databaseID, instanceID string) (*InstanceSpec, error) {
+	spec, err := s.store.Spec.GetByKey(databaseID).Exec(ctx)
+	switch {
+	case errors.Is(err, storage.ErrNotFound):
+		return nil, ErrDatabaseNotFound
+	case err != nil:
+		return nil, fmt.Errorf("failed to get database spec: %w", err)
+	}
+	nodes, err := spec.NodeInstances()
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute nodes instances: %w", err)
+	}
+	var instance *InstanceSpec
+	for _, node := range nodes {
+		if instance != nil {
+			break
+		}
+		for _, inst := range node.Instances {
+			if inst.InstanceID == instanceID {
+				instance = inst
+				break
+			}
+		}
+	}
+	if instance == nil {
+		return nil, ErrInstanceNotFound
+	}
+	return instance, nil
 }
 
 func (s *Service) InstanceCountForHost(ctx context.Context, hostID string) (int, error) {

@@ -21,13 +21,11 @@ type InstanceMonitor struct {
 	databaseID    string
 	instanceID    string
 	dbName        string
-	orch          database.Orchestrator
 	dbSvc         *database.Service
 	certSvc       *certificates.Service
 }
 
 func NewInstanceMonitor(
-	orch database.Orchestrator,
 	dbSvc *database.Service,
 	certSvc *certificates.Service,
 	logger zerolog.Logger,
@@ -39,7 +37,6 @@ func NewInstanceMonitor(
 		databaseID: databaseID,
 		instanceID: instanceID,
 		dbName:     dbName,
-		orch:       orch,
 		dbSvc:      dbSvc,
 		certSvc:    certSvc,
 	}
@@ -64,7 +61,7 @@ func (m *InstanceMonitor) checkStatus(ctx context.Context) error {
 		StatusUpdatedAt: utils.PointerTo(time.Now()),
 	}
 
-	info, err := m.orch.GetInstanceConnectionInfo(ctx, m.databaseID, m.instanceID)
+	info, err := m.dbSvc.GetInstanceConnectionInfo(ctx, m.databaseID, m.instanceID)
 	if err != nil {
 		if errors.Is(err, database.ErrInstanceStopped) {
 			status.Stopped = utils.PointerTo(true)

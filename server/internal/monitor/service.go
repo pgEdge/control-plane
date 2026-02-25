@@ -155,7 +155,6 @@ func (s *Service) HasInstanceMonitor(instanceID string) bool {
 
 func (s *Service) addInstanceMonitor(databaseID, instanceID, dbName string) {
 	mon := NewInstanceMonitor(
-		s.dbOrch,
 		s.dbSvc,
 		s.certSvc,
 		s.logger,

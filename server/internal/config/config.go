@@ -182,7 +182,8 @@ var etcdClientDefault = EtcdClient{
 type Orchestrator string
 
 const (
-	OrchestratorSwarm Orchestrator = "swarm"
+	OrchestratorSwarm   Orchestrator = "swarm"
+	OrchestratorSystemD Orchestrator = "systemd"
 )
 
 type EtcdMode string
@@ -239,7 +240,7 @@ func (c Config) Validate() error {
 	for _, err := range c.Logging.validate() {
 		errs = append(errs, fmt.Errorf("logging.%w", err))
 	}
-	if c.Orchestrator != OrchestratorSwarm {
+	if c.Orchestrator != OrchestratorSwarm && c.Orchestrator != OrchestratorSystemD {
 		errs = append(errs, fmt.Errorf("orchestrator: unsupported orchestrator %q", c.Orchestrator))
 	}
 	switch c.Orchestrator {
@@ -247,6 +248,8 @@ func (c Config) Validate() error {
 		for _, err := range c.DockerSwarm.validate() {
 			errs = append(errs, fmt.Errorf("docker_swarm.%w", err))
 		}
+	case OrchestratorSystemD:
+		// There is no SystemD-specific configuration yet.
 	default:
 		errs = append(errs, fmt.Errorf("host_type: unsupported host type %q", c.Orchestrator))
 	}
