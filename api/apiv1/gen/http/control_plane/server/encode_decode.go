@@ -3686,6 +3686,7 @@ func unmarshalDatabaseSpecRequestBodyToControlplaneDatabaseSpec(v *DatabaseSpecR
 		PostgresVersion: v.PostgresVersion,
 		SpockVersion:    v.SpockVersion,
 		Port:            v.Port,
+		PatroniPort:     v.PatroniPort,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
@@ -3746,6 +3747,7 @@ func unmarshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *Datab
 		Name:            *v.Name,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
+		PatroniPort:     v.PatroniPort,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 		SourceNode:      v.SourceNode,
@@ -4212,6 +4214,7 @@ func marshalControlplaneDatabaseSpecToDatabaseSpecResponseBody(v *controlplane.D
 		PostgresVersion: v.PostgresVersion,
 		SpockVersion:    v.SpockVersion,
 		Port:            v.Port,
+		PatroniPort:     v.PatroniPort,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
@@ -4276,6 +4279,7 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecResponseBody(v *contro
 		Name:            v.Name,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
+		PatroniPort:     v.PatroniPort,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 		SourceNode:      v.SourceNode,
@@ -4628,6 +4632,7 @@ func unmarshalDatabaseSpecRequestBodyRequestBodyToControlplaneDatabaseSpec(v *Da
 		PostgresVersion: v.PostgresVersion,
 		SpockVersion:    v.SpockVersion,
 		Port:            v.Port,
+		PatroniPort:     v.PatroniPort,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 	}
@@ -4688,6 +4693,7 @@ func unmarshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSp
 		Name:            *v.Name,
 		PostgresVersion: v.PostgresVersion,
 		Port:            v.Port,
+		PatroniPort:     v.PatroniPort,
 		Cpus:            v.Cpus,
 		Memory:          v.Memory,
 		SourceNode:      v.SourceNode,

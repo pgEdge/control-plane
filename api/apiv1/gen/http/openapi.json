@@ -3863,6 +3863,14 @@
         "orchestrator_opts": {
           "$ref": "#/definitions/OrchestratorOpts"
         },
+        "patroni_port": {
+          "type": "integer",
+          "description": "The port used by Patroni for this node. Overrides the Patroni port set in the DatabaseSpec. NOTE: This field is not currently supported for Docker Swarm.",
+          "example": 8888,
+          "format": "int64",
+          "minimum": 0,
+          "maximum": 65535
+        },
         "port": {
           "type": "integer",
           "description": "The port used by the Postgres database for this node. Overrides the Postgres port set in the DatabaseSpec.",
@@ -4046,6 +4054,7 @@
             ]
           }
         },
+        "patroni_port": 8888,
         "port": 5432,
         "postgres_version": "17.6",
         "postgresql_conf": {
@@ -4322,6 +4331,7 @@
                   ]
                 }
               },
+              "patroni_port": 8888,
               "port": 5432,
               "postgres_version": "17.6",
               "postgresql_conf": {
@@ -4511,6 +4521,7 @@
                   ]
                 }
               },
+              "patroni_port": 8888,
               "port": 5432,
               "postgres_version": "17.6",
               "postgresql_conf": {
@@ -4700,6 +4711,7 @@
                   ]
                 }
               },
+              "patroni_port": 8888,
               "port": 5432,
               "postgres_version": "17.6",
               "postgresql_conf": {
@@ -4743,6 +4755,14 @@
         },
         "orchestrator_opts": {
           "$ref": "#/definitions/OrchestratorOpts"
+        },
+        "patroni_port": {
+          "type": "integer",
+          "description": "The port used by Patroni for this database. NOTE: This field is not currently supported for Docker Swarm.",
+          "example": 8888,
+          "format": "int64",
+          "minimum": 0,
+          "maximum": 65535
         },
         "port": {
           "type": "integer",
@@ -5125,6 +5145,7 @@
                 ]
               }
             },
+            "patroni_port": 8888,
             "port": 5432,
             "postgres_version": "17.6",
             "postgresql_conf": {
@@ -5314,6 +5335,7 @@
                 ]
               }
             },
+            "patroni_port": 8888,
             "port": 5432,
             "postgres_version": "17.6",
             "postgresql_conf": {
@@ -5406,6 +5428,7 @@
             ]
           }
         },
+        "patroni_port": 8888,
         "port": 5432,
         "postgres_version": "17.6",
         "postgresql_conf": {
