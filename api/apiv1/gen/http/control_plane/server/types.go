@@ -1902,6 +1902,11 @@ type DatabaseSpecResponseBody struct {
 	// be assigned a random port. If the port is unspecified, the database will not
 	// be exposed on any port, dependent on orchestrator support for that feature.
 	Port *int `json:"port,omitempty"`
+	// The port used by Patroni for this node. If the port is 0, each instance will
+	// be assigned a random port. If the port is unspecified, Patroni will not be
+	// exposed on any port, dependent on orchestrator support for that feature.
+	// NOTE: This is field is not currently supported for Docker Swarm.
+	PatroniPort *int `json:"patroni_port,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
 	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
@@ -1942,6 +1947,10 @@ type DatabaseNodeSpecResponseBody struct {
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int `json:"port,omitempty"`
+	// The port used by Patroni for this node. Overrides the Patroni port set in
+	// the DatabaseSpec. NOTE: This is field is not currently supported for Docker
+	// Swarm.
+	PatroniPort *int `json:"patroni_port,omitempty"`
 	// The number of CPUs to allocate for the database on this node and to use for
 	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
 	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
@@ -2209,6 +2218,11 @@ type DatabaseSpecRequestBody struct {
 	// be assigned a random port. If the port is unspecified, the database will not
 	// be exposed on any port, dependent on orchestrator support for that feature.
 	Port *int `json:"port,omitempty"`
+	// The port used by Patroni for this node. If the port is 0, each instance will
+	// be assigned a random port. If the port is unspecified, Patroni will not be
+	// exposed on any port, dependent on orchestrator support for that feature.
+	// NOTE: This is field is not currently supported for Docker Swarm.
+	PatroniPort *int `json:"patroni_port,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
 	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
@@ -2249,6 +2263,10 @@ type DatabaseNodeSpecRequestBody struct {
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int `json:"port,omitempty"`
+	// The port used by Patroni for this node. Overrides the Patroni port set in
+	// the DatabaseSpec. NOTE: This is field is not currently supported for Docker
+	// Swarm.
+	PatroniPort *int `json:"patroni_port,omitempty"`
 	// The number of CPUs to allocate for the database on this node and to use for
 	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
 	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
@@ -2505,6 +2523,11 @@ type DatabaseSpecRequestBodyRequestBody struct {
 	// be assigned a random port. If the port is unspecified, the database will not
 	// be exposed on any port, dependent on orchestrator support for that feature.
 	Port *int `json:"port,omitempty"`
+	// The port used by Patroni for this node. If the port is 0, each instance will
+	// be assigned a random port. If the port is unspecified, Patroni will not be
+	// exposed on any port, dependent on orchestrator support for that feature.
+	// NOTE: This is field is not currently supported for Docker Swarm.
+	PatroniPort *int `json:"patroni_port,omitempty"`
 	// The number of CPUs to allocate for the database and to use for tuning
 	// Postgres. Defaults to the number of available CPUs on the host. Can include
 	// an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced
@@ -2546,6 +2569,10 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// The port used by the Postgres database for this node. Overrides the Postgres
 	// port set in the DatabaseSpec.
 	Port *int `json:"port,omitempty"`
+	// The port used by Patroni for this node. Overrides the Patroni port set in
+	// the DatabaseSpec. NOTE: This is field is not currently supported for Docker
+	// Swarm.
+	PatroniPort *int `json:"patroni_port,omitempty"`
 	// The number of CPUs to allocate for the database on this node and to use for
 	// tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500
 	// millicpus. Cannot allocate units smaller than 1m. Defaults to the number of
@@ -5030,6 +5057,16 @@ func ValidateDatabaseSpecRequestBody(body *DatabaseSpecRequestBody) (err error) 
 			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 65535, false))
 		}
 	}
+	if body.PatroniPort != nil {
+		if *body.PatroniPort < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.patroni_port", *body.PatroniPort, 0, true))
+		}
+	}
+	if body.PatroniPort != nil {
+		if *body.PatroniPort > 65535 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.patroni_port", *body.PatroniPort, 65535, false))
+		}
+	}
 	if body.Cpus != nil {
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.cpus", *body.Cpus, "^[0-9]+(\\.[0-9]{1,3}|m)?$"))
 	}
@@ -5123,6 +5160,16 @@ func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err
 	if body.Port != nil {
 		if *body.Port > 65535 {
 			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 65535, false))
+		}
+	}
+	if body.PatroniPort != nil {
+		if *body.PatroniPort < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.patroni_port", *body.PatroniPort, 0, true))
+		}
+	}
+	if body.PatroniPort != nil {
+		if *body.PatroniPort > 65535 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.patroni_port", *body.PatroniPort, 65535, false))
 		}
 	}
 	if body.Cpus != nil {
@@ -5731,6 +5778,16 @@ func ValidateDatabaseSpecRequestBodyRequestBody(body *DatabaseSpecRequestBodyReq
 			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 65535, false))
 		}
 	}
+	if body.PatroniPort != nil {
+		if *body.PatroniPort < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.patroni_port", *body.PatroniPort, 0, true))
+		}
+	}
+	if body.PatroniPort != nil {
+		if *body.PatroniPort > 65535 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.patroni_port", *body.PatroniPort, 65535, false))
+		}
+	}
 	if body.Cpus != nil {
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.cpus", *body.Cpus, "^[0-9]+(\\.[0-9]{1,3}|m)?$"))
 	}
@@ -5824,6 +5881,16 @@ func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecReques
 	if body.Port != nil {
 		if *body.Port > 65535 {
 			err = goa.MergeErrors(err, goa.InvalidRangeError("body.port", *body.Port, 65535, false))
+		}
+	}
+	if body.PatroniPort != nil {
+		if *body.PatroniPort < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.patroni_port", *body.PatroniPort, 0, true))
+		}
+	}
+	if body.PatroniPort != nil {
+		if *body.PatroniPort > 65535 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.patroni_port", *body.PatroniPort, 65535, false))
 		}
 	}
 	if body.Cpus != nil {

@@ -2742,6 +2742,13 @@ definitions:
         pattern: n[0-9]+
       orchestrator_opts:
         $ref: '#/definitions/OrchestratorOpts'
+      patroni_port:
+        type: integer
+        description: 'The port used by Patroni for this node. Overrides the Patroni port set in the DatabaseSpec. NOTE: This is field is not currently supported for Docker Swarm.'
+        example: 8888
+        format: int64
+        minimum: 0
+        maximum: 65535
       port:
         type: integer
         description: The port used by the Postgres database for this node. Overrides the Postgres port set in the DatabaseSpec.
@@ -2876,6 +2883,7 @@ definitions:
               host_path: /Users/user/backups/host
             - destination_path: /backups/container
               host_path: /Users/user/backups/host
+      patroni_port: 8888
       port: 5432
       postgres_version: "17.6"
       postgresql_conf:
@@ -3081,6 +3089,7 @@ definitions:
                     host_path: /Users/user/backups/host
                   - destination_path: /backups/container
                     host_path: /Users/user/backups/host
+            patroni_port: 8888
             port: 5432
             postgres_version: "17.6"
             postgresql_conf:
@@ -3221,6 +3230,7 @@ definitions:
                     host_path: /Users/user/backups/host
                   - destination_path: /backups/container
                     host_path: /Users/user/backups/host
+            patroni_port: 8888
             port: 5432
             postgres_version: "17.6"
             postgresql_conf:
@@ -3361,6 +3371,7 @@ definitions:
                     host_path: /Users/user/backups/host
                   - destination_path: /backups/container
                     host_path: /Users/user/backups/host
+            patroni_port: 8888
             port: 5432
             postgres_version: "17.6"
             postgresql_conf:
@@ -3396,6 +3407,13 @@ definitions:
         maxItems: 9
       orchestrator_opts:
         $ref: '#/definitions/OrchestratorOpts'
+      patroni_port:
+        type: integer
+        description: 'The port used by Patroni for this node. If the port is 0, each instance will be assigned a random port. If the port is unspecified, Patroni will not be exposed on any port, dependent on orchestrator support for that feature. NOTE: This is field is not currently supported for Docker Swarm.'
+        example: 8888
+        format: int64
+        minimum: 0
+        maximum: 65535
       port:
         type: integer
         description: The port used by the Postgres database. If the port is 0, each instance will be assigned a random port. If the port is unspecified, the database will not be exposed on any port, dependent on orchestrator support for that feature.
@@ -3681,6 +3699,7 @@ definitions:
                   host_path: /Users/user/backups/host
                 - destination_path: /backups/container
                   host_path: /Users/user/backups/host
+          patroni_port: 8888
           port: 5432
           postgres_version: "17.6"
           postgresql_conf:
@@ -3821,6 +3840,7 @@ definitions:
                   host_path: /Users/user/backups/host
                 - destination_path: /backups/container
                   host_path: /Users/user/backups/host
+          patroni_port: 8888
           port: 5432
           postgres_version: "17.6"
           postgresql_conf:
@@ -3883,6 +3903,7 @@ definitions:
               host_path: /Users/user/backups/host
             - destination_path: /backups/container
               host_path: /Users/user/backups/host
+      patroni_port: 8888
       port: 5432
       postgres_version: "17.6"
       postgresql_conf:

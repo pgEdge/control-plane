@@ -43,6 +43,13 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 		g.Example(5432)
 		g.Meta("struct:tag:json", "port,omitempty")
 	})
+	g.Attribute("patroni_port", g.Int, func() {
+		g.Description("The port used by Patroni for this node. Overrides the Patroni port set in the DatabaseSpec. NOTE: This is field is not currently supported for Docker Swarm.")
+		g.Minimum(0)
+		g.Maximum(65535)
+		g.Example(8888)
+		g.Meta("struct:tag:json", "patroni_port,omitempty")
+	})
 	g.Attribute("cpus", g.String, func() {
 		g.Description("The number of CPUs to allocate for the database on this node and to use for tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Cannot allocate units smaller than 1m. Defaults to the number of available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs than are available on the host. Whether this limit is enforced depends on the orchestrator.")
 		g.Pattern(cpuPattern)
@@ -535,6 +542,13 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 		g.Maximum(65535)
 		g.Example(5432)
 		g.Meta("struct:tag:json", "port,omitempty")
+	})
+	g.Attribute("patroni_port", g.Int, func() {
+		g.Description("The port used by Patroni for this node. If the port is 0, each instance will be assigned a random port. If the port is unspecified, Patroni will not be exposed on any port, dependent on orchestrator support for that feature. NOTE: This is field is not currently supported for Docker Swarm.")
+		g.Minimum(0)
+		g.Maximum(65535)
+		g.Example(8888)
+		g.Meta("struct:tag:json", "patroni_port,omitempty")
 	})
 	g.Attribute("cpus", g.String, func() {
 		g.Description("The number of CPUs to allocate for the database and to use for tuning Postgres. Defaults to the number of available CPUs on the host. Can include an SI suffix, e.g. '500m' for 500 millicpus. Whether this limit is enforced depends on the orchestrator.")
