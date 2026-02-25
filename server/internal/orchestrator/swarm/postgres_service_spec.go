@@ -8,6 +8,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
+	"github.com/pgEdge/control-plane/server/internal/orchestrator/common"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -59,8 +60,8 @@ func (s *PostgresServiceSpecResource) Dependencies() []resource.Identifier {
 		filesystem.DirResourceIdentifier(s.ConfigsDirID),
 		filesystem.DirResourceIdentifier(s.CertificatesDirID),
 		NetworkResourceIdentifier(s.DatabaseNetworkName),
-		EtcdCredsIdentifier(s.Instance.InstanceID),
-		PostgresCertsIdentifier(s.Instance.InstanceID),
+		common.EtcdCredsIdentifier(s.Instance.InstanceID),
+		common.PostgresCertsIdentifier(s.Instance.InstanceID),
 		PatroniConfigIdentifier(s.Instance.InstanceID),
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/docker"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
+	"github.com/pgEdge/control-plane/server/internal/orchestrator/common"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/utils"
@@ -62,8 +63,8 @@ func (p *PgBackRestRestore) Dependencies() []resource.Identifier {
 		filesystem.DirResourceIdentifier(p.DataDirID),
 		PostgresServiceResourceIdentifier(p.InstanceID),
 		PostgresServiceSpecResourceIdentifier(p.InstanceID),
-		PgBackRestConfigIdentifier(p.InstanceID, PgBackRestConfigTypeRestore),
-		PatroniClusterResourceIdentifier(p.NodeName),
+		common.PgBackRestConfigIdentifier(p.InstanceID, common.PgBackRestConfigTypeRestore),
+		common.PatroniClusterResourceIdentifier(p.NodeName),
 		ScaleServiceResourceIdentifier(p.InstanceID, ScaleDirectionDOWN),
 	}
 }
@@ -191,7 +192,7 @@ func (p *PgBackRestRestore) stopPostgres(
 	if err != nil {
 		return fmt.Errorf("failed to get data dir resource from state: %w", err)
 	}
-	patroniCluster, err := resource.FromContext[*PatroniCluster](rc, PatroniClusterResourceIdentifier(p.NodeName))
+	patroniCluster, err := resource.FromContext[*common.PatroniCluster](rc, common.PatroniClusterResourceIdentifier(p.NodeName))
 	if err != nil {
 		return fmt.Errorf("failed to get patroni cluster resource from state: %w", err)
 	}
