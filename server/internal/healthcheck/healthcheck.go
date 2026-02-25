@@ -1,4 +1,4 @@
-package common
+package healthcheck
 
 type ComponentStatus struct {
 	Name    string         `json:"name"`

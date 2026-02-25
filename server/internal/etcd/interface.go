@@ -5,8 +5,8 @@ import (
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 
-	"github.com/pgEdge/control-plane/server/internal/common"
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/healthcheck"
 )
 
 type ClusterMember struct {
@@ -38,7 +38,7 @@ type HostCredentials struct {
 }
 
 type Etcd interface {
-	common.HealthCheckable
+	healthcheck.HealthCheckable
 
 	IsInitialized() (bool, error)
 	Start(ctx context.Context) error
