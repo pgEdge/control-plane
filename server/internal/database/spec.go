@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
@@ -523,6 +524,7 @@ type InstanceSpec struct {
 	ClusterSize      int               `json:"cluster_size"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 	InPlaceRestore   bool              `json:"in_place_restore,omitempty"`
+	AllHostIDs       []string          `json:"all_host_ids"` // All host IDs in the database
 }
 
 func (s *InstanceSpec) CopySettingsFrom(current *InstanceSpec) {
@@ -574,6 +576,7 @@ func (s *InstanceSpec) Clone() *InstanceSpec {
 		PostgreSQLConf:   maps.Clone(s.PostgreSQLConf),
 		ClusterSize:      s.ClusterSize,
 		OrchestratorOpts: s.OrchestratorOpts.Clone(),
+		AllHostIDs:       slices.Clone(s.AllHostIDs),
 	}
 }
 
@@ -600,6 +603,13 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse version from spec: %w", err)
 	}
+
+	// First pass to gather host IDs
+	hostIDSet := ds.NewSet[string]()
+	for _, node := range s.Nodes {
+		hostIDSet.Add(node.HostIDs...)
+	}
+	allHostIDs := hostIDSet.ToSortedSlice(strings.Compare)
 
 	var owners []string
 	for _, user := range s.DatabaseUsers {
@@ -660,6 +670,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				PostgreSQLConf:   overridableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
 				ClusterSize:      clusterSize,
 				OrchestratorOpts: overridableValue(s.OrchestratorOpts, node.OrchestratorOpts),
+				AllHostIDs:       allHostIDs,
 			}
 		}
 

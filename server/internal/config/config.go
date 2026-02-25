@@ -112,6 +112,29 @@ var defaultDockerSwarm = DockerSwarm{
 	DatabaseNetworksSubnetBits: 26,
 }
 
+type SystemD struct {
+	InstanceDataDir string `koanf:"instance_data_dir" json:"instance_data_dir,omitempty"`
+	PgBackRestPath  string `koanf:"pgbackrest_path" json:"pgbackrest_path,omitempty"`
+	PatroniPath     string `koanf:"patroni_path" json:"patroni_path,omitempty"`
+}
+
+func (s SystemD) validate() []error {
+	var errs []error
+	if s.PgBackRestPath == "" {
+		errs = append(errs, errors.New("pgbackrest_path cannot be empty"))
+	}
+	if s.PatroniPath == "" {
+		errs = append(errs, errors.New("patroni_path cannot be empty"))
+	}
+
+	return errs
+}
+
+var defaultSystemD = SystemD{
+	PgBackRestPath: "/usr/bin/pgbackrest",
+	PatroniPath:    "/usr/local/bin/patroni",
+}
+
 type HTTP struct {
 	Enabled    bool   `koanf:"enabled" json:"enabled,omitempty"`
 	BindAddr   string `koanf:"bind_addr" json:"bind_addr,omitempty"`
@@ -184,7 +207,8 @@ var etcdClientDefault = EtcdClient{
 type Orchestrator string
 
 const (
-	OrchestratorSwarm Orchestrator = "swarm"
+	OrchestratorSwarm   Orchestrator = "swarm"
+	OrchestratorSystemD Orchestrator = "systemd"
 )
 
 type EtcdMode string
@@ -240,6 +264,7 @@ type Config struct {
 	TraefikEnabled         bool         `koanf:"traefik_enabled" json:"traefik_enabled,omitempty"`
 	VectorEnabled          bool         `koanf:"vector_enabled" json:"vector_enabled,omitempty"`
 	DockerSwarm            DockerSwarm  `koanf:"docker_swarm" json:"docker_swarm,omitzero"`
+	SystemD                SystemD      `koanf:"systemd" json:"systemd,omitzero"`
 	DatabaseOwnerUID       int          `koanf:"database_owner_uid" json:"database_owner_uid,omitempty"`
 	ProfilingEnabled       bool         `koanf:"profiling_enabled" json:"profiling_enabled,omitempty"`
 	RandomPorts            RandomPorts  `koanf:"random_ports" json:"random_ports,omitzero"`
@@ -340,16 +365,17 @@ func (c Config) Validate() error {
 	for _, err := range c.RandomPorts.validate() {
 		errs = append(errs, fmt.Errorf("random_ports.%w", err))
 	}
-	if c.Orchestrator != OrchestratorSwarm {
-		errs = append(errs, fmt.Errorf("orchestrator: unsupported orchestrator %q", c.Orchestrator))
-	}
 	switch c.Orchestrator {
 	case OrchestratorSwarm:
 		for _, err := range c.DockerSwarm.validate() {
 			errs = append(errs, fmt.Errorf("docker_swarm.%w", err))
 		}
+	case OrchestratorSystemD:
+		for _, err := range c.SystemD.validate() {
+			errs = append(errs, fmt.Errorf("systemd.%w", err))
+		}
 	default:
-		errs = append(errs, fmt.Errorf("host_type: unsupported host type %q", c.Orchestrator))
+		errs = append(errs, fmt.Errorf("orchestrator: unsupported orchestrator %q", c.Orchestrator))
 	}
 	switch c.EtcdMode {
 	case EtcdModeServer:
@@ -390,6 +416,7 @@ func DefaultConfig() (Config, error) {
 		EtcdServer:             etcdServerDefault,
 		EtcdClient:             etcdClientDefault,
 		DockerSwarm:            defaultDockerSwarm,
+		SystemD:                defaultSystemD,
 		DatabaseOwnerUID:       26,
 		RandomPorts:            defaultRandomPorts,
 	}, nil

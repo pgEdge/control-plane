@@ -347,7 +347,7 @@ build: dev-build
 
 .PHONY: dev-build
 dev-build: 
-	GOOS=linux go build \
+	CGO_ENABLED=0 GOOS=linux go build \
 		-gcflags "all=-N -l" \
 		-o docker/control-plane-dev/pgedge-control-plane \
 		$(shell pwd)/server
@@ -412,7 +412,7 @@ api-docs:
 
 .PHONY: ci-compose-build
 ci-compose-build: 
-	GOOS=linux go build \
+	CGO_ENABLED=0 GOOS=linux go build \
 		-gcflags "all=-N -l" \
 		-o docker/control-plane-ci/pgedge-control-plane \
 		$(shell pwd)/server

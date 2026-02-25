@@ -11766,7 +11766,7 @@
           },
           "patroni_port": {
             "type": "integer",
-            "description": "The port used by Patroni for this database. NOTE: This field is not currently supported for Docker Swarm.",
+            "description": "The port used by Patroni for this database. If the port is 0, each instance will be assigned a random port. NOTE: This field is not currently supported for Docker Swarm.",
             "example": 8888,
             "format": "int64",
             "minimum": 0,
@@ -13570,7 +13570,7 @@
           },
           "patroni_port": {
             "type": "integer",
-            "description": "The port used by Patroni for this database. NOTE: This field is not currently supported for Docker Swarm.",
+            "description": "The port used by Patroni for this database. If the port is 0, each instance will be assigned a random port. NOTE: This field is not currently supported for Docker Swarm.",
             "example": 8888,
             "format": "int64",
             "minimum": 0,
@@ -15633,7 +15633,7 @@
           },
           "patroni_port": {
             "type": "integer",
-            "description": "The port used by Patroni for this database. NOTE: This field is not currently supported for Docker Swarm.",
+            "description": "The port used by Patroni for this database. If the port is 0, each instance will be assigned a random port. NOTE: This field is not currently supported for Docker Swarm.",
             "example": 8888,
             "format": "int64",
             "minimum": 0,
@@ -17693,7 +17693,7 @@
           },
           "patroni_port": {
             "type": "integer",
-            "description": "The port used by Patroni for this database. NOTE: This field is not currently supported for Docker Swarm.",
+            "description": "The port used by Patroni for this database. If the port is 0, each instance will be assigned a random port. NOTE: This field is not currently supported for Docker Swarm.",
             "example": 8888,
             "format": "int64",
             "minimum": 0,
@@ -19641,7 +19641,7 @@
           },
           "patroni_port": {
             "type": "integer",
-            "description": "The port used by Patroni for this database. NOTE: This field is not currently supported for Docker Swarm.",
+            "description": "The port used by Patroni for this database. If the port is 0, each instance will be assigned a random port. NOTE: This field is not currently supported for Docker Swarm.",
             "example": 8888,
             "format": "int64",
             "minimum": 0,
@@ -21427,7 +21427,7 @@
           },
           "patroni_port": {
             "type": "integer",
-            "description": "The port used by Patroni for this database. NOTE: This field is not currently supported for Docker Swarm.",
+            "description": "The port used by Patroni for this database. If the port is 0, each instance will be assigned a random port. NOTE: This field is not currently supported for Docker Swarm.",
             "example": 8888,
             "format": "int64",
             "minimum": 0,
@@ -23297,7 +23297,7 @@
           },
           "patroni_port": {
             "type": "integer",
-            "description": "The port used by Patroni for this database. NOTE: This field is not currently supported for Docker Swarm.",
+            "description": "The port used by Patroni for this database. If the port is 0, each instance will be assigned a random port. NOTE: This field is not currently supported for Docker Swarm.",
             "example": 8888,
             "format": "int64",
             "minimum": 0,

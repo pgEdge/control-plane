@@ -55,7 +55,7 @@ func (a *Activities) UpdatePlannedInstanceStates(ctx context.Context, input *Upd
 			if err != nil {
 				return nil, fmt.Errorf("failed to deserialize instance resource: %w", err)
 			}
-			update := &database.InstanceUpdateOptions{
+			update := &database.InstanceStateUpdateOptions{
 				InstanceID: instance.Spec.InstanceID,
 				DatabaseID: instance.Spec.DatabaseID,
 				HostID:     instance.Spec.HostID,
@@ -73,7 +73,7 @@ func (a *Activities) UpdatePlannedInstanceStates(ctx context.Context, input *Upd
 				// Other event types don't require an update
 				continue
 			}
-			if err := a.DatabaseService.UpdateInstance(ctx, update); err != nil {
+			if err := a.DatabaseService.UpdateInstanceState(ctx, update); err != nil {
 				return nil, fmt.Errorf("failed to update database instance '%s': %w", instance.Spec.InstanceID, err)
 			}
 		}
