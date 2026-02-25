@@ -33,11 +33,11 @@ func Spock4DefaultGUCs() map[string]any {
 	}
 }
 
-func SnowflakeLolorGUCs(nodeOrdinal int) (map[string]any, error) {
+func SnowflakeLolorGUCs(nodeOrdinal int) map[string]any {
 	return map[string]any{
 		"snowflake.node": nodeOrdinal,
 		"lolor.node":     nodeOrdinal,
-	}, nil
+	}
 }
 
 func DefaultTunableGUCs(memBytes uint64, cpus float64, clusterSize int) map[string]any {
