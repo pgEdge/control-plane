@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,11 +22,11 @@ import (
 func TestRunner(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
 	client := server.Client(t)
-	logger := testutils.Logger(t)
+	loggerFactory := testutils.LoggerFactory(t)
 
 	t.Run("acquires lock and runs migrations", func(t *testing.T) {
 		root := uuid.NewString()
-		electionSvc := election.NewService(election.NewElectionStore(client, root), logger)
+		electionSvc := election.NewService(election.NewElectionStore(client, root), loggerFactory)
 		store := migrate.NewStore(client, root)
 		i := do.New()
 
@@ -41,7 +40,7 @@ func TestRunner(t *testing.T) {
 		}
 
 		candidate := testCandidate(t, electionSvc, "host-1")
-		runner := migrate.NewRunner("host-1", store, i, logger, []migrate.Migration{m}, candidate)
+		runner := migrate.NewRunner("host-1", store, i, loggerFactory, []migrate.Migration{m}, candidate)
 		err := runner.Run(t.Context())
 		require.NoError(t, err)
 		assert.True(t, ran, "migration should have run")
@@ -52,7 +51,7 @@ func TestRunner(t *testing.T) {
 		// successfully and that the migration is only run once.
 
 		root := uuid.NewString()
-		electionSvc := election.NewService(election.NewElectionStore(client, root), logger)
+		electionSvc := election.NewService(election.NewElectionStore(client, root), loggerFactory)
 		store := migrate.NewStore(client, root)
 		i := do.New()
 
@@ -77,7 +76,7 @@ func TestRunner(t *testing.T) {
 			defer wg.Done()
 
 			candidate := testCandidate(t, electionSvc, "host-1")
-			runner := migrate.NewRunner("host-1", store, i, logger, []migrate.Migration{m}, candidate)
+			runner := migrate.NewRunner("host-1", store, i, loggerFactory, []migrate.Migration{m}, candidate)
 			require.NoError(t, runner.Run(t.Context()))
 		}()
 
@@ -86,7 +85,7 @@ func TestRunner(t *testing.T) {
 			defer wg.Done()
 
 			candidate := testCandidate(t, electionSvc, "host-2")
-			runner := migrate.NewRunner("host-2", store, i, logger, []migrate.Migration{m}, candidate)
+			runner := migrate.NewRunner("host-2", store, i, loggerFactory, []migrate.Migration{m}, candidate)
 			require.NoError(t, runner.Run(t.Context()))
 		}()
 
@@ -100,11 +99,11 @@ func TestRunner(t *testing.T) {
 func TestRunnerMigrationOrdering(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
 	client := server.Client(t)
-	logger := zerolog.Nop()
+	loggerFactory := testutils.LoggerFactory(t)
 
 	t.Run("runs migrations in order", func(t *testing.T) {
 		root := uuid.NewString()
-		electionSvc := election.NewService(election.NewElectionStore(client, root), logger)
+		electionSvc := election.NewService(election.NewElectionStore(client, root), loggerFactory)
 		store := migrate.NewStore(client, root)
 		i := do.New()
 
@@ -132,7 +131,7 @@ func TestRunnerMigrationOrdering(t *testing.T) {
 		}
 
 		candidate := testCandidate(t, electionSvc, "host-1")
-		runner := migrate.NewRunner("host-1", store, i, logger, []migrate.Migration{m1, m2, m3}, candidate)
+		runner := migrate.NewRunner("host-1", store, i, loggerFactory, []migrate.Migration{m1, m2, m3}, candidate)
 		err := runner.Run(t.Context())
 		require.NoError(t, err)
 
@@ -141,7 +140,7 @@ func TestRunnerMigrationOrdering(t *testing.T) {
 
 	t.Run("starts from current revision", func(t *testing.T) {
 		root := uuid.NewString()
-		electionSvc := election.NewService(election.NewElectionStore(client, root), logger)
+		electionSvc := election.NewService(election.NewElectionStore(client, root), loggerFactory)
 		store := migrate.NewStore(client, root)
 		i := do.New()
 
@@ -173,7 +172,7 @@ func TestRunnerMigrationOrdering(t *testing.T) {
 		}
 
 		candidate := testCandidate(t, electionSvc, "host-1")
-		runner := migrate.NewRunner("host-1", store, i, logger, []migrate.Migration{m1, m2, m3}, candidate)
+		runner := migrate.NewRunner("host-1", store, i, loggerFactory, []migrate.Migration{m1, m2, m3}, candidate)
 		err = runner.Run(t.Context())
 		require.NoError(t, err)
 
@@ -183,7 +182,7 @@ func TestRunnerMigrationOrdering(t *testing.T) {
 
 	t.Run("stops on first failure", func(t *testing.T) {
 		root := uuid.NewString()
-		electionSvc := election.NewService(election.NewElectionStore(client, root), logger)
+		electionSvc := election.NewService(election.NewElectionStore(client, root), loggerFactory)
 		store := migrate.NewStore(client, root)
 		i := do.New()
 
@@ -211,7 +210,7 @@ func TestRunnerMigrationOrdering(t *testing.T) {
 		}
 
 		candidate := testCandidate(t, electionSvc, "host-1")
-		runner := migrate.NewRunner("host-1", store, i, logger, []migrate.Migration{m1, m2, m3}, candidate)
+		runner := migrate.NewRunner("host-1", store, i, loggerFactory, []migrate.Migration{m1, m2, m3}, candidate)
 		err := runner.Run(t.Context())
 		assert.ErrorContains(t, err, "migration failed")
 
@@ -221,7 +220,7 @@ func TestRunnerMigrationOrdering(t *testing.T) {
 
 	t.Run("records status for each migration", func(t *testing.T) {
 		root := uuid.NewString()
-		electionSvc := election.NewService(election.NewElectionStore(client, root), logger)
+		electionSvc := election.NewService(election.NewElectionStore(client, root), loggerFactory)
 		store := migrate.NewStore(client, root)
 		i := do.New()
 
@@ -229,7 +228,7 @@ func TestRunnerMigrationOrdering(t *testing.T) {
 		m2 := &runnerMockMigration{id: "migration-2", err: errors.New("failed")}
 
 		candidate := testCandidate(t, electionSvc, "host-1")
-		runner := migrate.NewRunner("host-1", store, i, logger, []migrate.Migration{m1, m2}, candidate)
+		runner := migrate.NewRunner("host-1", store, i, loggerFactory, []migrate.Migration{m1, m2}, candidate)
 		err := runner.Run(t.Context())
 		assert.ErrorContains(t, err, "failed")
 
@@ -253,7 +252,7 @@ func TestRunnerMigrationOrdering(t *testing.T) {
 
 	t.Run("updates revision after each successful migration", func(t *testing.T) {
 		root := uuid.NewString()
-		electionSvc := election.NewService(election.NewElectionStore(client, root), logger)
+		electionSvc := election.NewService(election.NewElectionStore(client, root), loggerFactory)
 		store := migrate.NewStore(client, root)
 		i := do.New()
 
@@ -261,7 +260,7 @@ func TestRunnerMigrationOrdering(t *testing.T) {
 		m2 := &runnerMockMigration{id: "migration-2"}
 
 		candidate := testCandidate(t, electionSvc, "host-1")
-		runner := migrate.NewRunner("host-1", store, i, logger, []migrate.Migration{m1, m2}, candidate)
+		runner := migrate.NewRunner("host-1", store, i, loggerFactory, []migrate.Migration{m1, m2}, candidate)
 		err := runner.Run(t.Context())
 		require.NoError(t, err)
 
@@ -272,7 +271,7 @@ func TestRunnerMigrationOrdering(t *testing.T) {
 
 	t.Run("does not update revision after failed migration", func(t *testing.T) {
 		root := uuid.NewString()
-		electionSvc := election.NewService(election.NewElectionStore(client, root), logger)
+		electionSvc := election.NewService(election.NewElectionStore(client, root), loggerFactory)
 		store := migrate.NewStore(client, root)
 		i := do.New()
 
@@ -280,7 +279,7 @@ func TestRunnerMigrationOrdering(t *testing.T) {
 		m2 := &runnerMockMigration{id: "migration-2", err: errors.New("failed")}
 
 		candidate := testCandidate(t, electionSvc, "host-1")
-		runner := migrate.NewRunner("host-1", store, i, logger, []migrate.Migration{m1, m2}, candidate)
+		runner := migrate.NewRunner("host-1", store, i, loggerFactory, []migrate.Migration{m1, m2}, candidate)
 		err := runner.Run(t.Context())
 		assert.ErrorContains(t, err, "failed")
 

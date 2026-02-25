@@ -16,9 +16,9 @@ import (
 func TestCandidate(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
 	client := server.Client(t)
-	logger := testutils.Logger(t)
+	loggerFactory := testutils.LoggerFactory(t)
 	store := election.NewElectionStore(client, uuid.NewString())
-	electionSvc := election.NewService(store, logger)
+	electionSvc := election.NewService(store, loggerFactory)
 
 	t.Run("basic functionality", func(t *testing.T) {
 		ctx := t.Context()
