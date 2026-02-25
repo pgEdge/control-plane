@@ -131,9 +131,9 @@ type Orchestrator interface {
 	GenerateInstanceResources(spec *InstanceSpec) (*InstanceResources, error)
 	GenerateInstanceRestoreResources(spec *InstanceSpec, taskID uuid.UUID) (*InstanceResources, error)
 	GenerateServiceInstanceResources(spec *ServiceInstanceSpec) (*ServiceInstanceResources, error)
-	GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*ConnectionInfo, error)
+	GetInstanceConnectionInfo(ctx context.Context, spec *InstanceSpec) (*ConnectionInfo, error)
 	GetServiceInstanceStatus(ctx context.Context, serviceInstanceID string) (*ServiceInstanceStatus, error)
-	CreatePgBackRestBackup(ctx context.Context, w io.Writer, instanceID string, options *pgbackrest.BackupOptions) error
+	CreatePgBackRestBackup(ctx context.Context, w io.Writer, spec *InstanceSpec, options *pgbackrest.BackupOptions) error
 	ExecuteInstanceCommand(ctx context.Context, w io.Writer, databaseID, instanceID string, args ...string) error
 	ValidateInstanceSpecs(ctx context.Context, changes []*InstanceSpecChange) ([]*ValidationResult, error)
 	StopInstance(ctx context.Context, instanceID string) error

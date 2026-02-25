@@ -1,20 +1,24 @@
 package orchestrator
 
 import (
+	"context"
 	"fmt"
+
+	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator/swarm"
+	"github.com/pgEdge/control-plane/server/internal/orchestrator/systemd"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
-	"github.com/samber/do"
 )
 
 type Orchestrator interface {
 	host.Orchestrator
 	database.Orchestrator
 	workflows.Orchestrator
+	Start(context.Context) error
 }
 
 func Provide(i *do.Injector) error {
@@ -26,6 +30,9 @@ func Provide(i *do.Injector) error {
 	case config.OrchestratorSwarm:
 		swarm.Provide(i)
 		provideOrchestrator[*swarm.Orchestrator](i)
+	case config.OrchestratorSystemD:
+		systemd.Provide(i)
+		provideOrchestrator[*systemd.Orchestrator](i)
 	default:
 		return fmt.Errorf("unsupported orchestrator: %q", cfg.Orchestrator)
 	}

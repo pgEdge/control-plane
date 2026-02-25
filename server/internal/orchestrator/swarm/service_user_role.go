@@ -181,11 +181,6 @@ func (r *ServiceUserRole) Delete(ctx context.Context, rc *resource.Context) erro
 // authenticated connection to it. The caller is responsible for closing
 // the connection.
 func (r *ServiceUserRole) connectToPrimary(ctx context.Context, rc *resource.Context, logger zerolog.Logger) (*pgx.Conn, error) {
-	orch, err := do.Invoke[database.Orchestrator](rc.Injector)
-	if err != nil {
-		return nil, err
-	}
-
 	dbSvc, err := do.Invoke[*database.Service](rc.Injector)
 	if err != nil {
 		return nil, err
@@ -206,7 +201,7 @@ func (r *ServiceUserRole) connectToPrimary(ctx context.Context, rc *resource.Con
 	// Find primary instance via Patroni
 	var primaryInstanceID string
 	for _, inst := range db.Instances {
-		connInfo, err := orch.GetInstanceConnectionInfo(ctx, r.DatabaseID, inst.InstanceID)
+		connInfo, err := dbSvc.GetInstanceConnectionInfo(ctx, r.DatabaseID, inst.InstanceID)
 		if err != nil {
 			continue
 		}
@@ -222,7 +217,7 @@ func (r *ServiceUserRole) connectToPrimary(ctx context.Context, rc *resource.Con
 		logger.Warn().Msg("could not determine primary instance, using first available instance")
 	}
 
-	connInfo, err := orch.GetInstanceConnectionInfo(ctx, r.DatabaseID, primaryInstanceID)
+	connInfo, err := dbSvc.GetInstanceConnectionInfo(ctx, r.DatabaseID, primaryInstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance connection info: %w", err)
 	}

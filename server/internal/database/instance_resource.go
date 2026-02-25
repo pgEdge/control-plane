@@ -340,7 +340,7 @@ func (r *InstanceResource) updateConnectionInfo(ctx context.Context, rc *resourc
 	if err != nil {
 		return err
 	}
-	connInfo, err := orch.GetInstanceConnectionInfo(ctx, r.Spec.DatabaseID, r.Spec.InstanceID)
+	connInfo, err := orch.GetInstanceConnectionInfo(ctx, r.Spec)
 	if err != nil {
 		return fmt.Errorf("failed to get instance connection info: %w", err)
 	}
