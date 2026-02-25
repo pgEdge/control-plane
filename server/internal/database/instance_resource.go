@@ -167,7 +167,7 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 	r.PrimaryInstanceID = primaryInstanceID
 
 	if r.Spec.InstanceID != r.PrimaryInstanceID {
-		err = r.updateInstanceState(ctx, rc, &InstanceUpdateOptions{State: InstanceStateAvailable})
+		err = r.updateInstanceRecord(ctx, rc, &InstanceUpdateOptions{State: InstanceStateAvailable})
 		if err != nil {
 			return r.recordError(ctx, rc, err)
 		}
@@ -218,7 +218,7 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	err = r.updateInstanceState(ctx, rc, &InstanceUpdateOptions{State: InstanceStateAvailable})
+	err = r.updateInstanceRecord(ctx, rc, &InstanceUpdateOptions{State: InstanceStateAvailable})
 	if err != nil {
 		return r.recordError(ctx, rc, err)
 	}
@@ -226,7 +226,7 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 	return nil
 }
 
-func (r *InstanceResource) updateInstanceState(ctx context.Context, rc *resource.Context, opts *InstanceUpdateOptions) error {
+func (r *InstanceResource) updateInstanceRecord(ctx context.Context, rc *resource.Context, opts *InstanceUpdateOptions) error {
 	svc, err := do.Invoke[*Service](rc.Injector)
 	if err != nil {
 		return err
@@ -235,6 +235,9 @@ func (r *InstanceResource) updateInstanceState(ctx context.Context, rc *resource
 	opts.DatabaseID = r.Spec.DatabaseID
 	opts.HostID = r.Spec.HostID
 	opts.NodeName = r.Spec.NodeName
+	opts.Port = r.Spec.Port
+	opts.PatroniPort = r.Spec.PatroniPort
+	opts.PgEdgeVersion = r.Spec.PgEdgeVersion
 	err = svc.UpdateInstance(ctx, opts)
 	if err != nil {
 		return fmt.Errorf("failed to update instance state: %w", err)
@@ -249,7 +252,7 @@ func (r *InstanceResource) recordError(ctx context.Context, rc *resource.Context
 		return err
 	}
 
-	err = r.updateInstanceState(ctx, rc, &InstanceUpdateOptions{
+	err = r.updateInstanceRecord(ctx, rc, &InstanceUpdateOptions{
 		State: InstanceStateFailed,
 		Error: cause.Error(),
 	})
@@ -265,7 +268,11 @@ func (r *InstanceResource) updateConnectionInfo(ctx context.Context, rc *resourc
 	if err != nil {
 		return err
 	}
-	connInfo, err := orch.GetInstanceConnectionInfo(ctx, r.Spec.DatabaseID, r.Spec.InstanceID)
+	connInfo, err := orch.GetInstanceConnectionInfo(ctx,
+		r.Spec.DatabaseID, r.Spec.InstanceID,
+		r.Spec.Port, r.Spec.PatroniPort,
+		r.Spec.PgEdgeVersion,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to get instance connection info: %w", err)
 	}

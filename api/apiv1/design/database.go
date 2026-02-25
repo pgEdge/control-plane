@@ -548,7 +548,7 @@ var DatabaseSpec = g.Type("DatabaseSpec", func() {
 		g.Meta("struct:tag:json", "port,omitempty")
 	})
 	g.Attribute("patroni_port", g.Int, func() {
-		g.Description("The port used by Patroni for this database. NOTE: This field is not currently supported for Docker Swarm.")
+		g.Description("The port used by Patroni for this database. If the port is 0, each instance will be assigned a random port. NOTE: This field is not currently supported for Docker Swarm.")
 		g.Minimum(0)
 		g.Maximum(65535)
 		g.Example(8888)

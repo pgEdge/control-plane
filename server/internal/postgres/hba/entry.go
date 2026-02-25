@@ -2,6 +2,7 @@ package hba
 
 import (
 	"fmt"
+	"net"
 )
 
 type EntryType string
@@ -59,7 +60,7 @@ func (e Entry) String() string {
 	case EntryTypeInclude, EntryTypeIncludeIfExists, EntryTypeIncludeDir:
 		return fmt.Sprintf("%-17s %s", e.Type, e.IncludePath)
 	default:
-		entry = fmt.Sprintf("%-7s %-15s %-15s %-23s", e.Type, e.Database, e.User, e.Address)
+		entry = fmt.Sprintf("%-7s %-15s %-15s %-23s", e.Type, e.Database, e.User, transformAddress(e.Address))
 	}
 	if e.Mask != "" {
 		entry += fmt.Sprintf(" %-23s", e.Mask)
@@ -70,4 +71,23 @@ func (e Entry) String() string {
 		entry += fmt.Sprintf(" %s", e.AuthMethod)
 	}
 	return entry
+}
+
+func transformAddress(address string) string {
+	ip := net.ParseIP(address)
+	if ip == nil {
+		return address
+	}
+
+	// Bare IP addresses are invalid. They need to be accompanied by a range.
+	var cidr *net.IPNet
+	if ipv4 := ip.To4(); ipv4 != nil {
+		cidr = &net.IPNet{IP: ipv4, Mask: net.CIDRMask(32, 32)}
+	} else if ipv6 := ip.To16(); ipv6 != nil {
+		cidr = &net.IPNet{IP: ipv6, Mask: net.CIDRMask(128, 128)}
+	} else {
+		return ""
+	}
+
+	return cidr.String()
 }
