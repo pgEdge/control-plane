@@ -66,6 +66,7 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 
 	errs = append(errs, validateCPUs(spec.Cpus, []string{"cpus"})...)
 	errs = append(errs, validateMemory(spec.Memory, []string{"memory"})...)
+	errs = append(errs, validatePorts(spec.Port, spec.PatroniPort, []string{"port"}))
 
 	// Track node-name uniqueness and prepare set for cross-node checks.
 	seenNodeNames := make(ds.Set[string], len(spec.Nodes))
@@ -193,6 +194,9 @@ func validateNode(node *api.DatabaseNodeSpec, path []string) []error {
 
 	memPath := appendPath(path, "memory")
 	errs = append(errs, validateMemory(node.Memory, memPath)...)
+
+	portPath := appendPath(path, "port")
+	errs = append(errs, validatePorts(node.Port, node.PatroniPort, portPath))
 
 	seenHostIDs := make(ds.Set[string], len(node.HostIds))
 	for i, h := range node.HostIds {
@@ -327,6 +331,17 @@ func validateMemory(value *string, path []string) []error {
 	}
 
 	return errs
+}
+
+func validatePorts(postgresPort, patroniPort *int, path []string) error {
+	postgres := utils.FromPointer(postgresPort)
+	patroni := utils.FromPointer(patroniPort)
+
+	if postgres > 0 && postgres == patroni {
+		return newValidationError(errors.New("postgres and patroni ports must not conflict"), path)
+	}
+
+	return nil
 }
 
 func validateBackupConfig(cfg *api.BackupConfigSpec, path []string) []error {
