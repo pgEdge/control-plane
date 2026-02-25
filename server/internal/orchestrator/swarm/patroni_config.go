@@ -253,11 +253,7 @@ func generatePatroniConfig(
 			"archive_command": PgBackRestBackupCmd("archive-push", `"%p"`).String(),
 		})
 	}
-	snowflakeLolorGUCs, err := postgres.SnowflakeLolorGUCs(spec.NodeOrdinal)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate snowflake/lolor GUCs: %w", err)
-	}
-	maps.Copy(parameters, snowflakeLolorGUCs)
+	maps.Copy(parameters, postgres.SnowflakeLolorGUCs(spec.NodeOrdinal))
 	maps.Copy(parameters, spec.PostgreSQLConf)
 	dcsParameters := patroni.ExtractPatroniControlledGUCs(parameters)
 
