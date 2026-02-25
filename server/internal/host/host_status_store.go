@@ -5,16 +5,16 @@ import (
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 
-	"github.com/pgEdge/control-plane/server/internal/common"
+	"github.com/pgEdge/control-plane/server/internal/healthcheck"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
 type StoredHostStatus struct {
 	storage.StoredValue
-	HostID     string                            `json:"host_id"`
-	UpdatedAt  time.Time                         `json:"updated_at"`
-	State      HostState                         `json:"state"`
-	Components map[string]common.ComponentStatus `json:"components"`
+	HostID     string                                 `json:"host_id"`
+	UpdatedAt  time.Time                              `json:"updated_at"`
+	State      HostState                              `json:"state"`
+	Components map[string]healthcheck.ComponentStatus `json:"components"`
 }
 
 type HostStatusStore struct {

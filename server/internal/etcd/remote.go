@@ -12,8 +12,8 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/certificates"
-	"github.com/pgEdge/control-plane/server/internal/common"
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/healthcheck"
 )
 
 var ErrOperationNotSupported = errors.New("operation not supported")
@@ -217,13 +217,13 @@ func (r *RemoteEtcd) Shutdown() error {
 	)
 }
 
-func (r *RemoteEtcd) HealthCheck() common.ComponentStatus {
+func (r *RemoteEtcd) HealthCheck() healthcheck.ComponentStatus {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	alarms, err := r.client.AlarmList(ctx)
 	if err != nil {
-		return common.ComponentStatus{
+		return healthcheck.ComponentStatus{
 			Name:    "etcd",
 			Healthy: false,
 			Error:   err.Error(),
@@ -234,7 +234,7 @@ func (r *RemoteEtcd) HealthCheck() common.ComponentStatus {
 		alarmStrs[i] = fmt.Sprintf("%d: %s", a.MemberID, a.Alarm.String())
 	}
 
-	return common.ComponentStatus{
+	return healthcheck.ComponentStatus{
 		Name:    "etcd",
 		Healthy: len(alarmStrs) == 0,
 		Details: map[string]interface{}{

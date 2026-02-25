@@ -25,11 +25,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 
-	"github.com/pgEdge/control-plane/server/internal/common"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/docker"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
+	"github.com/pgEdge/control-plane/server/internal/healthcheck"
 	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
@@ -125,7 +125,7 @@ func (o *Orchestrator) PopulateHostStatus(ctx context.Context, status *host.Host
 	if err != nil {
 		return fmt.Errorf("failed to get docker info: %w", err)
 	}
-	status.Components["docker"] = common.ComponentStatus{
+	status.Components["docker"] = healthcheck.ComponentStatus{
 		Name:    "docker",
 		Healthy: info.Swarm.LocalNodeState == swarm.LocalNodeStateActive,
 		Error:   info.Swarm.Error,

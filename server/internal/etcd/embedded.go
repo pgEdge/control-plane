@@ -20,8 +20,8 @@ import (
 	"go.etcd.io/etcd/server/v3/etcdserver"
 
 	"github.com/pgEdge/control-plane/server/internal/certificates"
-	"github.com/pgEdge/control-plane/server/internal/common"
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/healthcheck"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
@@ -441,13 +441,13 @@ func (e *EmbeddedEtcd) RemoveHost(ctx context.Context, hostID string) error {
 	return nil
 }
 
-func (e *EmbeddedEtcd) HealthCheck() common.ComponentStatus {
+func (e *EmbeddedEtcd) HealthCheck() healthcheck.ComponentStatus {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	status, err := e.client.Status(ctx, e.client.Endpoints()[0])
 	if err != nil {
-		return common.ComponentStatus{
+		return healthcheck.ComponentStatus{
 			Name:    "etcd",
 			Healthy: false,
 			Error:   err.Error(),
@@ -456,7 +456,7 @@ func (e *EmbeddedEtcd) HealthCheck() common.ComponentStatus {
 
 	alarms, err := e.client.AlarmList(ctx)
 	if err != nil {
-		return common.ComponentStatus{
+		return healthcheck.ComponentStatus{
 			Name:    "etcd",
 			Healthy: false,
 			Error:   err.Error(),
@@ -467,7 +467,7 @@ func (e *EmbeddedEtcd) HealthCheck() common.ComponentStatus {
 		alarmStrs[i] = fmt.Sprintf("%d: %s", a.MemberID, a.Alarm.String())
 	}
 
-	return common.ComponentStatus{
+	return healthcheck.ComponentStatus{
 		Name:    "etcd",
 		Healthy: len(status.Errors) == 0 && len(alarmStrs) == 0,
 		Details: map[string]interface{}{
