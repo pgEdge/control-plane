@@ -9,9 +9,11 @@ import (
 	"time"
 
 	"github.com/go-co-op/gocron"
-	"github.com/pgEdge/control-plane/server/internal/storage"
 	"github.com/rs/zerolog"
 	clientv3 "go.etcd.io/etcd/client/v3"
+
+	"github.com/pgEdge/control-plane/server/internal/logging"
+	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
 type Service struct {
@@ -29,14 +31,14 @@ type Service struct {
 
 // NewService initializes a new scheduled job service with a scheduler and job store.
 func NewService(
-	logger zerolog.Logger,
+	loggerFactory *logging.Factory,
 	store *ScheduledJobStore,
 	executor WorkflowExecutor,
 	etcdClient *clientv3.Client,
 	elector *Elector,
 ) *Service {
 	return &Service{
-		logger:     logger.With().Str("component", "scheduler_service").Logger(),
+		logger:     loggerFactory.Logger("scheduler_service"),
 		store:      store,
 		executor:   executor,
 		etcdClient: etcdClient,

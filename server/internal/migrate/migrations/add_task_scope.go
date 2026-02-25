@@ -7,12 +7,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/pgEdge/control-plane/server/internal/config"
-	"github.com/pgEdge/control-plane/server/internal/storage"
-	"github.com/pgEdge/control-plane/server/internal/task"
-	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	clientv3 "go.etcd.io/etcd/client/v3"
+
+	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/logging"
+	"github.com/pgEdge/control-plane/server/internal/storage"
+	"github.com/pgEdge/control-plane/server/internal/task"
 )
 
 type AddTaskScope struct{}
@@ -26,7 +27,7 @@ func (a *AddTaskScope) Run(ctx context.Context, i *do.Injector) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize config: %w", err)
 	}
-	logger, err := do.Invoke[zerolog.Logger](i)
+	loggerFactory, err := do.Invoke[*logging.Factory](i)
 	if err != nil {
 		return fmt.Errorf("failed to initialize logger: %w", err)
 	}
@@ -39,8 +40,7 @@ func (a *AddTaskScope) Run(ctx context.Context, i *do.Injector) error {
 		return fmt.Errorf("failed to initialize task store: %w", err)
 	}
 
-	logger = logger.With().
-		Str("component", "migration").
+	logger := loggerFactory.Logger("migration").With().
 		Str("identifier", a.Identifier()).
 		Logger()
 

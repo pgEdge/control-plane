@@ -3,13 +3,13 @@ package scheduler
 import (
 	"time"
 
-	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/election"
+	"github.com/pgEdge/control-plane/server/internal/logging"
 	"github.com/pgEdge/control-plane/server/internal/workflows"
 )
 
@@ -63,7 +63,7 @@ func provideService(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		logger, err := do.Invoke[zerolog.Logger](i)
+		loggerFactory, err := do.Invoke[*logging.Factory](i)
 		if err != nil {
 			return nil, err
 		}
@@ -75,7 +75,7 @@ func provideService(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		return NewService(logger, store, executor, client, elector), nil
+		return NewService(loggerFactory, store, executor, client, elector), nil
 	})
 }
 

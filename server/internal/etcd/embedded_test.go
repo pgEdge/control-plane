@@ -38,7 +38,7 @@ func TestEmbeddedEtcd(t *testing.T) {
 			},
 		}
 
-		server := etcd.NewEmbeddedEtcd(cfgMgr(t, cfg), testutils.Logger(t))
+		server := etcd.NewEmbeddedEtcd(cfgMgr(t, cfg), testutils.LoggerFactory(t))
 		require.NotNil(t, server)
 
 		initialized, err := server.IsInitialized()
@@ -101,7 +101,7 @@ func TestEmbeddedEtcd(t *testing.T) {
 			},
 		}
 
-		serverA := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgA), testutils.Logger(t))
+		serverA := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgA), testutils.LoggerFactory(t))
 		require.NotNil(t, serverA)
 
 		err := serverA.Start(ctx)
@@ -130,7 +130,7 @@ func TestEmbeddedEtcd(t *testing.T) {
 			},
 		}
 
-		serverB := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgB), testutils.Logger(t))
+		serverB := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgB), testutils.LoggerFactory(t))
 		require.NotNil(t, serverB)
 
 		// Generate credentials for server B
@@ -209,7 +209,7 @@ func TestEmbeddedEtcd(t *testing.T) {
 	})
 
 	t.Run("three member cluster", func(t *testing.T) {
-		logger := testutils.Logger(t)
+		loggerFactory := testutils.LoggerFactory(t)
 		ctx := context.Background()
 
 		// Initialize the cluster
@@ -224,7 +224,7 @@ func TestEmbeddedEtcd(t *testing.T) {
 				PeerPort:   storagetest.GetFreePort(t),
 			},
 		}
-		serverA := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgA), logger)
+		serverA := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgA), loggerFactory)
 		require.NoError(t, serverA.Start(ctx))
 		t.Cleanup(func() {
 			serverA.Shutdown()
@@ -241,7 +241,7 @@ func TestEmbeddedEtcd(t *testing.T) {
 				PeerPort:   storagetest.GetFreePort(t),
 			},
 		}
-		serverB := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgB), logger)
+		serverB := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgB), loggerFactory)
 
 		cfgC := config.Config{
 			HostID:      uuid.NewString(),
@@ -254,7 +254,7 @@ func TestEmbeddedEtcd(t *testing.T) {
 				PeerPort:   storagetest.GetFreePort(t),
 			},
 		}
-		serverC := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgC), logger)
+		serverC := etcd.NewEmbeddedEtcd(cfgMgr(t, cfgC), loggerFactory)
 
 		leader, err := serverA.Leader(ctx)
 		require.NoError(t, err)
@@ -387,7 +387,7 @@ func TestEmbeddedEtcd(t *testing.T) {
 			},
 		}
 
-		server := etcd.NewEmbeddedEtcd(cfgMgr(t, cfg), testutils.Logger(t))
+		server := etcd.NewEmbeddedEtcd(cfgMgr(t, cfg), testutils.LoggerFactory(t))
 		require.NotNil(t, server)
 
 		err := server.Start(ctx)

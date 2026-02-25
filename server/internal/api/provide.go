@@ -3,11 +3,11 @@ package api
 import (
 	"fmt"
 
-	"github.com/rs/zerolog"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/api/apiv1"
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/logging"
 )
 
 func Provide(i *do.Injector) {
@@ -21,14 +21,14 @@ func provideServer(i *do.Injector) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get config: %w", err)
 		}
-		logger, err := do.Invoke[zerolog.Logger](i)
+		loggerFactory, err := do.Invoke[*logging.Factory](i)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get logger: %w", err)
+			return nil, fmt.Errorf("failed to get logger factory: %w", err)
 		}
 		v1Svc, err := do.Invoke[*apiv1.Service](i)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get v1 api service: %w", err)
 		}
-		return NewServer(cfg, logger, v1Svc), nil
+		return NewServer(cfg, loggerFactory, v1Svc), nil
 	})
 }
