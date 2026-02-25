@@ -12,6 +12,7 @@ import (
 
 	"github.com/pgEdge/control-plane/server/internal/api/apiv1"
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/logging"
 )
 
 var _ do.Shutdownable = (*Server)(nil)
@@ -28,7 +29,7 @@ type Server struct {
 
 func NewServer(
 	cfg config.Config,
-	logger zerolog.Logger,
+	loggerFactory *logging.Factory,
 	v1Svc *apiv1.Service,
 ) *Server {
 	mux := goahttp.NewMuxer()
@@ -45,10 +46,7 @@ func NewServer(
 	// Mount all the v1 handlers
 	v1Svc.Mount(mux)
 
-	logger = logger.With().
-		Str("component", "api_server").
-		Logger()
-
+	logger := loggerFactory.Logger("api_server")
 	handler := addMiddleware(logger, mux)
 
 	var (

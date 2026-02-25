@@ -11,6 +11,7 @@ import (
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/election"
+	"github.com/pgEdge/control-plane/server/internal/logging"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 	"github.com/pgEdge/control-plane/server/internal/version"
 )
@@ -39,17 +40,15 @@ func NewRunner(
 	hostID string,
 	store *Store,
 	injector *do.Injector,
-	logger zerolog.Logger,
+	loggerFactory *logging.Factory,
 	migrations []Migration,
 	candidate *election.Candidate,
 ) *Runner {
 	return &Runner{
-		hostID:   hostID,
-		store:    store,
-		injector: injector,
-		logger: logger.With().
-			Str("component", "migration_runner").
-			Logger(),
+		hostID:     hostID,
+		store:      store,
+		injector:   injector,
+		logger:     loggerFactory.Logger("migration_runner"),
 		migrations: migrations,
 		candidate:  candidate,
 		errCh:      make(chan error, 1),

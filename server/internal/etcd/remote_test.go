@@ -30,7 +30,7 @@ func TestRemoteEtcd(t *testing.T) {
 			LogLevel: "debug",
 		},
 	}
-	remote := etcd.NewRemoteEtcd(cfgMgr(t, cfg), testutils.Logger(t))
+	remote := etcd.NewRemoteEtcd(cfgMgr(t, cfg), testutils.LoggerFactory(t))
 
 	join(t, serverA, remote, cfg)
 
@@ -99,7 +99,7 @@ func testEmbedded(t testing.TB) (*etcd.EmbeddedEtcd, config.Config) {
 			PeerPort:   storagetest.GetFreePort(t),
 		},
 	}
-	server := etcd.NewEmbeddedEtcd(cfgMgr(t, cfg), testutils.Logger(t))
+	server := etcd.NewEmbeddedEtcd(cfgMgr(t, cfg), testutils.LoggerFactory(t))
 
 	t.Cleanup(func() {
 		server.Shutdown()

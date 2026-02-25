@@ -25,7 +25,7 @@ func Provide(i *do.Injector) {
 
 func provideWorker(i *do.Injector) {
 	do.Provide(i, func(i *do.Injector) (*Worker, error) {
-		logger, err := do.Invoke[zerolog.Logger](i)
+		loggerFactory, err := do.Invoke[*logging.Factory](i)
 		if err != nil {
 			return nil, err
 		}
@@ -41,7 +41,7 @@ func provideWorker(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		return NewWorker(logger, be, workflows, orch)
+		return NewWorker(loggerFactory, be, workflows, orch)
 	})
 }
 

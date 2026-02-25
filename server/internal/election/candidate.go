@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/pgEdge/control-plane/server/internal/logging"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 	"github.com/rs/zerolog"
 )
@@ -42,7 +43,7 @@ type Candidate struct {
 // leadership.
 func NewCandidate(
 	store *ElectionStore,
-	logger zerolog.Logger,
+	loggerFactory *logging.Factory,
 	electionName Name,
 	candidateID string,
 	ttl time.Duration,
@@ -50,8 +51,7 @@ func NewCandidate(
 ) *Candidate {
 	return &Candidate{
 		store: store,
-		logger: logger.With().
-			Str("component", "election_candidate").
+		logger: loggerFactory.Logger("election_candidate").With().
 			Stringer("election_name", electionName).
 			Str("candidate_id", candidateID).
 			Logger(),

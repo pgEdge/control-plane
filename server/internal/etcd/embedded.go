@@ -22,6 +22,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/healthcheck"
+	"github.com/pgEdge/control-plane/server/internal/logging"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
@@ -32,22 +33,22 @@ var _ do.Shutdownable = (*EmbeddedEtcd)(nil)
 const quotaBackendBytes = 8 * 1024 * 1024 * 1024 // 8GB
 
 type EmbeddedEtcd struct {
-	mu          sync.Mutex
-	certSvc     *certificates.Service
-	client      *clientv3.Client
-	etcd        *embed.Etcd
-	logger      zerolog.Logger
-	cfg         *config.Manager
-	initialized chan struct{}
+	mu            sync.Mutex
+	certSvc       *certificates.Service
+	client        *clientv3.Client
+	etcd          *embed.Etcd
+	logger        zerolog.Logger
+	loggerFactory *logging.Factory
+	cfg           *config.Manager
+	initialized   chan struct{}
 }
 
-func NewEmbeddedEtcd(cfg *config.Manager, logger zerolog.Logger) *EmbeddedEtcd {
+func NewEmbeddedEtcd(cfg *config.Manager, loggerFactory *logging.Factory) *EmbeddedEtcd {
 	return &EmbeddedEtcd{
-		cfg:         cfg,
-		initialized: make(chan struct{}),
-		logger: logger.With().
-			Str("component", "etcd_server").
-			Logger(),
+		cfg:           cfg,
+		initialized:   make(chan struct{}),
+		logger:        loggerFactory.Logger("embedded_etcd"),
+		loggerFactory: loggerFactory,
 	}
 }
 
@@ -522,7 +523,7 @@ func (e *EmbeddedEtcd) ChangeMode(ctx context.Context, mode config.EtcdMode) (Et
 		return nil, err
 	}
 
-	remote := NewRemoteEtcd(e.cfg, e.logger)
+	remote := NewRemoteEtcd(e.cfg, e.loggerFactory)
 	if err := remote.Start(ctx); err != nil {
 		return nil, fmt.Errorf("failed to start remote client: %w", err)
 	}

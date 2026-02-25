@@ -14,6 +14,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/healthcheck"
+	"github.com/pgEdge/control-plane/server/internal/logging"
 )
 
 var ErrOperationNotSupported = errors.New("operation not supported")
@@ -22,23 +23,23 @@ var _ Etcd = (*RemoteEtcd)(nil)
 var _ do.Shutdownable = (*RemoteEtcd)(nil)
 
 type RemoteEtcd struct {
-	mu          sync.Mutex
-	certSvc     *certificates.Service
-	client      *clientv3.Client
-	logger      zerolog.Logger
-	cfg         *config.Manager
-	initialized chan struct{}
-	err         chan error
+	mu            sync.Mutex
+	certSvc       *certificates.Service
+	client        *clientv3.Client
+	logger        zerolog.Logger
+	loggerFactory *logging.Factory
+	cfg           *config.Manager
+	initialized   chan struct{}
+	err           chan error
 }
 
-func NewRemoteEtcd(cfg *config.Manager, logger zerolog.Logger) *RemoteEtcd {
+func NewRemoteEtcd(cfg *config.Manager, loggerFactory *logging.Factory) *RemoteEtcd {
 	return &RemoteEtcd{
-		cfg:         cfg,
-		initialized: make(chan struct{}),
-		err:         make(chan error),
-		logger: logger.With().
-			Str("component", "etcd_client").
-			Logger(),
+		cfg:           cfg,
+		initialized:   make(chan struct{}),
+		err:           make(chan error),
+		logger:        loggerFactory.Logger("remote_etcd"),
+		loggerFactory: loggerFactory,
 	}
 }
 
@@ -299,7 +300,7 @@ func (r *RemoteEtcd) ChangeMode(ctx context.Context, mode config.EtcdMode) (Etcd
 		return nil, err
 	}
 
-	embedded := NewEmbeddedEtcd(r.cfg, r.logger)
+	embedded := NewEmbeddedEtcd(r.cfg, r.loggerFactory)
 	err = embedded.Join(ctx, JoinOptions{
 		Leader:      leader,
 		Credentials: creds,
