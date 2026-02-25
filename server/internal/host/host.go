@@ -3,8 +3,8 @@ package host
 import (
 	"time"
 
-	"github.com/pgEdge/control-plane/server/internal/common"
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/healthcheck"
 )
 
 type HostState string
@@ -20,7 +20,7 @@ type HostStatus struct {
 	HostID     string
 	UpdatedAt  time.Time
 	State      HostState
-	Components map[string]common.ComponentStatus
+	Components map[string]healthcheck.ComponentStatus
 }
 
 type CohortType string

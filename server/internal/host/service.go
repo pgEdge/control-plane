@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pgEdge/control-plane/server/internal/common"
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/etcd"
+	"github.com/pgEdge/control-plane/server/internal/healthcheck"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
@@ -80,7 +80,7 @@ func (s *Service) UpdateHostStatus(ctx context.Context) error {
 		HostID:    s.cfg.HostID,
 		UpdatedAt: time.Now(),
 		State:     HostStateHealthy,
-		Components: map[string]common.ComponentStatus{
+		Components: map[string]healthcheck.ComponentStatus{
 			"etcd": s.etcd.HealthCheck(),
 		},
 	}
