@@ -52,7 +52,7 @@ health-gated startup — effectively a dependency graph within the service layer
 
 The data flow from API request to running container looks like this:
 
-```
+```text
 API Request (spec.services)
   → Validation (API layer)
   → Store spec in etcd
@@ -87,8 +87,8 @@ The `ServiceSpec` type has these attributes:
 | `host_ids` | `[]Identifier` | Which hosts should run this service (one instance per host) |
 | `port` | `Int` (optional) | Host port to publish; `0` = random; omitted = not published |
 | `config` | `MapOf(String, Any)` | Service-specific configuration |
-| `cpus` | `Float64` (optional) | CPU limit |
-| `memory` | `UInt64` (optional) | Memory limit in bytes |
+| `cpus` | `String` (optional) | CPU limit; accepts SI suffix `m` (e.g., `"500m"`, `"1"`) |
+| `memory` | `String` (optional) | Memory limit in SI or IEC notation (e.g., `"512M"`, `"1GiB"`) |
 
 To add a new service type, add its string value to the enum on `service_type`:
 
@@ -238,7 +238,7 @@ adding a new service type does **not** require new resource types.
 
 ### Dependency chain
 
-```
+```text
 Phase 1: Network (swarm.network)              — no dependencies
          ServiceUserRole (swarm.service_user_role) — no dependencies
 Phase 2: ServiceInstanceSpec (swarm.service_instance_spec) — depends on Network + ServiceUserRole
@@ -1166,7 +1166,7 @@ follow these steps in order:
 2. **`server/internal/api/apiv1/validate.go`**: Change the allowlist check in
    `validateServiceSpec()` to accept `"my-service"`. Write a
    `validateMyServiceConfig()` function following the pattern in
-   `validateMCPServiceConfig()` (see [A.2](#a2-validation-serverinternalapiapiapiv1validatego)).
+   `validateMCPServiceConfig()` (see [A.2](#a2-validation-serverinternalapiapiv1validatego)).
    Add a dispatch branch in `validateServiceSpec()`.
 
 3. **`server/internal/orchestrator/swarm/service_images.go`**: Add a
