@@ -106,57 +106,56 @@ Use the steps in this section when Docker Swarm has lost quorum (if a
 majority of managers are gone). If your Swarm still has a quorum, go to
 [Restoring the Control Plane](#restoring-the-control-plane).
 
-    1. Reinitialize the Swarm; on a surviving manager, invoke the following command:
+1.  Reinitialize the Swarm; on a surviving manager, invoke the following command:
 
-       ```bash
-       docker swarm init --force-new-cluster \
-           --advertise-addr ${RECOVERY_HOST_IP}
-       ```
+    ```bash
+    docker swarm init --force-new-cluster \
+        --advertise-addr ${RECOVERY_HOST_IP}
+    ```
 
     Verify:
 
-       ```bash
-       docker node ls
-       ```
+    ```bash
+    docker node ls
+    ```
 
-    2. Join Hosts to the New Swarm.  If you have other surviving nodes that should be
+2.  Join Hosts to the New Swarm.  If you have other surviving nodes that should be
     part of the new Swarm, attach them now. On the manager, get the join token:
 
-       ```bash
-       docker swarm join-token manager   # for manager nodes
-       docker swarm join-token worker    # for worker nodes
-       ```
+    ```bash
+    docker swarm join-token manager   # for manager nodes
+    docker swarm join-token worker    # for worker nodes
+    ```
 
     On each node to add, run:
 
-       ```bash
-       docker swarm join --token SWMTKN-1-xxx...xxx \
-           ${RECOVERY_HOST_IP}:2377
-       ```
+    ```bash
+    docker swarm join --token SWMTKN-1-xxx...xxx \
+        ${RECOVERY_HOST_IP}:2377
+    ```
 
     Use the command, `docker node ls` to verify the swarm on the manager.
 
-
-    3. Removing Old Swarm Nodes - first, demote lost managers, then remove the lost 
+3.  Removing Old Swarm Nodes - first, demote lost managers, then remove the lost
     nodes:
 
-       ```bash
-       docker node demote <LOST_HOSTNAME_1> <LOST_HOSTNAME_2>
-       docker node rm --force <LOST_HOSTNAME_1> <LOST_HOSTNAME_2>
-       ```
+    ```bash
+    docker node demote <LOST_HOSTNAME_1> <LOST_HOSTNAME_2>
+    docker node rm --force <LOST_HOSTNAME_1> <LOST_HOSTNAME_2>
+    ```
 
     Remove Control Plane and Postgres services that were pinned to the
     lost nodes:
 
-       ```bash
-       docker service rm control-plane_<LOST_HOST_ID_1> \
-           control-plane_<LOST_HOST_ID_2>
-       docker service ls
-       docker service rm <orphaned-postgres-service-1> \
-           <orphaned-postgres-service-2>
-       ```
+    ```bash
+    docker service rm control-plane_<LOST_HOST_ID_1> \
+        control-plane_<LOST_HOST_ID_2>
+    docker service ls
+    docker service rm <orphaned-postgres-service-1> \
+        <orphaned-postgres-service-2>
+    ```
 
-    If the container registry or Control Plane image resided on a lost host, 
+    If the container registry or Control Plane image resided on a lost host,
     recreate the registry and image on a surviving host before starting the
     Control Plane; for details, see
     [Upgrading the Control Plane](../installation/upgrading.md).
@@ -187,77 +186,77 @@ on your Swarm.  If:
 
 Then on the recovery host, perform the following steps:
 
-    1. Back up existing etcd data and set aside for restore:
+1.  Back up existing etcd data and set aside for restore:
 
-       ```bash
-       if [ -d "${PGEDGE_DATA_DIR}/etcd" ]; then
-           ETCD_BACKUP_DIR="${PGEDGE_DATA_DIR}/etcd.backup.$(date +%s)"
-           mv "${PGEDGE_DATA_DIR}/etcd" "${ETCD_BACKUP_DIR}"
-       fi
-       if [ -d "${PGEDGE_DATA_DIR}/certificates" ]; then
-           cp -r "${PGEDGE_DATA_DIR}/certificates" \
-               "${PGEDGE_DATA_DIR}/certificates.backup.$(date +%s)"
-       fi
-       if [ -f "${PGEDGE_DATA_DIR}/generated.config.json" ]; then
-           cp "${PGEDGE_DATA_DIR}/generated.config.json" \
-               "${PGEDGE_DATA_DIR}/generated.config.json.backup.$(date +%s)"
-       fi
-       ```
+    ```bash
+    if [ -d "${PGEDGE_DATA_DIR}/etcd" ]; then
+        ETCD_BACKUP_DIR="${PGEDGE_DATA_DIR}/etcd.backup.$(date +%s)"
+        mv "${PGEDGE_DATA_DIR}/etcd" "${ETCD_BACKUP_DIR}"
+    fi
+    if [ -d "${PGEDGE_DATA_DIR}/certificates" ]; then
+        cp -r "${PGEDGE_DATA_DIR}/certificates" \
+            "${PGEDGE_DATA_DIR}/certificates.backup.$(date +%s)"
+    fi
+    if [ -f "${PGEDGE_DATA_DIR}/generated.config.json" ]; then
+        cp "${PGEDGE_DATA_DIR}/generated.config.json" \
+            "${PGEDGE_DATA_DIR}/generated.config.json.backup.$(date +%s)"
+    fi
+    ```
 
-    2. Install etcdutl:
+2.  Install etcdutl:
 
-       ```bash
-       ETCD_VERSION="v3.6.8"
-       ARCH=$(uname -m)
-       if [ "$ARCH" = "x86_64" ]; then ARCH="amd64"; \
-           elif [ "$ARCH" = "aarch64" ]; then ARCH="arm64"; fi
-       curl -L "https://github.com/etcd-io/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-${ARCH}.tar.gz" \
-           | tar --strip-components 1 -xz -C /tmp \
-               "etcd-${ETCD_VERSION}-linux-${ARCH}/etcdutl"
-       sudo mv /tmp/etcdutl /usr/local/bin/ && \
-           sudo chmod +x /usr/local/bin/etcdutl
-       ```
+    ```bash
+    ETCD_VERSION="v3.6.8"
+    ARCH=$(uname -m)
+    if [ "$ARCH" = "x86_64" ]; then ARCH="amd64"; \
+        elif [ "$ARCH" = "aarch64" ]; then ARCH="arm64"; fi
+    curl -L "https://github.com/etcd-io/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-${ARCH}.tar.gz" \
+        | tar --strip-components 1 -xz -C /tmp \
+            "etcd-${ETCD_VERSION}-linux-${ARCH}/etcdutl"
+    sudo mv /tmp/etcdutl /usr/local/bin/ && \
+        sudo chmod +x /usr/local/bin/etcdutl
+    ```
 
-    3. Restore etcd from the backup directory (step 1 sets
-       `ETCD_BACKUP_DIR`). If you have no existing etcd directory and are
-       using a snapshot file instead, use that file path in place of
-       `"${ETCD_BACKUP_DIR}/member/snap/db"`. This will restore quorum by
-       reinitializing etcd with a single cluster member:
+3.  Restore etcd from the backup directory (step 1 sets
+    `ETCD_BACKUP_DIR`). If you have no existing etcd directory and are
+    using a snapshot file instead, use that file path in place of
+    `"${ETCD_BACKUP_DIR}/member/snap/db"`. This will restore quorum by
+    reinitializing etcd with a single cluster member:
 
-       ```bash
-       etcdutl snapshot restore "${ETCD_BACKUP_DIR}/member/snap/db" \
-           --name "${RECOVERY_HOST_ID}" \
-           --initial-cluster \
-               "${RECOVERY_HOST_ID}=https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
-           --initial-advertise-peer-urls \
-               "https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
-           --skip-hash-check \
-           --data-dir "${PGEDGE_DATA_DIR}/etcd"
-       ls -la "${PGEDGE_DATA_DIR}/etcd"
-       ```
+    ```bash
+    etcdutl snapshot restore "${ETCD_BACKUP_DIR}/member/snap/db" \
+        --name "${RECOVERY_HOST_ID}" \
+        --initial-cluster \
+            "${RECOVERY_HOST_ID}=https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
+        --initial-advertise-peer-urls \
+            "https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
+        --skip-hash-check \
+        --data-dir "${PGEDGE_DATA_DIR}/etcd"
+    ls -la "${PGEDGE_DATA_DIR}/etcd"
+    ```
 
-    4. Start the Control Plane and verify:
+4.  Start the Control Plane and verify:
 
-       - If Control Plane is already deployed as Swarm services (if the etcd
-         quorum was lost and you did not run
-         [Restoring Docker Swarm](#restoring-docker-swarm)):
-         `docker service scale control-plane_${RECOVERY_HOST_ID}=1`
+    - If Control Plane is already deployed as Swarm services (if the etcd
+      quorum was lost and you did not run
+      [Restoring Docker Swarm](#restoring-docker-swarm)):
+      `docker service scale control-plane_${RECOVERY_HOST_ID}=1`
 
-       - If you completed [Restoring Docker Swarm](#restoring-docker-swarm)
-         and deploy with the `stack` command:
-         `docker stack deploy -c <path-to-stack-yaml> control-plane`
-         Without setting `PGEDGE_ETCD_SERVER__FORCE_NEW_CLUSTER`.
+    - If you completed [Restoring Docker Swarm](#restoring-docker-swarm)
+      and deploy with the `stack` command:
+      `docker stack deploy -c <path-to-stack-yaml> control-plane`
+      Without setting `PGEDGE_ETCD_SERVER__FORCE_NEW_CLUSTER`.
 
-       Then:
+    Then:
 
-       ```bash
-       docker service ps control-plane_${RECOVERY_HOST_ID} --no-trunc
-       curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts"
-       ```
+    ```bash
+    docker service ps control-plane_${RECOVERY_HOST_ID} --no-trunc
+    curl -sS "http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts"
+    ```
 
-       You should see one host with `status: "reachable"` and 
-       `etcd_mode: "server"`. Then continue with the next section: 
-       [Updating Databases to Remove Old Hosts](#updating-databases-to-remove-old-hosts).
+    You should see one host with `status: "reachable"` and
+    `etcd_mode: "server"`. Then continue with the next section:
+    [Updating Databases to Remove Old Hosts](#updating-databases-to-remove-old-hosts).
 
 ## Updating Databases to Remove Old Hosts
 
@@ -332,43 +331,43 @@ Plane cluster.
 **To rejoin an existing host (host still accessible)** — when the lost host
 is reachable via SSH and Docker is running:
 
-    1. On a manager, invoke:
-       `docker service scale control-plane_<LOST_HOST_ID>=0`
-    2. On that host (with SSH), clear the state:
-       - **Server-mode:**
-         `rm -rf "${PGEDGE_DATA_DIR}/etcd" "${PGEDGE_DATA_DIR}/certificates" ; rm -f "${PGEDGE_DATA_DIR}/generated.config.json"`
-       - **Client-mode:**
-         `rm -f "${PGEDGE_DATA_DIR}/generated.config.json"`
-    3. On a manager, invoke:
-       `docker service scale control-plane_<LOST_HOST_ID>=1` (or
-       `docker stack deploy -c <path-to-stack-yaml> control-plane` if the
-       service was removed).
+1.  On a manager, invoke:
+    `docker service scale control-plane_<LOST_HOST_ID>=0`
+2.  On that host (with SSH), clear the state:
+    - Server-mode:
+      `rm -rf "${PGEDGE_DATA_DIR}/etcd" "${PGEDGE_DATA_DIR}/certificates" ; rm -f "${PGEDGE_DATA_DIR}/generated.config.json"`
+    - Client-mode:
+      `rm -f "${PGEDGE_DATA_DIR}/generated.config.json"`
+3.  On a manager, invoke:
+    `docker service scale control-plane_<LOST_HOST_ID>=1` (or
+    `docker stack deploy -c <path-to-stack-yaml> control-plane` if the
+    service was removed).
 
 **To provision a new host because the host was destroyed** — when the host
 must be recreated:
 
-    1. Create the new host and install prerequisites (Docker, etc.) per your
-       environment.
-    2. On the new host, join Docker Swarm (obtain the token on a manager
-       with `docker swarm join-token manager` or `worker`):
-       `docker swarm join --token SWMTKN-1-xxx...xxx \
-        ${RECOVERY_HOST_IP}:2377`. Verify with `docker node ls` on the
-       manager.
-    3. On the new host: `sudo mkdir -p /data/control-plane` (or your
-       `PGEDGE_DATA_DIR`).
-    4. On a manager:
-       `docker stack deploy -c <path-to-stack-yaml> control-plane`. Verify
-       with `docker service ps control-plane_<HOST_ID>`.
+1.  Create the new host and install prerequisites (Docker, etc.) per your
+    environment.
+2.  On the new host, join Docker Swarm (obtain the token on a manager
+    with `docker swarm join-token manager` or `worker`):
+    `docker swarm join --token SWMTKN-1-xxx...xxx \
+     ${RECOVERY_HOST_IP}:2377`. Verify with `docker node ls` on the
+    manager.
+3.  On the new host: `sudo mkdir -p /data/control-plane` (or your
+    `PGEDGE_DATA_DIR`).
+4.  On a manager:
+    `docker stack deploy -c <path-to-stack-yaml> control-plane`. Verify
+    with `docker service ps control-plane_<HOST_ID>`.
 
 **To join the Control Plane cluster** (for each host re-added, whether
 rejoined or new):
 
-    1. From any existing member:
-       `JOIN_TOKEN="$(curl http://${RECOVERY_HOST_IP}:${API_PORT}/v1/cluster/join-token)"`
-    2. On the host being added (not on an existing member):
-       `curl -X POST http://<NEW_HOST_IP>:${API_PORT}/v1/cluster/join -H 'Content-Type:application/json' --data "${JOIN_TOKEN}"`
-    3. Verify: `curl http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts` —
-       the host should show `status: "reachable"` and the correct `etcd_mode`.
+1.  From any existing member:
+    `JOIN_TOKEN="$(curl http://${RECOVERY_HOST_IP}:${API_PORT}/v1/cluster/join-token)"`
+2.  On the host being added (not on an existing member):
+    `curl -X POST http://<NEW_HOST_IP>:${API_PORT}/v1/cluster/join -H 'Content-Type:application/json' --data "${JOIN_TOKEN}"`
+3.  Verify: `curl http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts` —
+    the host should show `status: "reachable"` and the correct `etcd_mode`.
 
 Repeat for each host. Re-add **server-mode hosts first**, then
 client-mode hosts.
