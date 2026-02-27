@@ -39,8 +39,7 @@ Before starting the recovery process, ensure you have:
   remains, you can recover using that host's existing data; a backup is not
   required.
 
-See
-[Creating the stack definition file](../installation/installation.md#creating-the-stack-definition-file)
+See [Creating the stack definition file](../installation/installation.md#creating-the-stack-definition-file)
 in the installation documentation.
 
 ## Set Variables
@@ -69,8 +68,8 @@ ETCD_PEER_PORT=<etcd-peer-port>
 Use the following formula and table to determine if quorum has been
 lost:
 
-**Formula:** `Quorum = floor(N/2) + 1`, where N = number of server-mode
-hosts.
+**Formula:** `Quorum = floor(N/2) + 1`, where N = number of
+server-mode hosts.
 
 | Server-mode hosts | Quorum | Quorum lost when |
 |-------------------|--------|------------------|
@@ -80,22 +79,24 @@ hosts.
 
 ## Data Volume Restore
 
-You will need to restore from a previously created backup if you have
-lost 100% of your Control Plane servers configured to serve etcd. This
-could be a snapshot of the data volume or any other type of backup that
-includes the Control Plane data directory for one of the lost servers.
-Only one Control Plane server backup is needed to restore the cluster.
+You will need to restore from a previously created backup if you
+have lost 100% of your Control Plane servers configured to serve etcd.
+This could be a snapshot of the data volume or any other type of
+backup that includes the Control Plane data directory for one of the
+lost servers. Only one Control Plane server backup is needed to
+restore the cluster.
 
 If you have lost 100% of your database instances, you will need the
-data directory from at least one instance from each database. Your data
-volume backup will also include this data if you are restoring a host
-that was running an instance of each database. If not, you will also need
-to restore at least one more host that has this instance data.
+data directory from at least one instance from each database. Your
+data volume backup will also include this data if you are restoring
+a host that was running an instance of each database. If not, you
+will also need to restore at least one more host that has this
+instance data.
 
-If you do not have any data volume backups that include your database
-instances, we recommend creating a new Control Plane cluster and
-restoring your databases from pgBackRest backups instead. See
-[Creating a new database from a backup](../using/backup-restore.md#creating-a-new-database-from-a-backup)
+If you do not have any data volume backups that include your
+database instances, we recommend creating a new Control Plane
+cluster and restoring your databases from pgBackRest backups
+instead. See [Creating a new database from a backup](../using/backup-restore.md#creating-a-new-database-from-a-backup)
 for more information.
 
 ---
@@ -106,7 +107,8 @@ Use the steps in this section when Docker Swarm has lost quorum (if a
 majority of managers are gone). If your Swarm still has a quorum, go to
 [Restoring the Control Plane](#restoring-the-control-plane).
 
-1.  Reinitialize the Swarm; on a surviving manager, invoke the following command:
+1.  Reinitialize the Swarm; on a surviving manager, invoke the
+    following command:
 
     ```bash
     docker swarm init --force-new-cluster \
@@ -119,8 +121,9 @@ majority of managers are gone). If your Swarm still has a quorum, go to
     docker node ls
     ```
 
-2.  Join Hosts to the New Swarm.  If you have other surviving nodes that should be
-    part of the new Swarm, attach them now. On the manager, get the join token:
+2.  Join Hosts to the New Swarm.  If you have other surviving nodes
+    that should be part of the new Swarm, attach them now. On the
+    manager, get the join token:
 
     ```bash
     docker swarm join-token manager   # for manager nodes
@@ -136,16 +139,16 @@ majority of managers are gone). If your Swarm still has a quorum, go to
 
     Use the command, `docker node ls` to verify the swarm on the manager.
 
-3.  Removing Old Swarm Nodes - first, demote lost managers, then remove the lost
-    nodes:
+3.  Removing Old Swarm Nodes - first, demote lost managers, then remove
+    the lost nodes:
 
     ```bash
     docker node demote <LOST_HOSTNAME_1> <LOST_HOSTNAME_2>
     docker node rm --force <LOST_HOSTNAME_1> <LOST_HOSTNAME_2>
     ```
 
-    Remove Control Plane and Postgres services that were pinned to the
-    lost nodes:
+    Remove Control Plane and Postgres services that were pinned to the lost
+    nodes:
 
     ```bash
     docker service rm control-plane_<LOST_HOST_ID_1> \
@@ -155,9 +158,9 @@ majority of managers are gone). If your Swarm still has a quorum, go to
         <orphaned-postgres-service-2>
     ```
 
-    If the container registry or Control Plane image resided on a lost host,
-    recreate the registry and image on a surviving host before starting the
-    Control Plane; for details, see
+    If the container registry or Control Plane image resided on a lost
+    host, recreate the registry and image on a surviving host before
+    starting the Control Plane; for details, see
     [Upgrading the Control Plane](../installation/upgrading.md).
 
 ---
@@ -166,21 +169,22 @@ majority of managers are gone). If your Swarm still has a quorum, go to
 
 Perform the steps in this section only if the etcd quorum was lost, and
 the Control Plane API is unavailable. If the API is still accessible, go
-to
-[Updating Databases to Remove Old Hosts](#updating-databases-to-remove-old-hosts).
+to [Updating Databases to Remove Old Hosts](#updating-databases-to-remove-old-hosts).
 
 Use one server-mode host as the recovery host; what you do first depends
 on your Swarm.  If:
 
 - all server-mode hosts were offline: On a Swarm manager, stop all
   Control Plane services with the command:
-  `docker service scale control-plane_<host-id-1>=0 control-plane_<host-id-2>=0 ...` 
-  Then, restore the data volume from your
-  backup (see [Data Volume Restore](#data-volume-restore)).
+  `docker service scale control-plane_<host-id-1>=0 control-plane_<host-id-2>=0 ...`
+  Then, restore the data volume from your backup (see
+  [Data Volume Restore](#data-volume-restore)).
 - at least one server-mode host was still up: Use that host as the
-  recovery host. You do not need to stop services or restore the volume
-  first.
-- you already completed [Restoring Docker Swarm](#restoring-docker-swarm): 
+  recovery host. On a Swarm manager, stop the Control Plane service on
+  that host so the following steps do not move live etcd data:
+  `docker service scale control-plane_<recovery-host-id>=0`. You do not
+  need to restore the volume first.
+- you already completed [Restoring Docker Swarm](#restoring-docker-swarm):
   Restore the data volume on the surviving host if it was lost (see
   [Data volume restore](#data-volume-restore)); otherwise skip.
 
@@ -210,14 +214,15 @@ Then on the recovery host, perform the following steps:
     ARCH=$(uname -m)
     if [ "$ARCH" = "x86_64" ]; then ARCH="amd64"; \
         elif [ "$ARCH" = "aarch64" ]; then ARCH="arm64"; fi
-    curl -L "https://github.com/etcd-io/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-${ARCH}.tar.gz" \
+    curl -L \
+        "https://github.com/etcd-io/etcd/releases/download/${ETCD_VERSION}/etcd-${ETCD_VERSION}-linux-${ARCH}.tar.gz" \
         | tar --strip-components 1 -xz -C /tmp \
             "etcd-${ETCD_VERSION}-linux-${ARCH}/etcdutl"
     sudo mv /tmp/etcdutl /usr/local/bin/ && \
         sudo chmod +x /usr/local/bin/etcdutl
     ```
 
-3.  Restore etcd from the backup directory (step 1 sets
+3.  Restore etcd from the backup directory (Step 1 sets the value for
     `ETCD_BACKUP_DIR`). If you have no existing etcd directory and are
     using a snapshot file instead, use that file path in place of
     `"${ETCD_BACKUP_DIR}/member/snap/db"`. This will restore quorum by
@@ -226,10 +231,8 @@ Then on the recovery host, perform the following steps:
     ```bash
     etcdutl snapshot restore "${ETCD_BACKUP_DIR}/member/snap/db" \
         --name "${RECOVERY_HOST_ID}" \
-        --initial-cluster \
-            "${RECOVERY_HOST_ID}=https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
-        --initial-advertise-peer-urls \
-            "https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
+        --initial-cluster "${RECOVERY_HOST_ID}=https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
+        --initial-advertise-peer-urls "https://${RECOVERY_HOST_IP}:${ETCD_PEER_PORT}" \
         --skip-hash-check \
         --data-dir "${PGEDGE_DATA_DIR}/etcd"
     ls -la "${PGEDGE_DATA_DIR}/etcd"
@@ -283,8 +286,8 @@ curl -X POST \
 ```
 
 For multiple lost hosts, add `&remove_host=<HOST_ID>` for each. Monitor
-progress via [Tasks and Logs](../using/tasks-logs.md) in the Using
-Control Plane documentation.
+progress via [Tasks and Logs](../using/tasks-logs.md) in the Using Control
+Plane documentation.
 
 ### Removing Old Hosts
 
@@ -324,12 +327,12 @@ remaining hosts.
 
 ### Re-adding Hosts
 
-For each host you need to restore, either rejoin an existing host (still in
-the Swarm and reachable) or provision a new host, and then join the Control
-Plane cluster.
+For each host you need to restore, either rejoin an existing host (still
+in the Swarm and reachable) or provision a new host, and then join the
+Control Plane cluster.
 
-**To rejoin an existing host (host still accessible)** — when the lost host
-is reachable via SSH and Docker is running:
+**To rejoin an existing host (host still accessible)** — when the lost
+host is reachable via SSH and Docker is running:
 
 1.  On a manager, invoke:
     `docker service scale control-plane_<LOST_HOST_ID>=0`
@@ -343,8 +346,8 @@ is reachable via SSH and Docker is running:
     `docker stack deploy -c <path-to-stack-yaml> control-plane` if the
     service was removed).
 
-**To provision a new host because the host was destroyed** — when the host
-must be recreated:
+**To provision a new host because the host was destroyed** — when the
+host must be recreated:
 
 1.  Create the new host and install prerequisites (Docker, etc.) per your
     environment.
@@ -356,8 +359,8 @@ must be recreated:
 3.  On the new host: `sudo mkdir -p /data/control-plane` (or your
     `PGEDGE_DATA_DIR`).
 4.  On a manager:
-    `docker stack deploy -c <path-to-stack-yaml> control-plane`. Verify
-    with `docker service ps control-plane_<HOST_ID>`.
+    `docker stack deploy -c <path-to-stack-yaml> control-plane`.
+    Verify with `docker service ps control-plane_<HOST_ID>`.
 
 **To join the Control Plane cluster** (for each host re-added, whether
 rejoined or new):
@@ -366,16 +369,16 @@ rejoined or new):
     `JOIN_TOKEN="$(curl http://${RECOVERY_HOST_IP}:${API_PORT}/v1/cluster/join-token)"`
 2.  On the host being added (not on an existing member):
     `curl -X POST http://<NEW_HOST_IP>:${API_PORT}/v1/cluster/join -H 'Content-Type:application/json' --data "${JOIN_TOKEN}"`
-3.  Verify: `curl http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts` —
-    the host should show `status: "reachable"` and the correct `etcd_mode`.
+3.  Verify: `curl http://${RECOVERY_HOST_IP}:${API_PORT}/v1/hosts` — the
+    host should show `status: "reachable"` and the correct `etcd_mode`.
 
 Repeat for each host. Re-add **server-mode hosts first**, then
 client-mode hosts.
 
 ### Updating Databases to Re-add Hosts
 
-After hosts are back in the cluster, add them to each database spec so the
-Control Plane can create instances and sync data:
+After hosts are back in the cluster, add them to each database spec so
+the Control Plane can create instances and sync data:
 
 ```sh
 curl -X POST \
@@ -396,8 +399,8 @@ curl -X POST \
     }'
 ```
 
-To choose a specific source node for data sync, add `"source_node":"n2"` to
-the node entry. Monitor progress via [Tasks and Logs](../using/tasks-logs.md)
+To choose a specific source node for data sync, add `"source_node":"n2"`
+to the node entry. Monitor progress via [Tasks and Logs](../using/tasks-logs.md)
 in the Using Control Plane documentation.
 
 **Final verification:**
