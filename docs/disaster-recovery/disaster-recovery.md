@@ -1,7 +1,7 @@
 # Disaster Recovery
 
-This guide describes how to recover the Control Plane and Docker Swarm after
-host loss or etcd quorum loss. Follow the sections in order, skipping:
+This page describes how to recover the Control Plane and Docker Swarm after
+loss of a host or etcd quorum. Follow the sections in order, skipping:
 
 - [Restoring Docker Swarm](#restoring-docker-swarm) if the Swarm still has
   quorum.
