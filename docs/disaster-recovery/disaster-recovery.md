@@ -106,66 +106,60 @@ Use the steps in this section when Docker Swarm has lost quorum (if a
 majority of managers are gone). If your Swarm still has a quorum, go to
 [Restoring the Control Plane](#restoring-the-control-plane).
 
-    1. Reinitialize the Swarm
+    1. Reinitialize the Swarm; on a surviving manager, invoke the following command:
 
-    On a surviving manager, invoke the following command:
-
-    ```bash
-    docker swarm init --force-new-cluster \
-        --advertise-addr ${RECOVERY_HOST_IP}
-    ```
+       ```bash
+       docker swarm init --force-new-cluster \
+           --advertise-addr ${RECOVERY_HOST_IP}
+       ```
 
     Verify:
 
-    ```bash
-    docker node ls
-    ```
+       ```bash
+       docker node ls
+       ```
 
-    2. Join Hosts to the New Swarm
+    2. Join Hosts to the New Swarm.  If you have other surviving nodes that should be
+    part of the new Swarm, attach them now. On the manager, get the join token:
 
-    If you have other surviving nodes that should be part of the new
-    Swarm, attach them now. On the manager, get the join token:
-
-    ```bash
-    docker swarm join-token manager   # for manager nodes
-    docker swarm join-token worker    # for worker nodes
-    ```
+       ```bash
+       docker swarm join-token manager   # for manager nodes
+       docker swarm join-token worker    # for worker nodes
+       ```
 
     On each node to add, run:
 
-    ```bash
-    docker swarm join --token SWMTKN-1-xxx...xxx \
-        ${RECOVERY_HOST_IP}:2377
-    ```
+       ```bash
+       docker swarm join --token SWMTKN-1-xxx...xxx \
+           ${RECOVERY_HOST_IP}:2377
+       ```
 
-    Verify with `docker node ls` on the manager.
+    Use the command, `docker node ls` to verify the swarm on the manager.
 
 
-    3. Removing Old Swarm Nodes
+    3. Removing Old Swarm Nodes - first, demote lost managers, then remove the lost 
+    nodes:
 
-    First, demote lost managers, then remove the lost nodes:
-
-    ```bash
-    docker node demote <LOST_HOSTNAME_1> <LOST_HOSTNAME_2>
-    docker node rm --force <LOST_HOSTNAME_1> <LOST_HOSTNAME_2>
-    ```
+       ```bash
+       docker node demote <LOST_HOSTNAME_1> <LOST_HOSTNAME_2>
+       docker node rm --force <LOST_HOSTNAME_1> <LOST_HOSTNAME_2>
+       ```
 
     Remove Control Plane and Postgres services that were pinned to the
     lost nodes:
 
-    ```bash
-    docker service rm control-plane_<LOST_HOST_ID_1> \
-        control-plane_<LOST_HOST_ID_2>
-    docker service ls
-    docker service rm <orphaned-postgres-service-1> \
-        <orphaned-postgres-service-2>
-    ```
+       ```bash
+       docker service rm control-plane_<LOST_HOST_ID_1> \
+           control-plane_<LOST_HOST_ID_2>
+       docker service ls
+       docker service rm <orphaned-postgres-service-1> \
+           <orphaned-postgres-service-2>
+       ```
 
-If the container registry or Control Plane image resided on a lost host, 
-recreate the registry and image on a surviving host before starting the
-Control Plane; see
-[Upgrading the Control Plane](../installation/upgrading.md)
-for details.
+    If the container registry or Control Plane image resided on a lost host, 
+    recreate the registry and image on a surviving host before starting the
+    Control Plane; for details, see
+    [Upgrading the Control Plane](../installation/upgrading.md).
 
 ---
 
