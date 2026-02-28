@@ -1,0 +1,42 @@
+[
+  [
+    [
+      {
+        "type": "create",
+        "resource_id": "swarm.network::database-id",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "swarm.service_user_role::database-id-test-svc-host-1-id",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "swarm.service_instance_spec::database-id-test-svc-host-1-id",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "swarm.service_instance::database-id-test-svc-host-1-id",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "monitor.service_instance::database-id-test-svc-host-1-id",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ]
+  ]
+]
