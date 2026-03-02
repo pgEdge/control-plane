@@ -7,10 +7,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func strPtr(s string) *string       { return &s }
-func float64Ptr(f float64) *float64 { return &f }
-func intPtrMCP(i int) *int          { return &i }
-func boolPtrMCP(b bool) *bool       { return &b }
+func strPtr(s string) *string { return &s }
 
 // parseYAML unmarshals GenerateMCPConfig output into mcpYAMLConfig for assertion.
 func parseYAML(t *testing.T, data []byte) *mcpYAMLConfig {
