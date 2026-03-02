@@ -7,6 +7,7 @@ import (
 	"github.com/docker/docker/api/types/swarm"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -36,6 +37,7 @@ type ServiceInstanceSpecResource struct {
 	DatabaseHost      string                `json:"database_host"` // Postgres instance hostname
 	DatabasePort      int                   `json:"database_port"` // Postgres instance port
 	Port              *int                  `json:"port"`          // Service published port (optional, 0 = random)
+	DataDirID         string                `json:"data_dir_id"`   // DirResource ID for the service data directory
 	Spec              swarm.ServiceSpec     `json:"spec"`
 }
 
@@ -58,10 +60,11 @@ func (s *ServiceInstanceSpecResource) Executor() resource.Executor {
 }
 
 func (s *ServiceInstanceSpecResource) Dependencies() []resource.Identifier {
-	// Service instances depend on the database network and service user role
+	// Service instances depend on the database network, service user role, and MCP config
 	return []resource.Identifier{
 		NetworkResourceIdentifier(s.DatabaseNetworkID),
 		ServiceUserRoleIdentifier(s.ServiceInstanceID),
+		MCPConfigResourceIdentifier(s.ServiceInstanceID),
 	}
 }
 
@@ -89,6 +92,12 @@ func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.
 		return err
 	}
 
+	// Resolve the data directory path from the DirResource
+	dataPath, err := filesystem.DirResourceFullPath(rc, s.DataDirID)
+	if err != nil {
+		return fmt.Errorf("failed to get service data dir path: %w", err)
+	}
+
 	spec, err := ServiceContainerSpec(&ServiceContainerSpecOptions{
 		ServiceSpec:       s.ServiceSpec,
 		ServiceInstanceID: s.ServiceInstanceID,
@@ -104,6 +113,7 @@ func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.
 		DatabaseHost:      s.DatabaseHost,
 		DatabasePort:      s.DatabasePort,
 		Port:              s.Port,
+		DataPath:          dataPath,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate service container spec: %w", err)

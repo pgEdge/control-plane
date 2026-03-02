@@ -148,15 +148,10 @@ func (w *Workflows) getServiceResources(
 // container from the database spec. It prefers a co-located instance (same host
 // as the service) for lower latency, falling back to any instance in the database.
 // The hostname follows the swarm orchestrator convention: "postgres-{instanceID}".
+// The returned port is always the internal container port (5432), not the published
+// host port, because service containers connect via the overlay network.
 func findPostgresInstance(nodeInstances []*database.NodeInstances, serviceHostID string) (string, int, error) {
-	const defaultPort = 5432
-
-	instancePort := func(inst *database.InstanceSpec) int {
-		if inst.Port != nil {
-			return *inst.Port
-		}
-		return defaultPort
-	}
+	const internalPort = 5432
 
 	var fallback *database.InstanceSpec
 	for _, node := range nodeInstances {
@@ -165,13 +160,13 @@ func findPostgresInstance(nodeInstances []*database.NodeInstances, serviceHostID
 				fallback = inst
 			}
 			if inst.HostID == serviceHostID {
-				return fmt.Sprintf("postgres-%s", inst.InstanceID), instancePort(inst), nil
+				return fmt.Sprintf("postgres-%s", inst.InstanceID), internalPort, nil
 			}
 		}
 	}
 
 	if fallback != nil {
-		return fmt.Sprintf("postgres-%s", fallback.InstanceID), instancePort(fallback), nil
+		return fmt.Sprintf("postgres-%s", fallback.InstanceID), internalPort, nil
 	}
 
 	return "", 0, fmt.Errorf("no postgres instances found for service host %s", serviceHostID)
