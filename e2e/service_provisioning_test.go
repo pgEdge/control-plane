@@ -868,9 +868,24 @@ func TestUpdateMCPServiceConfig(t *testing.T) {
 
 	t.Log("Database updated, verifying service instance was updated in-place")
 
-	// Verify the database is available and service is running
+	// Verify the service instance still exists
 	require.Len(t, db.ServiceInstances, 1, "Should still have 1 service instance")
-	assert.Equal(t, "running", db.ServiceInstances[0].State, "Service should still be running")
+
+	// The service instance may briefly show "creating" after the update before
+	// the monitor converges to "running". Poll until it settles.
+	if db.ServiceInstances[0].State != "running" {
+		t.Logf("Service state is %q, waiting for running...", db.ServiceInstances[0].State)
+		deadline := time.Now().Add(5 * time.Minute)
+		for time.Now().Before(deadline) {
+			time.Sleep(5 * time.Second)
+			err = db.Refresh(ctx)
+			require.NoError(t, err, "Failed to refresh database")
+			if len(db.ServiceInstances) > 0 && db.ServiceInstances[0].State == "running" {
+				break
+			}
+		}
+	}
+	require.Equal(t, "running", db.ServiceInstances[0].State, "Service should be running after update")
 
 	// The key assertions: ServiceInstanceID and CreatedAt should be unchanged,
 	// proving the service was updated in-place (config.yaml regenerated) rather

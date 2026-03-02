@@ -508,6 +508,20 @@ func TestParseMCPServiceConfig(t *testing.T) {
 			require.NotEmpty(t, errs)
 			assert.Contains(t, joinedErr(errs).Error(), "embedding_provider must be one of")
 		})
+		t.Run("embedding_model without embedding_provider", func(t *testing.T) {
+			config := anthropicBase()
+			config["embedding_model"] = "voyage-3"
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "embedding_model must not be set without embedding_provider")
+		})
+		t.Run("embedding_api_key without embedding_provider", func(t *testing.T) {
+			config := anthropicBase()
+			config["embedding_api_key"] = "voy-key"
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "embedding_api_key must not be set without embedding_provider")
+		})
 	})
 
 	t.Run("init_users", func(t *testing.T) {

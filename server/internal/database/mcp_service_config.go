@@ -196,6 +196,14 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 	}
 
 	// Embedding config cross-validation
+	if embeddingProvider == nil {
+		if embeddingModel != nil {
+			errs = append(errs, fmt.Errorf("embedding_model must not be set without embedding_provider"))
+		}
+		if embeddingAPIKey != nil {
+			errs = append(errs, fmt.Errorf("embedding_api_key must not be set without embedding_provider"))
+		}
+	}
 	if embeddingProvider != nil {
 		if !slices.Contains(validEmbeddingProviders, *embeddingProvider) {
 			errs = append(errs, fmt.Errorf("embedding_provider must be one of: %s", strings.Join(validEmbeddingProviders, ", ")))
