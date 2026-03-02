@@ -77,7 +77,7 @@ nav:
       - Deleting a Database: using/delete-db.md
       - Migrating a Database: using/migrate-db.md
   - Troubleshooting:
-      - Recovering Control Plane and Docker Swarm: disaster-recovery/disaster-recovery.md
+      - Recovering a Control Plane Cluster: disaster-recovery/disaster-recovery.md
   - API:
       - OpenAPI: api/openapi.md
       - API Reference: api/reference.md
