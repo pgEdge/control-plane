@@ -153,7 +153,10 @@ add a dispatch branch in `validateServiceSpec()`.
 `GetServiceImage()` in `server/internal/orchestrator/swarm/service_images.go` is
 called during workflow execution. If the `service_type`/`version` combination is
 not registered in the image registry, it returns an error that fails the
-workflow task and sets the database to `"failed"` state.
+workflow task and sets the database to `"failed"` state. Note that this is
+distinct from post-provision health-check failures detected by the service
+instance monitor, which transition individual `ServiceInstance` records to
+`"failed"` but do **not** change the parent database's state.
 
 This catches cases where the API validation passes (valid semver, known type)
 but the specific version hasn't been registered. The E2E test
@@ -441,6 +444,11 @@ password).
 | `GenerateServiceInstanceID(dbID, svcID, hostID)` | `"{dbID}-{svcID}-{hostID}"` | `"mydb-mcp-host1"` |
 | `GenerateServiceUsername(svcID, hostID)` | `"svc_{svcID}_{hostID}"` | `"svc_mcp_host1"` |
 | `GenerateDatabaseNetworkID(dbID)` | `"{dbID}"` | `"mydb"` |
+
+`GenerateDatabaseNetworkID` returns the **resource identifier** used to look up
+the overlay network in the resource registry. The actual Docker Swarm network
+name is `"{databaseID}-database"` (set in the `Network.Name` field in
+`orchestrator.go`).
 
 Usernames longer than 63 characters are truncated with a deterministic hash
 suffix. See `docs/development/service-credentials.md` for details.
@@ -817,10 +825,13 @@ Example of a failed service instance in the API response:
 ```
 
 > [!NOTE]
-> Service instance failures do **not** automatically change the parent
-> database's `state`. A database can be `"available"` while one or more of its
-> service instances are `"failed"`. Monitor both `database.state` and
-> `service_instances[].state` for a complete health picture.
+> Service instance failures detected by the monitor do **not** automatically
+> change the parent database's `state`. A database can be `"available"` while
+> one or more of its service instances are `"failed"`. This is distinct from
+> provisioning/workflow failures (e.g., an unregistered image version), which
+> do set the database to `"failed"` because the workflow itself fails. Monitor
+> both `database.state` and `service_instances[].state` for a complete health
+> picture.
 
 ## Checklist: Adding a New Service Type
 
