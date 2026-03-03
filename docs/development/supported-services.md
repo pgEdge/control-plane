@@ -577,6 +577,251 @@ Run service E2E tests:
 make test-e2e E2E_RUN=TestProvisionMCPService
 ```
 
+## API Usage & Verification
+
+This section shows how services look in the API request and response payloads.
+Use these examples to verify your integration or to hand-test with `curl`.
+
+### Creating a Database with a Service
+
+`POST /v1/databases`
+
+```json
+{
+  "id": "my-app",
+  "spec": {
+    "database_name": "storefront",
+    "port": 5432,
+    "database_users": [
+      {
+        "username": "admin",
+        "password": "secret",
+        "db_owner": true,
+        "attributes": ["LOGIN", "SUPERUSER"]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "n1",
+        "host_ids": ["host-1"]
+      }
+    ],
+    "services": [
+      {
+        "service_id": "mcp-server",
+        "service_type": "mcp",
+        "version": "latest",
+        "host_ids": ["host-1"],
+        "port": 8080,
+        "config": {
+          "llm_provider": "anthropic",
+          "llm_model": "claude-sonnet-4-5",
+          "anthropic_api_key": "sk-ant-..."
+        }
+      }
+    ]
+  }
+}
+```
+
+A successful response returns **HTTP 200** with a `task` object you can poll
+for completion.
+
+### Validation Error Response
+
+If the request payload fails validation, the API returns **HTTP 400** with an
+`APIError`. All service validation errors use the `invalid_input` error name.
+
+Example — missing a required MCP config field:
+
+```json
+{
+  "name": "invalid_input",
+  "message": "services[0].config: missing required field 'llm_provider'"
+}
+```
+
+Other common validation errors:
+
+| Condition | Example `message` |
+|-----------|-------------------|
+| Duplicate `service_id` | `services[1]: service IDs must be unique within a database` |
+| Unsupported `service_type` | `services[0].service_type: unsupported service type 'foo' (only 'mcp' is currently supported)` |
+| Bad `version` format | `services[0].version: version must be in semver format (e.g., '1.0.0') or 'latest'` |
+| Missing provider API key | `services[0].config: missing required field 'anthropic_api_key' for anthropic provider` |
+| Unsupported `llm_provider` | `services[0].config[llm_provider]: unsupported llm_provider 'foo' (must be one of: anthropic, openai, ollama)` |
+
+### Reading a Database with Service Instances
+
+`GET /v1/databases/my-app` returns the full database, including runtime
+`service_instances`:
+
+```json
+{
+  "id": "my-app",
+  "state": "available",
+  "created_at": "2025-06-01T12:00:00Z",
+  "updated_at": "2025-06-01T12:05:00Z",
+  "spec": {
+    "services": [
+      {
+        "service_id": "mcp-server",
+        "service_type": "mcp",
+        "version": "latest",
+        "host_ids": ["host-1"],
+        "port": 8080,
+        "config": {
+          "llm_provider": "anthropic",
+          "llm_model": "claude-sonnet-4-5"
+        }
+      }
+    ]
+  },
+  "service_instances": [
+    {
+      "service_instance_id": "my-app-mcp-server-host-1",
+      "service_id": "mcp-server",
+      "database_id": "my-app",
+      "host_id": "host-1",
+      "state": "running",
+      "status": {
+        "container_id": "a1b2c3d4e5f6",
+        "image_version": "latest",
+        "hostname": "mcp-server-host-1.internal",
+        "ipv4_address": "10.0.1.5",
+        "ports": [
+          {
+            "name": "http",
+            "container_port": 8080,
+            "host_port": 8080
+          }
+        ],
+        "health_check": {
+          "status": "healthy",
+          "message": "Service responding normally",
+          "checked_at": "2025-06-01T12:04:50Z"
+        },
+        "last_health_at": "2025-06-01T12:04:50Z",
+        "service_ready": true
+      },
+      "created_at": "2025-06-01T12:00:30Z",
+      "updated_at": "2025-06-01T12:01:00Z"
+    }
+  ]
+}
+```
+
+> [!NOTE]
+> Sensitive config keys (`anthropic_api_key`, `openai_api_key`, and any key
+> matching patterns like `password`, `secret`, `token`, `credential`,
+> `private_key`, `access_key`) are **stripped from all API responses**. The
+> `config` object in `spec.services` will only contain non-sensitive keys.
+
+### Updating Services on an Existing Database
+
+Services are managed through the `spec.services` array in
+`PUT /v1/databases/{id}`. The control plane diffs the desired state against
+the current state and creates, updates, or deletes service instances
+accordingly.
+
+**Add a service** — include it in the `services` array:
+
+```json
+{
+  "spec": {
+    "services": [
+      {
+        "service_id": "mcp-server",
+        "service_type": "mcp",
+        "version": "latest",
+        "host_ids": ["host-1"],
+        "config": {
+          "llm_provider": "anthropic",
+          "llm_model": "claude-sonnet-4-5",
+          "anthropic_api_key": "sk-ant-..."
+        }
+      },
+      {
+        "service_id": "mcp-analytics",
+        "service_type": "mcp",
+        "version": "1.0.0",
+        "host_ids": ["host-2"],
+        "config": {
+          "llm_provider": "openai",
+          "llm_model": "gpt-4",
+          "openai_api_key": "sk-..."
+        }
+      }
+    ]
+  }
+}
+```
+
+**Remove a service** — omit it from the `services` array. The control plane
+deletes the corresponding service instances:
+
+```json
+{
+  "spec": {
+    "services": []
+  }
+}
+```
+
+**Update a service** — change fields (e.g., `version`, `config`, `host_ids`)
+in the existing entry. The control plane will update or recreate service
+instances as needed.
+
+### Service Health & Failure in API State
+
+Service instance health is tracked by the **service instance monitor**, which
+periodically polls the Docker Swarm orchestrator for container status. The
+results are reflected in the `service_instances` array of the database
+response.
+
+**State lifecycle:**
+
+| State | Meaning |
+|-------|---------|
+| `creating` | Instance provisioned; waiting for container to become healthy (up to 5 min timeout) |
+| `running` | Container is healthy and accepting requests |
+| `failed` | Container health check failed, creation timed out, or container disappeared |
+| `deleting` | Instance is being removed |
+
+**How failures surface:**
+
+- When a `running` instance's health check fails, the monitor transitions it
+  to `failed` and populates the `error` field with a diagnostic message (e.g.,
+  `"container is no longer healthy"`).
+- When a `creating` instance exceeds the 5-minute creation timeout, it
+  transitions to `failed` with an error like
+  `"creation timeout after 5m0s - container not healthy"`.
+- If the container disappears entirely (nil status from orchestrator), a
+  `running` instance transitions to `failed` after a 30-second grace period
+  with `"container status not available"`.
+
+Example of a failed service instance in the API response:
+
+```json
+{
+  "service_instance_id": "my-app-mcp-server-host-1",
+  "service_id": "mcp-server",
+  "database_id": "my-app",
+  "host_id": "host-1",
+  "state": "failed",
+  "status": null,
+  "error": "creation timeout after 5m0s - no status available",
+  "created_at": "2025-06-01T12:00:30Z",
+  "updated_at": "2025-06-01T12:05:30Z"
+}
+```
+
+> [!NOTE]
+> Service instance failures do **not** automatically change the parent
+> database's `state`. A database can be `"available"` while one or more of its
+> service instances are `"failed"`. Monitor both `database.state` and
+> `service_instances[].state` for a complete health picture.
+
 ## Checklist: Adding a New Service Type
 
 | Step | File | Change |
