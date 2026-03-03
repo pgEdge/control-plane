@@ -27,6 +27,7 @@ func TestAddNode(t *testing.T) {
 			// instance and the node resource.
 			name: "one instance",
 			input: &operations.NodeResources{
+				DBName:            "test",
 				NodeName:          "n1",
 				InstanceResources: []*database.InstanceResources{instance1},
 			},
@@ -50,6 +51,7 @@ func TestAddNode(t *testing.T) {
 			// resource.
 			name: "two instances",
 			input: &operations.NodeResources{
+				DBName:   "test",
 				NodeName: "n1",
 				InstanceResources: []*database.InstanceResources{
 					instance1,
@@ -86,6 +88,7 @@ func TestAddNode(t *testing.T) {
 			// replica instances get created simultaneously.
 			name: "three instances",
 			input: &operations.NodeResources{
+				DBName:   "test",
 				NodeName: "n1",
 				InstanceResources: []*database.InstanceResources{
 					instance1,

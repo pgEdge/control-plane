@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/samber/do"
 	"github.com/spf13/afero"
 
 	"github.com/pgEdge/control-plane/server/internal/certificates"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
@@ -35,20 +37,19 @@ func PostgresCertsIdentifier(instanceID string) resource.Identifier {
 }
 
 type PostgresCerts struct {
-	InstanceID          string `json:"instance_id"`
-	HostID              string `json:"host_id"`
-	InstanceHostname    string `json:"instance_hostname"`
-	InstanceIPv4Address string `json:"instance_ipv4_address"`
-	ParentID            string `json:"parent_id"`
-	OwnerUID            int    `json:"owner_uid"`
-	OwnerGID            int    `json:"owner_gid"`
-	CaCert              []byte `json:"ca_cert"`
-	ServerCert          []byte `json:"server_cert"`
-	ServerKey           []byte `json:"server_key"`
-	SuperuserCert       []byte `json:"superuser_cert"`
-	SuperuserKey        []byte `json:"superuser_key"`
-	ReplicationCert     []byte `json:"replication_cert"`
-	ReplicationKey      []byte `json:"replication_key"`
+	InstanceID        string   `json:"instance_id"`
+	HostID            string   `json:"host_id"`
+	InstanceAddresses []string `json:"instance_addresses"`
+	ParentID          string   `json:"parent_id"`
+	OwnerUID          int      `json:"owner_uid"`
+	OwnerGID          int      `json:"owner_gid"`
+	CaCert            []byte   `json:"ca_cert"`
+	ServerCert        []byte   `json:"server_cert"`
+	ServerKey         []byte   `json:"server_key"`
+	SuperuserCert     []byte   `json:"superuser_cert"`
+	SuperuserKey      []byte   `json:"superuser_key"`
+	ReplicationCert   []byte   `json:"replication_cert"`
+	ReplicationKey    []byte   `json:"replication_key"`
 }
 
 func (c *PostgresCerts) ResourceVersion() string {
@@ -79,6 +80,10 @@ func (c *PostgresCerts) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
 		filesystem.DirResourceIdentifier(c.ParentID),
 	}
+}
+
+func (c *PostgresCerts) TypeDependencies() []resource.Type {
+	return nil
 }
 
 func (c *PostgresCerts) Refresh(ctx context.Context, rc *resource.Context) error {
@@ -149,19 +154,13 @@ func (c *PostgresCerts) Create(ctx context.Context, rc *resource.Context) error 
 	}
 	certsDir := filepath.Join(parentFullPath, "postgres")
 
-	hostnames := []string{"localhost"}
-	if c.InstanceHostname != "" {
-		hostnames = append(hostnames, c.InstanceHostname)
-	}
-	ips := []string{"127.0.0.1"}
-	if c.InstanceIPv4Address != "" {
-		ips = append(ips, c.InstanceIPv4Address)
-	}
+	// Ensure that localhost is included in the addresses
+	combined := ds.NewSet(c.InstanceAddresses...)
+	combined.Add("127.0.0.1", "localhost")
+
 	pgServerPrincipal, err := certService.PostgresServer(ctx,
 		c.InstanceID,
-		c.InstanceHostname,
-		hostnames,
-		ips,
+		combined.ToSortedSlice(strings.Compare),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create postgres server principal: %w", err)

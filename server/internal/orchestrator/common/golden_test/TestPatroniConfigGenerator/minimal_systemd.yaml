@@ -96,7 +96,7 @@ postgresql:
   - hostssl all             pgedge,patroni_replicator 10.10.0.4/32            cert clientcert=verify-full
   - hostssl replication     pgedge,patroni_replicator 10.10.0.4/32            cert clientcert=verify-full
   - host    all             pgedge,patroni_replicator 0.0.0.0/0               reject
-  - host    all             pgedge,patroni_replicator ::/0                    reject
+  - host    all             pgedge,patroni_replicator ::0/0                   reject
   - host    all             all             0.0.0.0/0               md5
   use_pg_rewind: true
   remove_data_directory_on_rewind_failure: true
@@ -105,9 +105,9 @@ restapi:
   connect_address: storefront-n1-689qacsi.storefront-database:8888
   listen: 0.0.0.0:8888
   allowlist:
-  - 10.10.0.2/32
-  - 10.10.0.3/32
-  - 10.10.0.4/32
+  - 10.10.0.2
+  - 10.10.0.3
+  - 10.10.0.4
   - 127.0.0.1
   - localhost
 watchdog:

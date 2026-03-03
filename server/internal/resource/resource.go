@@ -35,15 +35,16 @@ func (r Identifier) String() string {
 }
 
 type ResourceData struct {
-	NeedsRecreate   bool            `json:"needs_recreate"`
-	Executor        Executor        `json:"executor"`
-	Identifier      Identifier      `json:"identifier"`
-	Attributes      json.RawMessage `json:"attributes"`
-	Dependencies    []Identifier    `json:"dependencies"`
-	DiffIgnore      []string        `json:"diff_ignore"`
-	ResourceVersion string          `json:"resource_version"`
-	PendingDeletion bool            `json:"pending_deletion"`
-	Error           string          `json:"error"`
+	NeedsRecreate    bool            `json:"needs_recreate"`
+	Executor         Executor        `json:"executor"`
+	Identifier       Identifier      `json:"identifier"`
+	Attributes       json.RawMessage `json:"attributes"`
+	Dependencies     []Identifier    `json:"dependencies"`
+	TypeDependencies []Type          `json:"type_dependencies"`
+	DiffIgnore       []string        `json:"diff_ignore"`
+	ResourceVersion  string          `json:"resource_version"`
+	PendingDeletion  bool            `json:"pending_deletion"`
+	Error            string          `json:"error"`
 }
 
 func (r *ResourceData) Diff(other *ResourceData) (jsondiff.Patch, error) {
@@ -63,15 +64,16 @@ func (r *ResourceData) Diff(other *ResourceData) (jsondiff.Patch, error) {
 
 func (r *ResourceData) Clone() *ResourceData {
 	return &ResourceData{
-		NeedsRecreate:   r.NeedsRecreate,
-		Executor:        r.Executor,
-		Identifier:      r.Identifier,
-		Attributes:      slices.Clone(r.Attributes),
-		Dependencies:    slices.Clone(r.Dependencies),
-		DiffIgnore:      slices.Clone(r.DiffIgnore),
-		ResourceVersion: r.ResourceVersion,
-		PendingDeletion: r.PendingDeletion,
-		Error:           r.Error,
+		NeedsRecreate:    r.NeedsRecreate,
+		Executor:         r.Executor,
+		Identifier:       r.Identifier,
+		Attributes:       slices.Clone(r.Attributes),
+		Dependencies:     slices.Clone(r.Dependencies),
+		TypeDependencies: slices.Clone(r.TypeDependencies),
+		DiffIgnore:       slices.Clone(r.DiffIgnore),
+		ResourceVersion:  r.ResourceVersion,
+		PendingDeletion:  r.PendingDeletion,
+		Error:            r.Error,
 	}
 }
 
@@ -87,6 +89,7 @@ type Context struct {
 	State    *State
 	Registry *Registry
 	Injector *do.Injector
+	HostID   string // The ID of the host that's executing this context.
 }
 
 type ExecutorType string
@@ -134,6 +137,7 @@ type Resource interface {
 	Executor() Executor
 	Identifier() Identifier
 	Dependencies() []Identifier
+	TypeDependencies() []Type
 	Refresh(ctx context.Context, rc *Context) error
 	Create(ctx context.Context, rc *Context) error
 	Update(ctx context.Context, rc *Context) error
@@ -148,13 +152,31 @@ func ToResourceData(resource Resource) (*ResourceData, error) {
 		return nil, fmt.Errorf("failed to marshal resource attributes: %w", err)
 	}
 	return &ResourceData{
-		Executor:        resource.Executor(),
-		Identifier:      resource.Identifier(),
-		Attributes:      attributes,
-		Dependencies:    resource.Dependencies(),
-		DiffIgnore:      resource.DiffIgnore(),
-		ResourceVersion: resource.ResourceVersion(),
+		Executor:         resource.Executor(),
+		Identifier:       resource.Identifier(),
+		Attributes:       attributes,
+		Dependencies:     resource.Dependencies(),
+		TypeDependencies: resource.TypeDependencies(),
+		DiffIgnore:       resource.DiffIgnore(),
+		ResourceVersion:  resource.ResourceVersion(),
 	}, nil
+}
+
+func ToResourceDataSlice(resources ...Resource) ([]*ResourceData, error) {
+	var errs []error
+	data := make([]*ResourceData, len(resources))
+	for i, res := range resources {
+		d, err := ToResourceData(res)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to convert resource to resource data: %w", err))
+		}
+		data[i] = d
+	}
+	if err := errors.Join(errs...); err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 type Registry struct {

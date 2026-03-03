@@ -25,6 +25,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/orchestrator/common"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
+	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/scheduler"
 	"github.com/pgEdge/control-plane/server/internal/utils"
@@ -205,16 +206,27 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		OwnerGID:   o.cfg.DatabaseOwnerUID,
 	}
 	postgresCerts := &common.PostgresCerts{
-		InstanceID:          spec.InstanceID,
-		HostID:              spec.HostID,
-		ParentID:            certificatesDir.ID,
-		InstanceHostname:    o.cfg.Hostname,
-		InstanceIPv4Address: o.cfg.IPv4Address,
-		OwnerUID:            o.cfg.DatabaseOwnerUID,
-		OwnerGID:            o.cfg.DatabaseOwnerUID,
+		InstanceID:        spec.InstanceID,
+		HostID:            spec.HostID,
+		ParentID:          certificatesDir.ID,
+		InstanceAddresses: o.cfg.Addresses(),
+		OwnerUID:          o.cfg.DatabaseOwnerUID,
+		OwnerGID:          o.cfg.DatabaseOwnerUID,
+	}
+
+	// These should be caught by `ValidateInstanceSpecs`, but just in case
+	patroniPort := utils.FromPointer(spec.PatroniPort)
+	if patroniPort == 0 {
+		return nil, fmt.Errorf("patroni_port is required for systemd instances, missing for instance '%s'", spec.InstanceID)
+	}
+	postgresPort := utils.FromPointer(spec.Port)
+	if postgresPort == 0 {
+		return nil, fmt.Errorf("port is required for systemd instances, missing for instance '%s'", spec.InstanceID)
 	}
 
 	patroniConfig := &PatroniConfig{
+		DatabaseID: spec.DatabaseID,
+		AllHostIDs: spec.AllHostIDs,
 		Base: &common.PatroniConfig{
 			InstanceID: spec.InstanceID,
 			HostID:     spec.HostID,
@@ -223,12 +235,12 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 				Instance:        spec,
 				HostCPUs:        float64(o.cpus),
 				HostMemoryBytes: o.memBytes,
-				PatroniPort:     8888,
-				PostgresPort:    5432,
+				PatroniPort:     patroniPort,
+				PostgresPort:    postgresPort,
 				OrchestratorParameters: map[string]any{
 					"shared_preload_libraries": "pg_stat_statements,spock",
 				},
-				FQDN:  o.cfg.IPv4Address,
+				FQDN:  o.cfg.PeerAddress(),
 				Paths: paths,
 			}),
 			ParentID: configsDir.ID,
@@ -241,25 +253,27 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 	if !ok {
 		return nil, errors.New("got empty postgres version")
 	}
-	patroniOptions, err := patroniUnitOptions(paths, o.packageManager.BinDir(pgMajor))
-	if err != nil {
-		return nil, err
-	}
 
 	patroniUnit := &UnitResource{
 		DatabaseID:  spec.DatabaseID,
 		HostID:      o.cfg.HostID,
 		ParentDirID: configsDir.ID,
 		Name:        patroniServiceName(spec.InstanceID),
-		Options:     patroniOptions,
+		Options:     patroniUnitOptions(paths, o.packageManager.BinDir(pgMajor)),
 		ExtraDependencies: []resource.Identifier{
 			patroniConfig.Identifier(),
+			instanceDir.Identifier(),
+			dataDir.Identifier(),
+			configsDir.Identifier(),
+			certificatesDir.Identifier(),
+			etcdCreds.Identifier(),
+			postgresCerts.Identifier(),
 		},
 	}
 
 	instance := &database.InstanceResource{
 		Spec:             spec,
-		InstanceHostname: o.cfg.Hostname,
+		InstanceHostname: o.cfg.PeerAddress(),
 		OrchestratorDependencies: []resource.Identifier{
 			patroniUnit.Identifier(),
 		},
@@ -278,6 +292,14 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		patroniUnit,
 	}
 
+	dbDependencyResources := []resource.Resource{&common.PgServiceConf{
+		ParentID:   configsDir.ID,
+		HostID:     spec.HostID,
+		InstanceID: spec.InstanceID,
+		OwnerUID:   o.cfg.DatabaseOwnerUID,
+		OwnerGID:   o.cfg.DatabaseOwnerUID,
+	}}
+
 	if spec.BackupConfig != nil {
 		orchestratorResources = append(orchestratorResources,
 			&common.PgBackRestConfig{
@@ -290,6 +312,8 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 				Type:         common.PgBackRestConfigTypeBackup,
 				OwnerUID:     o.cfg.DatabaseOwnerUID,
 				OwnerGID:     o.cfg.DatabaseOwnerUID,
+				Paths:        paths,
+				Port:         postgresPort,
 			},
 			&common.PgBackRestStanza{
 				DatabaseID: spec.DatabaseID,
@@ -323,10 +347,12 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 			Type:         common.PgBackRestConfigTypeRestore,
 			OwnerUID:     o.cfg.DatabaseOwnerUID,
 			OwnerGID:     o.cfg.DatabaseOwnerUID,
+			Paths:        paths,
+			Port:         postgresPort,
 		})
 	}
 
-	return database.NewInstanceResources(instance, orchestratorResources)
+	return database.NewInstanceResources(instance, orchestratorResources, dbDependencyResources)
 }
 
 func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
@@ -334,7 +360,35 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 }
 
 func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceSpec, taskID uuid.UUID) (*database.InstanceResources, error) {
-	return nil, errors.New("unimplemented")
+	if spec.RestoreConfig == nil {
+		return nil, fmt.Errorf("missing restore config for node %s instance %s", spec.NodeName, spec.InstanceID)
+	}
+	paths, err := o.instancePaths(spec.PgEdgeVersion.PostgresVersion, spec.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	spec.InPlaceRestore = true
+
+	instance, err := o.GenerateInstanceResources(spec)
+	if err != nil {
+		return nil, err
+	}
+
+	err = instance.AddResources(&PgBackRestRestore{
+		DatabaseID:     spec.DatabaseID,
+		HostID:         spec.HostID,
+		InstanceID:     spec.InstanceID,
+		TaskID:         taskID,
+		NodeName:       spec.NodeName,
+		RestoreOptions: spec.RestoreConfig.RestoreOptions,
+		Paths:          paths,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to add restore resource to instance resources: %w", err)
+	}
+
+	return instance, nil
 }
 
 func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, spec *database.InstanceSpec) (*database.ConnectionInfo, error) {
@@ -347,18 +401,17 @@ func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, spec *data
 	patroniPort := utils.FromPointer(spec.PatroniPort)
 
 	return &database.ConnectionInfo{
-		AdminHost:         "localhost",
-		AdminPort:         postgresPort,
-		PeerHost:          o.cfg.IPv4Address,
-		PeerPort:          postgresPort,
-		PeerSSLCert:       paths.Instance.PostgresSuperuserCert(),
-		PeerSSLKey:        paths.Instance.PostgresSuperuserKey(),
-		PeerSSLRootCert:   paths.Instance.PostgresCaCert(),
-		PatroniPort:       patroniPort,
-		ClientHost:        o.cfg.Hostname,
-		ClientIPv4Address: o.cfg.IPv4Address,
-		ClientPort:        postgresPort,
-		InstanceHostname:  o.cfg.Hostname,
+		AdminHost:        "localhost",
+		AdminPort:        postgresPort,
+		PeerHost:         o.cfg.PeerAddress(),
+		PeerPort:         postgresPort,
+		PeerSSLCert:      paths.Instance.PostgresSuperuserCert(),
+		PeerSSLKey:       paths.Instance.PostgresSuperuserKey(),
+		PeerSSLRootCert:  paths.Instance.PostgresCaCert(),
+		PatroniPort:      patroniPort,
+		ClientAddresses:  o.cfg.ClientAddresses,
+		ClientPort:       postgresPort,
+		InstanceHostname: o.cfg.PeerAddress(),
 	}, nil
 }
 
@@ -456,7 +509,7 @@ func ptrEqual[T comparable](a, b *T) bool {
 }
 
 func (o *Orchestrator) StopInstance(ctx context.Context, instanceID string) error {
-	if err := o.client.StopUnit(ctx, patroniServiceName(instanceID)); err != nil {
+	if err := o.client.StopUnit(ctx, patroniServiceName(instanceID), true); err != nil {
 		return fmt.Errorf("failed to stop patroni unit: %w", err)
 	}
 	return nil
@@ -476,26 +529,31 @@ func (o *Orchestrator) WorkerQueues() ([]workflow.Queue, error) {
 	}, nil
 }
 
+func (o *Orchestrator) NodeDSN(ctx context.Context, rc *resource.Context, nodeName string, fromInstanceID string, dbName string) (*postgres.DSN, error) {
+	return &postgres.DSN{
+		Service: nodeName,
+		DBName:  dbName,
+	}, nil
+}
+
 func (o *Orchestrator) instancePaths(pgVersion *host.Version, instanceID string) (common.InstancePaths, error) {
 	pgMajor, ok := pgVersion.MajorString()
 	if !ok {
 		return common.InstancePaths{}, errors.New("got empty postgres version")
 	}
-	pgBackRestPath, err := exec.LookPath("pgbackrest")
-	if err != nil {
-		return common.InstancePaths{}, fmt.Errorf("failed to find pgbackrest executable: %w", err)
+
+	var baseDir string
+	if o.cfg.SystemD.InstanceDataDir != "" {
+		baseDir = filepath.Join(o.cfg.SystemD.InstanceDataDir, pgMajor, instanceID)
+	} else {
+		baseDir = filepath.Join(o.packageManager.InstanceDataBaseDir(pgMajor), instanceID)
 	}
-	patroni, err := exec.LookPath("patroni")
-	if err != nil {
-		return common.InstancePaths{}, fmt.Errorf("failed to find patroni executable: %w", err)
-	}
-	baseDir := filepath.Join(o.packageManager.InstanceDataBaseDir(pgMajor), instanceID)
 
 	return common.InstancePaths{
 		Instance:       common.Paths{BaseDir: baseDir},
 		Host:           common.Paths{BaseDir: baseDir},
-		PgBackRestPath: pgBackRestPath,
-		PatroniPath:    patroni,
+		PgBackRestPath: o.cfg.SystemD.PgBackRestPath,
+		PatroniPath:    o.cfg.SystemD.PatroniPath,
 	}, nil
 }
 

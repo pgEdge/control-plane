@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"slices"
@@ -16,7 +15,6 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
-	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 var _ resource.Resource = (*InstanceResource)(nil)
@@ -69,6 +67,10 @@ func (r *InstanceResource) Dependencies() []resource.Identifier {
 	dependencies := slices.Clone(r.OrchestratorDependencies)
 
 	return dependencies
+}
+
+func (r *InstanceResource) TypeDependencies() []resource.Type {
+	return nil
 }
 
 func (r *InstanceResource) Refresh(ctx context.Context, rc *resource.Context) error {
@@ -137,6 +139,10 @@ func (r *InstanceResource) Delete(ctx context.Context, rc *resource.Context) err
 }
 
 func (r *InstanceResource) Connection(ctx context.Context, rc *resource.Context, dbName string) (*pgx.Conn, error) {
+	if rc.HostID != r.Spec.HostID {
+		return nil, fmt.Errorf("cannot connect to an instance running on a different host. executing host = '%s', instance host = '%s'", rc.HostID, r.Spec.HostID)
+	}
+
 	certs, err := do.Invoke[*certificates.Service](rc.Injector)
 	if err != nil {
 		return nil, err
@@ -193,37 +199,8 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 		return fmt.Errorf("failed to get TLS config: %w", err)
 	}
 
-	firstTimeSetup, err := r.isFirstTimeSetup(rc)
-	if err != nil {
-		return err
-	}
-
-	var spockSets []postgres.ReplicationSet
-	var spockTables []postgres.ReplicationSetTable
-	if r.Spec.RestoreConfig != nil && firstTimeSetup {
-		err = r.renameDB(ctx, tlsCfg)
-		if err != nil {
-			return fmt.Errorf("failed to rename database %q: %w", r.Spec.DatabaseName, err)
-		}
-
-		spockSets, spockTables, err = r.backupReplicationSets(ctx, tlsCfg)
-		if err != nil {
-			return err
-		}
-
-		err = r.dropSpock(ctx, tlsCfg)
-		if err != nil {
-			return fmt.Errorf("failed to drop spock: %w", err)
-		}
-	}
-
-	err = r.createDB(ctx, tlsCfg)
-	if err != nil {
-		return fmt.Errorf("failed to create database %q: %w", r.Spec.DatabaseName, err)
-	}
-
 	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
-		DSN: r.ConnectionInfo.AdminDSN(r.Spec.DatabaseName),
+		DSN: r.ConnectionInfo.AdminDSN("postgres"),
 		TLS: tlsCfg,
 	})
 	if err != nil {
@@ -231,39 +208,8 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 	}
 	defer conn.Close(ctx)
 
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback(ctx)
-
-	enabled, err := postgres.IsSpockEnabled().Scalar(ctx, tx)
-	if err != nil {
-		return fmt.Errorf("failed to check if spock is enabled: %w", err)
-	}
-
-	if enabled {
-		err = postgres.EnableRepairMode().Exec(ctx, tx)
-		if err != nil {
-			return fmt.Errorf("failed to enable repair mode: %w", err)
-		}
-	}
-
-	err = postgres.InitializePgEdgeExtensions(
-		r.Spec.NodeName,
-		r.ConnectionInfo.PeerDSN(r.Spec.DatabaseName),
-	).Exec(ctx, conn)
-	if err != nil {
-		return fmt.Errorf("failed to initialize pgedge extensions: %w", err)
-	}
-	if len(spockSets) > 0 || len(spockTables) > 0 {
-		if err := postgres.RestoreReplicationSets(spockSets, spockTables).Exec(ctx, conn); err != nil {
-			return fmt.Errorf("failed to restore spock metadata: %w", err)
-		}
-	}
 	roleStatements, err := postgres.CreateBuiltInRoles(postgres.BuiltinRoleOptions{
 		PGVersion: r.Spec.PgEdgeVersion.PostgresVersion.String(),
-		DBName:    r.Spec.DatabaseName,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate built-in role statements: %w", err)
@@ -276,8 +222,6 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 		statement, err := postgres.CreateUserRole(postgres.UserRoleOptions{
 			Name:       user.Username,
 			Password:   user.Password,
-			DBName:     r.Spec.DatabaseName,
-			DBOwner:    user.DBOwner,
 			Attributes: user.Attributes,
 			Roles:      user.Roles,
 		})
@@ -287,10 +231,6 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 		if err := statement.Exec(ctx, conn); err != nil {
 			return fmt.Errorf("failed to create user role %q: %w", user.Username, err)
 		}
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	err = r.updateInstanceState(ctx, rc, &InstanceUpdateOptions{State: InstanceStateAvailable})
@@ -351,110 +291,4 @@ func (r *InstanceResource) updateConnectionInfo(ctx context.Context, rc *resourc
 
 func (r *InstanceResource) patroniClient() *patroni.Client {
 	return patroni.NewClient(r.ConnectionInfo.PatroniURL(), nil)
-}
-
-func (r *InstanceResource) createDB(ctx context.Context, tlsCfg *tls.Config) error {
-	createDBConn, err := ConnectToInstance(ctx, &ConnectionOptions{
-		DSN: r.ConnectionInfo.AdminDSN("postgres"),
-		TLS: tlsCfg,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to connect to 'postgres' database on instance: %w", err)
-	}
-	defer createDBConn.Close(ctx)
-
-	err = postgres.CreateDatabase(r.Spec.DatabaseName).Exec(ctx, createDBConn)
-	if err != nil {
-		return fmt.Errorf("failed to create database %q: %w", r.Spec.DatabaseName, err)
-	}
-
-	return nil
-}
-
-func (r *InstanceResource) renameDB(ctx context.Context, tlsCfg *tls.Config) error {
-	// Short circuit if the restore config doesn't include a dbname or if the
-	// database name is the same.
-	if r.Spec.RestoreConfig.SourceDatabaseName == "" || r.Spec.RestoreConfig.SourceDatabaseName == r.Spec.DatabaseName {
-		return nil
-	}
-
-	// This operation can be flaky because of other processes connected to the
-	// database. We retry it a few times to avoid failing the entire create
-	// operation.
-	err := utils.Retry(3, 500*time.Millisecond, func() error {
-		createDBConn, err := ConnectToInstance(ctx, &ConnectionOptions{
-			DSN: r.ConnectionInfo.AdminDSN("postgres"),
-			TLS: tlsCfg,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to connect to 'postgres' database on instance: %w", err)
-		}
-		defer createDBConn.Close(ctx)
-
-		return postgres.
-			RenameDB(r.Spec.RestoreConfig.SourceDatabaseName, r.Spec.DatabaseName).
-			Exec(ctx, createDBConn)
-	})
-	if err != nil {
-		return fmt.Errorf("failed to rename database %q: %w", r.Spec.DatabaseName, err)
-	}
-
-	return nil
-}
-
-func (r *InstanceResource) dropSpock(ctx context.Context, tlsCfg *tls.Config) error {
-	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
-		DSN: r.ConnectionInfo.AdminDSN(r.Spec.DatabaseName),
-		TLS: tlsCfg,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to connect to database %q: %w", r.Spec.DatabaseName, err)
-	}
-	defer conn.Close(ctx)
-
-	err = postgres.DropSpockAndCleanupSlots(r.Spec.DatabaseName).Exec(ctx, conn)
-	if err != nil {
-		return fmt.Errorf("failed to drop spock: %w", err)
-	}
-
-	return nil
-}
-
-func (r *InstanceResource) isFirstTimeSetup(rc *resource.Context) (bool, error) {
-	// This instance will already exist in the state if it's been successfully
-	// created before.
-	_, err := resource.FromContext[*InstanceResource](rc, r.Identifier())
-	if errors.Is(err, resource.ErrNotFound) {
-		return true, nil
-	} else if err != nil {
-		return false, fmt.Errorf("failed to check state for previous version of this instance: %w", err)
-	}
-
-	return false, nil
-}
-
-func (r *InstanceResource) backupReplicationSets(
-	ctx context.Context,
-	tlsCfg *tls.Config,
-) ([]postgres.ReplicationSet, []postgres.ReplicationSetTable, error) {
-	conn, err := ConnectToInstance(ctx, &ConnectionOptions{
-		DSN: r.ConnectionInfo.AdminDSN(r.Spec.DatabaseName),
-		TLS: tlsCfg,
-	})
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to connect to database %q: %w", r.Spec.DatabaseName, err)
-	}
-	defer conn.Close(ctx)
-
-	sets, err := postgres.GetReplicationSets().Structs(ctx, conn)
-	if err != nil {
-		return nil, nil, fmt.Errorf("spock backup failed to get replication sets: %w", err)
-	}
-
-	tabs, err := postgres.GetReplicationSetTables().Structs(ctx, conn)
-	if err != nil {
-		return nil, nil, fmt.Errorf("spock backup failed to get replication set tables: %w", err)
-	}
-
-	return sets, tabs, nil
 }

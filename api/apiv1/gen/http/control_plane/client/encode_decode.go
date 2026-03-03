@@ -4053,14 +4053,20 @@ func unmarshalHostResponseBodyToControlplaneHost(v *HostResponseBody) *controlpl
 		ID:           controlplane.Identifier(*v.ID),
 		Orchestrator: *v.Orchestrator,
 		DataDir:      *v.DataDir,
-		Hostname:     *v.Hostname,
-		Ipv4Address:  *v.Ipv4Address,
 		Cpus:         v.Cpus,
 		Memory:       v.Memory,
 		EtcdMode:     v.EtcdMode,
 	}
 	if v.Cohort != nil {
 		res.Cohort = unmarshalHostCohortResponseBodyToControlplaneHostCohort(v.Cohort)
+	}
+	res.PeerAddresses = make([]string, len(v.PeerAddresses))
+	for i, val := range v.PeerAddresses {
+		res.PeerAddresses[i] = val
+	}
+	res.ClientAddresses = make([]string, len(v.ClientAddresses))
+	for i, val := range v.ClientAddresses {
+		res.ClientAddresses[i] = val
 	}
 	res.Status = unmarshalHostStatusResponseBodyToControlplaneHostStatus(v.Status)
 	if v.DefaultPgedgeVersion != nil {
@@ -4237,9 +4243,13 @@ func unmarshalInstanceConnectionInfoResponseBodyToControlplaneInstanceConnection
 		return nil
 	}
 	res := &controlplane.InstanceConnectionInfo{
-		Hostname:    v.Hostname,
-		Ipv4Address: v.Ipv4Address,
-		Port:        v.Port,
+		Port: v.Port,
+	}
+	if v.Addresses != nil {
+		res.Addresses = make([]string, len(v.Addresses))
+		for i, val := range v.Addresses {
+			res.Addresses[i] = val
+		}
 	}
 
 	return res
@@ -5214,10 +5224,14 @@ func unmarshalServiceInstanceStatusResponseBodyToControlplaneServiceInstanceStat
 	res := &controlplane.ServiceInstanceStatus{
 		ContainerID:  v.ContainerID,
 		ImageVersion: v.ImageVersion,
-		Hostname:     v.Hostname,
-		Ipv4Address:  v.Ipv4Address,
 		LastHealthAt: v.LastHealthAt,
 		ServiceReady: v.ServiceReady,
+	}
+	if v.Addresses != nil {
+		res.Addresses = make([]string, len(v.Addresses))
+		for i, val := range v.Addresses {
+			res.Addresses[i] = val
+		}
 	}
 	if v.Ports != nil {
 		res.Ports = make([]*controlplane.PortMapping, len(v.Ports))

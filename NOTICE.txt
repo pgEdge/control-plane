@@ -2625,6 +2625,36 @@ limitations under the License.
 
 ```
 
+## github.com/fatih/structs
+
+* Name: github.com/fatih/structs
+* Version: v1.1.0
+* License: [MIT](https://github.com/fatih/structs/blob/v1.1.0/LICENSE)
+
+```
+The MIT License (MIT)
+
+Copyright (c) 2014 Fatih Arslan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
 ## github.com/felixge/httpsnoop
 
 * Name: github.com/felixge/httpsnoop
@@ -5658,8 +5688,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ## github.com/knadh/koanf/maps
 
 * Name: github.com/knadh/koanf/maps
-* Version: v0.1.1
-* License: [MIT](https://github.com/knadh/koanf/blob/maps/v0.1.1/maps/LICENSE)
+* Version: v0.1.2
+* License: [MIT](https://github.com/knadh/koanf/blob/maps/v0.1.2/maps/LICENSE)
 
 ```
 The MIT License
@@ -5815,6 +5845,37 @@ THE SOFTWARE.
 * Name: github.com/knadh/koanf/providers/rawbytes
 * Version: v1.0.0
 * License: [MIT](https://github.com/knadh/koanf/blob/providers/rawbytes/v1.0.0/providers/rawbytes/LICENSE)
+
+```
+The MIT License
+
+Copyright (c) 2019, Kailash Nadh. https://github.com/knadh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+```
+
+## github.com/knadh/koanf/providers/structs
+
+* Name: github.com/knadh/koanf/providers/structs
+* Version: v1.0.0
+* License: [MIT](https://github.com/knadh/koanf/blob/providers/structs/v1.0.0/providers/structs/LICENSE)
 
 ```
 The MIT License

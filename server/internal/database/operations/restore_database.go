@@ -11,6 +11,8 @@ import (
 // as well as the end state for both the primary instance and the replica
 // instances for the given node.
 type NodeRestoreResources struct {
+	DBOwner          string
+	DBName           string
 	NodeName         string
 	PrimaryInstance  *database.InstanceResources
 	RestoreInstance  *database.InstanceResources
@@ -23,10 +25,32 @@ func (n *NodeRestoreResources) ToNodeResources() *NodeResources {
 	all = append(all, n.ReplicaInstances...)
 
 	return &NodeResources{
+		DBOwner:           n.DBOwner,
+		DBName:            n.DBName,
 		NodeName:          n.NodeName,
 		PrimaryInstanceID: n.PrimaryInstance.InstanceID(),
 		InstanceResources: all,
+		RestoreConfig:     n.PrimaryInstance.RestoreConfig(),
 	}
+}
+
+func (n *NodeRestoreResources) nodeResourceState() (*resource.State, error) {
+	instanceIDs := []string{n.PrimaryInstance.InstanceID()}
+	state := resource.NewState()
+
+	for _, instance := range n.ReplicaInstances {
+		instanceIDs = append(instanceIDs, instance.InstanceID())
+	}
+
+	err := state.AddResource(&database.NodeResource{
+		Name:        n.NodeName,
+		InstanceIDs: instanceIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to add node resources to state: %w", err)
+	}
+
+	return state, nil
 }
 
 // RestoreNode returns a sequence of states that restore the given node. Unlike
@@ -36,14 +60,12 @@ func (n *NodeRestoreResources) ToNodeResources() *NodeResources {
 // resources before running the restore. See RestoreDatabase for how these
 // states are used.
 func RestoreNode(node *NodeRestoreResources) ([]*resource.State, error) {
-	instanceIDs := make([]string, 0, 1+len(node.ReplicaInstances))
 	states := make([]*resource.State, 0, 4)
 
 	// The pre-restore state only contains the orchestrator resources.
 	preRestoreState := resource.NewState()
 	preRestoreState.Add(node.PrimaryInstance.Resources...)
 	states = append(states, preRestoreState)
-	instanceIDs = append(instanceIDs, node.PrimaryInstance.InstanceID())
 
 	// The restore state has the restore resources, the instance and the
 	// instance monitor.
@@ -60,8 +82,6 @@ func RestoreNode(node *NodeRestoreResources) ([]*resource.State, error) {
 	states = append(states, postRestore)
 
 	for _, inst := range node.ReplicaInstances {
-		instanceIDs = append(instanceIDs, inst.InstanceID())
-
 		replica, err := instanceState(inst)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compute post-restore state for replica instance: %w", err)
@@ -69,13 +89,11 @@ func RestoreNode(node *NodeRestoreResources) ([]*resource.State, error) {
 		postRestore.Merge(replica)
 	}
 
-	err = addNodeResource(states, &database.NodeResource{
-		Name:        node.NodeName,
-		InstanceIDs: instanceIDs,
-	})
+	nodeState, err := node.nodeResourceState()
 	if err != nil {
 		return nil, err
 	}
+	states[len(states)-1].Merge(nodeState)
 
 	return states, nil
 }

@@ -3,6 +3,7 @@
 .scratch
 docker/control-plane-dev/data
 clustertest/data
+lima/data
 .vagrant
 vagrant-ssh.cfg
 .terraform
@@ -18,5 +19,8 @@ bruno/test-scenarios/environments
 *-results.xml
 dist
 control-plane
+pgedge-control-plane
 !docker/control-plane
 e2e/debug
+packaging/selinux/*.mod
+packaging/selinux/*.pp

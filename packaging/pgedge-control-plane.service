@@ -1,0 +1,16 @@
+[Unit]
+Description=pgEdge Control Plane
+Documentation=https://docs.pgedge.com
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/pgedge-control-plane run --config-path /etc/pgedge-control-plane/config.json
+Restart=on-failure
+RestartSec=5s
+StateDirectory=pgedge-control-plane
+ConfigurationDirectory=pgedge-control-plane
+
+[Install]
+WantedBy=multi-user.target

@@ -406,7 +406,7 @@ func (p *PatroniConfigGenerator) pgHba(systemAddresses []string, extraEntries []
 			Type:       hba.EntryTypeHost,
 			Database:   "all",
 			User:       "pgedge,patroni_replicator",
-			Address:    "::/0",
+			Address:    "::0/0",
 			AuthMethod: hba.AuthMethodReject,
 		}.String(),
 	)

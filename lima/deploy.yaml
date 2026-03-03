@@ -1,0 +1,12 @@
+---
+- name: Start VMs
+  hosts: localhost
+  become: false
+  roles:
+    - role: start_vms
+
+- name: Install prerequisites
+  hosts: all
+  become: true
+  roles:
+    - role: install_prerequisites

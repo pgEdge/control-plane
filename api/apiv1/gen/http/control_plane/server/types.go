@@ -20,7 +20,7 @@ type JoinClusterRequestBody struct {
 	// Token to join an existing cluster.
 	Token *string `json:"token"`
 	// Existing server to join
-	ServerURL *string `json:"server_url"`
+	ServerUrls []string `json:"server_urls"`
 }
 
 // GetJoinOptionsRequestBody is the type of the "control-plane" service
@@ -30,10 +30,8 @@ type GetJoinOptionsRequestBody struct {
 	Token *string `json:"token"`
 	// The unique identifier for the host that's joining the cluster.
 	HostID *string `json:"host_id"`
-	// The hostname of the host that's joining the cluster.
-	Hostname *string `json:"hostname"`
-	// The IPv4 address of the host that's joining the cluster.
-	Ipv4Address *string `json:"ipv4_address"`
+	// The peer addresses of the host that's joining the cluster.
+	Addresses []string `json:"addresses"`
 	// True if the joining member is configured to run an embedded an etcd server.
 	EmbeddedEtcdEnabled *bool `json:"embedded_etcd_enabled"`
 }
@@ -105,7 +103,7 @@ type InitClusterResponseBody struct {
 	// Token to join an existing cluster.
 	Token string `json:"token"`
 	// Existing server to join
-	ServerURL string `json:"server_url"`
+	ServerUrls []string `json:"server_urls"`
 }
 
 // GetJoinTokenResponseBody is the type of the "control-plane" service
@@ -114,7 +112,7 @@ type GetJoinTokenResponseBody struct {
 	// Token to join an existing cluster.
 	Token string `json:"token"`
 	// Existing server to join
-	ServerURL string `json:"server_url"`
+	ServerUrls []string `json:"server_urls"`
 }
 
 // GetJoinOptionsResponseBody is the type of the "control-plane" service
@@ -155,10 +153,10 @@ type GetHostResponseBody struct {
 	DataDir string `json:"data_dir"`
 	// The cohort that this host belongs to.
 	Cohort *HostCohortResponseBody `json:"cohort,omitempty"`
-	// The hostname of this host.
-	Hostname string `json:"hostname"`
-	// The IPv4 address of this host.
-	Ipv4Address string `json:"ipv4_address"`
+	// The addresses that this host advertises to other hosts.
+	PeerAddresses []string `json:"peer_addresses"`
+	// The addresses that this host advertises to client applications.
+	ClientAddresses []string `json:"client_addresses"`
 	// The number of CPUs on this host.
 	Cpus *int `json:"cpus,omitempty"`
 	// The amount of memory available on this host.
@@ -1634,10 +1632,10 @@ type HostResponseBody struct {
 	DataDir string `json:"data_dir"`
 	// The cohort that this host belongs to.
 	Cohort *HostCohortResponseBody `json:"cohort,omitempty"`
-	// The hostname of this host.
-	Hostname string `json:"hostname"`
-	// The IPv4 address of this host.
-	Ipv4Address string `json:"ipv4_address"`
+	// The addresses that this host advertises to other hosts.
+	PeerAddresses []string `json:"peer_addresses"`
+	// The addresses that this host advertises to client applications.
+	ClientAddresses []string `json:"client_addresses"`
 	// The number of CPUs on this host.
 	Cpus *int `json:"cpus,omitempty"`
 	// The amount of memory available on this host.
@@ -1763,10 +1761,8 @@ type InstanceResponseBody struct {
 // InstanceConnectionInfoResponseBody is used to define fields on response body
 // types.
 type InstanceConnectionInfoResponseBody struct {
-	// The hostname of the host that's running this instance.
-	Hostname *string `json:"hostname,omitempty"`
-	// The IPv4 address of the host that's running this instance.
-	Ipv4Address *string `json:"ipv4_address,omitempty"`
+	// The addresses of the host that's running this instance.
+	Addresses []string `json:"addresses,omitempty"`
 	// The host port that Postgres is listening on for this instance.
 	Port *int `json:"port,omitempty"`
 }
@@ -1855,10 +1851,8 @@ type ServiceInstanceStatusResponseBody struct {
 	ContainerID *string `json:"container_id,omitempty"`
 	// The container image version currently running.
 	ImageVersion *string `json:"image_version,omitempty"`
-	// The hostname of the service instance.
-	Hostname *string `json:"hostname,omitempty"`
-	// The IPv4 address of the service instance.
-	Ipv4Address *string `json:"ipv4_address,omitempty"`
+	// The addresses of the host that's running this service instance.
+	Addresses []string `json:"addresses,omitempty"`
 	// Port mappings for this service instance.
 	Ports []*PortMappingResponseBody `json:"ports,omitempty"`
 	// Most recent health check result.
@@ -2823,8 +2817,15 @@ type ServiceSpecRequestBodyRequestBody struct {
 // the "init-cluster" endpoint of the "control-plane" service.
 func NewInitClusterResponseBody(res *controlplane.ClusterJoinToken) *InitClusterResponseBody {
 	body := &InitClusterResponseBody{
-		Token:     res.Token,
-		ServerURL: res.ServerURL,
+		Token: res.Token,
+	}
+	if res.ServerUrls != nil {
+		body.ServerUrls = make([]string, len(res.ServerUrls))
+		for i, val := range res.ServerUrls {
+			body.ServerUrls[i] = val
+		}
+	} else {
+		body.ServerUrls = []string{}
 	}
 	return body
 }
@@ -2833,8 +2834,15 @@ func NewInitClusterResponseBody(res *controlplane.ClusterJoinToken) *InitCluster
 // the "get-join-token" endpoint of the "control-plane" service.
 func NewGetJoinTokenResponseBody(res *controlplane.ClusterJoinToken) *GetJoinTokenResponseBody {
 	body := &GetJoinTokenResponseBody{
-		Token:     res.Token,
-		ServerURL: res.ServerURL,
+		Token: res.Token,
+	}
+	if res.ServerUrls != nil {
+		body.ServerUrls = make([]string, len(res.ServerUrls))
+		for i, val := range res.ServerUrls {
+			body.ServerUrls[i] = val
+		}
+	} else {
+		body.ServerUrls = []string{}
 	}
 	return body
 }
@@ -2902,14 +2910,28 @@ func NewGetHostResponseBody(res *controlplane.Host) *GetHostResponseBody {
 		ID:           string(res.ID),
 		Orchestrator: res.Orchestrator,
 		DataDir:      res.DataDir,
-		Hostname:     res.Hostname,
-		Ipv4Address:  res.Ipv4Address,
 		Cpus:         res.Cpus,
 		Memory:       res.Memory,
 		EtcdMode:     res.EtcdMode,
 	}
 	if res.Cohort != nil {
 		body.Cohort = marshalControlplaneHostCohortToHostCohortResponseBody(res.Cohort)
+	}
+	if res.PeerAddresses != nil {
+		body.PeerAddresses = make([]string, len(res.PeerAddresses))
+		for i, val := range res.PeerAddresses {
+			body.PeerAddresses[i] = val
+		}
+	} else {
+		body.PeerAddresses = []string{}
+	}
+	if res.ClientAddresses != nil {
+		body.ClientAddresses = make([]string, len(res.ClientAddresses))
+		for i, val := range res.ClientAddresses {
+			body.ClientAddresses[i] = val
+		}
+	} else {
+		body.ClientAddresses = []string{}
 	}
 	if res.Status != nil {
 		body.Status = marshalControlplaneHostStatusToHostStatusResponseBody(res.Status)
@@ -4548,8 +4570,11 @@ func NewInitClusterRequest(clusterID *string) *controlplane.InitClusterRequest {
 // endpoint payload.
 func NewJoinClusterClusterJoinToken(body *JoinClusterRequestBody) *controlplane.ClusterJoinToken {
 	v := &controlplane.ClusterJoinToken{
-		Token:     *body.Token,
-		ServerURL: *body.ServerURL,
+		Token: *body.Token,
+	}
+	v.ServerUrls = make([]string, len(body.ServerUrls))
+	for i, val := range body.ServerUrls {
+		v.ServerUrls[i] = val
 	}
 
 	return v
@@ -4561,9 +4586,11 @@ func NewGetJoinOptionsClusterJoinRequest(body *GetJoinOptionsRequestBody) *contr
 	v := &controlplane.ClusterJoinRequest{
 		Token:               *body.Token,
 		HostID:              controlplane.Identifier(*body.HostID),
-		Hostname:            *body.Hostname,
-		Ipv4Address:         *body.Ipv4Address,
 		EmbeddedEtcdEnabled: *body.EmbeddedEtcdEnabled,
+	}
+	v.Addresses = make([]string, len(body.Addresses))
+	for i, val := range body.Addresses {
+		v.Addresses[i] = val
 	}
 
 	return v
@@ -4862,11 +4889,8 @@ func ValidateJoinClusterRequestBody(body *JoinClusterRequestBody) (err error) {
 	if body.Token == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("token", "body"))
 	}
-	if body.ServerURL == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("server_url", "body"))
-	}
-	if body.ServerURL != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.server_url", *body.ServerURL, goa.FormatURI))
+	if body.ServerUrls == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("server_urls", "body"))
 	}
 	return
 }
@@ -4883,11 +4907,8 @@ func ValidateGetJoinOptionsRequestBody(body *GetJoinOptionsRequestBody) (err err
 	if body.HostID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("host_id", "body"))
 	}
-	if body.Hostname == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("hostname", "body"))
-	}
-	if body.Ipv4Address == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("ipv4_address", "body"))
+	if body.Addresses == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("addresses", "body"))
 	}
 	if body.Token != nil {
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.token", *body.Token, "^PGEDGE-[\\w]{64}-[\\w]{32}$"))
@@ -4902,18 +4923,13 @@ func ValidateGetJoinOptionsRequestBody(body *GetJoinOptionsRequestBody) (err err
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_id", *body.HostID, utf8.RuneCountInString(*body.HostID), 63, false))
 		}
 	}
-	if body.Hostname != nil {
-		if utf8.RuneCountInString(*body.Hostname) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.hostname", *body.Hostname, utf8.RuneCountInString(*body.Hostname), 3, true))
+	for _, e := range body.Addresses {
+		if utf8.RuneCountInString(e) < 3 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.addresses[*]", e, utf8.RuneCountInString(e), 3, true))
 		}
-	}
-	if body.Hostname != nil {
-		if utf8.RuneCountInString(*body.Hostname) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.hostname", *body.Hostname, utf8.RuneCountInString(*body.Hostname), 128, false))
+		if utf8.RuneCountInString(e) > 128 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.addresses[*]", e, utf8.RuneCountInString(e), 128, false))
 		}
-	}
-	if body.Ipv4Address != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", *body.Ipv4Address, goa.FormatIPv4))
 	}
 	return
 }

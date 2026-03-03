@@ -66,23 +66,27 @@ func (s *PostInitHandlers) GetJoinToken(ctx context.Context) (*api.ClusterJoinTo
 	if err != nil {
 		return nil, apiErr(err)
 	}
-	serverURL := GetServerURL(s.cfg)
 	return &api.ClusterJoinToken{
-		Token:     token,
-		ServerURL: serverURL.String(),
+		Token:      token,
+		ServerUrls: GetServerURLs(s.cfg),
 	}, nil
 }
 
-func GetServerURL(cfg config.Config) url.URL {
+func GetServerURLs(cfg config.Config) []string {
 	scheme := "http"
 	if cfg.HTTP.ServerCert != "" && cfg.HTTP.ServerKey != "" {
 		scheme = "https"
 	}
-	return url.URL{
-		Scheme: scheme,
-		Host:   fmt.Sprintf("%s:%d", cfg.IPv4Address, cfg.HTTP.Port),
+	var urls []string
+	for _, a := range cfg.PeerAddresses {
+		u := url.URL{
+			Scheme: scheme,
+			Host:   fmt.Sprintf("%s:%d", a, cfg.HTTP.Port),
+		}
+		urls = append(urls, u.String())
 	}
 
+	return urls
 }
 
 func (s *PostInitHandlers) GetJoinOptions(ctx context.Context, req *api.ClusterJoinRequest) (*api.ClusterJoinOptions, error) {
@@ -102,8 +106,7 @@ func (s *PostInitHandlers) GetJoinOptions(ctx context.Context, req *api.ClusterJ
 
 	creds, err := s.etcd.AddHost(ctx, etcd.HostCredentialOptions{
 		HostID:              hostID,
-		Hostname:            req.Hostname,
-		IPv4Address:         req.Ipv4Address,
+		Addresses:           req.Addresses,
 		EmbeddedEtcdEnabled: req.EmbeddedEtcdEnabled,
 	})
 	if err != nil {

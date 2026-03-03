@@ -81,5 +81,15 @@
         "diff": null
       }
     ]
+  ],
+  [
+    [
+      {
+        "type": "create",
+        "resource_id": "database.postgres_database::n1-",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ]
   ]
 ]

@@ -48,6 +48,7 @@ type PgBackRestConfig struct {
 	OwnerUID     int                      `json:"owner_uid"`
 	OwnerGID     int                      `json:"owner_gid"`
 	Paths        InstancePaths            `json:"paths"`
+	Port         int                      `json:"port"`
 }
 
 func (c *PgBackRestConfig) ResourceVersion() string {
@@ -70,6 +71,10 @@ func (c *PgBackRestConfig) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
 		filesystem.DirResourceIdentifier(c.ParentID),
 	}
+}
+
+func (c *PgBackRestConfig) TypeDependencies() []resource.Type {
+	return nil
 }
 
 func (c *PgBackRestConfig) Refresh(ctx context.Context, rc *resource.Context) error {
@@ -105,6 +110,7 @@ func (c *PgBackRestConfig) Create(ctx context.Context, rc *resource.Context) err
 		PgDataPath:   c.Paths.Instance.PgData(),
 		HostUser:     "pgedge",
 		User:         "pgedge",
+		Port:         c.Port,
 	}); err != nil {
 		return fmt.Errorf("failed to generate pgBackRest configuration: %w", err)
 	}

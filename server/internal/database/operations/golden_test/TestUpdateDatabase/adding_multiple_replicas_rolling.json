@@ -49,6 +49,12 @@
     [
       {
         "type": "update",
+        "resource_id": "database.postgres_database::n1-test",
+        "reason": "dependency_updated",
+        "diff": null
+      },
+      {
+        "type": "update",
         "resource_id": "database.replication_slot::n1n2",
         "reason": "dependency_updated",
         "diff": null
@@ -117,6 +123,12 @@
       }
     ],
     [
+      {
+        "type": "update",
+        "resource_id": "database.postgres_database::n2-test",
+        "reason": "dependency_updated",
+        "diff": null
+      },
       {
         "type": "update",
         "resource_id": "database.replication_slot::n2n1",

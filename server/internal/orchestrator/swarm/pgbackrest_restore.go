@@ -69,6 +69,10 @@ func (p *PgBackRestRestore) Dependencies() []resource.Identifier {
 	}
 }
 
+func (p *PgBackRestRestore) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (p *PgBackRestRestore) Refresh(ctx context.Context, rc *resource.Context) error {
 	return nil
 }

@@ -20,6 +20,11 @@
     [
       {
         "type": "delete",
+        "resource_id": "database.postgres_database::n2-test",
+        "diff": null
+      },
+      {
+        "type": "delete",
         "resource_id": "database.replication_slot::n1n2",
         "diff": null
       },

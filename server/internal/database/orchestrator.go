@@ -20,13 +20,56 @@ const pgEdgeUser = "pgedge"
 const ResourceTypeServiceInstance = "swarm.service_instance"
 
 type InstanceResources struct {
-	Instance  *InstanceResource
-	Resources []*resource.ResourceData
+	Instance             *InstanceResource
+	Resources            []*resource.ResourceData
+	DatabaseDependencies []*resource.ResourceData
 }
 
-type ServiceInstanceResources struct {
-	ServiceInstance *ServiceInstance
-	Resources       []*resource.ResourceData
+func NewInstanceResources(
+	instance *InstanceResource,
+	resources []resource.Resource,
+	databaseDependencies []resource.Resource,
+) (*InstanceResources, error) {
+	inst := &InstanceResources{
+		Instance: instance,
+	}
+	if err := inst.AddResources(resources...); err != nil {
+		return nil, err
+	}
+	if err := inst.AddDatabaseDependencies(databaseDependencies...); err != nil {
+		return nil, err
+	}
+
+	return inst, nil
+}
+
+func (r *InstanceResources) DatabaseDependencyIdentifiers() []resource.Identifier {
+	ids := make([]resource.Identifier, len(r.DatabaseDependencies))
+	for i, dep := range r.DatabaseDependencies {
+		ids[i] = dep.Identifier
+	}
+
+	return ids
+}
+
+func (r *InstanceResources) AddResources(resources ...resource.Resource) error {
+	resourceDataSlice, err := resource.ToResourceDataSlice(resources...)
+	if err != nil {
+		return fmt.Errorf("failed to convert instance resources: %w", err)
+	}
+	r.Resources = append(r.Resources, resourceDataSlice...)
+
+	return nil
+}
+
+func (r *InstanceResources) AddDatabaseDependencies(resources ...resource.Resource) error {
+	databaseDataSlice, err := resource.ToResourceDataSlice(resources...)
+	if err != nil {
+		return fmt.Errorf("failed to convert database dependency resources: %w", err)
+	}
+	r.DatabaseDependencies = append(r.DatabaseDependencies, databaseDataSlice...)
+
+	return nil
 }
 
 func (r *InstanceResources) InstanceID() string {
@@ -49,6 +92,10 @@ func (r *InstanceResources) NodeName() string {
 	return r.Instance.Spec.NodeName
 }
 
+func (r *InstanceResources) RestoreConfig() *RestoreConfig {
+	return r.Instance.Spec.RestoreConfig
+}
+
 func (r *InstanceResources) State() (*resource.State, error) {
 	state := resource.NewState()
 	state.Add(r.Resources...)
@@ -60,6 +107,11 @@ func (r *InstanceResources) State() (*resource.State, error) {
 	return state, nil
 }
 
+type ServiceInstanceResources struct {
+	ServiceInstance *ServiceInstance
+	Resources       []*resource.ResourceData
+}
+
 type ValidationResult struct {
 	InstanceID string   `json:"instance_id"`
 	HostID     string   `json:"host_id"`
@@ -68,35 +120,18 @@ type ValidationResult struct {
 	Errors     []string `json:"errors"`
 }
 
-func NewInstanceResources(instance *InstanceResource, resources []resource.Resource) (*InstanceResources, error) {
-	data := make([]*resource.ResourceData, len(resources))
-	for i, res := range resources {
-		d, err := resource.ToResourceData(res)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert resource to resource data: %w", err)
-		}
-		data[i] = d
-	}
-
-	return &InstanceResources{
-		Instance:  instance,
-		Resources: data,
-	}, nil
-}
-
 type ConnectionInfo struct {
-	AdminHost         string
-	AdminPort         int
-	PeerHost          string
-	PeerPort          int
-	PeerSSLCert       string
-	PeerSSLKey        string
-	PeerSSLRootCert   string
-	PatroniPort       int
-	ClientHost        string
-	ClientIPv4Address string
-	ClientPort        int
-	InstanceHostname  string
+	AdminHost        string
+	AdminPort        int
+	PeerHost         string
+	PeerPort         int
+	PeerSSLCert      string
+	PeerSSLKey       string
+	PeerSSLRootCert  string
+	PatroniPort      int
+	ClientAddresses  []string
+	ClientPort       int
+	InstanceHostname string
 }
 
 func (c *ConnectionInfo) PatroniURL() *url.URL {
@@ -108,10 +143,11 @@ func (c *ConnectionInfo) PatroniURL() *url.URL {
 
 func (c *ConnectionInfo) AdminDSN(dbName string) *postgres.DSN {
 	return &postgres.DSN{
-		Hosts:  []string{c.AdminHost},
-		Ports:  []int{c.AdminPort},
-		DBName: dbName,
-		User:   pgEdgeUser,
+		Hosts:           []string{c.AdminHost},
+		Ports:           []int{c.AdminPort},
+		DBName:          dbName,
+		User:            pgEdgeUser,
+		ApplicationName: "control-plane",
 	}
 }
 
@@ -138,4 +174,5 @@ type Orchestrator interface {
 	ValidateInstanceSpecs(ctx context.Context, changes []*InstanceSpecChange) ([]*ValidationResult, error)
 	StopInstance(ctx context.Context, instanceID string) error
 	StartInstance(ctx context.Context, instanceID string) error
+	NodeDSN(ctx context.Context, rc *resource.Context, nodeName string, fromInstanceID string, dbName string) (*postgres.DSN, error)
 }

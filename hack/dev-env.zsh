@@ -262,6 +262,23 @@ use-compose() {
 		http://localhost:3005 \
 }
 
+use-lima-dev() {
+	export CP_ENV=lima-dev
+
+	_update-restish-config \
+		http://localhost:3000 \
+		http://localhost:3001 \
+		http://localhost:3002 \
+		http://localhost:3003 \
+		http://localhost:3004 \
+		http://localhost:3005 \
+	
+	local i
+	for ((i = 1; i <= 6; i++ )); do
+		alias cp${i}-ssh="ssh -F ${HOME}/.lima/control-plane-dev-${i}/ssh.config -t lima-control-plane-dev-${i}"
+	done
+}
+
 use-lima() {
 	export CP_ENV=lima
 

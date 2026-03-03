@@ -3,7 +3,6 @@ package operations
 import (
 	"fmt"
 
-	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -17,14 +16,12 @@ func AddNode(node *NodeResources) ([]*resource.State, error) {
 		return nil, fmt.Errorf("got empty instances for node %s", node.NodeName)
 	}
 
-	instanceIDs := make([]string, 0, len(node.InstanceResources))
 	states := make([]*resource.State, 0, 2)
 
 	primary, err := instanceState(node.InstanceResources[0])
 	if err != nil {
 		return nil, err
 	}
-	instanceIDs = append(instanceIDs, node.InstanceResources[0].InstanceID())
 	states = append(states, primary)
 
 	var replicas *resource.State
@@ -38,20 +35,17 @@ func AddNode(node *NodeResources) ([]*resource.State, error) {
 		} else {
 			replicas.Merge(replica)
 		}
-		instanceIDs = append(instanceIDs, inst.InstanceID())
 	}
 
 	if replicas != nil {
 		states = append(states, replicas)
 	}
 
-	err = addNodeResource(states, &database.NodeResource{
-		Name:        node.NodeName,
-		InstanceIDs: instanceIDs,
-	})
+	nodeState, err := node.nodeResourceState()
 	if err != nil {
 		return nil, err
 	}
+	states[len(states)-1].Merge(nodeState)
 
 	return states, nil
 }

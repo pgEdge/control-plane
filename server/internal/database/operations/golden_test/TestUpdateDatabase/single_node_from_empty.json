@@ -30,5 +30,15 @@
         "diff": null
       }
     ]
+  ],
+  [
+    [
+      {
+        "type": "create",
+        "resource_id": "database.postgres_database::n1-test",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ]
   ]
 ]

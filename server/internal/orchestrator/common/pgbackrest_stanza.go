@@ -51,6 +51,10 @@ func (p *PgBackRestStanza) Dependencies() []resource.Identifier {
 	}
 }
 
+func (p *PgBackRestStanza) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (p *PgBackRestStanza) Refresh(ctx context.Context, rc *resource.Context) error {
 	orchestrator, err := do.Invoke[database.Orchestrator](rc.Injector)
 	if err != nil {

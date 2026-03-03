@@ -50,6 +50,10 @@ func (c *PatroniConfig) Dependencies() []resource.Identifier {
 	return deps
 }
 
+func (c *PatroniConfig) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (c *PatroniConfig) Refresh(ctx context.Context, rc *resource.Context) error {
 	return c.Base.Refresh(ctx, rc)
 }

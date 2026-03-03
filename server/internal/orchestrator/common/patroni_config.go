@@ -38,6 +38,10 @@ func (c *PatroniConfig) Dependencies() []resource.Identifier {
 	return deps
 }
 
+func (c *PatroniConfig) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (c *PatroniConfig) Refresh(ctx context.Context, rc *resource.Context) error {
 	fs, err := do.Invoke[afero.Fs](rc.Injector)
 	if err != nil {

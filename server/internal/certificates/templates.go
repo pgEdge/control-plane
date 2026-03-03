@@ -19,14 +19,19 @@ func userCertTemplate(username string) *x509.CertificateRequest {
 	}
 }
 
-func serverCertTemplate(hostname string, dnsNames, ipAddresses []string) *x509.CertificateRequest {
-	ips := make([]net.IP, len(ipAddresses))
-	for idx, ip := range ipAddresses {
-		ips[idx] = net.ParseIP(ip)
+func serverCertTemplate(name string, addresses []string) *x509.CertificateRequest {
+	var dnsNames []string
+	var ips []net.IP
+	for _, a := range addresses {
+		if ip := net.ParseIP(a); ip != nil {
+			ips = append(ips, ip)
+		} else {
+			dnsNames = append(dnsNames, a)
+		}
 	}
 	return &x509.CertificateRequest{
 		Subject: pkix.Name{
-			CommonName: hostname,
+			CommonName: name,
 		},
 		DNSNames:    dnsNames,
 		IPAddresses: ips,

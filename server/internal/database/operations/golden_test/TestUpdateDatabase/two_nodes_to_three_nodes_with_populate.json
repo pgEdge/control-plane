@@ -35,6 +35,12 @@
     [
       {
         "type": "create",
+        "resource_id": "database.postgres_database::n3-test",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
         "resource_id": "database.replication_slot::n1n3",
         "reason": "does_not_exist",
         "diff": null
@@ -141,7 +147,7 @@
           {
             "value": null,
             "op": "replace",
-            "path": "/dependent_subscriptions"
+            "path": "/extra_dependencies"
           },
           {
             "value": false,

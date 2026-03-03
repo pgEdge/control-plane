@@ -5,12 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"syscall"
+	"time"
 
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/rs/zerolog"
 
 	"github.com/pgEdge/control-plane/server/internal/logging"
 )
+
+const stopTimeout = 30 * time.Second
 
 var ErrUnitNotFound = errors.New("unit does not exist")
 
@@ -69,7 +73,7 @@ func (c *Client) StartUnit(ctx context.Context, name string) error {
 	return nil
 }
 
-func (c *Client) StopUnit(ctx context.Context, name string) error {
+func (c *Client) StopUnit(ctx context.Context, name string, wait bool) error {
 	logger := c.logger.With().Str("unit", name).Logger()
 	logger.Debug().Msg("stopping unit")
 
@@ -84,6 +88,17 @@ func (c *Client) StopUnit(ctx context.Context, name string) error {
 		Str("response", res).
 		Int("pid", pid).
 		Msg("stopped unit")
+
+	if wait && pid != 0 {
+		c.logger.Debug().
+			Int("pid", pid).
+			Float64("timeout_seconds", stopTimeout.Seconds()).
+			Msg("waiting for main process to exit")
+
+		if err := waitForPid(pid, stopTimeout); err != nil {
+			return fmt.Errorf("failed to wait for pid %d to exit: %w", pid, err)
+		}
+	}
 
 	return nil
 }
@@ -182,7 +197,7 @@ func (c *Client) GetUnitFilePath(ctx context.Context, name string) (string, erro
 
 	prop, err := c.conn.GetUnitPropertyContext(ctx, name, "FragmentPath")
 	if err != nil {
-		return "", fmt.Errorf("failed to get service property: %w", err)
+		return "", fmt.Errorf("failed to get unit property: %w", err)
 	}
 	path := prop.Value.String()
 
@@ -247,4 +262,27 @@ func (c *Client) Shutdown() error {
 	}
 
 	return nil
+}
+
+// waitForPid waits for the given PID to not exist using a method that works
+// for non-child processes.
+func waitForPid(pid int, timeout time.Duration) error {
+	// FindProcess will return
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		return err
+	}
+
+	deadline := time.Now().Add(timeout)
+	for {
+		// Signal 0 doesn't kill — just checks if process exists
+		err := proc.Signal(syscall.Signal(0))
+		if err != nil {
+			return nil // process is gone
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("timed out waiting for pid %d to exit after %.2f seconds", pid, timeout.Seconds())
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
 }

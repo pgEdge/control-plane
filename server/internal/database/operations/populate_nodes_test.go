@@ -22,6 +22,7 @@ func TestPopulateNode(t *testing.T) {
 		{
 			name: "populate new node in two node db",
 			node: &operations.NodeResources{
+				DBName:            "test",
 				NodeName:          "n2",
 				SourceNode:        "n1",
 				PrimaryInstanceID: instance1.InstanceID(),
@@ -32,11 +33,16 @@ func TestPopulateNode(t *testing.T) {
 			// source node, this will just have the sync resources.
 			expected: makeState(t,
 				[]resource.Resource{
+					&database.PostgresDatabaseResource{
+						NodeName: "n2",
+						DBName:   "test",
+					},
 					&database.ReplicationSlotResource{
 						ProviderNode:   "n1",
 						SubscriberNode: "n2",
 					},
 					&database.SubscriptionResource{
+						DBName:         "test",
 						SubscriberNode: "n2",
 						ProviderNode:   "n1",
 						SyncStructure:  true,
@@ -60,6 +66,7 @@ func TestPopulateNode(t *testing.T) {
 		{
 			name: "populate new node in three node db",
 			node: &operations.NodeResources{
+				DBName:            "test",
 				NodeName:          "n3",
 				SourceNode:        "n1",
 				PrimaryInstanceID: instance1.InstanceID(),
@@ -68,11 +75,16 @@ func TestPopulateNode(t *testing.T) {
 			existingNodeNames: []string{"n1", "n2"},
 			expected: makeState(t,
 				[]resource.Resource{
+					&database.PostgresDatabaseResource{
+						NodeName: "n3",
+						DBName:   "test",
+					},
 					&database.ReplicationSlotResource{
 						ProviderNode:   "n2",
 						SubscriberNode: "n3",
 					},
 					&database.SubscriptionResource{
+						DBName:         "test",
 						SubscriberNode: "n3",
 						ProviderNode:   "n2",
 						Disabled:       true,
@@ -102,6 +114,7 @@ func TestPopulateNode(t *testing.T) {
 						SubscriberNode: "n3",
 					},
 					&database.SubscriptionResource{
+						DBName:         "test",
 						SubscriberNode: "n3",
 						ProviderNode:   "n1",
 						SyncStructure:  true,
@@ -167,6 +180,7 @@ func TestPopulateNodes(t *testing.T) {
 			name: "one new node and one existing node",
 			existing: []*operations.NodeResources{
 				{
+					DBName:            "test",
 					NodeName:          "n1",
 					PrimaryInstanceID: n1Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n1Instance1},
@@ -174,6 +188,7 @@ func TestPopulateNodes(t *testing.T) {
 			},
 			new: []*operations.NodeResources{
 				{
+					DBName:            "test",
 					NodeName:          "n2",
 					SourceNode:        "n1",
 					PrimaryInstanceID: n2Instance1.InstanceID(),
@@ -184,11 +199,16 @@ func TestPopulateNodes(t *testing.T) {
 			// output.
 			expected: makeState(t,
 				[]resource.Resource{
+					&database.PostgresDatabaseResource{
+						NodeName: "n2",
+						DBName:   "test",
+					},
 					&database.ReplicationSlotResource{
 						ProviderNode:   "n1",
 						SubscriberNode: "n2",
 					},
 					&database.SubscriptionResource{
+						DBName:         "test",
 						SubscriberNode: "n2",
 						ProviderNode:   "n1",
 						SyncStructure:  true,
@@ -213,11 +233,13 @@ func TestPopulateNodes(t *testing.T) {
 			name: "one new node and two existing nodes",
 			existing: []*operations.NodeResources{
 				{
+					DBName:            "test",
 					NodeName:          "n1",
 					PrimaryInstanceID: n1Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n1Instance1},
 				},
 				{
+					DBName:            "test",
 					NodeName:          "n2",
 					PrimaryInstanceID: n2Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n2Instance1},
@@ -225,6 +247,7 @@ func TestPopulateNodes(t *testing.T) {
 			},
 			new: []*operations.NodeResources{
 				{
+					DBName:            "test",
 					NodeName:          "n3",
 					SourceNode:        "n1",
 					PrimaryInstanceID: n3Instance1.InstanceID(),
@@ -235,11 +258,16 @@ func TestPopulateNodes(t *testing.T) {
 			// output.
 			expected: makeState(t,
 				[]resource.Resource{
+					&database.PostgresDatabaseResource{
+						NodeName: "n3",
+						DBName:   "test",
+					},
 					&database.ReplicationSlotResource{
 						ProviderNode:   "n2",
 						SubscriberNode: "n3",
 					},
 					&database.SubscriptionResource{
+						DBName:         "test",
 						SubscriberNode: "n3",
 						ProviderNode:   "n2",
 						Disabled:       true,
@@ -269,6 +297,7 @@ func TestPopulateNodes(t *testing.T) {
 						SubscriberNode: "n3",
 					},
 					&database.SubscriptionResource{
+						DBName:         "test",
 						SubscriberNode: "n3",
 						ProviderNode:   "n1",
 						SyncStructure:  true,
@@ -307,16 +336,19 @@ func TestPopulateNodes(t *testing.T) {
 			name: "one new node and three existing nodes",
 			existing: []*operations.NodeResources{
 				{
+					DBName:            "test",
 					NodeName:          "n1",
 					PrimaryInstanceID: n1Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n1Instance1},
 				},
 				{
+					DBName:            "test",
 					NodeName:          "n2",
 					PrimaryInstanceID: n2Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n2Instance1},
 				},
 				{
+					DBName:            "test",
 					NodeName:          "n3",
 					PrimaryInstanceID: n3Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n3Instance1},
@@ -324,6 +356,7 @@ func TestPopulateNodes(t *testing.T) {
 			},
 			new: []*operations.NodeResources{
 				{
+					DBName:            "test",
 					NodeName:          "n4",
 					SourceNode:        "n1",
 					PrimaryInstanceID: n4Instance1.InstanceID(),
@@ -333,11 +366,16 @@ func TestPopulateNodes(t *testing.T) {
 			// Should have additional sync resources for each peer.
 			expected: makeState(t,
 				[]resource.Resource{
+					&database.PostgresDatabaseResource{
+						NodeName: "n4",
+						DBName:   "test",
+					},
 					&database.ReplicationSlotResource{
 						ProviderNode:   "n2",
 						SubscriberNode: "n4",
 					},
 					&database.SubscriptionResource{
+						DBName:         "test",
 						SubscriberNode: "n4",
 						ProviderNode:   "n2",
 						Disabled:       true,
@@ -347,6 +385,7 @@ func TestPopulateNodes(t *testing.T) {
 						SubscriberNode: "n4",
 					},
 					&database.SubscriptionResource{
+						DBName:         "test",
 						SubscriberNode: "n4",
 						ProviderNode:   "n3",
 						Disabled:       true,
@@ -396,6 +435,7 @@ func TestPopulateNodes(t *testing.T) {
 						SubscriberNode: "n4",
 					},
 					&database.SubscriptionResource{
+						DBName:         "test",
 						SubscriberNode: "n4",
 						ProviderNode:   "n1",
 						SyncStructure:  true,
@@ -446,6 +486,7 @@ func TestPopulateNodes(t *testing.T) {
 			name: "two new nodes and one existing node",
 			existing: []*operations.NodeResources{
 				{
+					DBName:            "test",
 					NodeName:          "n1",
 					PrimaryInstanceID: n1Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n1Instance1},
@@ -453,12 +494,14 @@ func TestPopulateNodes(t *testing.T) {
 			},
 			new: []*operations.NodeResources{
 				{
+					DBName:            "test",
 					NodeName:          "n2",
 					SourceNode:        "n1",
 					PrimaryInstanceID: n2Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n2Instance1},
 				},
 				{
+					DBName:            "test",
 					NodeName:          "n3",
 					SourceNode:        "n1",
 					PrimaryInstanceID: n3Instance1.InstanceID(),
@@ -468,11 +511,16 @@ func TestPopulateNodes(t *testing.T) {
 			// Should only have sync resources
 			expected: makeState(t,
 				[]resource.Resource{
+					&database.PostgresDatabaseResource{
+						NodeName: "n2",
+						DBName:   "test",
+					},
 					&database.ReplicationSlotResource{
 						ProviderNode:   "n1",
 						SubscriberNode: "n2",
 					},
 					&database.SubscriptionResource{
+						DBName:         "test",
 						SubscriberNode: "n2",
 						ProviderNode:   "n1",
 						SyncStructure:  true,
@@ -489,11 +537,16 @@ func TestPopulateNodes(t *testing.T) {
 						ProviderNode:   "n1",
 						SubscriberNode: "n2",
 					},
+					&database.PostgresDatabaseResource{
+						NodeName: "n3",
+						DBName:   "test",
+					},
 					&database.ReplicationSlotResource{
 						ProviderNode:   "n1",
 						SubscriberNode: "n3",
 					},
 					&database.SubscriptionResource{
+						DBName:         "test",
 						SubscriberNode: "n3",
 						ProviderNode:   "n1",
 						SyncStructure:  true,

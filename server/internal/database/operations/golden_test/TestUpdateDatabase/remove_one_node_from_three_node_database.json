@@ -30,6 +30,11 @@
     [
       {
         "type": "delete",
+        "resource_id": "database.postgres_database::n3-test",
+        "diff": null
+      },
+      {
+        "type": "delete",
         "resource_id": "database.replication_slot::n1n3",
         "diff": null
       },

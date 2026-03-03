@@ -177,12 +177,14 @@ func (s *State) topoIter(opts graphOptions) (iter.Seq[[]*ResourceData], error) {
 
 func (s *State) graph(opts graphOptions) (*simple.DirectedGraph, error) {
 	nodeIDs := map[Identifier]int64{}
+	nodeIDsByType := map[Type][]int64{}
 	graph := simple.NewDirectedGraph()
 	currID := int64(1)
 	// First pass to add nodes
 	for _, resources := range s.Resources {
 		for _, resource := range resources {
 			nodeIDs[resource.Identifier] = currID
+			nodeIDsByType[resource.Identifier.Type] = append(nodeIDsByType[resource.Identifier.Type], currID)
 			graph.AddNode(&node{
 				id:       currID,
 				resource: resource,
@@ -219,6 +221,23 @@ func (s *State) graph(opts graphOptions) (*simple.DirectedGraph, error) {
 						T: from,
 						F: to,
 					})
+				}
+			}
+			for _, ty := range resource.TypeDependencies {
+				for _, fromID := range nodeIDsByType[ty] {
+					from := graph.Node(fromID)
+					if opts.creationOrdered {
+						graph.SetEdge(simple.Edge{
+							T: to,
+							F: from,
+						})
+					} else {
+						// For deletion order we need to reverse the edge.
+						graph.SetEdge(simple.Edge{
+							T: from,
+							F: to,
+						})
+					}
 				}
 			}
 		}
@@ -274,6 +293,7 @@ func (s *State) planCreates(options PlanOptions, desired *State) (Plan, error) {
 	// Keeps track of all modified resources so that we can update their
 	// dependents.
 	modified := ds.NewSet[Identifier]()
+	modifiedTypes := ds.NewSet[Type]()
 	for layer := range layers {
 		var phase []*Event
 
@@ -309,7 +329,7 @@ func (s *State) planCreates(options PlanOptions, desired *State) (Plan, error) {
 					Resource: resource,
 					Reason:   EventReasonForceUpdate,
 				}
-			case slices.ContainsFunc(resource.Dependencies, modified.Has):
+			case slices.ContainsFunc(resource.TypeDependencies, modifiedTypes.Has), slices.ContainsFunc(resource.Dependencies, modified.Has):
 				event = &Event{
 					Type:     EventTypeUpdate,
 					Resource: resource,
@@ -333,6 +353,7 @@ func (s *State) planCreates(options PlanOptions, desired *State) (Plan, error) {
 			if event != nil {
 				phase = append(phase, event)
 				modified.Add(resource.Identifier)
+				modifiedTypes.Add(resource.Identifier.Type)
 			}
 		}
 
@@ -425,6 +446,24 @@ func FromState[T Resource](state *State, identifier Identifier) (T, error) {
 	return ToResource[T](data)
 }
 
+func AllFromState[T Resource](state *State, resourceType Type) ([]T, error) {
+	data := state.GetAll(resourceType)
+	all := make([]T, len(data))
+	for i, d := range data {
+		resource, err := ToResource[T](d)
+		if err != nil {
+			return nil, err
+		}
+		all[i] = resource
+	}
+
+	return all, nil
+}
+
 func FromContext[T Resource](rc *Context, identifier Identifier) (T, error) {
 	return FromState[T](rc.State, identifier)
+}
+
+func AllFromContext[T Resource](rc *Context, resourceType Type) ([]T, error) {
+	return AllFromState[T](rc.State, resourceType)
 }

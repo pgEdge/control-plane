@@ -62,15 +62,15 @@ func hostToAPI(h *host.Host) *api.Host {
 		}
 	}
 	return &api.Host{
-		Orchestrator: string(h.Orchestrator),
-		DataDir:      h.DataDir,
-		Hostname:     h.Hostname,
-		Ipv4Address:  h.IPv4Address,
-		Cpus:         utils.NillablePointerTo(h.CPUs),
-		Memory:       utils.NillablePointerTo(humanizeBytes(h.MemBytes)),
-		Cohort:       cohort,
-		ID:           api.Identifier(h.ID),
-		EtcdMode:     utils.NillablePointerTo(string(h.EtcdMode)),
+		Orchestrator:    string(h.Orchestrator),
+		DataDir:         h.DataDir,
+		PeerAddresses:   h.PeerAddresses,
+		ClientAddresses: h.ClientAddresses,
+		Cpus:            utils.NillablePointerTo(h.CPUs),
+		Memory:          utils.NillablePointerTo(humanizeBytes(h.MemBytes)),
+		Cohort:          cohort,
+		ID:              api.Identifier(h.ID),
+		EtcdMode:        utils.NillablePointerTo(string(h.EtcdMode)),
 		DefaultPgedgeVersion: &api.PgEdgeVersion{
 			PostgresVersion: h.DefaultPgEdgeVersion.PostgresVersion.String(),
 			SpockVersion:    h.DefaultPgEdgeVersion.SpockVersion.String(),
@@ -302,8 +302,7 @@ func serviceInstanceStatusToAPI(status *database.ServiceInstanceStatus) *api.Ser
 	return &api.ServiceInstanceStatus{
 		ContainerID:  status.ContainerID,
 		ImageVersion: status.ImageVersion,
-		Hostname:     status.Hostname,
-		Ipv4Address:  status.IPv4Address,
+		Addresses:    status.Addresses,
 		Ports:        ports,
 		HealthCheck:  healthCheckResultToAPI(status.HealthCheck),
 		LastHealthAt: lastHealthAt,
@@ -409,9 +408,8 @@ func instanceConnectionInfoToAPI(status *database.InstanceStatus) *api.InstanceC
 		return nil
 	}
 	return &api.InstanceConnectionInfo{
-		Hostname:    status.Hostname,
-		Ipv4Address: status.IPv4Address,
-		Port:        status.Port,
+		Addresses: status.Addresses,
+		Port:      status.Port,
 	}
 }
 

@@ -186,6 +186,7 @@ type ConfigOptions struct {
 	HostUser     string
 	User         string
 	SocketPath   string
+	Port         int
 	Repositories []*Repository
 }
 
@@ -233,6 +234,9 @@ func WriteConfig(w io.Writer, opts ConfigOptions) error {
 
 	if opts.SocketPath != "" {
 		db["pg1-socket-path"] = opts.SocketPath
+	}
+	if opts.Port > 0 {
+		db["pg1-port"] = fmt.Sprintf("%d", opts.Port)
 	}
 
 	file := ini.Empty()

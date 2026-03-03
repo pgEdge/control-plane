@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/host"
@@ -504,6 +505,7 @@ type InstanceSpec struct {
 	ClusterSize      int                 `json:"cluster_size"`
 	OrchestratorOpts *OrchestratorOpts   `json:"orchestrator_opts,omitempty"`
 	InPlaceRestore   bool                `json:"in_place_restore,omitempty"`
+	AllHostIDs       []string            `json:"all_host_ids"` // All host IDs in the database
 }
 
 type InstanceSpecChange struct {
@@ -540,6 +542,8 @@ func (s *InstanceSpec) Clone() *InstanceSpec {
 }
 
 type NodeInstances struct {
+	DBOwner       string          `json:"db_owner"`
+	DBName        string          `json:"db_name"`
 	NodeName      string          `json:"node_name"`
 	SourceNode    string          `json:"source_node"`
 	Instances     []*InstanceSpec `json:"instances"`
@@ -559,6 +563,21 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 	specVersion, err := host.NewPgEdgeVersion(s.PostgresVersion, s.SpockVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse version from spec: %w", err)
+	}
+
+	// First pass to gather host IDs
+	hostIDSet := ds.NewSet[string]()
+	for _, node := range s.Nodes {
+		hostIDSet.Add(node.HostIDs...)
+	}
+	allHostIDs := hostIDSet.ToSortedSlice(strings.Compare)
+
+	var owner string
+	for _, user := range s.DatabaseUsers {
+		if user.DBOwner {
+			owner = user.Username
+			break
+		}
 	}
 
 	clusterSize := len(s.Nodes)
@@ -607,10 +626,13 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				PostgreSQLConf:   overridableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
 				ClusterSize:      clusterSize,
 				OrchestratorOpts: overridableValue(s.OrchestratorOpts, node.OrchestratorOpts),
+				AllHostIDs:       allHostIDs,
 			}
 		}
 
 		nodes[nodeIdx] = &NodeInstances{
+			DBOwner:       owner,
+			DBName:        s.DatabaseName,
 			NodeName:      node.Name,
 			SourceNode:    node.SourceNode,
 			Instances:     instances,

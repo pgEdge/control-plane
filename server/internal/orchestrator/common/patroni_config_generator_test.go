@@ -303,9 +303,9 @@ func TestPatroniConfigGenerator(t *testing.T) {
 			},
 			generateOptions: common.GenerateOptions{
 				SystemAddresses: []string{
-					"10.10.0.2/32",
-					"10.10.0.3/32",
-					"10.10.0.4/32",
+					"10.10.0.2",
+					"10.10.0.3",
+					"10.10.0.4",
 				},
 			},
 		},
@@ -349,9 +349,9 @@ func TestPatroniConfigGenerator(t *testing.T) {
 				// disrupt by enabling this option.
 				EnableFastBasebackup: true,
 				SystemAddresses: []string{
-					"10.10.0.2/32",
-					"10.10.0.3/32",
-					"10.10.0.4/32",
+					"10.10.0.2",
+					"10.10.0.3",
+					"10.10.0.4",
 				},
 			},
 		},

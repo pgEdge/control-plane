@@ -99,7 +99,7 @@ postgresql:
   - hostssl all             pgedge,patroni_replicator 10.128.165.128/26       cert clientcert=verify-full
   - hostssl replication     pgedge,patroni_replicator 10.128.165.128/26       cert clientcert=verify-full
   - host    all             pgedge,patroni_replicator 0.0.0.0/0               reject
-  - host    all             pgedge,patroni_replicator ::/0                    reject
+  - host    all             pgedge,patroni_replicator ::0/0                   reject
   - host    all             all             172.17.0.1/32           md5
   - host    all             all             172.17.0.1/16           reject
   - host    all             all             0.0.0.0/0               md5

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/google/uuid"
 	goahttp "goa.design/goa/v3/http"
@@ -79,37 +80,21 @@ func (s *PreInitHandlers) InitCluster(ctx context.Context, req *api.InitClusterR
 		return nil, apiErr(err)
 	}
 
-	serverURL := GetServerURL(s.cfg)
-
 	return &api.ClusterJoinToken{
-		Token:     token,
-		ServerURL: serverURL.String(),
+		Token:      token,
+		ServerUrls: GetServerURLs(s.cfg),
 	}, nil
 }
 
 func (s *PreInitHandlers) JoinCluster(ctx context.Context, token *api.ClusterJoinToken) error {
-	serverURL, err := url.Parse(token.ServerURL)
+	cli, err := s.apiClient(ctx, token.ServerUrls)
 	if err != nil {
-		return ErrInvalidServerURL
-	}
-
-	http_client, err := s.GetClient()
-
-	if err != nil {
-		return err
-	}
-
-	enc := goahttp.RequestEncoder
-	dec := goahttp.ResponseDecoder //make our own
-	c := client.NewClient(serverURL.Scheme, serverURL.Host, http_client, enc, dec, false)
-	cli := &api.Client{
-		GetJoinOptionsEndpoint: c.GetJoinOptions(),
+		return apiErr(err)
 	}
 
 	opts, err := cli.GetJoinOptions(ctx, &api.ClusterJoinRequest{
 		HostID:              api.Identifier(s.cfg.HostID),
-		Hostname:            s.cfg.Hostname,
-		Ipv4Address:         s.cfg.IPv4Address,
+		Addresses:           s.cfg.PeerAddresses,
 		Token:               token.Token,
 		EmbeddedEtcdEnabled: s.cfg.EtcdMode == config.EtcdModeServer,
 	})
@@ -287,7 +272,7 @@ func (s *PreInitHandlers) ListTasks(ctx context.Context, req *api.ListTasksPaylo
 	return nil, ErrUninitialized
 }
 
-func (s *PreInitHandlers) GetClient() (res *http.Client, err error) {
+func (s *PreInitHandlers) httpClient() (res *http.Client, err error) {
 	if s.cfg.HTTP.ClientCert == "" {
 		return http.DefaultClient, nil
 	}
@@ -316,4 +301,33 @@ func (s *PreInitHandlers) GetClient() (res *http.Client, err error) {
 			},
 		},
 	}, nil
+}
+
+func (s *PreInitHandlers) apiClient(ctx context.Context, serverURLs []string) (*api.Client, error) {
+	httpClient, err := s.httpClient()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, u := range serverURLs {
+		serverURL, err := url.Parse(u)
+		if err != nil {
+			return nil, fmt.Errorf("invalid server URL '%s': %w", u, err)
+		}
+		enc := goahttp.RequestEncoder
+		dec := goahttp.ResponseDecoder
+		c := client.NewClient(serverURL.Scheme, serverURL.Host, httpClient, enc, dec, false)
+		apiClient := &api.Client{
+			GetJoinOptionsEndpoint: c.GetJoinOptions(),
+			GetVersionEndpoint:     c.GetVersion(),
+		}
+
+		// Validate the URL by calling the version endpoint
+		_, err = apiClient.GetVersion(ctx)
+		if err == nil {
+			return apiClient, nil
+		}
+	}
+
+	return nil, fmt.Errorf("failed to reach any of the given servers: %s", strings.Join(serverURLs, ", "))
 }

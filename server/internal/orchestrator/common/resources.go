@@ -9,4 +9,5 @@ func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*PgBackRestStanza](registry, ResourceTypePgBackRestStanza)
 	resource.RegisterResourceType[*PatroniCluster](registry, ResourceTypePatroniCluster)
 	resource.RegisterResourceType[*PatroniMember](registry, ResourceTypePatroniMember)
+	resource.RegisterResourceType[*PgServiceConf](registry, ResourceTypePgServiceConf)
 }

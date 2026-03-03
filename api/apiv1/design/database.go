@@ -1443,9 +1443,11 @@ var ListDatabasesResponse = g.Type("ListDatabasesResponse", func() {
 				"instances": []map[string]any{
 					{
 						"connection_info": map[string]any{
-							"hostname":     "i-0123456789abcdef.ec2.internal",
-							"ipv4_address": "10.24.34.2",
-							"port":         5432,
+							"addresses": []string{
+								"10.24.34.2",
+								"i-0123456789abcdef.ec2.internal",
+							},
+							"port": 5432,
 						},
 						"created_at": "2025-06-17T20:05:10Z",
 						"host_id":    "us-east-1",
@@ -1478,9 +1480,11 @@ var ListDatabasesResponse = g.Type("ListDatabasesResponse", func() {
 					},
 					{
 						"connection_info": map[string]any{
-							"hostname":     "i-058731542fee493f.ec2.internal",
-							"ipv4_address": "10.24.35.2",
-							"port":         5432,
+							"addresses": []string{
+								"10.24.35.2",
+								"i-058731542fee493f.ec2.internal",
+							},
+							"port": 5432,
 						},
 						"created_at": "2025-06-17T20:05:10Z",
 						"host_id":    "ap-south-1",
@@ -1513,9 +1517,11 @@ var ListDatabasesResponse = g.Type("ListDatabasesResponse", func() {
 					},
 					{
 						"connection_info": map[string]any{
-							"hostname":     "i-494027b7b53f6a23.ec2.internal",
-							"ipv4_address": "10.24.36.2",
-							"port":         5432,
+							"addresses": []string{
+								"10.24.36.2",
+								"i-494027b7b53f6a23.ec2.internal",
+							},
+							"port": 5432,
 						},
 						"created_at": "2025-06-17T20:05:10Z",
 						"host_id":    "eu-central-1",
@@ -1556,9 +1562,11 @@ var ListDatabasesResponse = g.Type("ListDatabasesResponse", func() {
 				"instances": []map[string]any{
 					{
 						"connection_info": map[string]any{
-							"hostname":     "i-0123456789abcdef.ec2.internal",
-							"ipv4_address": "10.24.34.2",
-							"port":         6432,
+							"addresses": []string{
+								"10.24.34.2",
+								"i-0123456789abcdef.ec2.internal",
+							},
+							"port": 6432,
 						},
 						"created_at": "2025-06-12T15:10:05Z",
 						"host_id":    "us-east-1",
@@ -1591,9 +1599,11 @@ var ListDatabasesResponse = g.Type("ListDatabasesResponse", func() {
 					},
 					{
 						"connection_info": map[string]any{
-							"hostname":     "i-058731542fee493f.ec2.internal",
-							"ipv4_address": "10.24.35.2",
-							"port":         6432,
+							"addresses": []string{
+								"10.24.35.2",
+								"i-058731542fee493f.ec2.internal",
+							},
+							"port": 6432,
 						},
 						"created_at": "2025-06-12T15:10:05Z",
 						"host_id":    "ap-south-1",
@@ -1626,9 +1636,11 @@ var ListDatabasesResponse = g.Type("ListDatabasesResponse", func() {
 					},
 					{
 						"connection_info": map[string]any{
-							"hostname":     "i-494027b7b53f6a23.ec2.internal",
-							"ipv4_address": "10.24.36.2",
-							"port":         6432,
+							"addresses": []string{
+								"10.24.36.2",
+								"i-494027b7b53f6a23.ec2.internal",
+							},
+							"port": 6432,
 						},
 						"created_at": "2025-06-12T15:10:05Z",
 						"host_id":    "eu-central-1",
@@ -1674,9 +1686,11 @@ var exampleDatabase = map[string]any{
 	"instances": []map[string]any{
 		{
 			"connection_info": map[string]any{
-				"hostname":     "i-0123456789abcdef.ec2.internal",
-				"ipv4_address": "10.24.34.2",
-				"port":         5432,
+				"addresses": []string{
+					"10.24.34.2",
+					"i-0123456789abcdef.ec2.internal",
+				},
+				"port": 5432,
 			},
 			"created_at": "2025-06-18T16:52:22Z",
 			"host_id":    "us-east-1",
@@ -1709,9 +1723,11 @@ var exampleDatabase = map[string]any{
 		},
 		{
 			"connection_info": map[string]any{
-				"hostname":     "i-058731542fee493f.ec2.internal",
-				"ipv4_address": "10.24.35.2",
-				"port":         5432,
+				"addresses": []string{
+					"10.24.35.2",
+					"i-058731542fee493f.ec2.internal",
+				},
+				"port": 5432,
 			},
 			"created_at": "2025-06-18T16:52:22Z",
 			"host_id":    "ap-south-1",
@@ -1744,9 +1760,11 @@ var exampleDatabase = map[string]any{
 		},
 		{
 			"connection_info": map[string]any{
-				"hostname":     "i-494027b7b53f6a23.ec2.internal",
-				"ipv4_address": "10.24.36.2",
-				"port":         5432,
+				"addresses": []string{
+					"10.24.36.2",
+					"i-494027b7b53f6a23.ec2.internal",
+				},
+				"port": 5432,
 			},
 			"created_at": "2025-06-18T16:52:22Z",
 			"host_id":    "eu-central-1",

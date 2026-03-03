@@ -64,6 +64,10 @@ func (s *ServiceInstanceResource) Dependencies() []resource.Identifier {
 	}
 }
 
+func (s *ServiceInstanceResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (s *ServiceInstanceResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	client, err := do.Invoke[*docker.Docker](rc.Injector)
 	if err != nil {

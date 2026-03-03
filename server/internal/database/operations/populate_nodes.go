@@ -12,6 +12,13 @@ import (
 func PopulateNode(node *NodeResources, existingNodeNames []string) (*resource.State, error) {
 	dbName := node.InstanceResources[0].DatabaseName()
 	populate := resource.NewState()
+
+	databaseState, err := node.databaseResourceState()
+	if err != nil {
+		return nil, err
+	}
+	populate.Merge(databaseState)
+
 	var peerWaitForSync []resource.Identifier
 	for _, peer := range existingNodeNames {
 		if peer == node.NodeName || peer == node.SourceNode {
@@ -34,8 +41,9 @@ func PopulateNode(node *NodeResources, existingNodeNames []string) (*resource.St
 		)
 	}
 
-	err := addSyncResources(
+	err = addSyncResources(
 		populate,
+		dbName,
 		peerWaitForSync,
 		node.SourceNode,
 		node.NodeName,
@@ -89,6 +97,7 @@ func addPeerResources(
 			SubscriberNode: newNode,
 		},
 		&database.SubscriptionResource{
+			DBName:         dbName,
 			SubscriberNode: newNode,
 			ProviderNode:   peerNode,
 			Disabled:       true,
@@ -134,6 +143,7 @@ func addPeerResources(
 
 func addSyncResources(
 	state *resource.State,
+	dbName string,
 	peerWaitForSync []resource.Identifier,
 	sourceNode string,
 	newNode string,
@@ -144,6 +154,7 @@ func addSyncResources(
 			SubscriberNode: newNode,
 		},
 		&database.SubscriptionResource{
+			DBName:            dbName,
 			SubscriberNode:    newNode,
 			ProviderNode:      sourceNode,
 			SyncStructure:     true,

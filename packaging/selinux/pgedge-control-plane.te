@@ -1,0 +1,28 @@
+module pgedge-control-plane 1.0.0;
+
+require {
+	type init_t;
+	type postgresql_db_t;
+	class file read;
+}
+
+allow init_t postgresql_db_t:file read;
+
+########################################
+#
+# Declarations
+#
+
+#type pgedge_control_plane_t;
+#type pgedge_control_plane_exec_t;
+
+#init_daemon_domain(pgedge_control_plane_t, pgedge_control_plane_exec_t)
+
+########################################
+#
+# pgedge_control_plane local policy
+#
+
+# Allow DBus communication with the system bus for systemd management
+#dbus_system_bus_client(pgedge_control_plane_t)
+#init_dbus_chat(pgedge_control_plane_t)

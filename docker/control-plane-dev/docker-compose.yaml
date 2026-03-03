@@ -6,9 +6,9 @@ services:
       watch:
         - path: ./Dockerfile
           action: rebuild
-        - path: ./control-plane
+        - path: ./pgedge-control-plane
           action: sync+restart
-          target: /control-plane
+          target: /pgedge-control-plane
     working_dir: ${WORKSPACE_DIR}
     environment:
       - DEBUG=${DEBUG:-0}

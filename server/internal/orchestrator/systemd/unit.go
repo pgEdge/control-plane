@@ -52,6 +52,10 @@ func (r *UnitResource) Dependencies() []resource.Identifier {
 	return deps
 }
 
+func (r *UnitResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (r *UnitResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	parentPath, err := filesystem.DirResourceFullPath(rc, r.ParentDirID)
 	if err != nil {
@@ -133,7 +137,7 @@ func (r *UnitResource) Delete(ctx context.Context, rc *resource.Context) error {
 	case err != nil:
 		return fmt.Errorf("failed to check if unit exists: %w", err)
 	default:
-		if err := client.StopUnit(ctx, r.Name); err != nil {
+		if err := client.StopUnit(ctx, r.Name, true); err != nil {
 			return fmt.Errorf("failed to stop unit: %w", err)
 		}
 		if err := client.DisableUnit(ctx, r.Name); err != nil {

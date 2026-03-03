@@ -29,6 +29,14 @@
         "reason": "dependency_updated",
         "diff": null
       }
+    ],
+    [
+      {
+        "type": "update",
+        "resource_id": "database.postgres_database::n1-test",
+        "reason": "dependency_updated",
+        "diff": null
+      }
     ]
   ],
   [
@@ -65,6 +73,12 @@
   ],
   [
     [
+      {
+        "type": "create",
+        "resource_id": "database.postgres_database::n3-test",
+        "reason": "does_not_exist",
+        "diff": null
+      },
       {
         "type": "create",
         "resource_id": "database.replication_slot::n1n3",
@@ -154,6 +168,11 @@
       }
     ],
     [
+      {
+        "type": "delete",
+        "resource_id": "database.postgres_database::n2-test",
+        "diff": null
+      },
       {
         "type": "delete",
         "resource_id": "database.replication_slot::n1n2",

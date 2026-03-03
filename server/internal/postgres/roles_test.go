@@ -19,9 +19,9 @@ func TestCreateUserRole(t *testing.T) {
 		{
 			name: "app user",
 			opts: postgres.UserRoleOptions{
-				Name:       "app",
-				Password:   "password",
-				DBName:     "northwind",
+				Name:     "app",
+				Password: "password",
+				// DBName:     "northwind",
 				Attributes: []string{"LOGIN"},
 				Roles:      []string{"pgedge_application"},
 			},
@@ -45,10 +45,10 @@ func TestCreateUserRole(t *testing.T) {
 		{
 			name: "DE admin user",
 			opts: postgres.UserRoleOptions{
-				Name:       "admin",
-				Password:   "password",
-				DBName:     "northwind",
-				DBOwner:    true,
+				Name:     "admin",
+				Password: "password",
+				// DBName:     "northwind",
+				// DBOwner:    true,
 				Attributes: []string{"LOGIN", "CREATEDB", "CREATEROLE"},
 				Roles:      []string{"pgedge_superuser"},
 			},
@@ -66,17 +66,17 @@ func TestCreateUserRole(t *testing.T) {
 				postgres.Statement{SQL: `ALTER ROLE "admin" WITH LOGIN;`},
 				postgres.Statement{SQL: `ALTER ROLE "admin" WITH CREATEDB;`},
 				postgres.Statement{SQL: `ALTER ROLE "admin" WITH CREATEROLE;`},
-				postgres.Statement{SQL: `ALTER DATABASE "northwind" OWNER TO "admin";`},
+				// postgres.Statement{SQL: `ALTER DATABASE "northwind" OWNER TO "admin";`},
 				postgres.Statement{SQL: `GRANT "pgedge_superuser" TO "admin" WITH INHERIT TRUE;`},
 			},
 		},
 		{
 			name: "EE admin user",
 			opts: postgres.UserRoleOptions{
-				Name:       "admin",
-				Password:   "password",
-				DBName:     "northwind",
-				DBOwner:    true,
+				Name:     "admin",
+				Password: "password",
+				// DBName:     "northwind",
+				// DBOwner:    true,
 				Attributes: []string{"LOGIN", "SUPERUSER"},
 			},
 			expected: postgres.Statements{
@@ -92,7 +92,7 @@ func TestCreateUserRole(t *testing.T) {
 				postgres.Statement{SQL: `ALTER ROLE "admin" WITH PASSWORD 'password';`},
 				postgres.Statement{SQL: `ALTER ROLE "admin" WITH LOGIN;`},
 				postgres.Statement{SQL: `ALTER ROLE "admin" WITH SUPERUSER;`},
-				postgres.Statement{SQL: `ALTER DATABASE "northwind" OWNER TO "admin";`},
+				// postgres.Statement{SQL: `ALTER DATABASE "northwind" OWNER TO "admin";`},
 			},
 		},
 		{

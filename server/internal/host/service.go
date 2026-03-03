@@ -39,12 +39,12 @@ func (s *Service) UpdateHost(ctx context.Context) error {
 	// 	return fmt.Errorf("failed to detect system resources: %w", err)
 	// }
 	host := &Host{
-		ID:           s.cfg.HostID,
-		Orchestrator: s.cfg.Orchestrator,
-		DataDir:      s.cfg.DataDir,
-		Hostname:     s.cfg.Hostname,
-		IPv4Address:  s.cfg.IPv4Address,
-		EtcdMode:     s.cfg.EtcdMode,
+		ID:              s.cfg.HostID,
+		Orchestrator:    s.cfg.Orchestrator,
+		DataDir:         s.cfg.DataDir,
+		PeerAddresses:   s.cfg.PeerAddresses,
+		ClientAddresses: s.cfg.ClientAddresses,
+		EtcdMode:        s.cfg.EtcdMode,
 		// CPUs:         resources.CPUs,
 		// MemBytes:     resources.MemBytes,
 		// UpdatedAt: time.Now(),

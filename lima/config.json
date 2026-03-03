@@ -1,0 +1,8 @@
+{
+
+  "orchestrator": "systemd",
+  "logging": {
+    "pretty": true
+  },
+  "client_addresses": ["localhost"]
+}

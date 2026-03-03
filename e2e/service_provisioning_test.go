@@ -5,6 +5,7 @@ package e2e
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -112,15 +113,8 @@ func TestProvisionMCPService(t *testing.T) {
 		t.Log("Verifying service instance connection info")
 
 		// Verify basic connection info exists
-		assert.NotNil(t, serviceInstance.Status.Hostname, "Hostname should be set")
-		assert.NotNil(t, serviceInstance.Status.Ipv4Address, "IPv4 address should be set")
-
-		if serviceInstance.Status.Hostname != nil {
-			t.Logf("Service hostname: %s", *serviceInstance.Status.Hostname)
-		}
-		if serviceInstance.Status.Ipv4Address != nil {
-			t.Logf("Service IPv4 address: %s", *serviceInstance.Status.Ipv4Address)
-		}
+		assert.NotEmpty(t, serviceInstance.Status.Addresses, "Addresses should be set")
+		t.Logf("Service addresses: %s", strings.Join(serviceInstance.Status.Addresses, ", "))
 
 		// Verify ports are configured
 		if len(serviceInstance.Status.Ports) > 0 {

@@ -1,63 +1,71 @@
 package postgres
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
 
 type DSN struct {
-	Hosts           []string
-	Ports           []int
-	User            string
-	Password        string
-	DBName          string
-	SSLCert         string
-	SSLKey          string
-	SSLRootCert     string
-	ApplicationName string
-	Extra           map[string]string
+	Hosts              []string
+	Ports              []int
+	User               string
+	Password           string
+	DBName             string
+	SSLCert            string
+	SSLKey             string
+	SSLRootCert        string
+	Service            string
+	ApplicationName    string
+	TargetSessionAttrs string
+	Extra              map[string]string
+}
+
+func (d *DSN) Host() string {
+	return strings.Join(d.Hosts, ",")
+}
+
+func (d *DSN) Port() string {
+	ports := make([]string, len(d.Ports))
+	for i, port := range d.Ports {
+		ports[i] = strconv.Itoa(port)
+	}
+	return strings.Join(ports, ",")
+}
+
+func (d *DSN) Fields() []string {
+	var fields []string
+	addField := func(key, value string) {
+		if value == "" {
+			return
+		}
+
+		var buf strings.Builder
+		buf.WriteString(key)
+		buf.WriteString("=")
+		buf.WriteString(value)
+
+		fields = append(fields, buf.String())
+	}
+
+	addField("host", d.Host())
+	addField("port", d.Port())
+	addField("user", d.User)
+	addField("password", d.Password)
+	addField("dbname", d.DBName)
+	addField("sslcert", d.SSLCert)
+	addField("sslkey", d.SSLKey)
+	addField("sslrootcert", d.SSLRootCert)
+	addField("service", d.Service)
+	addField("application_name", d.ApplicationName)
+	addField("target_session_attrs", d.TargetSessionAttrs)
+
+	for key, value := range d.Extra {
+		addField(key, value)
+	}
+
+	return fields
 }
 
 func (d *DSN) String() string {
-	var fields []string
-	if len(d.Hosts) > 0 {
-		host := strings.Join(d.Hosts, ",")
-		fields = append(fields, fmt.Sprintf("host=%s", host))
-	}
-	if len(d.Ports) > 0 {
-		ports := make([]string, len(d.Ports))
-		for i, port := range d.Ports {
-			ports[i] = strconv.Itoa(port)
-		}
-		port := strings.Join(ports, ",")
-		fields = append(fields, fmt.Sprintf("port=%s", port))
-	}
-	if d.User != "" {
-		fields = append(fields, fmt.Sprintf("user=%s", d.User))
-	}
-	if d.Password != "" {
-		fields = append(fields, fmt.Sprintf("password=%s", d.Password))
-	}
-	if d.DBName != "" {
-		fields = append(fields, fmt.Sprintf("dbname=%s", d.DBName))
-	}
-	if d.SSLCert != "" {
-		fields = append(fields, fmt.Sprintf("sslcert=%s", d.SSLCert))
-	}
-	if d.SSLKey != "" {
-		fields = append(fields, fmt.Sprintf("sslkey=%s", d.SSLKey))
-	}
-	if d.SSLRootCert != "" {
-		fields = append(fields, fmt.Sprintf("sslrootcert=%s", d.SSLRootCert))
-	}
-	if d.ApplicationName != "" {
-		fields = append(fields, fmt.Sprintf("application_name=%s", d.ApplicationName))
-	} else {
-		fields = append(fields, "application_name=control-plane")
-	}
-	for key, value := range d.Extra {
-		fields = append(fields, fmt.Sprintf("%s=%s", key, value))
-	}
-	return strings.Join(fields, " ")
+	return strings.Join(d.Fields(), " ")
 }

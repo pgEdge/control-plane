@@ -77,6 +77,10 @@ func (c *EtcdCreds) Dependencies() []resource.Identifier {
 	}
 }
 
+func (c *EtcdCreds) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (c *EtcdCreds) Refresh(ctx context.Context, rc *resource.Context) error {
 	fs, err := do.Invoke[afero.Fs](rc.Injector)
 	if err != nil {

@@ -34,6 +34,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/orchestrator/common"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
+	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/scheduler"
 	"github.com/pgEdge/control-plane/server/internal/utils"
@@ -153,7 +154,7 @@ func (o *Orchestrator) GenerateInstanceResources(spec *database.InstanceSpec) (*
 		return nil, err
 	}
 
-	resources, err := database.NewInstanceResources(instance, orchestratorResources)
+	resources, err := database.NewInstanceResources(instance, orchestratorResources, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create instance resources: %w", err)
 	}
@@ -248,12 +249,15 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec) (*database
 		OwnerGID:   o.cfg.DatabaseOwnerUID,
 	}
 	postgresCerts := &common.PostgresCerts{
-		InstanceID:       spec.InstanceID,
-		HostID:           spec.HostID,
-		ParentID:         certificatesDir.ID,
-		InstanceHostname: instanceHostname,
-		OwnerUID:         o.cfg.DatabaseOwnerUID,
-		OwnerGID:         o.cfg.DatabaseOwnerUID,
+		InstanceID: spec.InstanceID,
+		HostID:     spec.HostID,
+		ParentID:   certificatesDir.ID,
+		InstanceAddresses: slices.Concat(
+			[]string{instanceHostname},
+			o.cfg.Addresses(),
+		),
+		OwnerUID: o.cfg.DatabaseOwnerUID,
+		OwnerGID: o.cfg.DatabaseOwnerUID,
 	}
 	patroniConfig := &PatroniConfig{
 		Base: &common.PatroniConfig{
@@ -414,7 +418,7 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 
 	instance.OrchestratorDependencies = append(instance.OrchestratorDependencies, ScaleServiceResourceIdentifier(spec.InstanceID, ScaleDirectionUP))
 
-	instanceResources, err := database.NewInstanceResources(instance, resources)
+	instanceResources, err := database.NewInstanceResources(instance, resources, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize instance resources: %w", err)
 	}
@@ -555,18 +559,17 @@ func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, spec *data
 	}
 
 	return &database.ConnectionInfo{
-		AdminHost:         bridge.IPAddress,
-		AdminPort:         5432,
-		PeerHost:          fmt.Sprintf("%s.%s-database", inspect.Config.Hostname, spec.DatabaseID),
-		PeerPort:          5432,
-		PeerSSLCert:       "/opt/pgedge/certificates/postgres/superuser.crt",
-		PeerSSLKey:        "/opt/pgedge/certificates/postgres/superuser.key",
-		PeerSSLRootCert:   "/opt/pgedge/certificates/postgres/ca.crt",
-		PatroniPort:       8888,
-		ClientHost:        o.cfg.Hostname,
-		ClientIPv4Address: o.cfg.IPv4Address,
-		ClientPort:        clientPort,
-		InstanceHostname:  inspect.Config.Hostname,
+		AdminHost:        bridge.IPAddress,
+		AdminPort:        5432,
+		PeerHost:         fmt.Sprintf("%s.%s-database", inspect.Config.Hostname, spec.DatabaseID),
+		PeerPort:         5432,
+		PeerSSLCert:      "/opt/pgedge/certificates/postgres/superuser.crt",
+		PeerSSLKey:       "/opt/pgedge/certificates/postgres/superuser.key",
+		PeerSSLRootCert:  "/opt/pgedge/certificates/postgres/ca.crt",
+		PatroniPort:      8888,
+		ClientAddresses:  o.cfg.ClientAddresses,
+		ClientPort:       clientPort,
+		InstanceHostname: inspect.Config.Hostname,
 	}, nil
 }
 
@@ -626,8 +629,7 @@ func (o *Orchestrator) GetServiceInstanceStatus(ctx context.Context, serviceInst
 	return &database.ServiceInstanceStatus{
 		ContainerID:  utils.PointerTo(inspect.ID),
 		ImageVersion: utils.PointerTo(inspect.Config.Image),
-		Hostname:     utils.PointerTo(inspect.Config.Hostname),
-		IPv4Address:  utils.PointerTo(o.cfg.IPv4Address),
+		Addresses:    o.cfg.ClientAddresses,
 		Ports:        ports,
 		ServiceReady: utils.PointerTo(ready),
 	}, nil
@@ -739,6 +741,19 @@ func (o *Orchestrator) StartInstance(
 	instanceID string,
 ) error {
 	return o.scaleInstance(ctx, instanceID, 1)
+}
+
+func (o *Orchestrator) NodeDSN(ctx context.Context, rc *resource.Context, nodeName string, fromInstanceID string, dbName string) (*postgres.DSN, error) {
+	node, err := resource.FromContext[*database.NodeResource](rc, database.NodeResourceIdentifier(nodeName))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get node resource: %w", err)
+	}
+	instance, err := resource.FromContext[*database.InstanceResource](rc, database.InstanceResourceIdentifier(fromInstanceID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get node resource: %w", err)
+	}
+
+	return node.DSN(ctx, rc, instance, dbName)
 }
 
 func (o *Orchestrator) scaleInstance(

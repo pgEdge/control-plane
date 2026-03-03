@@ -1,0 +1,12 @@
+---
+- include_tasks: ../../../../e2e/fixtures/roles/lima_common/tasks/list.yaml
+
+- name: Create hosts
+  loop: '{{ machines }}'
+  command: limactl start --yes --name={{ item }} lima-template.yaml
+  when: item not in lima_vms
+
+- name: Start stopped hosts
+  loop: '{{ machines }}'
+  command: limactl start --name={{ item }}
+  when: item in lima_vms and lima_vms[item].status != 'Running'

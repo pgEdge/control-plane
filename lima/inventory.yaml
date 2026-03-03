@@ -1,0 +1,21 @@
+---
+control_plane:
+  hosts:
+    host-1:
+      ansible_host: lima-control-plane-dev-1
+      ansible_ssh_common_args: "-F {{ lookup('env', 'HOME') }}/.lima/control-plane-dev-1/ssh.config"
+    host-2:
+      ansible_host: lima-control-plane-dev-2
+      ansible_ssh_common_args: "-F {{ lookup('env', 'HOME') }}/.lima/control-plane-dev-2/ssh.config"
+    host-3:
+      ansible_host: lima-control-plane-dev-3
+      ansible_ssh_common_args: "-F {{ lookup('env', 'HOME') }}/.lima/control-plane-dev-3/ssh.config"
+    host-4:
+      ansible_host: lima-control-plane-dev-4
+      ansible_ssh_common_args: "-F {{ lookup('env', 'HOME') }}/.lima/control-plane-dev-4/ssh.config"
+    host-5:
+      ansible_host: lima-control-plane-dev-5
+      ansible_ssh_common_args: "-F {{ lookup('env', 'HOME') }}/.lima/control-plane-dev-5/ssh.config"
+    host-6:
+      ansible_host: lima-control-plane-dev-6
+      ansible_ssh_common_args: "-F {{ lookup('env', 'HOME') }}/.lima/control-plane-dev-6/ssh.config"

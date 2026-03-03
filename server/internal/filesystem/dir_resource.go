@@ -64,6 +64,10 @@ func (d *DirResource) Dependencies() []resource.Identifier {
 	}
 }
 
+func (d *DirResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (d *DirResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	fs, err := do.Invoke[afero.Fs](rc.Injector)
 	if err != nil {

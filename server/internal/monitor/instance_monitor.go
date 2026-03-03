@@ -78,8 +78,7 @@ func (m *InstanceMonitor) checkStatus(ctx context.Context) error {
 		return m.updateInstanceErrStatus(ctx, status, err)
 	}
 
-	status.Hostname = utils.PointerTo(info.ClientHost)
-	status.IPv4Address = utils.PointerTo(info.ClientIPv4Address)
+	status.Addresses = info.ClientAddresses
 	status.Port = utils.PointerTo(info.ClientPort)
 
 	err = m.populateFromPatroni(ctx, info, status)

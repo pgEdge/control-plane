@@ -10,6 +10,7 @@ import (
 
 	"github.com/rs/zerolog"
 
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
@@ -110,6 +111,29 @@ var defaultDockerSwarm = DockerSwarm{
 	DatabaseNetworksSubnetBits: 26,
 }
 
+type SystemD struct {
+	InstanceDataDir string `koanf:"instance_data_dir" json:"instance_data_dir,omitempty"`
+	PgBackRestPath  string `koanf:"pgbackrest_path" json:"pgbackrest_path,omitempty"`
+	PatroniPath     string `koanf:"patroni_path" json:"patroni_path,omitempty"`
+}
+
+func (s SystemD) validate() []error {
+	var errs []error
+	if s.PgBackRestPath == "" {
+		errs = append(errs, errors.New("pgbackrest_path cannot be empty"))
+	}
+	if s.PatroniPath == "" {
+		errs = append(errs, errors.New("patroni_path cannot be empty"))
+	}
+
+	return errs
+}
+
+var defaultSystemD = SystemD{
+	PgBackRestPath: "/usr/bin/pgbackrest",
+	PatroniPath:    "/usr/local/bin/patroni",
+}
+
 type HTTP struct {
 	Enabled    bool   `koanf:"enabled" json:"enabled,omitempty"`
 	BindAddr   string `koanf:"bind_addr" json:"bind_addr,omitempty"`
@@ -198,8 +222,8 @@ type Config struct {
 	HostID                 string       `koanf:"host_id" json:"host_id,omitempty"`
 	Orchestrator           Orchestrator `koanf:"orchestrator" json:"orchestrator,omitempty"`
 	DataDir                string       `koanf:"data_dir" json:"data_dir,omitempty"`
-	IPv4Address            string       `koanf:"ipv4_address" json:"ipv4_address,omitempty"`
-	Hostname               string       `koanf:"hostname" json:"hostname,omitempty"`
+	PeerAddresses          []string     `koanf:"peer_addresses" json:"peer_addresses,omitempty"`
+	ClientAddresses        []string     `koanf:"client_addresses" json:"client_addresses,omitempty"`
 	StopGracePeriodSeconds int64        `koanf:"stop_grace_period_seconds" json:"stop_grace_period_seconds,omitempty"`
 	MQTT                   MQTT         `koanf:"mqtt" json:"mqtt,omitzero"`
 	HTTP                   HTTP         `koanf:"http" json:"http,omitzero"`
@@ -213,8 +237,33 @@ type Config struct {
 	TraefikEnabled         bool         `koanf:"traefik_enabled" json:"traefik_enabled,omitempty"`
 	VectorEnabled          bool         `koanf:"vector_enabled" json:"vector_enabled,omitempty"`
 	DockerSwarm            DockerSwarm  `koanf:"docker_swarm" json:"docker_swarm,omitzero"`
+	SystemD                SystemD      `koanf:"systemd" json:"systemd,omitzero"`
 	DatabaseOwnerUID       int          `koanf:"database_owner_uid" json:"database_owner_uid,omitempty"`
 	ProfilingEnabled       bool         `koanf:"profiling_enabled" json:"profiling_enabled,omitempty"`
+}
+
+// ClientAddress is a convenience function to return the first client address.
+func (c Config) ClientAddress() string {
+	if len(c.ClientAddresses) > 0 {
+		return c.ClientAddresses[0]
+	}
+	return ""
+}
+
+// PeerAddress is a convenience function to return the first peer address.
+func (c Config) PeerAddress() string {
+	if len(c.PeerAddresses) > 0 {
+		return c.PeerAddresses[0]
+	}
+	return ""
+}
+
+// Addresses returns a sorted, combined list of peer and client addresses.
+func (c Config) Addresses() []string {
+	combined := ds.NewSet(c.PeerAddresses...)
+	combined.Add(c.ClientAddresses...)
+
+	return combined.ToSortedSlice(strings.Compare)
 }
 
 func (c Config) Validate() error {
@@ -225,8 +274,11 @@ func (c Config) Validate() error {
 	if err := validateOptionalID("tenant_id", c.TenantID); err != nil {
 		errs = append(errs, err)
 	}
-	if c.IPv4Address == "" {
-		errs = append(errs, errors.New("ipv4_address cannot be empty"))
+	if len(c.PeerAddresses) == 0 {
+		errs = append(errs, errors.New("peer_addresses cannot be empty"))
+	}
+	if len(c.ClientAddresses) == 0 {
+		errs = append(errs, errors.New("client_addresses cannot be empty"))
 	}
 	if c.DataDir == "" {
 		errs = append(errs, errors.New("data_dir cannot be empty"))
@@ -249,7 +301,9 @@ func (c Config) Validate() error {
 			errs = append(errs, fmt.Errorf("docker_swarm.%w", err))
 		}
 	case OrchestratorSystemD:
-		// There is no SystemD-specific configuration yet.
+		for _, err := range c.SystemD.validate() {
+			errs = append(errs, fmt.Errorf("systemd.%w", err))
+		}
 	default:
 		errs = append(errs, fmt.Errorf("host_type: unsupported host type %q", c.Orchestrator))
 	}
@@ -269,56 +323,92 @@ func (c Config) Validate() error {
 }
 
 func DefaultConfig() (Config, error) {
-	ipv4Address, err := getOutboundIP()
+	addresses, err := defaultAddresses()
 	if err != nil {
-		return Config{}, fmt.Errorf("failed to determine default ipv4_address: %w", err)
+		return Config{}, err
 	}
-	hostname, err := getHostname(ipv4Address)
+	hostID, err := getShortHostname()
 	if err != nil {
-		return Config{}, fmt.Errorf("failed to determine default hostname: %w", err)
+		return Config{}, err
 	}
+
 	return Config{
+		HostID:                 hostID,
 		Orchestrator:           OrchestratorSwarm,
 		EtcdMode:               EtcdModeServer,
-		Hostname:               hostname,
-		IPv4Address:            ipv4Address.String(),
+		PeerAddresses:          addresses,
+		ClientAddresses:        addresses,
 		Logging:                loggingDefault,
 		HTTP:                   httpDefault,
 		StopGracePeriodSeconds: 30,
 		EtcdServer:             etcdServerDefault,
 		EtcdClient:             etcdClientDefault,
 		DockerSwarm:            defaultDockerSwarm,
+		SystemD:                defaultSystemD,
 		DatabaseOwnerUID:       26,
 	}, nil
 }
 
-// GetOutboundIP returns the first outbound IP address for this host.
-func getOutboundIP() (net.IP, error) {
-	// Similar to 'ip route get 1'. Does not actually make a connection since
-	// UDP does not have a handshake.
-	conn, err := net.Dial("udp4", "8.8.8.8:80")
+func defaultAddresses() ([]string, error) {
+	ip, err := getFirstIP()
 	if err != nil {
-		return net.IPv4zero, fmt.Errorf("failed to create connection: %w", err)
+		return nil, err
 	}
-	defer conn.Close()
 
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
-
-	return localAddr.IP, nil
+	return []string{ip.String()}, nil
 }
 
-func getHostname(myIP net.IP) (string, error) {
-	// Try to lookup domain names for the given IP address
-	names, err := net.LookupAddr(myIP.String())
-	if err == nil && len(names) > 0 {
-		// FQDNs end in a dot
-		return strings.TrimRight(names[0], "."), nil
+// getFirstIP gets the first non-loopback IPv4 address
+func getFirstIP() (net.IP, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return net.IPv4zero, fmt.Errorf("failed to list interfaces: %w", err)
 	}
-	// Fallback to hostname
+	for _, iface := range interfaces {
+		// Skip loopback and down interfaces
+		if iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagUp == 0 {
+			continue
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+
+			// Check if it is a valid IPv4 address and not a loopback address
+			if ip == nil || ip.IsLoopback() {
+				continue
+			}
+
+			// To4() returns nil if the IP is not an IPv4 address
+			ip = ip.To4()
+			if ip == nil {
+				continue
+			}
+
+			// Return the first valid IPv4 address found
+			return ip, nil
+		}
+	}
+
+	return net.IPv4zero, fmt.Errorf("could not find a valid network interface")
+}
+
+func getShortHostname() (string, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return "", fmt.Errorf("failed to get system hostname: %w", err)
 	}
+	// Only return up to the first separator
+	short, _, _ := strings.Cut(hostname, ".")
 
-	return hostname, nil
+	return short, nil
 }

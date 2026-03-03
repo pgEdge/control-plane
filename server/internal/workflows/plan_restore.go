@@ -90,6 +90,8 @@ func (w *Workflows) getRestoreResources(
 	}
 
 	nodeRestore := &operations.NodeRestoreResources{
+		DBName:   node.DBName,
+		DBOwner:  node.DBOwner,
 		NodeName: node.NodeName,
 	}
 	for _, instance := range node.Instances {

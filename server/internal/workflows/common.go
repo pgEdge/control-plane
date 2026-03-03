@@ -241,6 +241,8 @@ func (w *Workflows) getNodeResources(
 	}
 
 	return &operations.NodeResources{
+		DBOwner:           node.DBOwner,
+		DBName:            node.DBName,
 		NodeName:          node.NodeName,
 		SourceNode:        node.SourceNode,
 		InstanceResources: resources,

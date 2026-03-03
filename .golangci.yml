@@ -16,6 +16,7 @@ linters:
     rules:
       - linters:
           - errcheck
+          - staticcheck
         path: (.+)_test.go
       - linters:
           - errcheck

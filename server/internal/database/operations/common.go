@@ -9,6 +9,8 @@ import (
 )
 
 type NodeResources struct {
+	DBOwner           string
+	DBName            string
 	NodeName          string
 	SourceNode        string
 	PrimaryInstanceID string
@@ -26,13 +28,54 @@ func (n *NodeResources) primaryInstance() *database.InstanceResources {
 	return nil
 }
 
-func addNodeResource(states []*resource.State, resource *database.NodeResource) error {
-	// Add the node resource to the last state
-	err := states[len(states)-1].AddResource(resource)
-	if err != nil {
-		return fmt.Errorf("failed to add node resource to state: %w", err)
+func (n *NodeResources) nodeResourceState() (*resource.State, error) {
+	var instanceIDs []string
+	state := resource.NewState()
+	for _, instance := range n.InstanceResources {
+		instanceIDs = append(instanceIDs, instance.InstanceID())
 	}
-	return nil
+
+	err := state.AddResource(&database.NodeResource{
+		Name:        n.NodeName,
+		InstanceIDs: instanceIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to add node resources to state: %w", err)
+	}
+
+	return state, nil
+}
+
+func (n *NodeResources) databaseResourceState() (*resource.State, error) {
+	hasRestoreConfig := n.RestoreConfig != nil
+
+	var renameFrom string
+	if hasRestoreConfig {
+		renameFrom = n.RestoreConfig.SourceDatabaseName
+	}
+
+	db := &database.PostgresDatabaseResource{
+		NodeName:         n.NodeName,
+		DBName:           n.DBName,
+		Owner:            n.DBOwner,
+		RenameFrom:       renameFrom,
+		HasRestoreConfig: hasRestoreConfig,
+	}
+
+	state := resource.NewState()
+	for _, instance := range n.InstanceResources {
+		for _, dep := range instance.DatabaseDependencies {
+			db.ExtraDependencies = append(db.ExtraDependencies, dep.Identifier)
+			state.Add(dep)
+		}
+	}
+
+	err := state.AddResource(db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add node resources to state: %w", err)
+	}
+
+	return state, nil
 }
 
 func instanceState(inst *database.InstanceResources) (*resource.State, error) {

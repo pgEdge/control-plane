@@ -1,8 +1,13 @@
 version: 2
 project_name: control-plane
+
+# before:
+#   hooks:
+#     - make build-selinux-policy
+
 builds:
   - main: ./server
-    binary: control-plane
+    binary: pgedge-control-plane
     env:
       - CGO_ENABLED=0
     goos:
@@ -25,6 +30,29 @@ sboms:
   - artifacts: archive
     documents:
       - '${artifact}.spdx.json'
+
+nfpms:
+  - package_name: pgedge-control-plane
+    vendor: pgEdge
+    homepage: https://www.pgedge.com
+    maintainer: pgEdge Support <support@pgedge.com>
+    description: pgEdge Control Plane
+    license: PostgreSQL License
+    formats:
+      - rpm
+    bindir: /usr/sbin
+    contents:
+      - src: packaging/pgedge-control-plane.service
+        dst: /usr/lib/systemd/system/pgedge-control-plane.service
+        type: config
+      - src: packaging/config.json
+        dst: /etc/pgedge-control-plane/config.json
+        type: config|noreplace
+      # - src: packaging/selinux/pgedge-control-plane.pp
+      #   dst: /usr/share/selinux/packages/pgedge-control-plane/pgedge-control-plane.pp
+    scripts:
+      postinstall: packaging/scripts/postinstall.sh
+      postremove: packaging/scripts/postremove.sh
 
 release:
   github:

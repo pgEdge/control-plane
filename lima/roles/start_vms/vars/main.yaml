@@ -1,0 +1,8 @@
+---
+machines:
+  - control-plane-dev-1
+  - control-plane-dev-2
+  - control-plane-dev-3
+  - control-plane-dev-4
+  - control-plane-dev-5
+  - control-plane-dev-6

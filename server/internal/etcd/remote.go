@@ -282,7 +282,7 @@ func (r *RemoteEtcd) ChangeMode(ctx context.Context, mode config.EtcdMode) (Etcd
 		ClientKey:  clientPrincipal.KeyPEM,
 	}
 
-	if err := addEtcdServerCredentials(ctx, cfg.HostID, cfg.Hostname, cfg.IPv4Address, r.certSvc, creds); err != nil {
+	if err := addEtcdServerCredentials(ctx, cfg.HostID, cfg.PeerAddresses, r.certSvc, creds); err != nil {
 		return nil, err
 	}
 

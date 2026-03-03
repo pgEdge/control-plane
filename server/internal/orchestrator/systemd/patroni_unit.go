@@ -3,19 +3,14 @@ package systemd
 import (
 	"fmt"
 	"os"
-	"os/exec"
+	"path/filepath"
 
 	"github.com/coreos/go-systemd/v22/unit"
 
 	"github.com/pgEdge/control-plane/server/internal/orchestrator/common"
 )
 
-func patroniUnitOptions(paths common.InstancePaths, pgBinPath string) ([]*unit.UnitOption, error) {
-	kill, err := exec.LookPath("kill")
-	if err != nil {
-		return nil, fmt.Errorf("failed to find kill executable: %w", err)
-	}
-
+func patroniUnitOptions(paths common.InstancePaths, pgBinPath string) []*unit.UnitOption {
 	pathEnv := "PATH=" + pgBinPath
 	if p := os.Getenv("PATH"); p != "" {
 		pathEnv += ":" + p
@@ -45,7 +40,7 @@ func patroniUnitOptions(paths common.InstancePaths, pgBinPath string) ([]*unit.U
 		{
 			Section: "Service",
 			Name:    "ExecReload",
-			Value:   fmt.Sprintf("%s -s HUP $MAINPID", kill),
+			Value:   "/bin/kill -s HUP $MAINPID",
 		},
 		{
 			Section: "Service",
@@ -68,9 +63,14 @@ func patroniUnitOptions(paths common.InstancePaths, pgBinPath string) ([]*unit.U
 			Value:   pathEnv,
 		},
 		{
+			Section: "Service",
+			Name:    "Environment",
+			Value:   "PGSERVICEFILE=" + filepath.Join(paths.Instance.Configs(), "pg_service.conf"),
+		},
+		{
 			Section: "Install",
 			Name:    "WantedBy",
 			Value:   "multi-user.target",
 		},
-	}, nil
+	}
 }
