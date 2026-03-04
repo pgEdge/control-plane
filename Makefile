@@ -56,7 +56,7 @@ gotestsum=$(gobin)/gotestsum \
 	$(if $(filter true,$(CI)),--junitfile $@-results.xml)
 
 golangci-lint=$(gobin)/golangci-lint \
-	$(if $(filter true,$(CI)),--output.text --output.junit-xml.path $@-results.xml)
+	$(if $(filter true,$(CI)),--output.text.path stdout --output.junit-xml.path $@-results.xml)
 
 .DEFAULT_GOAL := build
 
