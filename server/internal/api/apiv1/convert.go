@@ -222,14 +222,15 @@ func serviceSpecToAPI(svc *database.ServiceSpec) *api.ServiceSpec {
 	}
 
 	return &api.ServiceSpec{
-		ServiceID:   api.Identifier(svc.ServiceID),
-		ServiceType: svc.ServiceType,
-		Version:     svc.Version,
-		HostIds:     hostIDs,
-		Port:        svc.Port,
-		Config:      filteredConfig,
-		Cpus:        utils.NillablePointerTo(humanizeCPUs(utils.FromPointer(svc.CPUs))),
-		Memory:      utils.NillablePointerTo(humanizeBytes(utils.FromPointer(svc.MemoryBytes))),
+		ServiceID:        api.Identifier(svc.ServiceID),
+		ServiceType:      svc.ServiceType,
+		Version:          svc.Version,
+		HostIds:          hostIDs,
+		Port:             svc.Port,
+		Config:           filteredConfig,
+		Cpus:             utils.NillablePointerTo(humanizeCPUs(utils.FromPointer(svc.CPUs))),
+		Memory:           utils.NillablePointerTo(humanizeBytes(utils.FromPointer(svc.MemoryBytes))),
+		OrchestratorOpts: orchestratorOptsToAPI(svc.OrchestratorOpts),
 	}
 }
 
@@ -647,14 +648,15 @@ func apiToServiceSpec(apiSvc *api.ServiceSpec) (*database.ServiceSpec, error) {
 	}
 
 	return &database.ServiceSpec{
-		ServiceID:   string(apiSvc.ServiceID),
-		ServiceType: apiSvc.ServiceType,
-		Version:     apiSvc.Version,
-		HostIDs:     hostIDs,
-		Port:        apiSvc.Port,
-		Config:      apiSvc.Config,
-		CPUs:        cpus,
-		MemoryBytes: memory,
+		ServiceID:        string(apiSvc.ServiceID),
+		ServiceType:      apiSvc.ServiceType,
+		Version:          apiSvc.Version,
+		HostIDs:          hostIDs,
+		Port:             apiSvc.Port,
+		Config:           apiSvc.Config,
+		CPUs:             cpus,
+		MemoryBytes:      memory,
+		OrchestratorOpts: orchestratorOptsToDatabase(apiSvc.OrchestratorOpts),
 	}, nil
 }
 

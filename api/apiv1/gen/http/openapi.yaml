@@ -3432,6 +3432,37 @@ definitions:
               - 76f9b8c0-4958-11f0-a489-3bb29577c696
               - 76f9b8c0-4958-11f0-a489-3bb29577c696
             memory: 512M
+            orchestrator_opts:
+              swarm:
+                extra_labels:
+                  traefik.enable: "true"
+                  traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
+                extra_networks:
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                extra_volumes:
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
             service_type: mcp
@@ -3445,6 +3476,37 @@ definitions:
               - 76f9b8c0-4958-11f0-a489-3bb29577c696
               - 76f9b8c0-4958-11f0-a489-3bb29577c696
             memory: 512M
+            orchestrator_opts:
+              swarm:
+                extra_labels:
+                  traefik.enable: "true"
+                  traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
+                extra_networks:
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                extra_volumes:
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
             service_type: mcp
@@ -3458,6 +3520,37 @@ definitions:
               - 76f9b8c0-4958-11f0-a489-3bb29577c696
               - 76f9b8c0-4958-11f0-a489-3bb29577c696
             memory: 512M
+            orchestrator_opts:
+              swarm:
+                extra_labels:
+                  traefik.enable: "true"
+                  traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
+                extra_networks:
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                extra_volumes:
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
             service_type: mcp
@@ -3923,6 +4016,37 @@ definitions:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
           memory: 512M
+          orchestrator_opts:
+            swarm:
+              extra_labels:
+                traefik.enable: "true"
+                traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
+              extra_networks:
+                - aliases:
+                    - pg-db
+                    - db-alias
+                  driver_opts:
+                    com.docker.network.endpoint.expose: "true"
+                  id: traefik-public
+                - aliases:
+                    - pg-db
+                    - db-alias
+                  driver_opts:
+                    com.docker.network.endpoint.expose: "true"
+                  id: traefik-public
+                - aliases:
+                    - pg-db
+                    - db-alias
+                  driver_opts:
+                    com.docker.network.endpoint.expose: "true"
+                  id: traefik-public
+              extra_volumes:
+                - destination_path: /backups/container
+                  host_path: /Users/user/backups/host
+                - destination_path: /backups/container
+                  host_path: /Users/user/backups/host
+                - destination_path: /backups/container
+                  host_path: /Users/user/backups/host
           port: 0
           service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
           service_type: mcp
@@ -3936,6 +4060,37 @@ definitions:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
             - 76f9b8c0-4958-11f0-a489-3bb29577c696
           memory: 512M
+          orchestrator_opts:
+            swarm:
+              extra_labels:
+                traefik.enable: "true"
+                traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
+              extra_networks:
+                - aliases:
+                    - pg-db
+                    - db-alias
+                  driver_opts:
+                    com.docker.network.endpoint.expose: "true"
+                  id: traefik-public
+                - aliases:
+                    - pg-db
+                    - db-alias
+                  driver_opts:
+                    com.docker.network.endpoint.expose: "true"
+                  id: traefik-public
+                - aliases:
+                    - pg-db
+                    - db-alias
+                  driver_opts:
+                    com.docker.network.endpoint.expose: "true"
+                  id: traefik-public
+              extra_volumes:
+                - destination_path: /backups/container
+                  host_path: /Users/user/backups/host
+                - destination_path: /backups/container
+                  host_path: /Users/user/backups/host
+                - destination_path: /backups/container
+                  host_path: /Users/user/backups/host
           port: 0
           service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
           service_type: mcp
@@ -6313,6 +6468,8 @@ definitions:
         description: The amount of memory in SI or IEC notation to allocate for this service. Defaults to container defaults if unspecified.
         example: 512M
         maxLength: 16
+      orchestrator_opts:
+        $ref: '#/definitions/OrchestratorOpts'
       port:
         type: integer
         description: The port to publish the service on the host. If 0, Docker assigns a random port. If unspecified, no port is published and the service is not accessible from outside the Docker network.
@@ -6347,6 +6504,37 @@ definitions:
         - 76f9b8c0-4958-11f0-a489-3bb29577c696
         - 76f9b8c0-4958-11f0-a489-3bb29577c696
       memory: 512M
+      orchestrator_opts:
+        swarm:
+          extra_labels:
+            traefik.enable: "true"
+            traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
+          extra_networks:
+            - aliases:
+                - pg-db
+                - db-alias
+              driver_opts:
+                com.docker.network.endpoint.expose: "true"
+              id: traefik-public
+            - aliases:
+                - pg-db
+                - db-alias
+              driver_opts:
+                com.docker.network.endpoint.expose: "true"
+              id: traefik-public
+            - aliases:
+                - pg-db
+                - db-alias
+              driver_opts:
+                com.docker.network.endpoint.expose: "true"
+              id: traefik-public
+          extra_volumes:
+            - destination_path: /backups/container
+              host_path: /Users/user/backups/host
+            - destination_path: /backups/container
+              host_path: /Users/user/backups/host
+            - destination_path: /backups/container
+              host_path: /Users/user/backups/host
       port: 0
       service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
       service_type: mcp

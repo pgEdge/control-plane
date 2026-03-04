@@ -975,6 +975,8 @@ type ServiceSpec struct {
 	// The amount of memory in SI or IEC notation to allocate for this service.
 	// Defaults to container defaults if unspecified.
 	Memory *string `json:"memory,omitempty"`
+	// Orchestrator-specific options for this service.
+	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 }
 
 // StartInstancePayload is the payload type of the control-plane service

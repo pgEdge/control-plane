@@ -124,6 +124,9 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 		errs = append(errs, validateRestoreConfig(spec.RestoreConfig, []string{"restore_config"})...)
 	}
 
+	// Validate orchestrator_opts (spec-level)
+	errs = append(errs, validateOrchestratorOpts(spec.OrchestratorOpts, []string{"orchestrator_opts"})...)
+
 	// Validate services
 	seenServiceIDs := make(ds.Set[string], len(spec.Services))
 	for i, svc := range spec.Services {
@@ -223,6 +226,9 @@ func validateNode(node *api.DatabaseNodeSpec, path []string) []error {
 		errs = append(errs, validateRestoreConfig(node.RestoreConfig, restoreConfigPath)...)
 	}
 
+	// Validate orchestrator_opts (per-node)
+	errs = append(errs, validateOrchestratorOpts(node.OrchestratorOpts, appendPath(path, "orchestrator_opts"))...)
+
 	return errs
 }
 
@@ -275,6 +281,9 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string) []error {
 	if svc.Memory != nil {
 		errs = append(errs, validateMemory(svc.Memory, appendPath(path, "memory"))...)
 	}
+
+	// Validate orchestrator_opts
+	errs = append(errs, validateOrchestratorOpts(svc.OrchestratorOpts, appendPath(path, "orchestrator_opts"))...)
 
 	return errs
 }
@@ -519,6 +528,25 @@ func validateS3RepoProperties(props repoProperties, path []string) []error {
 
 var pgBackRestOptionPattern = regexp.MustCompile(`^[a-z0-9-]+$`)
 var semverPattern = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
+
+// reservedLabelPrefix is the label key prefix reserved for system use.
+const reservedLabelPrefix = "pgedge."
+
+func validateOrchestratorOpts(opts *api.OrchestratorOpts, path []string) []error {
+	if opts == nil || opts.Swarm == nil {
+		return nil
+	}
+
+	var errs []error
+	for key := range opts.Swarm.ExtraLabels {
+		if strings.HasPrefix(key, reservedLabelPrefix) {
+			labelPath := appendPath(path, "swarm", "extra_labels", mapKeyPath(key))
+			err := fmt.Errorf("labels starting with %q are reserved for system use", reservedLabelPrefix)
+			errs = append(errs, newValidationError(err, labelPath))
+		}
+	}
+	return errs
+}
 
 func validatePgBackRestOptions(opts map[string]string, path []string) []error {
 	var errs []error

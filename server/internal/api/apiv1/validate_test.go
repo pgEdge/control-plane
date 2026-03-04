@@ -979,6 +979,53 @@ func TestValidateServiceSpec(t *testing.T) {
 			},
 		},
 		{
+			name: "valid service with extra labels",
+			svc: &api.ServiceSpec{
+				ServiceID:   "mcp-server",
+				ServiceType: "mcp",
+				Version:     "1.0.0",
+				HostIds:     []api.Identifier{"host-1"},
+				Config: map[string]any{
+					"llm_provider":      "anthropic",
+					"llm_model":         "claude-sonnet-4-5",
+					"anthropic_api_key": "sk-ant-...",
+				},
+				OrchestratorOpts: &api.OrchestratorOpts{
+					Swarm: &api.SwarmOpts{
+						ExtraLabels: map[string]string{
+							"traefik.enable": "true",
+							"custom.label":   "value",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "reserved pgedge label in extra_labels",
+			svc: &api.ServiceSpec{
+				ServiceID:   "mcp-server",
+				ServiceType: "mcp",
+				Version:     "1.0.0",
+				HostIds:     []api.Identifier{"host-1"},
+				Config: map[string]any{
+					"llm_provider":      "anthropic",
+					"llm_model":         "claude-sonnet-4-5",
+					"anthropic_api_key": "sk-ant-...",
+				},
+				OrchestratorOpts: &api.OrchestratorOpts{
+					Swarm: &api.SwarmOpts{
+						ExtraLabels: map[string]string{
+							"traefik.enable":   "true",
+							"pgedge.component": "hacked",
+						},
+					},
+				},
+			},
+			expected: []string{
+				`orchestrator_opts.swarm.extra_labels[pgedge.component]: labels starting with "pgedge." are reserved`,
+			},
+		},
+		{
 			name: "multiple validation errors",
 			svc: &api.ServiceSpec{
 				ServiceID:   "mcp server",
@@ -999,6 +1046,83 @@ func TestValidateServiceSpec(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := errors.Join(validateServiceSpec(tc.svc, nil)...)
+			if len(tc.expected) < 1 {
+				assert.NoError(t, err)
+			} else {
+				for _, expected := range tc.expected {
+					assert.ErrorContains(t, err, expected)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateOrchestratorOpts(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		opts     *api.OrchestratorOpts
+		expected []string
+	}{
+		{
+			name: "nil opts",
+			opts: nil,
+		},
+		{
+			name: "nil swarm",
+			opts: &api.OrchestratorOpts{Swarm: nil},
+		},
+		{
+			name: "empty extra_labels",
+			opts: &api.OrchestratorOpts{
+				Swarm: &api.SwarmOpts{
+					ExtraLabels: map[string]string{},
+				},
+			},
+		},
+		{
+			name: "valid labels",
+			opts: &api.OrchestratorOpts{
+				Swarm: &api.SwarmOpts{
+					ExtraLabels: map[string]string{
+						"traefik.enable":                "true",
+						"traefik.http.routers.mcp.rule": "Host(`mcp.example.com`)",
+						"custom.label":                  "value",
+					},
+				},
+			},
+		},
+		{
+			name: "single reserved label",
+			opts: &api.OrchestratorOpts{
+				Swarm: &api.SwarmOpts{
+					ExtraLabels: map[string]string{
+						"pgedge.component": "hacked",
+					},
+				},
+			},
+			expected: []string{
+				`extra_labels[pgedge.component]: labels starting with "pgedge." are reserved`,
+			},
+		},
+		{
+			name: "multiple reserved labels",
+			opts: &api.OrchestratorOpts{
+				Swarm: &api.SwarmOpts{
+					ExtraLabels: map[string]string{
+						"traefik.enable":     "true",
+						"pgedge.component":   "hacked",
+						"pgedge.database.id": "wrong",
+					},
+				},
+			},
+			expected: []string{
+				`extra_labels[pgedge.component]: labels starting with "pgedge." are reserved`,
+				`extra_labels[pgedge.database.id]: labels starting with "pgedge." are reserved`,
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := errors.Join(validateOrchestratorOpts(tc.opts, []string{"orchestrator_opts"})...)
 			if len(tc.expected) < 1 {
 				assert.NoError(t, err)
 			} else {

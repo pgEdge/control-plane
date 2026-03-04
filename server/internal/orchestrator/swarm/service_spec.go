@@ -42,6 +42,13 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		"pgedge.host.id":             opts.HostID,
 	}
 
+	// Merge user-provided extra labels (matches Postgres ExtraLabels behavior)
+	if opts.ServiceSpec.OrchestratorOpts != nil && opts.ServiceSpec.OrchestratorOpts.Swarm != nil {
+		for k, v := range opts.ServiceSpec.OrchestratorOpts.Swarm.ExtraLabels {
+			labels[k] = v
+		}
+	}
+
 	// Build networks - attach to both bridge and database overlay networks
 	// Bridge network provides:
 	// - Control Plane access to service health/API endpoints (port 8080)
