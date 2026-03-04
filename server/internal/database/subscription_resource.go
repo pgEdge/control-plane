@@ -61,6 +61,10 @@ func (s *SubscriptionResource) Dependencies() []resource.Identifier {
 	return deps
 }
 
+func (s *SubscriptionResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (s *SubscriptionResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	subscriber, err := GetPrimaryInstance(ctx, rc, s.SubscriberNode)
 	if err != nil {

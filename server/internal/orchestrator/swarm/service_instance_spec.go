@@ -68,6 +68,10 @@ func (s *ServiceInstanceSpecResource) Dependencies() []resource.Identifier {
 	}
 }
 
+func (s *ServiceInstanceSpecResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (s *ServiceInstanceSpecResource) populateCredentials(rc *resource.Context) error {
 	userRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID))
 	if err != nil {

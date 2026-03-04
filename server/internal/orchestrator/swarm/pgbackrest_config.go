@@ -71,6 +71,10 @@ func (c *PgBackRestConfig) Dependencies() []resource.Identifier {
 	}
 }
 
+func (c *PgBackRestConfig) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (c *PgBackRestConfig) Refresh(ctx context.Context, rc *resource.Context) error {
 	fs, err := do.Invoke[afero.Fs](rc.Injector)
 	if err != nil {

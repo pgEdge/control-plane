@@ -50,6 +50,10 @@ func (m *ServiceInstanceMonitorResource) Dependencies() []resource.Identifier {
 	}
 }
 
+func (m *ServiceInstanceMonitorResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (m *ServiceInstanceMonitorResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	service, err := do.Invoke[*Service](rc.Injector)
 	if err != nil {

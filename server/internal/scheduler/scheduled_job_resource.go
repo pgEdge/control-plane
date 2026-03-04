@@ -8,6 +8,8 @@ import (
 	"github.com/samber/do"
 )
 
+var _ resource.Resource = (*ScheduledJobResource)(nil)
+
 const ResourceTypeScheduledJob resource.Type = "scheduler.job"
 
 func ScheduledJobResourceIdentifier(id string) resource.Identifier {
@@ -53,9 +55,15 @@ func (r *ScheduledJobResource) Executor() resource.Executor {
 func (r *ScheduledJobResource) Identifier() resource.Identifier {
 	return ScheduledJobResourceIdentifier(r.ID)
 }
+
 func (r *ScheduledJobResource) Dependencies() []resource.Identifier {
 	return r.DependsOn
 }
+
+func (r *ScheduledJobResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (r *ScheduledJobResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	service, err := do.Invoke[*Service](rc.Injector)
 	if err != nil {

@@ -49,6 +49,10 @@ func (m *InstanceMonitorResource) Dependencies() []resource.Identifier {
 	}
 }
 
+func (m *InstanceMonitorResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (m *InstanceMonitorResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	service, err := do.Invoke[*Service](rc.Injector)
 	if err != nil {

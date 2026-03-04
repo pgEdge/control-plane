@@ -62,6 +62,10 @@ func (r *LagTrackerCommitTimestampResource) Dependencies() []resource.Identifier
 	return deps
 }
 
+func (r *LagTrackerCommitTimestampResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (r *LagTrackerCommitTimestampResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	// Connect to receiver node
 	instance, err := GetPrimaryInstance(ctx, rc, r.ReceiverNode)
