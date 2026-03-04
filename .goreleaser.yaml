@@ -1,8 +1,8 @@
 version: 2
-project_name: control-plane
+project_name: pgedge-control-plane
 builds:
   - main: ./server
-    binary: control-plane
+    binary: pgedge-control-plane
     env:
       - CGO_ENABLED=0
     goos:

@@ -21,5 +21,6 @@ docs/plans
 *-results.xml
 dist
 control-plane
+pgedge-control-plane
 !docker/control-plane
 e2e/debug

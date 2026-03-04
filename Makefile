@@ -258,12 +258,12 @@ control-plane-images:
 goreleaser-build:
 	GORELEASER_CURRENT_TAG=$(CONTROL_PLANE_VERSION) \
 	$(goreleaser) build --snapshot --clean
-	tar -C dist/control-plane_linux_amd64_v1 -c -z \
-		-f dist/control-plane_$(CONTROL_PLANE_VERSION:v%=%)_linux_amd64.tar.gz \
-		control-plane
-	tar -C dist/control-plane_linux_arm64_v8.0 -c -z \
-		-f dist/control-plane_$(CONTROL_PLANE_VERSION:v%=%)_linux_arm64.tar.gz \
-		control-plane
+	tar -C dist/pgedge-control-plane_linux_amd64_v1 -c -z \
+		-f dist/pgedge-control-plane_$(CONTROL_PLANE_VERSION:v%=%)_linux_amd64.tar.gz \
+		pgedge-control-plane
+	tar -C dist/pgedge-control-plane_linux_arm64_v8.0 -c -z \
+		-f dist/pgedge-control-plane_$(CONTROL_PLANE_VERSION:v%=%)_linux_arm64.tar.gz \
+		pgedge-control-plane
 
 goreleaser-test-release:
 	GORELEASER_CURRENT_TAG=$(CONTROL_PLANE_VERSION) \
@@ -332,7 +332,7 @@ build: dev-build
 dev-build: 
 	GOOS=linux go build \
 		-gcflags "all=-N -l" \
-		-o docker/control-plane-dev/control-plane \
+		-o docker/control-plane-dev/pgedge-control-plane \
 		$(shell pwd)/server
 
 .PHONY: docker-swarm-init
@@ -397,7 +397,7 @@ api-docs:
 ci-compose-build: 
 	GOOS=linux go build \
 		-gcflags "all=-N -l" \
-		-o docker/control-plane-ci/control-plane \
+		-o docker/control-plane-ci/pgedge-control-plane \
 		$(shell pwd)/server
 
 .PHONY: ci-compose-detached

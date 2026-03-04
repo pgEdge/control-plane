@@ -13,13 +13,13 @@ if [[ "${DEBUG}" == 1 ]]; then
         --log-output=debugger,debuglineerr,gdbwire,lldbout,rpc \
         --accept-multiclient \
         --api-version=2 \
-        exec /control-plane \
+        exec /pgedge-control-plane \
         -- \
         run \
         --config-path /config.json \
         --logging.pretty
 else
-    exec /control-plane run \
+    exec /pgedge-control-plane run \
         --config-path /config.json \
         --logging.pretty
 fi
