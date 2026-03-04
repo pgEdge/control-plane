@@ -26,6 +26,7 @@ func ReplicationSlotAdvanceFromCTSResourceIdentifier(providerNode, subscriberNod
 // ReplicationSlotAdvanceFromCTSResource advances the replication slot on the provider
 // to the LSN derived from the commit timestamp captured in lag_tracker.
 type ReplicationSlotAdvanceFromCTSResource struct {
+	DatabaseName   string `json:"database_name"`
 	ProviderNode   string `json:"provider_node"`   // slot lives here
 	SubscriberNode string `json:"subscriber_node"` // target/receiver node
 }
@@ -46,7 +47,8 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Identifier() resource.Identifier
 
 func (r *ReplicationSlotAdvanceFromCTSResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
-		NodeResourceIdentifier(r.ProviderNode),                         // must run on provider
+		PostgresDatabaseResourceIdentifier(r.ProviderNode, r.DatabaseName),
+		PostgresDatabaseResourceIdentifier(r.SubscriberNode, r.DatabaseName),
 		LagTrackerCommitTSIdentifier(r.ProviderNode, r.SubscriberNode), // need commit_ts first
 	}
 }

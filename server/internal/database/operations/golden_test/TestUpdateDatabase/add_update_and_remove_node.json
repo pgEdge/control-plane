@@ -22,7 +22,17 @@
         "resource_id": "database.node::n1",
         "reason": "dependency_updated",
         "diff": null
-      },
+      }
+    ],
+    [
+      {
+        "type": "update",
+        "resource_id": "database.postgres_database::n1-test",
+        "reason": "dependency_updated",
+        "diff": null
+      }
+    ],
+    [
       {
         "type": "update",
         "resource_id": "monitor.instance::n1-instance-1-id",
@@ -54,12 +64,6 @@
         "resource_id": "database.node::n3",
         "reason": "does_not_exist",
         "diff": null
-      },
-      {
-        "type": "create",
-        "resource_id": "monitor.instance::n3-instance-1-id",
-        "reason": "does_not_exist",
-        "diff": null
       }
     ]
   ],
@@ -67,7 +71,21 @@
     [
       {
         "type": "create",
+        "resource_id": "database.postgres_database::n3-test",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
         "resource_id": "database.replication_slot::n1n3",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "monitor.instance::n3-instance-1-id",
         "reason": "does_not_exist",
         "diff": null
       }
@@ -167,6 +185,13 @@
       {
         "type": "delete",
         "resource_id": "database.sync_event::n1n3",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.postgres_database::n2-test",
         "diff": null
       }
     ],

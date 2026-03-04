@@ -53,7 +53,10 @@ func (s *SwitchoverResource) Dependencies() []resource.Identifier {
 }
 
 func (s *SwitchoverResource) TypeDependencies() []resource.Type {
-	return nil
+	return []resource.Type{
+		ResourceTypePostgresDatabase,
+		ResourceTypeSubscription,
+	}
 }
 
 func (s *SwitchoverResource) Refresh(ctx context.Context, rc *resource.Context) error {

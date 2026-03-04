@@ -37,6 +37,18 @@
     [
       {
         "type": "delete",
+        "resource_id": "database.postgres_database::n1-test",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.postgres_database::n2-test",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
         "resource_id": "database.node::n1",
         "diff": null
       },

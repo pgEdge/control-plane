@@ -34,6 +34,10 @@ func TestRestoreDatabase(t *testing.T) {
 				PrimaryInstanceID: n1Instance1.InstanceID(),
 				InstanceIDs:       []string{n1Instance1.InstanceID()},
 			},
+			&database.PostgresDatabaseResource{
+				NodeName:     "n1",
+				DatabaseName: "test",
+			},
 		},
 		n1Instance1.Resources,
 	)
@@ -53,19 +57,31 @@ func TestRestoreDatabase(t *testing.T) {
 				PrimaryInstanceID: n2Instance1.InstanceID(),
 				InstanceIDs:       []string{n2Instance1.InstanceID()},
 			},
+			&database.PostgresDatabaseResource{
+				NodeName:     "n1",
+				DatabaseName: "test",
+			},
 			&database.ReplicationSlotResource{
+				DatabaseName:   "test",
 				ProviderNode:   "n2",
 				SubscriberNode: "n1",
 			},
 			&database.SubscriptionResource{
+				DatabaseName:   "test",
 				SubscriberNode: "n1",
 				ProviderNode:   "n2",
 			},
+			&database.PostgresDatabaseResource{
+				NodeName:     "n2",
+				DatabaseName: "test",
+			},
 			&database.ReplicationSlotResource{
+				DatabaseName:   "test",
 				ProviderNode:   "n1",
 				SubscriberNode: "n2",
 			},
 			&database.SubscriptionResource{
+				DatabaseName:   "test",
 				SubscriberNode: "n2",
 				ProviderNode:   "n1",
 			},
@@ -96,19 +112,31 @@ func TestRestoreDatabase(t *testing.T) {
 				PrimaryInstanceID: n2Instance1.InstanceID(),
 				InstanceIDs:       []string{n2Instance1.InstanceID()},
 			},
+			&database.PostgresDatabaseResource{
+				NodeName:     "n1",
+				DatabaseName: "test",
+			},
 			&database.ReplicationSlotResource{
+				DatabaseName:   "test",
 				ProviderNode:   "n2",
 				SubscriberNode: "n1",
 			},
 			&database.SubscriptionResource{
+				DatabaseName:   "test",
 				SubscriberNode: "n1",
 				ProviderNode:   "n2",
 			},
+			&database.PostgresDatabaseResource{
+				NodeName:     "n2",
+				DatabaseName: "test",
+			},
 			&database.ReplicationSlotResource{
+				DatabaseName:   "test",
 				ProviderNode:   "n1",
 				SubscriberNode: "n2",
 			},
 			&database.SubscriptionResource{
+				DatabaseName:   "test",
 				SubscriberNode: "n2",
 				ProviderNode:   "n1",
 			},
@@ -137,6 +165,7 @@ func TestRestoreDatabase(t *testing.T) {
 			start: singleNodeState,
 			targets: []*operations.NodeRestoreResources{
 				{
+					DatabaseName:    "test",
 					NodeName:        "n1",
 					PrimaryInstance: n1Instance1,
 					RestoreInstance: n1Instance1WithRestore,
@@ -148,6 +177,7 @@ func TestRestoreDatabase(t *testing.T) {
 			start: twoNodeState,
 			nodes: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n2",
 					PrimaryInstanceID: n2Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n2Instance1},
@@ -155,6 +185,7 @@ func TestRestoreDatabase(t *testing.T) {
 			},
 			targets: []*operations.NodeRestoreResources{
 				{
+					DatabaseName:    "test",
 					NodeName:        "n1",
 					PrimaryInstance: n1Instance1,
 					RestoreInstance: n1Instance1WithRestore,
@@ -166,6 +197,7 @@ func TestRestoreDatabase(t *testing.T) {
 			start: twoNodeStateWithReplica,
 			nodes: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n2",
 					PrimaryInstanceID: n2Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n2Instance1},
@@ -173,6 +205,7 @@ func TestRestoreDatabase(t *testing.T) {
 			},
 			targets: []*operations.NodeRestoreResources{
 				{
+					DatabaseName:     "test",
 					NodeName:         "n1",
 					PrimaryInstance:  n1Instance1,
 					RestoreInstance:  n1Instance1WithRestore,
@@ -185,11 +218,13 @@ func TestRestoreDatabase(t *testing.T) {
 			start: twoNodeState,
 			targets: []*operations.NodeRestoreResources{
 				{
+					DatabaseName:    "test",
 					NodeName:        "n1",
 					PrimaryInstance: n1Instance1,
 					RestoreInstance: n1Instance1WithRestore,
 				},
 				{
+					DatabaseName:    "test",
 					NodeName:        "n2",
 					PrimaryInstance: n2Instance1,
 					RestoreInstance: n2Instance1WithRestore,

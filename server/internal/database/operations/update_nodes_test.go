@@ -28,6 +28,7 @@ func TestUpdateNode(t *testing.T) {
 			// instance and the node resource.
 			name: "one instance",
 			input: &operations.NodeResources{
+				DatabaseName:      "test",
 				NodeName:          "n1",
 				PrimaryInstanceID: instance1.InstanceID(),
 				InstanceResources: []*database.InstanceResources{instance1},
@@ -36,7 +37,6 @@ func TestUpdateNode(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						instance1.Instance,
-						makeMonitorResource(instance1),
 						&database.NodeResource{
 							Name:        "n1",
 							InstanceIDs: []string{instance1.InstanceID()},
@@ -52,6 +52,7 @@ func TestUpdateNode(t *testing.T) {
 			// node resource.
 			name: "two instances",
 			input: &operations.NodeResources{
+				DatabaseName:      "test",
 				NodeName:          "n1",
 				PrimaryInstanceID: instance1.InstanceID(),
 				InstanceResources: []*database.InstanceResources{
@@ -63,14 +64,12 @@ func TestUpdateNode(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						instance2.Instance,
-						makeMonitorResource(instance2),
 					},
 					instance2.Resources,
 				),
 				makeState(t,
 					[]resource.Resource{
 						instance1.Instance,
-						makeMonitorResource(instance1),
 						&database.NodeResource{
 							Name: "n1",
 							InstanceIDs: []string{
@@ -93,6 +92,7 @@ func TestUpdateNode(t *testing.T) {
 			// state contains the primary instance and the node resource.
 			name: "three instances",
 			input: &operations.NodeResources{
+				DatabaseName:      "test",
 				NodeName:          "n1",
 				PrimaryInstanceID: instance1.InstanceID(),
 				InstanceResources: []*database.InstanceResources{
@@ -105,21 +105,18 @@ func TestUpdateNode(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						instance2.Instance,
-						makeMonitorResource(instance2),
 					},
 					instance2.Resources,
 				),
 				makeState(t,
 					[]resource.Resource{
 						instance3.Instance,
-						makeMonitorResource(instance3),
 					},
 					instance3.Resources,
 				),
 				makeState(t,
 					[]resource.Resource{
 						instance1.Instance,
-						makeMonitorResource(instance1),
 						&database.NodeResource{
 							Name: "n1",
 							InstanceIDs: []string{
@@ -144,7 +141,8 @@ func TestUpdateNode(t *testing.T) {
 			// components.
 			name: "no primary",
 			input: &operations.NodeResources{
-				NodeName: "n1",
+				DatabaseName: "test",
+				NodeName:     "n1",
 				InstanceResources: []*database.InstanceResources{
 					instance1,
 				},
@@ -182,6 +180,7 @@ func TestRollingUpdateNodes(t *testing.T) {
 			name: "one node with one instance",
 			input: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					PrimaryInstanceID: n1Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n1Instance1},
@@ -191,7 +190,6 @@ func TestRollingUpdateNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n1Instance1.Instance,
-						makeMonitorResource(n1Instance1),
 						&database.NodeResource{
 							Name:        "n1",
 							InstanceIDs: []string{n1Instance1.InstanceID()},
@@ -206,11 +204,13 @@ func TestRollingUpdateNodes(t *testing.T) {
 			name: "two nodes with one instance each",
 			input: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					PrimaryInstanceID: n1Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n1Instance1},
 				},
 				{
+					DatabaseName:      "test",
 					NodeName:          "n2",
 					PrimaryInstanceID: n2Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n2Instance1},
@@ -220,7 +220,6 @@ func TestRollingUpdateNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n1Instance1.Instance,
-						makeMonitorResource(n1Instance1),
 						&database.NodeResource{
 							Name:        "n1",
 							InstanceIDs: []string{n1Instance1.InstanceID()},
@@ -231,7 +230,6 @@ func TestRollingUpdateNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n2Instance1.Instance,
-						makeMonitorResource(n2Instance1),
 						&database.NodeResource{
 							Name:        "n2",
 							InstanceIDs: []string{n2Instance1.InstanceID()},
@@ -248,6 +246,7 @@ func TestRollingUpdateNodes(t *testing.T) {
 			name: "two nodes with one replica",
 			input: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					PrimaryInstanceID: n1Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{
@@ -256,6 +255,7 @@ func TestRollingUpdateNodes(t *testing.T) {
 					},
 				},
 				{
+					DatabaseName:      "test",
 					NodeName:          "n2",
 					PrimaryInstanceID: n2Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n2Instance1},
@@ -265,14 +265,12 @@ func TestRollingUpdateNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n1Instance2.Instance,
-						makeMonitorResource(n1Instance2),
 					},
 					n1Instance2.Resources,
 				),
 				makeState(t,
 					[]resource.Resource{
 						n1Instance1.Instance,
-						makeMonitorResource(n1Instance1),
 						&database.NodeResource{
 							Name: "n1",
 							InstanceIDs: []string{
@@ -291,7 +289,6 @@ func TestRollingUpdateNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n2Instance1.Instance,
-						makeMonitorResource(n2Instance1),
 						&database.NodeResource{
 							Name:        "n2",
 							InstanceIDs: []string{n2Instance1.InstanceID()},
@@ -307,6 +304,7 @@ func TestRollingUpdateNodes(t *testing.T) {
 			name: "two nodes with two replicas",
 			input: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					PrimaryInstanceID: n1Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{
@@ -315,6 +313,7 @@ func TestRollingUpdateNodes(t *testing.T) {
 					},
 				},
 				{
+					DatabaseName:      "test",
 					NodeName:          "n2",
 					PrimaryInstanceID: n2Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{
@@ -327,14 +326,12 @@ func TestRollingUpdateNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n1Instance2.Instance,
-						makeMonitorResource(n1Instance2),
 					},
 					n1Instance2.Resources,
 				),
 				makeState(t,
 					[]resource.Resource{
 						n1Instance1.Instance,
-						makeMonitorResource(n1Instance1),
 						&database.NodeResource{
 							Name: "n1",
 							InstanceIDs: []string{
@@ -353,14 +350,12 @@ func TestRollingUpdateNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n2Instance2.Instance,
-						makeMonitorResource(n2Instance2),
 					},
 					n2Instance2.Resources,
 				),
 				makeState(t,
 					[]resource.Resource{
 						n2Instance1.Instance,
-						makeMonitorResource(n2Instance1),
 						&database.NodeResource{
 							Name: "n2",
 							InstanceIDs: []string{
@@ -409,6 +404,7 @@ func TestConcurrentUpdateNodes(t *testing.T) {
 			name: "one node with one instance",
 			input: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					PrimaryInstanceID: n1Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n1Instance1},
@@ -418,7 +414,6 @@ func TestConcurrentUpdateNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n1Instance1.Instance,
-						makeMonitorResource(n1Instance1),
 						&database.NodeResource{
 							Name:        "n1",
 							InstanceIDs: []string{n1Instance1.InstanceID()},
@@ -433,11 +428,13 @@ func TestConcurrentUpdateNodes(t *testing.T) {
 			name: "two nodes with one instance each",
 			input: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					PrimaryInstanceID: n1Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n1Instance1},
 				},
 				{
+					DatabaseName:      "test",
 					NodeName:          "n2",
 					PrimaryInstanceID: n2Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n2Instance1},
@@ -447,13 +444,11 @@ func TestConcurrentUpdateNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n1Instance1.Instance,
-						makeMonitorResource(n1Instance1),
 						&database.NodeResource{
 							Name:        "n1",
 							InstanceIDs: []string{n1Instance1.InstanceID()},
 						},
 						n2Instance1.Instance,
-						makeMonitorResource(n2Instance1),
 						&database.NodeResource{
 							Name:        "n2",
 							InstanceIDs: []string{n2Instance1.InstanceID()},
@@ -473,6 +468,7 @@ func TestConcurrentUpdateNodes(t *testing.T) {
 			name: "two nodes with one replica",
 			input: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					PrimaryInstanceID: n1Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{
@@ -481,6 +477,7 @@ func TestConcurrentUpdateNodes(t *testing.T) {
 					},
 				},
 				{
+					DatabaseName:      "test",
 					NodeName:          "n2",
 					PrimaryInstanceID: n2Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n2Instance1},
@@ -490,9 +487,7 @@ func TestConcurrentUpdateNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n1Instance2.Instance,
-						makeMonitorResource(n1Instance2),
 						n2Instance1.Instance,
-						makeMonitorResource(n2Instance1),
 						&database.NodeResource{
 							Name:        "n2",
 							InstanceIDs: []string{n2Instance1.InstanceID()},
@@ -506,7 +501,6 @@ func TestConcurrentUpdateNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n1Instance1.Instance,
-						makeMonitorResource(n1Instance1),
 						&database.NodeResource{
 							Name: "n1",
 							InstanceIDs: []string{
@@ -530,6 +524,7 @@ func TestConcurrentUpdateNodes(t *testing.T) {
 			name: "two nodes with two replicas",
 			input: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					PrimaryInstanceID: n1Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{
@@ -538,6 +533,7 @@ func TestConcurrentUpdateNodes(t *testing.T) {
 					},
 				},
 				{
+					DatabaseName:      "test",
 					NodeName:          "n2",
 					PrimaryInstanceID: n2Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{
@@ -550,9 +546,7 @@ func TestConcurrentUpdateNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n1Instance2.Instance,
-						makeMonitorResource(n1Instance2),
 						n2Instance2.Instance,
-						makeMonitorResource(n2Instance2),
 					},
 					slices.Concat(
 						n1Instance2.Resources,
@@ -562,7 +556,6 @@ func TestConcurrentUpdateNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n1Instance1.Instance,
-						makeMonitorResource(n1Instance1),
 						&database.NodeResource{
 							Name: "n1",
 							InstanceIDs: []string{
@@ -571,7 +564,6 @@ func TestConcurrentUpdateNodes(t *testing.T) {
 							},
 						},
 						n2Instance1.Instance,
-						makeMonitorResource(n2Instance1),
 						&database.NodeResource{
 							Name: "n2",
 							InstanceIDs: []string{

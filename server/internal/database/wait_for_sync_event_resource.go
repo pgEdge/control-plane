@@ -24,6 +24,7 @@ func WaitForSyncEventResourceIdentifier(providerNode, subscriberNode string) res
 }
 
 type WaitForSyncEventResource struct {
+	DatabaseName   string `json:"database_name"`
 	SubscriberNode string `json:"subscriber_node"`
 	ProviderNode   string `json:"provider_node"`
 }

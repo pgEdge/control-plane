@@ -12,6 +12,13 @@ import (
 func PopulateNode(node *NodeResources, existingNodeNames []string) (*resource.State, error) {
 	dbName := node.InstanceResources[0].DatabaseName()
 	populate := resource.NewState()
+
+	databaseState, err := node.databaseResourceState()
+	if err != nil {
+		return nil, err
+	}
+	populate.Merge(databaseState)
+
 	var peerWaitForSync []resource.Identifier
 	for _, peer := range existingNodeNames {
 		if peer == node.NodeName || peer == node.SourceNode {
@@ -34,8 +41,9 @@ func PopulateNode(node *NodeResources, existingNodeNames []string) (*resource.St
 		)
 	}
 
-	err := addSyncResources(
+	err = addSyncResources(
 		populate,
+		dbName,
 		peerWaitForSync,
 		node.SourceNode,
 		node.NodeName,
@@ -85,10 +93,12 @@ func addPeerResources(
 ) error {
 	return state.AddResource(
 		&database.ReplicationSlotResource{
+			DatabaseName:   dbName,
 			ProviderNode:   peerNode,
 			SubscriberNode: newNode,
 		},
 		&database.SubscriptionResource{
+			DatabaseName:   dbName,
 			SubscriberNode: newNode,
 			ProviderNode:   peerNode,
 			Disabled:       true,
@@ -99,6 +109,7 @@ func addPeerResources(
 			ProviderNode:   peerNode,
 		},
 		&database.SyncEventResource{
+			DatabaseName:   dbName,
 			ProviderNode:   peerNode,
 			SubscriberNode: sourceNode,
 			ExtraDependencies: []resource.Identifier{
@@ -110,12 +121,14 @@ func addPeerResources(
 			},
 		},
 		&database.WaitForSyncEventResource{
+			DatabaseName:   dbName,
 			ProviderNode:   peerNode,
 			SubscriberNode: sourceNode,
 		},
 		// After the new node has caught up to the source node, we advance the
 		// replication slots we created earlier.
 		&database.LagTrackerCommitTimestampResource{
+			DatabaseName: dbName,
 			OriginNode:   peerNode,
 			ReceiverNode: newNode,
 			ExtraDependencies: []resource.Identifier{
@@ -126,6 +139,7 @@ func addPeerResources(
 			},
 		},
 		&database.ReplicationSlotAdvanceFromCTSResource{
+			DatabaseName:   dbName,
 			ProviderNode:   peerNode,
 			SubscriberNode: newNode,
 		},
@@ -134,16 +148,19 @@ func addPeerResources(
 
 func addSyncResources(
 	state *resource.State,
+	dbName string,
 	peerWaitForSync []resource.Identifier,
 	sourceNode string,
 	newNode string,
 ) error {
 	return state.AddResource(
 		&database.ReplicationSlotResource{
+			DatabaseName:   dbName,
 			ProviderNode:   sourceNode,
 			SubscriberNode: newNode,
 		},
 		&database.SubscriptionResource{
+			DatabaseName:      dbName,
 			SubscriberNode:    newNode,
 			ProviderNode:      sourceNode,
 			SyncStructure:     true,
@@ -151,6 +168,7 @@ func addSyncResources(
 			ExtraDependencies: peerWaitForSync,
 		},
 		&database.SyncEventResource{
+			DatabaseName:   dbName,
 			ProviderNode:   sourceNode,
 			SubscriberNode: newNode,
 			ExtraDependencies: []resource.Identifier{
@@ -161,6 +179,7 @@ func addSyncResources(
 			},
 		},
 		&database.WaitForSyncEventResource{
+			DatabaseName:   dbName,
 			ProviderNode:   sourceNode,
 			SubscriberNode: newNode,
 		},

@@ -26,6 +26,7 @@ func ReplicationSlotResourceIdentifier(providerNode, subscriberNode string) reso
 // ensures the corresponding replication slot is dropped on the provider,
 // preventing orphaned slots from accumulating WAL.
 type ReplicationSlotResource struct {
+	DatabaseName   string `json:"database_name"`
 	ProviderNode   string `json:"provider_node"`
 	SubscriberNode string `json:"subscriber_node"`
 }
@@ -48,7 +49,7 @@ func (r *ReplicationSlotResource) Identifier() resource.Identifier {
 
 func (r *ReplicationSlotResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
-		NodeResourceIdentifier(r.ProviderNode),
+		PostgresDatabaseResourceIdentifier(r.ProviderNode, r.DatabaseName),
 	}
 }
 
