@@ -19,8 +19,8 @@ type StoredHost struct {
 	Orchestrator            config.Orchestrator `json:"type"`
 	Cohort                  *StoredCohort       `json:"stored_cohort,omitempty"`
 	DataDir                 string              `json:"data_dir"`
-	Hostname                string              `json:"hostname"`
-	IPv4Address             string              `json:"ipv4_address"`
+	PeerAddresses           []string            `json:"peer_addresses"`
+	ClientAddresses         []string            `json:"client_addresses"`
 	CPUs                    int                 `json:"cpus"`
 	MemBytes                uint64              `json:"mem_bytes"`
 	EtcdMode                config.EtcdMode     `json:"etcd_mode"`

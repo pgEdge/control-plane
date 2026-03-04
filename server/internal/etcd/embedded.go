@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -108,8 +110,7 @@ func (e *EmbeddedEtcd) initialize(ctx context.Context) error {
 
 	creds, err := CreateHostCredentials(ctx, client, certSvc, HostCredentialOptions{
 		HostID:              appCfg.HostID,
-		Hostname:            appCfg.Hostname,
-		IPv4Address:         appCfg.IPv4Address,
+		Addresses:           appCfg.PeerAddresses,
 		EmbeddedEtcdEnabled: true,
 	})
 	if err != nil {
@@ -334,19 +335,25 @@ func (e *EmbeddedEtcd) Error() <-chan error {
 func (e *EmbeddedEtcd) ClientEndpoints() []string {
 	appCfg := e.cfg.Config()
 	clientPort := appCfg.EtcdServer.ClientPort
-	return []string{
-		fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, clientPort),
-		fmt.Sprintf("https://%s:%d", appCfg.Hostname, clientPort),
+	endpoints := make([]string, len(appCfg.PeerAddresses))
+	for i, address := range appCfg.PeerAddresses {
+		clientHost := net.JoinHostPort(address, strconv.Itoa(clientPort))
+		endpoints[i] = fmt.Sprintf("https://%s", clientHost)
 	}
+
+	return endpoints
 }
 
 func (e *EmbeddedEtcd) PeerEndpoints() []string {
 	appCfg := e.cfg.Config()
 	peerPort := appCfg.EtcdServer.PeerPort
-	return []string{
-		fmt.Sprintf("https://%s:%d", appCfg.IPv4Address, peerPort),
-		fmt.Sprintf("https://%s:%d", appCfg.Hostname, peerPort),
+	endpoints := make([]string, len(appCfg.PeerAddresses))
+	for i, address := range appCfg.PeerAddresses {
+		peerHost := net.JoinHostPort(address, strconv.Itoa(peerPort))
+		endpoints[i] = fmt.Sprintf("https://%s", peerHost)
 	}
+
+	return endpoints
 }
 
 func (e *EmbeddedEtcd) etcdDir() string {
@@ -661,29 +668,26 @@ func embedConfig(cfg config.Config, logger zerolog.Logger) (*embed.Config, error
 
 	clientPort := cfg.EtcdServer.ClientPort
 	peerPort := cfg.EtcdServer.PeerPort
-	myIP := cfg.IPv4Address
 	c.ListenClientUrls = []url.URL{
 		{Scheme: "https", Host: fmt.Sprintf("0.0.0.0:%d", clientPort)},
 	}
-	c.AdvertiseClientUrls = []url.URL{
-		{Scheme: "https", Host: fmt.Sprintf("%s:%d", myIP, clientPort)},
-		{Scheme: "https", Host: fmt.Sprintf("%s:%d", cfg.Hostname, clientPort)},
-	}
-
 	c.ListenPeerUrls = []url.URL{
 		{Scheme: "https", Host: fmt.Sprintf("0.0.0.0:%d", peerPort)},
 	}
-	c.AdvertisePeerUrls = []url.URL{
-		{Scheme: "https", Host: fmt.Sprintf("%s:%d", myIP, peerPort)},
-		{Scheme: "https", Host: fmt.Sprintf("%s:%d", cfg.Hostname, peerPort)},
+	clientURLs := make([]url.URL, len(cfg.PeerAddresses))
+	peerURLs := make([]url.URL, len(cfg.PeerAddresses))
+	for i, address := range cfg.PeerAddresses {
+		clientURLs[i] = url.URL{Scheme: "https", Host: net.JoinHostPort(address, strconv.Itoa(clientPort))}
+		peerURLs[i] = url.URL{Scheme: "https", Host: net.JoinHostPort(address, strconv.Itoa(peerPort))}
 	}
+	c.AdvertiseClientUrls = clientURLs
+	c.AdvertisePeerUrls = peerURLs
 
 	// This will get overridden when joining an existing cluster
 	c.InitialCluster = fmt.Sprintf(
-		"%s=http://%s:%d",
+		"%s=http://%s",
 		cfg.HostID,
-		myIP,
-		peerPort,
+		net.JoinHostPort(cfg.PeerAddress(), strconv.Itoa(peerPort)),
 	)
 	// Using a large number here as a precaution. We're unlikely to hit this,
 	// but the workflows backend can produce large transactions in complex

@@ -507,7 +507,7 @@ func controlPlaneJoinClusterUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane join-cluster --body '{\n      \"server_url\": \"http://192.168.1.1:3000\",\n      \"token\": \"PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd\"\n   }'")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane join-cluster --body '{\n      \"server_urls\": [\n         \"http://192.168.1.1:3000\"\n      ],\n      \"token\": \"PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd\"\n   }'")
 }
 
 func controlPlaneGetJoinTokenUsage() {
@@ -541,7 +541,7 @@ func controlPlaneGetJoinOptionsUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane get-join-options --body '{\n      \"embedded_etcd_enabled\": true,\n      \"host_id\": \"76f9b8c0-4958-11f0-a489-3bb29577c696\",\n      \"hostname\": \"ip-10-1-0-113.ec2.internal\",\n      \"ipv4_address\": \"10.1.0.113\",\n      \"token\": \"PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd\"\n   }'")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "control-plane get-join-options --body '{\n      \"addresses\": [\n         \"10.1.0.113\",\n         \"ip-10-1-0-113.ec2.internal\"\n      ],\n      \"embedded_etcd_enabled\": true,\n      \"host_id\": \"76f9b8c0-4958-11f0-a489-3bb29577c696\",\n      \"token\": \"PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd\"\n   }'")
 }
 
 func controlPlaneGetClusterUsage() {

@@ -40,8 +40,8 @@ type Host struct {
 	Orchestrator            config.Orchestrator
 	Cohort                  *Cohort
 	DataDir                 string
-	Hostname                string
-	IPv4Address             string
+	PeerAddresses           []string
+	ClientAddresses         []string
 	CPUs                    int
 	MemBytes                uint64
 	EtcdMode                config.EtcdMode
@@ -92,8 +92,8 @@ func fromStorage(host *StoredHost, status *StoredHostStatus) (*Host, error) {
 		Orchestrator:            host.Orchestrator,
 		Cohort:                  cohort,
 		DataDir:                 host.DataDir,
-		Hostname:                host.Hostname,
-		IPv4Address:             host.IPv4Address,
+		PeerAddresses:           host.PeerAddresses,
+		ClientAddresses:         host.ClientAddresses,
 		CPUs:                    host.CPUs,
 		MemBytes:                host.MemBytes,
 		EtcdMode:                host.EtcdMode,
@@ -141,8 +141,8 @@ func toStorage(host *Host) *StoredHost {
 		Orchestrator:            host.Orchestrator,
 		Cohort:                  cohort,
 		DataDir:                 host.DataDir,
-		Hostname:                host.Hostname,
-		IPv4Address:             host.IPv4Address,
+		PeerAddresses:           host.PeerAddresses,
+		ClientAddresses:         host.ClientAddresses,
 		CPUs:                    host.CPUs,
 		MemBytes:                host.MemBytes,
 		EtcdMode:                host.EtcdMode,

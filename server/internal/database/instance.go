@@ -79,8 +79,7 @@ type SubscriptionStatus struct {
 type InstanceStatus struct {
 	PostgresVersion *string               `json:"postgres_version,omitempty"`
 	SpockVersion    *string               `json:"spock_version,omitempty"`
-	Hostname        *string               `json:"hostname,omitempty"`
-	IPv4Address     *string               `json:"ipv4_address,omitempty"`
+	Addresses       []string              `json:"addresses,omitempty"`
 	Port            *int                  `json:"port,omitempty"`
 	PatroniState    *patroni.State        `json:"patroni_state,omitempty"`
 	Role            *patroni.InstanceRole `json:"role,omitempty"`

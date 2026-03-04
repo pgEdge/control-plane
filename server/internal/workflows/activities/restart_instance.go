@@ -9,10 +9,8 @@ import (
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
-	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/utils"
-	"github.com/samber/do"
 )
 
 type RestartInstanceInput struct {
@@ -49,12 +47,7 @@ func (a *Activities) RestartInstance(ctx context.Context, input *RestartInstance
 	)
 	logger.Info("starting restart instance activity")
 
-	orch, err := do.Invoke[database.Orchestrator](a.Injector)
-	if err != nil {
-		return nil, err
-	}
-
-	connInfo, err := orch.GetInstanceConnectionInfo(ctx, input.DatabaseID, input.InstanceID)
+	connInfo, err := a.DatabaseService.GetInstanceConnectionInfo(ctx, input.DatabaseID, input.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance connection info: %w", err)
 	}

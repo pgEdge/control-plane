@@ -33,16 +33,10 @@ var StartInstanceResponse = g.Type("StartInstanceResponse", func() {
 
 var InstanceConnectionInfo = g.Type("InstanceConnectionInfo", func() {
 	g.Description("Connection information for a pgEdge instance.")
-	g.Attribute("hostname", g.String, func() {
-		g.Description("The hostname of the host that's running this instance.")
-		g.Example("i-0123456789abcdef.ec2.internal")
-		g.Meta("struct:tag:json", "hostname,omitempty")
-	})
-	g.Attribute("ipv4_address", g.String, func() {
-		g.Description("The IPv4 address of the host that's running this instance.")
-		g.Format(g.FormatIPv4)
-		g.Example("10.24.34.2")
-		g.Meta("struct:tag:json", "ipv4_address,omitempty")
+	g.Attribute("addresses", g.ArrayOf(g.String), func() {
+		g.Description("The addresses of the host that's running this instance.")
+		g.Example([]string{"10.24.34.2", "i-0123456789abcdef.ec2.internal"})
+		g.Meta("struct:tag:json", "addresses,omitempty")
 	})
 	g.Attribute("port", g.Int, func() {
 		g.Description("The host port that Postgres is listening on for this instance.")
@@ -260,16 +254,10 @@ var ServiceInstanceStatus = g.Type("ServiceInstanceStatus", func() {
 		g.Example("1.0.0")
 		g.Meta("struct:tag:json", "image_version,omitempty")
 	})
-	g.Attribute("hostname", g.String, func() {
-		g.Description("The hostname of the service instance.")
-		g.Example("mcp-server-host-1.internal")
-		g.Meta("struct:tag:json", "hostname,omitempty")
-	})
-	g.Attribute("ipv4_address", g.String, func() {
-		g.Description("The IPv4 address of the service instance.")
-		g.Format(g.FormatIPv4)
-		g.Example("10.0.1.5")
-		g.Meta("struct:tag:json", "ipv4_address,omitempty")
+	g.Attribute("addresses", g.ArrayOf(g.String), func() {
+		g.Description("The addresses of the host that's running this service instance.")
+		g.Example([]string{"10.24.34.2", "i-0123456789abcdef.ec2.internal"})
+		g.Meta("struct:tag:json", "addresses,omitempty")
 	})
 	g.Attribute("ports", g.ArrayOf(PortMapping), func() {
 		g.Description("Port mappings for this service instance.")

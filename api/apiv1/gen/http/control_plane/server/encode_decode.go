@@ -3422,14 +3422,28 @@ func marshalControlplaneHostToHostResponseBody(v *controlplane.Host) *HostRespon
 		ID:           string(v.ID),
 		Orchestrator: v.Orchestrator,
 		DataDir:      v.DataDir,
-		Hostname:     v.Hostname,
-		Ipv4Address:  v.Ipv4Address,
 		Cpus:         v.Cpus,
 		Memory:       v.Memory,
 		EtcdMode:     v.EtcdMode,
 	}
 	if v.Cohort != nil {
 		res.Cohort = marshalControlplaneHostCohortToHostCohortResponseBody(v.Cohort)
+	}
+	if v.PeerAddresses != nil {
+		res.PeerAddresses = make([]string, len(v.PeerAddresses))
+		for i, val := range v.PeerAddresses {
+			res.PeerAddresses[i] = val
+		}
+	} else {
+		res.PeerAddresses = []string{}
+	}
+	if v.ClientAddresses != nil {
+		res.ClientAddresses = make([]string, len(v.ClientAddresses))
+		for i, val := range v.ClientAddresses {
+			res.ClientAddresses[i] = val
+		}
+	} else {
+		res.ClientAddresses = []string{}
 	}
 	if v.Status != nil {
 		res.Status = marshalControlplaneHostStatusToHostStatusResponseBody(v.Status)
@@ -3610,9 +3624,13 @@ func marshalControlplaneInstanceConnectionInfoToInstanceConnectionInfoResponseBo
 		return nil
 	}
 	res := &InstanceConnectionInfoResponseBody{
-		Hostname:    v.Hostname,
-		Ipv4Address: v.Ipv4Address,
-		Port:        v.Port,
+		Port: v.Port,
+	}
+	if v.Addresses != nil {
+		res.Addresses = make([]string, len(v.Addresses))
+		for i, val := range v.Addresses {
+			res.Addresses[i] = val
+		}
 	}
 
 	return res
@@ -4152,10 +4170,14 @@ func marshalControlplaneServiceInstanceStatusToServiceInstanceStatusResponseBody
 	res := &ServiceInstanceStatusResponseBody{
 		ContainerID:  v.ContainerID,
 		ImageVersion: v.ImageVersion,
-		Hostname:     v.Hostname,
-		Ipv4Address:  v.Ipv4Address,
 		LastHealthAt: v.LastHealthAt,
 		ServiceReady: v.ServiceReady,
+	}
+	if v.Addresses != nil {
+		res.Addresses = make([]string, len(v.Addresses))
+		for i, val := range v.Addresses {
+			res.Addresses[i] = val
+		}
 	}
 	if v.Ports != nil {
 		res.Ports = make([]*PortMappingResponseBody, len(v.Ports))

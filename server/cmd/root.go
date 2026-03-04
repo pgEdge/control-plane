@@ -53,8 +53,12 @@ func newRootCmd(i *do.Injector) *cobra.Command {
 			if configPath != "" {
 				sources = append(sources, config.NewJsonFileSource(configPath))
 			}
+			envSource, err := config.NewEnvVarSource()
+			if err != nil {
+				return fmt.Errorf("failed to initialize env var config source: %w", err)
+			}
 			sources = append(sources,
-				config.NewEnvVarSource(),
+				envSource,
 				config.NewPFlagSource(cmd.Flags()),
 			)
 

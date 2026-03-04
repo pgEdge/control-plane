@@ -142,10 +142,10 @@ func postgresServerID(instanceID string) string {
 	return fmt.Sprintf("instance:%s:postgres-server", instanceID)
 }
 
-func (s *Service) PostgresServer(ctx context.Context, instanceID, hostname string, dnsNames, ips []string) (*Principal, error) {
+func (s *Service) PostgresServer(ctx context.Context, instanceID string, addresses []string) (*Principal, error) {
 	id := postgresServerID(instanceID)
 
-	return s.getPrincipal(ctx, id, serverCertTemplate(hostname, dnsNames, ips))
+	return s.getPrincipal(ctx, id, serverCertTemplate(instanceID, addresses))
 }
 
 func (s *Service) RemovePostgresServer(ctx context.Context, instanceID string) error {
@@ -158,10 +158,10 @@ func etcdServerID(hostID string) string {
 	return fmt.Sprintf("host:%s:etcd-server", hostID)
 }
 
-func (s *Service) EtcdServer(ctx context.Context, hostID, hostname string, dnsNames, ips []string) (*Principal, error) {
+func (s *Service) EtcdServer(ctx context.Context, hostID string, addresses []string) (*Principal, error) {
 	id := etcdServerID(hostID)
 
-	return s.getPrincipal(ctx, id, serverCertTemplate(hostname, dnsNames, ips))
+	return s.getPrincipal(ctx, id, serverCertTemplate(hostID, addresses))
 }
 
 func (s *Service) RemoveEtcdServer(ctx context.Context, hostID string) error {

@@ -10,6 +10,7 @@ import (
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/providers/posflag"
 	"github.com/knadh/koanf/providers/rawbytes"
+	"github.com/knadh/koanf/providers/structs"
 	"github.com/knadh/koanf/v2"
 	"github.com/spf13/pflag"
 )
@@ -29,16 +30,37 @@ func NewJsonFileSource(path string) *Source {
 	}
 }
 
-func NewEnvVarSource() *Source {
+func NewEnvVarSource() (*Source, error) {
+	// We use this koanf instance to infer types when we parse the env vars.
+	k := koanf.New(".")
+	if err := k.Load(structs.Provider(Config{}, "koanf"), nil); err != nil {
+		return nil, fmt.Errorf("failed to initialize config type reference: %w", err)
+	}
 	return &Source{
 		Provider: func(_ *koanf.Koanf) koanf.Provider {
-			return env.Provider("PGEDGE_", ".", func(s string) string {
-				s = strings.TrimPrefix(s, "PGEDGE_")
-				s = strings.ToLower(s)
-				return strings.ReplaceAll(s, "__", ".")
+			return env.ProviderWithValue("PGEDGE_", ".", func(key, value string) (string, any) {
+				key = strings.TrimPrefix(key, "PGEDGE_")
+				key = strings.ToLower(key)
+				key = strings.ReplaceAll(key, "__", ".")
+
+				switch k.Get(key).(type) {
+				case []string:
+					parts := strings.Split(value, ",")
+					values := make([]string, 0, len(parts))
+					for _, part := range parts {
+						part = strings.TrimSpace(part)
+						if part != "" {
+							values = append(values, part)
+						}
+					}
+
+					return key, values
+				}
+
+				return key, value
 			})
 		},
-	}
+	}, nil
 }
 
 func NewPFlagSource(flagSet *pflag.FlagSet) *Source {

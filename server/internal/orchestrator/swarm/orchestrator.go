@@ -237,12 +237,18 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec) (*database
 		OwnerGID:   o.cfg.DatabaseOwnerUID,
 	}
 	postgresCerts := &PostgresCerts{
-		InstanceID:       spec.InstanceID,
-		HostID:           spec.HostID,
-		ParentID:         certificatesDir.ID,
-		InstanceHostname: instanceHostname,
-		OwnerUID:         o.cfg.DatabaseOwnerUID,
-		OwnerGID:         o.cfg.DatabaseOwnerUID,
+		InstanceID: spec.InstanceID,
+		HostID:     spec.HostID,
+		ParentID:   certificatesDir.ID,
+		InstanceAddresses: slices.Concat(
+			[]string{
+				instanceHostname,
+				fmt.Sprintf("%s.%s", instanceHostname, databaseNetwork.Name),
+			},
+			o.cfg.Addresses(),
+		),
+		OwnerUID: o.cfg.DatabaseOwnerUID,
+		OwnerGID: o.cfg.DatabaseOwnerUID,
 	}
 	patroniConfig := &PatroniConfig{
 		Spec:                spec,
@@ -564,18 +570,17 @@ func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID
 	}
 
 	return &database.ConnectionInfo{
-		AdminHost:         bridge.IPAddress,
-		AdminPort:         5432,
-		PeerHost:          fmt.Sprintf("%s.%s-database", inspect.Config.Hostname, databaseID),
-		PeerPort:          5432,
-		PeerSSLCert:       "/opt/pgedge/certificates/postgres/superuser.crt",
-		PeerSSLKey:        "/opt/pgedge/certificates/postgres/superuser.key",
-		PeerSSLRootCert:   "/opt/pgedge/certificates/postgres/ca.crt",
-		PatroniPort:       8888,
-		ClientHost:        o.cfg.Hostname,
-		ClientIPv4Address: o.cfg.IPv4Address,
-		ClientPort:        clientPort,
-		InstanceHostname:  inspect.Config.Hostname,
+		AdminHost:        bridge.IPAddress,
+		AdminPort:        5432,
+		PeerHost:         fmt.Sprintf("%s.%s-database", inspect.Config.Hostname, databaseID),
+		PeerPort:         5432,
+		PeerSSLCert:      "/opt/pgedge/certificates/postgres/superuser.crt",
+		PeerSSLKey:       "/opt/pgedge/certificates/postgres/superuser.key",
+		PeerSSLRootCert:  "/opt/pgedge/certificates/postgres/ca.crt",
+		PatroniPort:      8888,
+		ClientAddresses:  o.cfg.ClientAddresses,
+		ClientPort:       clientPort,
+		InstanceHostname: inspect.Config.Hostname,
 	}, nil
 }
 
@@ -635,8 +640,7 @@ func (o *Orchestrator) GetServiceInstanceStatus(ctx context.Context, serviceInst
 	return &database.ServiceInstanceStatus{
 		ContainerID:  utils.PointerTo(inspect.ID),
 		ImageVersion: utils.PointerTo(inspect.Config.Image),
-		Hostname:     utils.PointerTo(inspect.Config.Hostname),
-		IPv4Address:  utils.PointerTo(o.cfg.IPv4Address),
+		Addresses:    o.cfg.ClientAddresses,
 		Ports:        ports,
 		ServiceReady: utils.PointerTo(ready),
 	}, nil

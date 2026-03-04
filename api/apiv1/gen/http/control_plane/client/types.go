@@ -20,7 +20,7 @@ type JoinClusterRequestBody struct {
 	// Token to join an existing cluster.
 	Token string `json:"token"`
 	// Existing server to join
-	ServerURL string `json:"server_url"`
+	ServerUrls []string `json:"server_urls"`
 }
 
 // GetJoinOptionsRequestBody is the type of the "control-plane" service
@@ -30,10 +30,8 @@ type GetJoinOptionsRequestBody struct {
 	Token string `json:"token"`
 	// The unique identifier for the host that's joining the cluster.
 	HostID string `json:"host_id"`
-	// The hostname of the host that's joining the cluster.
-	Hostname string `json:"hostname"`
-	// The IPv4 address of the host that's joining the cluster.
-	Ipv4Address string `json:"ipv4_address"`
+	// The peer addresses of the host that's joining the cluster.
+	Addresses []string `json:"addresses"`
 	// True if the joining member is configured to run an embedded an etcd server.
 	EmbeddedEtcdEnabled bool `json:"embedded_etcd_enabled"`
 }
@@ -105,7 +103,7 @@ type InitClusterResponseBody struct {
 	// Token to join an existing cluster.
 	Token *string `json:"token"`
 	// Existing server to join
-	ServerURL *string `json:"server_url"`
+	ServerUrls []string `json:"server_urls"`
 }
 
 // GetJoinTokenResponseBody is the type of the "control-plane" service
@@ -114,7 +112,7 @@ type GetJoinTokenResponseBody struct {
 	// Token to join an existing cluster.
 	Token *string `json:"token"`
 	// Existing server to join
-	ServerURL *string `json:"server_url"`
+	ServerUrls []string `json:"server_urls"`
 }
 
 // GetJoinOptionsResponseBody is the type of the "control-plane" service
@@ -155,10 +153,10 @@ type GetHostResponseBody struct {
 	DataDir *string `json:"data_dir"`
 	// The cohort that this host belongs to.
 	Cohort *HostCohortResponseBody `json:"cohort,omitempty"`
-	// The hostname of this host.
-	Hostname *string `json:"hostname"`
-	// The IPv4 address of this host.
-	Ipv4Address *string `json:"ipv4_address"`
+	// The addresses that this host advertises to other hosts.
+	PeerAddresses []string `json:"peer_addresses"`
+	// The addresses that this host advertises to client applications.
+	ClientAddresses []string `json:"client_addresses"`
 	// The number of CPUs on this host.
 	Cpus *int `json:"cpus,omitempty"`
 	// The amount of memory available on this host.
@@ -1634,10 +1632,10 @@ type HostResponseBody struct {
 	DataDir *string `json:"data_dir"`
 	// The cohort that this host belongs to.
 	Cohort *HostCohortResponseBody `json:"cohort,omitempty"`
-	// The hostname of this host.
-	Hostname *string `json:"hostname"`
-	// The IPv4 address of this host.
-	Ipv4Address *string `json:"ipv4_address"`
+	// The addresses that this host advertises to other hosts.
+	PeerAddresses []string `json:"peer_addresses"`
+	// The addresses that this host advertises to client applications.
+	ClientAddresses []string `json:"client_addresses"`
 	// The number of CPUs on this host.
 	Cpus *int `json:"cpus,omitempty"`
 	// The amount of memory available on this host.
@@ -1763,10 +1761,8 @@ type InstanceResponseBody struct {
 // InstanceConnectionInfoResponseBody is used to define fields on response body
 // types.
 type InstanceConnectionInfoResponseBody struct {
-	// The hostname of the host that's running this instance.
-	Hostname *string `json:"hostname,omitempty"`
-	// The IPv4 address of the host that's running this instance.
-	Ipv4Address *string `json:"ipv4_address,omitempty"`
+	// The addresses of the host that's running this instance.
+	Addresses []string `json:"addresses,omitempty"`
 	// The host port that Postgres is listening on for this instance.
 	Port *int `json:"port,omitempty"`
 }
@@ -2159,10 +2155,8 @@ type ServiceInstanceStatusResponseBody struct {
 	ContainerID *string `json:"container_id,omitempty"`
 	// The container image version currently running.
 	ImageVersion *string `json:"image_version,omitempty"`
-	// The hostname of the service instance.
-	Hostname *string `json:"hostname,omitempty"`
-	// The IPv4 address of the service instance.
-	Ipv4Address *string `json:"ipv4_address,omitempty"`
+	// The addresses of the host that's running this service instance.
+	Addresses []string `json:"addresses,omitempty"`
 	// Port mappings for this service instance.
 	Ports []*PortMappingResponseBody `json:"ports,omitempty"`
 	// Most recent health check result.
@@ -2829,8 +2823,15 @@ type TaskLogEntryResponseBody struct {
 // the "join-cluster" endpoint of the "control-plane" service.
 func NewJoinClusterRequestBody(p *controlplane.ClusterJoinToken) *JoinClusterRequestBody {
 	body := &JoinClusterRequestBody{
-		Token:     p.Token,
-		ServerURL: p.ServerURL,
+		Token: p.Token,
+	}
+	if p.ServerUrls != nil {
+		body.ServerUrls = make([]string, len(p.ServerUrls))
+		for i, val := range p.ServerUrls {
+			body.ServerUrls[i] = val
+		}
+	} else {
+		body.ServerUrls = []string{}
 	}
 	return body
 }
@@ -2841,9 +2842,15 @@ func NewGetJoinOptionsRequestBody(p *controlplane.ClusterJoinRequest) *GetJoinOp
 	body := &GetJoinOptionsRequestBody{
 		Token:               p.Token,
 		HostID:              string(p.HostID),
-		Hostname:            p.Hostname,
-		Ipv4Address:         p.Ipv4Address,
 		EmbeddedEtcdEnabled: p.EmbeddedEtcdEnabled,
+	}
+	if p.Addresses != nil {
+		body.Addresses = make([]string, len(p.Addresses))
+		for i, val := range p.Addresses {
+			body.Addresses[i] = val
+		}
+	} else {
+		body.Addresses = []string{}
 	}
 	return body
 }
@@ -2954,8 +2961,11 @@ func NewRestoreDatabaseRequestBody(p *controlplane.RestoreDatabasePayload) *Rest
 // "init-cluster" endpoint result from a HTTP "OK" response.
 func NewInitClusterClusterJoinTokenOK(body *InitClusterResponseBody) *controlplane.ClusterJoinToken {
 	v := &controlplane.ClusterJoinToken{
-		Token:     *body.Token,
-		ServerURL: *body.ServerURL,
+		Token: *body.Token,
+	}
+	v.ServerUrls = make([]string, len(body.ServerUrls))
+	for i, val := range body.ServerUrls {
+		v.ServerUrls[i] = val
 	}
 
 	return v
@@ -3042,8 +3052,11 @@ func NewJoinClusterServerError(body *JoinClusterServerErrorResponseBody) *contro
 // "get-join-token" endpoint result from a HTTP "OK" response.
 func NewGetJoinTokenClusterJoinTokenOK(body *GetJoinTokenResponseBody) *controlplane.ClusterJoinToken {
 	v := &controlplane.ClusterJoinToken{
-		Token:     *body.Token,
-		ServerURL: *body.ServerURL,
+		Token: *body.Token,
+	}
+	v.ServerUrls = make([]string, len(body.ServerUrls))
+	for i, val := range body.ServerUrls {
+		v.ServerUrls[i] = val
 	}
 
 	return v
@@ -3211,14 +3224,20 @@ func NewGetHostHostOK(body *GetHostResponseBody) *controlplane.Host {
 		ID:           controlplane.Identifier(*body.ID),
 		Orchestrator: *body.Orchestrator,
 		DataDir:      *body.DataDir,
-		Hostname:     *body.Hostname,
-		Ipv4Address:  *body.Ipv4Address,
 		Cpus:         body.Cpus,
 		Memory:       body.Memory,
 		EtcdMode:     body.EtcdMode,
 	}
 	if body.Cohort != nil {
 		v.Cohort = unmarshalHostCohortResponseBodyToControlplaneHostCohort(body.Cohort)
+	}
+	v.PeerAddresses = make([]string, len(body.PeerAddresses))
+	for i, val := range body.PeerAddresses {
+		v.PeerAddresses[i] = val
+	}
+	v.ClientAddresses = make([]string, len(body.ClientAddresses))
+	for i, val := range body.ClientAddresses {
+		v.ClientAddresses[i] = val
 	}
 	v.Status = unmarshalHostStatusResponseBodyToControlplaneHostStatus(body.Status)
 	if body.DefaultPgedgeVersion != nil {
@@ -5584,12 +5603,6 @@ func ValidateDatabaseSummaryResponseBody(body *DatabaseSummaryResponseBody) (err
 
 // ValidateInstanceResponseBody runs a no-op validation on InstanceResponseBody
 func ValidateInstanceResponseBody(body *InstanceResponseBody) (err error) {
-	return
-}
-
-// ValidateInstanceConnectionInfoResponseBody runs a no-op validation on
-// InstanceConnectionInfoResponseBody
-func ValidateInstanceConnectionInfoResponseBody(body *InstanceConnectionInfoResponseBody) (err error) {
 	return
 }
 

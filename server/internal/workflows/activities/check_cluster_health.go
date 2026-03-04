@@ -8,9 +8,7 @@ import (
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
-	"github.com/samber/do"
 
-	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
@@ -43,14 +41,8 @@ func (a *Activities) CheckClusterHealth(ctx context.Context, input *CheckCluster
 
 	logger.Info("starting cluster health check")
 
-	orch, err := do.Invoke[database.Orchestrator](a.Injector)
-	if err != nil {
-		logger.Error("failed to resolve orchestrator", "error", err)
-		return nil, fmt.Errorf("failed to resolve orchestrator: %w", err)
-	}
-
 	// Resolve connection information for the instance we will query.
-	connInfo, err := orch.GetInstanceConnectionInfo(ctx, input.DatabaseID, input.InstanceID)
+	connInfo, err := a.DatabaseService.GetInstanceConnectionInfo(ctx, input.DatabaseID, input.InstanceID)
 	if err != nil {
 		logger.Error("failed to get instance connection info", "error", err, "instance", input.InstanceID)
 		return nil, fmt.Errorf("failed to get instance connection info for %s: %w", input.InstanceID, err)

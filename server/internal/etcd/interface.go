@@ -22,8 +22,7 @@ type JoinOptions struct {
 
 type HostCredentialOptions struct {
 	HostID              string
-	Hostname            string
-	IPv4Address         string
+	Addresses           []string
 	EmbeddedEtcdEnabled bool
 }
 

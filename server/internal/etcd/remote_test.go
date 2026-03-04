@@ -21,11 +21,11 @@ func TestRemoteEtcd(t *testing.T) {
 	serverA, serverB, serverC := testCluster(t)
 
 	cfg := config.Config{
-		HostID:      uuid.NewString(),
-		DataDir:     t.TempDir(),
-		EtcdMode:    config.EtcdModeClient,
-		IPv4Address: "127.0.0.1",
-		Hostname:    "localhost",
+		HostID:          uuid.NewString(),
+		DataDir:         t.TempDir(),
+		EtcdMode:        config.EtcdModeClient,
+		PeerAddresses:   []string{"127.0.0.1", "localhost"},
+		ClientAddresses: []string{"127.0.0.1", "localhost"},
 		EtcdClient: config.EtcdClient{
 			LogLevel: "debug",
 		},
@@ -89,11 +89,11 @@ func testCluster(t testing.TB) (*etcd.EmbeddedEtcd, *etcd.EmbeddedEtcd, *etcd.Em
 
 func testEmbedded(t testing.TB) (*etcd.EmbeddedEtcd, config.Config) {
 	cfg := config.Config{
-		HostID:      uuid.NewString(),
-		DataDir:     t.TempDir(),
-		EtcdMode:    config.EtcdModeServer,
-		IPv4Address: "127.0.0.1",
-		Hostname:    "localhost",
+		HostID:          uuid.NewString(),
+		DataDir:         t.TempDir(),
+		EtcdMode:        config.EtcdModeServer,
+		PeerAddresses:   []string{"127.0.0.1", "localhost"},
+		ClientAddresses: []string{"127.0.0.1", "localhost"},
 		EtcdServer: config.EtcdServer{
 			ClientPort: storagetest.GetFreePort(t),
 			PeerPort:   storagetest.GetFreePort(t),
@@ -114,8 +114,7 @@ func join(t testing.TB, existing, new etcd.Etcd, newCfg config.Config) {
 	ctx := t.Context()
 	creds, err := existing.AddHost(ctx, etcd.HostCredentialOptions{
 		HostID:              newCfg.HostID,
-		Hostname:            newCfg.Hostname,
-		IPv4Address:         newCfg.IPv4Address,
+		Addresses:           newCfg.PeerAddresses,
 		EmbeddedEtcdEnabled: newCfg.EtcdMode == config.EtcdModeServer,
 	})
 	require.NoError(t, err)

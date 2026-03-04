@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/pgEdge/control-plane/server/internal/certificates"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/samber/do"
@@ -24,19 +26,19 @@ func PostgresCertsIdentifier(instanceID string) resource.Identifier {
 }
 
 type PostgresCerts struct {
-	InstanceID       string `json:"instance_id"`
-	HostID           string `json:"host_id"`
-	InstanceHostname string `json:"instance_hostname"`
-	ParentID         string `json:"parent_id"`
-	OwnerUID         int    `json:"owner_uid"`
-	OwnerGID         int    `json:"owner_gid"`
-	CaCert           []byte `json:"ca_cert"`
-	ServerCert       []byte `json:"server_cert"`
-	ServerKey        []byte `json:"server_key"`
-	SuperuserCert    []byte `json:"superuser_cert"`
-	SuperuserKey     []byte `json:"superuser_key"`
-	ReplicationCert  []byte `json:"replication_cert"`
-	ReplicationKey   []byte `json:"replication_key"`
+	InstanceID        string   `json:"instance_id"`
+	HostID            string   `json:"host_id"`
+	InstanceAddresses []string `json:"instance_addresses"`
+	ParentID          string   `json:"parent_id"`
+	OwnerUID          int      `json:"owner_uid"`
+	OwnerGID          int      `json:"owner_gid"`
+	CaCert            []byte   `json:"ca_cert"`
+	ServerCert        []byte   `json:"server_cert"`
+	ServerKey         []byte   `json:"server_key"`
+	SuperuserCert     []byte   `json:"superuser_cert"`
+	SuperuserKey      []byte   `json:"superuser_key"`
+	ReplicationCert   []byte   `json:"replication_cert"`
+	ReplicationKey    []byte   `json:"replication_key"`
 }
 
 func (c *PostgresCerts) ResourceVersion() string {
@@ -139,11 +141,13 @@ func (c *PostgresCerts) Create(ctx context.Context, rc *resource.Context) error 
 	}
 	postgresDir := filepath.Join(parentFullPath, "postgres")
 
+	// Ensure that localhost is included in the addresses
+	combined := ds.NewSet(c.InstanceAddresses...)
+	combined.Add("127.0.0.1", "localhost", "::1")
+
 	pgServerPrincipal, err := certService.PostgresServer(ctx,
 		c.InstanceID,
-		c.InstanceHostname,
-		[]string{c.InstanceHostname, "localhost"},
-		[]string{"127.0.0.1"},
+		combined.ToSortedSlice(strings.Compare),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create postgres server principal: %w", err)

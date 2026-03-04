@@ -69,7 +69,7 @@ paths:
             $ref: '#/definitions/ClusterJoinToken'
             required:
               - token
-              - server_url
+              - server_urls
         "400":
           description: Bad Request response.
           schema:
@@ -112,7 +112,7 @@ paths:
             $ref: '#/definitions/ClusterJoinToken'
             required:
               - token
-              - server_url
+              - server_urls
       responses:
         "204":
           description: No Content response.
@@ -164,7 +164,7 @@ paths:
             $ref: '#/definitions/ClusterJoinToken'
             required:
               - token
-              - server_url
+              - server_urls
         "409":
           description: Conflict response.
           schema:
@@ -1255,8 +1255,8 @@ paths:
               - id
               - orchestrator
               - data_dir
-              - hostname
-              - ipv4_address
+              - peer_addresses
+              - client_addresses
               - status
         "400":
           description: Bad Request response.
@@ -1726,46 +1726,6 @@ definitions:
             s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
             s3_region: us-east-1
             type: s3
-          - azure_account: pgedge-backups
-            azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-            azure_endpoint: blob.core.usgovcloudapi.net
-            azure_key: YXpLZXk=
-            base_path: /backups
-            custom_options:
-              s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-              storage-upload-chunk-size: 5MiB
-            gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-            gcs_endpoint: localhost
-            gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-            id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            retention_full: 2
-            retention_full_type: count
-            s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-            s3_endpoint: s3.us-east-1.amazonaws.com
-            s3_key: AKIAIOSFODNN7EXAMPLE
-            s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-            s3_region: us-east-1
-            type: s3
-          - azure_account: pgedge-backups
-            azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-            azure_endpoint: blob.core.usgovcloudapi.net
-            azure_key: YXpLZXk=
-            base_path: /backups
-            custom_options:
-              s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-              storage-upload-chunk-size: 5MiB
-            gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-            gcs_endpoint: localhost
-            gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-            id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            retention_full: 2
-            retention_full_type: count
-            s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-            s3_endpoint: s3.us-east-1.amazonaws.com
-            s3_key: AKIAIOSFODNN7EXAMPLE
-            s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-            s3_region: us-east-1
-            type: s3
         minItems: 1
       schedules:
         type: array
@@ -1785,6 +1745,46 @@ definitions:
         maxItems: 32
     example:
       repositories:
+        - azure_account: pgedge-backups
+          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+          azure_endpoint: blob.core.usgovcloudapi.net
+          azure_key: YXpLZXk=
+          base_path: /backups
+          custom_options:
+            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+            storage-upload-chunk-size: 5MiB
+          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+          gcs_endpoint: localhost
+          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+          id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+          retention_full: 2
+          retention_full_type: count
+          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+          s3_endpoint: s3.us-east-1.amazonaws.com
+          s3_key: AKIAIOSFODNN7EXAMPLE
+          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          s3_region: us-east-1
+          type: s3
+        - azure_account: pgedge-backups
+          azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+          azure_endpoint: blob.core.usgovcloudapi.net
+          azure_key: YXpLZXk=
+          base_path: /backups
+          custom_options:
+            s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
+            storage-upload-chunk-size: 5MiB
+          gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+          gcs_endpoint: localhost
+          gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
+          id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+          retention_full: 2
+          retention_full_type: count
+          s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
+          s3_endpoint: s3.us-east-1.amazonaws.com
+          s3_key: AKIAIOSFODNN7EXAMPLE
+          s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          s3_region: us-east-1
+          type: s3
         - azure_account: pgedge-backups
           azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
           azure_endpoint: blob.core.usgovcloudapi.net
@@ -1843,7 +1843,7 @@ definitions:
           key: value
         additionalProperties:
           type: string
-          example: Minima esse ut quaerat quae.
+          example: Dolorum fugit.
       backup_options:
         type: object
         description: Options for the backup.
@@ -1851,7 +1851,7 @@ definitions:
           archive-check: "n"
         additionalProperties:
           type: string
-          example: Dignissimos qui hic voluptates voluptatem.
+          example: Aut ratione asperiores.
       type:
         type: string
         description: The type of backup.
@@ -1908,7 +1908,7 @@ definitions:
           storage-upload-chunk-size: 5MiB
         additionalProperties:
           type: string
-          example: Repudiandae pariatur eligendi.
+          example: Nobis velit fugiat rerum dicta optio.
       gcs_bucket:
         type: string
         description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -2046,7 +2046,10 @@ definitions:
           $ref: '#/definitions/Host'
         description: All of the hosts in the cluster.
         example:
-          - cohort:
+          - client_addresses:
+              - 10.24.34.2
+              - i-0123456789abcdef.ec2.internal
+            cohort:
               cohort_id: zdjfu3tfxg1cihv3146ro3hy2
               control_available: true
               member_id: lah4bsznw6kc0hp7biylmmmll
@@ -2057,11 +2060,12 @@ definitions:
               postgres_version: "17.6"
               spock_version: "5"
             etcd_mode: server
-            hostname: i-0123456789abcdef.ec2.internal
             id: us-east-1
-            ipv4_address: 10.24.34.2
             memory: 16GB
             orchestrator: swarm
+            peer_addresses:
+              - 10.24.34.2
+              - i-0123456789abcdef.ec2.internal
             status:
               components: {}
               state: healthy
@@ -2073,7 +2077,10 @@ definitions:
                 spock_version: "5"
               - postgres_version: "16.10"
                 spock_version: "5"
-          - cohort:
+          - client_addresses:
+              - 10.24.35.2
+              - i-058731542fee493f.ec2.internal
+            cohort:
               cohort_id: zdjfu3tfxg1cihv3146ro3hy2
               control_available: true
               member_id: cb88u9jael2psnepep5iuzb4r
@@ -2084,11 +2091,12 @@ definitions:
               postgres_version: "17.6"
               spock_version: "5"
             etcd_mode: server
-            hostname: i-058731542fee493f.ec2.internal
             id: ap-south-1
-            ipv4_address: 10.24.35.2
             memory: 16GB
             orchestrator: swarm
+            peer_addresses:
+              - 10.24.35.2
+              - i-058731542fee493f.ec2.internal
             status:
               components: {}
               state: healthy
@@ -2100,7 +2108,10 @@ definitions:
                 spock_version: "5"
               - postgres_version: "16.10"
                 spock_version: "5"
-          - cohort:
+          - client_addresses:
+              - 10.24.36.2
+              - i-494027b7b53f6a23.ec2.internal
+            cohort:
               cohort_id: zdjfu3tfxg1cihv3146ro3hy2
               control_available: true
               member_id: u7u9i3nhqunxc4wj577l6ecb0
@@ -2111,11 +2122,12 @@ definitions:
               postgres_version: "17.6"
               spock_version: "5"
             etcd_mode: client
-            hostname: i-494027b7b53f6a23.ec2.internal
             id: eu-central-1
-            ipv4_address: 10.24.36.2
             memory: 16GB
             orchestrator: swarm
+            peer_addresses:
+              - 10.24.36.2
+              - i-494027b7b53f6a23.ec2.internal
             status:
               components: {}
               state: healthy
@@ -2137,7 +2149,10 @@ definitions:
         $ref: '#/definitions/ClusterStatus'
     example:
       hosts:
-        - cohort:
+        - client_addresses:
+            - 10.24.34.2
+            - i-0123456789abcdef.ec2.internal
+          cohort:
             cohort_id: zdjfu3tfxg1cihv3146ro3hy2
             control_available: true
             member_id: lah4bsznw6kc0hp7biylmmmll
@@ -2148,11 +2163,12 @@ definitions:
             postgres_version: "17.6"
             spock_version: "5"
           etcd_mode: server
-          hostname: i-0123456789abcdef.ec2.internal
           id: us-east-1
-          ipv4_address: 10.24.34.2
           memory: 16GB
           orchestrator: swarm
+          peer_addresses:
+            - 10.24.34.2
+            - i-0123456789abcdef.ec2.internal
           status:
             components: {}
             state: healthy
@@ -2164,7 +2180,10 @@ definitions:
               spock_version: "5"
             - postgres_version: "16.10"
               spock_version: "5"
-        - cohort:
+        - client_addresses:
+            - 10.24.35.2
+            - i-058731542fee493f.ec2.internal
+          cohort:
             cohort_id: zdjfu3tfxg1cihv3146ro3hy2
             control_available: true
             member_id: cb88u9jael2psnepep5iuzb4r
@@ -2175,11 +2194,12 @@ definitions:
             postgres_version: "17.6"
             spock_version: "5"
           etcd_mode: server
-          hostname: i-058731542fee493f.ec2.internal
           id: ap-south-1
-          ipv4_address: 10.24.35.2
           memory: 16GB
           orchestrator: swarm
+          peer_addresses:
+            - 10.24.35.2
+            - i-058731542fee493f.ec2.internal
           status:
             components: {}
             state: healthy
@@ -2191,7 +2211,10 @@ definitions:
               spock_version: "5"
             - postgres_version: "16.10"
               spock_version: "5"
-        - cohort:
+        - client_addresses:
+            - 10.24.36.2
+            - i-494027b7b53f6a23.ec2.internal
+          cohort:
             cohort_id: zdjfu3tfxg1cihv3146ro3hy2
             control_available: true
             member_id: u7u9i3nhqunxc4wj577l6ecb0
@@ -2202,11 +2225,12 @@ definitions:
             postgres_version: "17.6"
             spock_version: "5"
           etcd_mode: client
-          hostname: i-494027b7b53f6a23.ec2.internal
           id: eu-central-1
-          ipv4_address: 10.24.36.2
           memory: 16GB
           orchestrator: swarm
+          peer_addresses:
+            - 10.24.36.2
+            - i-494027b7b53f6a23.ec2.internal
           status:
             components: {}
             state: healthy
@@ -2229,21 +2253,25 @@ definitions:
     title: ClusterJoinToken
     type: object
     properties:
-      server_url:
-        type: string
+      server_urls:
+        type: array
+        items:
+          type: string
+          example: Et odio.
         description: Existing server to join
-        example: http://192.168.1.1:3000
-        format: uri
+        example:
+          - http://192.168.1.1:3000
       token:
         type: string
         description: Token to join an existing cluster.
         example: PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd
     example:
-      server_url: http://192.168.1.1:3000
+      server_urls:
+        - http://192.168.1.1:3000
       token: PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd
     required:
       - token
-      - server_url
+      - server_urls
   ClusterStatus:
     title: ClusterStatus
     type: object
@@ -2251,12 +2279,12 @@ definitions:
       state:
         type: string
         description: The current state of the cluster.
-        example: available
+        example: error
         enum:
           - available
           - error
     example:
-      state: error
+      state: available
     required:
       - state
   ComponentStatus:
@@ -2412,8 +2440,9 @@ definitions:
         description: All of the instances in the database.
         example:
           - connection_info:
-              hostname: i-0123456789abcdef.ec2.internal
-              ipv4_address: 10.24.34.2
+              addresses:
+                - 10.24.34.2
+                - i-0123456789abcdef.ec2.internal
               port: 5432
             created_at: "2011-03-15T17:48:48Z"
             error: 'failed to get patroni status: connection refused'
@@ -2443,39 +2472,9 @@ definitions:
             status_updated_at: "1993-04-25T23:06:28Z"
             updated_at: "1981-08-22T23:20:01Z"
           - connection_info:
-              hostname: i-0123456789abcdef.ec2.internal
-              ipv4_address: 10.24.34.2
-              port: 5432
-            created_at: "2011-03-15T17:48:48Z"
-            error: 'failed to get patroni status: connection refused'
-            host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-            id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-            node_name: n1
-            postgres:
-              patroni_paused: false
-              patroni_state: unknown
-              pending_restart: true
-              role: primary
-              version: "18.1"
-            spock:
-              read_only: "off"
-              subscriptions:
-                - name: sub_n1n2
-                  provider_node: n2
-                  status: down
-                - name: sub_n1n2
-                  provider_node: n2
-                  status: down
-                - name: sub_n1n2
-                  provider_node: n2
-                  status: down
-              version: 4.10.0
-            state: unknown
-            status_updated_at: "1993-04-25T23:06:28Z"
-            updated_at: "1981-08-22T23:20:01Z"
-          - connection_info:
-              hostname: i-0123456789abcdef.ec2.internal
-              ipv4_address: 10.24.34.2
+              addresses:
+                - 10.24.34.2
+                - i-0123456789abcdef.ec2.internal
               port: 5432
             created_at: "2011-03-15T17:48:48Z"
             error: 'failed to get patroni status: connection refused'
@@ -2518,14 +2517,15 @@ definitions:
             service_instance_id: mcp-server-host-1
             state: running
             status:
+              addresses:
+                - 10.24.34.2
+                - i-0123456789abcdef.ec2.internal
               container_id: a1b2c3d4e5f6
               health_check:
                 checked_at: "2025-01-28T10:00:00Z"
                 message: Connection refused
                 status: healthy
-              hostname: mcp-server-host-1.internal
               image_version: 1.0.0
-              ipv4_address: 10.0.1.5
               last_health_at: "2025-01-28T10:00:00Z"
               ports:
                 - container_port: 8080
@@ -2550,14 +2550,15 @@ definitions:
             service_instance_id: mcp-server-host-1
             state: running
             status:
+              addresses:
+                - 10.24.34.2
+                - i-0123456789abcdef.ec2.internal
               container_id: a1b2c3d4e5f6
               health_check:
                 checked_at: "2025-01-28T10:00:00Z"
                 message: Connection refused
                 status: healthy
-              hostname: mcp-server-host-1.internal
               image_version: 1.0.0
-              ipv4_address: 10.0.1.5
               last_health_at: "2025-01-28T10:00:00Z"
               ports:
                 - container_port: 8080
@@ -2579,7 +2580,7 @@ definitions:
       state:
         type: string
         description: Current state of the database.
-        example: available
+        example: deleting
         enum:
           - creating
           - modifying
@@ -2606,8 +2607,9 @@ definitions:
       id: storefront
       instances:
         - connection_info:
-            hostname: i-0123456789abcdef.ec2.internal
-            ipv4_address: 10.24.34.2
+            addresses:
+              - 10.24.34.2
+              - i-0123456789abcdef.ec2.internal
             port: 5432
           created_at: "2025-06-18T16:52:22Z"
           host_id: us-east-1
@@ -2631,8 +2633,9 @@ definitions:
           status_updated_at: "2025-06-18T17:58:56Z"
           updated_at: "2025-06-18T17:54:36Z"
         - connection_info:
-            hostname: i-058731542fee493f.ec2.internal
-            ipv4_address: 10.24.35.2
+            addresses:
+              - 10.24.35.2
+              - i-058731542fee493f.ec2.internal
             port: 5432
           created_at: "2025-06-18T16:52:22Z"
           host_id: ap-south-1
@@ -2656,8 +2659,9 @@ definitions:
           status_updated_at: "2025-06-18T17:58:56Z"
           updated_at: "2025-06-18T17:54:01Z"
         - connection_info:
-            hostname: i-494027b7b53f6a23.ec2.internal
-            ipv4_address: 10.24.36.2
+            addresses:
+              - 10.24.36.2
+              - i-494027b7b53f6a23.ec2.internal
             port: 5432
           created_at: "2025-06-18T16:52:22Z"
           host_id: eu-central-1
@@ -2728,6 +2732,8 @@ definitions:
           maxLength: 63
         description: The IDs of the hosts that should run this node. When multiple hosts are specified, one host will chosen as a primary, and the others will be read replicas.
         example:
+          - 76f9b8c0-4958-11f0-a489-3bb29577c696
+          - 76f9b8c0-4958-11f0-a489-3bb29577c696
           - 76f9b8c0-4958-11f0-a489-3bb29577c696
         minItems: 1
       memory:
@@ -2848,6 +2854,7 @@ definitions:
             type: full
       cpus: 500m
       host_ids:
+        - 76f9b8c0-4958-11f0-a489-3bb29577c696
         - 76f9b8c0-4958-11f0-a489-3bb29577c696
         - 76f9b8c0-4958-11f0-a489-3bb29577c696
       memory: 500M
@@ -2980,147 +2987,6 @@ definitions:
           $ref: '#/definitions/DatabaseNodeSpec'
         description: The Spock nodes for this database.
         example:
-          - backup_config:
-              repositories:
-                - azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    storage-upload-chunk-size: 5MiB
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                  retention_full: 2
-                  retention_full_type: count
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-                - azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    storage-upload-chunk-size: 5MiB
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                  retention_full: 2
-                  retention_full_type: count
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-                - azure_account: pgedge-backups
-                  azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  azure_endpoint: blob.core.usgovcloudapi.net
-                  azure_key: YXpLZXk=
-                  base_path: /backups
-                  custom_options:
-                    s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                    storage-upload-chunk-size: 5MiB
-                  gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  gcs_endpoint: localhost
-                  gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                  id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                  retention_full: 2
-                  retention_full_type: count
-                  s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                  s3_endpoint: s3.us-east-1.amazonaws.com
-                  s3_key: AKIAIOSFODNN7EXAMPLE
-                  s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                  s3_region: us-east-1
-                  type: s3
-              schedules:
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-                - cron_expression: 0 6 * * ?
-                  id: daily-full-backup
-                  type: full
-            cpus: 500m
-            host_ids:
-              - 76f9b8c0-4958-11f0-a489-3bb29577c696
-              - 76f9b8c0-4958-11f0-a489-3bb29577c696
-            memory: 500M
-            name: n1
-            orchestrator_opts:
-              swarm:
-                extra_labels:
-                  traefik.enable: "true"
-                  traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
-                extra_networks:
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                  - aliases:
-                      - pg-db
-                      - db-alias
-                    driver_opts:
-                      com.docker.network.endpoint.expose: "true"
-                    id: traefik-public
-                extra_volumes:
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-                  - destination_path: /backups/container
-                    host_path: /Users/user/backups/host
-            patroni_port: 8888
-            port: 5432
-            postgres_version: "17.6"
-            postgresql_conf:
-              max_connections: 1000
-            restore_config:
-              repository:
-                azure_account: pgedge-backups
-                azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                azure_endpoint: blob.core.usgovcloudapi.net
-                azure_key: YXpLZXk=
-                base_path: /backups
-                custom_options:
-                  s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                gcs_endpoint: localhost
-                gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                s3_endpoint: s3.us-east-1.amazonaws.com
-                s3_key: AKIAIOSFODNN7EXAMPLE
-                s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                s3_region: us-east-1
-                type: s3
-              restore_options:
-                set: 20250505-153628F
-                target: "123456"
-                type: xid
-              source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              source_database_name: northwind
-              source_node_name: n1
-            source_node: n1
           - backup_config:
               repositories:
                 - azure_account: pgedge-backups
@@ -3573,6 +3439,50 @@ definitions:
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
             service_type: mcp
             version: latest
+          - config:
+              llm_model: gpt-4
+              llm_provider: openai
+              openai_api_key: sk-...
+            cpus: 500m
+            host_ids:
+              - 76f9b8c0-4958-11f0-a489-3bb29577c696
+              - 76f9b8c0-4958-11f0-a489-3bb29577c696
+            memory: 512M
+            orchestrator_opts:
+              swarm:
+                extra_labels:
+                  traefik.enable: "true"
+                  traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
+                extra_networks:
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                  - aliases:
+                      - pg-db
+                      - db-alias
+                    driver_opts:
+                      com.docker.network.endpoint.expose: "true"
+                    id: traefik-public
+                extra_volumes:
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+                  - destination_path: /backups/container
+                    host_path: /Users/user/backups/host
+            port: 0
+            service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+            service_type: mcp
+            version: latest
       spock_version:
         type: string
         description: The major version of the Spock extension.
@@ -3683,147 +3593,6 @@ definitions:
           username: admin
       memory: 500M
       nodes:
-        - backup_config:
-            repositories:
-              - azure_account: pgedge-backups
-                azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                azure_endpoint: blob.core.usgovcloudapi.net
-                azure_key: YXpLZXk=
-                base_path: /backups
-                custom_options:
-                  s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                  storage-upload-chunk-size: 5MiB
-                gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                gcs_endpoint: localhost
-                gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                retention_full: 2
-                retention_full_type: count
-                s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                s3_endpoint: s3.us-east-1.amazonaws.com
-                s3_key: AKIAIOSFODNN7EXAMPLE
-                s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                s3_region: us-east-1
-                type: s3
-              - azure_account: pgedge-backups
-                azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                azure_endpoint: blob.core.usgovcloudapi.net
-                azure_key: YXpLZXk=
-                base_path: /backups
-                custom_options:
-                  s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                  storage-upload-chunk-size: 5MiB
-                gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                gcs_endpoint: localhost
-                gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                retention_full: 2
-                retention_full_type: count
-                s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                s3_endpoint: s3.us-east-1.amazonaws.com
-                s3_key: AKIAIOSFODNN7EXAMPLE
-                s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                s3_region: us-east-1
-                type: s3
-              - azure_account: pgedge-backups
-                azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                azure_endpoint: blob.core.usgovcloudapi.net
-                azure_key: YXpLZXk=
-                base_path: /backups
-                custom_options:
-                  s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-                  storage-upload-chunk-size: 5MiB
-                gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                gcs_endpoint: localhost
-                gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-                id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-                retention_full: 2
-                retention_full_type: count
-                s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-                s3_endpoint: s3.us-east-1.amazonaws.com
-                s3_key: AKIAIOSFODNN7EXAMPLE
-                s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-                s3_region: us-east-1
-                type: s3
-            schedules:
-              - cron_expression: 0 6 * * ?
-                id: daily-full-backup
-                type: full
-              - cron_expression: 0 6 * * ?
-                id: daily-full-backup
-                type: full
-              - cron_expression: 0 6 * * ?
-                id: daily-full-backup
-                type: full
-          cpus: 500m
-          host_ids:
-            - 76f9b8c0-4958-11f0-a489-3bb29577c696
-            - 76f9b8c0-4958-11f0-a489-3bb29577c696
-          memory: 500M
-          name: n1
-          orchestrator_opts:
-            swarm:
-              extra_labels:
-                traefik.enable: "true"
-                traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
-              extra_networks:
-                - aliases:
-                    - pg-db
-                    - db-alias
-                  driver_opts:
-                    com.docker.network.endpoint.expose: "true"
-                  id: traefik-public
-                - aliases:
-                    - pg-db
-                    - db-alias
-                  driver_opts:
-                    com.docker.network.endpoint.expose: "true"
-                  id: traefik-public
-                - aliases:
-                    - pg-db
-                    - db-alias
-                  driver_opts:
-                    com.docker.network.endpoint.expose: "true"
-                  id: traefik-public
-              extra_volumes:
-                - destination_path: /backups/container
-                  host_path: /Users/user/backups/host
-                - destination_path: /backups/container
-                  host_path: /Users/user/backups/host
-                - destination_path: /backups/container
-                  host_path: /Users/user/backups/host
-          patroni_port: 8888
-          port: 5432
-          postgres_version: "17.6"
-          postgresql_conf:
-            max_connections: 1000
-          restore_config:
-            repository:
-              azure_account: pgedge-backups
-              azure_container: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-              azure_endpoint: blob.core.usgovcloudapi.net
-              azure_key: YXpLZXk=
-              base_path: /backups
-              custom_options:
-                s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
-              gcs_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-              gcs_endpoint: localhost
-              gcs_key: ZXhhbXBsZSBnY3Mga2V5Cg==
-              id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-              s3_bucket: pgedge-backups-9f81786f-373b-4ff2-afee-e054a06a96f1
-              s3_endpoint: s3.us-east-1.amazonaws.com
-              s3_key: AKIAIOSFODNN7EXAMPLE
-              s3_key_secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-              s3_region: us-east-1
-              type: s3
-            restore_options:
-              set: 20250505-153628F
-              target: "123456"
-              type: xid
-            source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            source_database_name: northwind
-            source_node_name: n1
-          source_node: n1
         - backup_config:
             repositories:
               - azure_account: pgedge-backups
@@ -4142,8 +3911,9 @@ definitions:
         description: All of the instances in the database.
         example:
           - connection_info:
-              hostname: i-0123456789abcdef.ec2.internal
-              ipv4_address: 10.24.34.2
+              addresses:
+                - 10.24.34.2
+                - i-0123456789abcdef.ec2.internal
               port: 5432
             created_at: "2011-03-15T17:48:48Z"
             error: 'failed to get patroni status: connection refused'
@@ -4173,8 +3943,9 @@ definitions:
             status_updated_at: "1993-04-25T23:06:28Z"
             updated_at: "1981-08-22T23:20:01Z"
           - connection_info:
-              hostname: i-0123456789abcdef.ec2.internal
-              ipv4_address: 10.24.34.2
+              addresses:
+                - 10.24.34.2
+                - i-0123456789abcdef.ec2.internal
               port: 5432
             created_at: "2011-03-15T17:48:48Z"
             error: 'failed to get patroni status: connection refused'
@@ -4204,8 +3975,9 @@ definitions:
             status_updated_at: "1993-04-25T23:06:28Z"
             updated_at: "1981-08-22T23:20:01Z"
           - connection_info:
-              hostname: i-0123456789abcdef.ec2.internal
-              ipv4_address: 10.24.34.2
+              addresses:
+                - 10.24.34.2
+                - i-0123456789abcdef.ec2.internal
               port: 5432
             created_at: "2011-03-15T17:48:48Z"
             error: 'failed to get patroni status: connection refused'
@@ -4237,7 +4009,7 @@ definitions:
       state:
         type: string
         description: Current state of the database.
-        example: deleting
+        example: failed
         enum:
           - creating
           - modifying
@@ -4264,8 +4036,9 @@ definitions:
       id: 76f9b8c0-4958-11f0-a489-3bb29577c696
       instances:
         - connection_info:
-            hostname: i-0123456789abcdef.ec2.internal
-            ipv4_address: 10.24.34.2
+            addresses:
+              - 10.24.34.2
+              - i-0123456789abcdef.ec2.internal
             port: 5432
           created_at: "2011-03-15T17:48:48Z"
           error: 'failed to get patroni status: connection refused'
@@ -4295,8 +4068,9 @@ definitions:
           status_updated_at: "1993-04-25T23:06:28Z"
           updated_at: "1981-08-22T23:20:01Z"
         - connection_info:
-            hostname: i-0123456789abcdef.ec2.internal
-            ipv4_address: 10.24.34.2
+            addresses:
+              - 10.24.34.2
+              - i-0123456789abcdef.ec2.internal
             port: 5432
           created_at: "2011-03-15T17:48:48Z"
           error: 'failed to get patroni status: connection refused'
@@ -4325,7 +4099,39 @@ definitions:
           state: unknown
           status_updated_at: "1993-04-25T23:06:28Z"
           updated_at: "1981-08-22T23:20:01Z"
-      state: restoring
+        - connection_info:
+            addresses:
+              - 10.24.34.2
+              - i-0123456789abcdef.ec2.internal
+            port: 5432
+          created_at: "2011-03-15T17:48:48Z"
+          error: 'failed to get patroni status: connection refused'
+          host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+          id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+          node_name: n1
+          postgres:
+            patroni_paused: false
+            patroni_state: unknown
+            pending_restart: true
+            role: primary
+            version: "18.1"
+          spock:
+            read_only: "off"
+            subscriptions:
+              - name: sub_n1n2
+                provider_node: n2
+                status: down
+              - name: sub_n1n2
+                provider_node: n2
+                status: down
+              - name: sub_n1n2
+                provider_node: n2
+                status: down
+            version: 4.10.0
+          state: unknown
+          status_updated_at: "1993-04-25T23:06:28Z"
+          updated_at: "1981-08-22T23:20:01Z"
+      state: modifying
       tenant_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
       updated_at: "2025-01-01T02:30:00Z"
     required:
@@ -4341,7 +4147,7 @@ definitions:
         type: array
         items:
           type: string
-          example: Voluptatem autem quis praesentium ab fugit.
+          example: Aperiam voluptatem enim dignissimos quasi nihil.
         description: The attributes to assign to this database user.
         example:
           - LOGIN
@@ -4361,7 +4167,7 @@ definitions:
         type: array
         items:
           type: string
-          example: Dolores rerum soluta aliquam neque.
+          example: Ut minima esse ut quaerat quae fugiat.
         description: The roles to assign to this database user.
         example:
           - pgedge_superuser
@@ -4376,7 +4182,7 @@ definitions:
         - LOGIN
         - CREATEDB
         - CREATEROLE
-      db_owner: true
+      db_owner: false
       password: secret
       roles:
         - pgedge_superuser
@@ -4406,7 +4212,7 @@ definitions:
         type: array
         items:
           type: string
-          example: Nobis velit fugiat rerum dicta optio.
+          example: Unde maiores.
         description: Optional network-scoped aliases for the container.
         example:
           - pg-db
@@ -4419,7 +4225,7 @@ definitions:
           com.docker.network.endpoint.expose: "true"
         additionalProperties:
           type: string
-          example: Voluptas enim maiores sint voluptatibus earum.
+          example: Voluptatem sed voluptatem autem quis.
       id:
         type: string
         description: The name or ID of the network to connect to.
@@ -4467,7 +4273,7 @@ definitions:
         type: boolean
         description: If true, skip the health validations that prevent running failover on a healthy cluster.
         default: false
-        example: true
+        example: false
     example:
       candidate_instance_id: 68f50878-44d2-4524-a823-e31bd478706d-n1-689qacsi
       skip_validation: true
@@ -4519,6 +4325,15 @@ definitions:
     title: Host
     type: object
     properties:
+      client_addresses:
+        type: array
+        items:
+          type: string
+          example: Vero suscipit.
+        description: The addresses that this host advertises to client applications.
+        example:
+          - 10.24.34.2
+          - i-0123456789abcdef.ec2.internal
       cohort:
         $ref: '#/definitions/HostCohort'
       cpus:
@@ -4539,21 +4354,12 @@ definitions:
         enum:
           - server
           - client
-      hostname:
-        type: string
-        description: The hostname of this host.
-        example: i-0123456789abcdef.ec2.internal
       id:
         type: string
         description: Unique identifier for the host.
         example: 76f9b8c0-4958-11f0-a489-3bb29577c696
         minLength: 1
         maxLength: 63
-      ipv4_address:
-        type: string
-        description: The IPv4 address of this host.
-        example: 10.24.34.2
-        format: ipv4
       memory:
         type: string
         description: The amount of memory available on this host.
@@ -4562,6 +4368,15 @@ definitions:
         type: string
         description: The orchestrator used by this host.
         example: swarm
+      peer_addresses:
+        type: array
+        items:
+          type: string
+          example: Ut pariatur tenetur est illum.
+        description: The addresses that this host advertises to other hosts.
+        example:
+          - 10.24.34.2
+          - i-0123456789abcdef.ec2.internal
       status:
         $ref: '#/definitions/HostStatus'
       supported_pgedge_versions:
@@ -4577,6 +4392,9 @@ definitions:
           - postgres_version: "17.6"
             spock_version: "5"
     example:
+      client_addresses:
+        - 10.24.34.2
+        - i-0123456789abcdef.ec2.internal
       cohort:
         control_available: true
         member_id: lah4bsznw6kc0hp7biylmmmll
@@ -4587,11 +4405,12 @@ definitions:
         postgres_version: "17.6"
         spock_version: "5"
       etcd_mode: server
-      hostname: i-0123456789abcdef.ec2.internal
       id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-      ipv4_address: 10.24.34.2
       memory: 16GiB
       orchestrator: swarm
+      peer_addresses:
+        - 10.24.34.2
+        - i-0123456789abcdef.ec2.internal
       status:
         components:
           Id dolorem rerum labore commodi.:
@@ -4607,12 +4426,16 @@ definitions:
           spock_version: "5"
         - postgres_version: "17.6"
           spock_version: "5"
+        - postgres_version: "17.6"
+          spock_version: "5"
+        - postgres_version: "17.6"
+          spock_version: "5"
     required:
       - id
       - orchestrator
       - data_dir
-      - hostname
-      - ipv4_address
+      - peer_addresses
+      - client_addresses
       - status
   HostCohort:
     title: HostCohort
@@ -4646,13 +4469,19 @@ definitions:
         type: object
         description: The status of each component of the host.
         example:
-          Id vero suscipit fugiat dignissimos modi accusamus.:
+          Modi accusamus mollitia in.:
             details:
               alarms:
                 - '3: NOSPACE'
             error: failed to connect to etcd
             healthy: false
-          Itaque cum ut pariatur tenetur est.:
+          Molestiae corporis rem.:
+            details:
+              alarms:
+                - '3: NOSPACE'
+            error: failed to connect to etcd
+            healthy: false
+          Officiis explicabo blanditiis.:
             details:
               alarms:
                 - '3: NOSPACE'
@@ -4675,7 +4504,7 @@ definitions:
         format: date-time
     example:
       components:
-        Ex molestiae corporis rem consequuntur.:
+        Officiis deleniti laborum ratione id ut.:
           details:
             alarms:
               - '3: NOSPACE'
@@ -4696,7 +4525,7 @@ definitions:
       created_at:
         type: string
         description: The time that the instance was created.
-        example: "1976-12-13T20:14:34Z"
+        example: "1999-03-24T07:10:36Z"
         format: date-time
       error:
         type: string
@@ -4720,7 +4549,7 @@ definitions:
         $ref: '#/definitions/InstanceSpockStatus'
       state:
         type: string
-        example: unknown
+        example: failed
         enum:
           - creating
           - modifying
@@ -4733,20 +4562,21 @@ definitions:
       status_updated_at:
         type: string
         description: The time that the instance status information was last updated.
-        example: "1987-04-19T13:01:14Z"
+        example: "2009-05-08T19:19:30Z"
         format: date-time
       updated_at:
         type: string
         description: The time that the instance was last modified.
-        example: "1973-03-16T16:27:18Z"
+        example: "1994-08-13T06:00:30Z"
         format: date-time
     description: An instance of pgEdge Postgres running on a host.
     example:
       connection_info:
-        hostname: i-0123456789abcdef.ec2.internal
-        ipv4_address: 10.24.34.2
+        addresses:
+          - 10.24.34.2
+          - i-0123456789abcdef.ec2.internal
         port: 5432
-      created_at: "2008-03-04T09:05:33Z"
+      created_at: "1993-10-01T19:18:24Z"
       error: 'failed to get patroni status: connection refused'
       host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
       id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
@@ -4770,9 +4600,9 @@ definitions:
             provider_node: n2
             status: down
         version: 4.10.0
-      state: creating
-      status_updated_at: "2015-10-23T15:00:04Z"
-      updated_at: "1988-08-03T13:14:18Z"
+      state: backing_up
+      status_updated_at: "2012-10-31T05:58:43Z"
+      updated_at: "2000-05-10T20:48:56Z"
     required:
       - id
       - host_id
@@ -4784,15 +4614,15 @@ definitions:
     title: InstanceConnectionInfo
     type: object
     properties:
-      hostname:
-        type: string
-        description: The hostname of the host that's running this instance.
-        example: i-0123456789abcdef.ec2.internal
-      ipv4_address:
-        type: string
-        description: The IPv4 address of the host that's running this instance.
-        example: 10.24.34.2
-        format: ipv4
+      addresses:
+        type: array
+        items:
+          type: string
+          example: Voluptatibus minima accusamus impedit ipsa.
+        description: The addresses of the host that's running this instance.
+        example:
+          - 10.24.34.2
+          - i-0123456789abcdef.ec2.internal
       port:
         type: integer
         description: The host port that Postgres is listening on for this instance.
@@ -4800,8 +4630,9 @@ definitions:
         format: int64
     description: Connection information for a pgEdge instance.
     example:
-      hostname: i-0123456789abcdef.ec2.internal
-      ipv4_address: 10.24.34.2
+      addresses:
+        - 10.24.34.2
+        - i-0123456789abcdef.ec2.internal
       port: 5432
   InstancePostgresStatus:
     title: InstancePostgresStatus
@@ -4875,9 +4706,6 @@ definitions:
         - name: sub_n1n2
           provider_node: n2
           status: down
-        - name: sub_n1n2
-          provider_node: n2
-          status: down
       version: 4.10.0
   InstanceSubscription:
     title: InstanceSubscription
@@ -4915,6 +4743,14 @@ definitions:
           $ref: '#/definitions/Task'
         description: The tasks for the given database.
         example:
+          - completed_at: "2025-06-18T16:52:35Z"
+            created_at: "2025-06-18T16:52:05Z"
+            database_id: storefront
+            entity_id: storefront
+            scope: database
+            status: completed
+            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+            type: create
           - completed_at: "2025-06-18T16:52:35Z"
             created_at: "2025-06-18T16:52:05Z"
             database_id: storefront
@@ -4982,8 +4818,9 @@ definitions:
             id: 76f9b8c0-4958-11f0-a489-3bb29577c696
             instances:
               - connection_info:
-                  hostname: i-0123456789abcdef.ec2.internal
-                  ipv4_address: 10.24.34.2
+                  addresses:
+                    - 10.24.34.2
+                    - i-0123456789abcdef.ec2.internal
                   port: 5432
                 created_at: "2011-03-15T17:48:48Z"
                 error: 'failed to get patroni status: connection refused'
@@ -5013,76 +4850,9 @@ definitions:
                 status_updated_at: "1993-04-25T23:06:28Z"
                 updated_at: "1981-08-22T23:20:01Z"
               - connection_info:
-                  hostname: i-0123456789abcdef.ec2.internal
-                  ipv4_address: 10.24.34.2
-                  port: 5432
-                created_at: "2011-03-15T17:48:48Z"
-                error: 'failed to get patroni status: connection refused'
-                host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                node_name: n1
-                postgres:
-                  patroni_paused: false
-                  patroni_state: unknown
-                  pending_restart: true
-                  role: primary
-                  version: "18.1"
-                spock:
-                  read_only: "off"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  version: 4.10.0
-                state: unknown
-                status_updated_at: "1993-04-25T23:06:28Z"
-                updated_at: "1981-08-22T23:20:01Z"
-            state: restoring
-            tenant_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            updated_at: "2025-01-01T02:30:00Z"
-          - created_at: "2025-01-01T01:30:00Z"
-            id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            instances:
-              - connection_info:
-                  hostname: i-0123456789abcdef.ec2.internal
-                  ipv4_address: 10.24.34.2
-                  port: 5432
-                created_at: "2011-03-15T17:48:48Z"
-                error: 'failed to get patroni status: connection refused'
-                host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                node_name: n1
-                postgres:
-                  patroni_paused: false
-                  patroni_state: unknown
-                  pending_restart: true
-                  role: primary
-                  version: "18.1"
-                spock:
-                  read_only: "off"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  version: 4.10.0
-                state: unknown
-                status_updated_at: "1993-04-25T23:06:28Z"
-                updated_at: "1981-08-22T23:20:01Z"
-              - connection_info:
-                  hostname: i-0123456789abcdef.ec2.internal
-                  ipv4_address: 10.24.34.2
+                  addresses:
+                    - 10.24.34.2
+                    - i-0123456789abcdef.ec2.internal
                   port: 5432
                 created_at: "2011-03-15T17:48:48Z"
                 error: 'failed to get patroni status: connection refused'
@@ -5118,8 +4888,9 @@ definitions:
             id: 76f9b8c0-4958-11f0-a489-3bb29577c696
             instances:
               - connection_info:
-                  hostname: i-0123456789abcdef.ec2.internal
-                  ipv4_address: 10.24.34.2
+                  addresses:
+                    - 10.24.34.2
+                    - i-0123456789abcdef.ec2.internal
                   port: 5432
                 created_at: "2011-03-15T17:48:48Z"
                 error: 'failed to get patroni status: connection refused'
@@ -5149,8 +4920,9 @@ definitions:
                 status_updated_at: "1993-04-25T23:06:28Z"
                 updated_at: "1981-08-22T23:20:01Z"
               - connection_info:
-                  hostname: i-0123456789abcdef.ec2.internal
-                  ipv4_address: 10.24.34.2
+                  addresses:
+                    - 10.24.34.2
+                    - i-0123456789abcdef.ec2.internal
                   port: 5432
                 created_at: "2011-03-15T17:48:48Z"
                 error: 'failed to get patroni status: connection refused'
@@ -5186,8 +4958,9 @@ definitions:
             id: 76f9b8c0-4958-11f0-a489-3bb29577c696
             instances:
               - connection_info:
-                  hostname: i-0123456789abcdef.ec2.internal
-                  ipv4_address: 10.24.34.2
+                  addresses:
+                    - 10.24.34.2
+                    - i-0123456789abcdef.ec2.internal
                   port: 5432
                 created_at: "2011-03-15T17:48:48Z"
                 error: 'failed to get patroni status: connection refused'
@@ -5217,8 +4990,9 @@ definitions:
                 status_updated_at: "1993-04-25T23:06:28Z"
                 updated_at: "1981-08-22T23:20:01Z"
               - connection_info:
-                  hostname: i-0123456789abcdef.ec2.internal
-                  ipv4_address: 10.24.34.2
+                  addresses:
+                    - 10.24.34.2
+                    - i-0123456789abcdef.ec2.internal
                   port: 5432
                 created_at: "2011-03-15T17:48:48Z"
                 error: 'failed to get patroni status: connection refused'
@@ -5256,8 +5030,9 @@ definitions:
           id: inventory
           instances:
             - connection_info:
-                hostname: i-0123456789abcdef.ec2.internal
-                ipv4_address: 10.24.34.2
+                addresses:
+                  - 10.24.34.2
+                  - i-0123456789abcdef.ec2.internal
                 port: 5432
               created_at: "2025-06-17T20:05:10Z"
               host_id: us-east-1
@@ -5281,8 +5056,9 @@ definitions:
               status_updated_at: "2025-06-17T20:05:10Z"
               updated_at: "2025-06-17T20:05:10Z"
             - connection_info:
-                hostname: i-058731542fee493f.ec2.internal
-                ipv4_address: 10.24.35.2
+                addresses:
+                  - 10.24.35.2
+                  - i-058731542fee493f.ec2.internal
                 port: 5432
               created_at: "2025-06-17T20:05:10Z"
               host_id: ap-south-1
@@ -5306,8 +5082,9 @@ definitions:
               status_updated_at: "2025-06-17T20:05:10Z"
               updated_at: "2025-06-17T20:05:10Z"
             - connection_info:
-                hostname: i-494027b7b53f6a23.ec2.internal
-                ipv4_address: 10.24.36.2
+                addresses:
+                  - 10.24.36.2
+                  - i-494027b7b53f6a23.ec2.internal
                 port: 5432
               created_at: "2025-06-17T20:05:10Z"
               host_id: eu-central-1
@@ -5336,8 +5113,9 @@ definitions:
           id: storefront
           instances:
             - connection_info:
-                hostname: i-0123456789abcdef.ec2.internal
-                ipv4_address: 10.24.34.2
+                addresses:
+                  - 10.24.34.2
+                  - i-0123456789abcdef.ec2.internal
                 port: 6432
               created_at: "2025-06-12T15:10:05Z"
               host_id: us-east-1
@@ -5361,8 +5139,9 @@ definitions:
               status_updated_at: "2025-06-17T20:05:10Z"
               updated_at: "2025-06-12T15:10:05Z"
             - connection_info:
-                hostname: i-058731542fee493f.ec2.internal
-                ipv4_address: 10.24.35.2
+                addresses:
+                  - 10.24.35.2
+                  - i-058731542fee493f.ec2.internal
                 port: 6432
               created_at: "2025-06-12T15:10:05Z"
               host_id: ap-south-1
@@ -5386,8 +5165,9 @@ definitions:
               status_updated_at: "2025-06-17T20:05:10Z"
               updated_at: "2025-06-12T15:10:05Z"
             - connection_info:
-                hostname: i-494027b7b53f6a23.ec2.internal
-                ipv4_address: 10.24.36.2
+                addresses:
+                  - 10.24.36.2
+                  - i-494027b7b53f6a23.ec2.internal
                 port: 6432
               created_at: "2025-06-12T15:10:05Z"
               host_id: eu-central-1
@@ -5440,6 +5220,22 @@ definitions:
             status: completed
             task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
             type: create
+          - completed_at: "2025-06-18T16:52:35Z"
+            created_at: "2025-06-18T16:52:05Z"
+            database_id: storefront
+            entity_id: storefront
+            scope: database
+            status: completed
+            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+            type: create
+          - completed_at: "2025-06-18T16:52:35Z"
+            created_at: "2025-06-18T16:52:05Z"
+            database_id: storefront
+            entity_id: storefront
+            scope: database
+            status: completed
+            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+            type: create
     example:
       tasks:
         - completed_at: "2025-06-18T17:54:36Z"
@@ -5462,7 +5258,10 @@ definitions:
           $ref: '#/definitions/Host'
         description: List of hosts in the cluster
         example:
-          - cohort:
+          - client_addresses:
+              - 10.24.34.2
+              - i-0123456789abcdef.ec2.internal
+            cohort:
               control_available: true
               member_id: lah4bsznw6kc0hp7biylmmmll
               type: swarm
@@ -5472,11 +5271,12 @@ definitions:
               postgres_version: "17.6"
               spock_version: "5"
             etcd_mode: server
-            hostname: i-0123456789abcdef.ec2.internal
             id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            ipv4_address: 10.24.34.2
             memory: 16GiB
             orchestrator: swarm
+            peer_addresses:
+              - 10.24.34.2
+              - i-0123456789abcdef.ec2.internal
             status:
               components:
                 Id dolorem rerum labore commodi.:
@@ -5496,7 +5296,10 @@ definitions:
                 spock_version: "5"
               - postgres_version: "17.6"
                 spock_version: "5"
-          - cohort:
+          - client_addresses:
+              - 10.24.34.2
+              - i-0123456789abcdef.ec2.internal
+            cohort:
               control_available: true
               member_id: lah4bsznw6kc0hp7biylmmmll
               type: swarm
@@ -5506,11 +5309,12 @@ definitions:
               postgres_version: "17.6"
               spock_version: "5"
             etcd_mode: server
-            hostname: i-0123456789abcdef.ec2.internal
             id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            ipv4_address: 10.24.34.2
             memory: 16GiB
             orchestrator: swarm
+            peer_addresses:
+              - 10.24.34.2
+              - i-0123456789abcdef.ec2.internal
             status:
               components:
                 Id dolorem rerum labore commodi.:
@@ -5530,7 +5334,10 @@ definitions:
                 spock_version: "5"
               - postgres_version: "17.6"
                 spock_version: "5"
-          - cohort:
+          - client_addresses:
+              - 10.24.34.2
+              - i-0123456789abcdef.ec2.internal
+            cohort:
               control_available: true
               member_id: lah4bsznw6kc0hp7biylmmmll
               type: swarm
@@ -5540,45 +5347,12 @@ definitions:
               postgres_version: "17.6"
               spock_version: "5"
             etcd_mode: server
-            hostname: i-0123456789abcdef.ec2.internal
             id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            ipv4_address: 10.24.34.2
             memory: 16GiB
             orchestrator: swarm
-            status:
-              components:
-                Id dolorem rerum labore commodi.:
-                  details:
-                    alarms:
-                      - '3: NOSPACE'
-                  error: failed to connect to etcd
-                  healthy: false
-              state: available
-              updated_at: "2021-07-01T12:34:56Z"
-            supported_pgedge_versions:
-              - postgres_version: "17.6"
-                spock_version: "5"
-              - postgres_version: "17.6"
-                spock_version: "5"
-              - postgres_version: "17.6"
-                spock_version: "5"
-              - postgres_version: "17.6"
-                spock_version: "5"
-          - cohort:
-              control_available: true
-              member_id: lah4bsznw6kc0hp7biylmmmll
-              type: swarm
-            cpus: 4
-            data_dir: /data
-            default_pgedge_version:
-              postgres_version: "17.6"
-              spock_version: "5"
-            etcd_mode: server
-            hostname: i-0123456789abcdef.ec2.internal
-            id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            ipv4_address: 10.24.34.2
-            memory: 16GiB
-            orchestrator: swarm
+            peer_addresses:
+              - 10.24.34.2
+              - i-0123456789abcdef.ec2.internal
             status:
               components:
                 Id dolorem rerum labore commodi.:
@@ -5600,7 +5374,10 @@ definitions:
                 spock_version: "5"
     example:
       hosts:
-        - cohort:
+        - client_addresses:
+            - 10.24.34.2
+            - i-0123456789abcdef.ec2.internal
+          cohort:
             cohort_id: zdjfu3tfxg1cihv3146ro3hy2
             control_available: true
             member_id: lah4bsznw6kc0hp7biylmmmll
@@ -5611,11 +5388,12 @@ definitions:
             postgres_version: "17.6"
             spock_version: "5"
           etcd_mode: server
-          hostname: i-0123456789abcdef.ec2.internal
           id: us-east-1
-          ipv4_address: 10.24.34.2
           memory: 16GB
           orchestrator: swarm
+          peer_addresses:
+            - 10.24.34.2
+            - i-0123456789abcdef.ec2.internal
           status:
             components: {}
             state: healthy
@@ -5627,7 +5405,10 @@ definitions:
               spock_version: "5"
             - postgres_version: "16.10"
               spock_version: "5"
-        - cohort:
+        - client_addresses:
+            - 10.24.35.2
+            - i-058731542fee493f.ec2.internal
+          cohort:
             cohort_id: zdjfu3tfxg1cihv3146ro3hy2
             control_available: true
             member_id: cb88u9jael2psnepep5iuzb4r
@@ -5638,11 +5419,12 @@ definitions:
             postgres_version: "17.6"
             spock_version: "5"
           etcd_mode: server
-          hostname: i-058731542fee493f.ec2.internal
           id: ap-south-1
-          ipv4_address: 10.24.35.2
           memory: 16GB
           orchestrator: swarm
+          peer_addresses:
+            - 10.24.35.2
+            - i-058731542fee493f.ec2.internal
           status:
             components: {}
             state: healthy
@@ -5654,7 +5436,10 @@ definitions:
               spock_version: "5"
             - postgres_version: "16.10"
               spock_version: "5"
-        - cohort:
+        - client_addresses:
+            - 10.24.36.2
+            - i-494027b7b53f6a23.ec2.internal
+          cohort:
             cohort_id: zdjfu3tfxg1cihv3146ro3hy2
             control_available: true
             member_id: u7u9i3nhqunxc4wj577l6ecb0
@@ -5665,11 +5450,12 @@ definitions:
             postgres_version: "17.6"
             spock_version: "5"
           etcd_mode: client
-          hostname: i-494027b7b53f6a23.ec2.internal
           id: eu-central-1
-          ipv4_address: 10.24.36.2
           memory: 16GB
           orchestrator: swarm
+          peer_addresses:
+            - 10.24.36.2
+            - i-494027b7b53f6a23.ec2.internal
           status:
             components: {}
             state: healthy
@@ -5851,6 +5637,22 @@ definitions:
             status: completed
             task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
             type: create
+          - completed_at: "2025-06-18T16:52:35Z"
+            created_at: "2025-06-18T16:52:05Z"
+            database_id: storefront
+            entity_id: storefront
+            scope: database
+            status: completed
+            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+            type: create
+          - completed_at: "2025-06-18T16:52:35Z"
+            created_at: "2025-06-18T16:52:05Z"
+            database_id: storefront
+            entity_id: storefront
+            scope: database
+            status: completed
+            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
+            type: create
     example:
       task:
         completed_at: "2025-06-18T16:52:35Z"
@@ -5862,14 +5664,6 @@ definitions:
         task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
         type: create
       update_database_tasks:
-        - completed_at: "2025-06-18T16:52:35Z"
-          created_at: "2025-06-18T16:52:05Z"
-          database_id: storefront
-          entity_id: storefront
-          scope: database
-          status: completed
-          task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
-          type: create
         - completed_at: "2025-06-18T16:52:35Z"
           created_at: "2025-06-18T16:52:05Z"
           database_id: storefront
@@ -5930,7 +5724,7 @@ definitions:
         maxLength: 32
         additionalProperties:
           type: string
-          example: Dolor rem.
+          example: Id reprehenderit.
       source_database_id:
         type: string
         description: The ID of the database to restore this database from.
@@ -5989,7 +5783,7 @@ definitions:
         type: array
         items:
           type: string
-          example: Ratione asperiores iusto nostrum commodi quidem occaecati.
+          example: Eum dolores quae minima.
         description: The nodes to restore. Defaults to all nodes if empty or unspecified.
         example:
           - n1
@@ -6034,14 +5828,6 @@ definitions:
             status: completed
             task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
             type: create
-          - completed_at: "2025-06-18T16:52:35Z"
-            created_at: "2025-06-18T16:52:05Z"
-            database_id: storefront
-            entity_id: storefront
-            scope: database
-            status: completed
-            task_id: 019783f4-75f4-71e7-85a3-c9b96b345d77
-            type: create
       task:
         $ref: '#/definitions/Task'
     example:
@@ -6050,8 +5836,9 @@ definitions:
         id: storefront
         instances:
           - connection_info:
-              hostname: i-0123456789abcdef.ec2.internal
-              ipv4_address: 10.24.34.2
+              addresses:
+                - 10.24.34.2
+                - i-0123456789abcdef.ec2.internal
               port: 5432
             created_at: "2025-06-18T16:52:22Z"
             host_id: us-east-1
@@ -6075,8 +5862,9 @@ definitions:
             status_updated_at: "2025-06-18T17:58:56Z"
             updated_at: "2025-06-18T17:54:36Z"
           - connection_info:
-              hostname: i-058731542fee493f.ec2.internal
-              ipv4_address: 10.24.35.2
+              addresses:
+                - 10.24.35.2
+                - i-058731542fee493f.ec2.internal
               port: 5432
             created_at: "2025-06-18T16:52:22Z"
             host_id: ap-south-1
@@ -6100,8 +5888,9 @@ definitions:
             status_updated_at: "2025-06-18T17:58:56Z"
             updated_at: "2025-06-18T17:54:01Z"
           - connection_info:
-              hostname: i-494027b7b53f6a23.ec2.internal
-              ipv4_address: 10.24.36.2
+              addresses:
+                - 10.24.36.2
+                - i-494027b7b53f6a23.ec2.internal
               port: 5432
             created_at: "2025-06-18T16:52:22Z"
             host_id: eu-central-1
@@ -6218,7 +6007,7 @@ definitions:
           s3-kms-key-id: 1234abcd-12ab-34cd-56ef-1234567890ab
         additionalProperties:
           type: string
-          example: Quos dolorem tempore ut qui ratione repellat.
+          example: Voluptatibus earum.
       gcs_bucket:
         type: string
         description: The GCS bucket name for this repository. Only applies when type = 'gcs'.
@@ -6357,14 +6146,15 @@ definitions:
       service_instance_id: mcp-server-host-1
       state: running
       status:
+        addresses:
+          - 10.24.34.2
+          - i-0123456789abcdef.ec2.internal
         container_id: a1b2c3d4e5f6
         health_check:
           checked_at: "2025-01-28T10:00:00Z"
           message: Connection refused
           status: healthy
-        hostname: mcp-server-host-1.internal
         image_version: 1.0.0
-        ipv4_address: 10.0.1.5
         last_health_at: "2025-01-28T10:00:00Z"
         ports:
           - container_port: 8080
@@ -6393,25 +6183,25 @@ definitions:
     title: ServiceInstanceStatus
     type: object
     properties:
+      addresses:
+        type: array
+        items:
+          type: string
+          example: Ratione repellat.
+        description: The addresses of the host that's running this service instance.
+        example:
+          - 10.24.34.2
+          - i-0123456789abcdef.ec2.internal
       container_id:
         type: string
         description: The Docker container ID.
         example: a1b2c3d4e5f6
       health_check:
         $ref: '#/definitions/HealthCheckResult'
-      hostname:
-        type: string
-        description: The hostname of the service instance.
-        example: mcp-server-host-1.internal
       image_version:
         type: string
         description: The container image version currently running.
         example: 1.0.0
-      ipv4_address:
-        type: string
-        description: The IPv4 address of the service instance.
-        example: 10.0.1.5
-        format: ipv4
       last_health_at:
         type: string
         description: The time of the last health check attempt.
@@ -6438,14 +6228,15 @@ definitions:
         example: true
     description: Runtime status information for a service instance.
     example:
+      addresses:
+        - 10.24.34.2
+        - i-0123456789abcdef.ec2.internal
       container_id: a1b2c3d4e5f6
       health_check:
         checked_at: "2025-01-28T10:00:00Z"
         message: Connection refused
         status: healthy
-      hostname: mcp-server-host-1.internal
       image_version: 1.0.0
-      ipv4_address: 10.0.1.5
       last_health_at: "2025-01-28T10:00:00Z"
       ports:
         - container_port: 8080
@@ -6481,6 +6272,7 @@ definitions:
           maxLength: 63
         description: The IDs of the hosts that should run this service. One service instance will be created per host.
         example:
+          - 76f9b8c0-4958-11f0-a489-3bb29577c696
           - 76f9b8c0-4958-11f0-a489-3bb29577c696
           - 76f9b8c0-4958-11f0-a489-3bb29577c696
         minItems: 1
@@ -6522,7 +6314,6 @@ definitions:
         openai_api_key: sk-...
       cpus: 500m
       host_ids:
-        - 76f9b8c0-4958-11f0-a489-3bb29577c696
         - 76f9b8c0-4958-11f0-a489-3bb29577c696
       memory: 512M
       orchestrator_opts:
@@ -6612,7 +6403,7 @@ definitions:
           traefik.tcp.routers.mydb.rule: HostSNI(`mydb.example.com`)
         additionalProperties:
           type: string
-          example: Reprehenderit error.
+          example: Fugit ipsam.
       extra_networks:
         type: array
         items:
@@ -6982,8 +6773,9 @@ definitions:
         id: storefront
         instances:
           - connection_info:
-              hostname: i-0123456789abcdef.ec2.internal
-              ipv4_address: 10.24.34.2
+              addresses:
+                - 10.24.34.2
+                - i-0123456789abcdef.ec2.internal
               port: 5432
             created_at: "2025-06-18T16:52:22Z"
             host_id: us-east-1
@@ -7007,8 +6799,9 @@ definitions:
             status_updated_at: "2025-06-18T17:58:56Z"
             updated_at: "2025-06-18T17:54:36Z"
           - connection_info:
-              hostname: i-058731542fee493f.ec2.internal
-              ipv4_address: 10.24.35.2
+              addresses:
+                - 10.24.35.2
+                - i-058731542fee493f.ec2.internal
               port: 5432
             created_at: "2025-06-18T16:52:22Z"
             host_id: ap-south-1
@@ -7032,8 +6825,9 @@ definitions:
             status_updated_at: "2025-06-18T17:58:56Z"
             updated_at: "2025-06-18T17:54:01Z"
           - connection_info:
-              hostname: i-494027b7b53f6a23.ec2.internal
-              ipv4_address: 10.24.36.2
+              addresses:
+                - 10.24.36.2
+                - i-494027b7b53f6a23.ec2.internal
               port: 5432
             created_at: "2025-06-18T16:52:22Z"
             host_id: eu-central-1

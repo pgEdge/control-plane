@@ -6,10 +6,12 @@ import (
 	"net"
 	"net/netip"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/rs/zerolog"
 
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
@@ -197,8 +199,8 @@ type Config struct {
 	HostID                 string       `koanf:"host_id" json:"host_id,omitempty"`
 	Orchestrator           Orchestrator `koanf:"orchestrator" json:"orchestrator,omitempty"`
 	DataDir                string       `koanf:"data_dir" json:"data_dir,omitempty"`
-	IPv4Address            string       `koanf:"ipv4_address" json:"ipv4_address,omitempty"`
-	Hostname               string       `koanf:"hostname" json:"hostname,omitempty"`
+	PeerAddresses          []string     `koanf:"peer_addresses" json:"peer_addresses,omitempty"`
+	ClientAddresses        []string     `koanf:"client_addresses" json:"client_addresses,omitempty"`
 	StopGracePeriodSeconds int64        `koanf:"stop_grace_period_seconds" json:"stop_grace_period_seconds,omitempty"`
 	MQTT                   MQTT         `koanf:"mqtt" json:"mqtt,omitzero"`
 	HTTP                   HTTP         `koanf:"http" json:"http,omitzero"`
@@ -216,6 +218,78 @@ type Config struct {
 	ProfilingEnabled       bool         `koanf:"profiling_enabled" json:"profiling_enabled,omitempty"`
 }
 
+// ClientAddress is a convenience function to return the first client address.
+func (c Config) ClientAddress() string {
+	if len(c.ClientAddresses) > 0 {
+		return c.ClientAddresses[0]
+	}
+	return ""
+}
+
+// PeerAddress is a convenience function to return the first peer address.
+func (c Config) PeerAddress() string {
+	if len(c.PeerAddresses) > 0 {
+		return c.PeerAddresses[0]
+	}
+	return ""
+}
+
+// Addresses returns a sorted, combined list of peer and client addresses.
+func (c Config) Addresses() []string {
+	combined := ds.NewSet(c.PeerAddresses...)
+	combined.Add(c.ClientAddresses...)
+
+	return combined.ToSortedSlice(strings.Compare)
+}
+
+var labelRegex = regexp.MustCompile("^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$")
+
+func isValidHostname(hostname string) error {
+	hostname = strings.TrimSpace(hostname)
+	if len(hostname) == 0 {
+		return errors.New("cannot be empty")
+	}
+	if len(hostname) > 253 {
+		return errors.New("cannot be longer than 253 characters")
+	}
+	if strings.HasPrefix(hostname, "-") || strings.HasSuffix(hostname, "-") {
+		return errors.New("cannot start or end with a hyphen")
+	}
+	labels := strings.Split(hostname, ".")
+	for _, label := range labels {
+		if len(label) == 0 {
+			return errors.New("hostnames cannot have empty labels")
+		}
+		if len(label) > 63 {
+			return errors.New("hostnames cannot have labels longer than 63 characters")
+		}
+		// Check for valid characters within a label
+		isValidLabel := labelRegex.MatchString(label)
+		if !isValidLabel {
+			return errors.New("hostname has invalid characters")
+		}
+	}
+	return nil
+}
+
+func validateAddresses(name string, addresses []string) []error {
+	if len(addresses) == 0 {
+		return []error{fmt.Errorf("%s: cannot be empty", name)}
+	}
+	var errs []error
+	for i, addr := range addresses {
+		ip := net.ParseIP(addr)
+		if ip.To4() != nil || ip.To16() != nil {
+			continue
+		}
+		if err := isValidHostname(addr); err != nil {
+			errs = append(errs, fmt.Errorf("%s[%d]: %w", name, i, err))
+		}
+
+	}
+	return errs
+}
+
 func (c Config) Validate() error {
 	var errs []error
 	if err := validateRequiredID("host_id", c.HostID); err != nil {
@@ -223,9 +297,6 @@ func (c Config) Validate() error {
 	}
 	if err := validateOptionalID("tenant_id", c.TenantID); err != nil {
 		errs = append(errs, err)
-	}
-	if c.IPv4Address == "" {
-		errs = append(errs, errors.New("ipv4_address cannot be empty"))
 	}
 	if c.DataDir == "" {
 		errs = append(errs, errors.New("data_dir cannot be empty"))
@@ -262,23 +333,27 @@ func (c Config) Validate() error {
 	default:
 		errs = append(errs, fmt.Errorf("storage_type: unsupported storage type %q", c.EtcdMode))
 	}
+	errs = append(errs, validateAddresses("peer_addresses", c.PeerAddresses)...)
+	errs = append(errs, validateAddresses("client_addresses", c.ClientAddresses)...)
 	return errors.Join(errs...)
 }
 
 func DefaultConfig() (Config, error) {
-	ipv4Address, err := getOutboundIP()
+	addresses, err := defaultAddresses()
 	if err != nil {
-		return Config{}, fmt.Errorf("failed to determine default ipv4_address: %w", err)
+		return Config{}, err
 	}
-	hostname, err := getHostname(ipv4Address)
+	hostID, err := getShortHostname()
 	if err != nil {
-		return Config{}, fmt.Errorf("failed to determine default hostname: %w", err)
+		return Config{}, err
 	}
+
 	return Config{
+		HostID:                 hostID,
 		Orchestrator:           OrchestratorSwarm,
 		EtcdMode:               EtcdModeServer,
-		Hostname:               hostname,
-		IPv4Address:            ipv4Address.String(),
+		PeerAddresses:          addresses,
+		ClientAddresses:        addresses,
 		Logging:                loggingDefault,
 		HTTP:                   httpDefault,
 		StopGracePeriodSeconds: 30,
@@ -289,33 +364,66 @@ func DefaultConfig() (Config, error) {
 	}, nil
 }
 
-// GetOutboundIP returns the first outbound IP address for this host.
-func getOutboundIP() (net.IP, error) {
-	// Similar to 'ip route get 1'. Does not actually make a connection since
-	// UDP does not have a handshake.
-	conn, err := net.Dial("udp4", "8.8.8.8:80")
+func defaultAddresses() ([]string, error) {
+	ip, err := getFirstIP()
 	if err != nil {
-		return net.IPv4zero, fmt.Errorf("failed to create connection: %w", err)
+		return nil, err
 	}
-	defer conn.Close()
 
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
-
-	return localAddr.IP, nil
+	return []string{ip.String()}, nil
 }
 
-func getHostname(myIP net.IP) (string, error) {
-	// Try to lookup domain names for the given IP address
-	names, err := net.LookupAddr(myIP.String())
-	if err == nil && len(names) > 0 {
-		// FQDNs end in a dot
-		return strings.TrimRight(names[0], "."), nil
+// getFirstIP gets the first non-loopback IPv4 address
+func getFirstIP() (net.IP, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return net.IPv4zero, fmt.Errorf("failed to list interfaces: %w", err)
 	}
-	// Fallback to hostname
+	for _, iface := range interfaces {
+		// Skip loopback and down interfaces
+		if iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagUp == 0 {
+			continue
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+
+			// Check if it is a valid IPv4 address and not a loopback address
+			if ip == nil || ip.IsLoopback() {
+				continue
+			}
+
+			// To4() returns nil if the IP is not an IPv4 address
+			ip = ip.To4()
+			if ip == nil {
+				continue
+			}
+
+			// Return the first valid IPv4 address found
+			return ip, nil
+		}
+	}
+
+	return net.IPv4zero, fmt.Errorf("could not find a valid network interface")
+}
+
+func getShortHostname() (string, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return "", fmt.Errorf("failed to get system hostname: %w", err)
 	}
+	// Only return up to the first separator
+	short, _, _ := strings.Cut(hostname, ".")
 
-	return hostname, nil
+	return short, nil
 }

@@ -1,0 +1,3 @@
+kind: Added
+body: Added a default value for the `host_id` configuration setting. It will now default to the short hostname (`hostname -s`) of the host machine.
+time: 2026-03-06T16:01:21.303765-05:00

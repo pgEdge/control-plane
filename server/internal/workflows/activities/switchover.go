@@ -9,9 +9,7 @@ import (
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
-	"github.com/samber/do"
 
-	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
@@ -48,12 +46,7 @@ func (a *Activities) PerformSwitchover(ctx context.Context, input *PerformSwitch
 	}
 	logger = logger.With("database_id", input.DatabaseID, "task_id", input.TaskID.String())
 
-	orch, err := do.Invoke[database.Orchestrator](a.Injector)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get orchestrator: %w", err)
-	}
-
-	connInfo, err := orch.GetInstanceConnectionInfo(ctx, input.DatabaseID, input.LeaderInstanceID)
+	connInfo, err := a.DatabaseService.GetInstanceConnectionInfo(ctx, input.DatabaseID, input.LeaderInstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance connection info for leader: %w", err)
 	}
@@ -101,12 +94,7 @@ func (a *Activities) CancelSwitchover(ctx context.Context, input *CancelSwitchov
 	logger := activity.Logger(ctx)
 	logger = logger.With("database_id", input.DatabaseID, "task_id", input.TaskID.String())
 
-	orch, err := do.Invoke[database.Orchestrator](a.Injector)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get orchestrator: %w", err)
-	}
-
-	connInfo, err := orch.GetInstanceConnectionInfo(ctx, input.DatabaseID, input.LeaderInstanceID)
+	connInfo, err := a.DatabaseService.GetInstanceConnectionInfo(ctx, input.DatabaseID, input.LeaderInstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance connection info for leader: %w", err)
 	}

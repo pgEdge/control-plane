@@ -6,6 +6,7 @@ services:
     environment:
       - PGEDGE_HOST_ID=host-1
       - PGEDGE_DATA_DIR=/tmp/host-1
+      - PGEDGE_CLIENT_ADDRESSES=127.0.0.1
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3000/v1/version"]
       interval: 2s

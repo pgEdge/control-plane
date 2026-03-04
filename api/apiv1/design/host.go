@@ -112,16 +112,15 @@ var Host = g.Type("Host", func() {
 		g.Description("The cohort that this host belongs to.")
 		g.Meta("struct:tag:json", "cohort,omitempty")
 	})
-	g.Attribute("hostname", g.String, func() {
-		g.Description("The hostname of this host.")
-		g.Example("i-0123456789abcdef.ec2.internal")
-		g.Meta("struct:tag:json", "hostname")
+	g.Attribute("peer_addresses", g.ArrayOf(g.String), func() {
+		g.Description("The addresses that this host advertises to other hosts.")
+		g.Example([]string{"10.24.34.2", "i-0123456789abcdef.ec2.internal"})
+		g.Meta("struct:tag:json", "peer_addresses")
 	})
-	g.Attribute("ipv4_address", func() {
-		g.Description("The IPv4 address of this host.")
-		g.Format(g.FormatIPv4)
-		g.Example("10.24.34.2")
-		g.Meta("struct:tag:json", "ipv4_address")
+	g.Attribute("client_addresses", g.ArrayOf(g.String), func() {
+		g.Description("The addresses that this host advertises to client applications.")
+		g.Example([]string{"10.24.34.2", "i-0123456789abcdef.ec2.internal"})
+		g.Meta("struct:tag:json", "client_addresses")
 	})
 	g.Attribute("cpus", g.Int, func() {
 		g.Description("The number of CPUs on this host.")
@@ -156,8 +155,8 @@ var Host = g.Type("Host", func() {
 		"id",
 		"orchestrator",
 		"data_dir",
-		"hostname",
-		"ipv4_address",
+		"peer_addresses",
+		"client_addresses",
 		"status",
 	)
 })
@@ -175,9 +174,15 @@ var HostsArrayExample = []map[string]any{
 			"postgres_version": "17.6",
 			"spock_version":    "5",
 		},
-		"hostname":     "i-0123456789abcdef.ec2.internal",
-		"id":           "us-east-1",
-		"ipv4_address": "10.24.34.2",
+		"id": "us-east-1",
+		"peer_addresses": []string{
+			"10.24.34.2",
+			"i-0123456789abcdef.ec2.internal",
+		},
+		"client_addresses": []string{
+			"10.24.34.2",
+			"i-0123456789abcdef.ec2.internal",
+		},
 		"memory":       "16GB",
 		"orchestrator": "swarm",
 		"data_dir":     "/data",
@@ -214,9 +219,15 @@ var HostsArrayExample = []map[string]any{
 			"postgres_version": "17.6",
 			"spock_version":    "5",
 		},
-		"hostname":     "i-058731542fee493f.ec2.internal",
-		"id":           "ap-south-1",
-		"ipv4_address": "10.24.35.2",
+		"id": "ap-south-1",
+		"peer_addresses": []string{
+			"10.24.35.2",
+			"i-058731542fee493f.ec2.internal",
+		},
+		"client_addresses": []string{
+			"10.24.35.2",
+			"i-058731542fee493f.ec2.internal",
+		},
 		"memory":       "16GB",
 		"orchestrator": "swarm",
 		"data_dir":     "/data",
@@ -253,9 +264,15 @@ var HostsArrayExample = []map[string]any{
 			"postgres_version": "17.6",
 			"spock_version":    "5",
 		},
-		"hostname":     "i-494027b7b53f6a23.ec2.internal",
-		"id":           "eu-central-1",
-		"ipv4_address": "10.24.36.2",
+		"id": "eu-central-1",
+		"peer_addresses": []string{
+			"10.24.36.2",
+			"i-494027b7b53f6a23.ec2.internal",
+		},
+		"client_addresses": []string{
+			"10.24.36.2",
+			"i-494027b7b53f6a23.ec2.internal",
+		},
 		"memory":       "16GB",
 		"orchestrator": "swarm",
 		"data_dir":     "/data",
