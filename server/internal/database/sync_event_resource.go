@@ -52,6 +52,10 @@ func (r *SyncEventResource) Dependencies() []resource.Identifier {
 	return deps
 }
 
+func (r *SyncEventResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 // Confirm synchronization by sending sync_event from provider and waiting for it on subscriber
 func (r *SyncEventResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	// Get provider instance

@@ -65,6 +65,10 @@ func (s *PostgresServiceSpecResource) Dependencies() []resource.Identifier {
 	}
 }
 
+func (s *PostgresServiceSpecResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (s *PostgresServiceSpecResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	network, err := resource.FromContext[*Network](rc, NetworkResourceIdentifier(s.DatabaseNetworkName))
 	if err != nil {

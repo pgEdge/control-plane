@@ -63,6 +63,10 @@ func (n *Network) Dependencies() []resource.Identifier {
 	return nil
 }
 
+func (n *Network) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (n *Network) Validate() error {
 	var errs []error
 	if n.Scope == "" {

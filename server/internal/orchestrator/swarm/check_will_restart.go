@@ -55,6 +55,10 @@ func (c *CheckWillRestart) Dependencies() []resource.Identifier {
 	}
 }
 
+func (c *CheckWillRestart) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (c *CheckWillRestart) Refresh(ctx context.Context, rc *resource.Context) error {
 	if !rc.State.HasResources(c.Dependencies()...) {
 		return resource.ErrNotFound

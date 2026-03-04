@@ -71,6 +71,10 @@ func (r *MCPConfigResource) Dependencies() []resource.Identifier {
 	}
 }
 
+func (r *MCPConfigResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (r *MCPConfigResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	fs, err := do.Invoke[afero.Fs](rc.Injector)
 	if err != nil {

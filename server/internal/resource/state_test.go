@@ -16,7 +16,7 @@ func TestState(t *testing.T) {
 			resource1 := &testResource{
 				ID: "test1",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test2"),
+					testResourceID(testResourceType, "test2"),
 				},
 			}
 			resource1Data, err := resource.ToResourceData(resource1)
@@ -25,7 +25,7 @@ func TestState(t *testing.T) {
 			resource2 := &testResource{
 				ID: "test2",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test3"),
+					testResourceID(testResourceType, "test3"),
 				},
 			}
 			resource2Data, err := resource.ToResourceData(resource2)
@@ -75,7 +75,7 @@ func TestState(t *testing.T) {
 			resource1 := &testResource{
 				ID: "test1",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test2"),
+					testResourceID(testResourceType, "test2"),
 				},
 			}
 			resource1Data, err := resource.ToResourceData(resource1)
@@ -84,7 +84,7 @@ func TestState(t *testing.T) {
 			resource2 := &testResource{
 				ID: "test2",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test3"),
+					testResourceID(testResourceType, "test3"),
 				},
 			}
 			resource2Data, err := resource.ToResourceData(resource2)
@@ -136,7 +136,7 @@ func TestState(t *testing.T) {
 			resource1 := &testResource{
 				ID: "test1",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test2"),
+					testResourceID(testResourceType, "test2"),
 				},
 			}
 			resource1Data, err := resource.ToResourceData(resource1)
@@ -145,7 +145,7 @@ func TestState(t *testing.T) {
 			resource2 := &testResource{
 				ID: "test2",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test3"),
+					testResourceID(testResourceType, "test3"),
 				},
 			}
 			resource2Data, err := resource.ToResourceData(resource2)
@@ -190,7 +190,7 @@ func TestState(t *testing.T) {
 			resource1 := &testResource{
 				ID: "test1",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test2"),
+					testResourceID(testResourceType, "test2"),
 				},
 			}
 			resource1Data, err := resource.ToResourceData(resource1)
@@ -199,7 +199,7 @@ func TestState(t *testing.T) {
 			resource2 := &testResource{
 				ID: "test2",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test3"),
+					testResourceID(testResourceType, "test3"),
 				},
 			}
 			resource2Data, err := resource.ToResourceData(resource2)
@@ -213,7 +213,7 @@ func TestState(t *testing.T) {
 				SomeAttribute: "updated",
 				ID:            "test2",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test3"),
+					testResourceID(testResourceType, "test3"),
 				},
 			}
 			updatedResource2Data, err := resource.ToResourceData(updatedResource2)
@@ -258,11 +258,72 @@ func TestState(t *testing.T) {
 
 			assert.Equal(t, expected, plan)
 		})
+		t.Run("updated type dependency", func(t *testing.T) {
+			resource1 := &testResource{
+				TestType: "other_resource",
+				ID:       "test1",
+				TestTypeDependencies: []resource.Type{
+					testResourceType,
+				},
+			}
+			resource1Data, err := resource.ToResourceData(resource1)
+			require.NoError(t, err)
+
+			resource2 := &testResource{
+				ID: "test2",
+			}
+			resource2Data, err := resource.ToResourceData(resource2)
+			require.NoError(t, err)
+
+			updatedResource2 := &testResource{
+				SomeAttribute: "updated",
+				ID:            "test2",
+			}
+			updatedResource2Data, err := resource.ToResourceData(updatedResource2)
+			require.NoError(t, err)
+
+			current := resource.NewState()
+			desired := resource.NewState()
+
+			current.AddResource(resource1)
+			current.AddResource(resource2)
+
+			desired.AddResource(resource1)
+			desired.AddResource(updatedResource2)
+
+			plan, err := current.Plan(resource.PlanOptions{}, desired)
+			assert.NoError(t, err)
+
+			expectedDiff, err := resource2Data.Diff(updatedResource2Data)
+			assert.NoError(t, err)
+
+			expected := resource.Plan{
+				{
+					{
+						Type:     resource.EventTypeUpdate,
+						Resource: updatedResource2Data,
+						Reason:   resource.EventReasonHasDiff,
+						Diff:     expectedDiff,
+					},
+				},
+				{
+					// Resource 1 should be marked for update because it has a
+					// type dependency on resource 1.
+					{
+						Type:     resource.EventTypeUpdate,
+						Resource: resource1Data,
+						Reason:   resource.EventReasonDependencyUpdated,
+					},
+				},
+			}
+
+			assert.Equal(t, expected, plan)
+		})
 		t.Run("to empty state", func(t *testing.T) {
 			resource1 := &testResource{
 				ID: "test1",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test2"),
+					testResourceID(testResourceType, "test2"),
 				},
 			}
 			resource1Data, err := resource.ToResourceData(resource1)
@@ -271,7 +332,7 @@ func TestState(t *testing.T) {
 			resource2 := &testResource{
 				ID: "test2",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test3"),
+					testResourceID(testResourceType, "test3"),
 				},
 			}
 			resource2Data, err := resource.ToResourceData(resource2)
@@ -320,7 +381,7 @@ func TestState(t *testing.T) {
 			resource1 := &testResource{
 				ID: "test1",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test2"),
+					testResourceID(testResourceType, "test2"),
 				},
 			}
 			resource1Data, err := resource.ToResourceData(resource1)
@@ -335,7 +396,7 @@ func TestState(t *testing.T) {
 			resource3 := &testResource{
 				ID: "test3",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test4"),
+					testResourceID(testResourceType, "test4"),
 				},
 			}
 			resource3Data, err := resource.ToResourceData(resource3)
@@ -356,7 +417,7 @@ func TestState(t *testing.T) {
 			resource6 := &testResource{
 				ID: "test6",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test5"),
+					testResourceID(testResourceType, "test5"),
 				},
 			}
 			resource6Data, err := resource.ToResourceData(resource6)
@@ -426,7 +487,7 @@ func TestState(t *testing.T) {
 			resource1Data, err := resource.ToResourceData(&testResource{
 				ID: "test1",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test2"),
+					testResourceID(testResourceType, "test2"),
 				},
 			})
 			require.NoError(t, err)
@@ -472,7 +533,7 @@ func TestState(t *testing.T) {
 			resource1Data, err := resource.ToResourceData(&testResource{
 				ID: "test1",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test2"),
+					testResourceID(testResourceType, "test2"),
 				},
 			})
 			require.NoError(t, err)
@@ -517,7 +578,7 @@ func TestState(t *testing.T) {
 			resource1 := &testResource{
 				ID: "test1",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test2"),
+					testResourceID(testResourceType, "test2"),
 				},
 			}
 
@@ -536,7 +597,7 @@ func TestState(t *testing.T) {
 			resource1 := &testResource{
 				ID: "test1",
 				TestDependencies: []resource.Identifier{
-					testResourceID("test2"),
+					testResourceID(testResourceType, "test2"),
 				},
 			}
 			resource1Data, err := resource.ToResourceData(resource1)
@@ -587,18 +648,23 @@ func TestState(t *testing.T) {
 
 const testResourceType = resource.Type("test_resource")
 
-func testResourceID(id string) resource.Identifier {
+func testResourceID(resourceType resource.Type, id string) resource.Identifier {
+	if resourceType == "" {
+		resourceType = testResourceType
+	}
 	return resource.Identifier{
-		Type: testResourceType,
+		Type: resourceType,
 		ID:   id,
 	}
 }
 
 type testResource struct {
+	TestType             resource.Type         `json:"test_type"`
 	SomeAttribute        string                `json:"some_attribute"`
 	SomeIgnoredAttribute string                `json:"some_ignored_attribute"`
 	ID                   string                `json:"id"`
 	TestDependencies     []resource.Identifier `json:"test_dependencies"`
+	TestTypeDependencies []resource.Type       `json:"test_type_dependencies"`
 	NotFound             bool                  `json:"not_found"`
 	Error                string                `json:"error"`
 }
@@ -618,11 +684,15 @@ func (r *testResource) Executor() resource.Executor {
 }
 
 func (r *testResource) Identifier() resource.Identifier {
-	return testResourceID(r.ID)
+	return testResourceID(r.TestType, r.ID)
 }
 
 func (r *testResource) Dependencies() []resource.Identifier {
 	return r.TestDependencies
+}
+
+func (r *testResource) TypeDependencies() []resource.Type {
+	return r.TestTypeDependencies
 }
 
 func (r *testResource) Refresh(ctx context.Context, rc *resource.Context) error {

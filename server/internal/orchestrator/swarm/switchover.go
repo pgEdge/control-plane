@@ -48,6 +48,10 @@ func (s *Switchover) Dependencies() []resource.Identifier {
 	}
 }
 
+func (s *Switchover) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (s *Switchover) Refresh(ctx context.Context, rc *resource.Context) error {
 	if !rc.State.HasResources(s.Dependencies()...) {
 		return resource.ErrNotFound

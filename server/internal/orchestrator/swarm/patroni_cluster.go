@@ -47,6 +47,10 @@ func (p *PatroniCluster) Dependencies() []resource.Identifier {
 	return nil
 }
 
+func (p *PatroniCluster) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (p *PatroniCluster) Refresh(ctx context.Context, rc *resource.Context) error {
 	return nil
 }

@@ -51,6 +51,10 @@ func (p *PatroniMember) Dependencies() []resource.Identifier {
 	}
 }
 
+func (p *PatroniMember) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (p *PatroniMember) Refresh(ctx context.Context, rc *resource.Context) error {
 	return nil
 }

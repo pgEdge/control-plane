@@ -84,6 +84,10 @@ func (r *ServiceUserRole) Dependencies() []resource.Identifier {
 	return nil
 }
 
+func (r *ServiceUserRole) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (r *ServiceUserRole) Refresh(ctx context.Context, rc *resource.Context) error {
 	// If username or password is empty, the resource state is from before we
 	// added credential management. Return ErrNotFound to trigger recreation.

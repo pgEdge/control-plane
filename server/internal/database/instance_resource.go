@@ -71,6 +71,10 @@ func (r *InstanceResource) Dependencies() []resource.Identifier {
 	return dependencies
 }
 
+func (r *InstanceResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (r *InstanceResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	if err := r.updateConnectionInfo(ctx, rc); err != nil {
 		return resource.ErrNotFound
