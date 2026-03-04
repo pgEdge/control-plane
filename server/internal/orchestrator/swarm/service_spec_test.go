@@ -453,7 +453,7 @@ func TestServiceContainerSpec(t *testing.T) {
 			// Verify labels are applied to both ContainerSpec and Annotations
 			if tt.checkLabels != nil {
 				tt.checkLabels(t, got.TaskTemplate.ContainerSpec.Labels)
-				tt.checkLabels(t, got.Annotations.Labels)
+				tt.checkLabels(t, got.Labels)
 			}
 			if tt.checkNetworks != nil {
 				tt.checkNetworks(t, got.TaskTemplate.Networks)
