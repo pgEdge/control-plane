@@ -40,7 +40,11 @@
         "resource_id": "database.node::n2",
         "reason": "does_not_exist",
         "diff": null
-      },
+      }
+    ]
+  ],
+  [
+    [
       {
         "type": "create",
         "resource_id": "monitor.instance::n1-instance-1-id",
@@ -53,19 +57,17 @@
         "reason": "does_not_exist",
         "diff": null
       }
-    ]
-  ],
-  [
+    ],
     [
       {
         "type": "create",
-        "resource_id": "database.replication_slot::n1n2",
+        "resource_id": "database.postgres_database::n1:test",
         "reason": "does_not_exist",
         "diff": null
       },
       {
         "type": "create",
-        "resource_id": "database.replication_slot::n2n1",
+        "resource_id": "database.postgres_database::n2:test",
         "reason": "does_not_exist",
         "diff": null
       }
@@ -73,13 +75,27 @@
     [
       {
         "type": "create",
-        "resource_id": "database.subscription::n1n2",
+        "resource_id": "database.replication_slot::n1:n2:test",
         "reason": "does_not_exist",
         "diff": null
       },
       {
         "type": "create",
-        "resource_id": "database.subscription::n2n1",
+        "resource_id": "database.replication_slot::n2:n1:test",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.subscription::n1:n2:test",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "database.subscription::n2:n1:test",
         "reason": "does_not_exist",
         "diff": null
       }

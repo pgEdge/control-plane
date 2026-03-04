@@ -3646,7 +3646,7 @@
         "state": {
           "type": "string",
           "description": "Current state of the database.",
-          "example": "deleting",
+          "example": "restoring",
           "enum": [
             "creating",
             "modifying",
@@ -3654,7 +3654,6 @@
             "deleting",
             "degraded",
             "failed",
-            "backing_up",
             "restoring",
             "unknown"
           ]

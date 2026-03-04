@@ -77,6 +77,7 @@ func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*A
 		State:    input.State,
 		Injector: a.Injector,
 		Registry: registry,
+		HostID:   a.Config.HostID,
 	}
 
 	event := input.Event

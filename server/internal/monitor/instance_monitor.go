@@ -60,6 +60,10 @@ func (m *InstanceMonitor) checkStatus(ctx context.Context) error {
 	status := &database.InstanceStatus{
 		StatusUpdatedAt: utils.PointerTo(time.Now()),
 	}
+	dbState, err := m.dbSvc.GetStoredDatabaseState(ctx, m.databaseID)
+	if err != nil {
+		return m.updateInstanceErrStatus(ctx, status, fmt.Errorf("failed to get database state: %w", err))
+	}
 
 	info, err := m.dbSvc.GetInstanceConnectionInfo(ctx, m.databaseID, m.instanceID)
 	if err != nil {
@@ -87,7 +91,7 @@ func (m *InstanceMonitor) checkStatus(ctx context.Context) error {
 	}
 
 	if status.IsPrimary() {
-		err = m.populateFromDbConn(ctx, info, tlsCfg, status)
+		err = m.populateFromDbConn(ctx, dbState, info, tlsCfg, status)
 		if err != nil {
 			return m.updateInstanceErrStatus(ctx, status, err)
 		}
@@ -97,7 +101,6 @@ func (m *InstanceMonitor) checkStatus(ctx context.Context) error {
 		return m.updateInstanceErrStatus(ctx, status, err)
 	}
 	if currentInstance != nil && currentInstance.State != database.InstanceStateAvailable {
-
 		_ = m.dbSvc.UpdateInstance(ctx, &database.InstanceUpdateOptions{
 			InstanceID: m.instanceID,
 			DatabaseID: m.databaseID,
@@ -128,6 +131,7 @@ func (m *InstanceMonitor) populateFromPatroni(
 
 func (m *InstanceMonitor) populateFromDbConn(
 	ctx context.Context,
+	dbState database.DatabaseState,
 	info *database.ConnectionInfo,
 	tlsCfg *tls.Config,
 	status *database.InstanceStatus,
@@ -136,7 +140,11 @@ func (m *InstanceMonitor) populateFromDbConn(
 		DSN: info.AdminDSN(m.dbName),
 		TLS: tlsCfg,
 	})
-	if err != nil {
+	if postgres.IsDatabaseNotExists(err) && dbState.IsInProgress() {
+		// Skip database status collection if the database does not exist yet
+		// and we're actively modifying the database.
+		return nil
+	} else if err != nil {
 		return fmt.Errorf("failed to connect to instance: %w", err)
 	}
 	defer conn.Close(ctx)

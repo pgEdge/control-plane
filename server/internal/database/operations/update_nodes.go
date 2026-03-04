@@ -17,11 +17,9 @@ func UpdateNode(node *NodeResources) ([]*resource.State, error) {
 	var primary *resource.State
 
 	var primaryHostID string
-	instanceIDs := make([]string, len(node.InstanceResources))
 	states := make([]*resource.State, 0, len(node.InstanceResources))
-	for i, inst := range node.InstanceResources {
+	for _, inst := range node.InstanceResources {
 		instanceID := inst.InstanceID()
-		instanceIDs[i] = instanceID
 
 		state, err := instanceState(inst)
 		if err != nil {
@@ -57,13 +55,11 @@ func UpdateNode(node *NodeResources) ([]*resource.State, error) {
 	}
 
 	states = append(states, primary)
-	err := addNodeResource(states, &database.NodeResource{
-		Name:        node.NodeName,
-		InstanceIDs: instanceIDs,
-	})
+	nodeState, err := node.nodeResourceState()
 	if err != nil {
 		return nil, err
 	}
+	states[len(states)-1].Merge(nodeState)
 
 	return states, nil
 }

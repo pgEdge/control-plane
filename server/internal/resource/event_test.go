@@ -17,6 +17,7 @@ func TestEvent(t *testing.T) {
 			State:    resource.NewState(),
 			Registry: registry,
 			Injector: do.New(),
+			HostID:   "host-1",
 		}
 
 		for _, tc := range []struct {

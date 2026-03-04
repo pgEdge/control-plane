@@ -17,8 +17,9 @@ const (
 	DatabaseStateAvailable = "available"
 	DatabaseStateDeleting  = "deleting"
 	DatabaseStateDegraded  = "degraded"
-	DatabaseStateUnknown   = "unknown"
 	DatabaseStateFailed    = "failed"
+	DatabaseStateRestoring = "restoring"
+	DatabaseStateUnknown   = "unknown"
 )
 
 const (

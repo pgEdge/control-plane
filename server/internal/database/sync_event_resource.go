@@ -12,14 +12,15 @@ var _ resource.Resource = (*SyncEventResource)(nil)
 
 const ResourceTypeSyncEvent resource.Type = "database.sync_event"
 
-func SyncEventResourceIdentifier(providerNode, subscriberNode string) resource.Identifier {
+func SyncEventResourceIdentifier(providerNode, subscriberNode, databaseName string) resource.Identifier {
 	return resource.Identifier{
-		ID:   providerNode + subscriberNode,
 		Type: ResourceTypeSyncEvent,
+		ID:   fmt.Sprintf("%s:%s:%s", providerNode, subscriberNode, databaseName),
 	}
 }
 
 type SyncEventResource struct {
+	DatabaseName      string                `json:"database_name"`
 	ProviderNode      string                `json:"provider_node"`
 	SubscriberNode    string                `json:"subscriber_node"`
 	SyncEventLsn      string                `json:"sync_event_lsn"`
@@ -39,13 +40,12 @@ func (r *SyncEventResource) Executor() resource.Executor {
 }
 
 func (r *SyncEventResource) Identifier() resource.Identifier {
-	return SyncEventResourceIdentifier(r.ProviderNode, r.SubscriberNode)
+	return SyncEventResourceIdentifier(r.ProviderNode, r.SubscriberNode, r.DatabaseName)
 }
 
 func (r *SyncEventResource) Dependencies() []resource.Identifier {
 	deps := []resource.Identifier{
-		NodeResourceIdentifier(r.ProviderNode),
-		SubscriptionResourceIdentifier(r.ProviderNode, r.SubscriberNode),
+		SubscriptionResourceIdentifier(r.ProviderNode, r.SubscriberNode, r.DatabaseName),
 	}
 
 	deps = append(deps, r.ExtraDependencies...)
@@ -63,9 +63,9 @@ func (r *SyncEventResource) Refresh(ctx context.Context, rc *resource.Context) e
 	if err != nil {
 		return fmt.Errorf("failed to get provider instance: %w", err)
 	}
-	providerConn, err := provider.Connection(ctx, rc, provider.Spec.DatabaseName)
+	providerConn, err := provider.Connection(ctx, rc, r.DatabaseName)
 	if err != nil {
-		return fmt.Errorf("failed to connect to provider database %q: %w", provider.Spec.DatabaseName, err)
+		return fmt.Errorf("failed to connect to provider database %q: %w", r.DatabaseName, err)
 	}
 	defer providerConn.Close(ctx)
 

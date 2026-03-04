@@ -670,7 +670,6 @@ var Database = g.Type("Database", func() {
 			"deleting",
 			"degraded",
 			"failed",
-			"backing_up",
 			"restoring",
 			"unknown",
 		)

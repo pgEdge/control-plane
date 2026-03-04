@@ -16,16 +16,17 @@ var _ resource.Resource = (*ReplicationSlotAdvanceFromCTSResource)(nil)
 const ResourceTypeReplicationSlotAdvanceFromCTS resource.Type = "database.replication_slot_advance_from_cts"
 
 // ReplicationSlotAdvanceFromCTSResourceIdentifier creates a stable identifier for this resource.
-func ReplicationSlotAdvanceFromCTSResourceIdentifier(providerNode, subscriberNode string) resource.Identifier {
+func ReplicationSlotAdvanceFromCTSResourceIdentifier(providerNode, subscriberNode, databaseName string) resource.Identifier {
 	return resource.Identifier{
 		Type: ResourceTypeReplicationSlotAdvanceFromCTS,
-		ID:   providerNode + subscriberNode,
+		ID:   fmt.Sprintf("%s:%s:%s", providerNode, subscriberNode, databaseName),
 	}
 }
 
 // ReplicationSlotAdvanceFromCTSResource advances the replication slot on the provider
 // to the LSN derived from the commit timestamp captured in lag_tracker.
 type ReplicationSlotAdvanceFromCTSResource struct {
+	DatabaseName   string `json:"database_name"`
 	ProviderNode   string `json:"provider_node"`   // slot lives here
 	SubscriberNode string `json:"subscriber_node"` // target/receiver node
 }
@@ -41,13 +42,14 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Executor() resource.Executor {
 }
 
 func (r *ReplicationSlotAdvanceFromCTSResource) Identifier() resource.Identifier {
-	return ReplicationSlotAdvanceFromCTSResourceIdentifier(r.ProviderNode, r.SubscriberNode)
+	return ReplicationSlotAdvanceFromCTSResourceIdentifier(r.ProviderNode, r.SubscriberNode, r.DatabaseName)
 }
 
 func (r *ReplicationSlotAdvanceFromCTSResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
-		NodeResourceIdentifier(r.ProviderNode),                         // must run on provider
-		LagTrackerCommitTSIdentifier(r.ProviderNode, r.SubscriberNode), // need commit_ts first
+		PostgresDatabaseResourceIdentifier(r.ProviderNode, r.DatabaseName),
+		PostgresDatabaseResourceIdentifier(r.SubscriberNode, r.DatabaseName),
+		LagTrackerCommitTSIdentifier(r.ProviderNode, r.SubscriberNode, r.DatabaseName),
 	}
 }
 
@@ -63,7 +65,7 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *
 	// Fetch commit timestamp from lag tracker resource
 	lagTracker, err := resource.FromContext[*LagTrackerCommitTimestampResource](
 		rc,
-		LagTrackerCommitTSIdentifier(r.ProviderNode, r.SubscriberNode),
+		LagTrackerCommitTSIdentifier(r.ProviderNode, r.SubscriberNode, r.DatabaseName),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to get lag tracker resource for %q->%q: %w", r.ProviderNode, r.SubscriberNode, err)
@@ -80,7 +82,7 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *
 	if err != nil {
 		return fmt.Errorf("failed to get provider instance for node %q: %w", r.ProviderNode, err)
 	}
-	conn, err := provider.Connection(ctx, rc, provider.Spec.DatabaseName)
+	conn, err := provider.Connection(ctx, rc, r.DatabaseName)
 	if err != nil {
 		return fmt.Errorf("failed to connect to provider %q: %w", r.ProviderNode, err)
 	}
@@ -90,7 +92,7 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *
 	// subscription is already replicating and we don't need to advance the slot.
 	isActive, err := postgres.
 		IsReplicationSlotActive(
-			provider.Spec.DatabaseName,
+			r.DatabaseName,
 			r.ProviderNode,
 			r.SubscriberNode).
 		Scalar(ctx, conn)
@@ -104,7 +106,7 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *
 
 	currentLSN, err := postgres.
 		CurrentReplicationSlotLSN(
-			provider.Spec.DatabaseName,
+			r.DatabaseName,
 			r.ProviderNode,
 			r.SubscriberNode).
 		Scalar(ctx, conn)
@@ -114,7 +116,7 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *
 
 	targetLSN, err := postgres.
 		GetReplicationSlotLSNFromCommitTS(
-			provider.Spec.DatabaseName,
+			r.DatabaseName,
 			r.ProviderNode,
 			r.SubscriberNode,
 			commitTS).
@@ -131,7 +133,7 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Create(ctx context.Context, rc *
 
 	err = postgres.
 		AdvanceReplicationSlotToLSN(
-			provider.Spec.DatabaseName,
+			r.DatabaseName,
 			r.ProviderNode,
 			r.SubscriberNode,
 			targetLSN).

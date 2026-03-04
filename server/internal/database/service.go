@@ -329,6 +329,19 @@ func (s *Service) UpdateInstanceStatus(
 	return nil
 }
 
+func (s *Service) GetStoredDatabaseState(ctx context.Context, databaseID string) (DatabaseState, error) {
+	stored, err := s.store.Database.
+		GetByKey(databaseID).
+		Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return DatabaseStateUnknown, ErrDatabaseNotFound
+	} else if err != nil {
+		return DatabaseStateUnknown, fmt.Errorf("failed to get stored database: %w", err)
+	}
+
+	return stored.State, nil
+}
+
 func (s *Service) GetStoredInstanceState(ctx context.Context, databaseID, instanceID string) (InstanceState, error) {
 	storedInstance, err := s.store.Instance.
 		GetByKey(databaseID, instanceID).

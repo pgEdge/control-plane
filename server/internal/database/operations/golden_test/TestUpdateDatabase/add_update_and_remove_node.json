@@ -29,6 +29,14 @@
         "reason": "dependency_updated",
         "diff": null
       }
+    ],
+    [
+      {
+        "type": "update",
+        "resource_id": "database.postgres_database::n1:test",
+        "reason": "dependency_updated",
+        "diff": null
+      }
     ]
   ],
   [
@@ -54,54 +62,64 @@
         "resource_id": "database.node::n3",
         "reason": "does_not_exist",
         "diff": null
-      },
+      }
+    ]
+  ],
+  [
+    [
       {
         "type": "create",
         "resource_id": "monitor.instance::n3-instance-1-id",
         "reason": "does_not_exist",
         "diff": null
       }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.postgres_database::n3:test",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.replication_slot::n1:n3:test",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.subscription::n1:n3:test",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.sync_event::n1:n3:test",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.wait_for_sync_event::n1:n3:test",
+        "reason": "does_not_exist",
+        "diff": null
+      }
     ]
   ],
   [
     [
       {
         "type": "create",
-        "resource_id": "database.replication_slot::n1n3",
-        "reason": "does_not_exist",
-        "diff": null
-      }
-    ],
-    [
-      {
-        "type": "create",
-        "resource_id": "database.subscription::n1n3",
-        "reason": "does_not_exist",
-        "diff": null
-      }
-    ],
-    [
-      {
-        "type": "create",
-        "resource_id": "database.sync_event::n1n3",
-        "reason": "does_not_exist",
-        "diff": null
-      }
-    ],
-    [
-      {
-        "type": "create",
-        "resource_id": "database.wait_for_sync_event::n1n3",
-        "reason": "does_not_exist",
-        "diff": null
-      }
-    ]
-  ],
-  [
-    [
-      {
-        "type": "create",
-        "resource_id": "database.replication_slot::n3n1",
+        "resource_id": "database.replication_slot::n3:n1:test",
         "reason": "does_not_exist",
         "diff": null
       }
@@ -109,7 +127,7 @@
     [
       {
         "type": "update",
-        "resource_id": "database.subscription::n1n3",
+        "resource_id": "database.subscription::n1:n3:test",
         "reason": "has_diff",
         "diff": [
           {
@@ -126,7 +144,7 @@
       },
       {
         "type": "create",
-        "resource_id": "database.subscription::n3n1",
+        "resource_id": "database.subscription::n3:n1:test",
         "reason": "does_not_exist",
         "diff": null
       }
@@ -134,17 +152,17 @@
     [
       {
         "type": "delete",
-        "resource_id": "database.subscription::n1n2",
+        "resource_id": "database.subscription::n1:n2:test",
         "diff": null
       },
       {
         "type": "delete",
-        "resource_id": "database.subscription::n2n1",
+        "resource_id": "database.subscription::n2:n1:test",
         "diff": null
       },
       {
         "type": "delete",
-        "resource_id": "database.wait_for_sync_event::n1n3",
+        "resource_id": "database.wait_for_sync_event::n1:n3:test",
         "diff": null
       },
       {
@@ -156,17 +174,24 @@
     [
       {
         "type": "delete",
-        "resource_id": "database.replication_slot::n1n2",
+        "resource_id": "database.replication_slot::n1:n2:test",
         "diff": null
       },
       {
         "type": "delete",
-        "resource_id": "database.replication_slot::n2n1",
+        "resource_id": "database.replication_slot::n2:n1:test",
         "diff": null
       },
       {
         "type": "delete",
-        "resource_id": "database.sync_event::n1n3",
+        "resource_id": "database.sync_event::n1:n3:test",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.postgres_database::n2:test",
         "diff": null
       }
     ],

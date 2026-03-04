@@ -22,54 +22,64 @@
         "resource_id": "database.node::n2",
         "reason": "does_not_exist",
         "diff": null
-      },
+      }
+    ]
+  ],
+  [
+    [
       {
         "type": "create",
         "resource_id": "monitor.instance::n2-instance-1-id",
         "reason": "does_not_exist",
         "diff": null
       }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.postgres_database::n2:test",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.replication_slot::n1:n2:test",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.subscription::n1:n2:test",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.sync_event::n1:n2:test",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.wait_for_sync_event::n1:n2:test",
+        "reason": "does_not_exist",
+        "diff": null
+      }
     ]
   ],
   [
     [
       {
         "type": "create",
-        "resource_id": "database.replication_slot::n1n2",
-        "reason": "does_not_exist",
-        "diff": null
-      }
-    ],
-    [
-      {
-        "type": "create",
-        "resource_id": "database.subscription::n1n2",
-        "reason": "does_not_exist",
-        "diff": null
-      }
-    ],
-    [
-      {
-        "type": "create",
-        "resource_id": "database.sync_event::n1n2",
-        "reason": "does_not_exist",
-        "diff": null
-      }
-    ],
-    [
-      {
-        "type": "create",
-        "resource_id": "database.wait_for_sync_event::n1n2",
-        "reason": "does_not_exist",
-        "diff": null
-      }
-    ]
-  ],
-  [
-    [
-      {
-        "type": "create",
-        "resource_id": "database.replication_slot::n2n1",
+        "resource_id": "database.replication_slot::n2:n1:test",
         "reason": "does_not_exist",
         "diff": null
       }
@@ -77,7 +87,7 @@
     [
       {
         "type": "update",
-        "resource_id": "database.subscription::n1n2",
+        "resource_id": "database.subscription::n1:n2:test",
         "reason": "has_diff",
         "diff": [
           {
@@ -94,7 +104,7 @@
       },
       {
         "type": "create",
-        "resource_id": "database.subscription::n2n1",
+        "resource_id": "database.subscription::n2:n1:test",
         "reason": "does_not_exist",
         "diff": null
       }
@@ -102,14 +112,14 @@
     [
       {
         "type": "delete",
-        "resource_id": "database.wait_for_sync_event::n1n2",
+        "resource_id": "database.wait_for_sync_event::n1:n2:test",
         "diff": null
       }
     ],
     [
       {
         "type": "delete",
-        "resource_id": "database.sync_event::n1n2",
+        "resource_id": "database.sync_event::n1:n2:test",
         "diff": null
       }
     ]

@@ -77,6 +77,7 @@ func makeInstance(t testing.TB, node string, num int, dependencies ...resource.R
 			OrchestratorDependencies: depIdentifiers,
 		},
 		dependencies,
+		nil,
 	)
 	if err != nil {
 		t.Fatal(err)

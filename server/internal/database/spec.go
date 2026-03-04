@@ -579,6 +579,8 @@ func (s *InstanceSpec) Clone() *InstanceSpec {
 }
 
 type NodeInstances struct {
+DatabaseOwner string          `json:"database_owner"`
+	DatabaseName  string          `json:"database_name"`
 	NodeName      string          `json:"node_name"`
 	SourceNode    string          `json:"source_node"`
 	Instances     []*InstanceSpec `json:"instances"`
@@ -598,6 +600,19 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 	specVersion, err := host.NewPgEdgeVersion(s.PostgresVersion, s.SpockVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse version from spec: %w", err)
+	}
+
+	var owners []string
+	for _, user := range s.DatabaseUsers {
+		if user.DBOwner {
+			owners = append(owners, user.Username)
+		}
+	}
+	var owner string
+	if ownerCount := len(owners); ownerCount == 1 {
+		owner = owners[0]
+	} else if ownerCount > 1 {
+		return nil, fmt.Errorf("only one user can have db_owner=true, got %d", len(owners))
 	}
 
 	clusterSize := len(s.Nodes)
@@ -650,6 +665,8 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		}
 
 		nodes[nodeIdx] = &NodeInstances{
+DatabaseOwner: owner,
+			DatabaseName:  s.DatabaseName,
 			NodeName:      node.Name,
 			SourceNode:    node.SourceNode,
 			Instances:     instances,

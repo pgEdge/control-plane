@@ -520,6 +520,20 @@ func TestValidateDatabaseSpec(t *testing.T) {
 			spec: &api.DatabaseSpec{
 				Cpus:   utils.PointerTo("16"),
 				Memory: utils.PointerTo("64GiB"),
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{
+						Username:   "admin",
+						Password:   utils.PointerTo("password"),
+						DbOwner:    utils.PointerTo(true),
+						Attributes: []string{"LOGIN", "SUPERUSER"},
+					},
+					{
+						Username:   "app",
+						Password:   utils.PointerTo("password"),
+						Attributes: []string{"LOGIN"},
+						Roles:      []string{"pgedge_application"},
+					},
+				},
 				Nodes: []*api.DatabaseNodeSpec{
 					{
 						Name: "n1",
@@ -746,6 +760,39 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				"restore_config.repository.base_path: base_path must be absolute for posix repositories",
 				"port: postgres and patroni ports must not conflict",
 				"nodes[1].port: postgres and patroni ports must not conflict",
+			},
+		},
+		{
+			name: "invalid users",
+			spec: &api.DatabaseSpec{
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{
+						Username: "duplicate_user",
+					},
+					{
+						Username: "duplicate_user",
+					},
+					{
+						Username: "duplicate_owner_1",
+						DbOwner:  utils.PointerTo(true),
+					},
+					{
+						Username: "duplicate_owner_2",
+						DbOwner:  utils.PointerTo(true),
+					},
+				},
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name: "n1",
+						HostIds: []api.Identifier{
+							api.Identifier("host-1"),
+						},
+					},
+				},
+			},
+			expected: []string{
+				"database_users[1]: usernames must be unique within a database",
+				"database_users[3]: cannot have multiple users with db_owner = true",
 			},
 		},
 	} {

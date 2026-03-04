@@ -15,10 +15,10 @@ var _ resource.Resource = (*LagTrackerCommitTimestampResource)(nil)
 
 const ResourceTypeLagTrackerCommitTS resource.Type = "database.lag_tracker_commit_ts"
 
-func LagTrackerCommitTSIdentifier(originNode, receiverNode string) resource.Identifier {
+func LagTrackerCommitTSIdentifier(originNode, receiverNode, databaseName string) resource.Identifier {
 	return resource.Identifier{
 		Type: ResourceTypeLagTrackerCommitTS,
-		ID:   originNode + receiverNode,
+		ID:   fmt.Sprintf("%s:%s:%s", originNode, receiverNode, databaseName),
 	}
 }
 
@@ -26,19 +26,13 @@ type LagTrackerCommitTimestampResource struct {
 	// Planner fields
 	OriginNode   string `json:"origin_node"`
 	ReceiverNode string `json:"receiver_node"`
+	DatabaseName string `json:"database_name"`
 
 	// Dependency wiring
 	ExtraDependencies []resource.Identifier `json:"dependent_resources,omitempty"`
 
 	// Output (filled at Refresh/Create time)
 	CommitTimestamp *time.Time `json:"commit_timestamp,omitempty"`
-}
-
-func NewLagTrackerCommitTimestampResource(originNode, receiverNode string) *LagTrackerCommitTimestampResource {
-	return &LagTrackerCommitTimestampResource{
-		OriginNode:   originNode,
-		ReceiverNode: receiverNode,
-	}
 }
 
 func (r *LagTrackerCommitTimestampResource) ResourceVersion() string { return "1" }
@@ -51,12 +45,13 @@ func (r *LagTrackerCommitTimestampResource) Executor() resource.Executor {
 }
 
 func (r *LagTrackerCommitTimestampResource) Identifier() resource.Identifier {
-	return LagTrackerCommitTSIdentifier(r.OriginNode, r.ReceiverNode)
+	return LagTrackerCommitTSIdentifier(r.OriginNode, r.ReceiverNode, r.DatabaseName)
 }
 
 func (r *LagTrackerCommitTimestampResource) Dependencies() []resource.Identifier {
 	deps := []resource.Identifier{
-		NodeResourceIdentifier(r.ReceiverNode),
+		PostgresDatabaseResourceIdentifier(r.ReceiverNode, r.DatabaseName),
+		PostgresDatabaseResourceIdentifier(r.OriginNode, r.DatabaseName),
 	}
 	deps = append(deps, r.ExtraDependencies...)
 	return deps

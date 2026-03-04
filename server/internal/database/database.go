@@ -2,6 +2,8 @@ package database
 
 import (
 	"time"
+
+	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
 type DatabaseState string
@@ -13,15 +15,24 @@ const (
 	DatabaseStateDeleting  DatabaseState = "deleting"
 	DatabaseStateDegraded  DatabaseState = "degraded"
 	DatabaseStateFailed    DatabaseState = "failed"
-	DatabaseStateBackingUp DatabaseState = "backing_up"
 	DatabaseStateRestoring DatabaseState = "restoring"
-	DatabaseStateStopped   DatabaseState = "stopped"
 	DatabaseStateUnknown   DatabaseState = "unknown"
 )
 
+var inProgressDatabaseStates = ds.NewSet(
+	DatabaseStateCreating,
+	DatabaseStateModifying,
+	DatabaseStateDeleting,
+	DatabaseStateRestoring,
+)
+
+func (d DatabaseState) IsInProgress() bool {
+	return inProgressDatabaseStates.Has(d)
+}
+
 func DatabaseStateModifiable(state DatabaseState) bool {
 	switch state {
-	case DatabaseStateAvailable, DatabaseStateDegraded, DatabaseStateFailed, DatabaseStateStopped:
+	case DatabaseStateAvailable, DatabaseStateDegraded, DatabaseStateFailed:
 		return true
 	default:
 		return false

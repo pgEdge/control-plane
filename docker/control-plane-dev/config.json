@@ -1,4 +1,9 @@
 {
   "profiling_enabled": true,
-  "client_addresses": ["127.0.0.1"]
+  "client_addresses": ["127.0.0.1"],
+  "logging": {
+    "component_levels": {
+      "api_server": "error"
+    }
+  }
 }

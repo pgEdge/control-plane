@@ -9,6 +9,8 @@ import (
 )
 
 type NodeResources struct {
+	DatabaseOwner     string
+	DatabaseName      string
 	NodeName          string
 	SourceNode        string
 	PrimaryInstanceID string
@@ -26,28 +28,69 @@ func (n *NodeResources) primaryInstance() *database.InstanceResources {
 	return nil
 }
 
-func addNodeResource(states []*resource.State, resource *database.NodeResource) error {
-	// Add the node resource to the last state
-	err := states[len(states)-1].AddResource(resource)
-	if err != nil {
-		return fmt.Errorf("failed to add node resource to state: %w", err)
+func (n *NodeResources) nodeResourceState() (*resource.State, error) {
+	var instanceIDs []string
+	state := resource.NewState()
+	for _, instance := range n.InstanceResources {
+		instanceIDs = append(instanceIDs, instance.InstanceID())
 	}
-	return nil
+
+	err := state.AddResource(&database.NodeResource{
+		Name:        n.NodeName,
+		InstanceIDs: instanceIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to add node resources to state: %w", err)
+	}
+
+	return state, nil
+}
+
+func (n *NodeResources) databaseResourceState() (*resource.State, error) {
+	hasRestoreConfig := n.RestoreConfig != nil
+
+	var renameFrom string
+	if hasRestoreConfig {
+		renameFrom = n.RestoreConfig.SourceDatabaseName
+	}
+
+	db := &database.PostgresDatabaseResource{
+		NodeName:         n.NodeName,
+		DatabaseName:     n.DatabaseName,
+		Owner:            n.DatabaseOwner,
+		RenameFrom:       renameFrom,
+		HasRestoreConfig: hasRestoreConfig,
+	}
+
+	state := resource.NewState()
+	for _, instance := range n.InstanceResources {
+		err := state.AddResource(&monitor.InstanceMonitorResource{
+			DatabaseID:   instance.DatabaseID(),
+			InstanceID:   instance.InstanceID(),
+			HostID:       instance.HostID(),
+			DatabaseName: instance.DatabaseName(),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to add instance monitor resource to state: %w", err)
+		}
+		for _, dep := range instance.DatabaseDependencies {
+			db.ExtraDependencies = append(db.ExtraDependencies, dep.Identifier)
+			state.Add(dep)
+		}
+	}
+
+	err := state.AddResource(db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add database resources to state: %w", err)
+	}
+
+	return state, nil
 }
 
 func instanceState(inst *database.InstanceResources) (*resource.State, error) {
 	state, err := inst.State()
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute updated instance state: %w", err)
-	}
-	err = state.AddResource(&monitor.InstanceMonitorResource{
-		DatabaseID:   inst.DatabaseID(),
-		InstanceID:   inst.InstanceID(),
-		HostID:       inst.HostID(),
-		DatabaseName: inst.DatabaseName(),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to add instance monitor to state: %w", err)
 	}
 	return state, nil
 }

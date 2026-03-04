@@ -16,14 +16,15 @@ var _ resource.Resource = (*WaitForSyncEventResource)(nil)
 
 const ResourceTypeWaitForSyncEvent resource.Type = "database.wait_for_sync_event"
 
-func WaitForSyncEventResourceIdentifier(providerNode, subscriberNode string) resource.Identifier {
+func WaitForSyncEventResourceIdentifier(providerNode, subscriberNode, databaseName string) resource.Identifier {
 	return resource.Identifier{
 		Type: ResourceTypeWaitForSyncEvent,
-		ID:   providerNode + subscriberNode,
+		ID:   fmt.Sprintf("%s:%s:%s", providerNode, subscriberNode, databaseName),
 	}
 }
 
 type WaitForSyncEventResource struct {
+	DatabaseName   string `json:"database_name"`
 	SubscriberNode string `json:"subscriber_node"`
 	ProviderNode   string `json:"provider_node"`
 }
@@ -41,12 +42,12 @@ func (r *WaitForSyncEventResource) Executor() resource.Executor {
 }
 
 func (r *WaitForSyncEventResource) Identifier() resource.Identifier {
-	return WaitForSyncEventResourceIdentifier(r.ProviderNode, r.SubscriberNode)
+	return WaitForSyncEventResourceIdentifier(r.ProviderNode, r.SubscriberNode, r.DatabaseName)
 }
 
 func (r *WaitForSyncEventResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
-		SyncEventResourceIdentifier(r.ProviderNode, r.SubscriberNode),
+		SyncEventResourceIdentifier(r.ProviderNode, r.SubscriberNode, r.DatabaseName),
 	}
 }
 
@@ -61,15 +62,15 @@ func (r *WaitForSyncEventResource) Refresh(ctx context.Context, rc *resource.Con
 	if err != nil {
 		return fmt.Errorf("failed to get subscriber instance: %w", err)
 	}
-	subscriberConn, err := subscriber.Connection(ctx, rc, subscriber.Spec.DatabaseName)
+	subscriberConn, err := subscriber.Connection(ctx, rc, r.DatabaseName)
 	if err != nil {
-		return fmt.Errorf("failed to connect to subscriber database %q: %w", subscriber.Spec.DatabaseName, err)
+		return fmt.Errorf("failed to connect to subscriber database '%s': %w", r.DatabaseName, err)
 	}
 	defer subscriberConn.Close(ctx)
 
 	// Wait for sync event on subscriber
 
-	syncEvent, err := resource.FromContext[*SyncEventResource](rc, SyncEventResourceIdentifier(r.ProviderNode, r.SubscriberNode))
+	syncEvent, err := resource.FromContext[*SyncEventResource](rc, SyncEventResourceIdentifier(r.ProviderNode, r.SubscriberNode, r.DatabaseName))
 	if err != nil {
 		return fmt.Errorf("failed to get sync event: %w", err)
 	}

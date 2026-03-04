@@ -13,10 +13,10 @@ var _ resource.Resource = (*ReplicationSlotResource)(nil)
 
 const ResourceTypeReplicationSlot resource.Type = "database.replication_slot"
 
-func ReplicationSlotResourceIdentifier(providerNode, subscriberNode string) resource.Identifier {
+func ReplicationSlotResourceIdentifier(providerNode, subscriberNode, databaseName string) resource.Identifier {
 	return resource.Identifier{
 		Type: ResourceTypeReplicationSlot,
-		ID:   providerNode + subscriberNode,
+		ID:   fmt.Sprintf("%s:%s:%s", providerNode, subscriberNode, databaseName),
 	}
 }
 
@@ -26,6 +26,7 @@ func ReplicationSlotResourceIdentifier(providerNode, subscriberNode string) reso
 // ensures the corresponding replication slot is dropped on the provider,
 // preventing orphaned slots from accumulating WAL.
 type ReplicationSlotResource struct {
+	DatabaseName   string `json:"database_name"`
 	ProviderNode   string `json:"provider_node"`
 	SubscriberNode string `json:"subscriber_node"`
 }
@@ -43,12 +44,12 @@ func (r *ReplicationSlotResource) Executor() resource.Executor {
 }
 
 func (r *ReplicationSlotResource) Identifier() resource.Identifier {
-	return ReplicationSlotResourceIdentifier(r.ProviderNode, r.SubscriberNode)
+	return ReplicationSlotResourceIdentifier(r.ProviderNode, r.SubscriberNode, r.DatabaseName)
 }
 
 func (r *ReplicationSlotResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
-		NodeResourceIdentifier(r.ProviderNode),
+		PostgresDatabaseResourceIdentifier(r.ProviderNode, r.DatabaseName),
 	}
 }
 
@@ -78,24 +79,22 @@ func (r *ReplicationSlotResource) Delete(ctx context.Context, rc *resource.Conte
 		return fmt.Errorf("failed to get primary instance: %w", err)
 	}
 
-	conn, err := provider.Connection(ctx, rc, provider.Spec.DatabaseName)
+	conn, err := provider.Connection(ctx, rc, r.DatabaseName)
 	if err != nil {
 		return fmt.Errorf("failed to connect to provider instance: %w", err)
 	}
 	defer conn.Close(ctx)
 
-	dbName := provider.Spec.DatabaseName
-
 	// Terminate any active walsender using this slot. This is necessary
 	// when the subscriber has gone down and the walsender hasn't detected
 	// the broken connection yet — pg_drop_replication_slot fails on active
 	// slots.
-	if err := postgres.TerminateReplicationSlot(dbName, r.ProviderNode, r.SubscriberNode).
+	if err := postgres.TerminateReplicationSlot(r.DatabaseName, r.ProviderNode, r.SubscriberNode).
 		Exec(ctx, conn); err != nil {
 		return fmt.Errorf("failed to terminate walsender for replication slot %s->%s: %w", r.ProviderNode, r.SubscriberNode, err)
 	}
 
-	if err := postgres.DropReplicationSlot(dbName, r.ProviderNode, r.SubscriberNode).
+	if err := postgres.DropReplicationSlot(r.DatabaseName, r.ProviderNode, r.SubscriberNode).
 		Exec(ctx, conn); err != nil {
 		return fmt.Errorf("failed to drop replication slot %s->%s: %w", r.ProviderNode, r.SubscriberNode, err)
 	}
