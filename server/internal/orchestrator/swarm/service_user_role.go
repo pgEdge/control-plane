@@ -77,12 +77,11 @@ func (r *ServiceUserRole) Executor() resource.Executor {
 }
 
 func (r *ServiceUserRole) Dependencies() []resource.Identifier {
-	// No dependencies - this resource can be created/deleted independently
 	return nil
 }
 
 func (r *ServiceUserRole) TypeDependencies() []resource.Type {
-	return nil
+	return []resource.Type{database.ResourceTypePostgresDatabase}
 }
 
 func (r *ServiceUserRole) Refresh(ctx context.Context, rc *resource.Context) error {
@@ -138,8 +137,6 @@ func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Conte
 	statements, err := postgres.CreateUserRole(postgres.UserRoleOptions{
 		Name:       r.Username,
 		Password:   r.Password,
-		DBName:     r.DatabaseName,
-		DBOwner:    false,
 		Attributes: []string{"LOGIN"},
 	})
 	if err != nil {

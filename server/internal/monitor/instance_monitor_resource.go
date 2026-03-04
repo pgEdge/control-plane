@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/samber/do"
+
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/resource"
-	"github.com/samber/do"
 )
 
 var _ resource.Resource = (*InstanceMonitorResource)(nil)
@@ -21,6 +22,7 @@ func InstanceMonitorResourceIdentifier(instanceID string) resource.Identifier {
 }
 
 type InstanceMonitorResource struct {
+	NodeName     string `json:"node_name"`
 	DatabaseID   string `json:"database_id"`
 	InstanceID   string `json:"instance_id"`
 	DatabaseName string `json:"db_name"`
@@ -46,6 +48,7 @@ func (m *InstanceMonitorResource) Identifier() resource.Identifier {
 func (m *InstanceMonitorResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
 		database.InstanceResourceIdentifier(m.InstanceID),
+		database.PostgresDatabaseResourceIdentifier(m.NodeName, m.DatabaseName),
 	}
 }
 

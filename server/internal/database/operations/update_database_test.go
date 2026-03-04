@@ -32,6 +32,10 @@ func TestUpdateDatabase(t *testing.T) {
 				PrimaryInstanceID: n1Instance1.InstanceID(),
 				InstanceIDs:       []string{n1Instance1.InstanceID()},
 			},
+			&database.PostgresDatabaseResource{
+				NodeName:     "n1",
+				DatabaseName: "test",
+			},
 		},
 		n1Instance1.Resources,
 	)
@@ -44,6 +48,10 @@ func TestUpdateDatabase(t *testing.T) {
 				PrimaryInstanceID: n1Instance1.InstanceID(),
 				InstanceIDs:       []string{n1Instance1.InstanceID()},
 			},
+			&database.PostgresDatabaseResource{
+				NodeName:     "n1",
+				DatabaseName: "test",
+			},
 			n2Instance1.Instance,
 			makeMonitorResource(n2Instance1),
 			&database.NodeResource{
@@ -51,19 +59,27 @@ func TestUpdateDatabase(t *testing.T) {
 				PrimaryInstanceID: n2Instance1.InstanceID(),
 				InstanceIDs:       []string{n2Instance1.InstanceID()},
 			},
+			&database.PostgresDatabaseResource{
+				NodeName:     "n2",
+				DatabaseName: "test",
+			},
 			&database.ReplicationSlotResource{
+				DatabaseName:   "test",
 				ProviderNode:   "n2",
 				SubscriberNode: "n1",
 			},
 			&database.SubscriptionResource{
+				DatabaseName:   "test",
 				SubscriberNode: "n1",
 				ProviderNode:   "n2",
 			},
 			&database.ReplicationSlotResource{
+				DatabaseName:   "test",
 				ProviderNode:   "n1",
 				SubscriberNode: "n2",
 			},
 			&database.SubscriptionResource{
+				DatabaseName:   "test",
 				SubscriberNode: "n2",
 				ProviderNode:   "n1",
 			},
@@ -83,12 +99,20 @@ func TestUpdateDatabase(t *testing.T) {
 				PrimaryInstanceID: n1Instance1.InstanceID(),
 				InstanceIDs:       []string{n1Instance1.InstanceID()},
 			},
+			&database.PostgresDatabaseResource{
+				NodeName:     "n1",
+				DatabaseName: "test",
+			},
 			n2Instance1.Instance,
 			makeMonitorResource(n2Instance1),
 			&database.NodeResource{
 				Name:              "n2",
 				PrimaryInstanceID: n2Instance1.InstanceID(),
 				InstanceIDs:       []string{n2Instance1.InstanceID()},
+			},
+			&database.PostgresDatabaseResource{
+				NodeName:     "n2",
+				DatabaseName: "test",
 			},
 			n3Instance1.Instance,
 			makeMonitorResource(n3Instance1),
@@ -97,51 +121,67 @@ func TestUpdateDatabase(t *testing.T) {
 				PrimaryInstanceID: n3Instance1.InstanceID(),
 				InstanceIDs:       []string{n3Instance1.InstanceID()},
 			},
+			&database.PostgresDatabaseResource{
+				NodeName:     "n3",
+				DatabaseName: "test",
+			},
 			&database.ReplicationSlotResource{
+				DatabaseName:   "test",
 				ProviderNode:   "n2",
 				SubscriberNode: "n1",
 			},
 			&database.SubscriptionResource{
+				DatabaseName:   "test",
 				SubscriberNode: "n1",
 				ProviderNode:   "n2",
 			},
 			&database.ReplicationSlotResource{
+				DatabaseName:   "test",
 				ProviderNode:   "n1",
 				SubscriberNode: "n2",
 			},
 			&database.SubscriptionResource{
+				DatabaseName:   "test",
 				SubscriberNode: "n2",
 				ProviderNode:   "n1",
 			},
 			&database.ReplicationSlotResource{
+				DatabaseName:   "test",
 				ProviderNode:   "n3",
 				SubscriberNode: "n1",
 			},
 			&database.SubscriptionResource{
+				DatabaseName:   "test",
 				SubscriberNode: "n1",
 				ProviderNode:   "n3",
 			},
 			&database.ReplicationSlotResource{
+				DatabaseName:   "test",
 				ProviderNode:   "n1",
 				SubscriberNode: "n3",
 			},
 			&database.SubscriptionResource{
+				DatabaseName:   "test",
 				SubscriberNode: "n3",
 				ProviderNode:   "n1",
 			},
 			&database.ReplicationSlotResource{
+				DatabaseName:   "test",
 				ProviderNode:   "n3",
 				SubscriberNode: "n2",
 			},
 			&database.SubscriptionResource{
+				DatabaseName:   "test",
 				SubscriberNode: "n2",
 				ProviderNode:   "n3",
 			},
 			&database.ReplicationSlotResource{
+				DatabaseName:   "test",
 				ProviderNode:   "n2",
 				SubscriberNode: "n3",
 			},
 			&database.SubscriptionResource{
+				DatabaseName:   "test",
 				SubscriberNode: "n3",
 				ProviderNode:   "n2",
 			},
@@ -163,6 +203,10 @@ func TestUpdateDatabase(t *testing.T) {
 				Name:              "n1",
 				PrimaryInstanceID: n1Instance1.InstanceID(),
 				InstanceIDs:       []string{n1Instance1.InstanceID()},
+			},
+			&database.PostgresDatabaseResource{
+				NodeName:     "n1",
+				DatabaseName: "test",
 			},
 			svcRes.MonitorResource,
 		},
@@ -188,6 +232,7 @@ func TestUpdateDatabase(t *testing.T) {
 				{
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1},
+					DatabaseName:      "test",
 				},
 			},
 		},
@@ -203,6 +248,7 @@ func TestUpdateDatabase(t *testing.T) {
 				{
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1},
+					DatabaseName:      "test",
 				},
 			},
 		},
@@ -214,6 +260,7 @@ func TestUpdateDatabase(t *testing.T) {
 				{
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1},
+					DatabaseName:      "test",
 				},
 			},
 		},
@@ -225,10 +272,12 @@ func TestUpdateDatabase(t *testing.T) {
 				{
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1},
+					DatabaseName:      "test",
 				},
 				{
 					NodeName:          "n2",
 					InstanceResources: []*database.InstanceResources{n2Instance1},
+					DatabaseName:      "test",
 				},
 			},
 		},
@@ -240,10 +289,12 @@ func TestUpdateDatabase(t *testing.T) {
 				{
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1},
+					DatabaseName:      "test",
 				},
 				{
 					NodeName:          "n2",
 					InstanceResources: []*database.InstanceResources{n2Instance1},
+					DatabaseName:      "test",
 				},
 			},
 		},
@@ -262,10 +313,12 @@ func TestUpdateDatabase(t *testing.T) {
 						n1Instance1,
 						n1Instance2,
 					},
+					DatabaseName: "test",
 				},
 				{
 					NodeName:          "n2",
 					InstanceResources: []*database.InstanceResources{n2Instance1},
+					DatabaseName:      "test",
 				},
 			},
 		},
@@ -279,10 +332,12 @@ func TestUpdateDatabase(t *testing.T) {
 					InstanceResources: []*database.InstanceResources{
 						n1Instance1WithNewDependency,
 					},
+					DatabaseName: "test",
 				},
 				{
 					NodeName:          "n2",
 					InstanceResources: []*database.InstanceResources{n2Instance1},
+					DatabaseName:      "test",
 				},
 			},
 		},
@@ -300,10 +355,12 @@ func TestUpdateDatabase(t *testing.T) {
 					InstanceResources: []*database.InstanceResources{
 						n1Instance1WithNewDependency,
 					},
+					DatabaseName: "test",
 				},
 				{
 					NodeName:          "n2",
 					InstanceResources: []*database.InstanceResources{n2Instance1},
+					DatabaseName:      "test",
 				},
 			},
 		},
@@ -319,6 +376,7 @@ func TestUpdateDatabase(t *testing.T) {
 						n1Instance1,
 						n1Instance2,
 					},
+					DatabaseName: "test",
 				},
 				{
 					NodeName: "n2",
@@ -326,6 +384,7 @@ func TestUpdateDatabase(t *testing.T) {
 						n2Instance1,
 						n2Instance2,
 					},
+					DatabaseName: "test",
 				},
 			},
 		},
@@ -342,6 +401,7 @@ func TestUpdateDatabase(t *testing.T) {
 						n1Instance1,
 						n1Instance2,
 					},
+					DatabaseName: "test",
 				},
 				{
 					NodeName: "n2",
@@ -349,6 +409,7 @@ func TestUpdateDatabase(t *testing.T) {
 						n2Instance1,
 						n2Instance2,
 					},
+					DatabaseName: "test",
 				},
 			},
 		},
@@ -360,6 +421,7 @@ func TestUpdateDatabase(t *testing.T) {
 				{
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1},
+					DatabaseName:      "test",
 				},
 			},
 		},
@@ -371,10 +433,12 @@ func TestUpdateDatabase(t *testing.T) {
 				{
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1WithNewDependency},
+					DatabaseName:      "test",
 				},
 				{
 					NodeName:          "n3",
 					InstanceResources: []*database.InstanceResources{n3Instance1},
+					DatabaseName:      "test",
 				},
 			},
 		},
@@ -386,11 +450,13 @@ func TestUpdateDatabase(t *testing.T) {
 				{
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1},
+					DatabaseName:      "test",
 				},
 				{
 					NodeName:          "n2",
 					SourceNode:        "n1",
 					InstanceResources: []*database.InstanceResources{n2Instance1},
+					DatabaseName:      "test",
 				},
 			},
 		},
@@ -402,15 +468,18 @@ func TestUpdateDatabase(t *testing.T) {
 				{
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1},
+					DatabaseName:      "test",
 				},
 				{
 					NodeName:          "n2",
 					InstanceResources: []*database.InstanceResources{n2Instance1},
+					DatabaseName:      "test",
 				},
 				{
 					NodeName:          "n3",
 					SourceNode:        "n1",
 					InstanceResources: []*database.InstanceResources{n3Instance1},
+					DatabaseName:      "test",
 				},
 			},
 		},
@@ -422,6 +491,7 @@ func TestUpdateDatabase(t *testing.T) {
 				{
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1},
+					DatabaseName:      "test",
 				},
 				{
 					NodeName:   "n2",
@@ -430,6 +500,7 @@ func TestUpdateDatabase(t *testing.T) {
 						n2Instance1,
 						n2Instance2,
 					},
+					DatabaseName: "test",
 				},
 			},
 		},
@@ -441,10 +512,12 @@ func TestUpdateDatabase(t *testing.T) {
 				{
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1},
+					DatabaseName:      "test",
 				},
 				{
 					NodeName:          "n2",
 					InstanceResources: []*database.InstanceResources{n2Instance1},
+					DatabaseName:      "test",
 				},
 			},
 		},
@@ -456,6 +529,7 @@ func TestUpdateDatabase(t *testing.T) {
 				{
 					NodeName:          "n2",
 					InstanceResources: []*database.InstanceResources{n2Instance1},
+					DatabaseName:      "test",
 				},
 			},
 		},
@@ -470,6 +544,7 @@ func TestUpdateDatabase(t *testing.T) {
 			start:   resource.NewState(),
 			nodes: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1},
 				},
@@ -484,6 +559,7 @@ func TestUpdateDatabase(t *testing.T) {
 			start:   singleNodeWithServiceState,
 			nodes: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1},
 				},
@@ -496,6 +572,7 @@ func TestUpdateDatabase(t *testing.T) {
 			start:   singleNodeState,
 			nodes: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1},
 				},
@@ -510,6 +587,7 @@ func TestUpdateDatabase(t *testing.T) {
 			start:   singleNodeWithServiceState,
 			nodes: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1},
 				},
@@ -522,6 +600,7 @@ func TestUpdateDatabase(t *testing.T) {
 			start:   singleNodeWithServiceState,
 			nodes: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1WithNewDependency},
 				},

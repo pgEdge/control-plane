@@ -27,6 +27,7 @@ func TestAddNode(t *testing.T) {
 			// instance and the node resource.
 			name: "one instance",
 			input: &operations.NodeResources{
+				DatabaseName:      "test",
 				NodeName:          "n1",
 				InstanceResources: []*database.InstanceResources{instance1},
 			},
@@ -34,7 +35,6 @@ func TestAddNode(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						instance1.Instance,
-						makeMonitorResource(instance1),
 						&database.NodeResource{
 							Name:        "n1",
 							InstanceIDs: []string{instance1.InstanceID()},
@@ -50,7 +50,8 @@ func TestAddNode(t *testing.T) {
 			// resource.
 			name: "two instances",
 			input: &operations.NodeResources{
-				NodeName: "n1",
+				DatabaseName: "test",
+				NodeName:     "n1",
 				InstanceResources: []*database.InstanceResources{
 					instance1,
 					instance2,
@@ -60,14 +61,12 @@ func TestAddNode(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						instance1.Instance,
-						makeMonitorResource(instance1),
 					},
 					instance1.Resources,
 				),
 				makeState(t,
 					[]resource.Resource{
 						instance2.Instance,
-						makeMonitorResource(instance2),
 						&database.NodeResource{
 							Name: "n1",
 							InstanceIDs: []string{
@@ -86,7 +85,8 @@ func TestAddNode(t *testing.T) {
 			// replica instances get created simultaneously.
 			name: "three instances",
 			input: &operations.NodeResources{
-				NodeName: "n1",
+				DatabaseName: "test",
+				NodeName:     "n1",
 				InstanceResources: []*database.InstanceResources{
 					instance1,
 					instance2,
@@ -97,16 +97,13 @@ func TestAddNode(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						instance1.Instance,
-						makeMonitorResource(instance1),
 					},
 					instance1.Resources,
 				),
 				makeState(t,
 					[]resource.Resource{
 						instance2.Instance,
-						makeMonitorResource(instance2),
 						instance3.Instance,
-						makeMonitorResource(instance3),
 						&database.NodeResource{
 							Name: "n1",
 							InstanceIDs: []string{
@@ -167,7 +164,6 @@ func TestAddNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n1Instance1.Instance,
-						makeMonitorResource(n1Instance1),
 						&database.NodeResource{
 							Name:        "n1",
 							InstanceIDs: []string{n1Instance1.InstanceID()},
@@ -194,9 +190,7 @@ func TestAddNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n1Instance1.Instance,
-						makeMonitorResource(n1Instance1),
 						n2Instance1.Instance,
-						makeMonitorResource(n2Instance1),
 						&database.NodeResource{
 							Name:        "n1",
 							InstanceIDs: []string{n1Instance1.InstanceID()},
@@ -234,9 +228,7 @@ func TestAddNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n1Instance1.Instance,
-						makeMonitorResource(n1Instance1),
 						n2Instance1.Instance,
-						makeMonitorResource(n2Instance1),
 						&database.NodeResource{
 							Name:        "n2",
 							InstanceIDs: []string{n2Instance1.InstanceID()},
@@ -250,7 +242,6 @@ func TestAddNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n1Instance2.Instance,
-						makeMonitorResource(n1Instance2),
 						&database.NodeResource{
 							Name: "n1",
 							InstanceIDs: []string{
@@ -289,9 +280,7 @@ func TestAddNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n1Instance1.Instance,
-						makeMonitorResource(n1Instance1),
 						n2Instance1.Instance,
-						makeMonitorResource(n2Instance1),
 					},
 					slices.Concat(
 						n1Instance1.Resources,
@@ -301,9 +290,7 @@ func TestAddNodes(t *testing.T) {
 				makeState(t,
 					[]resource.Resource{
 						n1Instance2.Instance,
-						makeMonitorResource(n1Instance2),
 						n2Instance2.Instance,
-						makeMonitorResource(n2Instance2),
 						&database.NodeResource{
 							Name: "n1",
 							InstanceIDs: []string{

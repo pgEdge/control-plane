@@ -22,10 +22,12 @@
         "resource_id": "database.node::n1",
         "reason": "dependency_updated",
         "diff": null
-      },
+      }
+    ],
+    [
       {
         "type": "update",
-        "resource_id": "monitor.instance::n1-instance-1-id",
+        "resource_id": "database.postgres_database::n1-test",
         "reason": "dependency_updated",
         "diff": null
       }
@@ -34,6 +36,12 @@
       {
         "type": "update",
         "resource_id": "database.replication_slot::n1n2",
+        "reason": "dependency_updated",
+        "diff": null
+      },
+      {
+        "type": "update",
+        "resource_id": "monitor.instance::n1-instance-1-id",
         "reason": "dependency_updated",
         "diff": null
       }
