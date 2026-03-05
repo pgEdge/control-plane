@@ -4069,6 +4069,9 @@ func unmarshalServiceSpecRequestBodyToControlplaneServiceSpec(v *ServiceSpecRequ
 		tv := val
 		res.Config[tk] = tv
 	}
+	if v.OrchestratorOpts != nil {
+		res.OrchestratorOpts = unmarshalOrchestratorOptsRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
+	}
 
 	return res
 }
@@ -4615,6 +4618,9 @@ func marshalControlplaneServiceSpecToServiceSpecResponseBody(v *controlplane.Ser
 			res.Config[tk] = tv
 		}
 	}
+	if v.OrchestratorOpts != nil {
+		res.OrchestratorOpts = marshalControlplaneOrchestratorOptsToOrchestratorOptsResponseBody(v.OrchestratorOpts)
+	}
 
 	return res
 }
@@ -5012,6 +5018,9 @@ func unmarshalServiceSpecRequestBodyRequestBodyToControlplaneServiceSpec(v *Serv
 		tk := key
 		tv := val
 		res.Config[tk] = tv
+	}
+	if v.OrchestratorOpts != nil {
+		res.OrchestratorOpts = unmarshalOrchestratorOptsRequestBodyRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
 	}
 
 	return res

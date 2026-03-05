@@ -2099,6 +2099,8 @@ type ServiceSpecRequestBody struct {
 	// The amount of memory in SI or IEC notation to allocate for this service.
 	// Defaults to container defaults if unspecified.
 	Memory *string `json:"memory,omitempty"`
+	// Orchestrator-specific options for this service.
+	OrchestratorOpts *OrchestratorOptsRequestBody `json:"orchestrator_opts,omitempty"`
 }
 
 // DatabaseResponseBody is used to define fields on response body types.
@@ -2480,6 +2482,8 @@ type ServiceSpecResponseBody struct {
 	// The amount of memory in SI or IEC notation to allocate for this service.
 	// Defaults to container defaults if unspecified.
 	Memory *string `json:"memory,omitempty"`
+	// Orchestrator-specific options for this service.
+	OrchestratorOpts *OrchestratorOptsResponseBody `json:"orchestrator_opts,omitempty"`
 }
 
 // DatabaseSpecRequestBodyRequestBody is used to define fields on request body
@@ -2786,6 +2790,8 @@ type ServiceSpecRequestBodyRequestBody struct {
 	// The amount of memory in SI or IEC notation to allocate for this service.
 	// Defaults to container defaults if unspecified.
 	Memory *string `json:"memory,omitempty"`
+	// Orchestrator-specific options for this service.
+	OrchestratorOpts *OrchestratorOptsRequestBodyRequestBody `json:"orchestrator_opts,omitempty"`
 }
 
 // TaskLogEntryResponseBody is used to define fields on response body types.
@@ -6185,6 +6191,11 @@ func ValidateServiceSpecRequestBody(body *ServiceSpecRequestBody) (err error) {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.memory", *body.Memory, utf8.RuneCountInString(*body.Memory), 16, false))
 		}
 	}
+	if body.OrchestratorOpts != nil {
+		if err2 := ValidateOrchestratorOptsRequestBody(body.OrchestratorOpts); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
 	return
 }
 
@@ -6900,6 +6911,11 @@ func ValidateServiceSpecRequestBodyRequestBody(body *ServiceSpecRequestBodyReque
 	if body.Memory != nil {
 		if utf8.RuneCountInString(*body.Memory) > 16 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.memory", *body.Memory, utf8.RuneCountInString(*body.Memory), 16, false))
+		}
+	}
+	if body.OrchestratorOpts != nil {
+		if err2 := ValidateOrchestratorOptsRequestBodyRequestBody(body.OrchestratorOpts); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return

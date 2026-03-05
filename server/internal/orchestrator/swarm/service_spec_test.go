@@ -333,6 +333,109 @@ func TestServiceContainerSpec(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "service with extra labels for Traefik",
+			opts: &ServiceContainerSpecOptions{
+				ServiceSpec: &database.ServiceSpec{
+					ServiceID:   "mcp-server",
+					ServiceType: "mcp",
+					Version:     "latest",
+					Config: map[string]interface{}{
+						"llm_provider":      "anthropic",
+						"llm_model":         "claude-sonnet-4-5",
+						"anthropic_api_key": "sk-ant-test",
+					},
+					OrchestratorOpts: &database.OrchestratorOpts{
+						Swarm: &database.SwarmOpts{
+							ExtraLabels: map[string]string{
+								"traefik.enable":                                     "true",
+								"traefik.http.routers.mcp.rule":                      "Host(`mcp.example.com`)",
+								"traefik.http.services.mcp.loadbalancer.server.port": "8080",
+							},
+						},
+					},
+				},
+				ServiceInstanceID: "db1-mcp-server-host1",
+				DatabaseID:        "db1",
+				DatabaseName:      "testdb",
+				HostID:            "host1",
+				ServiceName:       "db1-mcp-server-host1",
+				Hostname:          "mcp-server-host1",
+				CohortMemberID:    "swarm-node-123",
+				ServiceImage: &ServiceImage{
+					Tag: "ghcr.io/pgedge/postgres-mcp:latest",
+				},
+				DatabaseNetworkID: "db1-database",
+				DatabaseHost:      "postgres-instance-1",
+				DatabasePort:      5432,
+			},
+			wantErr: false,
+			checkLabels: func(t *testing.T, labels map[string]string) {
+				// System labels must still be present
+				expectedSystem := map[string]string{
+					"pgedge.component":           "service",
+					"pgedge.service.instance.id": "db1-mcp-server-host1",
+					"pgedge.service.id":          "mcp-server",
+					"pgedge.database.id":         "db1",
+					"pgedge.host.id":             "host1",
+				}
+				for k, v := range expectedSystem {
+					if labels[k] != v {
+						t.Errorf("system label %s = %q, want %q", k, labels[k], v)
+					}
+				}
+				// Extra labels must be merged in
+				expectedExtra := map[string]string{
+					"traefik.enable":                                     "true",
+					"traefik.http.routers.mcp.rule":                      "Host(`mcp.example.com`)",
+					"traefik.http.services.mcp.loadbalancer.server.port": "8080",
+				}
+				for k, v := range expectedExtra {
+					if labels[k] != v {
+						t.Errorf("extra label %s = %q, want %q", k, labels[k], v)
+					}
+				}
+				// Total should be system + extra
+				if len(labels) != len(expectedSystem)+len(expectedExtra) {
+					t.Errorf("got %d labels, want %d", len(labels), len(expectedSystem)+len(expectedExtra))
+				}
+			},
+		},
+		{
+			name: "service with nil orchestrator opts (backward compat)",
+			opts: &ServiceContainerSpecOptions{
+				ServiceSpec: &database.ServiceSpec{
+					ServiceID:        "mcp-server",
+					ServiceType:      "mcp",
+					Version:          "latest",
+					Config:           map[string]interface{}{"llm_provider": "anthropic", "llm_model": "claude-sonnet-4-5", "anthropic_api_key": "sk-ant-test"},
+					OrchestratorOpts: nil,
+				},
+				ServiceInstanceID: "db1-mcp-server-host1",
+				DatabaseID:        "db1",
+				DatabaseName:      "testdb",
+				HostID:            "host1",
+				ServiceName:       "db1-mcp-server-host1",
+				Hostname:          "mcp-server-host1",
+				CohortMemberID:    "swarm-node-123",
+				ServiceImage: &ServiceImage{
+					Tag: "ghcr.io/pgedge/postgres-mcp:latest",
+				},
+				DatabaseNetworkID: "db1-database",
+				DatabaseHost:      "postgres-instance-1",
+				DatabasePort:      5432,
+			},
+			wantErr: false,
+			checkLabels: func(t *testing.T, labels map[string]string) {
+				// Only system labels, no extras
+				if len(labels) != 5 {
+					t.Errorf("got %d labels, want 5 (system only)", len(labels))
+				}
+				if labels["pgedge.component"] != "service" {
+					t.Errorf("pgedge.component = %q, want %q", labels["pgedge.component"], "service")
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -347,9 +450,10 @@ func TestServiceContainerSpec(t *testing.T) {
 				return
 			}
 
-			// Run validation checks
+			// Verify labels are applied to both ContainerSpec and Annotations
 			if tt.checkLabels != nil {
 				tt.checkLabels(t, got.TaskTemplate.ContainerSpec.Labels)
+				tt.checkLabels(t, got.Labels)
 			}
 			if tt.checkNetworks != nil {
 				tt.checkNetworks(t, got.TaskTemplate.Networks)

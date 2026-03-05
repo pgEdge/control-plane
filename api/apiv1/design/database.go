@@ -186,6 +186,10 @@ var ServiceSpec = g.Type("ServiceSpec", func() {
 		g.Example("512M")
 		g.Meta("struct:tag:json", "memory,omitempty")
 	})
+	g.Attribute("orchestrator_opts", OrchestratorOpts, func() {
+		g.Description("Orchestrator-specific options for this service.")
+		g.Meta("struct:tag:json", "orchestrator_opts,omitempty")
+	})
 
 	g.Required("service_id", "service_type", "version", "host_ids", "config")
 })
