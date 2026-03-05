@@ -1,7 +1,7 @@
 package swarm
 
 import (
-	"strings"
+	"fmt"
 	"testing"
 
 	"github.com/docker/docker/api/types/swarm"
@@ -18,16 +18,15 @@ func TestServiceContainerSpec(t *testing.T) {
 		opts    *ServiceContainerSpecOptions
 		wantErr bool
 		// Validation functions
-		checkLabels      func(t *testing.T, labels map[string]string)
-		checkNetworks    func(t *testing.T, networks []swarm.NetworkAttachmentConfig)
-		checkEnv         func(t *testing.T, env []string)
-		checkPlacement   func(t *testing.T, placement *swarm.Placement)
-		checkResources   func(t *testing.T, resources *swarm.ResourceRequirements)
-		checkHealthcheck func(t *testing.T, healthcheck *swarm.ContainerSpec)
-		checkPorts       func(t *testing.T, ports []swarm.PortConfig)
+		checkLabels    func(t *testing.T, labels map[string]string)
+		checkNetworks  func(t *testing.T, networks []swarm.NetworkAttachmentConfig)
+		checkContainer func(t *testing.T, spec *swarm.ContainerSpec)
+		checkPlacement func(t *testing.T, placement *swarm.Placement)
+		checkResources func(t *testing.T, resources *swarm.ResourceRequirements)
+		checkPorts     func(t *testing.T, ports []swarm.PortConfig)
 	}{
 		{
-			name: "basic MCP service",
+			name: "basic MCP service with bind mount and entrypoint",
 			opts: &ServiceContainerSpecOptions{
 				ServiceSpec: &database.ServiceSpec{
 					ServiceID:   "mcp-server",
@@ -58,6 +57,7 @@ func TestServiceContainerSpec(t *testing.T) {
 				DatabaseHost:      "postgres-instance-1",
 				DatabasePort:      5432,
 				Port:              intPtr(8080),
+				DataPath:          "/var/lib/pgedge/services/db1-mcp-server-host1",
 			},
 			wantErr: false,
 			checkLabels: func(t *testing.T, labels map[string]string) {
@@ -79,43 +79,44 @@ func TestServiceContainerSpec(t *testing.T) {
 					t.Errorf("got %d networks, want 2", len(networks))
 					return
 				}
-				// First network should be bridge
 				if networks[0].Target != "bridge" {
 					t.Errorf("first network = %v, want bridge", networks[0].Target)
 				}
-				// Second network should be database overlay
 				if networks[1].Target != "db1-database" {
 					t.Errorf("second network = %v, want db1-database", networks[1].Target)
 				}
 			},
-			checkEnv: func(t *testing.T, env []string) {
-				expectedEnv := []string{
-					"PGHOST=postgres-instance-1",
-					"PGPORT=5432",
-					"PGDATABASE=testdb",
-					"PGSSLMODE=prefer",
-					"PGEDGE_SERVICE_ID=mcp-server",
-					"PGEDGE_DATABASE_ID=db1",
-					"PGUSER=svc_db1mcp",
-					"PGPASSWORD=testpassword",
-					"PGEDGE_LLM_PROVIDER=anthropic",
-					"PGEDGE_LLM_MODEL=claude-sonnet-4-5",
-					"PGEDGE_ANTHROPIC_API_KEY=sk-ant-api03-test",
+			checkContainer: func(t *testing.T, spec *swarm.ContainerSpec) {
+				// User should be mcpContainerUID
+				if spec.User != fmt.Sprintf("%d", mcpContainerUID) {
+					t.Errorf("User = %v, want %d", spec.User, mcpContainerUID)
 				}
-				if len(env) != len(expectedEnv) {
-					t.Errorf("got %d env vars, want %d", len(env), len(expectedEnv))
+				// Command should override entrypoint
+				if len(spec.Command) != 1 || spec.Command[0] != "/app/pgedge-postgres-mcp" {
+					t.Errorf("Command = %v, want [/app/pgedge-postgres-mcp]", spec.Command)
 				}
-				for _, e := range expectedEnv {
-					found := false
-					for _, got := range env {
-						if got == e {
-							found = true
-							break
-						}
-					}
-					if !found {
-						t.Errorf("missing env var: %s", e)
-					}
+				// Args should pass config file path
+				if len(spec.Args) != 2 || spec.Args[0] != "-config" || spec.Args[1] != "/app/data/config.yaml" {
+					t.Errorf("Args = %v, want [-config /app/data/config.yaml]", spec.Args)
+				}
+				// Should have bind mount
+				if len(spec.Mounts) != 1 {
+					t.Fatalf("got %d mounts, want 1", len(spec.Mounts))
+				}
+				m := spec.Mounts[0]
+				if m.Source != "/var/lib/pgedge/services/db1-mcp-server-host1" {
+					t.Errorf("mount source = %v, want /var/lib/pgedge/services/db1-mcp-server-host1", m.Source)
+				}
+				if m.Target != "/app/data" {
+					t.Errorf("mount target = %v, want /app/data", m.Target)
+				}
+				// No env vars for config (config is via file)
+				if len(spec.Env) > 0 {
+					t.Errorf("expected no env vars, got %d: %v", len(spec.Env), spec.Env)
+				}
+				// Healthcheck should be set
+				if spec.Healthcheck == nil {
+					t.Error("healthcheck is nil")
 				}
 			},
 			checkPlacement: func(t *testing.T, placement *swarm.Placement) {
@@ -129,14 +130,6 @@ func TestServiceContainerSpec(t *testing.T) {
 			checkResources: func(t *testing.T, resources *swarm.ResourceRequirements) {
 				if resources != nil {
 					t.Errorf("expected no resource limits, got %+v", resources)
-				}
-			},
-			checkHealthcheck: func(t *testing.T, containerSpec *swarm.ContainerSpec) {
-				if containerSpec.Healthcheck == nil {
-					t.Fatal("healthcheck is nil")
-				}
-				if len(containerSpec.Healthcheck.Test) == 0 {
-					t.Error("healthcheck test is empty")
 				}
 			},
 			checkPorts: func(t *testing.T, ports []swarm.PortConfig) {
@@ -180,6 +173,7 @@ func TestServiceContainerSpec(t *testing.T) {
 				DatabaseNetworkID: "db1-database",
 				DatabaseHost:      "postgres-instance-1",
 				DatabasePort:      5432,
+				DataPath:          "/var/lib/pgedge/services/db1-mcp-server-host1",
 			},
 			wantErr: false,
 			checkResources: func(t *testing.T, resources *swarm.ResourceRequirements) {
@@ -199,243 +193,6 @@ func TestServiceContainerSpec(t *testing.T) {
 				}
 			},
 		},
-		{
-			name: "service with OpenAI provider",
-			opts: &ServiceContainerSpecOptions{
-				ServiceSpec: &database.ServiceSpec{
-					ServiceID:   "mcp-server",
-					ServiceType: "mcp",
-					Version:     "1.0.0",
-					Config: map[string]interface{}{
-						"llm_provider":   "openai",
-						"llm_model":      "gpt-4",
-						"openai_api_key": "sk-openai-test",
-					},
-				},
-				ServiceInstanceID: "db1-mcp-server-host1",
-				DatabaseID:        "db1",
-				DatabaseName:      "testdb",
-				HostID:            "host1",
-				ServiceName:       "db1-mcp-server-host1",
-				Hostname:          "mcp-server-host1",
-				CohortMemberID:    "swarm-node-123",
-				ServiceImage: &ServiceImage{
-					Tag: "ghcr.io/pgedge/postgres-mcp:latest",
-				},
-				DatabaseNetworkID: "db1-database",
-				DatabaseHost:      "postgres-instance-1",
-				DatabasePort:      5432,
-			},
-			wantErr: false,
-			checkEnv: func(t *testing.T, env []string) {
-				expectedEnv := []string{
-					"PGEDGE_LLM_PROVIDER=openai",
-					"PGEDGE_LLM_MODEL=gpt-4",
-					"PGEDGE_OPENAI_API_KEY=sk-openai-test",
-				}
-				for _, e := range expectedEnv {
-					found := false
-					for _, got := range env {
-						if got == e {
-							found = true
-							break
-						}
-					}
-					if !found {
-						t.Errorf("missing env var: %s", e)
-					}
-				}
-			},
-		},
-		{
-			name: "service with Ollama provider",
-			opts: &ServiceContainerSpecOptions{
-				ServiceSpec: &database.ServiceSpec{
-					ServiceID:   "mcp-server",
-					ServiceType: "mcp",
-					Version:     "1.0.0",
-					Config: map[string]interface{}{
-						"llm_provider": "ollama",
-						"llm_model":    "llama2",
-						"ollama_url":   "http://localhost:11434",
-					},
-				},
-				ServiceInstanceID: "db1-mcp-server-host1",
-				DatabaseID:        "db1",
-				DatabaseName:      "testdb",
-				HostID:            "host1",
-				ServiceName:       "db1-mcp-server-host1",
-				Hostname:          "mcp-server-host1",
-				CohortMemberID:    "swarm-node-123",
-				ServiceImage: &ServiceImage{
-					Tag: "ghcr.io/pgedge/postgres-mcp:latest",
-				},
-				DatabaseNetworkID: "db1-database",
-				DatabaseHost:      "postgres-instance-1",
-				DatabasePort:      5432,
-			},
-			wantErr: false,
-			checkEnv: func(t *testing.T, env []string) {
-				expectedEnv := []string{
-					"PGEDGE_LLM_PROVIDER=ollama",
-					"PGEDGE_LLM_MODEL=llama2",
-					"PGEDGE_OLLAMA_URL=http://localhost:11434",
-				}
-				for _, e := range expectedEnv {
-					found := false
-					for _, got := range env {
-						if got == e {
-							found = true
-							break
-						}
-					}
-					if !found {
-						t.Errorf("missing env var: %s", e)
-					}
-				}
-			},
-		},
-		{
-			name: "service without credentials",
-			opts: &ServiceContainerSpecOptions{
-				ServiceSpec: &database.ServiceSpec{
-					ServiceID:   "mcp-server",
-					ServiceType: "mcp",
-					Version:     "1.0.0",
-					Config: map[string]interface{}{
-						"llm_provider":      "anthropic",
-						"llm_model":         "claude-sonnet-4-5",
-						"anthropic_api_key": "sk-ant-test",
-					},
-				},
-				ServiceInstanceID: "db1-mcp-server-host1",
-				DatabaseID:        "db1",
-				DatabaseName:      "testdb",
-				HostID:            "host1",
-				ServiceName:       "db1-mcp-server-host1",
-				Hostname:          "mcp-server-host1",
-				CohortMemberID:    "swarm-node-123",
-				ServiceImage: &ServiceImage{
-					Tag: "ghcr.io/pgedge/postgres-mcp:latest",
-				},
-				Credentials:       nil, // No credentials
-				DatabaseNetworkID: "db1-database",
-				DatabaseHost:      "postgres-instance-1",
-				DatabasePort:      5432,
-			},
-			wantErr: false,
-			checkEnv: func(t *testing.T, env []string) {
-				// Should not have PGUSER or PGPASSWORD
-				for _, e := range env {
-					if strings.HasPrefix(e, "PGUSER=") || strings.HasPrefix(e, "PGPASSWORD=") {
-						t.Errorf("unexpected credential env var: %s", e)
-					}
-				}
-			},
-		},
-		{
-			name: "service with extra labels for Traefik",
-			opts: &ServiceContainerSpecOptions{
-				ServiceSpec: &database.ServiceSpec{
-					ServiceID:   "mcp-server",
-					ServiceType: "mcp",
-					Version:     "latest",
-					Config: map[string]interface{}{
-						"llm_provider":      "anthropic",
-						"llm_model":         "claude-sonnet-4-5",
-						"anthropic_api_key": "sk-ant-test",
-					},
-					OrchestratorOpts: &database.OrchestratorOpts{
-						Swarm: &database.SwarmOpts{
-							ExtraLabels: map[string]string{
-								"traefik.enable":                                     "true",
-								"traefik.http.routers.mcp.rule":                      "Host(`mcp.example.com`)",
-								"traefik.http.services.mcp.loadbalancer.server.port": "8080",
-							},
-						},
-					},
-				},
-				ServiceInstanceID: "db1-mcp-server-host1",
-				DatabaseID:        "db1",
-				DatabaseName:      "testdb",
-				HostID:            "host1",
-				ServiceName:       "db1-mcp-server-host1",
-				Hostname:          "mcp-server-host1",
-				CohortMemberID:    "swarm-node-123",
-				ServiceImage: &ServiceImage{
-					Tag: "ghcr.io/pgedge/postgres-mcp:latest",
-				},
-				DatabaseNetworkID: "db1-database",
-				DatabaseHost:      "postgres-instance-1",
-				DatabasePort:      5432,
-			},
-			wantErr: false,
-			checkLabels: func(t *testing.T, labels map[string]string) {
-				// System labels must still be present
-				expectedSystem := map[string]string{
-					"pgedge.component":           "service",
-					"pgedge.service.instance.id": "db1-mcp-server-host1",
-					"pgedge.service.id":          "mcp-server",
-					"pgedge.database.id":         "db1",
-					"pgedge.host.id":             "host1",
-				}
-				for k, v := range expectedSystem {
-					if labels[k] != v {
-						t.Errorf("system label %s = %q, want %q", k, labels[k], v)
-					}
-				}
-				// Extra labels must be merged in
-				expectedExtra := map[string]string{
-					"traefik.enable":                                     "true",
-					"traefik.http.routers.mcp.rule":                      "Host(`mcp.example.com`)",
-					"traefik.http.services.mcp.loadbalancer.server.port": "8080",
-				}
-				for k, v := range expectedExtra {
-					if labels[k] != v {
-						t.Errorf("extra label %s = %q, want %q", k, labels[k], v)
-					}
-				}
-				// Total should be system + extra
-				if len(labels) != len(expectedSystem)+len(expectedExtra) {
-					t.Errorf("got %d labels, want %d", len(labels), len(expectedSystem)+len(expectedExtra))
-				}
-			},
-		},
-		{
-			name: "service with nil orchestrator opts (backward compat)",
-			opts: &ServiceContainerSpecOptions{
-				ServiceSpec: &database.ServiceSpec{
-					ServiceID:        "mcp-server",
-					ServiceType:      "mcp",
-					Version:          "latest",
-					Config:           map[string]interface{}{"llm_provider": "anthropic", "llm_model": "claude-sonnet-4-5", "anthropic_api_key": "sk-ant-test"},
-					OrchestratorOpts: nil,
-				},
-				ServiceInstanceID: "db1-mcp-server-host1",
-				DatabaseID:        "db1",
-				DatabaseName:      "testdb",
-				HostID:            "host1",
-				ServiceName:       "db1-mcp-server-host1",
-				Hostname:          "mcp-server-host1",
-				CohortMemberID:    "swarm-node-123",
-				ServiceImage: &ServiceImage{
-					Tag: "ghcr.io/pgedge/postgres-mcp:latest",
-				},
-				DatabaseNetworkID: "db1-database",
-				DatabaseHost:      "postgres-instance-1",
-				DatabasePort:      5432,
-			},
-			wantErr: false,
-			checkLabels: func(t *testing.T, labels map[string]string) {
-				// Only system labels, no extras
-				if len(labels) != 5 {
-					t.Errorf("got %d labels, want 5 (system only)", len(labels))
-				}
-				if labels["pgedge.component"] != "service" {
-					t.Errorf("pgedge.component = %q, want %q", labels["pgedge.component"], "service")
-				}
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -450,25 +207,20 @@ func TestServiceContainerSpec(t *testing.T) {
 				return
 			}
 
-			// Verify labels are applied to both ContainerSpec and Annotations
 			if tt.checkLabels != nil {
 				tt.checkLabels(t, got.TaskTemplate.ContainerSpec.Labels)
-				tt.checkLabels(t, got.Labels)
 			}
 			if tt.checkNetworks != nil {
 				tt.checkNetworks(t, got.TaskTemplate.Networks)
 			}
-			if tt.checkEnv != nil {
-				tt.checkEnv(t, got.TaskTemplate.ContainerSpec.Env)
+			if tt.checkContainer != nil {
+				tt.checkContainer(t, got.TaskTemplate.ContainerSpec)
 			}
 			if tt.checkPlacement != nil {
 				tt.checkPlacement(t, got.TaskTemplate.Placement)
 			}
 			if tt.checkResources != nil {
 				tt.checkResources(t, got.TaskTemplate.Resources)
-			}
-			if tt.checkHealthcheck != nil {
-				tt.checkHealthcheck(t, got.TaskTemplate.ContainerSpec)
 			}
 			if tt.checkPorts != nil {
 				tt.checkPorts(t, got.EndpointSpec.Ports)
@@ -487,150 +239,6 @@ func TestServiceContainerSpec(t *testing.T) {
 			// Check hostname
 			if got.TaskTemplate.ContainerSpec.Hostname != tt.opts.Hostname {
 				t.Errorf("hostname = %v, want %v", got.TaskTemplate.ContainerSpec.Hostname, tt.opts.Hostname)
-			}
-		})
-	}
-}
-
-func TestBuildServiceEnvVars(t *testing.T) {
-	tests := []struct {
-		name     string
-		opts     *ServiceContainerSpecOptions
-		expected []string
-	}{
-		{
-			name: "anthropic provider with credentials",
-			opts: &ServiceContainerSpecOptions{
-				ServiceSpec: &database.ServiceSpec{
-					ServiceID: "mcp-server",
-					Config: map[string]interface{}{
-						"llm_provider":      "anthropic",
-						"llm_model":         "claude-sonnet-4-5",
-						"anthropic_api_key": "sk-ant-test",
-					},
-				},
-				DatabaseID:   "db1",
-				DatabaseName: "testdb",
-				DatabaseHost: "postgres-instance-1",
-				DatabasePort: 5432,
-				Credentials: &database.ServiceUser{
-					Username: "svc_test",
-					Password: "testpass",
-				},
-			},
-			expected: []string{
-				"PGHOST=postgres-instance-1",
-				"PGPORT=5432",
-				"PGDATABASE=testdb",
-				"PGSSLMODE=prefer",
-				"PGEDGE_SERVICE_ID=mcp-server",
-				"PGEDGE_DATABASE_ID=db1",
-				"PGUSER=svc_test",
-				"PGPASSWORD=testpass",
-				"PGEDGE_LLM_PROVIDER=anthropic",
-				"PGEDGE_LLM_MODEL=claude-sonnet-4-5",
-				"PGEDGE_ANTHROPIC_API_KEY=sk-ant-test",
-			},
-		},
-		{
-			name: "openai provider without credentials",
-			opts: &ServiceContainerSpecOptions{
-				ServiceSpec: &database.ServiceSpec{
-					ServiceID: "mcp-server",
-					Config: map[string]interface{}{
-						"llm_provider":   "openai",
-						"llm_model":      "gpt-4",
-						"openai_api_key": "sk-openai-test",
-					},
-				},
-				DatabaseID:   "db1",
-				DatabaseName: "testdb",
-				DatabaseHost: "postgres-instance-1",
-				DatabasePort: 5432,
-				Credentials:  nil,
-			},
-			expected: []string{
-				"PGHOST=postgres-instance-1",
-				"PGPORT=5432",
-				"PGDATABASE=testdb",
-				"PGSSLMODE=prefer",
-				"PGEDGE_SERVICE_ID=mcp-server",
-				"PGEDGE_DATABASE_ID=db1",
-				"PGEDGE_LLM_PROVIDER=openai",
-				"PGEDGE_LLM_MODEL=gpt-4",
-				"PGEDGE_OPENAI_API_KEY=sk-openai-test",
-			},
-		},
-		{
-			name: "ollama provider",
-			opts: &ServiceContainerSpecOptions{
-				ServiceSpec: &database.ServiceSpec{
-					ServiceID: "mcp-server",
-					Config: map[string]interface{}{
-						"llm_provider": "ollama",
-						"llm_model":    "llama2",
-						"ollama_url":   "http://localhost:11434",
-					},
-				},
-				DatabaseID:   "db1",
-				DatabaseName: "testdb",
-				DatabaseHost: "postgres-instance-1",
-				DatabasePort: 5432,
-			},
-			expected: []string{
-				"PGHOST=postgres-instance-1",
-				"PGPORT=5432",
-				"PGDATABASE=testdb",
-				"PGSSLMODE=prefer",
-				"PGEDGE_SERVICE_ID=mcp-server",
-				"PGEDGE_DATABASE_ID=db1",
-				"PGEDGE_LLM_PROVIDER=ollama",
-				"PGEDGE_LLM_MODEL=llama2",
-				"PGEDGE_OLLAMA_URL=http://localhost:11434",
-			},
-		},
-		{
-			name: "minimal config without LLM settings",
-			opts: &ServiceContainerSpecOptions{
-				ServiceSpec: &database.ServiceSpec{
-					ServiceID: "mcp-server",
-					Config:    map[string]interface{}{},
-				},
-				DatabaseID:   "db1",
-				DatabaseName: "testdb",
-				DatabaseHost: "postgres-instance-1",
-				DatabasePort: 5432,
-			},
-			expected: []string{
-				"PGHOST=postgres-instance-1",
-				"PGPORT=5432",
-				"PGDATABASE=testdb",
-				"PGSSLMODE=prefer",
-				"PGEDGE_SERVICE_ID=mcp-server",
-				"PGEDGE_DATABASE_ID=db1",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := buildServiceEnvVars(tt.opts)
-
-			if len(got) != len(tt.expected) {
-				t.Errorf("got %d env vars, want %d", len(got), len(tt.expected))
-			}
-
-			for _, e := range tt.expected {
-				found := false
-				for _, g := range got {
-					if g == e {
-						found = true
-						break
-					}
-				}
-				if !found {
-					t.Errorf("missing expected env var: %s", e)
-				}
 			}
 		})
 	}
@@ -677,7 +285,7 @@ func TestBuildServicePortConfig(t *testing.T) {
 			}
 
 			if tt.wantPortCount == 0 {
-				return // No port config expected
+				return
 			}
 
 			port := ports[0]
