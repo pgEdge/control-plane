@@ -287,6 +287,7 @@ func TestGenerateEmptyTokenFile(t *testing.T) {
 
 		var store mcpTokenStore
 		require.NoError(t, yaml.Unmarshal(data, &store))
+		require.NotNil(t, store.Tokens)
 		assert.Empty(t, store.Tokens)
 	})
 }
@@ -313,6 +314,7 @@ func TestGenerateEmptyUserFile(t *testing.T) {
 
 		var store mcpUserStore
 		require.NoError(t, yaml.Unmarshal(data, &store))
+		require.NotNil(t, store.Users)
 		assert.Empty(t, store.Users)
 	})
 }
