@@ -1,0 +1,6 @@
+---
+- name: Stop DBs
+  hosts: all
+  become: true
+  roles:
+    - role: stop_dbs

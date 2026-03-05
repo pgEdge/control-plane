@@ -1,0 +1,13 @@
+---
+- name: Reset failed services
+  ansible.builtin.command: systemctl reset-failed
+
+- name: Populate service facts
+  ansible.builtin.service_facts:
+
+- name: Stop and disable all patroni services
+  loop: "{{ ansible_facts['services'].values() | selectattr('name', 'match', '^patroni-') | list }}"
+  ansible.builtin.systemd_service:
+    name: '{{ item.name }}'
+    state: stopped
+    enabled: false
