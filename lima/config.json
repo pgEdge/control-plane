@@ -1,0 +1,11 @@
+{
+  "orchestrator": "systemd",
+  "profiling_enabled": true,
+  "client_addresses": ["127.0.0.1"],
+  "logging": {
+    "pretty": true,
+    "component_levels": {
+      "api_server": "error"
+    }
+  }
+}

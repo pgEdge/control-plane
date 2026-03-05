@@ -4,6 +4,7 @@
 .scratch
 docker/control-plane-dev/data
 clustertest/data
+lima/data
 .vagrant
 vagrant-ssh.cfg
 .terraform

@@ -1,0 +1,8 @@
+---
+hosts:
+{% for machine in machines %}
+  {{ machine.host_id }}:
+    external_ip: 127.0.0.1
+    port: {{ machine.http_port }}
+    ssh_command: ssh {{ hostvars[machine.name].ansible_ssh_common_args }} {{ hostvars[machine.name].ansible_host }}
+{% endfor %}
