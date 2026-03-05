@@ -23,3 +23,5 @@ control-plane
 pgedge-control-plane
 !docker/control-plane
 e2e/debug
+packaging/selinux/*.mod
+packaging/selinux/*.pp

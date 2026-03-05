@@ -38,3 +38,11 @@ target "control_plane" {
     "type=sbom",
   ]
 }
+
+target "selinux" {
+  context = "packaging/selinux"
+  dockerfile = "../../docker/selinux/Dockerfile"
+  target = "output"
+  platforms = ["linux/arm64"]
+  output = ["type=local,dest=packaging/selinux"]
+}
