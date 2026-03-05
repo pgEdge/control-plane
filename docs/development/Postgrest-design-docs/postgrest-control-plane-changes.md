@@ -487,7 +487,7 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
         Labels:   labels,
         Hostname: opts.Hostname,
         Healthcheck: &container.HealthConfig{
-            Test:        []string{"CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"},
+            Test:        buildServiceHealthCheckCmd(opts),
             StartPeriod: time.Second * 30,
             Interval:    time.Second * 10,
             Timeout:     time.Second * 5,
@@ -582,6 +582,7 @@ func buildPostgRESTEnvVars(opts *ServiceContainerSpecOptions) []string {
     env = append(env,
         "PGRST_DB_POOL_ACQUISITION_TIMEOUT=10",
         "PGRST_SERVER_PORT=8080",
+        "PGRST_ADMIN_SERVER_PORT=3001",
         "PGRST_LOG_LEVEL=warn",
         "PGRST_DB_CHANNEL_ENABLED=true",
     )
@@ -1095,10 +1096,11 @@ Add test cases for PostgREST container spec:
             "PGRST_DB_MAX_ROWS=1000",
             "PGRST_DB_POOL_ACQUISITION_TIMEOUT=10",
             "PGRST_SERVER_PORT=8080",
+            "PGRST_ADMIN_SERVER_PORT=3001",
             "PGRST_LOG_LEVEL=warn",
             "PGRST_DB_CHANNEL_ENABLED=true",
         ),
-        // PostgREST: no mounts, no custom command, no custom user
+        // PostgREST: no mounts, no custom command, no custom user, health check disabled
         checkNoMounts(),
         checkNoCommand(),
     },
@@ -1139,7 +1141,21 @@ Add test cases for PostgREST container spec:
 },
 ```
 
-**New check functions needed:**
+**New helper function for health check (in `service_spec.go`):**
+
+```go
+// buildServiceHealthCheckCmd returns the health check command for the service.
+// PostgREST's Docker image is a static binary with no shell utilities (no curl, no wget).
+// We disable the Docker health check for PostgREST and rely on the CP's ServiceInstanceMonitor.
+func buildServiceHealthCheckCmd(opts *ServiceContainerSpecOptions) []string {
+    if opts.ServiceSpec.ServiceType == "postgrest" {
+        return []string{"NONE"}
+    }
+    return []string{"CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"}
+}
+```
+
+**New check functions needed (in `service_spec_test.go`):**
 
 ```go
 func checkNoMounts() checkFunc {

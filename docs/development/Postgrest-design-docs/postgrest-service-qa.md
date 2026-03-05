@@ -167,15 +167,22 @@ PostgREST v14.5 is the latest stable release (Feb 2026). v14 dropped support for
 
 ### Health Check
 
-```
-Test:        curl -f http://localhost:8080/health || exit 1
-StartPeriod: 30 seconds
-Interval:    10 seconds
-Timeout:     5 seconds
-Retries:     3
-```
+**Docker health check:** Disabled (`NONE`) for PostgREST. The PostgREST Docker image
+is a static binary with no shell utilities (no `curl`, no `wget`), so the standard
+`curl -f http://localhost:8080/health` command fails.
 
-This is identical to MCP. PostgREST exposes `/health` (liveness — has a DB connection), `/ready` (readiness — schema cache loaded), and `/live` (alias for `/health`).
+**PostgREST admin endpoints:** PostgREST v14 serves `/health`, `/live`, and `/ready`
+on a separate admin port (configured via `PGRST_ADMIN_SERVER_PORT=3001`), not the API
+port (8080). These endpoints are:
+- `/health` — returns 200 if PostgREST has at least one usable DB connection
+- `/ready` — returns 200 if the schema cache is loaded
+- `/live` — alias for `/health`
+
+**CP health monitoring:** The `ServiceInstanceMonitor` checks health from outside the
+container via the bridge network, using the published port. This still works.
+
+**MCP comparison:** MCP uses `curl -f http://localhost:8080/health` because the MCP
+image includes curl. PostgREST cannot use this approach.
 
 ### Port
 

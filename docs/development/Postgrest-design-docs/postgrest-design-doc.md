@@ -21,8 +21,10 @@ overlay network, with CP-managed credentials and health monitoring.
 | | MCP (post-PR-280) | PostgREST |
 |---|---|---|
 | Config delivery | YAML files bind-mounted at `/app/data/` | Env vars (`PGRST_*` + libpq `PG*`) |
-| Image | Custom (`postgres-mcp`) | Upstream (`postgrest/postgrest`) |
+| Image | Custom (`postgres-mcp`) | Upstream (`postgrest/postgrest`) — static binary, no shell utils |
 | DB role | `LOGIN`, public-schema read + `pg_read_all_settings` | `LOGIN NOINHERIT` + `GRANT web_anon TO svc_*` |
+| Docker health check | `curl -f http://localhost:8080/health` | Disabled (`NONE`) — image has no curl/wget |
+| Admin port | N/A | `PGRST_ADMIN_SERVER_PORT=3001` for `/health`, `/ready`, `/live` |
 | Extra resources | DirResource → MCPConfigResource | None — uses the 4 base resources only |
 | External access | LLM provider APIs (outbound internet) | None |
 
