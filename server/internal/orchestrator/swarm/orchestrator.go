@@ -413,6 +413,12 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		}
 	}
 
+	// Parse the MCP service config from the untyped config map
+	mcpConfig, errs := database.ParseMCPServiceConfig(spec.ServiceSpec.Config, false)
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("failed to parse MCP service config: %w", errors.Join(errs...))
+	}
+
 	// Database network (shared with postgres instances)
 	databaseNetwork := &Network{
 		Scope:     "swarm",
@@ -438,6 +444,31 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		serviceUserRole.Password = spec.Credentials.Password
 	}
 
+	// Service data directory resource (host-side bind mount directory)
+	dataDirID := spec.ServiceInstanceID + "-data"
+	dataDir := &filesystem.DirResource{
+		ID:       dataDirID,
+		HostID:   spec.HostID,
+		Path:     filepath.Join(o.cfg.DataDir, "services", spec.ServiceInstanceID),
+		OwnerUID: mcpContainerUID,
+		OwnerGID: mcpContainerUID,
+	}
+
+	// MCP config resource (generates config.yaml, tokens.yaml, users.yaml)
+	mcpConfigResource := &MCPConfigResource{
+		ServiceInstanceID: spec.ServiceInstanceID,
+		HostID:            spec.HostID,
+		DirResourceID:     dataDirID,
+		Config:            mcpConfig,
+		DatabaseName:      spec.DatabaseName,
+		DatabaseHost:      spec.DatabaseHost,
+		DatabasePort:      spec.DatabasePort,
+	}
+	if spec.Credentials != nil {
+		mcpConfigResource.Username = spec.Credentials.Username
+		mcpConfigResource.Password = spec.Credentials.Password
+	}
+
 	// Service instance spec resource
 	serviceName := ServiceInstanceName(spec.ServiceSpec.ServiceType, spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
 	serviceInstanceSpec := &ServiceInstanceSpecResource{
@@ -448,13 +479,14 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		HostID:            spec.HostID,
 		ServiceName:       serviceName,
 		Hostname:          serviceName,
-		CohortMemberID:    o.swarmNodeID, // Use orchestrator's swarm node ID (same as Postgres instances)
+		CohortMemberID:    o.swarmNodeID,
 		ServiceImage:      serviceImage,
 		Credentials:       spec.Credentials,
 		DatabaseNetworkID: databaseNetwork.Name,
 		DatabaseHost:      spec.DatabaseHost,
 		DatabasePort:      spec.DatabasePort,
 		Port:              spec.Port,
+		DataDirID:         dataDirID,
 	}
 
 	// Service instance resource (actual Docker service)
@@ -466,9 +498,12 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		HostID:            spec.HostID,
 	}
 
+	// Resource chain: Network → ServiceUserRole → DirResource → MCPConfigResource → ServiceInstanceSpec → ServiceInstance
 	orchestratorResources := []resource.Resource{
 		databaseNetwork,
 		serviceUserRole,
+		dataDir,
+		mcpConfigResource,
 		serviceInstanceSpec,
 		serviceInstance,
 	}

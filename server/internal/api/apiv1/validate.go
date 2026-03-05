@@ -139,7 +139,7 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 		}
 		seenServiceIDs.Add(string(svc.ServiceID))
 
-		errs = append(errs, validateServiceSpec(svc, svcPath)...)
+		errs = append(errs, validateServiceSpec(svc, svcPath, false)...)
 	}
 
 	return errors.Join(errs...)
@@ -174,6 +174,12 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 				path,
 			))
 		}
+	}
+
+	// Validate services with isUpdate=true to reject bootstrap-only fields
+	for i, svc := range new.Services {
+		svcPath := []string{"services", arrayIndexPath(i)}
+		errs = append(errs, validateServiceSpec(svc, svcPath, true)...)
 	}
 
 	return errors.Join(errs...)
@@ -232,7 +238,7 @@ func validateNode(node *api.DatabaseNodeSpec, path []string) []error {
 	return errs
 }
 
-func validateServiceSpec(svc *api.ServiceSpec, path []string) []error {
+func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool) []error {
 	var errs []error
 
 	// Validate service_id
@@ -269,7 +275,7 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string) []error {
 
 	// Validate config based on service_type
 	if svc.ServiceType == "mcp" {
-		errs = append(errs, validateMCPServiceConfig(svc.Config, appendPath(path, "config"))...)
+		errs = append(errs, validateMCPServiceConfig(svc.Config, appendPath(path, "config"), isUpdate)...)
 	}
 
 	// Validate cpus if provided
@@ -288,54 +294,13 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string) []error {
 	return errs
 }
 
-// TODO: this is still a WIP based on use-case reqs...
-func validateMCPServiceConfig(config map[string]any, path []string) []error {
-	var errs []error
-
-	// Required fields for MCP service
-	requiredFields := []string{"llm_provider", "llm_model"}
-	for _, field := range requiredFields {
-		if _, ok := config[field]; !ok {
-			err := fmt.Errorf("missing required field '%s'", field)
-			errs = append(errs, newValidationError(err, path))
-		}
+func validateMCPServiceConfig(config map[string]any, path []string, isUpdate bool) []error {
+	_, errs := database.ParseMCPServiceConfig(config, isUpdate)
+	var result []error
+	for _, err := range errs {
+		result = append(result, newValidationError(err, path))
 	}
-
-	// Validate llm_provider
-	if val, exists := config["llm_provider"]; exists {
-		provider, ok := val.(string)
-		if !ok {
-			err := errors.New("llm_provider must be a string")
-			errs = append(errs, newValidationError(err, appendPath(path, mapKeyPath("llm_provider"))))
-		} else {
-			validProviders := []string{"anthropic", "openai", "ollama"}
-			if !slices.Contains(validProviders, provider) {
-				err := fmt.Errorf("unsupported llm_provider '%s' (must be one of: %s)", provider, strings.Join(validProviders, ", "))
-				errs = append(errs, newValidationError(err, appendPath(path, mapKeyPath("llm_provider"))))
-			}
-
-			// Provider-specific API key validation
-			switch provider {
-			case "anthropic":
-				if _, ok := config["anthropic_api_key"]; !ok {
-					err := errors.New("missing required field 'anthropic_api_key' for anthropic provider")
-					errs = append(errs, newValidationError(err, path))
-				}
-			case "openai":
-				if _, ok := config["openai_api_key"]; !ok {
-					err := errors.New("missing required field 'openai_api_key' for openai provider")
-					errs = append(errs, newValidationError(err, path))
-				}
-			case "ollama":
-				if _, ok := config["ollama_url"]; !ok {
-					err := errors.New("missing required field 'ollama_url' for ollama provider")
-					errs = append(errs, newValidationError(err, path))
-				}
-			}
-		}
-	}
-
-	return errs
+	return result
 }
 
 func validateCPUs(value *string, path []string) []error {

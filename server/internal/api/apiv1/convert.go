@@ -28,6 +28,7 @@ func isSensitiveConfigKey(key string) bool {
 		"api_key", "apikey", "api-key",
 		"credential", "private_key", "private-key",
 		"access_key", "access-key",
+		"init_users", // mcp 'init_users' contains embedded passwords and must be stripped
 	}
 	for _, p := range patterns {
 		if strings.Contains(k, p) {

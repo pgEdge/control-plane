@@ -118,12 +118,17 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 	}
 	defer conn.Close(ctx)
 
+	// Create the role with LOGIN but no inherited roles. We grant permissions
+	// directly rather than using pgedge_application_read_only because that role
+	// includes read access to the spock schema (replication internals) which the
+	// MCP service should not expose.
+	// https://github.com/pgEdge/pgedge-postgres-mcp/blob/main/docs/guide/security_mgmt.md
 	statements, err := postgres.CreateUserRole(postgres.UserRoleOptions{
-		Name:     r.Username,
-		Password: r.Password,
-		DBName:   r.DatabaseName,
-		DBOwner:  false,
-		Roles:    []string{"pgedge_application_read_only"},
+		Name:       r.Username,
+		Password:   r.Password,
+		DBName:     r.DatabaseName,
+		DBOwner:    false,
+		Attributes: []string{"LOGIN"},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate create user role statements: %w", err)
@@ -131,6 +136,21 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 
 	if err := statements.Exec(ctx, conn); err != nil {
 		return fmt.Errorf("failed to create service user: %w", err)
+	}
+
+	// grants based on MCP doc guidelines, but open to change as needed
+	grants := postgres.Statements{
+		// Database-level connect permission
+		postgres.Statement{SQL: fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s;", sanitizeIdentifier(r.DatabaseName), sanitizeIdentifier(r.Username))},
+		// Read-only access to the public schema (application tables)
+		postgres.Statement{SQL: fmt.Sprintf("GRANT USAGE ON SCHEMA public TO %s;", sanitizeIdentifier(r.Username))},
+		postgres.Statement{SQL: fmt.Sprintf("GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s;", sanitizeIdentifier(r.Username))},
+		postgres.Statement{SQL: fmt.Sprintf("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO %s;", sanitizeIdentifier(r.Username))},
+		// Allow viewing PostgreSQL configuration via diagnostic tools
+		postgres.Statement{SQL: fmt.Sprintf("GRANT pg_read_all_settings TO %s;", sanitizeIdentifier(r.Username))},
+	}
+	if err := grants.Exec(ctx, conn); err != nil {
+		return fmt.Errorf("failed to grant service user permissions: %w", err)
 	}
 
 	logger.Info().Str("username", r.Username).Msg("service user role created successfully")

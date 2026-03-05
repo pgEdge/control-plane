@@ -24,7 +24,7 @@ func (a *Activities) ExecuteGenerateServiceInstanceResources(
 	input *GenerateServiceInstanceResourcesInput,
 ) workflow.Future[*GenerateServiceInstanceResourcesOutput] {
 	options := workflow.ActivityOptions{
-		Queue: utils.ManagerQueue(),
+		Queue: utils.HostQueue(input.Spec.HostID),
 		RetryOptions: workflow.RetryOptions{
 			MaxAttempts: 1,
 		},

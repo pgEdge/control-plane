@@ -621,8 +621,8 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"services[0].config: missing required field 'llm_model'",
-				"services[0].config[llm_provider]: unsupported llm_provider 'unknown'",
+				"services[0].config: llm_model is required",
+				"services[0].config: llm_provider must be one of: anthropic, openai, ollama",
 			},
 		},
 		{
@@ -860,7 +860,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"config: missing required field 'llm_provider'",
+				"config: llm_provider is required",
 			},
 		},
 		{
@@ -875,7 +875,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"config: missing required field 'llm_model'",
+				"config: llm_model is required",
 			},
 		},
 		{
@@ -891,7 +891,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"config[llm_provider]: unsupported llm_provider 'unknown'",
+				"config: llm_provider must be one of: anthropic, openai, ollama",
 			},
 		},
 		{
@@ -907,7 +907,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"config: missing required field 'anthropic_api_key'",
+				"config: anthropic_api_key is required when llm_provider is \"anthropic\"",
 			},
 		},
 		{
@@ -923,7 +923,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"config: missing required field 'openai_api_key'",
+				"config: openai_api_key is required when llm_provider is \"openai\"",
 			},
 		},
 		{
@@ -939,7 +939,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"config: missing required field 'ollama_url'",
+				"config: ollama_url is required when llm_provider is \"ollama\"",
 			},
 		},
 		{
@@ -1045,7 +1045,7 @@ func TestValidateServiceSpec(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := errors.Join(validateServiceSpec(tc.svc, nil)...)
+			err := errors.Join(validateServiceSpec(tc.svc, nil, false)...)
 			if len(tc.expected) < 1 {
 				assert.NoError(t, err)
 			} else {

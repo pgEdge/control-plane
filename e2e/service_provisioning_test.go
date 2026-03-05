@@ -755,6 +755,148 @@ func TestUpdateDatabaseServiceStable(t *testing.T) {
 	t.Log("Service stability test completed successfully")
 }
 
+// TestUpdateMCPServiceConfig tests that updating a service's config (e.g.,
+// changing the LLM model) triggers a successful database update and the service
+// instance remains running. This exercises the MCPConfigResource.Update() path
+// where config.yaml is regenerated while tokens.yaml/users.yaml are preserved.
+func TestUpdateMCPServiceConfig(t *testing.T) {
+	t.Parallel()
+
+	host1 := fixture.HostIDs()[0]
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	t.Log("Creating database with MCP service (claude-sonnet-4-5)")
+
+	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
+		Spec: &controlplane.DatabaseSpec{
+			DatabaseName: "test_update_mcp_config",
+			DatabaseUsers: []*controlplane.DatabaseUserSpec{
+				{
+					Username:   "admin",
+					Password:   pointerTo("testpassword"),
+					DbOwner:    pointerTo(true),
+					Attributes: []string{"LOGIN", "SUPERUSER"},
+				},
+			},
+			Port: pointerTo(0),
+			Nodes: []*controlplane.DatabaseNodeSpec{
+				{
+					Name:    "n1",
+					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+				},
+			},
+			Services: []*controlplane.ServiceSpec{
+				{
+					ServiceID:   "mcp-server",
+					ServiceType: "mcp",
+					Version:     "latest",
+					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Config: map[string]any{
+						"llm_provider":      "anthropic",
+						"llm_model":         "claude-sonnet-4-5",
+						"anthropic_api_key": "sk-ant-test-key-config",
+					},
+				},
+			},
+		},
+	})
+
+	require.Len(t, db.ServiceInstances, 1, "Expected 1 service instance")
+
+	// Wait for service to reach "running" state before recording baseline
+	if db.ServiceInstances[0].State != "running" {
+		t.Log("Service not yet running, waiting...")
+		deadline := time.Now().Add(5 * time.Minute)
+		for time.Now().Before(deadline) {
+			time.Sleep(5 * time.Second)
+			err := db.Refresh(ctx)
+			require.NoError(t, err, "Failed to refresh database")
+			if len(db.ServiceInstances) > 0 && db.ServiceInstances[0].State == "running" {
+				break
+			}
+		}
+	}
+	require.Equal(t, "running", db.ServiceInstances[0].State, "Service should be running")
+
+	// Record identifiers before the update to verify stability after
+	serviceInstanceID := db.ServiceInstances[0].ServiceInstanceID
+	createdAtBefore := db.ServiceInstances[0].CreatedAt
+
+	t.Logf("Baseline: service_instance_id=%s, created_at=%s", serviceInstanceID, createdAtBefore)
+
+	t.Log("Updating database with changed service config (claude-sonnet-4-5 -> claude-haiku-4-5)")
+
+	// Update database with a changed service config (different LLM model).
+	// This should trigger MCPConfigResource.Update() to regenerate config.yaml
+	// without deleting/recreating the service instance.
+	err := db.Update(ctx, UpdateOptions{
+		Spec: &controlplane.DatabaseSpec{
+			DatabaseName: "test_update_mcp_config",
+			DatabaseUsers: []*controlplane.DatabaseUserSpec{
+				{
+					Username:   "admin",
+					Password:   pointerTo("testpassword"),
+					DbOwner:    pointerTo(true),
+					Attributes: []string{"LOGIN", "SUPERUSER"},
+				},
+			},
+			Port: pointerTo(0),
+			Nodes: []*controlplane.DatabaseNodeSpec{
+				{
+					Name:    "n1",
+					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
+				},
+			},
+			Services: []*controlplane.ServiceSpec{
+				{
+					ServiceID:   "mcp-server",
+					ServiceType: "mcp",
+					Version:     "latest",
+					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
+					Config: map[string]any{
+						"llm_provider":      "anthropic",
+						"llm_model":         "claude-haiku-4-5",
+						"anthropic_api_key": "sk-ant-test-key-config",
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err, "Failed to update database")
+
+	t.Log("Database updated, verifying service instance was updated in-place")
+
+	// Verify the service instance still exists
+	require.Len(t, db.ServiceInstances, 1, "Should still have 1 service instance")
+
+	// The service instance may briefly show "creating" after the update before
+	// the monitor converges to "running". Poll until it settles.
+	if db.ServiceInstances[0].State != "running" {
+		t.Logf("Service state is %q, waiting for running...", db.ServiceInstances[0].State)
+		deadline := time.Now().Add(5 * time.Minute)
+		for time.Now().Before(deadline) {
+			time.Sleep(5 * time.Second)
+			err = db.Refresh(ctx)
+			require.NoError(t, err, "Failed to refresh database")
+			if len(db.ServiceInstances) > 0 && db.ServiceInstances[0].State == "running" {
+				break
+			}
+		}
+	}
+	require.Equal(t, "running", db.ServiceInstances[0].State, "Service should be running after update")
+
+	// The key assertions: ServiceInstanceID and CreatedAt should be unchanged,
+	// proving the service was updated in-place (config.yaml regenerated) rather
+	// than deleted and recreated.
+	assert.Equal(t, serviceInstanceID, db.ServiceInstances[0].ServiceInstanceID, "Service instance ID should be unchanged (not recreated)")
+	assert.Equal(t, createdAtBefore, db.ServiceInstances[0].CreatedAt, "Service created_at should be unchanged (not recreated)")
+
+	t.Logf("Service instance %s updated in-place after config change", serviceInstanceID)
+	t.Log("MCP service config update test completed successfully")
+}
+
 // TestUpdateDatabaseRemoveService tests removing a service from a database.
 func TestUpdateDatabaseRemoveService(t *testing.T) {
 	t.Parallel()

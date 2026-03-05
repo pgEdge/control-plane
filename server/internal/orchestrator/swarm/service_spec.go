@@ -9,7 +9,11 @@ import (
 	"github.com/docker/docker/api/types/swarm"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/docker"
 )
+
+// mcpContainerUID is the UID of the MCP container user.
+const mcpContainerUID = 1001
 
 // ServiceContainerSpecOptions contains all parameters needed to build a service container spec.
 type ServiceContainerSpecOptions struct {
@@ -29,6 +33,8 @@ type ServiceContainerSpecOptions struct {
 	DatabasePort int
 	// Service port configuration
 	Port *int
+	// DataPath is the host-side directory path for the bind mount
+	DataPath string
 }
 
 // ServiceContainerSpec builds a Docker Swarm service spec for a service instance.
@@ -65,9 +71,6 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		},
 	}
 
-	// Build environment variables for database connection and LLM config
-	env := buildServiceEnvVars(opts)
-
 	// Get container image (already resolved in ServiceImage)
 	image := opts.ServiceImage.Tag
 
@@ -88,13 +91,21 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		}
 	}
 
+	// Build bind mount for config/auth files
+	mounts := []mount.Mount{
+		docker.BuildMount(opts.DataPath, "/app/data", false),
+	}
+
 	return swarm.ServiceSpec{
 		TaskTemplate: swarm.TaskSpec{
 			ContainerSpec: &swarm.ContainerSpec{
 				Image:    image,
 				Labels:   labels,
 				Hostname: opts.Hostname,
-				Env:      env,
+				User:     fmt.Sprintf("%d", mcpContainerUID),
+				// override the default container entrypoint so we can specify path to config on bind mount
+				Command: []string{"/app/pgedge-postgres-mcp"},
+				Args:    []string{"-config", "/app/data/config.yaml"},
 				Healthcheck: &container.HealthConfig{
 					Test:        []string{"CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"},
 					StartPeriod: time.Second * 30,
@@ -102,7 +113,7 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 					Timeout:     time.Second * 5,
 					Retries:     3,
 				},
-				Mounts: []mount.Mount{}, // No persistent volumes for services in Phase 1
+				Mounts: mounts,
 			},
 			Networks: networks,
 			Placement: &swarm.Placement{
@@ -121,57 +132,6 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 			Labels: labels,
 		},
 	}, nil
-}
-
-// buildServiceEnvVars constructs environment variables for the service container.
-func buildServiceEnvVars(opts *ServiceContainerSpecOptions) []string {
-	env := []string{
-		// Database connection
-		fmt.Sprintf("PGHOST=%s", opts.DatabaseHost),
-		fmt.Sprintf("PGPORT=%d", opts.DatabasePort),
-		fmt.Sprintf("PGDATABASE=%s", opts.DatabaseName),
-		"PGSSLMODE=prefer",
-
-		// Service metadata
-		fmt.Sprintf("PGEDGE_SERVICE_ID=%s", opts.ServiceSpec.ServiceID),
-		fmt.Sprintf("PGEDGE_DATABASE_ID=%s", opts.DatabaseID),
-	}
-
-	// Add credentials if provided
-	if opts.Credentials != nil {
-		env = append(env,
-			fmt.Sprintf("PGUSER=%s", opts.Credentials.Username),
-			fmt.Sprintf("PGPASSWORD=%s", opts.Credentials.Password),
-		)
-	}
-
-	// LLM configuration from serviceSpec.Config
-	if provider, ok := opts.ServiceSpec.Config["llm_provider"].(string); ok {
-		env = append(env, fmt.Sprintf("PGEDGE_LLM_PROVIDER=%s", provider))
-	}
-	if model, ok := opts.ServiceSpec.Config["llm_model"].(string); ok {
-		env = append(env, fmt.Sprintf("PGEDGE_LLM_MODEL=%s", model))
-	}
-
-	// Provider-specific API keys
-	if provider, ok := opts.ServiceSpec.Config["llm_provider"].(string); ok {
-		switch provider {
-		case "anthropic":
-			if key, ok := opts.ServiceSpec.Config["anthropic_api_key"].(string); ok {
-				env = append(env, fmt.Sprintf("PGEDGE_ANTHROPIC_API_KEY=%s", key))
-			}
-		case "openai":
-			if key, ok := opts.ServiceSpec.Config["openai_api_key"].(string); ok {
-				env = append(env, fmt.Sprintf("PGEDGE_OPENAI_API_KEY=%s", key))
-			}
-		case "ollama":
-			if url, ok := opts.ServiceSpec.Config["ollama_url"].(string); ok {
-				env = append(env, fmt.Sprintf("PGEDGE_OLLAMA_URL=%s", url))
-			}
-		}
-	}
-
-	return env
 }
 
 // buildServicePortConfig builds port configuration for service containers.
