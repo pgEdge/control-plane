@@ -1,18 +1,52 @@
 # Running the Control Plane locally
 
+- [Running the Control Plane locally](#running-the-control-plane-locally)
+  - [Common prerequisites](#common-prerequisites)
+  - [Developing the Swarm orchestrator](#developing-the-swarm-orchestrator)
+    - [Prerequisites](#prerequisites)
+      - [Configuration](#configuration)
+    - [Running the Control Plane](#running-the-control-plane)
+    - [Interact with the Control Plane API](#interact-with-the-control-plane-api)
+    - [Resetting your Development Environment](#resetting-your-development-environment)
+    - [Development Workflow](#development-workflow)
+      - [Rebuilding the `pgedge-control-plane` binary](#rebuilding-the-pgedge-control-plane-binary)
+      - [Debugging](#debugging)
+    - [API Documentation](#api-documentation)
+  - [Optional Development Tools](#optional-development-tools)
+    - [Restish](#restish)
+    - [`dev-env.zsh` Script](#dev-envzsh-script)
+    - [Bruno](#bruno)
+      - [Bruno's `wait_for_task` Helper](#brunos-wait_for_task-helper)
+      - [When Should I Add to the Test Scenarios?](#when-should-i-add-to-the-test-scenarios)
+  - [Developing the SystemD orchestrator](#developing-the-systemd-orchestrator)
+    - [Prerequisites](#prerequisites-1)
+      - [`pipx`](#pipx)
+      - [Circus](#circus)
+      - [Ansible](#ansible)
+      - [Lima](#lima)
+    - [Running the Control Plane](#running-the-control-plane-1)
+    - [Resetting your Development Environment](#resetting-your-development-environment-1)
+
+## Common prerequisites
+
+- Go >= 1.25
+  - [Official download page](https://go.dev/doc/install)
+- Restish
+  - [Official installation guide](https://rest.sh/#/guide)
+  - See the [Restish](#restish) section below for usage and configuration
+
+## Developing the Swarm orchestrator
+
 The `docker/control-plane-dev` directory contains configuration for a six-host
 Control Plane cluster that runs in Docker via Docker Compose.
 
-## Prerequisites
+### Prerequisites
 
 Before deploying the Control Plane in a development environment, you must install:
 
-* Docker Desktop - for details, visit the [official download page](https://www.docker.com/products/docker-desktop/).
+- Docker Desktop - for details, visit the [official download page](https://www.docker.com/products/docker-desktop/).
 
-* Go 1.20 + - for details, visit the [official download page](https://go.dev/doc/install)
-
-
-### Configuration
+#### Configuration
 
 After meeting prerequisites on your system, make sure to change the settings to
 provide adequate [disk space, CPU, and RAM](https://docs.docker.com/desktop/settings-and-maintenance/settings/#resources). Use the following as a baseline configuration:
@@ -25,6 +59,184 @@ provide adequate [disk space, CPU, and RAM](https://docs.docker.com/desktop/sett
 > [!IMPORTANT]
 > Our Docker Compose configuration uses host networking, so you must also enable
 > [the host networking setting](https://docs.docker.com/engine/network/drivers/host/#docker-desktop).
+
+### Running the Control Plane
+
+To start the Control Plane instances, navigate into the `control-plane` repository root and run:
+
+```sh
+make dev-watch
+```
+
+This will build a `pgedge-control-plane` binary, build the Docker image in
+`docker/control-plane-dev`, and run the Docker Compose configuration in `watch`
+mode. See the [Development workflow](#development-workflow) section to learn how
+to use this setup for development.
+
+### Interact with the Control Plane API
+
+Now, you should be able to interact with the API using Restish. For example, to
+initialize a new cluster and create a new database:
+
+```sh
+# If you're using the dev-env.zsh script, you can initialize the cluster and
+# join all hosts with one command:
+cp-init
+
+# If you're not using the dev-env.zsh script:
+restish control-plane-local-1 init-cluster
+restish control-plane-local-2 join-cluster "$(restish control-plane-local-1 get-join-token)"
+restish control-plane-local-3 join-cluster "$(restish control-plane-local-1 get-join-token)"
+restish control-plane-local-4 join-cluster "$(restish control-plane-local-1 get-join-token)"
+restish control-plane-local-5 join-cluster "$(restish control-plane-local-1 get-join-token)"
+restish control-plane-local-6 join-cluster "$(restish control-plane-local-1 get-join-token)"
+
+# If you're using the dev-env.zsh scripts:
+cp1-req create-database '{
+  "id": "storefront",
+  "spec": {
+    "database_name": "storefront",
+    "database_users": [
+      {
+        "username": "admin",
+        "password": "password",
+        "db_owner": true,
+        "attributes": ["SUPERUSER", "LOGIN"]
+      },
+      {
+        "username": "app",
+        "password": "password",
+        "attributes": ["LOGIN"],
+        "roles": ["pgedge_application"]
+      }
+    ],
+    "nodes": [
+      { "name": "n1", "host_ids": ["host-1", "host-4"] },
+      { "name": "n2", "host_ids": ["host-2", "host-5"] },
+      { "name": "n3", "host_ids": ["host-3", "host-6"] }
+    ]
+  }
+}'
+
+# If you're not using the dev-env.zsh script:
+restish control-plane-local-1 create-database '{
+  "id": "storefront",
+  "spec": {
+    "database_name": "storefront",
+    "database_users": [
+      {
+        "username": "admin",
+        "password": "password",
+        "db_owner": true,
+        "attributes": ["SUPERUSER", "LOGIN"]
+      },
+      {
+        "username": "app",
+        "password": "password",
+        "attributes": ["LOGIN"],
+        "roles": ["pgedge_application"]
+      }
+    ],
+    "nodes": [
+      { "name": "n1", "host_ids": ["host-1", "host-4"] },
+      { "name": "n2", "host_ids": ["host-2", "host-5"] },
+      { "name": "n3", "host_ids": ["host-3", "host-6"] }
+    ]
+  }
+}'
+```
+
+The API is under active development. You can find the current set of endpoints
+in:
+
+- the autogenerated help text in `restish`: `restish control-plane-local-1 --help`.
+- the Go source of the API specification in `api/apiv1/design`.
+- the generated OpenAPI spec in `api/apiv1/gen/http/openapi.yaml`.
+
+Endpoints that are unimplemented will return a `not implemented` error.
+
+### Resetting your Development Environment
+
+To reset your environment to its initial state, run:
+
+```
+make dev-teardown
+```
+
+This will:
+
+- shutdown the control plane.
+- remove any databases and database networks.
+- remove the data directories for each instance.
+
+When you start the control plane again with `make dev-watch`, it will be in an
+uninitialized state. Then, you can follow the instructions in the
+[Interact with the Control Plane API](#interact-with-the-control-plane-api)
+section to reinitialize your cluster.
+
+### Development Workflow
+
+The following sections detail the steps in the development process.
+
+#### Rebuilding the `pgedge-control-plane` binary
+
+The Docker Compose file is configured to watch for changes to the
+`pgedge-control-plane` binary. You can update the binary in the running
+containers by running:
+
+```sh
+make dev-build
+```
+
+You'll see messages in the docker compose output to indicate that it's stopping
+the containers, syncing the files, and then starting them up again. This takes
+about 10 seconds due to the graceful shutdown in the Control Plane server.
+
+#### Debugging
+
+The `control-plane-dev` image includes the Delve Go debugger. You can run the
+debugger by adding the `DEBUG` environment variable to the `make dev-watch`
+command:
+
+```sh
+DEBUG=1 make dev-watch
+```
+
+This will run the debugger in the `host-1` Control Plane container. The debugger
+will wait until you've attached to it before starting the Control Plane server.
+This is an example remote debugging configuration for VSCode:
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Docker debug",
+      "type": "go",
+      "request": "attach",
+      "mode": "remote",
+      "remotePath": "${workspaceFolder}",
+      "port": 2345,
+      "host": "localhost", 
+    }
+  ]
+}
+```
+
+After attaching the debugger, the server will start normally.
+
+### API Documentation
+
+The `docker-compose.yaml` file for this configuration includes an API
+documentation server. You can access the documentation in your browser at
+http://localhost:8999.
+
+This uses the OpenAPI spec from the `api/apiv1/gen` directory and generates the
+documentation on the client side. When you regenerate the OpenAPI spec, for
+example by running `make -C api generate`, you only need to refresh the page to
+see the updates.
+
+## Optional Development Tools
 
 ### Restish
 
@@ -56,7 +268,9 @@ After installing Restish, use the following command to verify the installation a
 restish --help
 ```
 
-On MacOS, the full path to the Restish configuration file is `~/Library/Application Support/restish/apis.json`. See [the configuration documentation](https://rest.sh/#/configuration) to find the configuration file location for non-MacOS systems. Update the configuration file to contain the following details for the Control Plane deployment:
+If you're a Zsh user, we strongly recommend using the [`dev-env.zsh`](#dev-envzsh-script), which will configure Restish for you and add helpful wrappers and aliases to your shell environment.
+
+If you choose not use the `dev-env.zsh` script, you can configure Restish manually. On macOS, the full path to the Restish configuration file is `~/Library/Application Support/restish/apis.json`. See [the configuration documentation](https://rest.sh/#/configuration) to find the configuration file location for non-macOS systems. Update the configuration file to contain the following details for the Control Plane deployment:
 
 ```json
 {
@@ -118,151 +332,6 @@ On MacOS, the full path to the Restish configuration file is `~/Library/Applicat
 }
 ```
 
-## Running the Control Plane
-
-To start the Control Plane instances, navigate into the `control-plane`
-repository root and run:
-
-```sh
-make dev-watch
-```
-
-This will build a `pgedge-control-plane` binary, build the Docker image in
-`docker/control-plane-dev`, and run the Docker Compose configuration in `watch`
-mode. See the [Development workflow](#development-workflow) section to learn how
-to use this setup for development.
-
-## Interact with the Control Plane API
-
-Now, you should be able to interact with the API using Restish. For example, to
-initialize a new cluster and create a new database:
-
-```sh
-restish control-plane-local-1 init-cluster
-restish control-plane-local-2 join-cluster "$(restish control-plane-local-1 get-join-token)"
-restish control-plane-local-3 join-cluster "$(restish control-plane-local-1 get-join-token)"
-restish control-plane-local-4 join-cluster "$(restish control-plane-local-1 get-join-token)"
-restish control-plane-local-5 join-cluster "$(restish control-plane-local-1 get-join-token)"
-restish control-plane-local-6 join-cluster "$(restish control-plane-local-1 get-join-token)"
-restish control-plane-local-1 create-database '{
-  "id": "storefront",
-  "spec": {
-    "database_name": "storefront",
-    "database_users": [
-      {
-        "username": "admin",
-        "password": "password",
-        "db_owner": true,
-        "attributes": ["SUPERUSER", "LOGIN"]
-      },
-      {
-        "username": "app",
-        "password": "password",
-        "attributes": ["LOGIN"],
-        "roles": ["pgedge_application"]
-      }
-    ],
-    "nodes": [
-      { "name": "n1", "host_ids": ["host-1", "host-4"] },
-      { "name": "n2", "host_ids": ["host-2", "host-5"] },
-      { "name": "n3", "host_ids": ["host-3", "host-6"] }
-    ]
-  }
-}'
-```
-
-The API is under active development. You can find the current set of endpoints
-in:
-
-- the autogenerated help text in `restish`: `restish control-plane-local-1 --help`.
-- the Go source of the API specification in `api/apiv1/design`.
-- the generated OpenAPI spec in `api/apiv1/gen/http/openapi.yaml`.
-
-Endpoints that are unimplemented will return a `not implemented` error.
-
-## Resetting your Development Environment
-
-To reset your environment to its initial state, run:
-
-```
-make dev-teardown
-```
-
-This will:
-
-- shutdown the control plane.
-- remove any databases and database networks.
-- remove the data directories for each instance.
-
-When you start the control plane again with `make dev-watch`, it will be in an
-uninitialized state. Then, you can follow the instructions in the
-[Interact with the Control Plane API](#interact-with-the-control-plane-api)
-section to reinitialize your cluster.
-
-## Development Workflow
-
-The following sections detail the steps in the development process.
-
-### Rebuilding the `pgedge-control-plane` binary
-
-The Docker Compose file is configured to watch for changes to the
-`pgedge-control-plane` binary. You can update the binary in the running
-containers by running:
-
-```sh
-make dev-build
-```
-
-You'll see messages in the docker compose output to indicate that it's stopping
-the containers, syncing the files, and then starting them up again. This takes
-about 10 seconds due to the graceful shutdown in the Control Plane server.
-
-### Debugging
-
-The `control-plane-dev` image includes the Delve Go debugger. You can run the
-debugger by adding the `DEBUG` environment variable to the `make dev-watch`
-command:
-
-```sh
-DEBUG=1 make dev-watch
-```
-
-This will run the debugger in the `host-1` Control Plane container. The debugger
-will wait until you've attached to it before starting the Control Plane server.
-This is an example remote debugging configuration for VSCode:
-
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Docker debug",
-      "type": "go",
-      "request": "attach",
-      "mode": "remote",
-      "remotePath": "${workspaceFolder}",
-      "port": 2345,
-      "host": "localhost", 
-    }
-  ]
-}
-```
-
-After attaching the debugger, the server will start normally.
-
-## API Documentation
-
-The `docker-compose.yaml` file for this configuration includes an API
-documentation server. You can access the documentation in your browser at
-http://localhost:8999.
-
-This uses the OpenAPI spec from the `api/apiv1/gen` directory and generates the
-documentation on the client side. When you regenerate the OpenAPI spec, for
-example by running `make -C api generate`, you only need to refresh the page to
-see the updates.
-
-## Optional Development Tools
-
 The tools listed below may be helpful in your development environment.
 
 ### `dev-env.zsh` Script
@@ -284,7 +353,7 @@ Bruno client.
 
 We recommend using the standalone Bruno API client rather than the VSCode
 extension because we make extensive use of the developer console. If you're
-using MacOS, you can install Bruno through HomeBrew:
+using macOS, you can install Bruno through HomeBrew:
 
 ```
 brew install bruno
@@ -311,3 +380,83 @@ develop and test changes. They can also be helpful for reviewers who need to
 test your changes. Consider adding new requests or scenarios if you find
 yourself repeating the same sequence of requests during development, and those
 requests aren't already covered by an existing scenarios.
+
+## Developing the SystemD orchestrator
+
+### Prerequisites
+
+#### `pipx`
+
+`pipx` is a tool that runs Python programs in isolated environments. It's the
+recommended way to run Ansible, which we use to deploy the test fixtures.
+
+[Homepage](https://pipx.pypa.io/stable/)
+
+```sh
+brew install pipx
+pipx ensurepath
+sudo pipx ensurepath --global # optional to allow pipx actions with --global argument
+```
+
+Be sure to restart your terminal session after running the `ensurepath` commands
+so that the profile changes take effect.
+
+#### Circus
+
+Circus is a process monitor, similar to Supervisord. We use it to manage the Control Plane server processes and stream their log output to the terminal.
+
+[Homepage](https://circus.readthedocs.io/en/latest/)
+
+```sh
+pipx install --include-deps circus
+```
+
+#### Ansible
+
+We're using Ansible to configure the test fixtures and install the Control Plane
+and other software on them.
+
+[Installation instructions
+page](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+
+```sh
+pipx install --include-deps ansible
+pipx inject ansible 'botocore>=1.34.0'
+pipx inject ansible 'boto3>=1.34.0'
+```
+
+#### Lima
+
+Lima is an easy-to-use virtual machine runner that works well on macOS.
+
+```sh
+# Installation through homebrew
+
+brew install lima
+```
+
+### Running the Control Plane
+
+To run the Control Plane, start by deploying the Lima virtual machines where we'll run the Control Plane servers:
+
+```sh
+make dev-lima-deploy
+```
+
+Note that this may take a while to create, configure, and install the pre-requisites. Once this command exits, you can build and run the Control Plane servers with:
+
+```sh
+make dev-lima-run
+```
+
+If you're using the `dev-env.zsh` script, make sure to run `use-dev-lima` to switch your environment and setup the `cp-*` aliases.
+
+At this point, you can interact with the Control Plane servers using the same commands described above in [Interact with the Control Plane API](#interact-with-the-control-plane-api).
+
+### Resetting your Development Environment
+
+To reset this environment to its initial state, stop the servers by hitting `ctrl+c` in the terminal where you ran `make dev-lima-run`. Then, run the following to stop and remove all databases and Control Plane data:
+
+```sh
+make dev-lima-reset
+```

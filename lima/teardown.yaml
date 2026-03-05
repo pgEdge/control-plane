@@ -1,0 +1,6 @@
+---
+- name: Teardown VMs
+  hosts: localhost
+  become: false
+  roles:
+    - role: teardown_vms

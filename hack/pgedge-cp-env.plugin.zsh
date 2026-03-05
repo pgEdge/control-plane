@@ -6,6 +6,7 @@ ZSH_THEME_PGEDGE_CP_ENV_PROMPT_PREFIX='cp-env:('
 ZSH_THEME_PGEDGE_CP_ENV_PROMPT_SUFFIX=')'
 
 ZSH_THEME_PGEDGE_CP_ENV_PROMPT_COMPOSE_STYLE="%{$fg_bold[green]%}"
+ZSH_THEME_PGEDGE_CP_ENV_PROMPT_DEV_LIMA_STYLE="%{$fg_bold[green]%}"
 ZSH_THEME_PGEDGE_CP_ENV_PROMPT_LIMA_STYLE="%{$fg_bold[cyan]%}"
 ZSH_THEME_PGEDGE_CP_ENV_PROMPT_EC2_STYLE="%{$fg_bold[yellow]%}"
 ZSH_THEME_PGEDGE_CP_ENV_PROMPT_OTHER_STYLE="%{$fg_bold[magenta]%}"
@@ -24,6 +25,9 @@ pgedge_cp_env_prompt_info() {
     case "${CP_ENV}" in
         compose)
             style="${ZSH_THEME_PGEDGE_CP_ENV_PROMPT_COMPOSE_STYLE}"
+            ;;
+        dev-lima)
+            style="${ZSH_THEME_PGEDGE_CP_ENV_PROMPT_DEV_LIMA_STYLE}"
             ;;
         lima)
             style="${ZSH_THEME_PGEDGE_CP_ENV_PROMPT_LIMA_STYLE}"

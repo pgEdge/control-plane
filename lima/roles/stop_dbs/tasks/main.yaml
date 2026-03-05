@@ -1,0 +1,39 @@
+---
+- name: Reset failed services
+  ansible.builtin.command: systemctl reset-failed
+  changed_when: false
+
+- name: Populate service facts
+  ansible.builtin.service_facts:
+
+- name: Stop and disable all patroni services
+  loop: "{{ ansible_facts['services'].values()
+    | selectattr('source', 'equalto', 'systemd')
+    | rejectattr('status', 'equalto', 'not-found')
+    | rejectattr('status', 'equalto', 'bad')
+    | selectattr('name', 'match', '^patroni-')
+    | list }}"
+  ansible.builtin.systemd_service:
+    name: '{{ item.name }}'
+    state: stopped
+    enabled: false
+
+- name: Find leftover patroni unit files
+  ansible.builtin.find:
+    paths: /etc/systemd/system
+    patterns: 'patroni-*.service'
+
+  register: files_to_delete
+
+- name: Delete leftover patroni unit files
+  ansible.builtin.file:
+    path: '{{ item.path }}'
+    state: absent
+  loop: '{{ files_to_delete.files }}'
+  loop_control:
+    label: '{{ item.path }}'
+  when: files_to_delete.matched > 0
+
+- name: Reload systemd
+  ansible.builtin.command: systemctl daemon-reload
+  changed_when: false
