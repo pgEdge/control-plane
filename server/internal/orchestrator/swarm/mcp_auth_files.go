@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/yaml.v3"
 )
 
 // mcpTokenStore mirrors the MCP server's TokenStore YAML format.

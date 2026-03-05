@@ -3,8 +3,8 @@ package swarm
 import (
 	"fmt"
 
+	"github.com/goccy/go-yaml"
 	"github.com/pgEdge/control-plane/server/internal/database"
-	"gopkg.in/yaml.v3"
 )
 
 // mcpYAMLConfig mirrors the MCP server's Config struct for YAML generation.

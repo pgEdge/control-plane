@@ -3,8 +3,8 @@ package swarm
 import (
 	"testing"
 
+	"github.com/goccy/go-yaml"
 	"github.com/pgEdge/control-plane/server/internal/database"
-	"gopkg.in/yaml.v3"
 )
 
 func strPtr(s string) *string { return &s }
