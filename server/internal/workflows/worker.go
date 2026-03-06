@@ -10,6 +10,8 @@ import (
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
+
+	"github.com/pgEdge/control-plane/server/internal/logging"
 )
 
 var _ do.Shutdownable = (*Worker)(nil)
@@ -26,7 +28,7 @@ type Worker struct {
 	cancel    context.CancelFunc
 }
 
-func NewWorker(logger zerolog.Logger, be backend.Backend, workflows *Workflows, orch Orchestrator) (*Worker, error) {
+func NewWorker(loggerFactory *logging.Factory, be backend.Backend, workflows *Workflows, orch Orchestrator) (*Worker, error) {
 	queues, err := orch.WorkerQueues()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get worker queues: %w", err)
@@ -44,9 +46,7 @@ func NewWorker(logger zerolog.Logger, be backend.Backend, workflows *Workflows, 
 	}
 
 	return &Worker{
-		logger: logger.With().
-			Str("component", "workflows_worker").
-			Logger(),
+		logger:    loggerFactory.Logger("workflows_worker"),
 		worker:    w,
 		workflows: workflows,
 	}, nil

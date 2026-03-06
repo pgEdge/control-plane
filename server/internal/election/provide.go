@@ -1,10 +1,11 @@
 package election
 
 import (
-	"github.com/pgEdge/control-plane/server/internal/config"
-	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	clientv3 "go.etcd.io/etcd/client/v3"
+
+	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/logging"
 )
 
 func Provide(i *do.Injector) {
@@ -32,10 +33,10 @@ func provideService(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		logger, err := do.Invoke[zerolog.Logger](i)
+		loggerFactory, err := do.Invoke[*logging.Factory](i)
 		if err != nil {
 			return nil, err
 		}
-		return NewService(store, logger), nil
+		return NewService(store, loggerFactory), nil
 	})
 }

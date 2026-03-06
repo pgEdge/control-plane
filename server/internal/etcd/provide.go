@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/grpclog"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/logging"
 )
 
 func Provide(i *do.Injector) {
@@ -30,12 +31,12 @@ func provideClient(i *do.Injector) {
 }
 
 // newEtcdForMode creates an Etcd instance based on the specified mode.
-func newEtcdForMode(mode config.EtcdMode, cfg *config.Manager, logger zerolog.Logger) (Etcd, error) {
+func newEtcdForMode(mode config.EtcdMode, cfg *config.Manager, loggerFactory *logging.Factory) (Etcd, error) {
 	switch mode {
 	case config.EtcdModeServer:
-		return NewEmbeddedEtcd(cfg, logger), nil
+		return NewEmbeddedEtcd(cfg, loggerFactory), nil
 	case config.EtcdModeClient:
-		return NewRemoteEtcd(cfg, logger), nil
+		return NewRemoteEtcd(cfg, loggerFactory), nil
 	default:
 		return nil, fmt.Errorf("invalid etcd mode: %s", mode)
 	}
@@ -48,6 +49,10 @@ func provideEtcd(i *do.Injector) {
 			return nil, err
 		}
 		logger, err := do.Invoke[zerolog.Logger](i)
+		if err != nil {
+			return nil, err
+		}
+		loggerFactory, err := do.Invoke[*logging.Factory](i)
 		if err != nil {
 			return nil, err
 		}
@@ -71,7 +76,7 @@ func provideEtcd(i *do.Injector) {
 
 		switch {
 		case oldMode == "" || oldMode == newMode:
-			etcd, err := newEtcdForMode(newMode, cfg, logger)
+			etcd, err := newEtcdForMode(newMode, cfg, loggerFactory)
 			if err != nil {
 				return nil, err
 			}
@@ -90,10 +95,10 @@ func provideEtcd(i *do.Injector) {
 
 			return etcd, nil
 		case oldMode == config.EtcdModeServer && newMode == config.EtcdModeClient:
-			embedded := NewEmbeddedEtcd(cfg, logger)
+			embedded := NewEmbeddedEtcd(cfg, loggerFactory)
 			return embedded.ChangeMode(ctx, newMode)
 		case oldMode == config.EtcdModeClient && newMode == config.EtcdModeServer:
-			remote := NewRemoteEtcd(cfg, logger)
+			remote := NewRemoteEtcd(cfg, loggerFactory)
 			return remote.ChangeMode(ctx, newMode)
 		default:
 			return nil, fmt.Errorf("unsupported etcd mode transition: %s -> %s", oldMode, newMode)

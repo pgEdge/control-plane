@@ -34,8 +34,9 @@ func validateOptionalID(name, value string) error {
 }
 
 type Logging struct {
-	Level  string `koanf:"level" json:"level,omitempty"`
-	Pretty bool   `koanf:"pretty" json:"pretty,omitempty"`
+	Level           string            `koanf:"level" json:"level,omitempty"`
+	Pretty          bool              `koanf:"pretty" json:"pretty,omitempty"`
+	ComponentLevels map[string]string `koanf:"component_levels" json:"component_levels,omitempty"`
 }
 
 func (l Logging) validate() []error {
