@@ -41,6 +41,7 @@ type Node struct {
 	HostIDs          []string          `json:"host_ids"`
 	PostgresVersion  string            `json:"postgres_version"`
 	Port             *int              `json:"port"`
+	PatroniPort      *int              `json:"patroni_port"`
 	CPUs             float64           `json:"cpus"`
 	MemoryBytes      uint64            `json:"memory"`
 	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
@@ -59,6 +60,7 @@ func (n *Node) Clone() *Node {
 		HostIDs:          slices.Clone(n.HostIDs),
 		PostgresVersion:  n.PostgresVersion,
 		Port:             n.Port,
+		PatroniPort:      n.PatroniPort,
 		CPUs:             n.CPUs,
 		MemoryBytes:      n.MemoryBytes,
 		PostgreSQLConf:   maps.Clone(n.PostgreSQLConf),
@@ -285,6 +287,7 @@ type Spec struct {
 	PostgresVersion  string            `json:"postgres_version"`
 	SpockVersion     string            `json:"spock_version"`
 	Port             *int              `json:"port"`
+	PatroniPort      *int              `json:"patroni_port"`
 	CPUs             float64           `json:"cpus"`
 	MemoryBytes      uint64            `json:"memory"`
 	Nodes            []*Node           `json:"nodes"`
@@ -371,6 +374,7 @@ func (s *Spec) Clone() *Spec {
 		PostgresVersion:  s.PostgresVersion,
 		SpockVersion:     s.SpockVersion,
 		Port:             s.Port,
+		PatroniPort:      s.PatroniPort,
 		CPUs:             s.CPUs,
 		MemoryBytes:      s.MemoryBytes,
 		PostgreSQLConf:   maps.Clone(s.PostgreSQLConf),
@@ -492,6 +496,7 @@ type InstanceSpec struct {
 	NodeOrdinal      int                 `json:"node_ordinal"`
 	PgEdgeVersion    *host.PgEdgeVersion `json:"pg_edge_version"`
 	Port             *int                `json:"port"`
+	PatroniPort      *int                `json:"patroni_port"`
 	CPUs             float64             `json:"cpus"`
 	MemoryBytes      uint64              `json:"memory"`
 	DatabaseUsers    []*User             `json:"database_users"`
@@ -524,6 +529,7 @@ func (s *InstanceSpec) Clone() *InstanceSpec {
 		NodeOrdinal:      s.NodeOrdinal,
 		PgEdgeVersion:    s.PgEdgeVersion.Clone(),
 		Port:             utils.ClonePointer(s.Port),
+		PatroniPort:      utils.ClonePointer(s.PatroniPort),
 		CPUs:             s.CPUs,
 		MemoryBytes:      s.MemoryBytes,
 		DatabaseUsers:    users,
@@ -594,6 +600,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				NodeOrdinal:      nodeOrdinal,
 				PgEdgeVersion:    nodeVersion,
 				Port:             overridableValue(s.Port, node.Port),
+				PatroniPort:      overridableValue(s.PatroniPort, node.PatroniPort),
 				CPUs:             overridableValue(s.CPUs, node.CPUs),
 				MemoryBytes:      overridableValue(s.MemoryBytes, node.MemoryBytes),
 				DatabaseUsers:    s.DatabaseUsers,

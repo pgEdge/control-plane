@@ -95,6 +95,66 @@ func TestValidateMemory(t *testing.T) {
 	}
 }
 
+func TestValidatePorts(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		postgresPort *int
+		patroniPort  *int
+		expected     string
+	}{
+		{
+			name:         "both nil",
+			postgresPort: nil,
+			patroniPort:  nil,
+		},
+		{
+			name:         "postgres port nil",
+			postgresPort: nil,
+			patroniPort:  utils.PointerTo(8888),
+		},
+		{
+			name:         "patroni port nil",
+			postgresPort: utils.PointerTo(8888),
+			patroniPort:  nil,
+		},
+		{
+			name:         "both zero",
+			postgresPort: utils.PointerTo(0),
+			patroniPort:  utils.PointerTo(0),
+		},
+		{
+			name:         "postgres port zero",
+			postgresPort: nil,
+			patroniPort:  utils.PointerTo(0),
+		},
+		{
+			name:         "patroni port zero",
+			postgresPort: utils.PointerTo(0),
+			patroniPort:  nil,
+		},
+		{
+			name:         "both defined non-equal",
+			postgresPort: utils.PointerTo(5432),
+			patroniPort:  utils.PointerTo(8888),
+		},
+		{
+			name:         "conflicting",
+			postgresPort: utils.PointerTo(5432),
+			patroniPort:  utils.PointerTo(5432),
+			expected:     "postgres and patroni ports must not conflict",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validatePorts(tc.postgresPort, tc.patroniPort, nil)
+			if tc.expected == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorContains(t, err, tc.expected)
+			}
+		})
+	}
+}
+
 func TestValidateRepoProperties(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
@@ -628,8 +688,10 @@ func TestValidateDatabaseSpec(t *testing.T) {
 		{
 			name: "invalid",
 			spec: &api.DatabaseSpec{
-				Cpus:   utils.PointerTo("0.00001"),
-				Memory: utils.PointerTo("%^&*"),
+				Cpus:        utils.PointerTo("0.00001"),
+				Memory:      utils.PointerTo("%^&*"),
+				Port:        utils.PointerTo(5432),
+				PatroniPort: utils.PointerTo(5432),
 				Nodes: []*api.DatabaseNodeSpec{
 					{
 						Name: "n1",
@@ -639,7 +701,9 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						},
 					},
 					{
-						Name: "n2",
+						Name:        "n2",
+						Port:        utils.PointerTo(8888),
+						PatroniPort: utils.PointerTo(8888),
 						HostIds: []api.Identifier{
 							api.Identifier("host-2"),
 						},
@@ -673,6 +737,8 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				"nodes[2]: node names must be unique within a database",
 				"backup_config.repositories[0].base_path: base_path must be absolute for posix repositories",
 				"restore_config.repository.base_path: base_path must be absolute for posix repositories",
+				"port: postgres and patroni ports must not conflict",
+				"nodes[1].port: postgres and patroni ports must not conflict",
 			},
 		},
 	} {
