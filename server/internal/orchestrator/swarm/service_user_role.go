@@ -112,11 +112,48 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 	}
 	r.Password = password
 
-	conn, err := r.connectToPrimary(ctx, rc, logger)
+	// Retry the entire user creation to handle transient "tuple concurrently
+	// updated" (SQLSTATE XX000) errors. These occur when multiple service user
+	// roles are created concurrently on the same Postgres instance and their
+	// GRANT statements modify overlapping system catalog tuples.
+	err = utils.Retry(3, 500*time.Millisecond, func() error {
+		return r.createUserRole(ctx, rc, logger)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create service user role: %w", err)
+	}
+
+	logger.Info().Str("username", r.Username).Msg("service user role created successfully")
+	return nil
+}
+
+func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Context, logger zerolog.Logger) error {
+	// Connect to the application database (not "postgres") so that Spock's
+	// repair mode can be enabled — Spock is installed per-database.
+	conn, err := r.connectToPrimary(ctx, rc, logger, r.DatabaseName)
 	if err != nil {
 		return err
 	}
 	defer conn.Close(ctx)
+
+	// Use a transaction with Spock repair mode to prevent replication conflicts
+	// in multi-node database topologies where Spock would otherwise replicate
+	// the role/grant DDL to other nodes.
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	enabled, err := postgres.IsSpockEnabled().Scalar(ctx, tx)
+	if err != nil {
+		return fmt.Errorf("failed to check if spock is enabled: %w", err)
+	}
+	if enabled {
+		if err := postgres.EnableRepairMode().Exec(ctx, tx); err != nil {
+			return fmt.Errorf("failed to enable repair mode: %w", err)
+		}
+	}
 
 	// Create the role with LOGIN but no inherited roles. We grant permissions
 	// directly rather than using pgedge_application_read_only because that role
@@ -134,7 +171,7 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 		return fmt.Errorf("failed to generate create user role statements: %w", err)
 	}
 
-	if err := statements.Exec(ctx, conn); err != nil {
+	if err := statements.Exec(ctx, tx); err != nil {
 		return fmt.Errorf("failed to create service user: %w", err)
 	}
 
@@ -149,11 +186,14 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 		// Allow viewing PostgreSQL configuration via diagnostic tools
 		postgres.Statement{SQL: fmt.Sprintf("GRANT pg_read_all_settings TO %s;", sanitizeIdentifier(r.Username))},
 	}
-	if err := grants.Exec(ctx, conn); err != nil {
+	if err := grants.Exec(ctx, tx); err != nil {
 		return fmt.Errorf("failed to grant service user permissions: %w", err)
 	}
 
-	logger.Info().Str("username", r.Username).Msg("service user role created successfully")
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit service user creation: %w", err)
+	}
+
 	return nil
 }
 
@@ -174,7 +214,7 @@ func (r *ServiceUserRole) Delete(ctx context.Context, rc *resource.Context) erro
 		Logger()
 	logger.Info().Msg("deleting service user from database")
 
-	conn, err := r.connectToPrimary(ctx, rc, logger)
+	conn, err := r.connectToPrimary(ctx, rc, logger, "postgres")
 	if err != nil {
 		// During deletion, connection failures are non-fatal — the database
 		// may already be gone or unreachable.
@@ -200,7 +240,7 @@ func (r *ServiceUserRole) Delete(ctx context.Context, rc *resource.Context) erro
 // connectToPrimary finds the primary Postgres instance and returns an
 // authenticated connection to it. The caller is responsible for closing
 // the connection.
-func (r *ServiceUserRole) connectToPrimary(ctx context.Context, rc *resource.Context, logger zerolog.Logger) (*pgx.Conn, error) {
+func (r *ServiceUserRole) connectToPrimary(ctx context.Context, rc *resource.Context, logger zerolog.Logger, dbName string) (*pgx.Conn, error) {
 	orch, err := do.Invoke[database.Orchestrator](rc.Injector)
 	if err != nil {
 		return nil, err
@@ -258,7 +298,7 @@ func (r *ServiceUserRole) connectToPrimary(ctx context.Context, rc *resource.Con
 	}
 
 	conn, err := database.ConnectToInstance(ctx, &database.ConnectionOptions{
-		DSN: connInfo.AdminDSN("postgres"),
+		DSN: connInfo.AdminDSN(dbName),
 		TLS: tlsConfig,
 	})
 	if err != nil {
