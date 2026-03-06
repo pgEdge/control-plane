@@ -118,6 +118,25 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 	}
 	defer conn.Close(ctx)
 
+	// Wrap user creation in a transaction with Spock repair mode to prevent
+	// "tuple concurrently updated" errors when multiple instances create the
+	// same user simultaneously and Spock replicates the changes.
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	enabled, err := postgres.IsSpockEnabled().Scalar(ctx, tx)
+	if err != nil {
+		return fmt.Errorf("failed to check if spock is enabled: %w", err)
+	}
+	if enabled {
+		if err := postgres.EnableRepairMode().Exec(ctx, tx); err != nil {
+			return fmt.Errorf("failed to enable repair mode: %w", err)
+		}
+	}
+
 	// Create the role with LOGIN but no inherited roles. We grant permissions
 	// directly rather than using pgedge_application_read_only because that role
 	// includes read access to the spock schema (replication internals) which the
@@ -134,7 +153,7 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 		return fmt.Errorf("failed to generate create user role statements: %w", err)
 	}
 
-	if err := statements.Exec(ctx, conn); err != nil {
+	if err := statements.Exec(ctx, tx); err != nil {
 		return fmt.Errorf("failed to create service user: %w", err)
 	}
 
@@ -149,8 +168,12 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 		// Allow viewing PostgreSQL configuration via diagnostic tools
 		postgres.Statement{SQL: fmt.Sprintf("GRANT pg_read_all_settings TO %s;", sanitizeIdentifier(r.Username))},
 	}
-	if err := grants.Exec(ctx, conn); err != nil {
+	if err := grants.Exec(ctx, tx); err != nil {
 		return fmt.Errorf("failed to grant service user permissions: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit service user creation: %w", err)
 	}
 
 	logger.Info().Str("username", r.Username).Msg("service user role created successfully")
