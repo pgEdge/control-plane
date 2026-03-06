@@ -29,6 +29,39 @@ type ServiceContainerSpecOptions struct {
 	DatabasePort int
 	// Service port configuration
 	Port *int
+	// SwarmConfigID is the Docker Swarm config ID to mount into the container.
+	// When set, the config is mounted at the service-type-specific config path.
+	// Used by services that require a config file (e.g. RAG server).
+	SwarmConfigID string
+}
+
+// serviceHealthCheckPath returns the HTTP health check path for a service type.
+func serviceHealthCheckPath(serviceType string) string {
+	if serviceType == "rag" {
+		return "/v1/health"
+	}
+	return "/health"
+}
+
+// serviceHealthCheckTest returns the Docker health check Test command for a
+// service type. Services whose images include curl use the standard curl check.
+// The RAG server image (RHEL minimal) ships without curl/wget, so it falls back
+// to a bash /dev/tcp TCP connectivity check against port 8080.
+func serviceHealthCheckTest(serviceType string) []string {
+	if serviceType == "rag" {
+		// No curl/wget in the RAG server image — use bash built-in /dev/tcp.
+		return []string{"CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"}
+	}
+	return []string{"CMD-SHELL", fmt.Sprintf("curl -f http://localhost:8080%s || exit 1", serviceHealthCheckPath(serviceType))}
+}
+
+// serviceConfigMountPath returns the path inside the container where the
+// Swarm config should be mounted for a given service type.
+func serviceConfigMountPath(serviceType string) string {
+	if serviceType == "rag" {
+		return "/etc/pgedge/pgedge-rag-server.yaml"
+	}
+	return ""
 }
 
 // ServiceContainerSpec builds a Docker Swarm service spec for a service instance.
@@ -81,22 +114,43 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		}
 	}
 
+	containerSpec := &swarm.ContainerSpec{
+		Image:    image,
+		Labels:   labels,
+		Hostname: opts.Hostname,
+		Env:      env,
+		Healthcheck: &container.HealthConfig{
+			Test:        serviceHealthCheckTest(opts.ServiceSpec.ServiceType),
+			StartPeriod: time.Second * 30,
+			Interval:    time.Second * 10,
+			Timeout:     time.Second * 5,
+			Retries:     3,
+		},
+		Mounts: []mount.Mount{}, // No persistent volumes for services in Phase 1
+	}
+
+	// Mount a Swarm config as a file inside the container when provided.
+	if opts.SwarmConfigID != "" {
+		mountPath := serviceConfigMountPath(opts.ServiceSpec.ServiceType)
+		if mountPath != "" {
+			containerSpec.Configs = []*swarm.ConfigReference{
+				{
+					ConfigID:   opts.SwarmConfigID,
+					ConfigName: fmt.Sprintf("rag-config-%s", opts.ServiceInstanceID),
+					File: &swarm.ConfigReferenceFileTarget{
+						Name: mountPath,
+						UID:  "0",
+						GID:  "0",
+						Mode: 0o444,
+					},
+				},
+			}
+		}
+	}
+
 	return swarm.ServiceSpec{
 		TaskTemplate: swarm.TaskSpec{
-			ContainerSpec: &swarm.ContainerSpec{
-				Image:    image,
-				Labels:   labels,
-				Hostname: opts.Hostname,
-				Env:      env,
-				Healthcheck: &container.HealthConfig{
-					Test:        []string{"CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"},
-					StartPeriod: time.Second * 30,
-					Interval:    time.Second * 10,
-					Timeout:     time.Second * 5,
-					Retries:     3,
-				},
-				Mounts: []mount.Mount{}, // No persistent volumes for services in Phase 1
-			},
+			ContainerSpec: containerSpec,
 			Networks: networks,
 			Placement: &swarm.Placement{
 				Constraints: []string{
@@ -138,32 +192,59 @@ func buildServiceEnvVars(opts *ServiceContainerSpecOptions) []string {
 		)
 	}
 
-	// LLM configuration from serviceSpec.Config
-	if provider, ok := opts.ServiceSpec.Config["llm_provider"].(string); ok {
-		env = append(env, fmt.Sprintf("PGEDGE_LLM_PROVIDER=%s", provider))
-	}
-	if model, ok := opts.ServiceSpec.Config["llm_model"].(string); ok {
-		env = append(env, fmt.Sprintf("PGEDGE_LLM_MODEL=%s", model))
+	switch opts.ServiceSpec.ServiceType {
+	case "rag":
+		env = append(env, buildRAGEnvVars(opts.ServiceSpec.Config)...)
+	default:
+		// MCP and other services: PGEDGE_-prefixed LLM vars
+		env = append(env, buildMCPEnvVars(opts.ServiceSpec.Config)...)
 	}
 
-	// Provider-specific API keys
-	if provider, ok := opts.ServiceSpec.Config["llm_provider"].(string); ok {
+	return env
+}
+
+// buildMCPEnvVars returns PGEDGE_-prefixed LLM env vars for the MCP service.
+func buildMCPEnvVars(config map[string]any) []string {
+	var env []string
+	if provider, ok := config["llm_provider"].(string); ok {
+		env = append(env, fmt.Sprintf("PGEDGE_LLM_PROVIDER=%s", provider))
+	}
+	if model, ok := config["llm_model"].(string); ok {
+		env = append(env, fmt.Sprintf("PGEDGE_LLM_MODEL=%s", model))
+	}
+	if provider, ok := config["llm_provider"].(string); ok {
 		switch provider {
 		case "anthropic":
-			if key, ok := opts.ServiceSpec.Config["anthropic_api_key"].(string); ok {
+			if key, ok := config["anthropic_api_key"].(string); ok {
 				env = append(env, fmt.Sprintf("PGEDGE_ANTHROPIC_API_KEY=%s", key))
 			}
 		case "openai":
-			if key, ok := opts.ServiceSpec.Config["openai_api_key"].(string); ok {
+			if key, ok := config["openai_api_key"].(string); ok {
 				env = append(env, fmt.Sprintf("PGEDGE_OPENAI_API_KEY=%s", key))
 			}
 		case "ollama":
-			if url, ok := opts.ServiceSpec.Config["ollama_url"].(string); ok {
+			if url, ok := config["ollama_url"].(string); ok {
 				env = append(env, fmt.Sprintf("PGEDGE_OLLAMA_URL=%s", url))
 			}
 		}
 	}
+	return env
+}
 
+// buildRAGEnvVars returns the standard API key env vars expected by the RAG server.
+// The RAG server reads its full config from a YAML file (delivered via Swarm config);
+// only API keys are injected as environment variables.
+func buildRAGEnvVars(config map[string]any) []string {
+	var env []string
+	if key, ok := config["openai_api_key"].(string); ok && key != "" {
+		env = append(env, fmt.Sprintf("OPENAI_API_KEY=%s", key))
+	}
+	if key, ok := config["anthropic_api_key"].(string); ok && key != "" {
+		env = append(env, fmt.Sprintf("ANTHROPIC_API_KEY=%s", key))
+	}
+	if key, ok := config["voyage_api_key"].(string); ok && key != "" {
+		env = append(env, fmt.Sprintf("VOYAGE_API_KEY=%s", key))
+	}
 	return env
 }
 
@@ -179,7 +260,7 @@ func buildServicePortConfig(port *int) []swarm.PortConfig {
 	}
 
 	config := swarm.PortConfig{
-		PublishMode: swarm.PortConfigPublishModeHost,
+		PublishMode: swarm.PortConfigPublishModeIngress,
 		TargetPort:  8080,
 		Name:        "http",
 		Protocol:    swarm.PortConfigProtocolTCP,

@@ -347,6 +347,41 @@ func (d *Docker) ServiceRemove(ctx context.Context, serviceID string) error {
 	return nil
 }
 
+// ConfigCreate creates a Docker Swarm config with the given spec.
+// Returns the created config's ID.
+func (d *Docker) ConfigCreate(ctx context.Context, spec swarm.ConfigSpec) (string, error) {
+	resp, err := d.client.ConfigCreate(ctx, spec)
+	if err != nil {
+		return "", fmt.Errorf("failed to create swarm config: %w", errTranslate(err))
+	}
+	return resp.ID, nil
+}
+
+// ConfigRemove removes a Docker Swarm config by ID.
+// Returns nil if the config does not exist.
+func (d *Docker) ConfigRemove(ctx context.Context, configID string) error {
+	err := d.client.ConfigRemove(ctx, configID)
+	if client.IsErrNotFound(err) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("failed to remove swarm config: %w", errTranslate(err))
+	}
+	return nil
+}
+
+// ConfigList returns all Swarm configs matching the given label filters.
+func (d *Docker) ConfigList(ctx context.Context, labelFilters map[string]string) ([]swarm.Config, error) {
+	f := filters.NewArgs()
+	for k, v := range labelFilters {
+		f.Add("label", fmt.Sprintf("%s=%s", k, v))
+	}
+	configs, err := d.client.ConfigList(ctx, types.ConfigListOptions{Filters: f})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list swarm configs: %w", errTranslate(err))
+	}
+	return configs, nil
+}
+
 func (d *Docker) TasksByServiceID(ctx context.Context) (map[string][]swarm.Task, error) {
 	tasks, err := d.client.TaskList(ctx, types.TaskListOptions{})
 	if err != nil {
@@ -398,6 +433,9 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
+	// Track unique failed task IDs across poll iterations to detect crash loops.
+	seenFailedTaskIDs := make(map[string]struct{})
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -405,6 +443,9 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 		case <-ticker.C:
 			service, _, err := d.client.ServiceInspectWithRaw(ctx, serviceID, types.ServiceInspectOptions{})
 			if err != nil {
+				if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+					return ctx.Err()
+				}
 				return fmt.Errorf("failed to inspect service: %w", errTranslate(err))
 			}
 			if service.Spec.Mode.Replicated == nil {
@@ -444,7 +485,12 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 			if err != nil {
 				return fmt.Errorf("failed to get ready node IDs: %w", err)
 			}
-			var running, stopping, failed, preparing, pending uint64
+			// containerFailed counts tasks that started but crashed (TaskStateFailed).
+			// rejected counts tasks that couldn't start due to infrastructure issues
+			// like missing bind-mount paths (TaskStateRejected). These are kept
+			// separate because rejected tasks are often transient on Docker Desktop
+			// (VirtioFS propagation delay) and should not trigger crash-loop detection.
+			var running, stopping, containerFailed, rejected, preparing, pending uint64
 			var lastFailureMsg string
 			var taskStates []string
 			for _, t := range tasks {
@@ -459,9 +505,29 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 					} else {
 						stopping++
 					}
-				case swarm.TaskStateFailed, swarm.TaskStateRejected:
-					failed++
-					// Capture the error message from the most recent failed task
+				case swarm.TaskStateFailed:
+					errMsg := t.Status.Err
+					if errMsg == "" {
+						errMsg = t.Status.Message
+					}
+					// Bind-mount failures ("bind source path does not exist") are
+					// transient on Docker Desktop: VirtioFS has a propagation delay
+					// before newly-created directories become visible inside the VM.
+					// Treat them like TaskStateRejected so Swarm can retry once the
+					// path appears, without triggering crash-loop detection.
+					if strings.Contains(errMsg, "bind source path does not exist") {
+						rejected++
+					} else {
+						containerFailed++
+						seenFailedTaskIDs[t.ID] = struct{}{}
+					}
+					if errMsg != "" {
+						lastFailureMsg = errMsg
+					}
+				case swarm.TaskStateRejected:
+					rejected++
+					// Do not add to seenFailedTaskIDs: rejections are infrastructure-
+					// level pre-start failures that Docker Swarm will retry automatically.
 					if t.Status.Err != "" {
 						lastFailureMsg = t.Status.Err
 					} else if t.Status.Message != "" {
@@ -479,19 +545,27 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 				Uint64("desired", desired).
 				Uint64("running", running).
 				Uint64("stopping", stopping).
-				Uint64("failed", failed).
+				Uint64("container_failed", containerFailed).
+				Uint64("rejected", rejected).
 				Uint64("preparing", preparing).
 				Uint64("pending", pending).
 				Int("total_tasks", len(tasks)).
 				Strs("task_states", taskStates).
 				Msg("checking service task status")
 
-			// If we have failed tasks and no running or transitional tasks, the service won't start
-			if failed > 0 && running == 0 && preparing == 0 && pending == 0 {
+			// Detect crash loops: if 3 or more unique container-level failures have
+			// occurred with no running tasks, the service is cycling and won't recover.
+			// Rejected tasks (infra-level) and bind-mount failures are excluded —
+			// they are retried by Swarm automatically.
+			// NOTE: We do not exit on the first failure because Docker Swarm
+			// schedules retries with backoff. During the backoff window there may be
+			// zero pending/running/preparing tasks even though the service will
+			// recover. Only after 3 unique failures do we declare the service broken.
+			if len(seenFailedTaskIDs) >= 3 && running == 0 {
 				if lastFailureMsg != "" {
-					return fmt.Errorf("service tasks failed: %s", lastFailureMsg)
+					return fmt.Errorf("service is crash-looping (%d failed tasks): %s", len(seenFailedTaskIDs), lastFailureMsg)
 				}
-				return fmt.Errorf("service has %d failed task(s), expected %d running", failed, desired)
+				return fmt.Errorf("service is crash-looping: %d tasks have failed, expected %d running", len(seenFailedTaskIDs), desired)
 			}
 
 			if running == desired && stopping == 0 {

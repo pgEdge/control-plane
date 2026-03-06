@@ -233,9 +233,10 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string) []error {
 	serviceIDPath := appendPath(path, "service_id")
 	errs = append(errs, validateIdentifier(string(svc.ServiceID), serviceIDPath))
 
-	// Validate service_type (must be "mcp" for now)
-	if svc.ServiceType != "mcp" {
-		err := fmt.Errorf("unsupported service type '%s' (only 'mcp' is currently supported)", svc.ServiceType)
+	// Validate service_type
+	validServiceTypes := []string{"mcp", "rag"}
+	if !slices.Contains(validServiceTypes, svc.ServiceType) {
+		err := fmt.Errorf("unsupported service type '%s' (must be one of: %s)", svc.ServiceType, strings.Join(validServiceTypes, ", "))
 		errs = append(errs, newValidationError(err, appendPath(path, "service_type")))
 	}
 
@@ -262,8 +263,11 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string) []error {
 	}
 
 	// Validate config based on service_type
-	if svc.ServiceType == "mcp" {
+	switch svc.ServiceType {
+	case "mcp":
 		errs = append(errs, validateMCPServiceConfig(svc.Config, appendPath(path, "config"))...)
+	case "rag":
+		errs = append(errs, validateRAGServiceConfig(svc.Config, appendPath(path, "config"))...)
 	}
 
 	// Validate cpus if provided
@@ -323,6 +327,88 @@ func validateMCPServiceConfig(config map[string]any, path []string) []error {
 					errs = append(errs, newValidationError(err, path))
 				}
 			}
+		}
+	}
+
+	return errs
+}
+
+func validateRAGServiceConfig(config map[string]any, path []string) []error {
+	var errs []error
+
+	// Required: embedding_provider
+	embeddingProvider, _ := config["embedding_provider"].(string)
+	if embeddingProvider == "" {
+		errs = append(errs, newValidationError(errors.New("missing required field 'embedding_provider'"), path))
+	} else {
+		validEmbeddingProviders := []string{"openai", "voyage", "ollama"}
+		if !slices.Contains(validEmbeddingProviders, embeddingProvider) {
+			err := fmt.Errorf("unsupported embedding_provider '%s' (must be one of: %s)", embeddingProvider, strings.Join(validEmbeddingProviders, ", "))
+			errs = append(errs, newValidationError(err, appendPath(path, mapKeyPath("embedding_provider"))))
+		}
+	}
+
+	// Required: embedding_model
+	if _, ok := config["embedding_model"].(string); !ok || config["embedding_model"] == "" {
+		errs = append(errs, newValidationError(errors.New("missing required field 'embedding_model'"), path))
+	}
+
+	// Required: llm_provider
+	llmProvider, _ := config["llm_provider"].(string)
+	if llmProvider == "" {
+		errs = append(errs, newValidationError(errors.New("missing required field 'llm_provider'"), path))
+	} else {
+		validLLMProviders := []string{"anthropic", "openai", "ollama"}
+		if !slices.Contains(validLLMProviders, llmProvider) {
+			err := fmt.Errorf("unsupported llm_provider '%s' (must be one of: %s)", llmProvider, strings.Join(validLLMProviders, ", "))
+			errs = append(errs, newValidationError(err, appendPath(path, mapKeyPath("llm_provider"))))
+		}
+	}
+
+	// Required: llm_model
+	if _, ok := config["llm_model"].(string); !ok || config["llm_model"] == "" {
+		errs = append(errs, newValidationError(errors.New("missing required field 'llm_model'"), path))
+	}
+
+	// Required: tables (at least one entry)
+	tables, _ := config["tables"].([]any)
+	if len(tables) == 0 {
+		errs = append(errs, newValidationError(errors.New("'tables' must contain at least one entry"), path))
+	}
+	for i, t := range tables {
+		tableMap, ok := t.(map[string]any)
+		tablePath := appendPath(path, mapKeyPath("tables"), arrayIndexPath(i))
+		if !ok {
+			errs = append(errs, newValidationError(errors.New("each table entry must be an object"), tablePath))
+			continue
+		}
+		for _, field := range []string{"table", "text_column", "vector_column"} {
+			if v, _ := tableMap[field].(string); v == "" {
+				errs = append(errs, newValidationError(fmt.Errorf("missing required field '%s'", field), tablePath))
+			}
+		}
+	}
+
+	// Conditionally required API keys
+	needsOpenAI := embeddingProvider == "openai" || llmProvider == "openai"
+	if needsOpenAI {
+		if _, ok := config["openai_api_key"].(string); !ok || config["openai_api_key"] == "" {
+			errs = append(errs, newValidationError(errors.New("missing required field 'openai_api_key' for openai provider"), path))
+		}
+	}
+	if llmProvider == "anthropic" {
+		if _, ok := config["anthropic_api_key"].(string); !ok || config["anthropic_api_key"] == "" {
+			errs = append(errs, newValidationError(errors.New("missing required field 'anthropic_api_key' for anthropic provider"), path))
+		}
+	}
+	if embeddingProvider == "voyage" {
+		if _, ok := config["voyage_api_key"].(string); !ok || config["voyage_api_key"] == "" {
+			errs = append(errs, newValidationError(errors.New("missing required field 'voyage_api_key' for voyage provider"), path))
+		}
+	}
+	if embeddingProvider == "ollama" || llmProvider == "ollama" {
+		if _, ok := config["ollama_url"].(string); !ok || config["ollama_url"] == "" {
+			errs = append(errs, newValidationError(errors.New("missing required field 'ollama_url' for ollama provider"), path))
 		}
 	}
 

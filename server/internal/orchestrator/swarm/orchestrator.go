@@ -438,6 +438,32 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		serviceUserRole.Password = spec.Credentials.Password
 	}
 
+	// For services that require a generated config file (e.g. RAG), create a
+	// ServiceConfigResource that manages the Docker Swarm config lifecycle.
+	// Also create a RAGSchemaResource that ensures pgvector and the configured
+	// tables exist in the database before the container starts.
+	var serviceConfig *ServiceConfigResource
+	var ragSchema *RAGSchemaResource
+	if spec.ServiceSpec.ServiceType == "rag" {
+		serviceConfig = &ServiceConfigResource{
+			ServiceInstanceID: spec.ServiceInstanceID,
+			ServiceSpec:       spec.ServiceSpec,
+			DatabaseID:        spec.DatabaseID,
+			DatabaseName:      spec.DatabaseName,
+			DatabaseHost:      spec.DatabaseHost,
+			DatabasePort:      spec.DatabasePort,
+			HostID:            spec.HostID,
+		}
+		ragSchema = &RAGSchemaResource{
+			ServiceInstanceID: spec.ServiceInstanceID,
+			DatabaseID:        spec.DatabaseID,
+			DatabaseName:      spec.DatabaseName,
+			HostID:            spec.HostID,
+			PostgresHostID:    spec.PostgresHostID,
+			ServiceSpec:       spec.ServiceSpec,
+		}
+	}
+
 	// Service instance spec resource
 	serviceName := ServiceInstanceName(spec.ServiceSpec.ServiceType, spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
 	serviceInstanceSpec := &ServiceInstanceSpecResource{
@@ -471,6 +497,12 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		serviceUserRole,
 		serviceInstanceSpec,
 		serviceInstance,
+	}
+	if serviceConfig != nil {
+		orchestratorResources = append(orchestratorResources, serviceConfig)
+	}
+	if ragSchema != nil {
+		orchestratorResources = append(orchestratorResources, ragSchema)
 	}
 
 	// Convert to resource data

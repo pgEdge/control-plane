@@ -505,6 +505,20 @@ func TestUpdateDatabase(t *testing.T) {
 			},
 		},
 		{
+			name:    "add RAG service to existing database",
+			options: operations.UpdateDatabaseOptions{},
+			start:   singleNodeState,
+			nodes: []*operations.NodeResources{
+				{
+					NodeName:          "n1",
+					InstanceResources: []*database.InstanceResources{n1Instance1},
+				},
+			},
+			services: []*operations.ServiceResources{
+				makeRAGServiceResources(t, "database-id", "test-svc", "host-1-id", nil),
+			},
+		},
+		{
 			name:    "remove service from existing database",
 			options: operations.UpdateDatabaseOptions{},
 			start:   singleNodeWithServiceState,

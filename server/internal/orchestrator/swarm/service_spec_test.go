@@ -333,6 +333,86 @@ func TestServiceContainerSpec(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "RAG service - health check path and env vars",
+			opts: &ServiceContainerSpecOptions{
+				ServiceSpec: &database.ServiceSpec{
+					ServiceID:   "rag",
+					ServiceType: "rag",
+					Version:     "latest",
+					Config: map[string]interface{}{
+						"embedding_provider": "openai",
+						"embedding_model":    "text-embedding-3-small",
+						"llm_provider":       "anthropic",
+						"llm_model":          "claude-sonnet-4-5",
+						"openai_api_key":     "sk-openai-test",
+						"anthropic_api_key":  "sk-ant-test",
+						"tables": []any{
+							map[string]any{
+								"table":         "documents_content_chunks",
+								"text_column":   "content",
+								"vector_column": "embedding",
+							},
+						},
+					},
+				},
+				ServiceInstanceID: "db1-rag-host1",
+				DatabaseID:        "db1",
+				DatabaseName:      "testdb",
+				HostID:            "host1",
+				ServiceName:       "rag-db1-rag-host1abc",
+				Hostname:          "rag-db1-rag-host1abc",
+				CohortMemberID:    "swarm-node-123",
+				ServiceImage: &ServiceImage{
+					Tag: "ghcr.io/pgedge/rag-server:main",
+				},
+				Credentials: &database.ServiceUser{
+					Username: "svc_rag_host1",
+					Password: "testpassword",
+					Role:     "pgedge_application_read_only",
+				},
+				DatabaseNetworkID: "db1-database",
+				DatabaseHost:      "postgres-instance-1",
+				DatabasePort:      5432,
+				Port:              intPtr(9200),
+				SwarmConfigID:     "swarm-config-abc123",
+			},
+			wantErr: false,
+			checkHealthcheck: func(t *testing.T, cs *swarm.ContainerSpec) {
+				if cs.Healthcheck == nil {
+					t.Fatal("healthcheck is nil")
+				}
+				if len(cs.Healthcheck.Test) < 2 {
+					t.Fatal("healthcheck test is empty")
+				}
+				cmd := cs.Healthcheck.Test[1]
+				if !strings.Contains(cmd, "/v1/health") {
+					t.Errorf("RAG health check should use /v1/health, got: %s", cmd)
+				}
+			},
+			checkEnv: func(t *testing.T, env []string) {
+				// RAG service should use standard API key env vars
+				wantVars := []string{"OPENAI_API_KEY=sk-openai-test", "ANTHROPIC_API_KEY=sk-ant-test"}
+				for _, want := range wantVars {
+					found := false
+					for _, e := range env {
+						if e == want {
+							found = true
+							break
+						}
+					}
+					if !found {
+						t.Errorf("missing env var: %s", want)
+					}
+				}
+				// Should NOT have PGEDGE_-prefixed LLM vars
+				for _, e := range env {
+					if strings.HasPrefix(e, "PGEDGE_LLM_") || strings.HasPrefix(e, "PGEDGE_ANTHROPIC_") || strings.HasPrefix(e, "PGEDGE_OPENAI_") {
+						t.Errorf("RAG service should not have PGEDGE_ LLM env var: %s", e)
+					}
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {

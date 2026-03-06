@@ -36,7 +36,11 @@ type ServiceInstanceSpecResource struct {
 	DatabaseHost      string                `json:"database_host"` // Postgres instance hostname
 	DatabasePort      int                   `json:"database_port"` // Postgres instance port
 	Port              *int                  `json:"port"`          // Service published port (optional, 0 = random)
-	Spec              swarm.ServiceSpec     `json:"spec"`
+	// SwarmConfigID holds the ID of a Docker Swarm config to mount into the
+	// container (used by services that require a config file, e.g. RAG).
+	// Populated from ServiceConfigResource during Refresh/Create/Update.
+	SwarmConfigID string            `json:"swarm_config_id,omitempty"`
+	Spec          swarm.ServiceSpec `json:"spec"`
 }
 
 func (s *ServiceInstanceSpecResource) ResourceVersion() string {
@@ -58,11 +62,17 @@ func (s *ServiceInstanceSpecResource) Executor() resource.Executor {
 }
 
 func (s *ServiceInstanceSpecResource) Dependencies() []resource.Identifier {
-	// Service instances depend on the database network and service user role
-	return []resource.Identifier{
+	deps := []resource.Identifier{
 		NetworkResourceIdentifier(s.DatabaseNetworkID),
 		ServiceUserRoleIdentifier(s.ServiceInstanceID),
 	}
+	// Services that use a Swarm config (e.g. RAG) must wait for it and the
+	// schema setup to be complete before the container spec is built.
+	if s.ServiceSpec != nil && s.ServiceSpec.ServiceType == "rag" {
+		deps = append(deps, ServiceConfigResourceIdentifier(s.ServiceInstanceID))
+		deps = append(deps, RAGSchemaResourceIdentifier(s.ServiceInstanceID))
+	}
+	return deps
 }
 
 func (s *ServiceInstanceSpecResource) populateCredentials(rc *resource.Context) error {
@@ -89,6 +99,15 @@ func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.
 		return err
 	}
 
+	// For services that use a Swarm config file (e.g. RAG), read the config ID.
+	if s.ServiceSpec != nil && s.ServiceSpec.ServiceType == "rag" {
+		svcConfig, err := resource.FromContext[*ServiceConfigResource](rc, ServiceConfigResourceIdentifier(s.ServiceInstanceID))
+		if err != nil {
+			return fmt.Errorf("failed to get service config from state: %w", err)
+		}
+		s.SwarmConfigID = svcConfig.ConfigID
+	}
+
 	spec, err := ServiceContainerSpec(&ServiceContainerSpecOptions{
 		ServiceSpec:       s.ServiceSpec,
 		ServiceInstanceID: s.ServiceInstanceID,
@@ -104,6 +123,7 @@ func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.
 		DatabaseHost:      s.DatabaseHost,
 		DatabasePort:      s.DatabasePort,
 		Port:              s.Port,
+		SwarmConfigID:     s.SwarmConfigID,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate service container spec: %w", err)

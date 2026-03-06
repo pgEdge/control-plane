@@ -11513,7 +11513,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "analytics-service",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -11530,7 +11530,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "analytics-service",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -11547,7 +11547,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "analytics-service",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               }
             ]
@@ -12183,7 +12183,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "analytics-service",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -12200,7 +12200,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "analytics-service",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -12217,7 +12217,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "analytics-service",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -12234,7 +12234,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "analytics-service",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             }
           ],
@@ -12950,7 +12950,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -12967,7 +12967,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -12984,7 +12984,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -13001,7 +13001,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               }
             ]
@@ -13634,7 +13634,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -13651,7 +13651,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             }
           ],
@@ -14364,7 +14364,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -14381,7 +14381,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               }
             ]
@@ -15201,7 +15201,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -15218,7 +15218,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -15235,7 +15235,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             }
           ],
@@ -15759,7 +15759,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -15776,7 +15776,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               }
             ]
@@ -16407,7 +16407,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -16424,7 +16424,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -16441,7 +16441,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             }
           ],
@@ -16964,7 +16964,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -16980,7 +16980,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               }
             ]
@@ -17610,7 +17610,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -17626,7 +17626,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             }
           ],
@@ -18339,7 +18339,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -18356,7 +18356,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -18373,7 +18373,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               }
             ]
@@ -18815,7 +18815,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -18832,7 +18832,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -18849,7 +18849,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -18866,7 +18866,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             }
           ],
@@ -19201,7 +19201,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -19218,7 +19218,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -19235,7 +19235,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -19252,7 +19252,7 @@
                 "memory": "512M",
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               }
             ]
@@ -20072,7 +20072,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -20089,7 +20089,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -20106,7 +20106,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -20123,7 +20123,7 @@
               "memory": "512M",
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             }
           ],
@@ -23669,9 +23669,10 @@
           "service_type": {
             "type": "string",
             "description": "The type of service to run.",
-            "example": "mcp",
+            "example": "rag",
             "enum": [
-              "mcp"
+              "mcp",
+              "rag"
             ]
           },
           "version": {
@@ -23696,7 +23697,7 @@
           "memory": "512M",
           "port": 0,
           "service_id": "analytics-service",
-          "service_type": "mcp",
+          "service_type": "rag",
           "version": "latest"
         },
         "required": [

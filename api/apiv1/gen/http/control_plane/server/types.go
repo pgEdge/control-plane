@@ -5657,8 +5657,8 @@ func ValidateServiceSpecRequestBody(body *ServiceSpecRequestBody) (err error) {
 		}
 	}
 	if body.ServiceType != nil {
-		if !(*body.ServiceType == "mcp") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", *body.ServiceType, []any{"mcp"}))
+		if !(*body.ServiceType == "mcp" || *body.ServiceType == "rag") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", *body.ServiceType, []any{"mcp", "rag"}))
 		}
 	}
 	if body.Version != nil {
@@ -6358,8 +6358,8 @@ func ValidateServiceSpecRequestBodyRequestBody(body *ServiceSpecRequestBodyReque
 		}
 	}
 	if body.ServiceType != nil {
-		if !(*body.ServiceType == "mcp") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", *body.ServiceType, []any{"mcp"}))
+		if !(*body.ServiceType == "mcp" || *body.ServiceType == "rag") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", *body.ServiceType, []any{"mcp", "rag"}))
 		}
 	}
 	if body.Version != nil {

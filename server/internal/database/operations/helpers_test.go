@@ -278,6 +278,113 @@ func (r *serviceInstanceResource) Dependencies() []resource.Identifier {
 	}
 }
 
+type serviceConfigResource struct {
+	orchestratorResource
+	serviceInstanceID string
+	hostID            string
+}
+
+func (r *serviceConfigResource) Identifier() resource.Identifier {
+	return resource.Identifier{ID: r.serviceInstanceID, Type: "swarm.service_config"}
+}
+
+func (r *serviceConfigResource) DiffIgnore() []string {
+	return nil
+}
+
+func (r *serviceConfigResource) Executor() resource.Executor {
+	return resource.HostExecutor(r.hostID)
+}
+
+func (r *serviceConfigResource) Dependencies() []resource.Identifier {
+	return []resource.Identifier{
+		{ID: r.serviceInstanceID, Type: "swarm.service_user_role"},
+	}
+}
+
+// ragServiceInstanceSpecResource is a variant of serviceInstanceSpecResource that
+// also depends on the service config (used by RAG services).
+type ragServiceInstanceSpecResource struct {
+	orchestratorResource
+	networkID         string
+	serviceInstanceID string
+	hostID            string
+}
+
+func (r *ragServiceInstanceSpecResource) Executor() resource.Executor {
+	return resource.HostExecutor(r.hostID)
+}
+
+func (r *ragServiceInstanceSpecResource) Identifier() resource.Identifier {
+	return resource.Identifier{ID: r.serviceInstanceID, Type: "swarm.service_instance_spec"}
+}
+
+func (r *ragServiceInstanceSpecResource) DiffIgnore() []string {
+	return []string{"/spec"}
+}
+
+func (r *ragServiceInstanceSpecResource) Dependencies() []resource.Identifier {
+	return []resource.Identifier{
+		{ID: r.networkID, Type: "swarm.network"},
+		{ID: r.serviceInstanceID, Type: "swarm.service_user_role"},
+		{ID: r.serviceInstanceID, Type: "swarm.service_config"},
+	}
+}
+
+func makeRAGServiceResources(t testing.TB, databaseID, serviceID, hostID string, nodeNames []string) *operations.ServiceResources {
+	t.Helper()
+
+	serviceInstanceID := database.GenerateServiceInstanceID(databaseID, serviceID, hostID)
+	databaseNetworkID := database.GenerateDatabaseNetworkID(databaseID)
+
+	resources := []resource.Resource{
+		&serviceNetworkResource{
+			orchestratorResource: orchestratorResource{ID: databaseNetworkID},
+			nodeNames:            nodeNames,
+		},
+		&serviceUserRoleResource{
+			orchestratorResource: orchestratorResource{ID: serviceInstanceID},
+			nodeNames:            nodeNames,
+		},
+		&serviceConfigResource{
+			orchestratorResource: orchestratorResource{ID: serviceInstanceID},
+			serviceInstanceID:    serviceInstanceID,
+			hostID:               hostID,
+		},
+		&ragServiceInstanceSpecResource{
+			orchestratorResource: orchestratorResource{ID: serviceInstanceID},
+			networkID:            databaseNetworkID,
+			serviceInstanceID:    serviceInstanceID,
+			hostID:               hostID,
+		},
+		&serviceInstanceResource{
+			orchestratorResource: orchestratorResource{ID: serviceInstanceID},
+			serviceInstanceID:    serviceInstanceID,
+		},
+	}
+
+	resourceData := make([]*resource.ResourceData, len(resources))
+	for i, res := range resources {
+		rd, err := resource.ToResourceData(res)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resourceData[i] = rd
+	}
+
+	monitorResource := &monitor.ServiceInstanceMonitorResource{
+		DatabaseID:        databaseID,
+		ServiceInstanceID: serviceInstanceID,
+		HostID:            hostID,
+	}
+
+	return &operations.ServiceResources{
+		ServiceInstanceID: serviceInstanceID,
+		Resources:         resourceData,
+		MonitorResource:   monitorResource,
+	}
+}
+
 func makeServiceResources(t testing.TB, databaseID, serviceID, hostID string, nodeNames []string) *operations.ServiceResources {
 	t.Helper()
 

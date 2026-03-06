@@ -90,6 +90,36 @@ func (r *ServiceUserRole) Refresh(ctx context.Context, rc *resource.Context) err
 	if r.Username == "" || r.Password == "" {
 		return resource.ErrNotFound
 	}
+
+	// Verify the role actually exists on the co-located Postgres node.
+	// In a multi-node pgEdge/Spock setup, CREATE ROLE is not replicated, so
+	// the role must be present on each node's own primary. If it's absent
+	// (e.g., was previously created on a different node), return ErrNotFound
+	// so Create() re-runs with the correct target node.
+	logger, err := do.Invoke[zerolog.Logger](rc.Injector)
+	if err != nil {
+		return err
+	}
+	logger = logger.With().
+		Str("service_instance_id", r.ServiceInstanceID).
+		Str("database_id", r.DatabaseID).
+		Logger()
+
+	conn, err := r.connectToPrimary(ctx, rc, logger)
+	if err != nil {
+		// Postgres unreachable — transient, don't treat as missing role.
+		return fmt.Errorf("failed to reach postgres to verify service user: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	var exists bool
+	if err := conn.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM pg_roles WHERE rolname = $1)", r.Username).Scan(&exists); err != nil {
+		return fmt.Errorf("failed to check for service user %q: %w", r.Username, err)
+	}
+	if !exists {
+		logger.Info().Str("username", r.Username).Msg("service user not found on target postgres node, will recreate")
+		return resource.ErrNotFound
+	}
 	return nil
 }
 
@@ -119,11 +149,12 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 	defer conn.Close(ctx)
 
 	statements, err := postgres.CreateUserRole(postgres.UserRoleOptions{
-		Name:     r.Username,
-		Password: r.Password,
-		DBName:   r.DatabaseName,
-		DBOwner:  false,
-		Roles:    []string{"pgedge_application_read_only"},
+		Name:       r.Username,
+		Password:   r.Password,
+		DBName:     r.DatabaseName,
+		DBOwner:    false,
+		Attributes: []string{"LOGIN"},
+		Roles:      []string{"pgedge_application_read_only"},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate create user role statements: %w", err)
@@ -203,26 +234,44 @@ func (r *ServiceUserRole) connectToPrimary(ctx context.Context, rc *resource.Con
 		return nil, fmt.Errorf("database has no instances")
 	}
 
-	// Find primary instance via Patroni
-	var primaryInstanceID string
-	for _, inst := range db.Instances {
-		connInfo, err := orch.GetInstanceConnectionInfo(ctx, r.DatabaseID, inst.InstanceID)
-		if err != nil {
-			continue
+	// Find primary instance via Patroni.
+	// Prefer the co-located Postgres instance (same host as this service) so
+	// that the role is created on the correct Spock node. In a multi-node
+	// pgEdge setup each node is an independent Postgres cluster; CREATE ROLE is
+	// not replicated by Spock, so we must connect to the right node's primary.
+	targetHostID := r.PostgresHostID
+	if targetHostID == "" {
+		targetHostID = r.HostID
+	}
+
+	// Pick a seed instance from the target host to identify its Patroni cluster.
+	var seedInstance *database.Instance
+	for i := range db.Instances {
+		if db.Instances[i].HostID == targetHostID {
+			seedInstance = db.Instances[i]
+			break
 		}
+	}
+	if seedInstance == nil {
+		seedInstance = db.Instances[0]
+		logger.Warn().Str("target_host_id", targetHostID).Msg("no co-located postgres instance found, falling back to first available")
+	}
+
+	var primaryInstanceID string
+	connInfo, err := orch.GetInstanceConnectionInfo(ctx, r.DatabaseID, seedInstance.InstanceID)
+	if err == nil {
 		patroniClient := patroni.NewClient(connInfo.PatroniURL(), nil)
 		primaryID, err := database.GetPrimaryInstanceID(ctx, patroniClient, 10*time.Second)
 		if err == nil && primaryID != "" {
 			primaryInstanceID = primaryID
-			break
 		}
 	}
 	if primaryInstanceID == "" {
-		primaryInstanceID = db.Instances[0].InstanceID
-		logger.Warn().Msg("could not determine primary instance, using first available instance")
+		primaryInstanceID = seedInstance.InstanceID
+		logger.Warn().Msg("could not determine primary instance, using co-located instance directly")
 	}
 
-	connInfo, err := orch.GetInstanceConnectionInfo(ctx, r.DatabaseID, primaryInstanceID)
+	connInfo, err = orch.GetInstanceConnectionInfo(ctx, r.DatabaseID, primaryInstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance connection info: %w", err)
 	}
