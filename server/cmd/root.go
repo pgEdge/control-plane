@@ -23,6 +23,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/monitor"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator/swarm"
+	"github.com/pgEdge/control-plane/server/internal/ports"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/scheduler"
 	"github.com/pgEdge/control-plane/server/internal/task"
@@ -76,6 +77,7 @@ func newRootCmd(i *do.Injector) *cobra.Command {
 			logging.Provide(i)
 			migrate.Provide(i)
 			monitor.Provide(i)
+			ports.Provide(i)
 			resource.Provide(i)
 			scheduler.Provide(i)
 			workflows.Provide(i)
