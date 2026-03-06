@@ -508,6 +508,25 @@ type InstanceSpec struct {
 	InPlaceRestore   bool                `json:"in_place_restore,omitempty"`
 }
 
+func (s *InstanceSpec) CopySettingsFrom(current *InstanceSpec) {
+	s.Port = reconcilePort(current.Port, s.Port)
+	s.PatroniPort = reconcilePort(current.PatroniPort, s.PatroniPort)
+}
+
+func reconcilePort(current, new *int) *int {
+	if new == nil || *new != 0 {
+		// no action needed if the new port is unexposed or explicitly set
+		return new
+	}
+	if current != nil && *current != 0 {
+		// we've already assigned a stable random port here
+		return utils.PointerTo(*current) // create new pointer
+	}
+
+	// return 0 to signal that we need to assign a new random port
+	return utils.PointerTo(0)
+}
+
 type InstanceSpecChange struct {
 	Previous *InstanceSpec
 	Current  *InstanceSpec

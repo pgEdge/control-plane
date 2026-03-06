@@ -12,6 +12,7 @@ type Store struct {
 	Database              *DatabaseStore
 	Instance              *InstanceStore
 	InstanceStatus        *InstanceStatusStore
+	InstanceSpec          *InstanceSpecStore
 	ServiceInstance       *ServiceInstanceStore
 	ServiceInstanceStatus *ServiceInstanceStatusStore
 }
@@ -23,6 +24,7 @@ func NewStore(client *clientv3.Client, root string) *Store {
 		Database:              NewDatabaseStore(client, root),
 		Instance:              NewInstanceStore(client, root),
 		InstanceStatus:        NewInstanceStatusStore(client, root),
+		InstanceSpec:          NewInstanceSpecStore(client, root),
 		ServiceInstance:       NewServiceInstanceStore(client, root),
 		ServiceInstanceStatus: NewServiceInstanceStatusStore(client, root),
 	}

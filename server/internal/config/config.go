@@ -194,6 +194,32 @@ const (
 	EtcdModeClient EtcdMode = "client"
 )
 
+type RandomPorts struct {
+	Min int `koanf:"min" json:"min,omitempty"`
+	Max int `koanf:"max" json:"max,omitempty"`
+}
+
+func (r RandomPorts) validate() []error {
+	var errs []error
+	if r.Min < 1 {
+		errs = append(errs, errors.New("min: cannot be less than 1"))
+	}
+	if r.Max > 65535 {
+		errs = append(errs, errors.New("max: cannot be greater than 65535"))
+	}
+	if r.Max <= r.Min {
+		errs = append(errs, errors.New("max: must be greater than min"))
+	}
+	return errs
+}
+
+// We're intentionally using a range that's well below the ephemeral port range
+// to reduce the risk of interference from the OS.
+var defaultRandomPorts = RandomPorts{
+	Min: 5432,
+	Max: 15432,
+}
+
 type Config struct {
 	TenantID               string       `koanf:"tenant_id" json:"tenant_id,omitempty"`
 	HostID                 string       `koanf:"host_id" json:"host_id,omitempty"`
@@ -216,6 +242,7 @@ type Config struct {
 	DockerSwarm            DockerSwarm  `koanf:"docker_swarm" json:"docker_swarm,omitzero"`
 	DatabaseOwnerUID       int          `koanf:"database_owner_uid" json:"database_owner_uid,omitempty"`
 	ProfilingEnabled       bool         `koanf:"profiling_enabled" json:"profiling_enabled,omitempty"`
+	RandomPorts            RandomPorts  `koanf:"random_ports" json:"random_ports,omitzero"`
 }
 
 // ClientAddress is a convenience function to return the first client address.
@@ -310,6 +337,9 @@ func (c Config) Validate() error {
 	for _, err := range c.Logging.validate() {
 		errs = append(errs, fmt.Errorf("logging.%w", err))
 	}
+	for _, err := range c.RandomPorts.validate() {
+		errs = append(errs, fmt.Errorf("random_ports.%w", err))
+	}
 	if c.Orchestrator != OrchestratorSwarm {
 		errs = append(errs, fmt.Errorf("orchestrator: unsupported orchestrator %q", c.Orchestrator))
 	}
@@ -361,6 +391,7 @@ func DefaultConfig() (Config, error) {
 		EtcdClient:             etcdClientDefault,
 		DockerSwarm:            defaultDockerSwarm,
 		DatabaseOwnerUID:       26,
+		RandomPorts:            defaultRandomPorts,
 	}, nil
 }
 

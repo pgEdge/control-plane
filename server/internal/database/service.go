@@ -8,8 +8,11 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/ports"
 	"github.com/pgEdge/control-plane/server/internal/storage"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 var (
@@ -24,16 +27,26 @@ var (
 )
 
 type Service struct {
+	cfg          config.Config
 	orchestrator Orchestrator
 	store        *Store
 	hostSvc      *host.Service
+	portsSvc     *ports.Service
 }
 
-func NewService(orchestrator Orchestrator, store *Store, hostSvc *host.Service) *Service {
+func NewService(
+	cfg config.Config,
+	orchestrator Orchestrator,
+	store *Store,
+	hostSvc *host.Service,
+	portsSvc *ports.Service,
+) *Service {
 	return &Service{
+		cfg:          cfg,
 		orchestrator: orchestrator,
 		store:        store,
 		hostSvc:      hostSvc,
+		portsSvc:     portsSvc,
 	}
 }
 
@@ -119,6 +132,18 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 }
 
 func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) error {
+	specs, err := s.store.InstanceSpec.
+		GetByDatabaseID(databaseID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get instance specs: %w", err)
+	}
+	for _, spec := range specs {
+		if err := s.releaseInstancePorts(ctx, spec.Spec); err != nil {
+			return err
+		}
+	}
+
 	var ops []storage.TxnOperation
 
 	spec, err := s.store.Spec.GetByKey(databaseID).Exec(ctx)
@@ -141,6 +166,7 @@ func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) error {
 
 	ops = append(ops,
 		s.store.Instance.DeleteByDatabaseID(databaseID),
+		s.store.InstanceSpec.DeleteByDatabaseID(databaseID),
 		s.store.InstanceStatus.DeleteByDatabaseID(databaseID),
 	)
 
@@ -279,7 +305,7 @@ func (s *Service) DeleteInstance(ctx context.Context, databaseID, instanceID str
 		return fmt.Errorf("failed to delete stored instance status: %w", err)
 	}
 
-	return nil
+	return s.DeleteInstanceSpec(ctx, databaseID, instanceID)
 }
 
 func (s *Service) UpdateInstanceStatus(
@@ -488,6 +514,134 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 	}
 
 	return nil
+}
+
+func (s *Service) ReconcileInstanceSpec(ctx context.Context, spec *InstanceSpec) (*InstanceSpec, error) {
+	if s.cfg.HostID != spec.HostID {
+		return nil, fmt.Errorf("this instance belongs to another host - this host='%s', instance host='%s'", s.cfg.HostID, spec.HostID)
+	}
+
+	var previous *InstanceSpec
+	stored, err := s.store.InstanceSpec.
+		GetByKey(spec.DatabaseID, spec.InstanceID).
+		Exec(ctx)
+	switch {
+	case err == nil:
+		previous = stored.Spec
+		spec.CopySettingsFrom(previous)
+	case errors.Is(err, storage.ErrNotFound):
+		stored = &StoredInstanceSpec{}
+	default:
+		return nil, fmt.Errorf("failed to get current spec for instance '%s': %w", spec.InstanceID, err)
+	}
+
+	var allocated []int
+	rollback := func(cause error) error {
+		rollbackCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		return errors.Join(cause, s.portsSvc.ReleasePort(rollbackCtx, spec.HostID, allocated...))
+	}
+
+	if spec.Port != nil && *spec.Port == 0 {
+		port, err := s.portsSvc.AllocatePort(ctx, spec.HostID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to allocate port: %w", err)
+		}
+		allocated = append(allocated, port)
+		spec.Port = utils.PointerTo(port)
+	}
+
+	if spec.PatroniPort != nil && *spec.PatroniPort == 0 {
+		port, err := s.portsSvc.AllocatePort(ctx, spec.HostID)
+		if err != nil {
+			return nil, rollback(fmt.Errorf("failed to allocate patroni port: %w", err))
+		}
+		allocated = append(allocated, port)
+		spec.PatroniPort = utils.PointerTo(port)
+	}
+
+	stored.Spec = spec
+	err = s.store.InstanceSpec.
+		Update(stored).
+		Exec(ctx)
+	if err != nil {
+		return nil, rollback(fmt.Errorf("failed to persist updated instance spec: %w", err))
+	}
+
+	if err := s.releasePreviousSpecPorts(ctx, previous, spec); err != nil {
+		return nil, err
+	}
+
+	return spec, nil
+}
+
+func (s *Service) DeleteInstanceSpec(ctx context.Context, databaseID, instanceID string) error {
+	spec, err := s.store.InstanceSpec.
+		GetByKey(databaseID, instanceID).
+		Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		// Spec has already been deleted
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("failed to check if instance spec exists: %w", err)
+	}
+
+	if err := s.releaseInstancePorts(ctx, spec.Spec); err != nil {
+		return err
+	}
+
+	_, err = s.store.InstanceSpec.
+		DeleteByKey(databaseID, instanceID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete instance spec: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) releaseInstancePorts(ctx context.Context, spec *InstanceSpec) error {
+	err := s.portsSvc.ReleasePortIfDefined(ctx, spec.HostID, spec.Port, spec.PatroniPort)
+	if err != nil {
+		return fmt.Errorf("failed to release ports for instance '%s': %w", spec.InstanceID, err)
+	}
+
+	return nil
+}
+
+func (s *Service) releasePreviousSpecPorts(ctx context.Context, previous, new *InstanceSpec) error {
+	if previous == nil {
+		return nil
+	}
+	if portShouldBeReleased(previous.Port, new.Port) {
+		err := s.portsSvc.ReleasePortIfDefined(ctx, new.HostID, previous.Port)
+		if err != nil {
+			return fmt.Errorf("failed to release previous port: %w", err)
+		}
+	}
+	if portShouldBeReleased(previous.PatroniPort, new.PatroniPort) {
+		err := s.portsSvc.ReleasePortIfDefined(ctx, new.HostID, previous.PatroniPort)
+		if err != nil {
+			return fmt.Errorf("failed to release previous patroni port: %w", err)
+		}
+	}
+	return nil
+}
+
+func portShouldBeReleased(current *int, new *int) bool {
+	if current == nil || *current == 0 {
+		// we didn't previously have an assigned port
+		return false
+	}
+	if new == nil || *current != *new {
+		// we had a previously assigned port and now the port is either nil or
+		// different
+		return true
+	}
+
+	// the current and new ports are equal, so it should not be released.
+	return false
 }
 
 func ValidateChangedSpec(current, updated *Spec) error {
