@@ -13,8 +13,8 @@ import (
 	"github.com/rs/zerolog"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
-	"github.com/pgEdge/control-plane/server/internal/common"
 	"github.com/pgEdge/control-plane/server/internal/ds"
+	"github.com/pgEdge/control-plane/server/internal/healthcheck"
 	"github.com/samber/do"
 
 	"github.com/docker/docker/api/types"
@@ -31,7 +31,7 @@ import (
 var ErrNotFound = errors.New("not found error")
 var ErrProcessNotFound = errors.New("matching process not found")
 
-var _ common.HealthCheckable = (*Docker)(nil)
+var _ healthcheck.HealthCheckable = (*Docker)(nil)
 var _ do.Shutdownable = (*Docker)(nil)
 
 type Docker struct {
@@ -505,20 +505,20 @@ func (d *Docker) WaitForService(ctx context.Context, serviceID string, timeout t
 	}
 }
 
-func (d *Docker) HealthCheck() common.ComponentStatus {
+func (d *Docker) HealthCheck() healthcheck.ComponentStatus {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	info, err := d.Info(ctx)
 	if err != nil {
-		return common.ComponentStatus{
+		return healthcheck.ComponentStatus{
 			Name:    "docker",
 			Healthy: false,
 			Error:   err.Error(),
 		}
 	}
 
-	return common.ComponentStatus{
+	return healthcheck.ComponentStatus{
 		Name:    "docker",
 		Healthy: info.Swarm.LocalNodeState == swarm.LocalNodeStateActive,
 		Details: map[string]any{
