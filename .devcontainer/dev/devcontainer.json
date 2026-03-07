@@ -1,0 +1,20 @@
+{
+  "name": "pgEdge Control Plane Development",
+  "image": "mcr.microsoft.com/devcontainers/go:1.25",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "postCreateCommand": "go mod download",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "go.lintTool": "golangci-lint"
+      },
+      "extensions": [
+        "golang.go",
+        "redhat.vscode-yaml"
+      ]
+    }
+  }
+}
