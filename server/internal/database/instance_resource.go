@@ -86,13 +86,7 @@ func (r *InstanceResource) Refresh(ctx context.Context, rc *resource.Context) er
 }
 
 func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) error {
-	err := r.updateInstanceState(ctx, rc, &InstanceUpdateOptions{State: InstanceStateCreating})
-	if err != nil {
-		return r.recordError(ctx, rc, err)
-	}
-
-	err = r.initializeInstance(ctx, rc)
-	if err != nil {
+	if err := r.initializeInstance(ctx, rc); err != nil {
 		return r.recordError(ctx, rc, err)
 	}
 
@@ -100,11 +94,6 @@ func (r *InstanceResource) Create(ctx context.Context, rc *resource.Context) err
 }
 
 func (r *InstanceResource) Update(ctx context.Context, rc *resource.Context) error {
-	err := r.updateInstanceState(ctx, rc, &InstanceUpdateOptions{State: InstanceStateModifying})
-	if err != nil {
-		return r.recordError(ctx, rc, err)
-	}
-
 	if err := r.updateConnectionInfo(ctx, rc); err != nil {
 		return r.recordError(ctx, rc, err)
 	}
@@ -114,8 +103,7 @@ func (r *InstanceResource) Update(ctx context.Context, rc *resource.Context) err
 		return r.recordError(ctx, rc, err)
 	}
 
-	err = r.initializeInstance(ctx, rc)
-	if err != nil {
+	if err := r.initializeInstance(ctx, rc); err != nil {
 		return r.recordError(ctx, rc, err)
 	}
 
@@ -123,16 +111,9 @@ func (r *InstanceResource) Update(ctx context.Context, rc *resource.Context) err
 }
 
 func (r *InstanceResource) Delete(ctx context.Context, rc *resource.Context) error {
-	svc, err := do.Invoke[*Service](rc.Injector)
-	if err != nil {
-		return r.recordError(ctx, rc, err)
-	}
-
-	err = svc.DeleteInstance(ctx, r.Spec.DatabaseID, r.Spec.InstanceID)
-	if err != nil {
-		return r.recordError(ctx, rc, err)
-	}
-
+	// It's unnecessary and potentially error-prone to delete anything here.
+	// Instead, we just shut down the instance and delete the data from the
+	// filesystem when we're fulfilling a delete request.
 	return nil
 }
 

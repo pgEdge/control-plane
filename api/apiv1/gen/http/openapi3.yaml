@@ -4693,7 +4693,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: modifying
               status_updated_at: "2006-12-23T09:53:03Z"
               updated_at: "1994-06-04T08:19:03Z"
             - connection_info:
@@ -4725,7 +4725,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: modifying
               status_updated_at: "2006-12-23T09:53:03Z"
               updated_at: "1994-06-04T08:19:03Z"
             - connection_info:
@@ -4757,7 +4757,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: modifying
               status_updated_at: "2006-12-23T09:53:03Z"
               updated_at: "1994-06-04T08:19:03Z"
         service_instances:
@@ -5084,7 +5084,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: available
               status_updated_at: "1993-04-25T23:06:28Z"
               updated_at: "1981-08-22T23:20:01Z"
             - connection_info:
@@ -5116,7 +5116,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: available
               status_updated_at: "1993-04-25T23:06:28Z"
               updated_at: "1981-08-22T23:20:01Z"
             - connection_info:
@@ -5148,7 +5148,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: available
               status_updated_at: "1993-04-25T23:06:28Z"
               updated_at: "1981-08-22T23:20:01Z"
         service_instances:
@@ -5475,7 +5475,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: available
               status_updated_at: "1993-04-25T23:06:28Z"
               updated_at: "1981-08-22T23:20:01Z"
             - connection_info:
@@ -5507,7 +5507,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: available
               status_updated_at: "1993-04-25T23:06:28Z"
               updated_at: "1981-08-22T23:20:01Z"
             - connection_info:
@@ -5539,7 +5539,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: available
               status_updated_at: "1993-04-25T23:06:28Z"
               updated_at: "1981-08-22T23:20:01Z"
         service_instances:
@@ -5866,7 +5866,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: available
               status_updated_at: "1993-04-25T23:06:28Z"
               updated_at: "1981-08-22T23:20:01Z"
             - connection_info:
@@ -5898,7 +5898,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: available
               status_updated_at: "1993-04-25T23:06:28Z"
               updated_at: "1981-08-22T23:20:01Z"
             - connection_info:
@@ -5930,7 +5930,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: available
               status_updated_at: "1993-04-25T23:06:28Z"
               updated_at: "1981-08-22T23:20:01Z"
             - connection_info:
@@ -5962,7 +5962,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: available
               status_updated_at: "1993-04-25T23:06:28Z"
               updated_at: "1981-08-22T23:20:01Z"
         service_instances:
@@ -6256,7 +6256,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: available
               status_updated_at: "1993-04-25T23:06:28Z"
               updated_at: "1981-08-22T23:20:01Z"
             - connection_info:
@@ -6288,7 +6288,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: available
               status_updated_at: "1993-04-25T23:06:28Z"
               updated_at: "1981-08-22T23:20:01Z"
         service_instances:
@@ -15702,7 +15702,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: modifying
               status_updated_at: "2006-12-23T09:53:03Z"
               updated_at: "1994-06-04T08:19:03Z"
             - connection_info:
@@ -15734,7 +15734,7 @@ components:
                     provider_node: n2
                     status: down
                 version: 4.10.0
-              state: unknown
+              state: modifying
               status_updated_at: "2006-12-23T09:53:03Z"
               updated_at: "1994-06-04T08:19:03Z"
         state:
@@ -15795,7 +15795,7 @@ components:
                   provider_node: n2
                   status: down
               version: 4.10.0
-            state: unknown
+            state: modifying
             status_updated_at: "2006-12-23T09:53:03Z"
             updated_at: "1994-06-04T08:19:03Z"
           - connection_info:
@@ -15827,7 +15827,7 @@ components:
                   provider_node: n2
                   status: down
               version: 4.10.0
-            state: unknown
+            state: modifying
             status_updated_at: "2006-12-23T09:53:03Z"
             updated_at: "1994-06-04T08:19:03Z"
           - connection_info:
@@ -15859,7 +15859,7 @@ components:
                   provider_node: n2
                   status: down
               version: 4.10.0
-            state: unknown
+            state: modifying
             status_updated_at: "2006-12-23T09:53:03Z"
             updated_at: "1994-06-04T08:19:03Z"
           - connection_info:
@@ -15891,7 +15891,7 @@ components:
                   provider_node: n2
                   status: down
               version: 4.10.0
-            state: unknown
+            state: modifying
             status_updated_at: "2006-12-23T09:53:03Z"
             updated_at: "1994-06-04T08:19:03Z"
         state: creating
@@ -16377,10 +16377,11 @@ components:
           $ref: '#/components/schemas/InstanceSpockStatus'
         state:
           type: string
-          example: unknown
+          example: stopped
           enum:
             - creating
             - modifying
+            - deleting
             - backing_up
             - available
             - degraded
@@ -16659,7 +16660,7 @@ components:
                         provider_node: n2
                         status: down
                     version: 4.10.0
-                  state: unknown
+                  state: modifying
                   status_updated_at: "2006-12-23T09:53:03Z"
                   updated_at: "1994-06-04T08:19:03Z"
                 - connection_info:
@@ -16691,7 +16692,7 @@ components:
                         provider_node: n2
                         status: down
                     version: 4.10.0
-                  state: unknown
+                  state: modifying
                   status_updated_at: "2006-12-23T09:53:03Z"
                   updated_at: "1994-06-04T08:19:03Z"
                 - connection_info:
@@ -16723,7 +16724,7 @@ components:
                         provider_node: n2
                         status: down
                     version: 4.10.0
-                  state: unknown
+                  state: modifying
                   status_updated_at: "2006-12-23T09:53:03Z"
                   updated_at: "1994-06-04T08:19:03Z"
                 - connection_info:
@@ -16755,141 +16756,7 @@ components:
                         provider_node: n2
                         status: down
                     version: 4.10.0
-                  state: unknown
-                  status_updated_at: "2006-12-23T09:53:03Z"
-                  updated_at: "1994-06-04T08:19:03Z"
-              state: modifying
-              tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
-              updated_at: "2025-01-01T02:30:00Z"
-            - created_at: "2025-01-01T01:30:00Z"
-              id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
-              instances:
-                - connection_info:
-                    addresses:
-                      - 10.24.34.2
-                      - i-0123456789abcdef.ec2.internal
-                    port: 5432
-                  created_at: "1991-01-10T16:19:34Z"
-                  error: 'failed to get patroni status: connection refused'
-                  host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  node_name: n1
-                  postgres:
-                    patroni_paused: false
-                    patroni_state: unknown
-                    pending_restart: false
-                    role: primary
-                    version: "18.1"
-                  spock:
-                    read_only: "off"
-                    subscriptions:
-                      - name: sub_n1n2
-                        provider_node: n2
-                        status: down
-                      - name: sub_n1n2
-                        provider_node: n2
-                        status: down
-                      - name: sub_n1n2
-                        provider_node: n2
-                        status: down
-                    version: 4.10.0
-                  state: unknown
-                  status_updated_at: "2006-12-23T09:53:03Z"
-                  updated_at: "1994-06-04T08:19:03Z"
-                - connection_info:
-                    addresses:
-                      - 10.24.34.2
-                      - i-0123456789abcdef.ec2.internal
-                    port: 5432
-                  created_at: "1991-01-10T16:19:34Z"
-                  error: 'failed to get patroni status: connection refused'
-                  host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  node_name: n1
-                  postgres:
-                    patroni_paused: false
-                    patroni_state: unknown
-                    pending_restart: false
-                    role: primary
-                    version: "18.1"
-                  spock:
-                    read_only: "off"
-                    subscriptions:
-                      - name: sub_n1n2
-                        provider_node: n2
-                        status: down
-                      - name: sub_n1n2
-                        provider_node: n2
-                        status: down
-                      - name: sub_n1n2
-                        provider_node: n2
-                        status: down
-                    version: 4.10.0
-                  state: unknown
-                  status_updated_at: "2006-12-23T09:53:03Z"
-                  updated_at: "1994-06-04T08:19:03Z"
-                - connection_info:
-                    addresses:
-                      - 10.24.34.2
-                      - i-0123456789abcdef.ec2.internal
-                    port: 5432
-                  created_at: "1991-01-10T16:19:34Z"
-                  error: 'failed to get patroni status: connection refused'
-                  host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  node_name: n1
-                  postgres:
-                    patroni_paused: false
-                    patroni_state: unknown
-                    pending_restart: false
-                    role: primary
-                    version: "18.1"
-                  spock:
-                    read_only: "off"
-                    subscriptions:
-                      - name: sub_n1n2
-                        provider_node: n2
-                        status: down
-                      - name: sub_n1n2
-                        provider_node: n2
-                        status: down
-                      - name: sub_n1n2
-                        provider_node: n2
-                        status: down
-                    version: 4.10.0
-                  state: unknown
-                  status_updated_at: "2006-12-23T09:53:03Z"
-                  updated_at: "1994-06-04T08:19:03Z"
-                - connection_info:
-                    addresses:
-                      - 10.24.34.2
-                      - i-0123456789abcdef.ec2.internal
-                    port: 5432
-                  created_at: "1991-01-10T16:19:34Z"
-                  error: 'failed to get patroni status: connection refused'
-                  host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                  node_name: n1
-                  postgres:
-                    patroni_paused: false
-                    patroni_state: unknown
-                    pending_restart: false
-                    role: primary
-                    version: "18.1"
-                  spock:
-                    read_only: "off"
-                    subscriptions:
-                      - name: sub_n1n2
-                        provider_node: n2
-                        status: down
-                      - name: sub_n1n2
-                        provider_node: n2
-                        status: down
-                      - name: sub_n1n2
-                        provider_node: n2
-                        status: down
-                    version: 4.10.0
-                  state: unknown
+                  state: modifying
                   status_updated_at: "2006-12-23T09:53:03Z"
                   updated_at: "1994-06-04T08:19:03Z"
               state: modifying
@@ -16927,7 +16794,7 @@ components:
                         provider_node: n2
                         status: down
                     version: 4.10.0
-                  state: unknown
+                  state: modifying
                   status_updated_at: "2006-12-23T09:53:03Z"
                   updated_at: "1994-06-04T08:19:03Z"
                 - connection_info:
@@ -16959,7 +16826,7 @@ components:
                         provider_node: n2
                         status: down
                     version: 4.10.0
-                  state: unknown
+                  state: modifying
                   status_updated_at: "2006-12-23T09:53:03Z"
                   updated_at: "1994-06-04T08:19:03Z"
                 - connection_info:
@@ -16991,7 +16858,7 @@ components:
                         provider_node: n2
                         status: down
                     version: 4.10.0
-                  state: unknown
+                  state: modifying
                   status_updated_at: "2006-12-23T09:53:03Z"
                   updated_at: "1994-06-04T08:19:03Z"
                 - connection_info:
@@ -17023,7 +16890,7 @@ components:
                         provider_node: n2
                         status: down
                     version: 4.10.0
-                  state: unknown
+                  state: modifying
                   status_updated_at: "2006-12-23T09:53:03Z"
                   updated_at: "1994-06-04T08:19:03Z"
               state: modifying
@@ -17061,7 +16928,7 @@ components:
                         provider_node: n2
                         status: down
                     version: 4.10.0
-                  state: unknown
+                  state: modifying
                   status_updated_at: "2006-12-23T09:53:03Z"
                   updated_at: "1994-06-04T08:19:03Z"
                 - connection_info:
@@ -17093,7 +16960,7 @@ components:
                         provider_node: n2
                         status: down
                     version: 4.10.0
-                  state: unknown
+                  state: modifying
                   status_updated_at: "2006-12-23T09:53:03Z"
                   updated_at: "1994-06-04T08:19:03Z"
                 - connection_info:
@@ -17125,7 +16992,7 @@ components:
                         provider_node: n2
                         status: down
                     version: 4.10.0
-                  state: unknown
+                  state: modifying
                   status_updated_at: "2006-12-23T09:53:03Z"
                   updated_at: "1994-06-04T08:19:03Z"
                 - connection_info:
@@ -17157,7 +17024,141 @@ components:
                         provider_node: n2
                         status: down
                     version: 4.10.0
-                  state: unknown
+                  state: modifying
+                  status_updated_at: "2006-12-23T09:53:03Z"
+                  updated_at: "1994-06-04T08:19:03Z"
+              state: modifying
+              tenant_id: 8210ec10-2dca-406c-ac4a-0661d2189954
+              updated_at: "2025-01-01T02:30:00Z"
+            - created_at: "2025-01-01T01:30:00Z"
+              id: 02f1a7db-fca8-4521-b57a-2a375c1ced51
+              instances:
+                - connection_info:
+                    addresses:
+                      - 10.24.34.2
+                      - i-0123456789abcdef.ec2.internal
+                    port: 5432
+                  created_at: "1991-01-10T16:19:34Z"
+                  error: 'failed to get patroni status: connection refused'
+                  host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                  node_name: n1
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: unknown
+                    pending_restart: false
+                    role: primary
+                    version: "18.1"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                      - name: sub_n1n2
+                        provider_node: n2
+                        status: down
+                      - name: sub_n1n2
+                        provider_node: n2
+                        status: down
+                      - name: sub_n1n2
+                        provider_node: n2
+                        status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "2006-12-23T09:53:03Z"
+                  updated_at: "1994-06-04T08:19:03Z"
+                - connection_info:
+                    addresses:
+                      - 10.24.34.2
+                      - i-0123456789abcdef.ec2.internal
+                    port: 5432
+                  created_at: "1991-01-10T16:19:34Z"
+                  error: 'failed to get patroni status: connection refused'
+                  host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                  node_name: n1
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: unknown
+                    pending_restart: false
+                    role: primary
+                    version: "18.1"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                      - name: sub_n1n2
+                        provider_node: n2
+                        status: down
+                      - name: sub_n1n2
+                        provider_node: n2
+                        status: down
+                      - name: sub_n1n2
+                        provider_node: n2
+                        status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "2006-12-23T09:53:03Z"
+                  updated_at: "1994-06-04T08:19:03Z"
+                - connection_info:
+                    addresses:
+                      - 10.24.34.2
+                      - i-0123456789abcdef.ec2.internal
+                    port: 5432
+                  created_at: "1991-01-10T16:19:34Z"
+                  error: 'failed to get patroni status: connection refused'
+                  host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                  node_name: n1
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: unknown
+                    pending_restart: false
+                    role: primary
+                    version: "18.1"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                      - name: sub_n1n2
+                        provider_node: n2
+                        status: down
+                      - name: sub_n1n2
+                        provider_node: n2
+                        status: down
+                      - name: sub_n1n2
+                        provider_node: n2
+                        status: down
+                    version: 4.10.0
+                  state: modifying
+                  status_updated_at: "2006-12-23T09:53:03Z"
+                  updated_at: "1994-06-04T08:19:03Z"
+                - connection_info:
+                    addresses:
+                      - 10.24.34.2
+                      - i-0123456789abcdef.ec2.internal
+                    port: 5432
+                  created_at: "1991-01-10T16:19:34Z"
+                  error: 'failed to get patroni status: connection refused'
+                  host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                  id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                  node_name: n1
+                  postgres:
+                    patroni_paused: false
+                    patroni_state: unknown
+                    pending_restart: false
+                    role: primary
+                    version: "18.1"
+                  spock:
+                    read_only: "off"
+                    subscriptions:
+                      - name: sub_n1n2
+                        provider_node: n2
+                        status: down
+                      - name: sub_n1n2
+                        provider_node: n2
+                        status: down
+                      - name: sub_n1n2
+                        provider_node: n2
+                        status: down
+                    version: 4.10.0
+                  state: modifying
                   status_updated_at: "2006-12-23T09:53:03Z"
                   updated_at: "1994-06-04T08:19:03Z"
               state: modifying

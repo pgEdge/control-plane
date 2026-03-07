@@ -119,14 +119,6 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 }
 
 func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) error {
-	// Note: This method only deletes the database spec and database state from etcd.
-	// Instances and service instances are deleted via their resource lifecycle
-	// in the DeleteDatabase workflow (which calls resource.Delete() on each resource).
-	// The workflow ensures proper cleanup order:
-	// 1. Scale down and remove Docker containers (via resource Delete methods)
-	// 2. Delete etcd state (via DeleteInstance/DeleteServiceInstance in resource Delete)
-	// 3. Delete database spec and state (this method)
-
 	var ops []storage.TxnOperation
 
 	spec, err := s.store.Spec.GetByKey(databaseID).Exec(ctx)
@@ -147,9 +139,15 @@ func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) error {
 		return ErrDatabaseNotFound
 	}
 
+	ops = append(ops,
+		s.store.Instance.DeleteByDatabaseID(databaseID),
+		s.store.InstanceStatus.DeleteByDatabaseID(databaseID),
+	)
+
 	if err := s.store.Txn(ops...).Commit(ctx); err != nil {
 		return fmt.Errorf("failed to delete database: %w", err)
 	}
+
 	return nil
 }
 
@@ -349,9 +347,7 @@ func (s *Service) GetInstance(ctx context.Context, databaseID, instanceID string
 	storedStatus, err := s.store.InstanceStatus.
 		GetByKey(databaseID, instanceID).
 		Exec(ctx)
-	if errors.Is(err, storage.ErrNotFound) {
-		return nil, ErrInstanceNotFound
-	} else if err != nil {
+	if err != nil && !errors.Is(err, storage.ErrNotFound) {
 		return nil, fmt.Errorf("failed to get stored instance status: %w", err)
 	}
 

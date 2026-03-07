@@ -24,7 +24,6 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.ApplyEvent),
 		work.RegisterActivity(a.CancelSwitchover),
 		work.RegisterActivity(a.CheckClusterHealth),
-		work.RegisterActivity(a.CleanupInstance),
 		work.RegisterActivity(a.CreatePgBackRestBackup),
 		work.RegisterActivity(a.DeleteDbEntities),
 		work.RegisterActivity(a.GenerateServiceInstanceResources),
@@ -44,6 +43,7 @@ func (a *Activities) Register(work *worker.Worker) error {
 		work.RegisterActivity(a.StartInstance),
 		work.RegisterActivity(a.StopInstance),
 		work.RegisterActivity(a.UpdateDbState),
+		work.RegisterActivity(a.UpdatePlannedInstanceStates),
 		work.RegisterActivity(a.UpdateTask),
 		work.RegisterActivity(a.ValidateInstanceSpecs),
 	}

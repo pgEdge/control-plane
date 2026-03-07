@@ -61,3 +61,8 @@ func (s *InstanceStatusStore) DeleteByKey(databaseID, instanceID string) storage
 	key := s.Key(databaseID, instanceID)
 	return storage.NewDeleteKeyOp(s.client, key)
 }
+
+func (s *InstanceStatusStore) DeleteByDatabaseID(databaseID string) storage.DeleteOp {
+	prefix := s.DatabasePrefix(databaseID)
+	return storage.NewDeletePrefixOp(s.client, prefix)
+}

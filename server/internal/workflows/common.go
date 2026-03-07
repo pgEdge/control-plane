@@ -8,9 +8,8 @@ import (
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
 
-	"github.com/pgEdge/control-plane/server/internal/database/operations"
-
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/database/operations"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
@@ -47,22 +46,6 @@ func (w *Workflows) applyEvents(
 					// The host is removed, so we want to just remove it from
 					// the state.
 					state.Remove(event.Resource)
-
-					// TODO(PLAT-398): Remove this workaround once instance records
-					// are managed outside of the instance resource lifecycle.
-					//
-					// If this is an instance resource, we also need to clean up
-					// the instance record from etcd since the normal Delete()
-					// lifecycle method couldn't run on the removed host.
-					if event.Resource.Identifier.Type == database.ResourceTypeInstance {
-						cleanupIn := &activities.CleanupInstanceInput{
-							DatabaseID: databaseID,
-							InstanceID: event.Resource.Identifier.ID,
-						}
-						if _, err := w.Activities.ExecuteCleanupInstance(ctx, cleanupIn).Get(ctx); err != nil {
-							return fmt.Errorf("failed to cleanup orphaned instance %s: %w", event.Resource.Identifier.ID, err)
-						}
-					}
 				} else if event.Type != resource.EventTypeRefresh {
 					// In the case of a refresh event, we'll just leave the
 					// state alone so that we can plan dependent operations. All
@@ -108,6 +91,42 @@ func (w *Workflows) applyEvents(
 	return nil
 }
 
+func (w *Workflows) updatePlannedInstanceStates(
+	ctx workflow.Context,
+	databaseID string,
+	plan resource.Plan,
+) error {
+	var modifiesInstances bool
+	for _, phase := range plan {
+		for _, event := range phase {
+			if event.Resource.Identifier.Type == database.ResourceTypeInstance {
+				modifiesInstances = true
+				break
+			}
+		}
+		if modifiesInstances {
+			break
+		}
+	}
+	if !modifiesInstances {
+		// no need to execute this activity if this plan doesn't modify any
+		// instances.
+		return nil
+	}
+	updateStatesInput := &activities.UpdatePlannedInstanceStatesInput{
+		DatabaseID: databaseID,
+		Plan:       plan,
+	}
+	_, err := w.Activities.
+		ExecuteUpdatePlannedInstanceStates(ctx, updateStatesInput).
+		Get(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to update planned instance states: %w", err)
+	}
+
+	return nil
+}
+
 func (w *Workflows) applyPlans(
 	ctx workflow.Context,
 	databaseID string,
@@ -131,7 +150,11 @@ func (w *Workflows) applyPlans(
 	}()
 
 	for i, plan := range plans {
-		err := w.applyEvents(ctx, databaseID, taskID, state, plan, removeHosts...)
+		err := w.updatePlannedInstanceStates(ctx, databaseID, plan)
+		if err != nil {
+			return err
+		}
+		err = w.applyEvents(ctx, databaseID, taskID, state, plan, removeHosts...)
 		if err != nil {
 			return fmt.Errorf("error in plan %d: %w", i, err)
 		}

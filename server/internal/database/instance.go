@@ -15,6 +15,7 @@ type InstanceState string
 const (
 	InstanceStateCreating  InstanceState = "creating"
 	InstanceStateModifying InstanceState = "modifying"
+	InstanceStateDeleting  InstanceState = "deleting"
 	InstanceStateBackingUp InstanceState = "backing_up"
 	InstanceStateAvailable InstanceState = "available"
 	InstanceStateDegraded  InstanceState = "degraded"
@@ -22,6 +23,17 @@ const (
 	InstanceStateStopped   InstanceState = "stopped"
 	InstanceStateUnknown   InstanceState = "unknown"
 )
+
+var inProgressStates = ds.NewSet(
+	InstanceStateCreating,
+	InstanceStateModifying,
+	InstanceStateDeleting,
+	InstanceStateBackingUp,
+)
+
+func (i InstanceState) IsInProgress() bool {
+	return inProgressStates.Has(i)
+}
 
 var modifyingStates = ds.NewSet(
 	patroni.StateStopping,

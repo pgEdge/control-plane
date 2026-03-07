@@ -27,10 +27,18 @@ type InstanceUpdateOptions struct {
 	NodeName   string        `json:"node_name"`
 	State      InstanceState `json:"state"`
 	Error      string        `json:"error,omitempty"`
+	Now        time.Time     `json:"now"`
+}
+
+func (o *InstanceUpdateOptions) now() time.Time {
+	if !o.Now.IsZero() {
+		return o.Now
+	}
+	return time.Now()
 }
 
 func NewStoredInstance(opts *InstanceUpdateOptions) *StoredInstance {
-	now := time.Now()
+	now := opts.now()
 	return &StoredInstance{
 		InstanceID: opts.InstanceID,
 		DatabaseID: opts.DatabaseID,
@@ -46,7 +54,7 @@ func NewStoredInstance(opts *InstanceUpdateOptions) *StoredInstance {
 func (i *StoredInstance) Update(opts *InstanceUpdateOptions) {
 	i.State = opts.State
 	i.Error = opts.Error
-	i.UpdateAt = time.Now()
+	i.UpdateAt = opts.now()
 }
 
 type InstanceStore struct {
@@ -96,4 +104,9 @@ func (s *InstanceStore) Put(item *StoredInstance) storage.PutOp[*StoredInstance]
 func (s *InstanceStore) DeleteByKey(databaseID, instanceID string) storage.DeleteOp {
 	key := s.Key(databaseID, instanceID)
 	return storage.NewDeleteKeyOp(s.client, key)
+}
+
+func (s *InstanceStore) DeleteByDatabaseID(databaseID string) storage.DeleteOp {
+	prefix := s.DatabasePrefix(databaseID)
+	return storage.NewDeletePrefixOp(s.client, prefix)
 }
