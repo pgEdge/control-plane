@@ -29,7 +29,8 @@ replication enabled via Spock, orchestrated by the pgEdge Control Plane.
   (Linux) or [Docker Desktop](https://docs.docker.com/desktop/) (macOS)
 - curl — [curl.se/download](https://curl.se/download.html)
 - jq — [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download/)
-- psql — [postgresql.org/download](https://www.postgresql.org/download/)
+- psql — macOS: `brew install libpq && brew link --force libpq`;
+  Linux: [pgEdge Enterprise packages](https://docs.pgedge.com/enterprise) or your distribution's `postgresql-client` package
 
 !!! warning "macOS: Enable host networking in Docker Desktop"
     Control Plane requires Docker host networking. On macOS with Docker

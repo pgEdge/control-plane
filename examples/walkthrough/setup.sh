@@ -47,7 +47,11 @@ if [[ ${#MISSING[@]} -gt 0 ]]; then
         explain "  jq      -- https://jqlang.github.io/jq/download/"
         ;;
       psql)
-        explain "  psql    -- https://www.postgresql.org/download/"
+        if [[ "$OS" == "Darwin" ]]; then
+          explain "  psql    -- brew install libpq && brew link --force libpq"
+        else
+          explain "  psql    -- https://docs.pgedge.com/enterprise (use the install builder)"
+        fi
         ;;
     esac
   done
