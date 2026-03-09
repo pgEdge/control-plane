@@ -26,7 +26,48 @@ func TestPosixBackupRestore(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	t.Log("Creating database")
+	var backupRepositories []*controlplane.BackupRepositorySpec
+	var restoreRepository *controlplane.RestoreRepositorySpec
+	var orchestratorOpts *controlplane.OrchestratorOpts
+
+	switch fixture.Orchestrator() {
+	case "swarm":
+		backupRepositories = []*controlplane.BackupRepositorySpec{
+			{
+				Type:     client.RepositoryTypePosix,
+				BasePath: pointerTo("/backups"),
+			},
+		}
+		restoreRepository = &controlplane.RestoreRepositorySpec{
+			Type:     client.RepositoryTypePosix,
+			BasePath: pointerTo("/backups"),
+		}
+		orchestratorOpts = &controlplane.OrchestratorOpts{
+			Swarm: &controlplane.SwarmOpts{
+				ExtraVolumes: []*controlplane.ExtraVolumesSpec{
+					{
+						HostPath:        tmpDir,
+						DestinationPath: "/backups",
+					},
+				},
+			},
+		}
+	case "systemd":
+		backupRepositories = []*controlplane.BackupRepositorySpec{
+			{
+				Type:     client.RepositoryTypePosix,
+				BasePath: &tmpDir,
+			},
+		}
+		restoreRepository = &controlplane.RestoreRepositorySpec{
+			Type:     client.RepositoryTypePosix,
+			BasePath: &tmpDir,
+		}
+	default:
+		t.Fatalf("unsupported orchestrator '%s'", fixture.Orchestrator())
+	}
+
+	tLog(t, "Creating database")
 
 	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
 		Spec: &controlplane.DatabaseSpec{
@@ -39,29 +80,16 @@ func TestPosixBackupRestore(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
 					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
 					BackupConfig: &controlplane.BackupConfigSpec{
-						Repositories: []*controlplane.BackupRepositorySpec{
-							{
-								Type:     client.RepositoryTypePosix,
-								BasePath: pointerTo("/backups"),
-							},
-						},
+						Repositories: backupRepositories,
 					},
-					OrchestratorOpts: &controlplane.OrchestratorOpts{
-						Swarm: &controlplane.SwarmOpts{
-							ExtraVolumes: []*controlplane.ExtraVolumesSpec{
-								{
-									HostPath:        tmpDir,
-									DestinationPath: "/backups",
-								},
-							},
-						},
-					},
+					OrchestratorOpts: orchestratorOpts,
 				},
 			},
 		},
@@ -73,7 +101,7 @@ func TestPosixBackupRestore(t *testing.T) {
 		Password: "password",
 	}
 
-	t.Log("Inserting test data")
+	tLog(t, "Inserting test data")
 
 	db.WithConnection(ctx, opts, t, func(conn *pgx.Conn) {
 		_, err := conn.Exec(ctx, "CREATE TABLE foo (id INT PRIMARY KEY, val TEXT)")
@@ -86,7 +114,7 @@ func TestPosixBackupRestore(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Log("Creating a full backup")
+	tLog(t, "Creating a full backup")
 
 	db.BackupDatabaseNode(ctx, BackupDatabaseNodeOptions{
 		Node: "n1",
@@ -95,18 +123,18 @@ func TestPosixBackupRestore(t *testing.T) {
 		},
 	})
 
-	t.Log("Deleting all data")
+	tLog(t, "Deleting all data")
 
 	db.WithConnection(ctx, opts, t, func(conn *pgx.Conn) {
 		_, err := conn.Exec(ctx, "DELETE FROM foo")
 		require.NoError(t, err)
 	})
 
-	t.Log("Getting set name for latest full backup")
+	tLog(t, "Getting set name for latest full backup")
 
 	setName := fixture.LatestPosixBackup(t, host1, tmpDir, string(db.ID))
 
-	t.Log("Creating another backup to ensure we can restore the correct one")
+	tLog(t, "Creating another backup to ensure we can restore the correct one")
 	db.BackupDatabaseNode(ctx, BackupDatabaseNodeOptions{
 		Node: "n1",
 		Options: &controlplane.BackupOptions{
@@ -114,17 +142,14 @@ func TestPosixBackupRestore(t *testing.T) {
 		},
 	})
 
-	t.Log("Restoring to the first backup")
+	tLog(t, "Restoring to the first backup")
 
 	err := db.RestoreDatabase(ctx, RestoreDatabaseOptions{
 		RestoreConfig: &controlplane.RestoreConfigSpec{
 			SourceDatabaseID:   db.ID,
 			SourceNodeName:     "n1",
 			SourceDatabaseName: db.Spec.DatabaseName,
-			Repository: &controlplane.RestoreRepositorySpec{
-				Type:     client.RepositoryTypePosix,
-				BasePath: pointerTo("/backups"),
-			},
+			Repository:         restoreRepository,
 			RestoreOptions: map[string]string{
 				"set":  strings.TrimSpace(setName),
 				"type": "immediate",
@@ -133,7 +158,7 @@ func TestPosixBackupRestore(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	t.Log("Validating restored data")
+	tLog(t, "Validating restored data")
 
 	// Validate that our data is restored
 	db.WithConnection(ctx, opts, t, func(conn *pgx.Conn) {
@@ -151,9 +176,7 @@ func TestPosixBackupRestore(t *testing.T) {
 func TestS3BackupRestore(t *testing.T) {
 	t.Parallel()
 
-	if !fixture.S3Enabled() {
-		t.Skip("s3 not enabled for this fixture")
-	}
+	fixture.SkipIfS3Unsupported(t)
 
 	hostIDs := fixture.HostIDs()
 	host1 := hostIDs[0]
@@ -180,7 +203,8 @@ func TestS3BackupRestore(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{Name: "n1", HostIds: []controlplane.Identifier{controlplane.Identifier(hostIDs[0])}},
 				{Name: "n2", HostIds: []controlplane.Identifier{controlplane.Identifier(hostIDs[1])}},
@@ -280,9 +304,7 @@ func TestS3BackupRestore(t *testing.T) {
 func TestS3AddNodeFromBackup(t *testing.T) {
 	t.Parallel()
 
-	if !fixture.S3Enabled() {
-		t.Skip("s3 not enabled for this fixture")
-	}
+	fixture.SkipIfS3Unsupported(t)
 
 	host1 := fixture.HostIDs()[0]
 	host2 := fixture.HostIDs()[1]
@@ -309,7 +331,8 @@ func TestS3AddNodeFromBackup(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
@@ -365,7 +388,8 @@ func TestS3AddNodeFromBackup(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
@@ -414,9 +438,7 @@ func TestS3AddNodeFromBackup(t *testing.T) {
 func TestS3CreateDBFromBackup(t *testing.T) {
 	t.Parallel()
 
-	if !fixture.S3Enabled() {
-		t.Skip("s3 not enabled for this fixture")
-	}
+	fixture.SkipIfS3Unsupported(t)
 
 	host1 := fixture.HostIDs()[0]
 	host2 := fixture.HostIDs()[1]
@@ -443,7 +465,8 @@ func TestS3CreateDBFromBackup(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
@@ -499,7 +522,8 @@ func TestS3CreateDBFromBackup(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
@@ -546,6 +570,38 @@ func TestRemoveBackupConfig(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Minute)
 	defer cancel()
 
+	var backupRepositories []*controlplane.BackupRepositorySpec
+	var orchestratorOpts *controlplane.OrchestratorOpts
+
+	switch fixture.Orchestrator() {
+	case "swarm":
+		backupRepositories = []*controlplane.BackupRepositorySpec{
+			{
+				Type:     client.RepositoryTypePosix,
+				BasePath: pointerTo("/backups"),
+			},
+		}
+		orchestratorOpts = &controlplane.OrchestratorOpts{
+			Swarm: &controlplane.SwarmOpts{
+				ExtraVolumes: []*controlplane.ExtraVolumesSpec{
+					{
+						HostPath:        tmpDir,
+						DestinationPath: "/backups",
+					},
+				},
+			},
+		}
+	case "systemd":
+		backupRepositories = []*controlplane.BackupRepositorySpec{
+			{
+				Type:     client.RepositoryTypePosix,
+				BasePath: &tmpDir,
+			},
+		}
+	default:
+		t.Fatalf("unsupported orchestrator '%s'", fixture.Orchestrator())
+	}
+
 	tLog(t, "creating database")
 
 	db := fixture.NewDatabaseFixture(ctx, t, &controlplane.CreateDatabaseRequest{
@@ -559,29 +615,16 @@ func TestRemoveBackupConfig(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
 					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
 					BackupConfig: &controlplane.BackupConfigSpec{
-						Repositories: []*controlplane.BackupRepositorySpec{
-							{
-								Type:     client.RepositoryTypePosix,
-								BasePath: pointerTo("/backups"),
-							},
-						},
+						Repositories: backupRepositories,
 					},
-					OrchestratorOpts: &controlplane.OrchestratorOpts{
-						Swarm: &controlplane.SwarmOpts{
-							ExtraVolumes: []*controlplane.ExtraVolumesSpec{
-								{
-									HostPath:        tmpDir,
-									DestinationPath: "/backups",
-								},
-							},
-						},
-					},
+					OrchestratorOpts: orchestratorOpts,
 				},
 			},
 		},
@@ -599,21 +642,13 @@ func TestRemoveBackupConfig(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
-					Name:    "n1",
-					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
-					OrchestratorOpts: &controlplane.OrchestratorOpts{
-						Swarm: &controlplane.SwarmOpts{
-							ExtraVolumes: []*controlplane.ExtraVolumesSpec{
-								{
-									HostPath:        tmpDir,
-									DestinationPath: "/backups",
-								},
-							},
-						},
-					},
+					Name:             "n1",
+					HostIds:          []controlplane.Identifier{controlplane.Identifier(host1)},
+					OrchestratorOpts: orchestratorOpts,
 				},
 			},
 		},

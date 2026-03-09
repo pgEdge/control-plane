@@ -17,6 +17,8 @@ import (
 func TestMinorVersionUpgrade(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfUpgradesUnsupported(t)
+
 	host1 := fixture.HostIDs()[0]
 	host2 := fixture.HostIDs()[1]
 
@@ -36,6 +38,7 @@ func TestMinorVersionUpgrade(t *testing.T) {
 			DatabaseName:    "test",
 			PostgresVersion: &fromVersion,
 			Port:            pointerTo(0),
+			PatroniPort:     pointerTo(0),
 			DatabaseUsers: []*controlplane.DatabaseUserSpec{
 				{
 					Username:   username,
@@ -88,6 +91,7 @@ func TestMinorVersionUpgrade(t *testing.T) {
 			DatabaseName:    "test",
 			PostgresVersion: &toVersion,
 			Port:            pointerTo(0),
+			PatroniPort:     pointerTo(0),
 			DatabaseUsers: []*controlplane.DatabaseUserSpec{
 				{
 					Username:   username,
