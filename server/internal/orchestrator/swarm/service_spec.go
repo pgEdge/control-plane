@@ -234,16 +234,35 @@ func buildMCPEnvVars(config map[string]any) []string {
 // buildRAGEnvVars returns the standard API key env vars expected by the RAG server.
 // The RAG server reads its full config from a YAML file (delivered via Swarm config);
 // only API keys are injected as environment variables.
+//
+// Keys may appear at the top level of config or inside individual pipeline entries.
+// All unique keys across all locations are collected and set once.
 func buildRAGEnvVars(config map[string]any) []string {
+	// Gather all config maps to scan: top-level + each pipeline entry.
+	sources := []map[string]any{config}
+	if pipelines, ok := config["pipelines"].([]any); ok {
+		for _, raw := range pipelines {
+			if p, ok := raw.(map[string]any); ok {
+				sources = append(sources, p)
+			}
+		}
+	}
+
+	type keyDef struct{ field, envVar string }
+	keys := []keyDef{
+		{"openai_api_key", "OPENAI_API_KEY"},
+		{"anthropic_api_key", "ANTHROPIC_API_KEY"},
+		{"voyage_api_key", "VOYAGE_API_KEY"},
+	}
+
 	var env []string
-	if key, ok := config["openai_api_key"].(string); ok && key != "" {
-		env = append(env, fmt.Sprintf("OPENAI_API_KEY=%s", key))
-	}
-	if key, ok := config["anthropic_api_key"].(string); ok && key != "" {
-		env = append(env, fmt.Sprintf("ANTHROPIC_API_KEY=%s", key))
-	}
-	if key, ok := config["voyage_api_key"].(string); ok && key != "" {
-		env = append(env, fmt.Sprintf("VOYAGE_API_KEY=%s", key))
+	for _, k := range keys {
+		for _, src := range sources {
+			if val, ok := src[k.field].(string); ok && val != "" {
+				env = append(env, fmt.Sprintf("%s=%s", k.envVar, val))
+				break // first non-empty value wins; skip remaining sources
+			}
+		}
 	}
 	return env
 }

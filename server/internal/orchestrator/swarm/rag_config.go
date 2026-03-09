@@ -19,24 +19,18 @@ type ragConfigOptions struct {
 // generateRAGConfig renders the pgedge-rag-server.yaml content from a ServiceSpec.
 // API keys are NOT included here — they are passed as environment variables by
 // buildServiceEnvVars so they are never written to disk in the Swarm config.
+//
+// cfg must contain a "pipelines" array with at least one pipeline object.
 func generateRAGConfig(opts *ragConfigOptions) (string, error) {
 	cfg := opts.ServiceSpec.Config
 
-	pipelineName := stringConfigField(cfg, "pipeline_name", "default")
-	pipelineDesc := stringConfigField(cfg, "pipeline_description", "")
-	embeddingProvider := stringConfigField(cfg, "embedding_provider", "")
-	embeddingModel := stringConfigField(cfg, "embedding_model", "")
-	llmProvider := stringConfigField(cfg, "llm_provider", "")
-	llmModel := stringConfigField(cfg, "llm_model", "")
+	rawPipelines, ok := cfg["pipelines"].([]any)
+	if !ok || len(rawPipelines) == 0 {
+		return "", fmt.Errorf("RAG config must contain a non-empty \"pipelines\" array")
+	}
+
 	tokenBudget := intConfigField(cfg, "token_budget", 4000)
 	topN := intConfigField(cfg, "top_n", 10)
-	ollamaURL := stringConfigField(cfg, "ollama_url", "")
-
-	// Build the tables section
-	tables, err := buildRAGTablesYAML(cfg)
-	if err != nil {
-		return "", err
-	}
 
 	var sb strings.Builder
 	sb.WriteString("server:\n")
@@ -48,9 +42,41 @@ func generateRAGConfig(opts *ragConfigOptions) (string, error) {
 	sb.WriteString(fmt.Sprintf("  top_n: %d\n", topN))
 	sb.WriteString("\n")
 	sb.WriteString("pipelines:\n")
-	sb.WriteString(fmt.Sprintf("  - name: %q\n", pipelineName))
-	if pipelineDesc != "" {
-		sb.WriteString(fmt.Sprintf("    description: %q\n", pipelineDesc))
+
+	for _, raw := range rawPipelines {
+		p, ok := raw.(map[string]any)
+		if !ok {
+			return "", fmt.Errorf("invalid pipeline entry in RAG config")
+		}
+		if err := writePipelineYAML(&sb, p, opts); err != nil {
+			return "", err
+		}
+	}
+
+	return sb.String(), nil
+}
+
+// writePipelineYAML appends one pipeline block to sb, reading fields from p.
+// Database connection is always taken from opts (shared across all pipelines).
+func writePipelineYAML(sb *strings.Builder, p map[string]any, opts *ragConfigOptions) error {
+	name := stringConfigField(p, "pipeline_name", "default")
+	desc := stringConfigField(p, "pipeline_description", "")
+	embeddingProvider := stringConfigField(p, "embedding_provider", "")
+	embeddingModel := stringConfigField(p, "embedding_model", "")
+	embeddingBaseURL := stringConfigField(p, "embedding_base_url", "")
+	llmProvider := stringConfigField(p, "llm_provider", "")
+	llmModel := stringConfigField(p, "llm_model", "")
+	llmBaseURL := stringConfigField(p, "llm_base_url", "")
+	ollamaURL := stringConfigField(p, "ollama_url", "")
+
+	tables, err := buildRAGTablesYAML(p)
+	if err != nil {
+		return err
+	}
+
+	sb.WriteString(fmt.Sprintf("  - name: %q\n", name))
+	if desc != "" {
+		sb.WriteString(fmt.Sprintf("    description: %q\n", desc))
 	}
 	sb.WriteString("    database:\n")
 	sb.WriteString(fmt.Sprintf("      host: %q\n", opts.DatabaseHost))
@@ -64,16 +90,19 @@ func generateRAGConfig(opts *ragConfigOptions) (string, error) {
 	sb.WriteString("    embedding_llm:\n")
 	sb.WriteString(fmt.Sprintf("      provider: %q\n", embeddingProvider))
 	sb.WriteString(fmt.Sprintf("      model: %q\n", embeddingModel))
+	if embeddingBaseURL != "" {
+		sb.WriteString(fmt.Sprintf("      base_url: %q\n", embeddingBaseURL))
+	}
 	sb.WriteString("    rag_llm:\n")
 	sb.WriteString(fmt.Sprintf("      provider: %q\n", llmProvider))
 	sb.WriteString(fmt.Sprintf("      model: %q\n", llmModel))
-
-	// Include ollama_url in config if provided (Ollama server is internal, not a secret)
+	if llmBaseURL != "" {
+		sb.WriteString(fmt.Sprintf("      base_url: %q\n", llmBaseURL))
+	}
 	if ollamaURL != "" {
 		sb.WriteString(fmt.Sprintf("    ollama_url: %q\n", ollamaURL))
 	}
-
-	return sb.String(), nil
+	return nil
 }
 
 func buildRAGTablesYAML(cfg map[string]any) (string, error) {
