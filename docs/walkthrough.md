@@ -138,8 +138,12 @@ preparing to accept database definitions. This is a one-time
 operation:
 
 ```bash
-curl -sf http://localhost:3000/v1/cluster/init
-echo "Cluster initialized."
+status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/v1/cluster/init)
+case "$status" in
+  200|201) echo "Cluster initialized." ;;
+  409)     echo "Cluster already initialized." ;;
+  *)       echo "Cluster initialization failed (HTTP $status)"; exit 1 ;;
+esac
 ```
 
 ---

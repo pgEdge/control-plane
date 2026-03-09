@@ -192,9 +192,9 @@ esac
 # so that reruns target the correct instances.
 existing_db=$(curl -sf "${CP_URL}/v1/databases/${DB_ID}" 2>/dev/null || true)
 if [[ -n "$existing_db" ]]; then
-  N1_PORT=$(echo "$existing_db" | grep -o '"port":[0-9]*' | sed 's/"port"://' | sed -n '1p')
-  N2_PORT=$(echo "$existing_db" | grep -o '"port":[0-9]*' | sed 's/"port"://' | sed -n '2p')
-  N3_PORT=$(echo "$existing_db" | grep -o '"port":[0-9]*' | sed 's/"port"://' | sed -n '3p')
+  N1_PORT=$(echo "$existing_db" | jq -r '[.instances[] | select(.node_name=="n1")] | .[0].connection_info.port // empty')
+  N2_PORT=$(echo "$existing_db" | jq -r '[.instances[] | select(.node_name=="n2")] | .[0].connection_info.port // empty')
+  N3_PORT=$(echo "$existing_db" | jq -r '[.instances[] | select(.node_name=="n3")] | .[0].connection_info.port // empty')
   if [[ -n "$N1_PORT" && -n "$N2_PORT" && -n "$N3_PORT" ]]; then
     info "Existing database found. Using ports: n1=${N1_PORT}, n2=${N2_PORT}, n3=${N3_PORT}"
   else
