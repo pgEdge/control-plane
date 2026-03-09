@@ -76,14 +76,17 @@ detect_ports() {
 
 # ── Welcome ──────────────────────────────────────────────────────────────────
 
-header "pgEdge Enterprise -- Get Running Fast"
+header "pgEdge Enterprise Postgres"
 
-explain "This guide walks you through the Control Plane journey:"
+explain "This guide walks you through deploying pgEdge Enterprise Postgres"
+explain "using the Control Plane, a lightweight orchestrator that manages"
+explain "distributed Postgres databases with multi-master replication and"
+explain "read replica support."
 explain ""
-explain "  1. Start Control Plane"
+explain "  1. Start the Control Plane"
 explain "  2. Create a distributed database"
 explain "  3. Verify multi-master replication"
-explain "  4. Prove automatic recovery from node failure"
+explain "  4. Demonstrate automatic recovery from node failure"
 explain ""
 explain "You'll go from zero to active-active replication in minutes."
 
@@ -91,10 +94,11 @@ prompt_continue
 
 # ── Step 1: Start Control Plane ──────────────────────────────────────────────
 
-header "Step 1: Start Control Plane"
+header "Step 1: Start the Control Plane"
 
-explain "Control Plane is a lightweight orchestrator that manages your Postgres"
-explain "instances. It runs as a single container and exposes a REST API."
+explain "The Control Plane is a lightweight orchestrator that manages your Postgres"
+explain "instances. It runs on each of your hosts and exposes a REST API."
+explain "In this example, we are running it on a single host."
 
 detect_ports
 
@@ -188,13 +192,15 @@ prompt_continue
 header "Step 2: Create a Distributed Database"
 
 explain "Control Plane uses a declarative model. You describe the database you"
-explain "want -- name, users, and nodes -- and CP handles the rest. Spock"
-explain "multi-master replication is configured automatically between all nodes."
-echo ""
-explain "This will create a 3-node database. It takes a minute or two while CP"
-explain "pulls the Postgres image and starts each node."
-echo ""
-explain "${DIM}Tip: open a second terminal and run 'watch docker ps' (or use the Containers view in Docker Desktop)${RESET}"
+explain "want and Control Plane handles the configuration and deployment for you."
+explain ""
+explain "A node represents an independent Postgres instance within your database."
+explain "Each node accepts reads and writes, and Spock logical replication keeps"
+explain "them in sync. Control Plane also supports read replicas for scaling read"
+explain "traffic, though this walkthrough focuses on multi-master replication."
+explain ""
+explain "This will create a database with 3 nodes. It takes a minute or two as"
+explain "the Postgres image is pulled and started on each node."
 
 prompt_run "curl -s -X POST ${CP_URL}/v1/databases \\
     -H 'Content-Type: application/json' \\
@@ -218,7 +224,8 @@ prompt_run "curl -s -X POST ${CP_URL}/v1/databases \\
         }
     }'" "Creating database..."
 
-explain "CP is now pulling the Postgres image and starting 3 nodes."
+explain "Control Plane is now creating services for each node and starting"
+explain "the Postgres containers."
 echo ""
 
 start_spinner "Waiting for database to become available..."
@@ -243,9 +250,9 @@ else
 fi
 
 explain ""
-explain "Let's connect to n1 using psql inside the container:"
+explain "Let's connect to n1 to confirm Postgres is running:"
 
-prompt_run "docker exec \$(docker ps --filter label=pgedge.node.name=n1 --format '{{.Names}}') psql -U admin ${DB_ID} -c \"SELECT version();\""
+prompt_run "PGPASSWORD=password psql -h localhost -p ${N1_PORT} -U admin ${DB_ID} -c \"SELECT version();\""
 
 prompt_continue
 
@@ -259,24 +266,24 @@ explain ""
 explain "Let's prove it. First, create a table on n1:"
 
 # Clean up any leftover data from a previous run
-docker exec "$(docker ps --filter label=pgedge.node.name=n1 --format '{{.Names}}')" \
-  psql -U admin "${DB_ID}" -c "DROP TABLE IF EXISTS example;" >/dev/null 2>&1 || true
+PGPASSWORD=password psql -h localhost -p "${N1_PORT}" -U admin "${DB_ID}" \
+  -c "DROP TABLE IF EXISTS example;" >/dev/null 2>&1 || true
 
-prompt_run "docker exec \$(docker ps --filter label=pgedge.node.name=n1 --format '{{.Names}}') psql -U admin ${DB_ID} -c \"CREATE TABLE example (id int primary key, data text);\""
+prompt_run "PGPASSWORD=password psql -h localhost -p ${N1_PORT} -U admin ${DB_ID} -c \"CREATE TABLE example (id int primary key, data text);\""
 
 explain "Insert a row on n2:"
 
-prompt_run "docker exec \$(docker ps --filter label=pgedge.node.name=n2 --format '{{.Names}}') psql -U admin ${DB_ID} -c \"INSERT INTO example (id, data) VALUES (1, 'Hello from n2!');\""
+prompt_run "PGPASSWORD=password psql -h localhost -p ${N2_PORT} -U admin ${DB_ID} -c \"INSERT INTO example (id, data) VALUES (1, 'Hello from n2!');\""
 
 explain "Read it back from n1 -- it should be there via Spock replication:"
 
-prompt_run "docker exec \$(docker ps --filter label=pgedge.node.name=n1 --format '{{.Names}}') psql -U admin ${DB_ID} -c \"SELECT * FROM example;\""
+prompt_run "PGPASSWORD=password psql -h localhost -p ${N1_PORT} -U admin ${DB_ID} -c \"SELECT * FROM example;\""
 
 explain "Now write on n3 and read from n1:"
 
-prompt_run "docker exec \$(docker ps --filter label=pgedge.node.name=n3 --format '{{.Names}}') psql -U admin ${DB_ID} -c \"INSERT INTO example (id, data) VALUES (2, 'Hello from n3!');\""
+prompt_run "PGPASSWORD=password psql -h localhost -p ${N3_PORT} -U admin ${DB_ID} -c \"INSERT INTO example (id, data) VALUES (2, 'Hello from n3!');\""
 
-prompt_run "docker exec \$(docker ps --filter label=pgedge.node.name=n1 --format '{{.Names}}') psql -U admin ${DB_ID} -c \"SELECT * FROM example;\""
+prompt_run "PGPASSWORD=password psql -h localhost -p ${N1_PORT} -U admin ${DB_ID} -c \"SELECT * FROM example;\""
 
 info "Both rows replicated to n1 -- every node can read every other node's writes."
 
@@ -295,8 +302,6 @@ explain ""
 explain "Scaling the service to 0 cleanly stops n2 and prevents Control Plane"
 explain "from auto-recovering it, so you can observe each step."
 explain ""
-explain "Make sure you have ${BOLD}watch docker ps${RESET} running in a second terminal (or the Containers view in Docker Desktop)."
-
 prompt_continue
 
 explain "Scale n2 to 0:"
@@ -305,13 +310,13 @@ prompt_run "N2_SERVICE=\$(docker service ls --filter label=pgedge.component=post
 
 explain "Write on n1 while n2 is down:"
 
-prompt_run "docker exec \$(docker ps --filter label=pgedge.node.name=n1 --format '{{.Names}}') psql -U admin ${DB_ID} -c \"INSERT INTO example (id, data) VALUES (3, 'Written while n2 is down!');\""
+prompt_run "PGPASSWORD=password psql -h localhost -p ${N1_PORT} -U admin ${DB_ID} -c \"INSERT INTO example (id, data) VALUES (3, 'Written while n2 is down!');\""
 
-explain "Read from n3 to confirm the cluster still works:"
+explain "Read from n3 to confirm the database still works:"
 
-prompt_run "docker exec \$(docker ps --filter label=pgedge.node.name=n3 --format '{{.Names}}') psql -U admin ${DB_ID} -c \"SELECT * FROM example;\""
+prompt_run "PGPASSWORD=password psql -h localhost -p ${N3_PORT} -U admin ${DB_ID} -c \"SELECT * FROM example;\""
 
-info "The cluster kept working with a node down."
+info "The database kept working with a node down."
 echo ""
 explain "Now let's bring n2 back by scaling the service to 1:"
 
@@ -335,8 +340,8 @@ else
   info "n2 is back! Waiting for Postgres to accept connections..."
   n2_retries=20
   while [[ "$n2_retries" -gt 0 ]]; do
-    if docker exec "$(docker ps --filter label=pgedge.node.name=n2 --format '{{.Names}}')" \
-      psql -U admin "${DB_ID}" -c "SELECT 1;" >/dev/null 2>&1; then
+    if PGPASSWORD=password psql -h localhost -p "${N2_PORT}" -U admin "${DB_ID}" \
+      -c "SELECT 1;" >/dev/null 2>&1; then
       break
     fi
     sleep 2
@@ -352,9 +357,9 @@ else
   explain "Let's read from n2. Everything should be there -- including the row"
   explain "that was written while n2 was down:"
 
-  prompt_run "docker exec \$(docker ps --filter label=pgedge.node.name=n2 --format '{{.Names}}') psql -U admin ${DB_ID} -c \"SELECT * FROM example;\""
+  prompt_run "PGPASSWORD=password psql -h localhost -p ${N2_PORT} -U admin ${DB_ID} -c \"SELECT * FROM example;\""
 
-  info "The cluster survived a node failure, n2 came back via service"
+  info "The database survived a node failure, n2 came back via service"
   info "scaling, and Spock replication caught everything up. Zero data loss."
 fi
 

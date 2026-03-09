@@ -4,16 +4,15 @@ cwd: ../
 
 # Guided Walkthrough
 
-Deploy a 3-node distributed PostgreSQL database with active-active
-multi-master replication using the Spock extension, all orchestrated
-by pgEdge Control Plane.
+Deploy a distributed PostgreSQL database with multi-master
+replication enabled via Spock, orchestrated by the pgEdge Control Plane.
 
 | Step | What you'll do |
 |------|---------------|
-| **Start Control Plane** | Launch the orchestrator in a Docker container |
-| **Create a Distributed Database** | Deploy a 3-node Postgres cluster with Spock replication |
-| **Verify Multi-Master Replication** | Write on one node, read from another |
-| **Resilience Demo** | Take a node down, prove zero data loss on recovery |
+| Start Control Plane | Launch the orchestrator in a Docker container |
+| Create a Distributed Database | Deploy a 3-node Postgres database with Spock replication |
+| Verify Multi-Master Replication | Write on one node, read from another |
+| Resilience Demo | Take a node down, prove zero data loss on recovery |
 
 !!! tip "Run the commands as you read"
     Every code block below is executable. Open this repo in
@@ -26,10 +25,11 @@ by pgEdge Control Plane.
 
 ## Prerequisites
 
-- **Docker** — [Docker Engine](https://docs.docker.com/engine/install/)
+- Docker — [Docker Engine](https://docs.docker.com/engine/install/)
   (Linux) or [Docker Desktop](https://docs.docker.com/desktop/) (macOS)
-- **curl** — [curl.se/download](https://curl.se/download.html)
-- **jq** — [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download/)
+- curl — [curl.se/download](https://curl.se/download.html)
+- jq — [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download/)
+- psql — [postgresql.org/download](https://www.postgresql.org/download/)
 
 !!! warning "macOS: Enable host networking in Docker Desktop"
     Control Plane requires Docker host networking. On macOS with Docker
@@ -43,8 +43,9 @@ by pgEdge Control Plane.
 
 ## Step 1: Start the Control Plane
 
-Control Plane is a lightweight orchestrator that manages your Postgres
-instances. It runs as a single container and exposes a REST API.
+The Control Plane is a lightweight orchestrator that manages your Postgres
+instances. It runs on each of your hosts and exposes a REST API.
+In this example, we are running it on a single host.
 
 ### If you're in Codespaces
 
@@ -84,15 +85,19 @@ docker swarm init 2>/dev/null || echo "Swarm already active"
     to specify which address to advertise. Find your primary IP and
     run `docker swarm init --advertise-addr <your-ip>` instead.
 
-### Create a temporary data directory
+### Set environment variables
 
-Control Plane persists configuration and database state to a host
-directory that gets mounted into the container:
+These variables are used throughout the walkthrough. Adjust the ports
+if they conflict with existing services on your machine:
 
 ```bash
+export N1_PORT=5432
+export N2_PORT=5433
+export N3_PORT=5434
 export CP_DATA=$(mktemp -d)/pgedge-cp-demo
 mkdir -p "$CP_DATA"
 echo "Data directory: $CP_DATA"
+echo "Node ports: n1=$N1_PORT, n2=$N2_PORT, n3=$N3_PORT"
 ```
 
 ### Pull and start the Control Plane container
@@ -139,18 +144,15 @@ echo "Cluster initialized."
 ### What you're creating
 
 Control Plane uses a declarative model. You describe the database you
-want — name, users, and nodes — and Control Plane handles the rest.
-Spock multi-master replication is configured automatically between all
-nodes.
+want and Control Plane handles the configuration and deployment for you.
 
-This will create a 3-node database with an admin user. It takes a
-minute or two while Control Plane pulls the Postgres image and starts
-each node.
+A node represents an independent Postgres instance within your database.
+Each node accepts reads and writes, and Spock logical replication keeps
+them in sync. Control Plane also supports read replicas for scaling read
+traffic, though this walkthrough focuses on multi-master replication.
 
-!!! note
-    Open a second terminal and run `watch docker ps` (or use the
-    Containers view in Docker Desktop) — you'll want
-    this for the rest of the demo.
+This will create a database with 3 nodes. It takes a minute or two as
+the Postgres image is pulled and started on each node.
 
 ### Create the database
 
@@ -170,17 +172,17 @@ curl -s -X POST http://localhost:3000/v1/databases \
                 }
             ],
             "nodes": [
-                { "name": "n1", "port": 5432, "host_ids": ["host-1"] },
-                { "name": "n2", "port": 5433, "host_ids": ["host-1"] },
-                { "name": "n3", "port": 5434, "host_ids": ["host-1"] }
+                { "name": "n1", "port": '"$N1_PORT"', "host_ids": ["host-1"] },
+                { "name": "n2", "port": '"$N2_PORT"', "host_ids": ["host-1"] },
+                { "name": "n3", "port": '"$N3_PORT"', "host_ids": ["host-1"] }
             ]
         }
     }'
 ```
 
 The API returns a JSON task confirming that database creation has
-started. Creation is asynchronous — Control Plane is now pulling the
-Postgres image and spinning up three containers in the background.
+started. Creation is asynchronous — Control Plane is now creating
+services for each node and starting the Postgres containers.
 
 ### Wait for the database
 
@@ -203,15 +205,8 @@ echo "Database is ready!"
 Connect to n1 to confirm Postgres is running:
 
 ```bash
-docker exec $(docker ps --filter label=pgedge.node.name=n1 \
-    --format '{{.Names}}') psql -U admin example -c "SELECT version();"
+PGPASSWORD=password psql -h localhost -p "$N1_PORT" -U admin example -c "SELECT version();"
 ```
-
-!!! tip "Have psql installed locally?"
-    You can also connect directly from your host:
-    ```text
-    PGPASSWORD=password psql -h localhost -p 5432 -U admin example
-    ```
 
 ---
 
@@ -223,16 +218,14 @@ accepts writes and changes propagate automatically.
 ### Create a table on n1
 
 ```bash
-docker exec $(docker ps --filter label=pgedge.node.name=n1 \
-    --format '{{.Names}}') psql -U admin example \
+PGPASSWORD=password psql -h localhost -p "$N1_PORT" -U admin example \
     -c "CREATE TABLE example (id int primary key, data text);"
 ```
 
 ### Insert a row on n2
 
 ```bash
-docker exec $(docker ps --filter label=pgedge.node.name=n2 \
-    --format '{{.Names}}') psql -U admin example \
+PGPASSWORD=password psql -h localhost -p "$N2_PORT" -U admin example \
     -c "INSERT INTO example (id, data) VALUES (1, 'Hello from n2!');"
 ```
 
@@ -241,16 +234,14 @@ docker exec $(docker ps --filter label=pgedge.node.name=n2 \
 The row was written on n2 but is already on n1 via Spock replication:
 
 ```bash
-docker exec $(docker ps --filter label=pgedge.node.name=n1 \
-    --format '{{.Names}}') psql -U admin example \
+PGPASSWORD=password psql -h localhost -p "$N1_PORT" -U admin example \
     -c "SELECT * FROM example;"
 ```
 
 ### Write on n3
 
 ```bash
-docker exec $(docker ps --filter label=pgedge.node.name=n3 \
-    --format '{{.Names}}') psql -U admin example \
+PGPASSWORD=password psql -h localhost -p "$N3_PORT" -U admin example \
     -c "INSERT INTO example (id, data) VALUES (2, 'Hello from n3!');"
 ```
 
@@ -259,8 +250,7 @@ docker exec $(docker ps --filter label=pgedge.node.name=n3 \
 Both rows should be here — one replicated from n2, one from n3:
 
 ```bash
-docker exec $(docker ps --filter label=pgedge.node.name=n1 \
-    --format '{{.Names}}') psql -U admin example \
+PGPASSWORD=password psql -h localhost -p "$N1_PORT" -U admin example \
     -c "SELECT * FROM example;"
 ```
 
@@ -297,20 +287,18 @@ echo "Node n2 scaled to 0."
 ### Write on n1 while n2 is down
 
 ```bash
-docker exec $(docker ps --filter label=pgedge.node.name=n1 \
-    --format '{{.Names}}') psql -U admin example \
+PGPASSWORD=password psql -h localhost -p "$N1_PORT" -U admin example \
     -c "INSERT INTO example (id, data) VALUES (3, 'Written while n2 is down!');"
 ```
 
-### Read from n3 to confirm the cluster still works
+### Read from n3 to confirm the database still works
 
 ```bash
-docker exec $(docker ps --filter label=pgedge.node.name=n3 \
-    --format '{{.Names}}') psql -U admin example \
+PGPASSWORD=password psql -h localhost -p "$N3_PORT" -U admin example \
     -c "SELECT * FROM example;"
 ```
 
-The cluster kept working with a node down.
+The database kept working with a node down.
 
 ### Scale n2 back to 1
 
@@ -328,18 +316,17 @@ echo "Node n2 scaling back up."
 Poll until the n2 container appears and is ready:
 
 ```bash
-echo "Waiting for n2 container..."
-until docker ps --filter label=pgedge.node.name=n2 \
-    --format '{{.Names}}' | grep -q .; do
+echo "Waiting for n2 to accept connections..."
+until PGPASSWORD=password psql -h localhost -p "$N2_PORT" -U admin example \
+    -c "SELECT 1" >/dev/null 2>&1; do
   sleep 3
 done
-echo "n2 is back! Waiting for Postgres to accept connections..."
-until docker exec $(docker ps --filter label=pgedge.node.name=n2 \
-    --format '{{.Names}}') psql -U admin example \
-    -c "SELECT 1;" >/dev/null 2>&1; do
-  sleep 2
+echo "n2 is back. Waiting for replication sync..."
+until PGPASSWORD=password psql -h localhost -p "$N2_PORT" -U admin example \
+    -tAc "SELECT 1 FROM example WHERE id = 3;" | grep -qx '1'; do
+  sleep 3
 done
-echo "Ready — replication should be synced."
+echo "Replication is synced."
 ```
 
 ### Read from n2 to verify recovery
@@ -348,12 +335,11 @@ Everything should be here, including the row written while n2 was
 down:
 
 ```bash
-docker exec $(docker ps --filter label=pgedge.node.name=n2 \
-    --format '{{.Names}}') psql -U admin example \
+PGPASSWORD=password psql -h localhost -p "$N2_PORT" -U admin example \
     -c "SELECT * FROM example;"
 ```
 
-The cluster survived a node failure, n2 came back via service
+The database survived a node failure, n2 came back via service
 scaling, and Spock replication caught everything up. Zero data loss.
 
 ---
@@ -398,8 +384,8 @@ echo "Cleanup complete."
 
 | Topic | Link |
 |-------|------|
-| Control Plane docs | [docs.pgedge.com/control-plane](https://docs.pgedge.com/control-plane/) |
-| Core concepts | [docs.pgedge.com/control-plane/prerequisites/concepts](https://docs.pgedge.com/control-plane/prerequisites/concepts) |
-| Spock multi-master | [docs.pgedge.com/spock-v5](https://docs.pgedge.com/spock-v5) |
+| Control Plane Overview | [docs.pgedge.com/control-plane](https://docs.pgedge.com/control-plane/) |
+| Control Plane Concepts | [docs.pgedge.com/control-plane/prerequisites/concepts](https://docs.pgedge.com/control-plane/prerequisites/concepts) |
+| Spock Multi-Master Replication | [docs.pgedge.com/spock-v5](https://docs.pgedge.com/spock-v5) |
 | API Reference | [docs.pgedge.com/control-plane/api/reference](https://docs.pgedge.com/control-plane/api/reference) |
 | Package Catalog | [docs.pgedge.com/enterprise/packages](https://docs.pgedge.com/enterprise/packages) |

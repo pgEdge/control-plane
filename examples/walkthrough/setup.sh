@@ -16,7 +16,7 @@ header "Control Plane Walkthrough -- Prerequisites Check"
 explain "Checking that required tools are installed..."
 echo ""
 
-REQUIRED_CMDS=(docker curl jq)
+REQUIRED_CMDS=(docker curl jq psql)
 MISSING=()
 
 for cmd in "${REQUIRED_CMDS[@]}"; do
@@ -45,6 +45,9 @@ if [[ ${#MISSING[@]} -gt 0 ]]; then
         ;;
       jq)
         explain "  jq      -- https://jqlang.github.io/jq/download/"
+        ;;
+      psql)
+        explain "  psql    -- https://www.postgresql.org/download/"
         ;;
     esac
   done
@@ -107,20 +110,10 @@ echo ""
 
 if [[ "$OS" == "Darwin" ]]; then
   explain "Checking Docker Desktop host networking..."
-  # Start a throwaway TCP listener with --network host and verify the
-  # port is reachable from the Mac host. "alpine true" only checks that
-  # Docker accepts the flag, not that ports are actually forwarded.
-  HOST_NET_OK=false
-  HOST_NET_PORT=19876
-  if docker run --rm -d --network host --name pgedge-hostnet-check \
-    alpine sh -c "nc -l -p $HOST_NET_PORT" &>/dev/null; then
-    sleep 1
-    if nc -z localhost "$HOST_NET_PORT" &>/dev/null; then
-      HOST_NET_OK=true
-    fi
-    docker rm -f pgedge-hostnet-check >/dev/null 2>&1 || true
-  fi
-  if [[ "$HOST_NET_OK" != "true" ]]; then
+  SETTINGS_FILE="$HOME/Library/Group Containers/group.com.docker/settings-store.json"
+  if [[ -f "$SETTINGS_FILE" ]] && grep -q 'HostNetworkingEnabled.*true' "$SETTINGS_FILE"; then
+    info "Docker Desktop host networking is enabled."
+  else
     echo ""
     error "Host networking is not enabled in Docker Desktop."
     explain ""
@@ -137,7 +130,6 @@ if [[ "$OS" == "Darwin" ]]; then
     explain "  ${DIM}bash ${SCRIPT_DIR}/guide.sh${RESET}"
     exit 1
   fi
-  info "Docker Desktop host networking is enabled."
   echo ""
 fi
 
