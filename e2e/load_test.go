@@ -119,6 +119,7 @@ func (l *LoadTest) Run(t *testing.T) {
 			Spec: &controlplane.DatabaseSpec{
 				DatabaseName:  "load_test",
 				Port:          pointerTo(0),
+				PatroniPort:   pointerTo(0),
 				Nodes:         l.StartingNodes,
 				DatabaseUsers: users,
 			},
@@ -151,6 +152,7 @@ func (l *LoadTest) Run(t *testing.T) {
 			Spec: &controlplane.DatabaseSpec{
 				DatabaseName:  "load_test",
 				Port:          pointerTo(0),
+				PatroniPort:   pointerTo(0),
 				Nodes:         l.UpdatedNodes,
 				DatabaseUsers: users,
 			},

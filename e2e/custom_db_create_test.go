@@ -58,6 +58,7 @@ func TestCreateDbWithVersions(t *testing.T) {
 						},
 					},
 					Port:            pointerTo(0),
+					PatroniPort:     pointerTo(0),
 					PostgresVersion: pointerTo(version.PostgresVersion),
 					SpockVersion:    pointerTo(version.SpockVersion),
 					Nodes: []*controlplane.DatabaseNodeSpec{

@@ -35,7 +35,8 @@ func testCancelDB(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
@@ -44,6 +45,8 @@ func testCancelDB(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	creation_task := create_resp.Task
 	database := create_resp.Database
 	if err != nil {
