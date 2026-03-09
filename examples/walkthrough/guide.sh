@@ -100,8 +100,6 @@ explain "The Control Plane is a lightweight orchestrator that manages your Postg
 explain "instances. It runs on each of your hosts and exposes a REST API."
 explain "In this example, we are running it on a single host."
 
-detect_ports
-
 # Remove stale container from a previous run
 if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "^${CP_CONTAINER}$"; then
   if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${CP_CONTAINER}$"; then
@@ -179,10 +177,31 @@ else
 fi
 
 # Initialize cluster (idempotent -- safe to re-run)
-if curl -sf "${CP_URL}/v1/cluster/init" >/dev/null 2>&1; then
-  info "Cluster initialized."
+init_status=$(curl -s -o /dev/null -w "%{http_code}" "${CP_URL}/v1/cluster/init" 2>/dev/null || true)
+case "$init_status" in
+  200|201) info "Cluster initialized." ;;
+  409)     info "Cluster already initialized." ;;
+  *)
+    error "Cluster initialization failed (HTTP ${init_status:-no response})."
+    error "Check Control Plane logs: docker logs ${CP_CONTAINER}"
+    exit 1
+    ;;
+esac
+
+# Detect ports -- if the database already exists, read its ports from the API
+# so that reruns target the correct instances.
+existing_db=$(curl -sf "${CP_URL}/v1/databases/${DB_ID}" 2>/dev/null || true)
+if [[ -n "$existing_db" ]]; then
+  N1_PORT=$(echo "$existing_db" | grep -o '"port":[0-9]*' | sed 's/"port"://' | sed -n '1p')
+  N2_PORT=$(echo "$existing_db" | grep -o '"port":[0-9]*' | sed 's/"port"://' | sed -n '2p')
+  N3_PORT=$(echo "$existing_db" | grep -o '"port":[0-9]*' | sed 's/"port"://' | sed -n '3p')
+  if [[ -n "$N1_PORT" && -n "$N2_PORT" && -n "$N3_PORT" ]]; then
+    info "Existing database found. Using ports: n1=${N1_PORT}, n2=${N2_PORT}, n3=${N3_PORT}"
+  else
+    detect_ports
+  fi
 else
-  info "Cluster already initialized."
+  detect_ports
 fi
 
 prompt_continue
@@ -351,7 +370,18 @@ else
     warn "n2 container is back but Postgres may still be starting."
   fi
   info "Waiting for replication to sync..."
-  sleep 3
+  sync_retries=20
+  while [[ "$sync_retries" -gt 0 ]]; do
+    if PGPASSWORD=password psql -h localhost -p "${N2_PORT}" -U admin "${DB_ID}" \
+      -tAc "SELECT 1 FROM example WHERE id = 3;" 2>/dev/null | grep -qx '1'; then
+      break
+    fi
+    sleep 3
+    sync_retries=$((sync_retries - 1))
+  done
+  if [[ "$sync_retries" -eq 0 ]]; then
+    warn "Replication may not have fully synced yet."
+  fi
 
   explain ""
   explain "Let's read from n2. Everything should be there -- including the row"

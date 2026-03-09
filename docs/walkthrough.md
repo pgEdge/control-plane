@@ -78,7 +78,11 @@ bash examples/walkthrough/guide.sh
 Control Plane uses Docker Swarm for container orchestration:
 
 ```bash
-docker swarm init 2>/dev/null || echo "Swarm already active"
+if [ "$(docker info --format '{{.Swarm.LocalNodeState}}' 2>/dev/null)" = "active" ]; then
+  echo "Swarm already active"
+else
+  docker swarm init
+fi
 ```
 
 !!! tip "Getting a 'could not choose an IP address' error?"

@@ -17,6 +17,11 @@ explain "Checking that required tools are installed..."
 echo ""
 
 REQUIRED_CMDS=(docker curl jq psql)
+if [[ "$OS" == "Darwin" ]]; then
+  REQUIRED_CMDS+=(lsof)
+else
+  REQUIRED_CMDS+=(ss)
+fi
 MISSING=()
 
 for cmd in "${REQUIRED_CMDS[@]}"; do
@@ -52,6 +57,12 @@ if [[ ${#MISSING[@]} -gt 0 ]]; then
         else
           explain "  psql    -- https://docs.pgedge.com/enterprise (use the install builder)"
         fi
+        ;;
+      lsof)
+        explain "  lsof    -- install Xcode Command Line Tools: xcode-select --install"
+        ;;
+      ss)
+        explain "  ss      -- install iproute2: sudo apt-get install -y iproute2"
         ;;
     esac
   done
