@@ -463,6 +463,7 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 	// MCP config resource (generates config.yaml, tokens.yaml, users.yaml)
 	mcpConfigResource := &MCPConfigResource{
 		ServiceInstanceID: spec.ServiceInstanceID,
+		ServiceID:         spec.ServiceSpec.ServiceID,
 		HostID:            spec.HostID,
 		DirResourceID:     dataDirID,
 		Config:            mcpConfig,

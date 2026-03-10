@@ -91,46 +91,44 @@ type ServiceUser struct {
 	Role     string `json:"role"`     // Database role, e.g., "pgedge_application_read_only"
 }
 
-// GenerateServiceUsername creates a deterministic username for a service instance.
+// GenerateServiceUsername creates a deterministic username for a service.
 //
 // # Username Format
 //
-// The username follows the pattern: "svc_{service_id}_{host_id}"
+// The username follows the pattern: "svc_{service_id}"
 //
 // Example:
 //
-//	service_id: "mcp-server", host_id: "host1"
-//	Generated username: "svc_mcp-server_host1"
+//	service_id: "mcp-server"
+//	Generated username: "svc_mcp_server"
 //
 // # Rationale
 //
 // - "svc_" prefix: Clearly identifies service accounts vs. application users
 // - service_id: Uniquely identifies the service within the database
-// - host_id: Distinguishes service instances on different hosts
-// - Deterministic: Same service_id + host_id always generates the same username
+// - Deterministic: Same service_id always generates the same username
+// - Shared: One database user role per service, shared across all instances
 //
 // # Uniqueness
 //
-// Service instance IDs are unique within a database (format: {db_id}-{service_id}-{host_id}).
-// By using the full service_id and host_id, we guarantee uniqueness even when
-// multiple services exist on the same database.
+// Service IDs are unique within a database. By using the service_id, we
+// guarantee uniqueness even when multiple services exist on the same database.
 //
 // # PostgreSQL Compatibility
 //
 // PostgreSQL identifier length limit is 63 characters. For short names the full
-// service_id and host_id are used directly. When the combined username exceeds
-// 63 characters, the function appends an 8-character hex hash (from SHA-256 of
-// the full untruncated name) to a truncated prefix. This guarantees uniqueness
-// even when two inputs share a long common prefix.
+// service_id is used directly. When the username exceeds 63 characters, the
+// function appends an 8-character hex hash (from SHA-256 of the full untruncated
+// name) to a truncated prefix. This guarantees uniqueness even when two inputs
+// share a long common prefix.
 //
-// Short name format: svc_{service_id}_{host_id}
-// Long name format:  svc_{first 50 chars of service_id_host_id}_{8-hex-hash}
-func GenerateServiceUsername(serviceID, hostID string) string {
+// Short name format: svc_{service_id}
+// Long name format:  svc_{first 50 chars of service_id}_{8-hex-hash}
+func GenerateServiceUsername(serviceID string) string {
 	// Sanitize hyphens to underscores for PostgreSQL compatibility.
 	// Hyphens in identifiers require double-quoting in SQL.
 	serviceID = strings.ReplaceAll(serviceID, "-", "_")
-	hostID = strings.ReplaceAll(hostID, "-", "_")
-	username := fmt.Sprintf("svc_%s_%s", serviceID, hostID)
+	username := fmt.Sprintf("svc_%s", serviceID)
 
 	if len(username) <= 63 {
 		return username
@@ -141,7 +139,7 @@ func GenerateServiceUsername(serviceID, hostID string) string {
 	suffix := hex.EncodeToString(h[:4]) // 8 hex chars
 
 	// svc_ (4) + prefix (50) + _ (1) + hash (8) = 63
-	raw := fmt.Sprintf("%s_%s", serviceID, hostID)
+	raw := serviceID
 	if len(raw) > 50 {
 		raw = raw[:50]
 	}

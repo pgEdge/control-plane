@@ -59,7 +59,7 @@ func (s *ServiceInstanceResource) Executor() resource.Executor {
 
 func (s *ServiceInstanceResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
-		ServiceUserRoleIdentifier(s.ServiceInstanceID),
+		ServiceUserRoleIdentifier(s.ServiceID),
 		ServiceInstanceSpecResourceIdentifier(s.ServiceInstanceID),
 	}
 }

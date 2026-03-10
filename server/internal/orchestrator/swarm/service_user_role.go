@@ -29,9 +29,9 @@ func sanitizeIdentifier(name string) string {
 	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }
 
-func ServiceUserRoleIdentifier(serviceInstanceID string) resource.Identifier {
+func ServiceUserRoleIdentifier(serviceID string) resource.Identifier {
 	return resource.Identifier{
-		ID:   serviceInstanceID,
+		ID:   serviceID,
 		Type: ResourceTypeServiceUserRole,
 	}
 }
@@ -55,11 +55,13 @@ type ServiceUserRole struct {
 }
 
 func (r *ServiceUserRole) ResourceVersion() string {
-	return "2"
+	return "3"
 }
 
 func (r *ServiceUserRole) DiffIgnore() []string {
 	return []string{
+		"/service_instance_id",
+		"/host_id",
 		"/postgres_host_id",
 		"/username",
 		"/password",
@@ -67,7 +69,7 @@ func (r *ServiceUserRole) DiffIgnore() []string {
 }
 
 func (r *ServiceUserRole) Identifier() resource.Identifier {
-	return ServiceUserRoleIdentifier(r.ServiceInstanceID)
+	return ServiceUserRoleIdentifier(r.ServiceID)
 }
 
 func (r *ServiceUserRole) Executor() resource.Executor {
@@ -105,21 +107,14 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 	logger.Info().Msg("creating service user role")
 
 	// Generate deterministic username and random password
-	r.Username = database.GenerateServiceUsername(r.ServiceID, r.HostID)
+	r.Username = database.GenerateServiceUsername(r.ServiceID)
 	password, err := utils.RandomString(32)
 	if err != nil {
 		return fmt.Errorf("failed to generate password: %w", err)
 	}
 	r.Password = password
 
-	// Retry the entire user creation to handle transient "tuple concurrently
-	// updated" (SQLSTATE XX000) errors. These occur when multiple service user
-	// roles are created concurrently on the same Postgres instance and their
-	// GRANT statements modify overlapping system catalog tuples.
-	err = utils.Retry(3, 500*time.Millisecond, func() error {
-		return r.createUserRole(ctx, rc, logger)
-	})
-	if err != nil {
+	if err := r.createUserRole(ctx, rc, logger); err != nil {
 		return fmt.Errorf("failed to create service user role: %w", err)
 	}
 
