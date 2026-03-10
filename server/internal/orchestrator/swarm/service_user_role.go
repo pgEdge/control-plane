@@ -36,22 +36,24 @@ func ServiceUserRoleIdentifier(serviceID string) resource.Identifier {
 	}
 }
 
-// ServiceUserRole manages the lifecycle of a database user for a service instance.
+// ServiceUserRole manages the lifecycle of a database user for a service.
 //
-// This resource handles creation, verification, and cleanup of database users.
-// On Create, it generates a deterministic username and random password, creates
-// the Postgres role, and stores the credentials in the resource state. On
-// subsequent reconciliation cycles, the credentials are reused from the
-// persisted state (no password regeneration).
+// This resource is keyed by ServiceID, so one role is shared across all
+// instances of the same service. It handles creation, verification, and
+// cleanup of database users. On Create, it generates a deterministic username
+// and random password, creates the Postgres role, and stores the credentials
+// in the resource state. On subsequent reconciliation cycles, the credentials
+// are reused from the persisted state (no password regeneration).
+//
+// The role is created on the primary instance and Spock replicates it to all
+// other nodes automatically.
 type ServiceUserRole struct {
-	ServiceInstanceID string `json:"service_instance_id"`
-	DatabaseID        string `json:"database_id"`
-	DatabaseName      string `json:"database_name"`
-	Username          string `json:"username"`
-	HostID            string `json:"host_id"`
-	PostgresHostID    string `json:"postgres_host_id"` // Host where Postgres runs (for executor routing)
-	ServiceID         string `json:"service_id"`       // Needed for username generation
-	Password          string `json:"password"`         // Generated on Create, persisted in state
+	ServiceID    string `json:"service_id"`
+	DatabaseID   string `json:"database_id"`
+	DatabaseName string `json:"database_name"`
+	NodeName     string `json:"node_name"` // Database node name for PrimaryExecutor routing
+	Username     string `json:"username"`
+	Password     string `json:"password"` // Generated on Create, persisted in state
 }
 
 func (r *ServiceUserRole) ResourceVersion() string {
@@ -60,9 +62,7 @@ func (r *ServiceUserRole) ResourceVersion() string {
 
 func (r *ServiceUserRole) DiffIgnore() []string {
 	return []string{
-		"/service_instance_id",
-		"/host_id",
-		"/postgres_host_id",
+		"/node_name",
 		"/username",
 		"/password",
 	}
@@ -73,12 +73,7 @@ func (r *ServiceUserRole) Identifier() resource.Identifier {
 }
 
 func (r *ServiceUserRole) Executor() resource.Executor {
-	// ServiceUserRole must execute on the host running Postgres, because
-	// Create/Delete connect via local Docker container inspect.
-	if r.PostgresHostID != "" {
-		return resource.HostExecutor(r.PostgresHostID)
-	}
-	return resource.HostExecutor(r.HostID)
+	return resource.PrimaryExecutor(r.NodeName)
 }
 
 func (r *ServiceUserRole) Dependencies() []resource.Identifier {
@@ -101,7 +96,7 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 		return err
 	}
 	logger = logger.With().
-		Str("service_instance_id", r.ServiceInstanceID).
+		Str("service_id", r.ServiceID).
 		Str("database_id", r.DatabaseID).
 		Logger()
 	logger.Info().Msg("creating service user role")
@@ -123,32 +118,13 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 }
 
 func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Context, logger zerolog.Logger) error {
-	// Connect to the application database (not "postgres") so that Spock's
-	// repair mode can be enabled — Spock is installed per-database.
+	// Connect to the application database so schema-level grants resolve correctly.
+	// The role is created on the primary and Spock replicates it to other nodes.
 	conn, err := r.connectToPrimary(ctx, rc, logger, r.DatabaseName)
 	if err != nil {
 		return err
 	}
 	defer conn.Close(ctx)
-
-	// Use a transaction with Spock repair mode to prevent replication conflicts
-	// in multi-node database topologies where Spock would otherwise replicate
-	// the role/grant DDL to other nodes.
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback(ctx)
-
-	enabled, err := postgres.IsSpockEnabled().Scalar(ctx, tx)
-	if err != nil {
-		return fmt.Errorf("failed to check if spock is enabled: %w", err)
-	}
-	if enabled {
-		if err := postgres.EnableRepairMode().Exec(ctx, tx); err != nil {
-			return fmt.Errorf("failed to enable repair mode: %w", err)
-		}
-	}
 
 	// Create the role with LOGIN but no inherited roles. We grant permissions
 	// directly rather than using pgedge_application_read_only because that role
@@ -166,7 +142,7 @@ func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Conte
 		return fmt.Errorf("failed to generate create user role statements: %w", err)
 	}
 
-	if err := statements.Exec(ctx, tx); err != nil {
+	if err := statements.Exec(ctx, conn); err != nil {
 		return fmt.Errorf("failed to create service user: %w", err)
 	}
 
@@ -181,12 +157,8 @@ func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Conte
 		// Allow viewing PostgreSQL configuration via diagnostic tools
 		postgres.Statement{SQL: fmt.Sprintf("GRANT pg_read_all_settings TO %s;", sanitizeIdentifier(r.Username))},
 	}
-	if err := grants.Exec(ctx, tx); err != nil {
+	if err := grants.Exec(ctx, conn); err != nil {
 		return fmt.Errorf("failed to grant service user permissions: %w", err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("failed to commit service user creation: %w", err)
 	}
 
 	return nil
@@ -203,7 +175,7 @@ func (r *ServiceUserRole) Delete(ctx context.Context, rc *resource.Context) erro
 		return err
 	}
 	logger = logger.With().
-		Str("service_instance_id", r.ServiceInstanceID).
+		Str("service_id", r.ServiceID).
 		Str("database_id", r.DatabaseID).
 		Str("username", r.Username).
 		Logger()

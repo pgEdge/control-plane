@@ -170,7 +170,7 @@ type ServiceInstanceSpec struct {
 	CohortMemberID    string
 	Credentials       *ServiceUser
 	DatabaseNetworkID string
-	PostgresHostID    string // Host where Postgres instance runs (for ServiceUserRole executor routing)
+	NodeName          string // Database node name (for ServiceUserRole PrimaryExecutor routing)
 	DatabaseHost      string // Postgres instance hostname to connect to
 	DatabasePort      int    // Postgres instance port
 	Port              *int   // Service instance published port (optional, 0 = random)
