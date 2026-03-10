@@ -100,6 +100,7 @@ header "Step 1: Start the Control Plane"
 explain "The Control Plane is a lightweight orchestrator that manages your Postgres"
 explain "instances. It runs on each of your hosts and exposes a REST API."
 explain "In this example, we are running it on a single host."
+echo ""
 
 # Remove stale container from a previous run
 if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "^${CP_CONTAINER}$"; then
@@ -257,16 +258,28 @@ show_cmd "curl -s ${CP_URL}/v1/databases/${DB_ID} | jq -r .state"
 echo ""
 
 state=""
+prev_state=""
 retries=60
+start_spinner "Waiting for database to become available..."
 while [[ "$retries" -gt 0 ]]; do
   state=$(curl -sf "${CP_URL}/v1/databases/${DB_ID}" 2>/dev/null | grep -o '"state":"[^"]*"' | head -1 | cut -d'"' -f4 || true)
-  echo "  State: ${state:-unknown}"
+  if [[ "$state" != "$prev_state" && -n "$state" ]]; then
+    stop_spinner
+    if [[ "$state" == "available" ]]; then
+      echo -e "${GREEN}✔ ${state}${RESET}"
+    else
+      echo -e "${TEAL}● ${state}${RESET}"
+      start_spinner "Waiting for database to become available..."
+    fi
+    prev_state="$state"
+  fi
   if [[ "$state" == "available" ]]; then
     break
   fi
   sleep 3
   retries=$((retries - 1))
 done
+stop_spinner
 
 if [[ "$state" == "available" ]]; then
   echo ""
