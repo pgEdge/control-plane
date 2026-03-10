@@ -10,6 +10,7 @@ func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*ServiceUserRole](registry, ResourceTypeServiceUserRole)
 	resource.RegisterResourceType[*ServiceConfigResource](registry, ResourceTypeServiceConfig)
 	resource.RegisterResourceType[*RAGSchemaResource](registry, ResourceTypeRAGSchema)
+	resource.RegisterResourceType[*RAGAPIKeysResource](registry, ResourceTypeRAGAPIKeys)
 	resource.RegisterResourceType[*Network](registry, ResourceTypeNetwork)
 	resource.RegisterResourceType[*EtcdCreds](registry, ResourceTypeEtcdCreds)
 	resource.RegisterResourceType[*PatroniConfig](registry, ResourceTypePatroniConfig)

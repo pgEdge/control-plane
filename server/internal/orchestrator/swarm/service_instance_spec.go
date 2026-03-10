@@ -66,11 +66,12 @@ func (s *ServiceInstanceSpecResource) Dependencies() []resource.Identifier {
 		NetworkResourceIdentifier(s.DatabaseNetworkID),
 		ServiceUserRoleIdentifier(s.ServiceInstanceID),
 	}
-	// Services that use a Swarm config (e.g. RAG) must wait for it and the
-	// schema setup to be complete before the container spec is built.
+	// Services that use a Swarm config (e.g. RAG) must wait for it, the
+	// schema setup, and the API keys files to be ready before the spec is built.
 	if s.ServiceSpec != nil && s.ServiceSpec.ServiceType == "rag" {
 		deps = append(deps, ServiceConfigResourceIdentifier(s.ServiceInstanceID))
 		deps = append(deps, RAGSchemaResourceIdentifier(s.ServiceInstanceID))
+		deps = append(deps, RAGAPIKeysResourceIdentifier(s.ServiceInstanceID))
 	}
 	return deps
 }
@@ -99,13 +100,20 @@ func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.
 		return err
 	}
 
-	// For services that use a Swarm config file (e.g. RAG), read the config ID.
+	// For RAG services, read the Swarm config ID and the keys dir host path.
+	var keysDirHostPath string
 	if s.ServiceSpec != nil && s.ServiceSpec.ServiceType == "rag" {
 		svcConfig, err := resource.FromContext[*ServiceConfigResource](rc, ServiceConfigResourceIdentifier(s.ServiceInstanceID))
 		if err != nil {
 			return fmt.Errorf("failed to get service config from state: %w", err)
 		}
 		s.SwarmConfigID = svcConfig.ConfigID
+
+		apiKeys, err := resource.FromContext[*RAGAPIKeysResource](rc, RAGAPIKeysResourceIdentifier(s.ServiceInstanceID))
+		if err != nil {
+			return fmt.Errorf("failed to get RAG API keys resource from state: %w", err)
+		}
+		keysDirHostPath = apiKeys.KeysDirPath
 	}
 
 	spec, err := ServiceContainerSpec(&ServiceContainerSpecOptions{
@@ -124,6 +132,7 @@ func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.
 		DatabasePort:      s.DatabasePort,
 		Port:              s.Port,
 		SwarmConfigID:     s.SwarmConfigID,
+		KeysDirHostPath:   keysDirHostPath,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate service container spec: %w", err)

@@ -28,9 +28,9 @@ func RAGSchemaResourceIdentifier(serviceInstanceID string) resource.Identifier {
 	}
 }
 
-// RAGSchemaResource ensures the pgvector extension and configured tables exist
-// in the database before the RAG service container is deployed. It is idempotent
-// and uses IF NOT EXISTS so it is safe to run multiple times.
+// RAGSchemaResource ensures the pgvector extension is enabled and the service
+// user has SELECT access on the configured tables. Table creation is the
+// user's responsibility (e.g. via pgedge_vectorizer or direct DDL).
 type RAGSchemaResource struct {
 	ServiceInstanceID string                `json:"service_instance_id"`
 	DatabaseID        string                `json:"database_id"`
@@ -61,7 +61,7 @@ func (r *RAGSchemaResource) Executor() resource.Executor {
 }
 
 func (r *RAGSchemaResource) Dependencies() []resource.Identifier {
-	// Depends on ServiceUserRole so we can grant table access to the service user.
+	// Depends on ServiceUserRole so we can grant SELECT on the user's tables.
 	return []resource.Identifier{
 		ServiceUserRoleIdentifier(r.ServiceInstanceID),
 	}
@@ -98,7 +98,7 @@ func (r *RAGSchemaResource) setup(ctx context.Context, rc *resource.Context) err
 		Str("database_id", r.DatabaseID).
 		Logger()
 
-	// Resolve the service user so we can grant SELECT on the new tables.
+	// Resolve the service user so we can grant SELECT on the user's tables.
 	userRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(r.ServiceInstanceID))
 	if err != nil {
 		return fmt.Errorf("failed to get service user role: %w", err)
@@ -119,54 +119,10 @@ func (r *RAGSchemaResource) setup(ctx context.Context, rc *resource.Context) err
 		return fmt.Errorf("failed to create vector extension: %w", err)
 	}
 
-	cfg := r.ServiceSpec.Config
-	rawTables, _ := cfg["tables"].([]any)
-	if len(rawTables) == 0 {
-		return fmt.Errorf("no tables configured for RAG schema setup")
-	}
-
-	embeddingModel := stringConfigField(cfg, "embedding_model", "")
-	dims := embeddingDimensions(embeddingModel)
-
-	for _, t := range rawTables {
-		tableMap, ok := t.(map[string]any)
-		if !ok {
-			return fmt.Errorf("invalid table entry in RAG config")
-		}
-		tableName, _ := tableMap["table"].(string)
-		textCol, _ := tableMap["text_column"].(string)
-		vectorCol, _ := tableMap["vector_column"].(string)
-		idCol, _ := tableMap["id_column"].(string)
-		if idCol == "" {
-			idCol = "id"
-		}
-		if tableName == "" || textCol == "" || vectorCol == "" {
-			return fmt.Errorf("table entry missing required fields (table, text_column, vector_column)")
-		}
-
-		createSQL := fmt.Sprintf(
-			`CREATE TABLE IF NOT EXISTS %s (%s BIGSERIAL PRIMARY KEY, %s TEXT NOT NULL, %s vector(%d))`,
-			sanitizeIdentifier(tableName),
-			sanitizeIdentifier(idCol),
-			sanitizeIdentifier(textCol),
-			sanitizeIdentifier(vectorCol),
-			dims,
-		)
-		if err := execDDLIdempotent(ctx, conn, createSQL); err != nil {
-			return fmt.Errorf("failed to create table %q: %w", tableName, err)
-		}
-
-		indexName := fmt.Sprintf("%s_%s_hnsw_idx", tableName, vectorCol)
-		indexSQL := fmt.Sprintf(
-			`CREATE INDEX IF NOT EXISTS %s ON %s USING hnsw (%s vector_cosine_ops)`,
-			sanitizeIdentifier(indexName),
-			sanitizeIdentifier(tableName),
-			sanitizeIdentifier(vectorCol),
-		)
-		if err := execDDLIdempotent(ctx, conn, indexSQL); err != nil {
-			return fmt.Errorf("failed to create vector index on table %q: %w", tableName, err)
-		}
-
+	// Collect unique table names across all pipelines and grant SELECT to the
+	// service user. Table creation is the user's responsibility.
+	tables := collectRAGTables(r.ServiceSpec.Config)
+	for _, tableName := range tables {
 		grantSQL := fmt.Sprintf(`GRANT SELECT ON %s TO %s`,
 			sanitizeIdentifier(tableName),
 			sanitizeIdentifier(userRole.Username),
@@ -174,15 +130,38 @@ func (r *RAGSchemaResource) setup(ctx context.Context, rc *resource.Context) err
 		if err := execDDLIdempotent(ctx, conn, grantSQL); err != nil {
 			return fmt.Errorf("failed to grant SELECT on table %q to %q: %w", tableName, userRole.Username, err)
 		}
-
-		logger.Info().
-			Str("table", tableName).
-			Int("vector_dims", dims).
-			Msg("RAG table ready")
+		logger.Info().Str("table", tableName).Msg("granted SELECT on RAG table")
 	}
 
 	r.SchemaSetup = true
 	return nil
+}
+
+// collectRAGTables returns a deduplicated list of table names referenced across
+// all pipelines in the config.
+func collectRAGTables(cfg map[string]any) []string {
+	seen := map[string]bool{}
+	var tables []string
+	rawPipelines, _ := cfg["pipelines"].([]any)
+	for _, rawPipeline := range rawPipelines {
+		p, ok := rawPipeline.(map[string]any)
+		if !ok {
+			continue
+		}
+		rawTables, _ := p["tables"].([]any)
+		for _, t := range rawTables {
+			tableMap, ok := t.(map[string]any)
+			if !ok {
+				continue
+			}
+			tableName, _ := tableMap["table"].(string)
+			if tableName != "" && !seen[tableName] {
+				seen[tableName] = true
+				tables = append(tables, tableName)
+			}
+		}
+	}
+	return tables
 }
 
 // execDDLIdempotent executes a DDL statement and ignores concurrent-creation
@@ -198,25 +177,6 @@ func execDDLIdempotent(ctx context.Context, conn *pgx.Conn, sql string) error {
 		return nil
 	}
 	return err
-}
-
-// embeddingDimensions returns the vector dimensions for a given embedding model name.
-func embeddingDimensions(model string) int {
-	switch model {
-	case "text-embedding-3-large":
-		return 3072
-	case "text-embedding-ada-002":
-		return 1536
-	case "voyage-3-large":
-		return 1024
-	case "voyage-3":
-		return 1024
-	case "voyage-3-lite":
-		return 512
-	default:
-		// text-embedding-3-small and most other models default to 1536.
-		return 1536
-	}
 }
 
 // connectToDatabase connects to the service database (not "postgres") using the

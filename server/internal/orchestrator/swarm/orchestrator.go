@@ -444,7 +444,13 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 	// tables exist in the database before the container starts.
 	var serviceConfig *ServiceConfigResource
 	var ragSchema *RAGSchemaResource
+	var ragAPIKeys *RAGAPIKeysResource
 	if spec.ServiceSpec.ServiceType == "rag" {
+		ragAPIKeys = &RAGAPIKeysResource{
+			ServiceInstanceID: spec.ServiceInstanceID,
+			HostID:            spec.HostID,
+			ServiceSpec:       spec.ServiceSpec,
+		}
 		serviceConfig = &ServiceConfigResource{
 			ServiceInstanceID: spec.ServiceInstanceID,
 			ServiceSpec:       spec.ServiceSpec,
@@ -497,6 +503,9 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		serviceUserRole,
 		serviceInstanceSpec,
 		serviceInstance,
+	}
+	if ragAPIKeys != nil {
+		orchestratorResources = append(orchestratorResources, ragAPIKeys)
 	}
 	if serviceConfig != nil {
 		orchestratorResources = append(orchestratorResources, serviceConfig)

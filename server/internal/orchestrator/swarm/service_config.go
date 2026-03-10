@@ -92,10 +92,9 @@ func (r *ServiceConfigResource) Executor() resource.Executor {
 }
 
 func (r *ServiceConfigResource) Dependencies() []resource.Identifier {
-	// ServiceConfigResource only needs the ServiceUserRole to be ready so it
-	// can embed the credentials in the YAML.
 	return []resource.Identifier{
 		ServiceUserRoleIdentifier(r.ServiceInstanceID),
+		RAGAPIKeysResourceIdentifier(r.ServiceInstanceID),
 	}
 }
 
@@ -188,6 +187,13 @@ func (r *ServiceConfigResource) createConfig(ctx context.Context, rc *resource.C
 		return fmt.Errorf("failed to get service user role from state: %w", err)
 	}
 
+	// Read the keys dir path from RAGAPIKeysResource so the YAML can reference
+	// the bind-mounted key files rather than having keys in env vars.
+	var keysDirPath string
+	if apiKeys, err := resource.FromContext[*RAGAPIKeysResource](rc, RAGAPIKeysResourceIdentifier(r.ServiceInstanceID)); err == nil {
+		keysDirPath = apiKeys.KeysDirPath
+	}
+
 	yaml, err := generateRAGConfig(&ragConfigOptions{
 		ServiceSpec:  r.ServiceSpec,
 		DatabaseHost: r.DatabaseHost,
@@ -195,6 +201,7 @@ func (r *ServiceConfigResource) createConfig(ctx context.Context, rc *resource.C
 		DatabaseName: r.DatabaseName,
 		Username:     userRole.Username,
 		Password:     userRole.Password,
+		KeysDirPath:  keysDirPath,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate RAG config: %w", err)

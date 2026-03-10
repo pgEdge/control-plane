@@ -8,12 +8,16 @@ import (
 )
 
 type ragConfigOptions struct {
-	ServiceSpec  *database.ServiceSpec
-	DatabaseHost string
-	DatabasePort int
-	DatabaseName string
-	Username     string
-	Password     string
+	ServiceSpec     *database.ServiceSpec
+	DatabaseHost    string
+	DatabasePort    int
+	DatabaseName    string
+	Username        string
+	Password        string
+	// KeysDirPath is the container-internal path where API key files are mounted.
+	// When set, an api_keys section is written into the YAML referencing files
+	// under that directory. Populated from RAGAPIKeysResource.
+	KeysDirPath string
 }
 
 // generateRAGConfig renders the pgedge-rag-server.yaml content from a ServiceSpec.
@@ -41,6 +45,25 @@ func generateRAGConfig(opts *ragConfigOptions) (string, error) {
 	sb.WriteString(fmt.Sprintf("  token_budget: %d\n", tokenBudget))
 	sb.WriteString(fmt.Sprintf("  top_n: %d\n", topN))
 	sb.WriteString("\n")
+
+	// Write api_keys section pointing to bind-mounted key files.
+	if opts.KeysDirPath != "" {
+		keys := collectRAGAPIKeys(opts.ServiceSpec.Config)
+		if len(keys) > 0 {
+			sb.WriteString("api_keys:\n")
+			for _, def := range []struct{ filename, yamlKey string }{
+				{"openai", "openai"},
+				{"anthropic", "anthropic"},
+				{"voyage", "voyage"},
+			} {
+				if _, ok := keys[def.filename]; ok {
+					sb.WriteString(fmt.Sprintf("  %s: %q\n", def.yamlKey, opts.KeysDirPath+"/"+def.filename))
+				}
+			}
+			sb.WriteString("\n")
+		}
+	}
+
 	sb.WriteString("pipelines:\n")
 
 	for _, raw := range rawPipelines {

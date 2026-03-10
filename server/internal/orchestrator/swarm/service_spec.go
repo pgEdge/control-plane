@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/api/types/swarm"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/docker"
 )
 
 // ServiceContainerSpecOptions contains all parameters needed to build a service container spec.
@@ -33,6 +34,10 @@ type ServiceContainerSpecOptions struct {
 	// When set, the config is mounted at the service-type-specific config path.
 	// Used by services that require a config file (e.g. RAG server).
 	SwarmConfigID string
+	// KeysDirHostPath is the host path of the API keys directory to bind-mount
+	// into the RAG container at ragKeysContainerPath. Set by ServiceInstanceSpecResource
+	// after reading it from RAGAPIKeysResource.
+	KeysDirHostPath string
 }
 
 // serviceHealthCheckPath returns the HTTP health check path for a service type.
@@ -126,7 +131,7 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 			Timeout:     time.Second * 5,
 			Retries:     3,
 		},
-		Mounts: []mount.Mount{}, // No persistent volumes for services in Phase 1
+		Mounts: buildServiceMounts(opts),
 	}
 
 	// Mount a Swarm config as a file inside the container when provided.
@@ -192,15 +197,24 @@ func buildServiceEnvVars(opts *ServiceContainerSpecOptions) []string {
 		)
 	}
 
-	switch opts.ServiceSpec.ServiceType {
-	case "rag":
-		env = append(env, buildRAGEnvVars(opts.ServiceSpec.Config)...)
-	default:
-		// MCP and other services: PGEDGE_-prefixed LLM vars
+	if opts.ServiceSpec.ServiceType != "rag" {
+		// MCP and other services: PGEDGE_-prefixed LLM vars.
+		// RAG keys are delivered via bind-mounted files, not env vars.
 		env = append(env, buildMCPEnvVars(opts.ServiceSpec.Config)...)
 	}
 
 	return env
+}
+
+// buildServiceMounts returns the bind mounts for a service container.
+// For RAG services, this includes the API keys directory when available.
+func buildServiceMounts(opts *ServiceContainerSpecOptions) []mount.Mount {
+	if opts.ServiceSpec.ServiceType == "rag" && opts.KeysDirHostPath != "" {
+		return []mount.Mount{
+			docker.BuildMount(opts.KeysDirHostPath, ragKeysContainerPath, true),
+		}
+	}
+	return nil
 }
 
 // buildMCPEnvVars returns PGEDGE_-prefixed LLM env vars for the MCP service.
@@ -231,41 +245,6 @@ func buildMCPEnvVars(config map[string]any) []string {
 	return env
 }
 
-// buildRAGEnvVars returns the standard API key env vars expected by the RAG server.
-// The RAG server reads its full config from a YAML file (delivered via Swarm config);
-// only API keys are injected as environment variables.
-//
-// Keys may appear at the top level of config or inside individual pipeline entries.
-// All unique keys across all locations are collected and set once.
-func buildRAGEnvVars(config map[string]any) []string {
-	// Gather all config maps to scan: top-level + each pipeline entry.
-	sources := []map[string]any{config}
-	if pipelines, ok := config["pipelines"].([]any); ok {
-		for _, raw := range pipelines {
-			if p, ok := raw.(map[string]any); ok {
-				sources = append(sources, p)
-			}
-		}
-	}
-
-	type keyDef struct{ field, envVar string }
-	keys := []keyDef{
-		{"openai_api_key", "OPENAI_API_KEY"},
-		{"anthropic_api_key", "ANTHROPIC_API_KEY"},
-		{"voyage_api_key", "VOYAGE_API_KEY"},
-	}
-
-	var env []string
-	for _, k := range keys {
-		for _, src := range sources {
-			if val, ok := src[k.field].(string); ok && val != "" {
-				env = append(env, fmt.Sprintf("%s=%s", k.envVar, val))
-				break // first non-empty value wins; skip remaining sources
-			}
-		}
-	}
-	return env
-}
 
 // buildServicePortConfig builds port configuration for service containers.
 // Exposes port 8080 for the HTTP API.

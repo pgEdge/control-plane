@@ -12,7 +12,7 @@
 
 The RAG service is deployed as a Docker Swarm service managed entirely by the control plane. It sits between the client and the database — the client sends natural language queries to the RAG service, and the RAG service translates those queries into vector SQL, retrieves relevant document chunks, and passes them to an LLM to generate an answer.
 
-The control plane owns everything before the container starts: network, Postgres user, Swarm config YAML, pgvector schema, and container deployment. Once running, the control plane only monitors health — it does not participate in query traffic.
+The control plane owns everything before the container starts: network, Postgres user, API key files on the host filesystem, Swarm config YAML, pgvector schema, and container deployment. Once running, the control plane only monitors health — it does not participate in query traffic.
 
 ```
   ┌─────────────────────────────────────────────────────────────────┐
@@ -25,11 +25,12 @@ The control plane owns everything before the container starts: network, Postgres
   │  └──────────────┘    │  Resource lifecycle per host:       │   │
   │                      │  1. NetworkResource                 │   │
   │                      │  2. ServiceUserRole ──────────────┐ │   │
-  │                      │  3. ServiceConfigResource ───────┐│ │   │
-  │                      │  4. RAGSchemaResource ───────────┼┤ │   │
-  │                      │  5. ServiceInstanceSpecResource ◀┘│ │   │
-  │                      │  6. ServiceInstanceResource      ◀┘ │   │
-  │                      │  7. ServiceInstanceMonitor          │   │
+  │                      │  3. RAGAPIKeysResource ───────────┤ │   │
+  │                      │  4. ServiceConfigResource ────────┤ │   │
+  │                      │  5. RAGSchemaResource ────────────┤ │   │
+  │                      │  6. ServiceInstanceSpecResource ◀─┘ │   │
+  │                      │  7. ServiceInstanceResource         │   │
+  │                      │  8. ServiceInstanceMonitor          │   │
   │                      └─────────────────────────────────────┘   │
   └──────────────────────────────┬──────────────────────────────────┘
                                  │ Docker Swarm API
@@ -44,6 +45,8 @@ The control plane owns everything before the container starts: network, Postgres
                     │  │  Mounts:                         │ │
                     │  │   Swarm config → /etc/pgedge/    │ │
                     │  │   pgedge-rag-server.yaml         │ │
+                    │  │   host keys dir → /etc/pgedge/   │ │
+                    │  │   keys/ (read-only bind mount)   │ │
                     │  └──────────────┬───────────────────┘ │
                     │                 │ overlay network      │
                     │  ┌──────────────▼───────────────────┐ │
@@ -60,7 +63,7 @@ The control plane owns everything before the container starts: network, Postgres
 
 ### Provisioning flow
 
-Resources 2–4 (ServiceUserRole, ServiceConfigResource, RAGSchemaResource) run in parallel in Phase 1 — they have no dependencies on each other. `ServiceInstanceSpecResource` in Phase 2 gates on all three: it needs Postgres credentials (from ServiceUserRole), the Swarm config ID (from ServiceConfigResource), and confirmation the schema exists (from RAGSchemaResource). Only then does Phase 3 deploy the container.
+Resources 2–5 (ServiceUserRole, RAGAPIKeysResource, ServiceConfigResource, RAGSchemaResource) execute in dependency order in Phase 1. `RAGAPIKeysResource` depends on `ServiceUserRole` (needs credentials established first), then `ServiceConfigResource` depends on `RAGAPIKeysResource` (needs the host keys directory path to embed in the YAML `api_keys` section). `ServiceInstanceSpecResource` in Phase 2 gates on all four Phase 1 resources. Only then does Phase 3 deploy the container.
 
 ```
 User: POST /v1/databases  (services[].service_type = "rag")
@@ -68,6 +71,7 @@ User: POST /v1/databases  (services[].service_type = "rag")
         ▼
   API Validation (validate.go)
   ├─ service_type in allowlist?        ✓ "rag"
+  ├─ pipelines array non-empty?        ✓
   ├─ embedding_provider valid?         ✓ "openai"
   ├─ tables array non-empty?           ✓
   ├─ openai_api_key present?           ✓ (required for openai provider)
@@ -85,16 +89,21 @@ User: POST /v1/databases  (services[].service_type = "rag")
   ├─ ServiceUserRole          → CREATE ROLE svc_rag_host_1 LOGIN
   │                             GRANT pgedge_application_read_only
   │                             (on co-located Patroni primary)
+  ├─ RAGAPIKeysResource       → write per-provider key files to
+  │                             /var/lib/pgedge/services/<id>/keys/
+  │                             on the host filesystem (bind-mounted
+  │                             read-only into container)
   ├─ ServiceConfigResource    → render YAML via generateRAGConfig()
+  │                             (includes api_keys section with host paths)
   │                             → docker config create rag-config-<id>
   │                             → stores SwarmConfigID
   ├─ RAGSchemaResource        → CREATE EXTENSION IF NOT EXISTS vector
-  │                             → CREATE TABLE documents_content_chunks
-  │                             → CREATE INDEX ... USING hnsw
-  │                             → GRANT SELECT TO svc_rag_host_1
+  │                             → GRANT SELECT ON configured tables
+  │                             (tables must already exist)
   ├─ ServiceInstanceSpecResource
   │   ├─ reads SwarmConfigID from ServiceConfigResource
   │   ├─ reads credentials from ServiceUserRole
+  │   ├─ reads KeysDirPath from RAGAPIKeysResource (for bind mount)
   │   └─ calls ServiceContainerSpec() → swarm.ServiceSpec
   └─ ServiceInstanceResource  → docker service create
                                 → WaitForService (5 min timeout)
@@ -160,7 +169,7 @@ Client: POST /v1/pipelines/default  { "query": "What is pgEdge?" }
 
 The RAG server is a single Go binary. On startup it reads `pgedge-rag-server.yaml` (mounted from the Swarm config), initialises one `Pipeline` per configured pipeline entry, and starts the HTTP server. Each pipeline holds its own database connection pool, embedding provider client, completion provider client, and a stateless BM25 index (rebuilt per request). The `PipelineManager` is the only shared state, protected by a read/write mutex. There is no caching layer — every query hits Postgres fresh.
 
-**One pipeline per service instance.** The control plane generates exactly one pipeline in the YAML per service instance, because each instance is scoped to one `(service_id, host_id)` pair — one Postgres target. Adding more `tables` entries to the config adds search targets within that same pipeline; they all share the same database connection and LLM config. Two separate LLM configs or two separate databases require two separate service instances.
+**Multiple pipelines per service instance.** The control plane generates one pipeline per entry in the `config.pipelines` array. Each pipeline can have its own embedding provider, LLM, model, `base_url`, and table set — all sharing the same database connection (same host/user/password). Two separate databases require two separate service instances.
 
 ```
 ┌────────────────────────────────────────────────────────────┐
@@ -187,12 +196,13 @@ The RAG server is a single Go binary. On startup it reads `pgedge-rag-server.yam
 │  │  │  │ host: postgres-<instanceID>:5432         │   │ │  │
 │  │  │  │ user: svc_rag_host_1 (read-only)         │   │ │  │
 │  │  │  └──────────────────────────────────────────┘   │ │  │
-│  │  │  ┌──────────────────────────────────────────┐   │ │  │
-│  │  │  │ BM25 Index (in-memory, rebuilt per query)│   │ │  │
-│  │  │  └──────────────────────────────────────────┘   │ │  │
-│  │  │  ┌──────────────────────────────────────────┐   │ │  │
-│  │  │  │ Orchestrator (5-step RAG pipeline)       │   │ │  │
-│  │  │  └──────────────────────────────────────────┘   │ │  │
+│  │  └─────────────────────────────────────────────────┘ │  │
+│  │  ┌─────────────────────────────────────────────────┐ │  │
+│  │  │  Pipeline "ollama"                              │ │  │
+│  │  │  ┌──────────────┐  ┌──────────────────────────┐ │ │  │
+│  │  │  │ EmbeddingProv│  │ CompletionProvider       │ │ │  │
+│  │  │  │ (Ollama)     │  │ (Ollama)                 │ │ │  │
+│  │  │  └──────────────┘  └──────────────────────────┘ │ │  │
 │  │  └─────────────────────────────────────────────────┘ │  │
 │  └──────────────────────────────────────────────────────┘  │
 │                                                            │
@@ -229,11 +239,17 @@ It lives next to the database because its entire data layer is the database — 
 
 ### How the RAG server is configured
 
-The RAG server reads a YAML file at `/etc/pgedge/pgedge-rag-server.yaml`. API keys are read from environment variables (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `VOYAGE_API_KEY`). The control plane renders this YAML from the `ServiceSpec.Config` map, stores it as a Docker Swarm config object, and mounts it into the container. API keys are passed separately as env vars so they never land in the Swarm config stored by the Docker daemon.
+The RAG server reads a YAML file at `/etc/pgedge/pgedge-rag-server.yaml`. The control plane renders this YAML from the `ServiceSpec.Config` map, stores it as a Docker Swarm config object, and mounts it into the container.
+
+**API keys are stored as bind-mounted host files, not in the Swarm config.** Docker Swarm config objects are stored in the Docker daemon Raft log and are readable via `docker config inspect` — making them unsuitable for secrets. Instead, `RAGAPIKeysResource` writes one file per provider to `/var/lib/pgedge/services/<instanceID>/keys/` on the host filesystem. The directory is bind-mounted read-only into the container at `/etc/pgedge/keys/`. The generated YAML references each key by its container-internal path under `api_keys`.
 
 ### `ServiceSpec.Config` fields
 
-#### Required
+The top-level `config` object must contain a `pipelines` array. Each pipeline is an independent query path with its own embedding model, LLM, and table set.
+
+#### Pipeline fields (per entry in `pipelines`)
+
+##### Required
 
 | Field | Type | Values |
 |-------|------|--------|
@@ -252,29 +268,39 @@ Each entry in `tables`:
 | `vector_column` | yes | Column holding the `vector(N)` embedding |
 | `id_column` | no | Defaults to `id` |
 
-#### Conditionally required (by provider)
+##### Conditionally required (top-level, by provider)
+
+API keys are set once at the top level of `config` and apply to all pipelines. They are written to the host filesystem by `RAGAPIKeysResource` and referenced by path in the generated YAML — they are never embedded in the Swarm config object.
 
 | Field | Required when |
 |-------|--------------|
-| `openai_api_key` | `embedding_provider=openai` OR `llm_provider=openai` |
-| `anthropic_api_key` | `llm_provider=anthropic` |
-| `voyage_api_key` | `embedding_provider=voyage` |
-| `ollama_url` | `embedding_provider=ollama` OR `llm_provider=ollama` |
+| `openai_api_key` | any pipeline uses `embedding_provider=openai` OR `llm_provider=openai` |
+| `anthropic_api_key` | any pipeline uses `llm_provider=anthropic` |
+| `voyage_api_key` | any pipeline uses `embedding_provider=voyage` |
+| `ollama_url` | per-pipeline — required when `embedding_provider=ollama` OR `llm_provider=ollama` |
 
 API keys are validated as non-empty strings. They are **stripped from all API responses** — never returned after submission.
 
-#### Optional
+##### Optional
 
 | Field | Type | Default | Notes |
 |-------|------|---------|-------|
-| `pipeline_name` | string | `"default"` | Pipeline name in `GET /v1/pipelines` |
+| `pipeline_name` | string | `"default"` | Pipeline name used in `POST /v1/pipelines/{name}` |
 | `pipeline_description` | string | `""` | Human-readable description |
-| `token_budget` | int | `4000` | Max context tokens passed to LLM |
-| `top_n` | int | `10` | Documents retrieved per query |
+| `embedding_base_url` | string | — | Custom base URL for embedding provider (e.g. self-hosted) |
+| `llm_base_url` | string | — | Custom base URL for LLM provider |
 | `ollama_url` | string | — | Required for Ollama provider |
+
+#### Top-level optional fields
+
+| Field | Type | Default | Notes |
+|-------|------|---------|-------|
+| `token_budget` | int | `4000` | Max context tokens passed to LLM (all pipelines) |
+| `top_n` | int | `10` | Documents retrieved per query (all pipelines) |
 
 #### Validation rules
 
+- `pipelines` array must be present and non-empty
 - `embedding_provider` and `llm_provider` must be known values; unknown values rejected at API layer (HTTP 400)
 - `tables` must have at least one entry; each must have all three required column fields as non-empty strings
 - API keys validated as present and non-empty when their provider is selected
@@ -288,19 +314,39 @@ API keys are validated as non-empty strings. They are **stripped from all API re
   "service_type": "rag",
   "version": "latest",
   "host_ids": ["host-1"],
-  "port": 9200,
+  "port": 0,
   "config": {
-    "embedding_provider": "openai",
-    "embedding_model": "text-embedding-3-small",
-    "llm_provider": "anthropic",
-    "llm_model": "claude-sonnet-4-5",
     "openai_api_key": "sk-...",
     "anthropic_api_key": "sk-ant-...",
-    "tables": [
+    "pipelines": [
       {
-        "table": "documents_content_chunks",
-        "text_column": "content",
-        "vector_column": "embedding"
+        "pipeline_name": "default",
+        "embedding_provider": "openai",
+        "embedding_model": "text-embedding-3-small",
+        "llm_provider": "anthropic",
+        "llm_model": "claude-sonnet-4-5",
+        "tables": [
+          {
+            "table": "documents_content_chunks",
+            "text_column": "content",
+            "vector_column": "embedding"
+          }
+        ]
+      },
+      {
+        "pipeline_name": "ollama",
+        "embedding_provider": "ollama",
+        "embedding_model": "nomic-embed-text",
+        "llm_provider": "ollama",
+        "llm_model": "llama3",
+        "ollama_url": "http://ollama:11434",
+        "tables": [
+          {
+            "table": "documents_content_chunks",
+            "text_column": "content",
+            "vector_column": "embedding"
+          }
+        ]
       }
     ]
   }
@@ -317,6 +363,10 @@ server:
 defaults:
   token_budget: 4000
   top_n: 10
+
+api_keys:
+  openai: "/etc/pgedge/keys/openai"
+  anthropic: "/etc/pgedge/keys/anthropic"
 
 pipelines:
   - name: "default"
@@ -337,7 +387,28 @@ pipelines:
     rag_llm:
       provider: "anthropic"
       model: "claude-sonnet-4-5"
+  - name: "ollama"
+    database:
+      host: "postgres-{instanceID}"
+      port: 5432
+      database: "{dbName}"
+      username: "{serviceUser}"
+      password: "{servicePassword}"
+      ssl_mode: "prefer"
+    tables:
+      - table: "documents_content_chunks"
+        text_column: "content"
+        vector_column: "embedding"
+    embedding_llm:
+      provider: "ollama"
+      model: "nomic-embed-text"
+    rag_llm:
+      provider: "ollama"
+      model: "llama3"
+    ollama_url: "http://ollama:11434"
 ```
+
+The `api_keys` section is only written when API key files exist for the instance. Each value is the container-internal path to the key file under `/etc/pgedge/keys/`.
 
 ---
 
@@ -345,13 +416,17 @@ pipelines:
 
 ### Prerequisites
 
-Before the RAG service returns useful results, the user must have documents with pre-computed embeddings in the configured table. The control plane creates the table and index (`RAGSchemaResource`) but does not populate it.
+Before deploying the RAG service, the database must already contain tables with pre-computed embeddings. The control plane does **not** create these tables — that is the user's responsibility. The expected flow is:
+
+1. Deploy a Control Plane database
+2. Create your tables and populate them with embeddings
+3. Deploy the RAG service pointing `pipelines[].tables` at your tables
 
 Options for populating:
-- **`pgedge_vectorizer` extension** (recommended): background worker that auto-generates embeddings as rows are inserted. Requires `CREATE EXTENSION IF NOT EXISTS pgedge_vectorizer` — must be done manually today; the control plane does not automate this.
+- **`pgedge_vectorizer` extension** (recommended): background worker that auto-generates embeddings as rows are inserted. Run `CREATE EXTENSION IF NOT EXISTS pgedge_vectorizer` in your database, then use `pgedge_vectorizer.enable_vectorization()` on your source table.
 - **Direct insert**: compute embeddings externally (e.g. via OpenAI API) and insert rows directly into the table with the vector values.
 
-If the table is empty, queries return `{"error": {"code": "EXECUTION_ERROR", "message": "no documents found for query"}}`.
+If the table is empty or does not exist, queries will fail. If a configured table does not exist at provisioning time, `RAGSchemaResource` will fail the `GRANT` and block deployment.
 
 ### API
 
@@ -382,7 +457,7 @@ Optional request fields: `top_n` (override default), `include_sources` (include 
 
 ### Post-initialization changes
 
-All configuration (model, table, provider) requires a service spec update. The control plane re-renders the YAML, creates a new Swarm config object (configs are immutable in Docker), and triggers a service restart. There is no in-place config hot-reload path today.
+All configuration (model, table, provider) requires a service spec update. The control plane re-renders the YAML, creates a new Swarm config object (configs are immutable in Docker), updates the host key files, and triggers a service restart. There is no in-place config hot-reload path today.
 
 ---
 
@@ -397,6 +472,7 @@ All configuration (model, table, provider) requires a service spec update. The c
 | Runtime | Red Hat UBI9 Micro — no curl, no wget, no bash shell tools |
 | User | `pgedge` (UID 1000, non-root) |
 | Config path | `/etc/pgedge/pgedge-rag-server.yaml` |
+| Keys path | `/etc/pgedge/keys/` (bind-mounted read-only from host) |
 | Port | `8080` |
 
 ### Health check
@@ -425,10 +501,11 @@ This confirms the port is accepting connections. It does not validate the HTTP r
 | Aspect | MCP | RAG |
 |--------|-----|-----|
 | Config delivery | Env vars only | YAML via Docker Swarm config mounted at `/etc/pgedge/pgedge-rag-server.yaml` |
+| API keys | Env vars | Bind-mounted host files at `/etc/pgedge/keys/` (never in Swarm config) |
 | Health check | `curl -f http://localhost:8080/health` | bash `/dev/tcp` TCP check (no curl in image) |
-| Extra resources | `DirResource` + `MCPConfigResource` | `ServiceConfigResource` + `RAGSchemaResource` |
-| Schema setup | None | Automated: pgvector extension + table + HNSW index + SELECT grant |
-| Total lifecycle resources | 6 | 7 |
+| Extra resources | `DirResource` + `MCPConfigResource` | `RAGAPIKeysResource` + `ServiceConfigResource` + `RAGSchemaResource` |
+| Schema setup | None | Automated: pgvector extension + SELECT grant on user-managed tables |
+| Total lifecycle resources | 6 | 8 |
 | External API calls | LLM provider on each query | Embedding provider + LLM provider on each query |
 
 ---
@@ -453,36 +530,29 @@ This confirms the port is accepting connections. It does not validate the HTTP r
 | Extension | Installed by | When |
 |-----------|-------------|------|
 | `vector` (pgvector) | Control plane — `RAGSchemaResource.Create()` | Before container starts |
-| `pgedge_vectorizer` | Manual — not automated | Optional; needed only if using background embedding generation |
+| `pgedge_vectorizer` | User — manual `CREATE EXTENSION` | Before populating tables; needed for background embedding generation |
 
 ### Schema
 
-The control plane creates the following in `RAGSchemaResource.Create()`, running on the co-located Patroni primary:
+Table creation is the **user's responsibility**. The expected flow is:
+
+1. Deploy a Control Plane database
+2. Create your tables and populate them with embeddings (using `pgedge_vectorizer`, a doc loader, or direct inserts)
+3. Deploy the RAG service, pointing `pipelines[].tables` at your existing tables
+
+`RAGSchemaResource.Create()` runs on the co-located Patroni primary and does two things:
 
 ```sql
+-- Enable pgvector (requires superuser — control plane handles this)
 CREATE EXTENSION IF NOT EXISTS vector;
 
-CREATE TABLE IF NOT EXISTS documents_content_chunks (
-    id BIGSERIAL PRIMARY KEY,
-    content TEXT,
-    embedding vector(1536)   -- dims resolved from embedding_model
-);
-
-CREATE INDEX IF NOT EXISTS ... ON documents_content_chunks
-    USING hnsw (embedding vector_cosine_ops);
-
-GRANT SELECT ON documents_content_chunks TO svc_rag_host_1;
+-- Grant read access to the service user on each configured table
+GRANT SELECT ON <table> TO svc_rag_host_1;
 ```
 
-Vector dimensions by model:
+The `GRANT` is issued for every table listed across all pipelines. If a table does not exist at provisioning time, the `GRANT` will fail and provisioning will be blocked — the user must create their tables before deploying the RAG service.
 
-| Model | Dims |
-|-------|------|
-| `text-embedding-3-large` | 3072 |
-| `text-embedding-3-small`, `text-embedding-ada-002` | 1536 |
-| All others (default) | 1536 |
-
-Schema DDL and `GRANT` **are replicated** by Spock — running on one node propagates to all. `CREATE ROLE` is **not replicated** — the service user must be created per-node on each co-located primary, which `ServiceUserRole` handles.
+`GRANT` **is replicated** by Spock — running on one node propagates to all. `CREATE ROLE` is **not replicated** — the service user must be created per-node on each co-located primary, which `ServiceUserRole` handles.
 
 ### Spock / replication
 
@@ -525,12 +595,12 @@ Published port and container IP are surfaced in the control-plane API under `ser
 
 | Gap | Detail |
 |-----|--------|
-| **No document ingestion API** | The RAG server is read-only. Users must insert documents with pre-computed embeddings directly. The control plane provides no ingestion path. `pgedge_vectorizer` helps but requires manual `CREATE EXTENSION`. |
+| **No document ingestion API** | The RAG server is read-only. Users must create their own tables and populate them with embeddings before deploying the RAG service. The recommended path is `pgedge_vectorizer` (requires manual `CREATE EXTENSION pgedge_vectorizer`). |
 | **No config update path** | Changing any config field (model, table, provider) requires delete + re-provision. An in-place update path would need to create a new Swarm config object, update the service mount, and restart. Resource model supports it but it is not wired up. |
 | **Health check does not validate Postgres** | The `/dev/tcp` check confirms the port is open but not that the RAG server successfully connected to Postgres. A failed DB connection passes health until a query is attempted. |
 | **Embedding dimension not validated at provisioning** | If a table was previously created with different dimensions and the config specifies a different model, `RAGSchemaResource` skips table creation (IF NOT EXISTS) and the mismatch surfaces only at query time. |
 | **`pgedge_vectorizer` not automated** | Schema setup (`RAGSchemaResource`) installs `pgvector` but not `pgedge_vectorizer`. Users who want background embedding generation must run `CREATE EXTENSION` manually. |
-| **Single pipeline per service instance** | The control plane generates one pipeline per service instance. Two separate LLM configs or embedding models on the same database require two separate service instances. The RAG server supports multiple pipelines in YAML, but the control plane does not expose this. |
+| **Multiple databases per service instance** | All pipelines within one service instance share the same Postgres connection (same host, user, database). Two separate databases require two separate service instances. |
 | **Swarm config immutability** | Docker Swarm configs are immutable. Any config change requires creating a new config object and restarting the service. This is handled internally but means every config change restarts the container. |
 
 ---
@@ -540,6 +610,7 @@ Published port and container IP are surfaced in the control-plane API under `ser
 | Question | Answer |
 |----------|--------|
 | Does the pgEdge Postgres image have `vector` enabled by default? | `vector` (pgvector) is installed but not enabled per-database. `RAGSchemaResource` runs `CREATE EXTENSION IF NOT EXISTS vector` automatically. `pgedge_vectorizer` requires manual `CREATE EXTENSION` today. |
-| Single pipeline per service instance, or multiple? | **Single pipeline per instance** — the control plane generates one pipeline per `(service_id, host_id)` pair. Multiple pipelines would require multiple database connections or models, which maps more cleanly to separate service instances. |
-| Support Voyage AI now or defer? | Voyage AI is **supported** — `voyage_api_key` is validated and `VOYAGE_API_KEY` is injected as an env var. The RAG server supports it as an embedding provider. |
+| Single pipeline per service instance, or multiple? | **Multiple pipelines supported** — the control plane generates one pipeline per entry in `config.pipelines`. All pipelines share the same database connection. Two separate databases require two separate service instances. |
+| Support Voyage AI now or defer? | Voyage AI is **supported** — `voyage_api_key` is written to a host key file and referenced in the YAML `api_keys` section. The RAG server supports it as an embedding provider. |
 | Extension installation automation post-spike? | `pgvector` is automated via `RAGSchemaResource`. `pgedge_vectorizer` is deferred — document as manual prerequisite. A future `ServiceExtensionResource` could automate it. |
+| How many lifecycle resources? | **8 resources** per service instance per host: `NetworkResource`, `ServiceUserRole`, `RAGAPIKeysResource`, `ServiceConfigResource`, `RAGSchemaResource`, `ServiceInstanceSpecResource`, `ServiceInstanceResource`, `ServiceInstanceMonitor`. |
