@@ -15,7 +15,7 @@ with three nodes, each accepting reads and writes.
 | Start the Control Plane | Launch the orchestrator in a Docker container |
 | Create a Distributed Database | Deploy a 3-node Postgres database with Spock replication |
 | Verify Multi-Master Replication | Write on one node, read from another |
-| Resilience Demo | Take a node down, prove zero data loss on recovery |
+| Test Resilience | Take a node down, verify recovery without data loss |
 
 !!! tip "Run the commands as you read"
     Every code block below is executable. Open this repo in
@@ -36,7 +36,7 @@ with three nodes, each accepting reads and writes.
   Linux: [pgEdge Enterprise packages](https://docs.pgedge.com/enterprise) or your distribution's `postgresql-client` package
 
 !!! warning "macOS: Enable host networking in Docker Desktop"
-    Control Plane requires Docker host networking. On macOS with Docker
+    The Control Plane requires Docker host networking. On macOS with Docker
     Desktop, this must be enabled manually. Open Docker Desktop and go
     to **Settings > Resources > Network**, check **Enable host
     networking**, then click **Apply and restart**. See
@@ -49,7 +49,7 @@ with three nodes, each accepting reads and writes.
 
 The Control Plane is a lightweight orchestrator that manages your Postgres
 instances. It runs on each of your hosts and exposes a REST API.
-In this example, we are running it on a single host.
+This example runs on a single host.
 
 ### If you're in Codespaces
 
@@ -78,7 +78,7 @@ bash examples/walkthrough/guide.sh
 
 ### Set up the environment
 
-Control Plane uses Docker Swarm for container orchestration.
+The Control Plane uses Docker Swarm for container orchestration.
 Initialize Swarm and set the ports for each database node. Adjust the
 ports if they conflict with existing services on your machine:
 
@@ -136,8 +136,8 @@ esac
 
 ### What you're creating
 
-Control Plane uses a declarative model. You describe the database you
-want and Control Plane handles the configuration and deployment for you.
+The Control Plane uses a declarative model. You describe the database you
+want and the Control Plane handles the configuration and deployment.
 
 The database spec defines three nodes — n1, n2, and n3. Each node
 runs its own Postgres primary and accepts reads and writes
@@ -146,7 +146,7 @@ by replicating changes bidirectionally. Nodes can also have read
 replicas for high availability, though this walkthrough focuses on
 multi-master replication.
 
-This will create a database with 3 nodes.
+This will create a database with three nodes.
 
 ### Create the database
 
@@ -216,7 +216,7 @@ PGPASSWORD=password psql -h localhost -p "$N1_PORT" -U admin example -c "SELECT 
 
 ## Step 3: Verify Multi-Master Replication
 
-All three nodes have Spock bi-directional replication. Every node
+All three nodes have Spock bidirectional replication. Every node
 accepts writes and changes propagate automatically.
 
 ### Create a table on n1
@@ -263,12 +263,12 @@ writes.
 
 ---
 
-## Step 4: Resilience Demo
+## Step 4: Test Resilience
 
 ### What's happening
 
 Active-active means every node accepts reads and writes. If a node
-goes down, the others keep working — and when it comes back, Spock
+goes down, the others keep working. When it comes back, Spock
 automatically catches it up.
 
 You'll simulate a node failure by taking n2 offline, write data
@@ -364,7 +364,7 @@ replication caught everything up without data loss.
 | Command | What it does |
 |---------|-------------|
 | `curl -s http://localhost:3000/v1/databases/example \| jq` | Full database status (includes nodes) |
-| `curl -s http://localhost:3000/v1/databases/example \| jq '.nodes'` | List just the nodes |
+| `curl -s http://localhost:3000/v1/databases/example \| jq '.instances'` | List just the instances |
 | `curl -s http://localhost:3000/v1/version \| jq` | Control Plane version |
 | `docker service ls` | List all Swarm services |
 
@@ -372,8 +372,8 @@ replication caught everything up without data loss.
 
 ## Cleanup
 
-If you are running in GitHub Codespaces, just delete the Codespace —
-no cleanup needed.
+If you are running in GitHub Codespaces, delete the Codespace. No
+other cleanup is needed.
 
 If you are running locally:
 

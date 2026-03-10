@@ -87,7 +87,7 @@ explain ""
 explain "  1. Start the Control Plane"
 explain "  2. Create a Distributed Database"
 explain "  3. Verify Multi-Master Replication"
-explain "  4. Resilience Demo"
+explain "  4. Test Resilience"
 explain ""
 explain "You'll go from zero to active-active replication in minutes."
 
@@ -99,7 +99,7 @@ header "Step 1: Start the Control Plane"
 
 explain "The Control Plane is a lightweight orchestrator that manages your Postgres"
 explain "instances. It runs on each of your hosts and exposes a REST API."
-explain "In this example, we are running it on a single host."
+explain "This example runs on a single host."
 echo ""
 
 # Remove stale container from a previous run
@@ -181,10 +181,10 @@ fi
 # Initialize cluster (idempotent -- safe to re-run)
 init_status=$(curl -s -o /dev/null -w "%{http_code}" "${CP_URL}/v1/cluster/init" 2>/dev/null || true)
 case "$init_status" in
-  200|201) info "Cluster initialized." ;;
-  409)     info "Cluster already initialized." ;;
+  200|201) info "Control Plane initialized." ;;
+  409)     info "Control Plane already initialized." ;;
   *)
-    error "Cluster initialization failed (HTTP ${init_status:-no response})."
+    error "Initialization failed (HTTP ${init_status:-no response})."
     error "Check Control Plane logs: docker logs ${CP_CONTAINER}"
     exit 1
     ;;
@@ -212,8 +212,8 @@ prompt_continue
 
 header "Step 2: Create a Distributed Database"
 
-explain "Control Plane uses a declarative model. You describe the database you"
-explain "want and Control Plane handles the configuration and deployment for you."
+explain "The Control Plane uses a declarative model. You describe the database you"
+explain "want and the Control Plane handles the configuration and deployment."
 explain ""
 explain "The database spec defines three nodes -- n1, n2, and n3. Each node"
 explain "runs its own Postgres primary and accepts reads and writes"
@@ -222,7 +222,7 @@ explain "by replicating changes bidirectionally. Nodes can also have read"
 explain "replicas for high availability, though this walkthrough focuses on"
 explain "multi-master replication."
 explain ""
-explain "This will create a database with 3 nodes."
+explain "This will create a database with three nodes."
 
 prompt_run "curl -s -X POST ${CP_URL}/v1/databases \\
     -H 'Content-Type: application/json' \\
@@ -283,7 +283,7 @@ stop_spinner
 
 if [[ "$state" == "available" ]]; then
   echo ""
-  info "Database '${DB_ID}' is available with 3 nodes (n1, n2, n3)"
+  info "Database '${DB_ID}' is available with three nodes (n1, n2, n3)"
 else
   echo ""
   warn "Database is still being created (state: ${state:-unknown}). You can check progress with:"
@@ -296,7 +296,7 @@ explain "Let's look at the database through the Control Plane API:"
 
 prompt_run "curl -s ${CP_URL}/v1/databases/${DB_ID} | jq ."
 
-explain "The API provides full visibility into your database -- nodes,"
+explain "The Control Plane API provides full visibility into your database -- nodes,"
 explain "instances, state, and connection info."
 explain ""
 explain "Let's connect to n1 to confirm Postgres is running:"
@@ -309,7 +309,7 @@ prompt_continue
 
 header "Step 3: Verify Multi-Master Replication"
 
-explain "All three nodes have Spock bi-directional replication. Every node"
+explain "All three nodes have Spock bidirectional replication. Every node"
 explain "accepts writes and changes propagate automatically."
 explain ""
 explain "Let's prove it. First, create a table on n1:"
@@ -338,10 +338,10 @@ info "Both rows replicated to n1 -- every node can read every other node's write
 
 # ── Step 4: Resilience ───────────────────────────────────────────────────────
 
-header "Step 4: Resilience Demo"
+header "Step 4: Test Resilience"
 
 explain "Active-active means every node accepts reads and writes. If a node"
-explain "goes down, the others keep working -- and when it comes back, Spock"
+explain "goes down, the others keep working. When it comes back, Spock"
 explain "automatically catches it up."
 explain ""
 explain "Let's prove it. We'll simulate a node failure by taking n2 offline,"
@@ -398,7 +398,7 @@ else
     n2_retries=$((n2_retries - 1))
   done
   if [[ "$n2_retries" -eq 0 ]]; then
-    warn "n2 container is back but Postgres may still be starting."
+    warn "n2 is back but Postgres may still be starting."
   fi
   info "Waiting for replication to sync..."
   sync_retries=20
@@ -435,20 +435,22 @@ prompt_continue
 header "Done!"
 
 info "You've created a distributed Postgres database, verified multi-master"
-info "replication, and proven automatic recovery from node failure --"
-info "all through the Control Plane API."
+info "replication, and proven automatic recovery from node failure."
 echo ""
-explain "What's next:"
+explain "${BOLD}Learn more:${RESET}"
 explain ""
-explain "  Control Plane docs: https://docs.pgedge.com/control-plane/"
-explain "  Full walkthrough:   https://docs.pgedge.com/control-plane/walkthrough"
+explain "  Control Plane docs:  https://docs.pgedge.com/control-plane/"
+explain "  Spock replication:   https://docs.pgedge.com/spock-v5"
+explain "  API reference:       https://docs.pgedge.com/control-plane/api/reference"
 echo ""
 explain "${BOLD}To clean up:${RESET}"
 explain ""
-explain "  ${DIM}# Remove database services (stops Postgres containers)${RESET}"
+explain "  ${DIM}# Remove database services${RESET}"
 explain "  ${DIM}docker service rm \$(docker service ls --filter label=pgedge.database.id=${DB_ID} -q)${RESET}"
+explain ""
 explain "  ${DIM}# Remove the Control Plane container${RESET}"
 explain "  ${DIM}docker rm -f ${CP_CONTAINER}${RESET}"
+explain ""
 explain "  ${DIM}# Remove the data directory${RESET}"
 explain "  ${DIM}sudo rm -rf ${CP_DATA}${RESET}"
 echo ""
