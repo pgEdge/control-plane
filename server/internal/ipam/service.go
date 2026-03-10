@@ -12,10 +12,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
-const (
-	maxRetries        = 3
-	releaseMaxRetries = 2
-)
+const maxRetries = 3
 
 // TODO: This should be part of the swarm orchestrator and it should be scoped
 // to the cohort ID.
@@ -54,7 +51,7 @@ func (s *Service) ReleaseSubnet(ctx context.Context, prefix netip.Prefix, bits i
 	}
 
 	var lastErr error
-	for retries := releaseMaxRetries; retries >= 0; retries-- {
+	for retries := maxRetries; retries > 0; retries-- {
 		lastErr = s.releaseSubnet(ctx, prefix, bits, subnet)
 		if lastErr == nil {
 			return nil
