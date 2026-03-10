@@ -225,6 +225,12 @@ func (r *SubnetRange) Has(subnet netip.Prefix) bool {
 	return r.alloc.Has(offset)
 }
 
+// Contains returns true if the subnet is within this range.
+func (r *SubnetRange) Contains(subnet netip.Prefix) bool {
+	ok, _ := r.contains(subnet)
+	return ok
+}
+
 // Snapshot saves the current state of the pool.
 func (r *SubnetRange) Snapshot() (string, []byte, error) {
 	snapshottable, ok := r.alloc.(allocator.Snapshottable)
