@@ -55,7 +55,7 @@ nav:
       - Control Plane Concepts: prerequisites/concepts.md
       - Preparing your System: prerequisites/index.md
   - Getting Started:
-      - Quickstart - Deploying Control Plane on Docker Hosts: installation/quickstart.md
+      - Quickstart: installation/quickstart.md
       - Guided Walkthrough: walkthrough.md
   - Installing Control Plane:
       - Deployment Options: installation/index.md
