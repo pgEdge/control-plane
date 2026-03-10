@@ -160,8 +160,7 @@ Each node accepts reads and writes, and Spock logical replication keeps
 them in sync. Control Plane also supports read replicas for scaling read
 traffic, though this walkthrough focuses on multi-master replication.
 
-This will create a database with 3 nodes. It takes a minute or two as
-the Postgres image is pulled and started on each node.
+This will create a database with 3 nodes.
 
 ### Create the database
 
@@ -186,16 +185,17 @@ curl -s -X POST http://localhost:3000/v1/databases \
                 { "name": "n3", "port": '"$N3_PORT"', "host_ids": ["host-1"] }
             ]
         }
-    }'
+    }' | jq .
 ```
 
-The API returns a JSON task confirming that database creation has
-started. Creation is asynchronous — Control Plane is now creating
-services for each node and starting the Postgres containers.
+The API returns a task confirming that database creation has started.
+Creation is asynchronous — the database and its nodes are being set up
+in the background.
 
 ### Wait for the database
 
-Poll until the state is `available`:
+Poll until the state is `available`. This may take a few minutes on
+the first run:
 
 ```bash
 echo "Waiting for database..."

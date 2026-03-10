@@ -218,8 +218,7 @@ explain "Each node accepts reads and writes, and Spock logical replication keeps
 explain "them in sync. Control Plane also supports read replicas for scaling read"
 explain "traffic, though this walkthrough focuses on multi-master replication."
 explain ""
-explain "This will create a database with 3 nodes. It takes a minute or two as"
-explain "the Postgres image is pulled and started on each node."
+explain "This will create a database with 3 nodes."
 
 prompt_run "curl -s -X POST ${CP_URL}/v1/databases \\
     -H 'Content-Type: application/json' \\
@@ -241,28 +240,36 @@ prompt_run "curl -s -X POST ${CP_URL}/v1/databases \\
                 { \"name\": \"n3\", \"port\": ${N3_PORT}, \"host_ids\": [\"host-1\"] }
             ]
         }
-    }'" "Creating database..."
+    }' | jq ." "Creating database..."
 
-explain "Control Plane is now creating services for each node and starting"
-explain "the Postgres containers."
+explain ""
+explain "Control Plane returned a task confirming that database creation has"
+explain "started. Creation is asynchronous -- the database and its nodes are"
+explain "being set up in the background."
+explain ""
+explain "Let's wait for the database to become available. This may take a few"
+explain "minutes on the first run."
+
+show_cmd "curl -s ${CP_URL}/v1/databases/${DB_ID} | jq -r .state"
 echo ""
 
-start_spinner "Waiting for database to become available..."
 state=""
 retries=60
 while [[ "$retries" -gt 0 ]]; do
   state=$(curl -sf "${CP_URL}/v1/databases/${DB_ID}" 2>/dev/null | grep -o '"state":"[^"]*"' | head -1 | cut -d'"' -f4 || true)
+  echo "  State: ${state:-unknown}"
   if [[ "$state" == "available" ]]; then
     break
   fi
   sleep 3
   retries=$((retries - 1))
 done
-stop_spinner
 
 if [[ "$state" == "available" ]]; then
+  echo ""
   info "Database '${DB_ID}' is available with 3 nodes (n1, n2, n3)"
 else
+  echo ""
   warn "Database is still being created (state: ${state:-unknown}). You can check progress with:"
   show_cmd "curl -s ${CP_URL}/v1/databases/${DB_ID} | jq .state"
   prompt_continue
