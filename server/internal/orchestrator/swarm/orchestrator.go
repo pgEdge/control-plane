@@ -502,6 +502,7 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		DatabaseID:        spec.DatabaseID,
 		ServiceName:       serviceName,
 		ServiceID:         spec.ServiceSpec.ServiceID,
+		ServiceSpecID:     spec.ServiceSpec.ServiceID,
 		HostID:            spec.HostID,
 	}
 
