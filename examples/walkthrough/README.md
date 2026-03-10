@@ -32,13 +32,13 @@ as a no-op — the devcontainer has already handled setup.
 Both paths walk through the same progression:
 
 1. Start the Control Plane — Docker Swarm init, pull and run the
-   Control Plane container, initialize the cluster
-2. Create a Distributed Database — declare a 3-node database via
+   Control Plane container, initialize the Control Plane
+2. Create a Distributed Database — declare a three-node database via
    the REST API, wait for it to become available
 3. Verify Multi-Master Replication — write on one node, read from
    another, confirm bidirectional replication
-4. Resilience Demo — scale a node down, write while it's offline,
-   bring it back, verify zero data loss
+4. Test Resilience — take a node offline, write while it's down,
+   bring it back, verify recovery without data loss
 
 ## File Overview
 
