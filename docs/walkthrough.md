@@ -24,8 +24,6 @@ with three nodes, each accepting reads and writes.
     [Runme extension](https://marketplace.visualstudio.com/items?itemName=stateful.runme)
     in VS Code and click **Execute Cell** on each block.
 
----
-
 ## Prerequisites
 
 - Docker — [Docker Engine](https://docs.docker.com/engine/install/)
@@ -42,8 +40,6 @@ with three nodes, each accepting reads and writes.
     networking**, then click **Apply and restart**. See
     [Docker Desktop host networking](https://docs.docker.com/engine/network/drivers/host/#docker-desktop)
     for details.
-
----
 
 ## Step 1: Start the Control Plane
 
@@ -130,8 +126,6 @@ case "$status" in
 esac
 ```
 
----
-
 ## Step 2: Create a Distributed Database
 
 ### What you're creating
@@ -212,8 +206,6 @@ Connect to n1 to confirm Postgres is running:
 PGPASSWORD=password psql -h localhost -p "$N1_PORT" -U admin example -c "SELECT version();"
 ```
 
----
-
 ## Step 3: Verify Multi-Master Replication
 
 All three nodes have Spock bidirectional replication. Every node
@@ -260,8 +252,6 @@ PGPASSWORD=password psql -h localhost -p "$N1_PORT" -U admin example \
 
 Both rows replicated to n1. Every node can read every other node's
 writes.
-
----
 
 ## Step 4: Test Resilience
 
@@ -357,8 +347,6 @@ PGPASSWORD=password psql -h localhost -p "$N2_PORT" -U admin example \
 The database survived a node failure. n2 came back online and Spock
 replication caught everything up without data loss.
 
----
-
 ## Explore Further
 
 | Command | What it does |
@@ -367,8 +355,6 @@ replication caught everything up without data loss.
 | `curl -s http://localhost:3000/v1/databases/example \| jq '.instances'` | List just the instances |
 | `curl -s http://localhost:3000/v1/version \| jq` | Control Plane version |
 | `docker service ls` | List all Swarm services |
-
----
 
 ## Cleanup
 
@@ -392,8 +378,6 @@ echo "Cleanup complete."
     The temporary data directory created by `guide.sh` or the
     walkthrough blocks above requires `sudo rm -rf` to remove,
     since Docker creates files as root.
-
----
 
 ## Learn More
 
