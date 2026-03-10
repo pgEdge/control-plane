@@ -244,7 +244,7 @@ prompt_run "curl -s -X POST ${CP_URL}/v1/databases \\
                 { \"name\": \"n3\", \"port\": ${N3_PORT}, \"host_ids\": [\"host-1\"] }
             ]
         }
-    }' | jq ." "Creating database..."
+    }' | jq .task" "Creating database..."
 
 explain ""
 explain "The Control Plane API returned a task confirming that database creation has"
@@ -292,6 +292,13 @@ else
 fi
 
 explain ""
+explain "Let's look at the database through the Control Plane API:"
+
+prompt_run "curl -s ${CP_URL}/v1/databases/${DB_ID} | jq ."
+
+explain "The API provides full visibility into your database -- nodes,"
+explain "instances, state, and connection info."
+explain ""
 explain "Let's connect to n1 to confirm Postgres is running:"
 
 prompt_run "PGPASSWORD=password psql -h localhost -p ${N1_PORT} -U admin ${DB_ID} -c \"SELECT version();\""
@@ -337,18 +344,19 @@ explain "Active-active means every node accepts reads and writes. If a node"
 explain "goes down, the others keep working -- and when it comes back, Spock"
 explain "automatically catches it up."
 explain ""
-explain "Let's prove it. We'll halt n2 using Docker service scaling, write"
-explain "data while it's down, then bring it back and verify everything"
+explain "Let's prove it. We'll simulate a node failure by taking n2 offline,"
+explain "write data while it's down, then bring it back and verify everything"
 explain "replicated."
-explain ""
-explain "Scaling the service to 0 cleanly stops n2 and prevents Control Plane"
-explain "from auto-recovering it, so you can observe each step."
 explain ""
 prompt_continue
 
-explain "Scale n2 to 0:"
+explain "Take n2 offline:"
 
 prompt_run "N2_SERVICE=\$(docker service ls --filter label=pgedge.component=postgres --filter label=pgedge.node.name=n2 --format '{{ .Name }}') && docker service scale \"\$N2_SERVICE\"=0 && echo 'Node n2 scaled to 0.'"
+
+explain "Let's check how the Control Plane sees the database now:"
+
+prompt_run "curl -s ${CP_URL}/v1/databases/${DB_ID} | jq '.instances[] | {node_name, state}'"
 
 explain "Write on n1 while n2 is down:"
 
@@ -360,7 +368,7 @@ prompt_run "PGPASSWORD=password psql -h localhost -p ${N3_PORT} -U admin ${DB_ID
 
 info "The database kept working with a node down."
 echo ""
-explain "Now let's bring n2 back by scaling the service to 1:"
+explain "Now let's bring n2 back online:"
 
 prompt_run "N2_SERVICE=\$(docker service ls --filter label=pgedge.component=postgres --filter label=pgedge.node.name=n2 --format '{{ .Name }}') && docker service scale \"\$N2_SERVICE\"=1 && echo 'Node n2 scaling back up.'"
 
@@ -407,13 +415,17 @@ else
   fi
 
   explain ""
-  explain "Let's read from n2. Everything should be there -- including the row"
-  explain "that was written while n2 was down:"
+  explain "Let's check the database state through the API:"
+
+  prompt_run "curl -s ${CP_URL}/v1/databases/${DB_ID} | jq '.instances[] | {node_name, state}'"
+
+  explain "All nodes are back. Let's read from n2 -- everything should be"
+  explain "there, including the row written while n2 was down:"
 
   prompt_run "PGPASSWORD=password psql -h localhost -p ${N2_PORT} -U admin ${DB_ID} -c \"SELECT * FROM example;\""
 
-  info "The database survived a node failure, n2 came back via service"
-  info "scaling, and Spock replication caught everything up. Zero data loss."
+  info "The database survived a node failure. n2 came back online and Spock"
+  info "replication caught everything up without data loss."
 fi
 
 prompt_continue

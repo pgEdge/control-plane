@@ -54,7 +54,7 @@ In this example, we are running it on a single host.
 ### If you're in Codespaces
 
 The environment is already set up. Skip ahead to
-[Initialize Docker Swarm](#initialize-docker-swarm).
+[Set up the environment](#set-up-the-environment).
 
 ### On your own machine
 
@@ -76,9 +76,11 @@ and spinners:
 bash examples/walkthrough/guide.sh
 ```
 
-### Initialize Docker Swarm
+### Set up the environment
 
-Control Plane uses Docker Swarm for container orchestration:
+Control Plane uses Docker Swarm for container orchestration.
+Initialize Swarm and set the ports for each database node. Adjust the
+ports if they conflict with existing services on your machine:
 
 ```bash
 if [ "$(docker info --format '{{.Swarm.LocalNodeState}}' 2>/dev/null)" = "active" ]; then
@@ -86,6 +88,12 @@ if [ "$(docker info --format '{{.Swarm.LocalNodeState}}' 2>/dev/null)" = "active
 else
   docker swarm init
 fi
+
+export N1_PORT=5432
+export N2_PORT=5433
+export N3_PORT=5434
+export CP_DATA=$(mktemp -d)/pgedge-cp-demo
+mkdir -p "$CP_DATA"
 ```
 
 !!! tip "Getting a 'could not choose an IP address' error?"
@@ -93,27 +101,9 @@ fi
     to specify which address to advertise. Find your primary IP and
     run `docker swarm init --advertise-addr <your-ip>` instead.
 
-### Set environment variables
+### Start the Control Plane
 
-These variables are used throughout the walkthrough. Adjust the ports
-if they conflict with existing services on your machine:
-
-```bash
-export N1_PORT=5432
-export N2_PORT=5433
-export N3_PORT=5434
-export CP_DATA=$(mktemp -d)/pgedge-cp-demo
-mkdir -p "$CP_DATA"
-echo "Data directory: $CP_DATA"
-echo "Node ports: n1=$N1_PORT, n2=$N2_PORT, n3=$N3_PORT"
-```
-
-### Pull and start the Control Plane container
-
-This pulls the Control Plane image from the GitHub container registry
-and starts it with host networking. The Docker socket is mounted so
-that Control Plane can create and manage Postgres containers on your
-behalf.
+Pull the Control Plane image, start it, and initialize:
 
 ```bash
 docker pull ghcr.io/pgedge/control-plane
@@ -131,19 +121,12 @@ until curl -sf http://localhost:3000/v1/version >/dev/null 2>&1; do
   sleep 2
 done
 echo "Control Plane is ready!"
-```
 
-### Initialize the Control Plane
-
-This one-time step prepares the Control Plane to manage databases on
-this host:
-
-```bash
 status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/v1/cluster/init)
 case "$status" in
-  200|201) echo "Cluster initialized." ;;
-  409)     echo "Cluster already initialized." ;;
-  *)       echo "Cluster initialization failed (HTTP $status)"; exit 1 ;;
+  200|201) echo "Initialized." ;;
+  409)     echo "Already initialized." ;;
+  *)       echo "Initialization failed (HTTP $status)"; exit 1 ;;
 esac
 ```
 
@@ -188,7 +171,7 @@ curl -s -X POST http://localhost:3000/v1/databases \
                 { "name": "n3", "port": '"$N3_PORT"', "host_ids": ["host-1"] }
             ]
         }
-    }' | jq .
+    }' | jq .task
 ```
 
 The Control Plane API returns a task confirming that database creation has started.
@@ -210,6 +193,15 @@ while true; do
   sleep 3
 done
 echo "Database is ready!"
+```
+
+### Explore the database through the API
+
+The Control Plane API provides full visibility into your database —
+nodes, instances, state, and connection info:
+
+```bash
+curl -s http://localhost:3000/v1/databases/example | jq .
 ```
 
 ### Verify with psql
@@ -279,13 +271,10 @@ Active-active means every node accepts reads and writes. If a node
 goes down, the others keep working — and when it comes back, Spock
 automatically catches it up.
 
-You'll halt n2 using Docker service scaling, write data while it's
-down, then bring it back and verify everything replicated.
+You'll simulate a node failure by taking n2 offline, write data
+while it's down, then bring it back and verify everything replicated.
 
-Scaling the service to 0 cleanly stops n2 and prevents Control Plane
-from auto-recovering it, so you can observe each step.
-
-### Scale n2 to 0
+### Take n2 offline
 
 ```bash
 N2_SERVICE=$(docker service ls \
@@ -294,6 +283,12 @@ N2_SERVICE=$(docker service ls \
   --format '{{ .Name }}')
 docker service scale "$N2_SERVICE"=0
 echo "Node n2 scaled to 0."
+```
+
+Check how the Control Plane sees the database now:
+
+```bash
+curl -s http://localhost:3000/v1/databases/example | jq '.instances[] | {node_name, state}'
 ```
 
 ### Write on n1 while n2 is down
@@ -312,7 +307,7 @@ PGPASSWORD=password psql -h localhost -p "$N3_PORT" -U admin example \
 
 The database kept working with a node down.
 
-### Scale n2 back to 1
+### Bring n2 back online
 
 ```bash
 N2_SERVICE=$(docker service ls \
@@ -323,9 +318,9 @@ docker service scale "$N2_SERVICE"=1
 echo "Node n2 scaling back up."
 ```
 
-### Wait for n2 to come back
+### Wait for n2 to recover
 
-Poll until the n2 container appears and is ready:
+Poll until n2 is accepting connections and replication has synced:
 
 ```bash
 echo "Waiting for n2 to accept connections..."
@@ -341,6 +336,14 @@ done
 echo "Replication is synced."
 ```
 
+### Check the database state
+
+```bash
+curl -s http://localhost:3000/v1/databases/example | jq '.instances[] | {node_name, state}'
+```
+
+All nodes should be back.
+
 ### Read from n2 to verify recovery
 
 Everything should be here, including the row written while n2 was
@@ -351,8 +354,8 @@ PGPASSWORD=password psql -h localhost -p "$N2_PORT" -U admin example \
     -c "SELECT * FROM example;"
 ```
 
-The database survived a node failure, n2 came back via service
-scaling, and Spock replication caught everything up. Zero data loss.
+The database survived a node failure. n2 came back online and Spock
+replication caught everything up without data loss.
 
 ---
 
