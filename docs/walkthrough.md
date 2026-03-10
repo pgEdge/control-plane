@@ -4,12 +4,15 @@ cwd: ../
 
 # Guided Walkthrough
 
-Deploy a distributed PostgreSQL database with multi-master
-replication enabled via Spock, orchestrated by the pgEdge Control Plane.
+This walkthrough guides you through deploying a distributed PostgreSQL
+database using the pgEdge Control Plane, a lightweight orchestrator
+that manages Postgres databases with multi-master replication and
+read replica support. By the end you will have a running database
+with three nodes, each accepting reads and writes.
 
 | Step | What you'll do |
 |------|---------------|
-| Start Control Plane | Launch the orchestrator in a Docker container |
+| Start the Control Plane | Launch the orchestrator in a Docker container |
 | Create a Distributed Database | Deploy a 3-node Postgres database with Spock replication |
 | Verify Multi-Master Replication | Write on one node, read from another |
 | Resilience Demo | Take a node down, prove zero data loss on recovery |
@@ -130,12 +133,10 @@ done
 echo "Control Plane is ready!"
 ```
 
-### Initialize the cluster
+### Initialize the Control Plane
 
-Cluster initialization tells Control Plane to set up its internal
-state — registering this host, initializing the metadata store, and
-preparing to accept database definitions. This is a one-time
-operation:
+This one-time step prepares the Control Plane to manage databases on
+this host:
 
 ```bash
 status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/v1/cluster/init)
@@ -155,10 +156,12 @@ esac
 Control Plane uses a declarative model. You describe the database you
 want and Control Plane handles the configuration and deployment for you.
 
-A node represents an independent Postgres instance within your database.
-Each node accepts reads and writes, and Spock logical replication keeps
-them in sync. Control Plane also supports read replicas for scaling read
-traffic, though this walkthrough focuses on multi-master replication.
+The database spec defines three nodes — n1, n2, and n3. Each node
+runs its own Postgres primary and accepts reads and writes
+independently. Spock logical replication keeps all nodes in sync
+by replicating changes bidirectionally. Nodes can also have read
+replicas for high availability, though this walkthrough focuses on
+multi-master replication.
 
 This will create a database with 3 nodes.
 
@@ -188,7 +191,7 @@ curl -s -X POST http://localhost:3000/v1/databases \
     }' | jq .
 ```
 
-The API returns a task confirming that database creation has started.
+The Control Plane API returns a task confirming that database creation has started.
 Creation is asynchronous — the database and its nodes are being set up
 in the background.
 
