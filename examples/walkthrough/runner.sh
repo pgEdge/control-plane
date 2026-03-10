@@ -22,37 +22,37 @@ RESET='\033[0m'
 header() {
   echo ""
   echo -e "${BOLD}${TEAL}══════════════════════════════════════════════════════════════${RESET}"
-  echo -e "${BOLD}${TEAL}  $1${RESET}"
+  echo -e "${BOLD}${TEAL}$1${RESET}"
   echo -e "${BOLD}${TEAL}══════════════════════════════════════════════════════════════${RESET}"
   echo ""
 }
 
 info() {
-  echo -e "  ${GREEN}$1${RESET}"
+  echo -e "${GREEN}$1${RESET}"
 }
 
 warn() {
-  echo -e "  ${YELLOW}$1${RESET}"
+  echo -e "${YELLOW}$1${RESET}"
 }
 
 error() {
-  echo -e "  ${RED}$1${RESET}"
+  echo -e "${RED}$1${RESET}"
 }
 
 explain() {
-  echo -e "  $1"
+  echo -e "$1"
 }
 
 show_cmd() {
   echo ""
-  echo -e "  ${ORANGE}\$ $1${RESET}"
+  echo -e "${ORANGE}\$ $1${RESET}"
 }
 
 # --- Interactive helpers ---
 
 prompt_continue() {
   echo ""
-  read -rp "  Press Enter to continue..." </dev/tty
+  read -rp "Press Enter to continue..." </dev/tty
   echo ""
 }
 
@@ -61,7 +61,7 @@ prompt_run() {
   local slow="${2:-}"
   show_cmd "$cmd"
   echo ""
-  read -rp "  Press Enter to run..." </dev/tty
+  read -rp "Press Enter to run..." </dev/tty
   echo ""
   if [[ -n "$slow" ]]; then
     local tmpfile
@@ -69,14 +69,14 @@ prompt_run() {
     start_spinner "$slow"
     eval "$cmd" > "$tmpfile" 2> >(grep -v "Unable to use a TTY" >&2)
     stop_spinner
-    echo -e "  ${DIM}─── Output ─────────────────────────────────────────────────${RESET}"
+    echo -e "${DIM}─── Output ─────────────────────────────────────────────────${RESET}"
     cat "$tmpfile"
-    echo -e "  ${DIM}────────────────────────────────────────────────────────────${RESET}"
+    echo -e "${DIM}────────────────────────────────────────────────────────────${RESET}"
     rm -f "$tmpfile"
   else
-    echo -e "  ${DIM}─── Output ─────────────────────────────────────────────────${RESET}"
+    echo -e "${DIM}─── Output ─────────────────────────────────────────────────${RESET}"
     eval "$cmd" 2> >(grep -v "Unable to use a TTY" >&2)
-    echo -e "  ${DIM}────────────────────────────────────────────────────────────${RESET}"
+    echo -e "${DIM}────────────────────────────────────────────────────────────${RESET}"
   fi
   echo ""
 }
@@ -91,7 +91,7 @@ start_spinner() {
   (
     while true; do
       for (( i=0; i<${#chars}; i++ )); do
-        printf "\r  \033[38;5;30m%s\033[0m %s" "${chars:$i:1}" "$msg"
+        printf "\r\033[38;5;30m%s\033[0m %s" "${chars:$i:1}" "$msg"
         sleep 0.1
       done
     done
