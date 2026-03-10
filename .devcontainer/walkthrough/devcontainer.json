@@ -1,6 +1,9 @@
 {
   "name": "pgEdge Control Plane Walkthrough",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "hostRequirements": {
+    "cpus": 4
+  },
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },

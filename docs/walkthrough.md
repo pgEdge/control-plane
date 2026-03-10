@@ -17,29 +17,31 @@ with three nodes, each accepting reads and writes.
 | Verify Multi-Master Replication | Write on one node, read from another |
 | Test Resilience | Take a node down, verify recovery without data loss |
 
-!!! tip "Run the commands as you read"
-    Every code block below is executable. Open this repo in
-    [GitHub Codespaces](https://codespaces.new/pgEdge/control-plane?devcontainer_path=.devcontainer/walkthrough/devcontainer.json)
-    for a ready-to-go environment, or install the
-    [Runme extension](https://marketplace.visualstudio.com/items?itemName=stateful.runme)
-    in VS Code and click **Execute Cell** on each block.
+> [!TIP]
+> **Run the commands as you read**
+> Every code block below is executable. Open this repo in
+> [GitHub Codespaces](https://codespaces.new/pgEdge/control-plane?devcontainer_path=.devcontainer/walkthrough/devcontainer.json)
+> for a ready-to-go environment, or install the
+> [Runme extension](https://marketplace.visualstudio.com/items?itemName=stateful.runme)
+> in VS Code and click **Execute Cell** on each block.
 
 ## Prerequisites
 
-- Docker — [Docker Engine](https://docs.docker.com/engine/install/)
-  (Linux) or [Docker Desktop](https://docs.docker.com/desktop/) (macOS)
-- curl — [curl.se/download](https://curl.se/download.html)
-- jq — [jqlang.github.io/jq/download](https://jqlang.github.io/jq/download/)
-- psql — macOS: `brew install libpq && brew link --force libpq`;
-  Linux: [pgEdge Enterprise packages](https://docs.pgedge.com/enterprise) or your distribution's `postgresql-client` package
+- [Docker Engine](https://docs.docker.com/engine/install/) (Linux) or [Docker Desktop](https://docs.docker.com/desktop/) (macOS)
+- [curl](https://curl.se/download.html)
+- [jq](https://jqlang.github.io/jq/download/)
+- psql
+    - macOS: `brew install libpq && brew link --force libpq`
+    - Linux: [pgEdge Enterprise packages](https://docs.pgedge.com/enterprise) or your distribution's `postgresql-client` package
 
-!!! warning "macOS: Enable host networking in Docker Desktop"
-    The Control Plane requires Docker host networking. On macOS with Docker
-    Desktop, this must be enabled manually. Open Docker Desktop and go
-    to **Settings > Resources > Network**, check **Enable host
-    networking**, then click **Apply and restart**. See
-    [Docker Desktop host networking](https://docs.docker.com/engine/network/drivers/host/#docker-desktop)
-    for details.
+> [!WARNING]
+> **macOS: Enable host networking in Docker Desktop**
+> The Control Plane requires Docker host networking. On macOS with Docker
+> Desktop, this must be enabled manually. Open Docker Desktop and go
+> to **Settings > Resources > Network**, check **Enable host
+> networking**, then click **Apply and restart**. See
+> [Docker Desktop host networking](https://docs.docker.com/engine/network/drivers/host/#docker-desktop)
+> for details.
 
 ## Step 1: Start the Control Plane
 
@@ -85,17 +87,18 @@ else
   docker swarm init
 fi
 
-export N1_PORT=5432
-export N2_PORT=5433
-export N3_PORT=5434
-export CP_DATA=$(mktemp -d)/pgedge-cp-demo
+export N1_PORT="5432"
+export N2_PORT="5433"
+export N3_PORT="5434"
+export CP_DATA="/tmp/pgedge-cp-demo"
 mkdir -p "$CP_DATA"
 ```
 
-!!! tip "Getting a 'could not choose an IP address' error?"
-    If your machine has multiple network interfaces, Docker needs you
-    to specify which address to advertise. Find your primary IP and
-    run `docker swarm init --advertise-addr <your-ip>` instead.
+> [!TIP]
+> **Getting a 'could not choose an IP address' error?**
+> If your machine has multiple network interfaces, Docker needs you
+> to specify which address to advertise. Find your primary IP and
+> run `docker swarm init --advertise-addr <your-ip>` instead.
 
 ### Start the Control Plane
 
@@ -374,10 +377,10 @@ docker rm -f host-1 2>/dev/null || true
 echo "Cleanup complete."
 ```
 
-!!! note
-    The temporary data directory created by `guide.sh` or the
-    walkthrough blocks above requires `sudo rm -rf` to remove,
-    since Docker creates files as root.
+> [!NOTE]
+> The temporary data directory created by `guide.sh` or the
+> walkthrough blocks above requires `sudo rm -rf` to remove,
+> since Docker creates files as root.
 
 ## Learn More
 
