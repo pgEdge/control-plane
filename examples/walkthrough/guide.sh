@@ -78,15 +78,16 @@ detect_ports() {
 
 header "pgEdge Enterprise Postgres"
 
-explain "This guide walks you through deploying pgEdge Enterprise Postgres"
-explain "using the Control Plane, a lightweight orchestrator that manages"
-explain "distributed Postgres databases with multi-master replication and"
-explain "read replica support."
+explain "This guide walks you through deploying a distributed PostgreSQL"
+explain "database using the pgEdge Control Plane, a lightweight orchestrator"
+explain "that manages Postgres databases with multi-master replication and"
+explain "read replica support. By the end you will have a running database"
+explain "with three nodes, each accepting reads and writes."
 explain ""
 explain "  1. Start the Control Plane"
-explain "  2. Create a distributed database"
-explain "  3. Verify multi-master replication"
-explain "  4. Demonstrate automatic recovery from node failure"
+explain "  2. Create a Distributed Database"
+explain "  3. Verify Multi-Master Replication"
+explain "  4. Resilience Demo"
 explain ""
 explain "You'll go from zero to active-active replication in minutes."
 
@@ -213,10 +214,12 @@ header "Step 2: Create a Distributed Database"
 explain "Control Plane uses a declarative model. You describe the database you"
 explain "want and Control Plane handles the configuration and deployment for you."
 explain ""
-explain "A node represents an independent Postgres instance within your database."
-explain "Each node accepts reads and writes, and Spock logical replication keeps"
-explain "them in sync. Control Plane also supports read replicas for scaling read"
-explain "traffic, though this walkthrough focuses on multi-master replication."
+explain "The database spec defines three nodes -- n1, n2, and n3. Each node"
+explain "runs its own Postgres primary and accepts reads and writes"
+explain "independently. Spock logical replication keeps all nodes in sync"
+explain "by replicating changes bidirectionally. Nodes can also have read"
+explain "replicas for high availability, though this walkthrough focuses on"
+explain "multi-master replication."
 explain ""
 explain "This will create a database with 3 nodes."
 
@@ -243,7 +246,7 @@ prompt_run "curl -s -X POST ${CP_URL}/v1/databases \\
     }' | jq ." "Creating database..."
 
 explain ""
-explain "Control Plane returned a task confirming that database creation has"
+explain "The Control Plane API returned a task confirming that database creation has"
 explain "started. Creation is asynchronous -- the database and its nodes are"
 explain "being set up in the background."
 explain ""
@@ -315,7 +318,7 @@ info "Both rows replicated to n1 -- every node can read every other node's write
 
 # ── Step 4: Resilience ───────────────────────────────────────────────────────
 
-header "Step 4: Resilience"
+header "Step 4: Resilience Demo"
 
 explain "Active-active means every node accepts reads and writes. If a node"
 explain "goes down, the others keep working -- and when it comes back, Spock"
