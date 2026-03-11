@@ -34,6 +34,7 @@ func MCPConfigResourceIdentifier(serviceInstanceID string) resource.Identifier {
 //   - users.yaml: Application-owned, written only on first Create if init_users is set
 type MCPConfigResource struct {
 	ServiceInstanceID string                     `json:"service_instance_id"`
+	ServiceID         string                     `json:"service_id"`
 	HostID            string                     `json:"host_id"`
 	DirResourceID     string                     `json:"dir_resource_id"`
 	Config            *database.MCPServiceConfig `json:"config"`
@@ -67,7 +68,7 @@ func (r *MCPConfigResource) Executor() resource.Executor {
 func (r *MCPConfigResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
 		filesystem.DirResourceIdentifier(r.DirResourceID),
-		ServiceUserRoleIdentifier(r.ServiceInstanceID),
+		ServiceUserRoleIdentifier(r.ServiceID),
 	}
 }
 
@@ -254,7 +255,7 @@ func (r *MCPConfigResource) writeUserFileIfNeeded(fs afero.Fs, usersPath string)
 
 // populateCredentials fetches the username/password from the ServiceUserRole resource.
 func (r *MCPConfigResource) populateCredentials(rc *resource.Context) error {
-	userRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(r.ServiceInstanceID))
+	userRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(r.ServiceID))
 	if err != nil {
 		return fmt.Errorf("failed to get service user role from state: %w", err)
 	}

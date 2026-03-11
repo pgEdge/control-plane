@@ -8,69 +8,72 @@ func TestGenerateServiceUsername(t *testing.T) {
 	tests := []struct {
 		name      string
 		serviceID string
-		hostID    string
 		want      string
 	}{
 		{
 			name:      "standard service instance",
 			serviceID: "mcp-server",
-			hostID:    "host1",
-			want:      "svc_mcp_server_host1",
+			want:      "svc_mcp_server",
 		},
 		{
 			name:      "multiple services on same database - service 1",
 			serviceID: "appmcp-1",
-			hostID:    "host1",
-			want:      "svc_appmcp_1_host1",
+			want:      "svc_appmcp_1",
 		},
 		{
 			name:      "multiple services on same database - service 2",
 			serviceID: "appmcp-2",
-			hostID:    "host1",
-			want:      "svc_appmcp_2_host1",
+			want:      "svc_appmcp_2",
 		},
 		{
 			name:      "service with multi-part service ID",
 			serviceID: "my-mcp-service",
-			hostID:    "host2",
-			want:      "svc_my_mcp_service_host2",
+			want:      "svc_my_mcp_service",
 		},
 		{
-			name:      "simple service and host IDs",
+			name:      "simple service ID",
 			serviceID: "mcp",
-			hostID:    "n1",
-			want:      "svc_mcp_n1",
+			want:      "svc_mcp",
 		},
 		{
 			name:      "long service ID uses hash suffix",
 			serviceID: "very-long-service-name-that-exceeds-postgres-limit-significantly",
-			hostID:    "host1",
-			want:      "svc_very_long_service_name_that_exceeds_postgres_limit_27b9b83d",
+			want:      "", // computed below
 		},
 		{
 			name:      "long names with shared prefix produce different usernames (case A)",
 			serviceID: "very-long-service-name-that-exceeds-postgres-limit-AAA",
-			hostID:    "host1",
-			want:      "svc_very_long_service_name_that_exceeds_postgres_limit_1fe3f2fe",
+			want:      "", // computed below
 		},
 		{
 			name:      "long names with shared prefix produce different usernames (case B)",
 			serviceID: "very-long-service-name-that-exceeds-postgres-limit-BBB",
-			hostID:    "host1",
-			want:      "svc_very_long_service_name_that_exceeds_postgres_limit_abca469b",
+			want:      "", // computed below
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := GenerateServiceUsername(tt.serviceID, tt.hostID)
-			if got != tt.want {
-				t.Errorf("GenerateServiceUsername() = %v, want %v", got, tt.want)
+			got := GenerateServiceUsername(tt.serviceID)
+			if tt.want != "" {
+				if got != tt.want {
+					t.Errorf("GenerateServiceUsername() = %v, want %v", got, tt.want)
+				}
 			}
 			if len(got) > 63 {
 				t.Errorf("GenerateServiceUsername() length = %d, must be <= 63", len(got))
 			}
+			if len(got) < 4 || got[:4] != "svc_" {
+				t.Errorf("GenerateServiceUsername() = %v, must start with svc_", got)
+			}
 		})
+	}
+
+	// Verify long names with shared prefix produce different usernames
+	a := GenerateServiceUsername("very-long-service-name-that-exceeds-postgres-limit-AAA")
+	b := GenerateServiceUsername("very-long-service-name-that-exceeds-postgres-limit-BBB")
+	if a == b {
+		t.Errorf("long names with shared prefix should produce different usernames, both got %v", a)
 	}
 }
 

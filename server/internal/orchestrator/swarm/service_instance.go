@@ -32,7 +32,8 @@ type ServiceInstanceResource struct {
 	ServiceInstanceID string `json:"service_instance_id"`
 	DatabaseID        string `json:"database_id"`
 	ServiceName       string `json:"service_name"`
-	ServiceID         string `json:"service_id"`
+	ServiceID         string `json:"service_id"`      // Docker Swarm service ID (set by Refresh)
+	ServiceSpecID     string `json:"service_spec_id"` // Logical service ID from the spec (e.g. "mcp-server")
 	HostID            string `json:"host_id"`
 	NeedsUpdate       bool   `json:"needs_update"`
 }
@@ -45,6 +46,7 @@ func (s *ServiceInstanceResource) DiffIgnore() []string {
 	return []string{
 		"/database_id",
 		"/service_id",
+		"/service_spec_id",
 		"/host_id",
 	}
 }
@@ -59,7 +61,7 @@ func (s *ServiceInstanceResource) Executor() resource.Executor {
 
 func (s *ServiceInstanceResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
-		ServiceUserRoleIdentifier(s.ServiceInstanceID),
+		ServiceUserRoleIdentifier(s.ServiceSpecID),
 		ServiceInstanceSpecResourceIdentifier(s.ServiceInstanceID),
 	}
 }

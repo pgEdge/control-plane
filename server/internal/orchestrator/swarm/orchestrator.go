@@ -435,12 +435,10 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 
 	// Service user role resource (manages database user lifecycle)
 	serviceUserRole := &ServiceUserRole{
-		ServiceInstanceID: spec.ServiceInstanceID,
-		DatabaseID:        spec.DatabaseID,
-		DatabaseName:      spec.DatabaseName,
-		HostID:            spec.HostID,
-		PostgresHostID:    spec.PostgresHostID,
-		ServiceID:         spec.ServiceSpec.ServiceID,
+		ServiceID:    spec.ServiceSpec.ServiceID,
+		DatabaseID:   spec.DatabaseID,
+		DatabaseName: spec.DatabaseName,
+		NodeName:     spec.NodeName,
 	}
 	// Username and Password are populated from existing state during Refresh,
 	// or generated during Create. Only set if credentials exist (backward
@@ -463,6 +461,7 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 	// MCP config resource (generates config.yaml, tokens.yaml, users.yaml)
 	mcpConfigResource := &MCPConfigResource{
 		ServiceInstanceID: spec.ServiceInstanceID,
+		ServiceID:         spec.ServiceSpec.ServiceID,
 		HostID:            spec.HostID,
 		DirResourceID:     dataDirID,
 		Config:            mcpConfig,
@@ -501,6 +500,7 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		DatabaseID:        spec.DatabaseID,
 		ServiceName:       serviceName,
 		ServiceID:         spec.ServiceSpec.ServiceID,
+		ServiceSpecID:     spec.ServiceSpec.ServiceID,
 		HostID:            spec.HostID,
 	}
 

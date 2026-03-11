@@ -29,54 +29,51 @@ func sanitizeIdentifier(name string) string {
 	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }
 
-func ServiceUserRoleIdentifier(serviceInstanceID string) resource.Identifier {
+func ServiceUserRoleIdentifier(serviceID string) resource.Identifier {
 	return resource.Identifier{
-		ID:   serviceInstanceID,
+		ID:   serviceID,
 		Type: ResourceTypeServiceUserRole,
 	}
 }
 
-// ServiceUserRole manages the lifecycle of a database user for a service instance.
+// ServiceUserRole manages the lifecycle of a database user for a service.
 //
-// This resource handles creation, verification, and cleanup of database users.
-// On Create, it generates a deterministic username and random password, creates
-// the Postgres role, and stores the credentials in the resource state. On
-// subsequent reconciliation cycles, the credentials are reused from the
-// persisted state (no password regeneration).
+// This resource is keyed by ServiceID, so one role is shared across all
+// instances of the same service. It handles creation, verification, and
+// cleanup of database users. On Create, it generates a deterministic username
+// and random password, creates the Postgres role, and stores the credentials
+// in the resource state. On subsequent reconciliation cycles, the credentials
+// are reused from the persisted state (no password regeneration).
+//
+// The role is created on the primary instance and Spock replicates it to all
+// other nodes automatically.
 type ServiceUserRole struct {
-	ServiceInstanceID string `json:"service_instance_id"`
-	DatabaseID        string `json:"database_id"`
-	DatabaseName      string `json:"database_name"`
-	Username          string `json:"username"`
-	HostID            string `json:"host_id"`
-	PostgresHostID    string `json:"postgres_host_id"` // Host where Postgres runs (for executor routing)
-	ServiceID         string `json:"service_id"`       // Needed for username generation
-	Password          string `json:"password"`         // Generated on Create, persisted in state
+	ServiceID    string `json:"service_id"`
+	DatabaseID   string `json:"database_id"`
+	DatabaseName string `json:"database_name"`
+	NodeName     string `json:"node_name"` // Database node name for PrimaryExecutor routing
+	Username     string `json:"username"`
+	Password     string `json:"password"` // Generated on Create, persisted in state
 }
 
 func (r *ServiceUserRole) ResourceVersion() string {
-	return "2"
+	return "3"
 }
 
 func (r *ServiceUserRole) DiffIgnore() []string {
 	return []string{
-		"/postgres_host_id",
+		"/node_name",
 		"/username",
 		"/password",
 	}
 }
 
 func (r *ServiceUserRole) Identifier() resource.Identifier {
-	return ServiceUserRoleIdentifier(r.ServiceInstanceID)
+	return ServiceUserRoleIdentifier(r.ServiceID)
 }
 
 func (r *ServiceUserRole) Executor() resource.Executor {
-	// ServiceUserRole must execute on the host running Postgres, because
-	// Create/Delete connect via local Docker container inspect.
-	if r.PostgresHostID != "" {
-		return resource.HostExecutor(r.PostgresHostID)
-	}
-	return resource.HostExecutor(r.HostID)
+	return resource.PrimaryExecutor(r.NodeName)
 }
 
 func (r *ServiceUserRole) Dependencies() []resource.Identifier {
@@ -99,20 +96,31 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 		return err
 	}
 	logger = logger.With().
-		Str("service_instance_id", r.ServiceInstanceID).
+		Str("service_id", r.ServiceID).
 		Str("database_id", r.DatabaseID).
 		Logger()
 	logger.Info().Msg("creating service user role")
 
 	// Generate deterministic username and random password
-	r.Username = database.GenerateServiceUsername(r.ServiceID, r.HostID)
+	r.Username = database.GenerateServiceUsername(r.ServiceID)
 	password, err := utils.RandomString(32)
 	if err != nil {
 		return fmt.Errorf("failed to generate password: %w", err)
 	}
 	r.Password = password
 
-	conn, err := r.connectToPrimary(ctx, rc, logger)
+	if err := r.createUserRole(ctx, rc, logger); err != nil {
+		return fmt.Errorf("failed to create service user role: %w", err)
+	}
+
+	logger.Info().Str("username", r.Username).Msg("service user role created successfully")
+	return nil
+}
+
+func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Context, logger zerolog.Logger) error {
+	// Connect to the application database so schema-level grants resolve correctly.
+	// The role is created on the primary and Spock replicates it to other nodes.
+	conn, err := r.connectToPrimary(ctx, rc, logger, r.DatabaseName)
 	if err != nil {
 		return err
 	}
@@ -153,7 +161,6 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 		return fmt.Errorf("failed to grant service user permissions: %w", err)
 	}
 
-	logger.Info().Str("username", r.Username).Msg("service user role created successfully")
 	return nil
 }
 
@@ -168,13 +175,13 @@ func (r *ServiceUserRole) Delete(ctx context.Context, rc *resource.Context) erro
 		return err
 	}
 	logger = logger.With().
-		Str("service_instance_id", r.ServiceInstanceID).
+		Str("service_id", r.ServiceID).
 		Str("database_id", r.DatabaseID).
 		Str("username", r.Username).
 		Logger()
 	logger.Info().Msg("deleting service user from database")
 
-	conn, err := r.connectToPrimary(ctx, rc, logger)
+	conn, err := r.connectToPrimary(ctx, rc, logger, "postgres")
 	if err != nil {
 		// During deletion, connection failures are non-fatal — the database
 		// may already be gone or unreachable.
@@ -200,7 +207,7 @@ func (r *ServiceUserRole) Delete(ctx context.Context, rc *resource.Context) erro
 // connectToPrimary finds the primary Postgres instance and returns an
 // authenticated connection to it. The caller is responsible for closing
 // the connection.
-func (r *ServiceUserRole) connectToPrimary(ctx context.Context, rc *resource.Context, logger zerolog.Logger) (*pgx.Conn, error) {
+func (r *ServiceUserRole) connectToPrimary(ctx context.Context, rc *resource.Context, logger zerolog.Logger, dbName string) (*pgx.Conn, error) {
 	dbSvc, err := do.Invoke[*database.Service](rc.Injector)
 	if err != nil {
 		return nil, err
@@ -253,7 +260,7 @@ func (r *ServiceUserRole) connectToPrimary(ctx context.Context, rc *resource.Con
 	}
 
 	conn, err := database.ConnectToInstance(ctx, &database.ConnectionOptions{
-		DSN: connInfo.AdminDSN("postgres"),
+		DSN: connInfo.AdminDSN(dbName),
 		TLS: tlsConfig,
 	})
 	if err != nil {

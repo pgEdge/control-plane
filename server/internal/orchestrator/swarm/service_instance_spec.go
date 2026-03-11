@@ -63,13 +63,13 @@ func (s *ServiceInstanceSpecResource) Dependencies() []resource.Identifier {
 	// Service instances depend on the database network, service user role, and MCP config
 	return []resource.Identifier{
 		NetworkResourceIdentifier(s.DatabaseNetworkID),
-		ServiceUserRoleIdentifier(s.ServiceInstanceID),
+		ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID),
 		MCPConfigResourceIdentifier(s.ServiceInstanceID),
 	}
 }
 
 func (s *ServiceInstanceSpecResource) populateCredentials(rc *resource.Context) error {
-	userRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(s.ServiceInstanceID))
+	userRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(s.ServiceSpec.ServiceID))
 	if err != nil {
 		return fmt.Errorf("failed to get service user role from state: %w", err)
 	}

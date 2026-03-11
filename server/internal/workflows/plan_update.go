@@ -57,23 +57,19 @@ func (w *Workflows) PlanUpdate(ctx workflow.Context, input *PlanUpdateInput) (*P
 	}
 
 	// Generate service instance resources.
-	// Determine a Postgres host for ServiceUserRole executor routing —
-	// ServiceUserRole.Create() needs local Docker access to the Postgres container.
-	var postgresHostID string
-	for _, node := range nodeInstances {
-		if len(node.Instances) > 0 {
-			postgresHostID = node.Instances[0].HostID
-			break
-		}
+	// Pick any node name for ServiceUserRole PrimaryExecutor routing.
+	var nodeName string
+	if len(nodeInstances) > 0 {
+		nodeName = nodeInstances[0].NodeName
 	}
-	if postgresHostID == "" && len(input.Spec.Services) > 0 {
-		return nil, fmt.Errorf("no postgres instances available for service role routing")
+	if nodeName == "" && len(input.Spec.Services) > 0 {
+		return nil, fmt.Errorf("no database nodes available for service role routing")
 	}
 
 	var serviceResources []*operations.ServiceResources
 	for _, serviceSpec := range input.Spec.Services {
 		for _, hostID := range serviceSpec.HostIDs {
-			svcRes, err := w.getServiceResources(ctx, input.Spec, serviceSpec, hostID, postgresHostID, nodeInstances)
+			svcRes, err := w.getServiceResources(ctx, input.Spec, serviceSpec, hostID, nodeName, nodeInstances)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get service resources for %s on %s: %w", serviceSpec.ServiceID, hostID, err)
 			}
@@ -96,7 +92,7 @@ func (w *Workflows) getServiceResources(
 	spec *database.Spec,
 	serviceSpec *database.ServiceSpec,
 	hostID string,
-	postgresHostID string,
+	nodeName string,
 	nodeInstances []*database.NodeInstances,
 ) (*operations.ServiceResources, error) {
 	serviceInstanceID := database.GenerateServiceInstanceID(spec.DatabaseID, serviceSpec.ServiceID, hostID)
@@ -119,7 +115,7 @@ func (w *Workflows) getServiceResources(
 		DatabaseID:        spec.DatabaseID,
 		DatabaseName:      spec.DatabaseName,
 		HostID:            hostID,
-		PostgresHostID:    postgresHostID,
+		NodeName:          nodeName,
 		DatabaseNetworkID: database.GenerateDatabaseNetworkID(spec.DatabaseID),
 		DatabaseHost:      databaseHost,
 		DatabasePort:      databasePort,
