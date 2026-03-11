@@ -6882,7 +6882,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "modifying",
                 "status_updated_at": "2006-12-23T09:53:03Z",
                 "updated_at": "1994-06-04T08:19:03Z"
               },
@@ -6927,7 +6927,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "modifying",
                 "status_updated_at": "2006-12-23T09:53:03Z",
                 "updated_at": "1994-06-04T08:19:03Z"
               },
@@ -6972,7 +6972,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "modifying",
                 "status_updated_at": "2006-12-23T09:53:03Z",
                 "updated_at": "1994-06-04T08:19:03Z"
               }
@@ -7434,7 +7434,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "available",
                 "status_updated_at": "1993-04-25T23:06:28Z",
                 "updated_at": "1981-08-22T23:20:01Z"
               },
@@ -7479,7 +7479,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "available",
                 "status_updated_at": "1993-04-25T23:06:28Z",
                 "updated_at": "1981-08-22T23:20:01Z"
               },
@@ -7524,7 +7524,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "available",
                 "status_updated_at": "1993-04-25T23:06:28Z",
                 "updated_at": "1981-08-22T23:20:01Z"
               }
@@ -7986,7 +7986,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "available",
                 "status_updated_at": "1993-04-25T23:06:28Z",
                 "updated_at": "1981-08-22T23:20:01Z"
               },
@@ -8031,7 +8031,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "available",
                 "status_updated_at": "1993-04-25T23:06:28Z",
                 "updated_at": "1981-08-22T23:20:01Z"
               },
@@ -8076,7 +8076,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "available",
                 "status_updated_at": "1993-04-25T23:06:28Z",
                 "updated_at": "1981-08-22T23:20:01Z"
               }
@@ -8538,7 +8538,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "available",
                 "status_updated_at": "1993-04-25T23:06:28Z",
                 "updated_at": "1981-08-22T23:20:01Z"
               },
@@ -8583,7 +8583,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "available",
                 "status_updated_at": "1993-04-25T23:06:28Z",
                 "updated_at": "1981-08-22T23:20:01Z"
               },
@@ -8628,7 +8628,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "available",
                 "status_updated_at": "1993-04-25T23:06:28Z",
                 "updated_at": "1981-08-22T23:20:01Z"
               },
@@ -8673,7 +8673,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "available",
                 "status_updated_at": "1993-04-25T23:06:28Z",
                 "updated_at": "1981-08-22T23:20:01Z"
               }
@@ -9088,7 +9088,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "available",
                 "status_updated_at": "1993-04-25T23:06:28Z",
                 "updated_at": "1981-08-22T23:20:01Z"
               },
@@ -9133,7 +9133,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "available",
                 "status_updated_at": "1993-04-25T23:06:28Z",
                 "updated_at": "1981-08-22T23:20:01Z"
               }
@@ -22392,7 +22392,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "modifying",
                 "status_updated_at": "2006-12-23T09:53:03Z",
                 "updated_at": "1994-06-04T08:19:03Z"
               },
@@ -22437,7 +22437,7 @@
                   ],
                   "version": "4.10.0"
                 },
-                "state": "unknown",
+                "state": "modifying",
                 "status_updated_at": "2006-12-23T09:53:03Z",
                 "updated_at": "1994-06-04T08:19:03Z"
               }
@@ -22518,7 +22518,7 @@
                 ],
                 "version": "4.10.0"
               },
-              "state": "unknown",
+              "state": "modifying",
               "status_updated_at": "2006-12-23T09:53:03Z",
               "updated_at": "1994-06-04T08:19:03Z"
             },
@@ -22563,7 +22563,7 @@
                 ],
                 "version": "4.10.0"
               },
-              "state": "unknown",
+              "state": "modifying",
               "status_updated_at": "2006-12-23T09:53:03Z",
               "updated_at": "1994-06-04T08:19:03Z"
             },
@@ -22608,7 +22608,7 @@
                 ],
                 "version": "4.10.0"
               },
-              "state": "unknown",
+              "state": "modifying",
               "status_updated_at": "2006-12-23T09:53:03Z",
               "updated_at": "1994-06-04T08:19:03Z"
             },
@@ -22653,7 +22653,7 @@
                 ],
                 "version": "4.10.0"
               },
-              "state": "unknown",
+              "state": "modifying",
               "status_updated_at": "2006-12-23T09:53:03Z",
               "updated_at": "1994-06-04T08:19:03Z"
             }
@@ -23313,10 +23313,11 @@
           },
           "state": {
             "type": "string",
-            "example": "unknown",
+            "example": "stopped",
             "enum": [
               "creating",
               "modifying",
+              "deleting",
               "backing_up",
               "available",
               "degraded",
@@ -23690,7 +23691,7 @@
                       ],
                       "version": "4.10.0"
                     },
-                    "state": "unknown",
+                    "state": "modifying",
                     "status_updated_at": "2006-12-23T09:53:03Z",
                     "updated_at": "1994-06-04T08:19:03Z"
                   },
@@ -23735,7 +23736,7 @@
                       ],
                       "version": "4.10.0"
                     },
-                    "state": "unknown",
+                    "state": "modifying",
                     "status_updated_at": "2006-12-23T09:53:03Z",
                     "updated_at": "1994-06-04T08:19:03Z"
                   },
@@ -23780,7 +23781,7 @@
                       ],
                       "version": "4.10.0"
                     },
-                    "state": "unknown",
+                    "state": "modifying",
                     "status_updated_at": "2006-12-23T09:53:03Z",
                     "updated_at": "1994-06-04T08:19:03Z"
                   },
@@ -23825,7 +23826,7 @@
                       ],
                       "version": "4.10.0"
                     },
-                    "state": "unknown",
+                    "state": "modifying",
                     "status_updated_at": "2006-12-23T09:53:03Z",
                     "updated_at": "1994-06-04T08:19:03Z"
                   }
@@ -23879,7 +23880,7 @@
                       ],
                       "version": "4.10.0"
                     },
-                    "state": "unknown",
+                    "state": "modifying",
                     "status_updated_at": "2006-12-23T09:53:03Z",
                     "updated_at": "1994-06-04T08:19:03Z"
                   },
@@ -23924,7 +23925,7 @@
                       ],
                       "version": "4.10.0"
                     },
-                    "state": "unknown",
+                    "state": "modifying",
                     "status_updated_at": "2006-12-23T09:53:03Z",
                     "updated_at": "1994-06-04T08:19:03Z"
                   },
@@ -23969,7 +23970,7 @@
                       ],
                       "version": "4.10.0"
                     },
-                    "state": "unknown",
+                    "state": "modifying",
                     "status_updated_at": "2006-12-23T09:53:03Z",
                     "updated_at": "1994-06-04T08:19:03Z"
                   },
@@ -24014,7 +24015,7 @@
                       ],
                       "version": "4.10.0"
                     },
-                    "state": "unknown",
+                    "state": "modifying",
                     "status_updated_at": "2006-12-23T09:53:03Z",
                     "updated_at": "1994-06-04T08:19:03Z"
                   }
@@ -24068,7 +24069,7 @@
                       ],
                       "version": "4.10.0"
                     },
-                    "state": "unknown",
+                    "state": "modifying",
                     "status_updated_at": "2006-12-23T09:53:03Z",
                     "updated_at": "1994-06-04T08:19:03Z"
                   },
@@ -24113,7 +24114,7 @@
                       ],
                       "version": "4.10.0"
                     },
-                    "state": "unknown",
+                    "state": "modifying",
                     "status_updated_at": "2006-12-23T09:53:03Z",
                     "updated_at": "1994-06-04T08:19:03Z"
                   },
@@ -24158,7 +24159,7 @@
                       ],
                       "version": "4.10.0"
                     },
-                    "state": "unknown",
+                    "state": "modifying",
                     "status_updated_at": "2006-12-23T09:53:03Z",
                     "updated_at": "1994-06-04T08:19:03Z"
                   },
@@ -24203,7 +24204,7 @@
                       ],
                       "version": "4.10.0"
                     },
-                    "state": "unknown",
+                    "state": "modifying",
                     "status_updated_at": "2006-12-23T09:53:03Z",
                     "updated_at": "1994-06-04T08:19:03Z"
                   }
@@ -24257,7 +24258,7 @@
                       ],
                       "version": "4.10.0"
                     },
-                    "state": "unknown",
+                    "state": "modifying",
                     "status_updated_at": "2006-12-23T09:53:03Z",
                     "updated_at": "1994-06-04T08:19:03Z"
                   },
@@ -24302,7 +24303,7 @@
                       ],
                       "version": "4.10.0"
                     },
-                    "state": "unknown",
+                    "state": "modifying",
                     "status_updated_at": "2006-12-23T09:53:03Z",
                     "updated_at": "1994-06-04T08:19:03Z"
                   },
@@ -24347,7 +24348,7 @@
                       ],
                       "version": "4.10.0"
                     },
-                    "state": "unknown",
+                    "state": "modifying",
                     "status_updated_at": "2006-12-23T09:53:03Z",
                     "updated_at": "1994-06-04T08:19:03Z"
                   },
@@ -24392,7 +24393,7 @@
                       ],
                       "version": "4.10.0"
                     },
-                    "state": "unknown",
+                    "state": "modifying",
                     "status_updated_at": "2006-12-23T09:53:03Z",
                     "updated_at": "1994-06-04T08:19:03Z"
                   }

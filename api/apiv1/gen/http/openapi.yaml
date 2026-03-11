@@ -2468,7 +2468,7 @@ definitions:
                   provider_node: n2
                   status: down
               version: 4.10.0
-            state: unknown
+            state: available
             status_updated_at: "1993-04-25T23:06:28Z"
             updated_at: "1981-08-22T23:20:01Z"
           - connection_info:
@@ -2500,7 +2500,7 @@ definitions:
                   provider_node: n2
                   status: down
               version: 4.10.0
-            state: unknown
+            state: available
             status_updated_at: "1993-04-25T23:06:28Z"
             updated_at: "1981-08-22T23:20:01Z"
       service_instances:
@@ -3939,7 +3939,7 @@ definitions:
                   provider_node: n2
                   status: down
               version: 4.10.0
-            state: unknown
+            state: available
             status_updated_at: "1993-04-25T23:06:28Z"
             updated_at: "1981-08-22T23:20:01Z"
           - connection_info:
@@ -3971,7 +3971,7 @@ definitions:
                   provider_node: n2
                   status: down
               version: 4.10.0
-            state: unknown
+            state: available
             status_updated_at: "1993-04-25T23:06:28Z"
             updated_at: "1981-08-22T23:20:01Z"
           - connection_info:
@@ -4003,7 +4003,7 @@ definitions:
                   provider_node: n2
                   status: down
               version: 4.10.0
-            state: unknown
+            state: available
             status_updated_at: "1993-04-25T23:06:28Z"
             updated_at: "1981-08-22T23:20:01Z"
       state:
@@ -4064,7 +4064,7 @@ definitions:
                 provider_node: n2
                 status: down
             version: 4.10.0
-          state: unknown
+          state: available
           status_updated_at: "1993-04-25T23:06:28Z"
           updated_at: "1981-08-22T23:20:01Z"
         - connection_info:
@@ -4096,7 +4096,7 @@ definitions:
                 provider_node: n2
                 status: down
             version: 4.10.0
-          state: unknown
+          state: available
           status_updated_at: "1993-04-25T23:06:28Z"
           updated_at: "1981-08-22T23:20:01Z"
         - connection_info:
@@ -4128,7 +4128,7 @@ definitions:
                 provider_node: n2
                 status: down
             version: 4.10.0
-          state: unknown
+          state: available
           status_updated_at: "1993-04-25T23:06:28Z"
           updated_at: "1981-08-22T23:20:01Z"
       state: modifying
@@ -4549,10 +4549,11 @@ definitions:
         $ref: '#/definitions/InstanceSpockStatus'
       state:
         type: string
-        example: failed
+        example: degraded
         enum:
           - creating
           - modifying
+          - deleting
           - backing_up
           - available
           - degraded
@@ -4846,7 +4847,7 @@ definitions:
                       provider_node: n2
                       status: down
                   version: 4.10.0
-                state: unknown
+                state: available
                 status_updated_at: "1993-04-25T23:06:28Z"
                 updated_at: "1981-08-22T23:20:01Z"
               - connection_info:
@@ -4878,77 +4879,7 @@ definitions:
                       provider_node: n2
                       status: down
                   version: 4.10.0
-                state: unknown
-                status_updated_at: "1993-04-25T23:06:28Z"
-                updated_at: "1981-08-22T23:20:01Z"
-            state: restoring
-            tenant_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            updated_at: "2025-01-01T02:30:00Z"
-          - created_at: "2025-01-01T01:30:00Z"
-            id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            instances:
-              - connection_info:
-                  addresses:
-                    - 10.24.34.2
-                    - i-0123456789abcdef.ec2.internal
-                  port: 5432
-                created_at: "2011-03-15T17:48:48Z"
-                error: 'failed to get patroni status: connection refused'
-                host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                node_name: n1
-                postgres:
-                  patroni_paused: false
-                  patroni_state: unknown
-                  pending_restart: true
-                  role: primary
-                  version: "18.1"
-                spock:
-                  read_only: "off"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  version: 4.10.0
-                state: unknown
-                status_updated_at: "1993-04-25T23:06:28Z"
-                updated_at: "1981-08-22T23:20:01Z"
-              - connection_info:
-                  addresses:
-                    - 10.24.34.2
-                    - i-0123456789abcdef.ec2.internal
-                  port: 5432
-                created_at: "2011-03-15T17:48:48Z"
-                error: 'failed to get patroni status: connection refused'
-                host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
-                id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
-                node_name: n1
-                postgres:
-                  patroni_paused: false
-                  patroni_state: unknown
-                  pending_restart: true
-                  role: primary
-                  version: "18.1"
-                spock:
-                  read_only: "off"
-                  subscriptions:
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                    - name: sub_n1n2
-                      provider_node: n2
-                      status: down
-                  version: 4.10.0
-                state: unknown
+                state: available
                 status_updated_at: "1993-04-25T23:06:28Z"
                 updated_at: "1981-08-22T23:20:01Z"
             state: restoring
@@ -4986,7 +4917,7 @@ definitions:
                       provider_node: n2
                       status: down
                   version: 4.10.0
-                state: unknown
+                state: available
                 status_updated_at: "1993-04-25T23:06:28Z"
                 updated_at: "1981-08-22T23:20:01Z"
               - connection_info:
@@ -5018,7 +4949,77 @@ definitions:
                       provider_node: n2
                       status: down
                   version: 4.10.0
-                state: unknown
+                state: available
+                status_updated_at: "1993-04-25T23:06:28Z"
+                updated_at: "1981-08-22T23:20:01Z"
+            state: restoring
+            tenant_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+            updated_at: "2025-01-01T02:30:00Z"
+          - created_at: "2025-01-01T01:30:00Z"
+            id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+            instances:
+              - connection_info:
+                  addresses:
+                    - 10.24.34.2
+                    - i-0123456789abcdef.ec2.internal
+                  port: 5432
+                created_at: "2011-03-15T17:48:48Z"
+                error: 'failed to get patroni status: connection refused'
+                host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                node_name: n1
+                postgres:
+                  patroni_paused: false
+                  patroni_state: unknown
+                  pending_restart: true
+                  role: primary
+                  version: "18.1"
+                spock:
+                  read_only: "off"
+                  subscriptions:
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                  version: 4.10.0
+                state: available
+                status_updated_at: "1993-04-25T23:06:28Z"
+                updated_at: "1981-08-22T23:20:01Z"
+              - connection_info:
+                  addresses:
+                    - 10.24.34.2
+                    - i-0123456789abcdef.ec2.internal
+                  port: 5432
+                created_at: "2011-03-15T17:48:48Z"
+                error: 'failed to get patroni status: connection refused'
+                host_id: de3b1388-1f0c-42f1-a86c-59ab72f255ec
+                id: a67cbb36-c3c3-49c9-8aac-f4a0438a883d
+                node_name: n1
+                postgres:
+                  patroni_paused: false
+                  patroni_state: unknown
+                  pending_restart: true
+                  role: primary
+                  version: "18.1"
+                spock:
+                  read_only: "off"
+                  subscriptions:
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                    - name: sub_n1n2
+                      provider_node: n2
+                      status: down
+                  version: 4.10.0
+                state: available
                 status_updated_at: "1993-04-25T23:06:28Z"
                 updated_at: "1981-08-22T23:20:01Z"
             state: restoring

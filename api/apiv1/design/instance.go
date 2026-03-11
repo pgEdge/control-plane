@@ -162,6 +162,7 @@ var Instance = g.Type("Instance", func() {
 		g.Enum(
 			"creating",
 			"modifying",
+			"deleting",
 			"backing_up",
 			"available",
 			"degraded",

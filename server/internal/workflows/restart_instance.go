@@ -6,7 +6,6 @@ import (
 
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
-	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/task"
 	"github.com/pgEdge/control-plane/server/internal/workflows/activities"
 )
@@ -35,15 +34,6 @@ func (w *Workflows) RestartInstance(ctx workflow.Context, input *RestartInstance
 			logger.Warn("workflow was canceled")
 			cleanupCtx := workflow.NewDisconnectedContext(ctx)
 
-			updateStateInput := &activities.UpdateDbStateInput{
-				DatabaseID: input.DatabaseID,
-				State:      database.DatabaseStateFailed,
-			}
-
-			_, stateErr := w.Activities.ExecuteUpdateDbState(cleanupCtx, updateStateInput).Get(cleanupCtx)
-			if stateErr != nil {
-				logger.With("error", stateErr).Error("failed to update database state")
-			}
 			w.cancelTask(cleanupCtx, task.ScopeDatabase, input.DatabaseID, input.TaskID, logger)
 		}
 	}()

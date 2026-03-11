@@ -31,6 +31,7 @@ const (
 const (
 	InstanceStateCreating  = "creating"
 	InstanceStateModifying = "modifying"
+	InstanceStateDeleting  = "deleting"
 	InstanceStateBackingUp = "backing_up"
 	InstanceStateAvailable = "available"
 	InstanceStateDegraded  = "degraded"
