@@ -398,6 +398,20 @@ func (s *Service) GetAllServiceInstances(ctx context.Context) ([]*ServiceInstanc
 	return serviceInstances, nil
 }
 
+func (s *Service) GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*ConnectionInfo, error) {
+	// This serves as an existence check for now. We'll make more use of the
+	// stored instance when we add support for systemd.
+	_, err := s.store.Instance.
+		GetByKey(databaseID, instanceID).
+		Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, ErrInstanceNotFound
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to get stored instance: %w", err)
+	}
+	return s.orchestrator.GetInstanceConnectionInfo(ctx, databaseID, instanceID)
+}
+
 func (s *Service) InstanceCountForHost(ctx context.Context, hostID string) (int, error) {
 	storedInstances, err := s.store.Instance.
 		GetAll().

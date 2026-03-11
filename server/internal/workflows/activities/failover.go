@@ -8,9 +8,7 @@ import (
 	"github.com/cschleiden/go-workflows/activity"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/google/uuid"
-	"github.com/samber/do"
 
-	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
@@ -42,14 +40,8 @@ func (a *Activities) PerformFailover(ctx context.Context, input *PerformFailover
 	logger = logger.With("database_id", input.DatabaseID, "task_id", input.TaskID.String(),
 		"leader_instance", input.LeaderInstanceID, "candidate_instance", input.CandidateInstanceID)
 
-	orch, err := do.Invoke[database.Orchestrator](a.Injector)
-	if err != nil {
-		logger.Error("failed to resolve orchestrator from injector", "error", err)
-		return nil, fmt.Errorf("failed to get orchestrator: %w", err)
-	}
-
 	// Get connection info for the leader instance. We will call that leader's Patroni API.
-	connInfo, err := orch.GetInstanceConnectionInfo(ctx, input.DatabaseID, input.LeaderInstanceID)
+	connInfo, err := a.DatabaseService.GetInstanceConnectionInfo(ctx, input.DatabaseID, input.LeaderInstanceID)
 	if err != nil {
 		logger.Error("failed to get leader instance connection info", "error", err, "leader", input.LeaderInstanceID)
 		return nil, fmt.Errorf("failed to get instance connection info for leader %s: %w", input.LeaderInstanceID, err)

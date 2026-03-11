@@ -230,15 +230,13 @@ func (d *DatabaseFixture) ConnectToInstance(ctx context.Context, opts Connection
 		return nil, fmt.Errorf("instance %s has no connection info", instance.ID)
 	}
 	if instance.ConnectionInfo.Port == nil {
-		return nil, fmt.Errorf("instance %s connection info is missing port has no connection info", instance.ID)
+		return nil, fmt.Errorf("instance %s connection info is missing port", instance.ID)
+	}
+	if len(instance.ConnectionInfo.Addresses) == 0 {
+		return nil, fmt.Errorf("instance %s connection info is missing addresses", instance.ID)
 	}
 
-	host, ok := d.config.Hosts[instance.HostID]
-	if !ok {
-		return nil, fmt.Errorf("host %s not found in fixture's hosts", instance.HostID)
-	}
-
-	dsn := fmt.Sprintf("host=%s port=%d dbname=%s user=%s", host.ExternalIP, *instance.ConnectionInfo.Port, d.Spec.DatabaseName, opts.Username)
+	dsn := fmt.Sprintf("host=%s port=%d dbname=%s user=%s", instance.ConnectionInfo.Addresses[0], *instance.ConnectionInfo.Port, d.Spec.DatabaseName, opts.Username)
 	if opts.Password != "" {
 		dsn = fmt.Sprintf("%s password=%s", dsn, opts.Password)
 	}

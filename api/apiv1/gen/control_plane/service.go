@@ -251,10 +251,8 @@ type ClusterJoinRequest struct {
 	Token string `json:"token"`
 	// The unique identifier for the host that's joining the cluster.
 	HostID Identifier `json:"host_id"`
-	// The hostname of the host that's joining the cluster.
-	Hostname string `json:"hostname"`
-	// The IPv4 address of the host that's joining the cluster.
-	Ipv4Address string `json:"ipv4_address"`
+	// The peer addresses of the host that's joining the cluster.
+	Addresses []string `json:"addresses"`
 	// True if the joining member is configured to run an embedded an etcd server.
 	EmbeddedEtcdEnabled bool `json:"embedded_etcd_enabled"`
 }
@@ -265,7 +263,7 @@ type ClusterJoinToken struct {
 	// Token to join an existing cluster.
 	Token string `json:"token"`
 	// Existing server to join
-	ServerURL string `json:"server_url"`
+	ServerUrls []string `json:"server_urls"`
 }
 
 type ClusterStatus struct {
@@ -580,10 +578,10 @@ type Host struct {
 	DataDir string `json:"data_dir"`
 	// The cohort that this host belongs to.
 	Cohort *HostCohort `json:"cohort,omitempty"`
-	// The hostname of this host.
-	Hostname string `json:"hostname"`
-	// The IPv4 address of this host.
-	Ipv4Address string `json:"ipv4_address"`
+	// The addresses that this host advertises to other hosts.
+	PeerAddresses []string `json:"peer_addresses"`
+	// The addresses that this host advertises to client applications.
+	ClientAddresses []string `json:"client_addresses"`
 	// The number of CPUs on this host.
 	Cpus *int `json:"cpus,omitempty"`
 	// The amount of memory available on this host.
@@ -654,10 +652,8 @@ type Instance struct {
 
 // Connection information for a pgEdge instance.
 type InstanceConnectionInfo struct {
-	// The hostname of the host that's running this instance.
-	Hostname *string `json:"hostname,omitempty"`
-	// The IPv4 address of the host that's running this instance.
-	Ipv4Address *string `json:"ipv4_address,omitempty"`
+	// The addresses of the host that's running this instance.
+	Addresses []string `json:"addresses,omitempty"`
 	// The host port that Postgres is listening on for this instance.
 	Port *int `json:"port,omitempty"`
 }
@@ -943,10 +939,8 @@ type ServiceInstanceStatus struct {
 	ContainerID *string `json:"container_id,omitempty"`
 	// The container image version currently running.
 	ImageVersion *string `json:"image_version,omitempty"`
-	// The hostname of the service instance.
-	Hostname *string `json:"hostname,omitempty"`
-	// The IPv4 address of the service instance.
-	Ipv4Address *string `json:"ipv4_address,omitempty"`
+	// The addresses of the host that's running this service instance.
+	Addresses []string `json:"addresses,omitempty"`
 	// Port mappings for this service instance.
 	Ports []*PortMapping `json:"ports,omitempty"`
 	// Most recent health check result.

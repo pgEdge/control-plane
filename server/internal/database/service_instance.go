@@ -37,8 +37,7 @@ type ServiceInstance struct {
 type ServiceInstanceStatus struct {
 	ContainerID  *string            `json:"container_id,omitempty"`
 	ImageVersion *string            `json:"image_version,omitempty"`
-	Hostname     *string            `json:"hostname,omitempty"`
-	IPv4Address  *string            `json:"ipv4_address,omitempty"`
+	Addresses    []string           `json:"addresses,omitempty"`
 	Ports        []PortMapping      `json:"ports,omitempty"`
 	HealthCheck  *HealthCheckResult `json:"health_check,omitempty"`
 	LastHealthAt *time.Time         `json:"last_health_at,omitempty"`

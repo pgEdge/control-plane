@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/url"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
@@ -85,24 +87,23 @@ func NewInstanceResources(instance *InstanceResource, resources []resource.Resou
 }
 
 type ConnectionInfo struct {
-	AdminHost         string
-	AdminPort         int
-	PeerHost          string
-	PeerPort          int
-	PeerSSLCert       string
-	PeerSSLKey        string
-	PeerSSLRootCert   string
-	PatroniPort       int
-	ClientHost        string
-	ClientIPv4Address string
-	ClientPort        int
-	InstanceHostname  string
+	AdminHost        string
+	AdminPort        int
+	PeerHost         string
+	PeerPort         int
+	PeerSSLCert      string
+	PeerSSLKey       string
+	PeerSSLRootCert  string
+	PatroniPort      int
+	ClientAddresses  []string
+	ClientPort       int
+	InstanceHostname string
 }
 
 func (c *ConnectionInfo) PatroniURL() *url.URL {
 	return &url.URL{
 		Scheme: "http",
-		Host:   fmt.Sprintf("%s:%d", c.AdminHost, c.PatroniPort),
+		Host:   net.JoinHostPort(c.AdminHost, strconv.Itoa(c.PatroniPort)),
 	}
 }
 

@@ -53,16 +53,25 @@ func BuildJoinClusterPayload(controlPlaneJoinClusterBody string) (*controlplane.
 	{
 		err = json.Unmarshal([]byte(controlPlaneJoinClusterBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"server_url\": \"http://192.168.1.1:3000\",\n      \"token\": \"PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"server_urls\": [\n         \"http://192.168.1.1:3000\"\n      ],\n      \"token\": \"PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd\"\n   }'")
 		}
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.server_url", body.ServerURL, goa.FormatURI))
+		if body.ServerUrls == nil {
+			err = goa.MergeErrors(err, goa.MissingFieldError("server_urls", "body"))
+		}
 		if err != nil {
 			return nil, err
 		}
 	}
 	v := &controlplane.ClusterJoinToken{
-		Token:     body.Token,
-		ServerURL: body.ServerURL,
+		Token: body.Token,
+	}
+	if body.ServerUrls != nil {
+		v.ServerUrls = make([]string, len(body.ServerUrls))
+		for i, val := range body.ServerUrls {
+			v.ServerUrls[i] = val
+		}
+	} else {
+		v.ServerUrls = []string{}
 	}
 
 	return v, nil
@@ -76,7 +85,10 @@ func BuildGetJoinOptionsPayload(controlPlaneGetJoinOptionsBody string) (*control
 	{
 		err = json.Unmarshal([]byte(controlPlaneGetJoinOptionsBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"embedded_etcd_enabled\": true,\n      \"host_id\": \"76f9b8c0-4958-11f0-a489-3bb29577c696\",\n      \"hostname\": \"ip-10-1-0-113.ec2.internal\",\n      \"ipv4_address\": \"10.1.0.113\",\n      \"token\": \"PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"addresses\": [\n         \"10.1.0.113\",\n         \"ip-10-1-0-113.ec2.internal\"\n      ],\n      \"embedded_etcd_enabled\": true,\n      \"host_id\": \"76f9b8c0-4958-11f0-a489-3bb29577c696\",\n      \"token\": \"PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd\"\n   }'")
+		}
+		if body.Addresses == nil {
+			err = goa.MergeErrors(err, goa.MissingFieldError("addresses", "body"))
 		}
 		err = goa.MergeErrors(err, goa.ValidatePattern("body.token", body.Token, "^PGEDGE-[\\w]{64}-[\\w]{32}$"))
 		if utf8.RuneCountInString(body.HostID) < 1 {
@@ -85,13 +97,14 @@ func BuildGetJoinOptionsPayload(controlPlaneGetJoinOptionsBody string) (*control
 		if utf8.RuneCountInString(body.HostID) > 63 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_id", body.HostID, utf8.RuneCountInString(body.HostID), 63, false))
 		}
-		if utf8.RuneCountInString(body.Hostname) < 3 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.hostname", body.Hostname, utf8.RuneCountInString(body.Hostname), 3, true))
+		for _, e := range body.Addresses {
+			if utf8.RuneCountInString(e) < 3 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.addresses[*]", e, utf8.RuneCountInString(e), 3, true))
+			}
+			if utf8.RuneCountInString(e) > 128 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.addresses[*]", e, utf8.RuneCountInString(e), 128, false))
+			}
 		}
-		if utf8.RuneCountInString(body.Hostname) > 128 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.hostname", body.Hostname, utf8.RuneCountInString(body.Hostname), 128, false))
-		}
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.ipv4_address", body.Ipv4Address, goa.FormatIPv4))
 		if err != nil {
 			return nil, err
 		}
@@ -99,9 +112,15 @@ func BuildGetJoinOptionsPayload(controlPlaneGetJoinOptionsBody string) (*control
 	v := &controlplane.ClusterJoinRequest{
 		Token:               body.Token,
 		HostID:              controlplane.Identifier(body.HostID),
-		Hostname:            body.Hostname,
-		Ipv4Address:         body.Ipv4Address,
 		EmbeddedEtcdEnabled: body.EmbeddedEtcdEnabled,
+	}
+	if body.Addresses != nil {
+		v.Addresses = make([]string, len(body.Addresses))
+		for i, val := range body.Addresses {
+			v.Addresses[i] = val
+		}
+	} else {
+		v.Addresses = []string{}
 	}
 
 	return v, nil

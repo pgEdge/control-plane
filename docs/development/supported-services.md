@@ -695,8 +695,10 @@ Other common validation errors:
       "status": {
         "container_id": "a1b2c3d4e5f6",
         "image_version": "latest",
-        "hostname": "mcp-server-host-1.internal",
-        "ipv4_address": "10.0.1.5",
+        "addresses": [
+            "10.0.1.5",
+            "mcp-server-host-1.internal"
+        ],
         "ports": [
           {
             "name": "http",

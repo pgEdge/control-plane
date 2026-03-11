@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/afero"
 	"go.etcd.io/etcd/api/v3/authpb"
@@ -51,7 +52,7 @@ func CreateHostCredentials(
 
 	if opts.EmbeddedEtcdEnabled {
 		// Create a cert for the peer server
-		if err := addEtcdServerCredentials(ctx, opts.HostID, opts.Hostname, opts.IPv4Address, certSvc, creds); err != nil {
+		if err := addEtcdServerCredentials(ctx, opts.HostID, opts.Addresses, certSvc, creds); err != nil {
 			return nil, err
 		}
 	}
@@ -358,17 +359,18 @@ func writeHostCredentials(creds *HostCredentials, cfg *config.Manager) error {
 func addEtcdServerCredentials(
 	ctx context.Context,
 	hostID string,
-	hostname string,
-	ipv4Address string,
+	addresses []string,
 	certSvc *certificates.Service,
 	creds *HostCredentials,
 ) error {
+	// Ensure that localhost is included in the addresses
+	combined := ds.NewSet(addresses...)
+	combined.Add("127.0.0.1", "localhost")
+
 	// Create a cert for the peer server
 	serverPrincipal, err := certSvc.EtcdServer(ctx,
 		hostID,
-		hostname,
-		[]string{"localhost", hostname},
-		[]string{"127.0.0.1", ipv4Address},
+		combined.ToSortedSlice(strings.Compare),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create cert for etcd server: %w", err)

@@ -1,3 +1,4 @@
 {
-  "profiling_enabled": true
+  "profiling_enabled": true,
+  "client_addresses": ["127.0.0.1"]
 }

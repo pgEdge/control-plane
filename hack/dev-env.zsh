@@ -202,23 +202,6 @@ _psql-docker-exec() {
     fi
 }
 
-# TODO: we won't need this after PLAT-220
-_translate-ip() {
-	local ip_in="$1"
-
-	if [[ "${CP_ENV}" == "compose" ]]; then
-		echo "${ip_in}"
-		return
-	fi
-
-	local test_config="$(_test-config)"
-
-	peer_ip="${ip_in}" yq '.hosts[] 
-		| select(.peer_ip == env(peer_ip)) 
-		| .external_ip' \
-		"${test_config}"
-}
-
 _psql-local() {
 	local instance_id="$1"
 	local db_user="$2"
@@ -237,9 +220,6 @@ _psql-local() {
 		jq -r '.ipv4_address')
 	local port=$(<<<"${conn_info}" \
 		jq -r '.port')
-
-	# TODO: PLAT-220
-	ip_addr=$(_translate-ip "${ip_addr}")
 
 	local psql_cmd=(psql -h "${ip_addr}" -p "${port}" -U "${db_user}" -d "${db_name}" ${args[@]})
 

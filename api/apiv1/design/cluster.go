@@ -47,14 +47,13 @@ var ClusterJoinToken = g.Type("ClusterJoinToken", func() {
 		g.Example("PGEDGE-dd440afcf5de20ef8e8cf54f6cb9f125fd55f90e64faa94b906130b31235e730-41e975f41d7ea61058f2fe2572cb52dd")
 		g.Meta("struct:tag:json", "token")
 	})
-	g.Attribute("server_url", g.String, func() {
-		g.Format(g.FormatURI)
+	g.Attribute("server_urls", g.ArrayOf(g.String), func() {
 		g.Description("Existing server to join")
-		g.Example("http://192.168.1.1:3000")
-		g.Meta("struct:tag:json", "server_url")
+		g.Example([]string{"http://192.168.1.1:3000"})
+		g.Meta("struct:tag:json", "server_urls")
 	})
 
-	g.Required("token", "server_url")
+	g.Required("token", "server_urls")
 })
 
 var ClusterJoinRequest = g.Type("ClusterJoinRequest", func() {
@@ -69,18 +68,14 @@ var ClusterJoinRequest = g.Type("ClusterJoinRequest", func() {
 		g.Example("host-1")
 		g.Meta("struct:tag:json", "host_id")
 	})
-	g.Attribute("hostname", g.String, func() {
-		g.Description("The hostname of the host that's joining the cluster.")
-		g.MinLength(3)
-		g.MaxLength(128)
-		g.Example("ip-10-1-0-113.ec2.internal")
-		g.Meta("struct:tag:json", "hostname")
-	})
-	g.Attribute("ipv4_address", g.String, func() {
-		g.Format(g.FormatIPv4)
-		g.Description("The IPv4 address of the host that's joining the cluster.")
-		g.Example("10.1.0.113")
-		g.Meta("struct:tag:json", "ipv4_address")
+	g.Attribute("addresses", g.ArrayOf(g.String), func() {
+		g.Description("The peer addresses of the host that's joining the cluster.")
+		g.Elem(func() {
+			g.MinLength(3)
+			g.MaxLength(128)
+		})
+		g.Example([]string{"10.1.0.113", "ip-10-1-0-113.ec2.internal"})
+		g.Meta("struct:tag:json", "addresses")
 	})
 	g.Attribute("embedded_etcd_enabled", g.Boolean, func() {
 		g.Description("True if the joining member is configured to run an embedded an etcd server.")
@@ -88,7 +83,7 @@ var ClusterJoinRequest = g.Type("ClusterJoinRequest", func() {
 		g.Meta("struct:tag:json", "embedded_etcd_enabled")
 	})
 
-	g.Required("embedded_etcd_enabled", "token", "host_id", "hostname", "ipv4_address")
+	g.Required("embedded_etcd_enabled", "token", "host_id", "addresses")
 })
 
 var EtcdClusterMember = g.Type("EtcdClusterMember", func() {
