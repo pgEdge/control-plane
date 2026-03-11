@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/pgEdge/control-plane/server/internal/resource"
@@ -62,12 +63,22 @@ func (n *NodeResource) Create(ctx context.Context, rc *resource.Context) error {
 		return fmt.Errorf("node %q does not have any instances", n.Name)
 	}
 
-	// The primary instance ID should be the same on every instance
-	instance, err := resource.FromContext[*InstanceResource](rc, InstanceResourceIdentifier(n.InstanceIDs[0]))
-	if err != nil {
-		return fmt.Errorf("failed to get instance %q: %w", n.InstanceIDs[0], err)
+	// Some instances may be down or in a bad state. We'll want to check all of
+	// them to find one that knows the primary instance ID.
+	n.PrimaryInstanceID = ""
+	for _, id := range n.InstanceIDs {
+		instance, err := resource.FromContext[*InstanceResource](rc, InstanceResourceIdentifier(id))
+		if errors.Is(err, resource.ErrNotFound) {
+			continue
+		} else if err != nil {
+			return fmt.Errorf("failed to get instance %q: %w", id, err)
+		}
+
+		if instance.PrimaryInstanceID != "" {
+			n.PrimaryInstanceID = instance.PrimaryInstanceID
+			break
+		}
 	}
-	n.PrimaryInstanceID = instance.PrimaryInstanceID
 
 	return nil
 }

@@ -422,6 +422,9 @@ func FromState[T Resource](state *State, identifier Identifier) (T, error) {
 	if !ok {
 		return zero, fmt.Errorf("%w: %s", ErrNotFound, identifier.String())
 	}
+	if data.NeedsRecreate {
+		return zero, fmt.Errorf("%w: %s needs recreate", ErrNotFound, identifier.String())
+	}
 	return ToResource[T](data)
 }
 
