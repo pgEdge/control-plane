@@ -174,14 +174,9 @@ func (r *InstanceResource) initializeInstance(ctx context.Context, rc *resource.
 		return fmt.Errorf("failed to get TLS config: %w", err)
 	}
 
-	firstTimeSetup, err := r.isFirstTimeSetup(rc)
-	if err != nil {
-		return err
-	}
-
 	var spockSets []postgres.ReplicationSet
 	var spockTables []postgres.ReplicationSetTable
-	if r.Spec.RestoreConfig != nil && firstTimeSetup {
+	if r.Spec.RestoreConfig != nil && r.isFirstTimeSetup(rc) {
 		err = r.renameDB(ctx, tlsCfg)
 		if err != nil {
 			return fmt.Errorf("failed to rename database %q: %w", r.Spec.DatabaseName, err)
@@ -401,17 +396,11 @@ func (r *InstanceResource) dropSpock(ctx context.Context, tlsCfg *tls.Config) er
 	return nil
 }
 
-func (r *InstanceResource) isFirstTimeSetup(rc *resource.Context) (bool, error) {
+func (r *InstanceResource) isFirstTimeSetup(rc *resource.Context) bool {
 	// This instance will already exist in the state if it's been successfully
 	// created before.
-	_, err := resource.FromContext[*InstanceResource](rc, r.Identifier())
-	if errors.Is(err, resource.ErrNotFound) {
-		return true, nil
-	} else if err != nil {
-		return false, fmt.Errorf("failed to check state for previous version of this instance: %w", err)
-	}
-
-	return false, nil
+	_, ok := rc.State.Get(r.Identifier())
+	return !ok
 }
 
 func (r *InstanceResource) backupReplicationSets(
