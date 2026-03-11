@@ -35,6 +35,10 @@ func NewVersions(cfg config.Config) *Versions {
 		PgEdgeImage: imageTag(cfg, "16.12-spock5.0.5-standard-1"),
 	})
 
+	versions.addImage(host.MustPgEdgeVersion("16.13", "5"), &Images{
+		PgEdgeImage: imageTag(cfg, "16-spock5-standard"),
+	})
+
 	// pg17
 	versions.addImage(host.MustPgEdgeVersion("17.6", "5"), &Images{
 		PgEdgeImage: imageTag(cfg, "17.6-spock5.0.4-standard-3"),
@@ -44,6 +48,9 @@ func NewVersions(cfg config.Config) *Versions {
 	})
 	versions.addImage(host.MustPgEdgeVersion("17.8", "5"), &Images{
 		PgEdgeImage: imageTag(cfg, "17.8-spock5.0.5-standard-1"),
+	})
+	versions.addImage(host.MustPgEdgeVersion("17.9", "5"), &Images{
+		PgEdgeImage: imageTag(cfg, "17-spock5-standard"),
 	})
 
 	// pg18
@@ -55,6 +62,9 @@ func NewVersions(cfg config.Config) *Versions {
 	})
 	versions.addImage(host.MustPgEdgeVersion("18.2", "5"), &Images{
 		PgEdgeImage: imageTag(cfg, "18.2-spock5.0.5-standard-1"),
+	})
+	versions.addImage(host.MustPgEdgeVersion("18.3", "5"), &Images{
+		PgEdgeImage: imageTag(cfg, "18-spock5-standard"),
 	})
 
 	versions.defaultVersion = host.MustPgEdgeVersion("18.2", "5")
