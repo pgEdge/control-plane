@@ -68,3 +68,4 @@ This is the current list of components that can be configured in the `logging.co
 - `migration_runner`
 - `scheduler_service`
 - `workflows_worker`
+- `ports_service`

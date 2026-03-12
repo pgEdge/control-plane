@@ -43,12 +43,17 @@ func (a *Activities) GetRestoreResources(ctx context.Context, input *GetRestoreR
 	)
 	logger.Info("getting restore resources")
 
-	resources, err := a.Orchestrator.GenerateInstanceResources(input.Spec)
+	spec, err := a.DatabaseService.ReconcileInstanceSpec(ctx, input.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reconcile instance spec: %w", err)
+	}
+
+	resources, err := a.Orchestrator.GenerateInstanceResources(spec)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate instance resources: %w", err)
 	}
 
-	restoreSpec := input.Spec.Clone()
+	restoreSpec := spec.Clone()
 	restoreSpec.RestoreConfig = input.RestoreConfig
 	restoreResources, err := a.Orchestrator.GenerateInstanceRestoreResources(restoreSpec, input.TaskID)
 	if err != nil {
