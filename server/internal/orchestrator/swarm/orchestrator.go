@@ -419,6 +419,11 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		}
 	}
 
+	// Only MCP service instance generation is currently implemented.
+	if spec.ServiceSpec.ServiceType != "mcp" {
+		return nil, fmt.Errorf("service type %q instance generation is not yet supported", spec.ServiceSpec.ServiceType)
+	}
+
 	// Parse the MCP service config from the untyped config map
 	mcpConfig, errs := database.ParseMCPServiceConfig(spec.ServiceSpec.Config, false)
 	if len(errs) > 0 {

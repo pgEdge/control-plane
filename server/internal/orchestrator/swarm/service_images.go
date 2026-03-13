@@ -49,6 +49,13 @@ func NewServiceVersions(cfg config.Config) *ServiceVersions {
 		// No constraints — MCP works with all PG/Spock versions.
 	})
 
+	// RAG service versions
+	// TODO: Register semver versions when official releases are published.
+	versions.addServiceImage("rag", "latest", &ServiceImage{
+		Tag: serviceImageTag(cfg, "rag-server:latest"),
+		// No constraints — RAG works with all PG/Spock versions.
+	})
+
 	// Example of a service image with version constraints (nil = no restriction):
 	//
 	//   acme-service:1.0.0 requires PG 14-17 and Spock >= 4.0.0
