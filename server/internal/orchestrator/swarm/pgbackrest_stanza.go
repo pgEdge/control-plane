@@ -49,6 +49,10 @@ func (p *PgBackRestStanza) Dependencies() []resource.Identifier {
 	}
 }
 
+func (p *PgBackRestStanza) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (p *PgBackRestStanza) Refresh(ctx context.Context, rc *resource.Context) error {
 	client, err := do.Invoke[*docker.Docker](rc.Injector)
 	if err != nil {

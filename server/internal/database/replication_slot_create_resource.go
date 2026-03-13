@@ -47,6 +47,10 @@ func (r *ReplicationSlotCreateResource) Dependencies() []resource.Identifier {
 	}
 }
 
+func (r *ReplicationSlotCreateResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (r *ReplicationSlotCreateResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	instance, err := GetPrimaryInstance(ctx, rc, r.ProviderNode)
 	if err != nil {

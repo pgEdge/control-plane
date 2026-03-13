@@ -71,6 +71,10 @@ func (c *PostgresCerts) Dependencies() []resource.Identifier {
 	}
 }
 
+func (c *PostgresCerts) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (c *PostgresCerts) Refresh(ctx context.Context, rc *resource.Context) error {
 	fs, err := do.Invoke[afero.Fs](rc.Injector)
 	if err != nil {

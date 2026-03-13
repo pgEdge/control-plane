@@ -46,6 +46,10 @@ func (s *ScaleService) Dependencies() []resource.Identifier {
 	return append([]resource.Identifier{PostgresServiceResourceIdentifier(s.InstanceID)}, s.Deps...)
 }
 
+func (s *ScaleService) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (s *ScaleService) Refresh(ctx context.Context, rc *resource.Context) error {
 	return resource.ErrNotFound
 }

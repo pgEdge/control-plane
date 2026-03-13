@@ -51,6 +51,10 @@ func (n *NodeResource) Dependencies() []resource.Identifier {
 	return dependencies
 }
 
+func (n *NodeResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (n *NodeResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	if err := n.Create(ctx, rc); err != nil {
 		return err

@@ -51,6 +51,10 @@ func (r *ReplicationSlotAdvanceFromCTSResource) Dependencies() []resource.Identi
 	}
 }
 
+func (r *ReplicationSlotAdvanceFromCTSResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (r *ReplicationSlotAdvanceFromCTSResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	return nil
 }

@@ -59,6 +59,10 @@ func (s *PostgresService) Dependencies() []resource.Identifier {
 	}
 }
 
+func (s *PostgresService) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (s *PostgresService) Refresh(ctx context.Context, rc *resource.Context) error {
 	client, err := do.Invoke[*docker.Docker](rc.Injector)
 	if err != nil {

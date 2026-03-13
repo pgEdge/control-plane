@@ -131,6 +131,10 @@ func (r *orchestratorResource) Dependencies() []resource.Identifier {
 	return nil
 }
 
+func (r *orchestratorResource) TypeDependencies() []resource.Type {
+	return nil
+}
+
 func (r *orchestratorResource) Refresh(ctx context.Context, rc *resource.Context) error {
 	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"maps"
 	"slices"
 
+	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
@@ -177,13 +178,15 @@ func (s *State) topoIter(opts graphOptions) (iter.Seq[[]*ResourceData], error) {
 
 func (s *State) graph(opts graphOptions) (*simple.DirectedGraph, error) {
 	nodeIDs := map[Identifier]int64{}
-	graph := simple.NewDirectedGraph()
+	nodeIDsByType := map[Type][]int64{}
+	g := simple.NewDirectedGraph()
 	currID := int64(1)
 	// First pass to add nodes
 	for _, resources := range s.Resources {
 		for _, resource := range resources {
 			nodeIDs[resource.Identifier] = currID
-			graph.AddNode(&node{
+			nodeIDsByType[resource.Identifier.Type] = append(nodeIDsByType[resource.Identifier.Type], currID)
+			g.AddNode(&node{
 				id:       currID,
 				resource: resource,
 			})
@@ -194,10 +197,13 @@ func (s *State) graph(opts graphOptions) (*simple.DirectedGraph, error) {
 	for _, resources := range s.Resources {
 		for _, resource := range resources {
 			toID := nodeIDs[resource.Identifier]
-			to := graph.Node(toID)
+			to := g.Node(toID)
 			for _, dep := range resource.Dependencies {
+				if dep == resource.Identifier {
+					return nil, fmt.Errorf("invalid dependency: resource '%s' cannot depend on itself", resource.Identifier)
+				}
 				fromID, ok := nodeIDs[dep]
-				from := graph.Node(fromID)
+				from := g.Node(fromID)
 				if !ok {
 					if opts.ignoreMissingDeps {
 						continue
@@ -205,25 +211,38 @@ func (s *State) graph(opts graphOptions) (*simple.DirectedGraph, error) {
 						return nil, fmt.Errorf("dependency of %s not found: %s", resource.Identifier, dep)
 					}
 				}
-				// Our layered topological sort returns in 'from' to 'to' order.
-				// So modeling from dependency to dependent gets us the order we
-				// want for creates and updates.
-				if opts.creationOrdered {
-					graph.SetEdge(simple.Edge{
-						T: to,
-						F: from,
-					})
-				} else {
-					// For deletion order we need to reverse the edge.
-					graph.SetEdge(simple.Edge{
-						T: from,
-						F: to,
-					})
+				addEdge(opts, g, from, to)
+			}
+			for _, ty := range resource.TypeDependencies {
+				if ty == resource.Identifier.Type {
+					return nil, fmt.Errorf("invalid type dependency: resource '%s' cannot depend on its own type '%s'", resource.Identifier, ty)
+				}
+				for _, fromID := range nodeIDsByType[ty] {
+					from := g.Node(fromID)
+					addEdge(opts, g, from, to)
 				}
 			}
 		}
 	}
-	return graph, nil
+	return g, nil
+}
+
+func addEdge(opts graphOptions, g *simple.DirectedGraph, from, to graph.Node) {
+	// Our layered topological sort returns in 'from' to 'to' order.
+	// So modeling from dependency to dependent gets us the order we
+	// want for creates and updates.
+	if opts.creationOrdered {
+		g.SetEdge(simple.Edge{
+			T: to,
+			F: from,
+		})
+	} else {
+		// For deletion order we need to reverse the edge.
+		g.SetEdge(simple.Edge{
+			T: from,
+			F: to,
+		})
+	}
 }
 
 func (s *State) PlanRefresh() (Plan, error) {
@@ -274,6 +293,7 @@ func (s *State) planCreates(options PlanOptions, desired *State) (Plan, error) {
 	// Keeps track of all modified resources so that we can update their
 	// dependents.
 	modified := ds.NewSet[Identifier]()
+	modifiedTypes := ds.NewSet[Type]()
 	for layer := range layers {
 		var phase []*Event
 
@@ -309,7 +329,7 @@ func (s *State) planCreates(options PlanOptions, desired *State) (Plan, error) {
 					Resource: resource,
 					Reason:   EventReasonForceUpdate,
 				}
-			case slices.ContainsFunc(resource.Dependencies, modified.Has):
+			case slices.ContainsFunc(resource.TypeDependencies, modifiedTypes.Has), slices.ContainsFunc(resource.Dependencies, modified.Has):
 				event = &Event{
 					Type:     EventTypeUpdate,
 					Resource: resource,
@@ -333,6 +353,7 @@ func (s *State) planCreates(options PlanOptions, desired *State) (Plan, error) {
 			if event != nil {
 				phase = append(phase, event)
 				modified.Add(resource.Identifier)
+				modifiedTypes.Add(resource.Identifier.Type)
 			}
 		}
 
@@ -428,6 +449,24 @@ func FromState[T Resource](state *State, identifier Identifier) (T, error) {
 	return ToResource[T](data)
 }
 
+func AllFromState[T Resource](state *State, resourceType Type) ([]T, error) {
+	data := state.GetAll(resourceType)
+	all := make([]T, len(data))
+	for i, d := range data {
+		resource, err := ToResource[T](d)
+		if err != nil {
+			return nil, err
+		}
+		all[i] = resource
+	}
+
+	return all, nil
+}
+
 func FromContext[T Resource](rc *Context, identifier Identifier) (T, error) {
 	return FromState[T](rc.State, identifier)
+}
+
+func AllFromContext[T Resource](rc *Context, resourceType Type) ([]T, error) {
+	return AllFromState[T](rc.State, resourceType)
 }
