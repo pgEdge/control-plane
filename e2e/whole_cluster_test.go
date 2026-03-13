@@ -37,6 +37,7 @@ func TestWholeCluster(t *testing.T) {
 		Spec: &controlplane.DatabaseSpec{
 			DatabaseName: "test",
 			Port:         pointerTo(0),
+			PatroniPort:  pointerTo(0),
 			DatabaseUsers: []*controlplane.DatabaseUserSpec{
 				{
 					Username:   username,

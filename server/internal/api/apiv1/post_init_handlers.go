@@ -298,7 +298,7 @@ func (s *PostInitHandlers) ListDatabases(ctx context.Context) (*api.ListDatabase
 }
 
 func (s *PostInitHandlers) CreateDatabase(ctx context.Context, req *api.CreateDatabaseRequest) (*api.CreateDatabaseResponse, error) {
-	spec, err := apiToDatabaseSpec(req.ID, req.TenantID, req.Spec)
+	spec, err := apiToDatabaseSpec(s.cfg.Orchestrator, req.ID, req.TenantID, req.Spec)
 	if err != nil {
 		return nil, makeInvalidInputErr(err)
 	}
@@ -353,7 +353,7 @@ func (s *PostInitHandlers) GetDatabase(ctx context.Context, req *api.GetDatabase
 }
 
 func (s *PostInitHandlers) UpdateDatabase(ctx context.Context, req *api.UpdateDatabasePayload) (*api.UpdateDatabaseResponse, error) {
-	spec, err := apiToDatabaseSpec(&req.DatabaseID, req.Request.TenantID, req.Request.Spec)
+	spec, err := apiToDatabaseSpec(s.cfg.Orchestrator, &req.DatabaseID, req.Request.TenantID, req.Request.Spec)
 	if err != nil {
 		return nil, makeInvalidInputErr(err)
 	}

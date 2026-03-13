@@ -35,7 +35,8 @@ func TestFailoverScenarios(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",

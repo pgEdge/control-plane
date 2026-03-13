@@ -388,6 +388,30 @@ dev-teardown: dev-down
 api-docs:
 	WORKSPACE_DIR=$(shell pwd) DEBUG=0 docker compose -f ./docker/control-plane-dev/docker-compose.yaml up api-docs
 
+########################
+# lima dev environment #
+########################
+
+.PHONY: dev-lima-deploy
+dev-lima-deploy:
+	$(MAKE) -C lima deploy
+
+.PHONY: dev-lima-build
+dev-lima-build:
+	$(MAKE) -C lima build
+
+.PHONY: dev-lima-run
+dev-lima-run:
+	$(MAKE) -C lima run
+
+.PHONY: dev-lima-reset
+dev-lima-reset:
+	$(MAKE) -C lima reset
+
+.PHONY: dev-lima-teardown
+dev-lima-teardown:
+	$(MAKE) -C lima teardown
+
 #################################
 # docker compose ci environment #
 #################################

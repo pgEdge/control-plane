@@ -73,11 +73,9 @@ func (a *Activities) handleDatabaseFailed(ctx context.Context, databaseID string
 	now := time.Now()
 	for _, instance := range instances {
 		if instance.State.IsInProgress() {
-			err := a.DatabaseService.UpdateInstance(ctx, &database.InstanceUpdateOptions{
+			err := a.DatabaseService.UpdateInstanceState(ctx, &database.InstanceStateUpdateOptions{
 				InstanceID: instance.InstanceID,
 				DatabaseID: instance.DatabaseID,
-				HostID:     instance.HostID,
-				NodeName:   instance.NodeName,
 				State:      database.InstanceStateFailed,
 				Now:        now,
 			})

@@ -4,12 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/ports"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 	"github.com/pgEdge/control-plane/server/internal/utils"
@@ -291,6 +295,34 @@ func (s *Service) UpdateInstance(ctx context.Context, opts *InstanceUpdateOption
 	return nil
 }
 
+func (s *Service) UpdateInstanceState(ctx context.Context, opts *InstanceStateUpdateOptions) error {
+	instance, err := s.store.Instance.
+		GetByKey(opts.DatabaseID, opts.InstanceID).
+		Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		instance = NewStoredInstance(&InstanceUpdateOptions{
+			InstanceID: opts.InstanceID,
+			DatabaseID: opts.DatabaseID,
+			HostID:     opts.HostID,
+			NodeName:   opts.NodeName,
+			State:      opts.State,
+		})
+	} else if err != nil {
+		return fmt.Errorf("failed to get stored instance: %w", err)
+	} else {
+		instance.UpdateState(opts)
+	}
+
+	err = s.store.Instance.
+		Put(instance).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to update stored instance: %w", err)
+	}
+
+	return nil
+}
+
 func (s *Service) DeleteInstance(ctx context.Context, databaseID, instanceID string) error {
 	_, err := s.store.Instance.
 		DeleteByKey(databaseID, instanceID).
@@ -420,10 +452,20 @@ func (s *Service) GetAllServiceInstances(ctx context.Context) ([]*ServiceInstanc
 	return serviceInstances, nil
 }
 
+func (s *Service) CreatePgBackRestBackup(ctx context.Context, w io.Writer, databaseID, instanceID string, options *pgbackrest.BackupOptions) error {
+	instance, err := s.store.InstanceSpec.
+		GetByKey(databaseID, instanceID).
+		Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return ErrInstanceNotFound
+	} else if err != nil {
+		return err
+	}
+	return s.orchestrator.CreatePgBackRestBackup(ctx, w, instance.Spec, options)
+}
+
 func (s *Service) GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*ConnectionInfo, error) {
-	// This serves as an existence check for now. We'll make more use of the
-	// stored instance when we add support for systemd.
-	_, err := s.store.Instance.
+	storedInstance, err := s.store.Instance.
 		GetByKey(databaseID, instanceID).
 		Exec(ctx)
 	if errors.Is(err, storage.ErrNotFound) {
@@ -431,7 +473,10 @@ func (s *Service) GetInstanceConnectionInfo(ctx context.Context, databaseID, ins
 	} else if err != nil {
 		return nil, fmt.Errorf("failed to get stored instance: %w", err)
 	}
-	return s.orchestrator.GetInstanceConnectionInfo(ctx, databaseID, instanceID)
+	return s.orchestrator.GetInstanceConnectionInfo(ctx,
+		storedInstance.DatabaseID, storedInstance.InstanceID,
+		storedInstance.Port, storedInstance.PatroniPort,
+		storedInstance.PgEdgeVersion)
 }
 
 func (s *Service) InstanceCountForHost(ctx context.Context, hostID string) (int, error) {
@@ -450,18 +495,34 @@ func (s *Service) InstanceCountForHost(ctx context.Context, hostID string) (int,
 	return count, nil
 }
 
+func validateHostIDs(hostIDs ds.Set[string], hosts []*host.Host) error {
+	found := ds.NewSet[string]()
+	for _, host := range hosts {
+		found.Add(host.ID)
+	}
+	notFound := hostIDs.Difference(found).ToSortedSlice(strings.Compare)
+	if len(notFound) != 0 {
+		return fmt.Errorf("got invalid host ids: %s", strings.Join(notFound, ", "))
+	}
+
+	return nil
+}
+
 func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
-	var hostIDs []string
+	hostIDs := ds.NewSet[string]()
 	// First pass to build out hostID list
 	for _, node := range spec.Nodes {
-		hostIDs = append(hostIDs, node.HostIDs...)
+		hostIDs.Add(node.HostIDs...)
 	}
 	for _, svc := range spec.Services {
-		hostIDs = append(hostIDs, svc.HostIDs...)
+		hostIDs.Add(svc.HostIDs...)
 	}
-	hosts, err := s.hostSvc.GetHosts(ctx, hostIDs)
+	hosts, err := s.hostSvc.GetHosts(ctx, hostIDs.ToSlice())
 	if err != nil {
 		return fmt.Errorf("failed to get hosts: %w", err)
+	}
+	if err := validateHostIDs(hostIDs, hosts); err != nil {
+		return err
 	}
 	defaultVersion, err := host.GreatestCommonDefaultVersion(hosts...)
 	if err != nil {

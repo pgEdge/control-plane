@@ -1,0 +1,88 @@
+---
+- name: Install epel-release
+  package:
+    name: '{{ item }}'
+    state: present
+  with_items:
+    - epel-release
+    - dnf
+- name: Enable crb
+  community.general.dnf_config_manager:
+    name: crb
+    state: enabled
+- name: Install pgEdge repository
+  package:
+    name: https://dnf.pgedge.com/reporpm/pgedge-release-latest.noarch.rpm
+    state: present
+    disable_gpg_check: true
+- name: Install prerequisites
+  package:
+    name: '{{ item }}'
+    state: present
+  with_items:
+    - python3-pip
+    - pgedge-postgresql18
+    - pgedge-postgresql17
+    - pgedge-postgresql16
+    - pgedge-spock50_18
+    - pgedge-spock50_17
+    - pgedge-spock50_16
+    - pgedge-snowflake_18
+    - pgedge-snowflake_17
+    - pgedge-snowflake_16
+    - pgedge-lolor_18
+    - pgedge-lolor_17
+    - pgedge-lolor_16
+    - pgedge-postgresql18-contrib
+    - pgedge-postgresql17-contrib
+    - pgedge-postgresql16-contrib
+    - pgedge-pgbackrest
+    - pgedge-python3-psycopg2
+    - which
+    - wget
+    - git
+- name: Install python modules
+  pip:
+    state: present
+    name:
+      - "patroni[etcd,jsonlogger]==4.1.0"
+- name: Install etcdctl and etcdutl
+  ansible.builtin.unarchive:
+    src: "{{ etcd_download_url }}"
+    dest: /usr/bin
+    remote_src: yes
+    extra_opts:
+      - "--strip-components=1"
+      - "{{ etcd_archive_name }}/etcdctl"
+      - "{{ etcd_archive_name }}/etcdutl"
+    creates: /usr/bin/etcdctl
+- name: Install Go
+  ansible.builtin.unarchive:
+    src: "{{ go_download_url }}"
+    dest: /usr/local
+    remote_src: yes
+    creates: /usr/local/go
+- name: Add profile environment
+  ansible.builtin.copy:
+    content: |
+      export PATH=$PATH:/usr/local/go/bin
+    dest: /etc/profile.d/control-plane-dev.sh
+    mode: '0755'
+- name: Allow large time jumps in chronyd
+  ansible.builtin.lineinfile:
+    path: /etc/chrony.conf
+    regexp: '^makestep'
+    line: 'makestep 1 -1'
+  register: chronycfg
+- name: Restart chronyd
+  ansible.builtin.systemd_service:
+    name: chronyd
+    state: restarted
+  when: chronycfg.changed
+- name: Install delve debugger
+  ansible.builtin.command: /usr/local/go/bin/go install github.com/go-delve/delve/cmd/dlv@latest
+- name: Disable SELinux
+  ansible.posix.selinux:
+    state: disabled
+- name: Fix clocks
+  ansible.builtin.command: chronyc -a makestep

@@ -19,6 +19,8 @@ import (
 func TestProvisionMCPService(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicesUnsupported(t)
+
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -38,7 +40,8 @@ func TestProvisionMCPService(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
@@ -144,6 +147,8 @@ func TestProvisionMCPService(t *testing.T) {
 func TestProvisionMultiHostMCPService(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicesUnsupported(t)
+
 	host1 := fixture.HostIDs()[0]
 	host2 := fixture.HostIDs()[1]
 	host3 := fixture.HostIDs()[2]
@@ -165,7 +170,8 @@ func TestProvisionMultiHostMCPService(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
@@ -223,6 +229,8 @@ func TestProvisionMultiHostMCPService(t *testing.T) {
 func TestUpdateDatabaseAddService(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicesUnsupported(t)
+
 	host1 := fixture.HostIDs()[0]
 	host2 := fixture.HostIDs()[1]
 
@@ -243,7 +251,8 @@ func TestUpdateDatabaseAddService(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
@@ -270,7 +279,8 @@ func TestUpdateDatabaseAddService(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
@@ -318,6 +328,8 @@ func TestUpdateDatabaseAddService(t *testing.T) {
 func TestProvisionMCPServiceUnsupportedVersion(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicesUnsupported(t)
+
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -336,7 +348,8 @@ func TestProvisionMCPServiceUnsupportedVersion(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
@@ -420,6 +433,8 @@ func TestProvisionMCPServiceUnsupportedVersion(t *testing.T) {
 func TestProvisionMCPServiceRecovery(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicesUnsupported(t)
+
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -440,7 +455,8 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
@@ -527,7 +543,8 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 						Attributes: []string{"LOGIN", "SUPERUSER"},
 					},
 				},
-				Port: pointerTo(0),
+				Port:        pointerTo(0),
+				PatroniPort: pointerTo(0),
 				Nodes: []*controlplane.DatabaseNodeSpec{
 					{
 						Name:    "n1",
@@ -618,6 +635,8 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 func TestUpdateDatabaseServiceStable(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicesUnsupported(t)
+
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -636,7 +655,8 @@ func TestUpdateDatabaseServiceStable(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
@@ -701,7 +721,8 @@ func TestUpdateDatabaseServiceStable(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
@@ -756,6 +777,8 @@ func TestUpdateDatabaseServiceStable(t *testing.T) {
 func TestUpdateMCPServiceConfig(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicesUnsupported(t)
+
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -774,7 +797,8 @@ func TestUpdateMCPServiceConfig(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
@@ -836,7 +860,8 @@ func TestUpdateMCPServiceConfig(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
@@ -895,6 +920,8 @@ func TestUpdateMCPServiceConfig(t *testing.T) {
 func TestUpdateDatabaseRemoveService(t *testing.T) {
 	t.Parallel()
 
+	fixture.SkipIfServicesUnsupported(t)
+
 	host1 := fixture.HostIDs()[0]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -914,7 +941,8 @@ func TestUpdateDatabaseRemoveService(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
@@ -955,7 +983,8 @@ func TestUpdateDatabaseRemoveService(t *testing.T) {
 					Attributes: []string{"LOGIN", "SUPERUSER"},
 				},
 			},
-			Port: pointerTo(0),
+			Port:        pointerTo(0),
+			PatroniPort: pointerTo(0),
 			Nodes: []*controlplane.DatabaseNodeSpec{
 				{
 					Name:    "n1",
