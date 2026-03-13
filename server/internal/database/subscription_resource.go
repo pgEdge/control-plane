@@ -3,8 +3,8 @@ package database
 import (
 	"context"
 	"fmt"
-	"slices"
-	"strings"
+
+	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
@@ -22,12 +22,13 @@ func SubscriptionResourceIdentifier(providerNode, subscriberNode string) resourc
 }
 
 type SubscriptionResource struct {
+	DatabaseName      string                `json:"database_name"`
 	SubscriberNode    string                `json:"subscriber_node"`
 	ProviderNode      string                `json:"provider_node"`
 	Disabled          bool                  `json:"disabled"`
 	SyncStructure     bool                  `json:"sync_structure"`
 	SyncData          bool                  `json:"sync_data"`
-	ExtraDependencies []resource.Identifier `json:"dependent_subscriptions"`
+	ExtraDependencies []resource.Identifier `json:"extra_dependencies"`
 	NeedsUpdate       bool                  `json:"needs_update"`
 }
 
@@ -53,8 +54,8 @@ func (s *SubscriptionResource) AddDependentResource(dep resource.Identifier) {
 
 func (s *SubscriptionResource) Dependencies() []resource.Identifier {
 	deps := []resource.Identifier{
-		NodeResourceIdentifier(s.SubscriberNode),
-		NodeResourceIdentifier(s.ProviderNode),
+		PostgresDatabaseResourceIdentifier(s.SubscriberNode, s.DatabaseName),
+		PostgresDatabaseResourceIdentifier(s.ProviderNode, s.DatabaseName),
 		ReplicationSlotResourceIdentifier(s.ProviderNode, s.SubscriberNode),
 	}
 	deps = append(deps, s.ExtraDependencies...)
@@ -70,7 +71,7 @@ func (s *SubscriptionResource) Refresh(ctx context.Context, rc *resource.Context
 	if err != nil {
 		return fmt.Errorf("failed to get subscriber instance: %w", err)
 	}
-	providerDSN, err := s.providerDSN(ctx, rc)
+	providerDSN, err := s.providerDSN(ctx, rc, subscriber)
 	if err != nil {
 		return err
 	}
@@ -114,7 +115,7 @@ func (s *SubscriptionResource) Create(ctx context.Context, rc *resource.Context)
 	if err != nil {
 		return fmt.Errorf("failed to get subscriber instance: %w", err)
 	}
-	providerDSN, err := s.providerDSN(ctx, rc)
+	providerDSN, err := s.providerDSN(ctx, rc, subscriber)
 	if err != nil {
 		return err
 	}
@@ -141,44 +142,25 @@ func (s *SubscriptionResource) Create(ctx context.Context, rc *resource.Context)
 	return nil
 }
 
-func (s *SubscriptionResource) providerDSN(ctx context.Context, rc *resource.Context) (*postgres.DSN, error) {
-	providers, err := GetAllInstances(ctx, rc, s.ProviderNode)
+func (s *SubscriptionResource) providerDSN(ctx context.Context, rc *resource.Context, subscriber *InstanceResource) (*postgres.DSN, error) {
+	orch, err := do.Invoke[Orchestrator](rc.Injector)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get provider instances: %w", err)
+		return nil, err
 	}
-	if len(providers) == 0 {
-		return nil, fmt.Errorf("%w: no provider instance found for node %s", resource.ErrNotFound, s.ProviderNode)
-	}
-	// Sorting instances so that our final DSN is deterministic
-	slices.SortStableFunc(providers, func(a, b *InstanceResource) int {
-		return strings.Compare(a.ConnectionInfo.PeerHost, b.ConnectionInfo.PeerHost)
-	})
-	hosts := make([]string, len(providers))
-	ports := make([]int, len(providers))
-	for i, provider := range providers {
-		hosts[i] = provider.ConnectionInfo.PeerHost
-		ports[i] = provider.ConnectionInfo.PeerPort
+	providerDSN, err := orch.NodeDSN(ctx, rc, s.ProviderNode, subscriber.Spec.InstanceID, s.DatabaseName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get provider dsn: %w", err)
 	}
 
-	return &postgres.DSN{
-		Hosts:       hosts,
-		Ports:       ports,
-		DBName:      providers[0].Spec.DatabaseName,
-		User:        "pgedge",
-		SSLCert:     providers[0].ConnectionInfo.PeerSSLCert,
-		SSLKey:      providers[0].ConnectionInfo.PeerSSLKey,
-		SSLRootCert: providers[0].ConnectionInfo.PeerSSLRootCert,
-		Extra: map[string]string{
-			"target_session_attrs": "primary",
-		},
-	}, nil
+	return providerDSN, nil
 }
+
 func (s *SubscriptionResource) Update(ctx context.Context, rc *resource.Context) error {
 	subscriber, err := GetPrimaryInstance(ctx, rc, s.SubscriberNode)
 	if err != nil {
 		return fmt.Errorf("failed to get subscriber instance: %w", err)
 	}
-	providerDSN, err := s.providerDSN(ctx, rc)
+	providerDSN, err := s.providerDSN(ctx, rc, subscriber)
 	if err != nil {
 		return err
 	}

@@ -19,3 +19,8 @@ func IsSpockNodeNotConfigured(err error) bool {
 	var pgErr *pgconn.PgError
 	return errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ObjectNotInPrerequisiteState
 }
+
+func IsDatabaseNotExists(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == pgerrcode.InvalidCatalogName
+}

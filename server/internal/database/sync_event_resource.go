@@ -20,6 +20,7 @@ func SyncEventResourceIdentifier(providerNode, subscriberNode string) resource.I
 }
 
 type SyncEventResource struct {
+	DatabaseName      string                `json:"database_name"`
 	ProviderNode      string                `json:"provider_node"`
 	SubscriberNode    string                `json:"subscriber_node"`
 	SyncEventLsn      string                `json:"sync_event_lsn"`
@@ -44,7 +45,6 @@ func (r *SyncEventResource) Identifier() resource.Identifier {
 
 func (r *SyncEventResource) Dependencies() []resource.Identifier {
 	deps := []resource.Identifier{
-		NodeResourceIdentifier(r.ProviderNode),
 		SubscriptionResourceIdentifier(r.ProviderNode, r.SubscriberNode),
 	}
 

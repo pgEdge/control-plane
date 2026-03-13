@@ -89,6 +89,7 @@ type Context struct {
 	State    *State
 	Registry *Registry
 	Injector *do.Injector
+	HostID   string // The ID of the host that's executing this context.
 }
 
 type ExecutorType string
@@ -159,6 +160,23 @@ func ToResourceData(resource Resource) (*ResourceData, error) {
 		DiffIgnore:       resource.DiffIgnore(),
 		ResourceVersion:  resource.ResourceVersion(),
 	}, nil
+}
+
+func ToResourceDataSlice(resources ...Resource) ([]*ResourceData, error) {
+	var errs []error
+	data := make([]*ResourceData, len(resources))
+	for i, res := range resources {
+		d, err := ToResourceData(res)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to convert resource to resource data: %w", err))
+		}
+		data[i] = d
+	}
+	if err := errors.Join(errs...); err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 type Registry struct {

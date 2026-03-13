@@ -741,6 +741,39 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				"nodes[1].port: postgres and patroni ports must not conflict",
 			},
 		},
+		{
+			name: "invalid users",
+			spec: &api.DatabaseSpec{
+				DatabaseUsers: []*api.DatabaseUserSpec{
+					{
+						Username: "duplicate_user",
+					},
+					{
+						Username: "duplicate_user",
+					},
+					{
+						Username: "duplicate_owner_1",
+						DbOwner:  utils.PointerTo(true),
+					},
+					{
+						Username: "duplicate_owner_2",
+						DbOwner:  utils.PointerTo(true),
+					},
+				},
+				Nodes: []*api.DatabaseNodeSpec{
+					{
+						Name: "n1",
+						HostIds: []api.Identifier{
+							api.Identifier("host-1"),
+						},
+					},
+				},
+			},
+			expected: []string{
+				"users[1]: usernames must be unique within a database",
+				"users[3]: cannot have multiple users with db_owner = true",
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := validateDatabaseSpec(tc.spec)
