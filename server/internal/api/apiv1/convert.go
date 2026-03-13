@@ -38,6 +38,34 @@ func isSensitiveConfigKey(key string) bool {
 	return false
 }
 
+// scrubSensitiveConfig returns a copy of config with sensitive keys removed,
+// recursively descending into nested maps and slices.
+func scrubSensitiveConfig(config map[string]any) map[string]any {
+	out := make(map[string]any, len(config))
+	for k, v := range config {
+		if isSensitiveConfigKey(k) {
+			continue
+		}
+		out[k] = scrubSensitiveValue(v)
+	}
+	return out
+}
+
+func scrubSensitiveValue(v any) any {
+	switch val := v.(type) {
+	case map[string]any:
+		return scrubSensitiveConfig(val)
+	case []any:
+		out := make([]any, len(val))
+		for i, elem := range val {
+			out[i] = scrubSensitiveValue(elem)
+		}
+		return out
+	default:
+		return v
+	}
+}
+
 func hostToAPI(h *host.Host) *api.Host {
 	components := make(map[string]*api.ComponentStatus, len(h.Status.Components))
 	for name, status := range h.Status.Components {
@@ -211,16 +239,11 @@ func serviceSpecToAPI(svc *database.ServiceSpec) *api.ServiceSpec {
 		hostIDs[i] = api.Identifier(hostID)
 	}
 
-	// Strip sensitive keys from config before returning to API
+	// Strip sensitive keys from config before returning to API (recursively,
+	// to handle nested structures such as the RAG service pipelines array).
 	var filteredConfig map[string]any
 	if svc.Config != nil {
-		filteredConfig = make(map[string]any, len(svc.Config))
-		for k, v := range svc.Config {
-			if isSensitiveConfigKey(k) {
-				continue
-			}
-			filteredConfig[k] = v
-		}
+		filteredConfig = scrubSensitiveConfig(svc.Config)
 	}
 
 	return &api.ServiceSpec{
