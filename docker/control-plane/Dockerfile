@@ -4,6 +4,6 @@ ARG TARGETOS
 ARG TARGETARCH
 ARG ARCHIVE_VERSION
 
-ENTRYPOINT ["/control-plane"]
+ENTRYPOINT ["/pgedge-control-plane"]
 
 ADD control-plane_${ARCHIVE_VERSION}_${TARGETOS}_${TARGETARCH}.tar.gz /
