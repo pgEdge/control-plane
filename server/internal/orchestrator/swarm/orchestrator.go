@@ -669,6 +669,10 @@ func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, 
 	return nil
 }
 
+func (o *Orchestrator) ExecuteInstanceCommand(ctx context.Context, w io.Writer, databaseID, instanceID string, args ...string) error {
+	return PostgresContainerExec(ctx, w, o.docker, instanceID, args)
+}
+
 func (o *Orchestrator) ValidateInstanceSpecs(ctx context.Context, changes []*database.InstanceSpecChange) ([]*database.ValidationResult, error) {
 	results := make([]*database.ValidationResult, 0, len(changes)*3)
 

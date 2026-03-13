@@ -22,6 +22,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/migrate"
 	"github.com/pgEdge/control-plane/server/internal/monitor"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator"
+	"github.com/pgEdge/control-plane/server/internal/orchestrator/common"
 	"github.com/pgEdge/control-plane/server/internal/orchestrator/swarm"
 	"github.com/pgEdge/control-plane/server/internal/ports"
 	"github.com/pgEdge/control-plane/server/internal/resource"
@@ -95,6 +96,7 @@ func newRootCmd(i *do.Injector) *cobra.Command {
 			filesystem.RegisterResourceTypes(registry)
 			monitor.RegisterResourceTypes(registry)
 			scheduler.RegisterResourceTypes(registry)
+			common.RegisterResourceTypes(registry)
 			swarm.RegisterResourceTypes(registry)
 
 			if err := orchestrator.Provide(i); err != nil {
