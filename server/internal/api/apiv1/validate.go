@@ -249,9 +249,12 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool) []e
 	serviceIDPath := appendPath(path, "service_id")
 	errs = append(errs, validateIdentifier(string(svc.ServiceID), serviceIDPath))
 
-	// Validate service_type (must be "mcp" for now)
-	if svc.ServiceType != "mcp" {
-		err := fmt.Errorf("unsupported service type '%s' (only 'mcp' is currently supported)", svc.ServiceType)
+	// Validate service_type
+	switch svc.ServiceType {
+	case "mcp", "rag":
+		// valid
+	default:
+		err := fmt.Errorf("unsupported service type '%s'", svc.ServiceType)
 		errs = append(errs, newValidationError(err, appendPath(path, "service_type")))
 	}
 
@@ -278,8 +281,11 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool) []e
 	}
 
 	// Validate config based on service_type
-	if svc.ServiceType == "mcp" {
+	switch svc.ServiceType {
+	case "mcp":
 		errs = append(errs, validateMCPServiceConfig(svc.Config, appendPath(path, "config"), isUpdate)...)
+	case "rag":
+		errs = append(errs, validateRAGServiceConfig(svc.Config, appendPath(path, "config"), isUpdate)...)
 	}
 
 	// Validate cpus if provided
@@ -300,6 +306,15 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool) []e
 
 func validateMCPServiceConfig(config map[string]any, path []string, isUpdate bool) []error {
 	_, errs := database.ParseMCPServiceConfig(config, isUpdate)
+	var result []error
+	for _, err := range errs {
+		result = append(result, newValidationError(err, path))
+	}
+	return result
+}
+
+func validateRAGServiceConfig(config map[string]any, path []string, isUpdate bool) []error {
+	_, errs := database.ParseRAGServiceConfig(config, isUpdate)
 	var result []error
 	for _, err := range errs {
 		result = append(result, newValidationError(err, path))
