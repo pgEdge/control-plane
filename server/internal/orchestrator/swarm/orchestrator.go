@@ -419,6 +419,13 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		}
 	}
 
+	// Only MCP is fully implemented in the orchestrator for now.
+	// PostgREST provisioning (container spec, config delivery, service user) is
+	// implemented in follow-up tickets.
+	if spec.ServiceSpec.ServiceType != "mcp" {
+		return nil, fmt.Errorf("service type %q is not yet supported for provisioning", spec.ServiceSpec.ServiceType)
+	}
+
 	// Parse the MCP service config from the untyped config map
 	mcpConfig, errs := database.ParseMCPServiceConfig(spec.ServiceSpec.Config, false)
 	if len(errs) > 0 {
