@@ -26,4 +26,5 @@ func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*PostgRESTAuthenticatorResource](registry, ResourceTypePostgRESTAuthenticator)
 	resource.RegisterResourceType[*RAGServiceKeysResource](registry, ResourceTypeRAGServiceKeys)
 	resource.RegisterResourceType[*RAGConfigResource](registry, ResourceTypeRAGConfig)
+	resource.RegisterResourceType[*RAGServiceUserRole](registry, ResourceTypeRAGServiceUserRole)
 }
