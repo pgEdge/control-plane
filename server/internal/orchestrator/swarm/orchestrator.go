@@ -402,6 +402,11 @@ func (o *Orchestrator) GenerateInstanceRestoreResources(spec *database.InstanceS
 }
 
 func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
+	// Only MCP service instance generation is currently implemented.
+	if spec.ServiceSpec.ServiceType != "mcp" {
+		return nil, fmt.Errorf("service type %q instance generation is not yet supported", spec.ServiceSpec.ServiceType)
+	}
+
 	// Get service image based on service type and version
 	serviceImage, err := o.serviceVersions.GetServiceImage(spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version)
 	if err != nil {
