@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"sort"
 	"strings"
 )
 
@@ -76,6 +77,7 @@ func ParseRAGServiceConfig(config map[string]any, _ bool) (*RAGServiceConfig, []
 		}
 	}
 	if len(unknownKeys) > 0 {
+		sort.Strings(unknownKeys)
 		errs = append(errs, fmt.Errorf("unknown config key(s): %s", strings.Join(unknownKeys, ", ")))
 		return nil, errs
 	}
