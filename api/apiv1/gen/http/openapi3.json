@@ -26537,7 +26537,8 @@
             "description": "The type of service to run.",
             "example": "mcp",
             "enum": [
-              "mcp"
+              "mcp",
+              "postgrest"
             ]
           },
           "version": {
@@ -26691,7 +26692,8 @@
             "description": "The type of service to run.",
             "example": "mcp",
             "enum": [
-              "mcp"
+              "mcp",
+              "postgrest"
             ]
           },
           "version": {
@@ -26841,7 +26843,8 @@
             "description": "The type of service to run.",
             "example": "mcp",
             "enum": [
-              "mcp"
+              "mcp",
+              "postgrest"
             ]
           },
           "version": {
@@ -26992,7 +26995,8 @@
             "description": "The type of service to run.",
             "example": "mcp",
             "enum": [
-              "mcp"
+              "mcp",
+              "postgrest"
             ]
           },
           "version": {
@@ -27145,7 +27149,8 @@
             "description": "The type of service to run.",
             "example": "mcp",
             "enum": [
-              "mcp"
+              "mcp",
+              "postgrest"
             ]
           },
           "version": {
@@ -27297,7 +27302,8 @@
             "description": "The type of service to run.",
             "example": "mcp",
             "enum": [
-              "mcp"
+              "mcp",
+              "postgrest"
             ]
           },
           "version": {
@@ -27449,7 +27455,8 @@
             "description": "The type of service to run.",
             "example": "mcp",
             "enum": [
-              "mcp"
+              "mcp",
+              "postgrest"
             ]
           },
           "version": {

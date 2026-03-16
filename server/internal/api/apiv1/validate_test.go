@@ -651,7 +651,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"services[0].service_type: unsupported service type 'unknown'",
+				`services[0].service_type: unsupported service type "unknown"`,
 				"services[0].version: version must be in semver format (e.g., '1.0.0') or 'latest'",
 			},
 		},
@@ -860,7 +860,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Config:      map[string]any{},
 			},
 			expected: []string{
-				"service_type: unsupported service type 'unknown'",
+				`service_type: unsupported service type "unknown"`,
 			},
 		},
 		{
