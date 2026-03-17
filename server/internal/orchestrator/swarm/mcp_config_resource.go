@@ -33,16 +33,16 @@ func MCPConfigResourceIdentifier(serviceInstanceID string) resource.Identifier {
 //   - tokens.yaml: Application-owned, written only on first Create if init_token is set
 //   - users.yaml: Application-owned, written only on first Create if init_users is set
 type MCPConfigResource struct {
-	ServiceInstanceID string                     `json:"service_instance_id"`
-	ServiceID         string                     `json:"service_id"`
-	HostID            string                     `json:"host_id"`
-	DirResourceID     string                     `json:"dir_resource_id"`
-	Config            *database.MCPServiceConfig `json:"config"`
-	DatabaseName      string                     `json:"database_name"`
-	DatabaseHost      string                     `json:"database_host"`
-	DatabasePort      int                        `json:"database_port"`
-	Username          string                     `json:"username"`
-	Password          string                     `json:"password"`
+	ServiceInstanceID  string                      `json:"service_instance_id"`
+	ServiceID          string                      `json:"service_id"`
+	HostID             string                      `json:"host_id"`
+	DirResourceID      string                      `json:"dir_resource_id"`
+	Config             *database.MCPServiceConfig  `json:"config"`
+	DatabaseName       string                      `json:"database_name"`
+	DatabaseHosts      []database.ServiceHostEntry `json:"database_hosts"`
+	TargetSessionAttrs string                      `json:"target_session_attrs"`
+	Username           string                      `json:"username"`
+	Password           string                      `json:"password"`
 }
 
 func (r *MCPConfigResource) ResourceVersion() string {
@@ -171,12 +171,12 @@ func (r *MCPConfigResource) Delete(ctx context.Context, rc *resource.Context) er
 // writeConfigFile generates and writes the config.yaml file.
 func (r *MCPConfigResource) writeConfigFile(fs afero.Fs, dirPath string) error {
 	content, err := GenerateMCPConfig(&MCPConfigParams{
-		Config:       r.Config,
-		DatabaseName: r.DatabaseName,
-		DatabaseHost: r.DatabaseHost,
-		DatabasePort: r.DatabasePort,
-		Username:     r.Username,
-		Password:     r.Password,
+		Config:             r.Config,
+		DatabaseName:       r.DatabaseName,
+		DatabaseHosts:      r.DatabaseHosts,
+		TargetSessionAttrs: r.TargetSessionAttrs,
+		Username:           r.Username,
+		Password:           r.Password,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate MCP config: %w", err)

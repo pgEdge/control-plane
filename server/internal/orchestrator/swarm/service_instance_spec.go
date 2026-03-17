@@ -23,22 +23,22 @@ func ServiceInstanceSpecResourceIdentifier(serviceInstanceID string) resource.Id
 }
 
 type ServiceInstanceSpecResource struct {
-	ServiceInstanceID string                `json:"service_instance_id"`
-	ServiceSpec       *database.ServiceSpec `json:"service_spec"`
-	DatabaseID        string                `json:"database_id"`
-	DatabaseName      string                `json:"database_name"`
-	HostID            string                `json:"host_id"`
-	ServiceName       string                `json:"service_name"`
-	Hostname          string                `json:"hostname"`
-	CohortMemberID    string                `json:"cohort_member_id"`
-	ServiceImage      *ServiceImage         `json:"service_image"`
-	Credentials       *database.ServiceUser `json:"credentials"`
-	DatabaseNetworkID string                `json:"database_network_id"`
-	DatabaseHost      string                `json:"database_host"` // Postgres instance hostname
-	DatabasePort      int                   `json:"database_port"` // Postgres instance port
-	Port              *int                  `json:"port"`          // Service published port (optional, 0 = random)
-	DataDirID         string                `json:"data_dir_id"`   // DirResource ID for the service data directory
-	Spec              swarm.ServiceSpec     `json:"spec"`
+	ServiceInstanceID  string                      `json:"service_instance_id"`
+	ServiceSpec        *database.ServiceSpec       `json:"service_spec"`
+	DatabaseID         string                      `json:"database_id"`
+	DatabaseName       string                      `json:"database_name"`
+	HostID             string                      `json:"host_id"`
+	ServiceName        string                      `json:"service_name"`
+	Hostname           string                      `json:"hostname"`
+	CohortMemberID     string                      `json:"cohort_member_id"`
+	ServiceImage       *ServiceImage               `json:"service_image"`
+	Credentials        *database.ServiceUser       `json:"credentials"`
+	DatabaseNetworkID  string                      `json:"database_network_id"`
+	DatabaseHosts      []database.ServiceHostEntry `json:"database_hosts"`       // Ordered Postgres host:port entries
+	TargetSessionAttrs string                      `json:"target_session_attrs"` // libpq target_session_attrs
+	Port               *int                        `json:"port"`                 // Service published port (optional, 0 = random)
+	DataDirID          string                      `json:"data_dir_id"`          // DirResource ID for the service data directory
+	Spec               swarm.ServiceSpec           `json:"spec"`
 }
 
 func (s *ServiceInstanceSpecResource) ResourceVersion() string {
@@ -114,8 +114,6 @@ func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.
 		ServiceImage:      s.ServiceImage,
 		Credentials:       s.Credentials,
 		DatabaseNetworkID: network.NetworkID,
-		DatabaseHost:      s.DatabaseHost,
-		DatabasePort:      s.DatabasePort,
 		Port:              s.Port,
 		DataPath:          dataPath,
 	})

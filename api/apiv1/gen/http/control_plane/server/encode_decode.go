@@ -4092,6 +4092,29 @@ func unmarshalServiceSpecRequestBodyToControlplaneServiceSpec(v *ServiceSpecRequ
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = unmarshalOrchestratorOptsRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
 	}
+	if v.DatabaseConnection != nil {
+		res.DatabaseConnection = unmarshalDatabaseConnectionRequestBodyToControlplaneDatabaseConnection(v.DatabaseConnection)
+	}
+
+	return res
+}
+
+// unmarshalDatabaseConnectionRequestBodyToControlplaneDatabaseConnection
+// builds a value of type *controlplane.DatabaseConnection from a value of type
+// *DatabaseConnectionRequestBody.
+func unmarshalDatabaseConnectionRequestBodyToControlplaneDatabaseConnection(v *DatabaseConnectionRequestBody) *controlplane.DatabaseConnection {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.DatabaseConnection{
+		TargetSessionAttrs: v.TargetSessionAttrs,
+	}
+	if v.TargetNodes != nil {
+		res.TargetNodes = make([]string, len(v.TargetNodes))
+		for i, val := range v.TargetNodes {
+			res.TargetNodes[i] = val
+		}
+	}
 
 	return res
 }
@@ -4647,6 +4670,29 @@ func marshalControlplaneServiceSpecToServiceSpecResponseBody(v *controlplane.Ser
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = marshalControlplaneOrchestratorOptsToOrchestratorOptsResponseBody(v.OrchestratorOpts)
 	}
+	if v.DatabaseConnection != nil {
+		res.DatabaseConnection = marshalControlplaneDatabaseConnectionToDatabaseConnectionResponseBody(v.DatabaseConnection)
+	}
+
+	return res
+}
+
+// marshalControlplaneDatabaseConnectionToDatabaseConnectionResponseBody builds
+// a value of type *DatabaseConnectionResponseBody from a value of type
+// *controlplane.DatabaseConnection.
+func marshalControlplaneDatabaseConnectionToDatabaseConnectionResponseBody(v *controlplane.DatabaseConnection) *DatabaseConnectionResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &DatabaseConnectionResponseBody{
+		TargetSessionAttrs: v.TargetSessionAttrs,
+	}
+	if v.TargetNodes != nil {
+		res.TargetNodes = make([]string, len(v.TargetNodes))
+		for i, val := range v.TargetNodes {
+			res.TargetNodes[i] = val
+		}
+	}
 
 	return res
 }
@@ -5049,6 +5095,29 @@ func unmarshalServiceSpecRequestBodyRequestBodyToControlplaneServiceSpec(v *Serv
 	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = unmarshalOrchestratorOptsRequestBodyRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
+	}
+	if v.DatabaseConnection != nil {
+		res.DatabaseConnection = unmarshalDatabaseConnectionRequestBodyRequestBodyToControlplaneDatabaseConnection(v.DatabaseConnection)
+	}
+
+	return res
+}
+
+// unmarshalDatabaseConnectionRequestBodyRequestBodyToControlplaneDatabaseConnection
+// builds a value of type *controlplane.DatabaseConnection from a value of type
+// *DatabaseConnectionRequestBodyRequestBody.
+func unmarshalDatabaseConnectionRequestBodyRequestBodyToControlplaneDatabaseConnection(v *DatabaseConnectionRequestBodyRequestBody) *controlplane.DatabaseConnection {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.DatabaseConnection{
+		TargetSessionAttrs: v.TargetSessionAttrs,
+	}
+	if v.TargetNodes != nil {
+		res.TargetNodes = make([]string, len(v.TargetNodes))
+		for i, val := range v.TargetNodes {
+			res.TargetNodes[i] = val
+		}
 	}
 
 	return res

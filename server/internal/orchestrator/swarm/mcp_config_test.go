@@ -1,6 +1,7 @@
 package swarm
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/goccy/go-yaml"
@@ -26,11 +27,10 @@ func TestGenerateMCPConfig_MinimalConfig(t *testing.T) {
 			LLMModel:        "claude-sonnet-4-5",
 			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
 		},
-		DatabaseName: "mydb",
-		DatabaseHost: "db-host",
-		DatabasePort: 5432,
-		Username:     "appuser",
-		Password:     "secret",
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
 	}
 
 	data, err := GenerateMCPConfig(params)
@@ -88,11 +88,10 @@ func TestGenerateMCPConfig_DefaultValues(t *testing.T) {
 			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
 			// LLMTemperature, LLMMaxTokens, PoolMaxConns, AllowWrites all nil
 		},
-		DatabaseName: "mydb",
-		DatabaseHost: "db-host",
-		DatabasePort: 5432,
-		Username:     "appuser",
-		Password:     "secret",
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
 	}
 
 	data, err := GenerateMCPConfig(params)
@@ -135,11 +134,10 @@ func TestGenerateMCPConfig_CustomValues(t *testing.T) {
 			PoolMaxConns:    &poolMax,
 			AllowWrites:     &allowW,
 		},
-		DatabaseName: "mydb",
-		DatabaseHost: "db-host",
-		DatabasePort: 5432,
-		Username:     "appuser",
-		Password:     "secret",
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
 	}
 
 	data, err := GenerateMCPConfig(params)
@@ -174,11 +172,10 @@ func TestGenerateMCPConfig_ProviderKeys_Anthropic(t *testing.T) {
 			LLMModel:        "claude-sonnet-4-5",
 			AnthropicAPIKey: &apiKey,
 		},
-		DatabaseName: "mydb",
-		DatabaseHost: "db-host",
-		DatabasePort: 5432,
-		Username:     "appuser",
-		Password:     "secret",
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
 	}
 
 	data, err := GenerateMCPConfig(params)
@@ -207,11 +204,10 @@ func TestGenerateMCPConfig_ProviderKeys_OpenAI(t *testing.T) {
 			LLMModel:     "gpt-4",
 			OpenAIAPIKey: &apiKey,
 		},
-		DatabaseName: "mydb",
-		DatabaseHost: "db-host",
-		DatabasePort: 5432,
-		Username:     "appuser",
-		Password:     "secret",
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
 	}
 
 	data, err := GenerateMCPConfig(params)
@@ -240,11 +236,10 @@ func TestGenerateMCPConfig_ProviderKeys_Ollama(t *testing.T) {
 			LLMModel:    "llama3",
 			OllamaURL:   &ollamaURL,
 		},
-		DatabaseName: "mydb",
-		DatabaseHost: "db-host",
-		DatabasePort: 5432,
-		Username:     "appuser",
-		Password:     "secret",
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
 	}
 
 	data, err := GenerateMCPConfig(params)
@@ -279,11 +274,10 @@ func TestGenerateMCPConfig_EmbeddingPresent(t *testing.T) {
 			EmbeddingModel:    &embModel,
 			EmbeddingAPIKey:   &embAPIKey,
 		},
-		DatabaseName: "mydb",
-		DatabaseHost: "db-host",
-		DatabasePort: 5432,
-		Username:     "appuser",
-		Password:     "secret",
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
 	}
 
 	data, err := GenerateMCPConfig(params)
@@ -318,11 +312,10 @@ func TestGenerateMCPConfig_EmbeddingAbsent(t *testing.T) {
 			LLMModel:        "claude-sonnet-4-5",
 			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
 		},
-		DatabaseName: "mydb",
-		DatabaseHost: "db-host",
-		DatabasePort: 5432,
-		Username:     "appuser",
-		Password:     "secret",
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
 	}
 
 	data, err := GenerateMCPConfig(params)
@@ -351,11 +344,10 @@ func TestGenerateMCPConfig_EmbeddingOpenAI(t *testing.T) {
 			EmbeddingModel:    &embModel,
 			EmbeddingAPIKey:   &embAPIKey,
 		},
-		DatabaseName: "mydb",
-		DatabaseHost: "db-host",
-		DatabasePort: 5432,
-		Username:     "appuser",
-		Password:     "secret",
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
 	}
 
 	data, err := GenerateMCPConfig(params)
@@ -389,11 +381,10 @@ func TestGenerateMCPConfig_EmbeddingOllama(t *testing.T) {
 			EmbeddingProvider: &embProvider,
 			EmbeddingModel:    &embModel,
 		},
-		DatabaseName: "mydb",
-		DatabaseHost: "db-host",
-		DatabasePort: 5432,
-		Username:     "appuser",
-		Password:     "secret",
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
 	}
 
 	data, err := GenerateMCPConfig(params)
@@ -426,11 +417,10 @@ func TestGenerateMCPConfig_ToolToggles_AllDisabled(t *testing.T) {
 			DisableSearchKnowledgebase: &trueVal,
 			DisableCountRows:           &trueVal,
 		},
-		DatabaseName: "mydb",
-		DatabaseHost: "db-host",
-		DatabasePort: 5432,
-		Username:     "appuser",
-		Password:     "secret",
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
 	}
 
 	data, err := GenerateMCPConfig(params)
@@ -473,11 +463,10 @@ func TestGenerateMCPConfig_ToolToggles_NoneDisabled(t *testing.T) {
 			LLMModel:        "claude-sonnet-4-5",
 			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
 		},
-		DatabaseName: "mydb",
-		DatabaseHost: "db-host",
-		DatabasePort: 5432,
-		Username:     "appuser",
-		Password:     "secret",
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
 	}
 
 	data, err := GenerateMCPConfig(params)
@@ -522,11 +511,10 @@ func TestGenerateMCPConfig_ToolToggles_DisableFalseIsNoop(t *testing.T) {
 			AnthropicAPIKey:      strPtr("sk-ant-api03-test"),
 			DisableQueryDatabase: &falseVal,
 		},
-		DatabaseName: "mydb",
-		DatabaseHost: "db-host",
-		DatabasePort: 5432,
-		Username:     "appuser",
-		Password:     "secret",
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
 	}
 
 	data, err := GenerateMCPConfig(params)
@@ -549,11 +537,10 @@ func TestGenerateMCPConfig_DatabaseConfig(t *testing.T) {
 			LLMModel:        "claude-sonnet-4-5",
 			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
 		},
-		DatabaseName: "myspecialdb",
-		DatabaseHost: "pg-primary.internal",
-		DatabasePort: 5433,
-		Username:     "svc_myspecialdb",
-		Password:     "supersecret",
+		DatabaseName:  "myspecialdb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "pg-primary.internal", Port: 5433}},
+		Username:      "svc_myspecialdb",
+		Password:      "supersecret",
 	}
 
 	data, err := GenerateMCPConfig(params)
@@ -574,11 +561,14 @@ func TestGenerateMCPConfig_DatabaseConfig(t *testing.T) {
 	if db.Database != "myspecialdb" {
 		t.Errorf("databases[0].database = %q, want %q", db.Database, "myspecialdb")
 	}
-	if db.Host != "pg-primary.internal" {
-		t.Errorf("databases[0].host = %q, want %q", db.Host, "pg-primary.internal")
+	if len(db.Hosts) != 1 {
+		t.Fatalf("databases[0].hosts len = %d, want 1", len(db.Hosts))
 	}
-	if db.Port != 5433 {
-		t.Errorf("databases[0].port = %d, want 5433", db.Port)
+	if db.Hosts[0].Host != "pg-primary.internal" {
+		t.Errorf("databases[0].hosts[0].host = %q, want %q", db.Hosts[0].Host, "pg-primary.internal")
+	}
+	if db.Hosts[0].Port != 5433 {
+		t.Errorf("databases[0].hosts[0].port = %d, want 5433", db.Hosts[0].Port)
 	}
 	if db.User != "svc_myspecialdb" {
 		t.Errorf("databases[0].user = %q, want %q", db.User, "svc_myspecialdb")
@@ -589,4 +579,332 @@ func TestGenerateMCPConfig_DatabaseConfig(t *testing.T) {
 	if db.SSLMode != "prefer" {
 		t.Errorf("databases[0].sslmode = %q, want %q", db.SSLMode, "prefer")
 	}
+}
+
+// TestGenerateMCPConfig_MultiHostTopology exercises the full path from
+// service spec → BuildServiceHostList → GenerateMCPConfig → YAML output.
+// It verifies that the generated YAML contains the correct ordered hosts
+// array and target_session_attrs for various topologies.
+func TestGenerateMCPConfig_MultiHostTopology(t *testing.T) {
+	// inst builds a minimal InstanceSpec for testing.
+	inst := func(instanceID, hostID string) *database.InstanceSpec {
+		return &database.InstanceSpec{
+			InstanceID: instanceID,
+			HostID:     hostID,
+		}
+	}
+
+	// baseMCPConfig returns a minimal MCPServiceConfig to avoid nil-pointer
+	// issues in GenerateMCPConfig.
+	baseMCPConfig := func() *database.MCPServiceConfig {
+		return &database.MCPServiceConfig{
+			LLMProvider:     "anthropic",
+			LLMModel:        "claude-sonnet-4-5",
+			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
+		}
+	}
+
+	// assertHostEntries verifies the YAML hosts array matches the expected
+	// host:port pairs in order.
+	assertHostEntries := func(t *testing.T, expected []database.ServiceHostEntry, actual []mcpHostEntry) {
+		t.Helper()
+		if len(actual) != len(expected) {
+			t.Fatalf("hosts length = %d, want %d\n  got:  %v\n  want: %v", len(actual), len(expected), actual, expected)
+		}
+		for i := range expected {
+			if actual[i].Host != expected[i].Host {
+				t.Errorf("hosts[%d].host = %q, want %q", i, actual[i].Host, expected[i].Host)
+			}
+			if actual[i].Port != expected[i].Port {
+				t.Errorf("hosts[%d].port = %d, want %d", i, actual[i].Port, expected[i].Port)
+			}
+		}
+	}
+
+	// he builds the expected ServiceHostEntry for a given instance ID
+	// (mirrors the "postgres-{instanceID}" convention at port 5432).
+	he := func(instanceID string) database.ServiceHostEntry {
+		return database.ServiceHostEntry{
+			Host: fmt.Sprintf("postgres-%s", instanceID),
+			Port: 5432,
+		}
+	}
+
+	t.Run("2-node multi-active service on host-1", func(t *testing.T) {
+		nodeInstances := []*database.NodeInstances{
+			{NodeName: "n1", Instances: []*database.InstanceSpec{inst("inst1", "host-1")}},
+			{NodeName: "n2", Instances: []*database.InstanceSpec{inst("inst2", "host-2")}},
+		}
+
+		targetSessionAttrs := database.TargetSessionAttrsPrimary
+		connInfo, err := database.BuildServiceHostList(&database.BuildServiceHostListParams{
+			ServiceHostID:      "host-1",
+			NodeInstances:      nodeInstances,
+			TargetSessionAttrs: targetSessionAttrs,
+		})
+		if err != nil {
+			t.Fatalf("BuildServiceHostList error: %v", err)
+		}
+
+		data, err := GenerateMCPConfig(&MCPConfigParams{
+			Config:             baseMCPConfig(),
+			DatabaseName:       "mydb",
+			DatabaseHosts:      connInfo.Hosts,
+			TargetSessionAttrs: connInfo.TargetSessionAttrs,
+			Username:           "appuser",
+			Password:           "secret",
+		})
+		if err != nil {
+			t.Fatalf("GenerateMCPConfig error: %v", err)
+		}
+
+		cfg := parseYAML(t, data)
+		if len(cfg.Databases) != 1 {
+			t.Fatalf("databases len = %d, want 1", len(cfg.Databases))
+		}
+		db := cfg.Databases[0]
+
+		// Local node (n1 on host-1) should appear first.
+		assertHostEntries(t, []database.ServiceHostEntry{
+			he("inst1"),
+			he("inst2"),
+		}, db.Hosts)
+
+		// allow_writes: true → target_session_attrs: primary
+		if db.TargetSessionAttrs != database.TargetSessionAttrsPrimary {
+			t.Errorf("target_session_attrs = %q, want %q", db.TargetSessionAttrs, database.TargetSessionAttrsPrimary)
+		}
+	})
+
+	t.Run("HA within node service on replica host", func(t *testing.T) {
+		nodeInstances := []*database.NodeInstances{
+			{
+				NodeName: "n1",
+				Instances: []*database.InstanceSpec{
+					inst("inst1-h1", "host-1"),
+					inst("inst1-h2", "host-2"),
+				},
+			},
+			{NodeName: "n2", Instances: []*database.InstanceSpec{inst("inst2-h3", "host-3")}},
+		}
+
+		targetSessionAttrs := database.TargetSessionAttrsPrimary
+		connInfo, err := database.BuildServiceHostList(&database.BuildServiceHostListParams{
+			ServiceHostID:      "host-2",
+			NodeInstances:      nodeInstances,
+			TargetSessionAttrs: targetSessionAttrs,
+		})
+		if err != nil {
+			t.Fatalf("BuildServiceHostList error: %v", err)
+		}
+
+		data, err := GenerateMCPConfig(&MCPConfigParams{
+			Config:             baseMCPConfig(),
+			DatabaseName:       "mydb",
+			DatabaseHosts:      connInfo.Hosts,
+			TargetSessionAttrs: connInfo.TargetSessionAttrs,
+			Username:           "appuser",
+			Password:           "secret",
+		})
+		if err != nil {
+			t.Fatalf("GenerateMCPConfig error: %v", err)
+		}
+
+		cfg := parseYAML(t, data)
+		db := cfg.Databases[0]
+
+		// Co-located instance (inst1-h2 on host-2) first within n1,
+		// then inst1-h1 (other n1 instance), then n2.
+		assertHostEntries(t, []database.ServiceHostEntry{
+			he("inst1-h2"),
+			he("inst1-h1"),
+			he("inst2-h3"),
+		}, db.Hosts)
+
+		if db.TargetSessionAttrs != database.TargetSessionAttrsPrimary {
+			t.Errorf("target_session_attrs = %q, want %q", db.TargetSessionAttrs, database.TargetSessionAttrsPrimary)
+		}
+	})
+
+	t.Run("target_nodes filter", func(t *testing.T) {
+		targetNodes := []string{"n1", "n2"}
+		nodeInstances := []*database.NodeInstances{
+			{NodeName: "n1", Instances: []*database.InstanceSpec{inst("inst1", "host-1")}},
+			{NodeName: "n2", Instances: []*database.InstanceSpec{inst("inst2", "host-2")}},
+			{NodeName: "n3", Instances: []*database.InstanceSpec{inst("inst3", "host-3")}},
+		}
+
+		targetSessionAttrs := database.TargetSessionAttrsPrimary
+		connInfo, err := database.BuildServiceHostList(&database.BuildServiceHostListParams{
+			ServiceHostID:      "host-1",
+			NodeInstances:      nodeInstances,
+			TargetNodes:        targetNodes,
+			TargetSessionAttrs: targetSessionAttrs,
+		})
+		if err != nil {
+			t.Fatalf("BuildServiceHostList error: %v", err)
+		}
+
+		data, err := GenerateMCPConfig(&MCPConfigParams{
+			Config:             baseMCPConfig(),
+			DatabaseName:       "mydb",
+			DatabaseHosts:      connInfo.Hosts,
+			TargetSessionAttrs: connInfo.TargetSessionAttrs,
+			Username:           "appuser",
+			Password:           "secret",
+		})
+		if err != nil {
+			t.Fatalf("GenerateMCPConfig error: %v", err)
+		}
+
+		cfg := parseYAML(t, data)
+		db := cfg.Databases[0]
+
+		// Only n1 and n2 should be included; n3 excluded.
+		assertHostEntries(t, []database.ServiceHostEntry{
+			he("inst1"),
+			he("inst2"),
+		}, db.Hosts)
+	})
+
+	t.Run("allow_writes true derives primary", func(t *testing.T) {
+		nodeInstances := []*database.NodeInstances{
+			{NodeName: "n1", Instances: []*database.InstanceSpec{inst("inst1", "host-1")}},
+		}
+
+		targetSessionAttrs := database.TargetSessionAttrsPrimary
+		connInfo, err := database.BuildServiceHostList(&database.BuildServiceHostListParams{
+			ServiceHostID:      "host-1",
+			NodeInstances:      nodeInstances,
+			TargetSessionAttrs: targetSessionAttrs,
+		})
+		if err != nil {
+			t.Fatalf("BuildServiceHostList error: %v", err)
+		}
+
+		data, err := GenerateMCPConfig(&MCPConfigParams{
+			Config:             baseMCPConfig(),
+			DatabaseName:       "mydb",
+			DatabaseHosts:      connInfo.Hosts,
+			TargetSessionAttrs: connInfo.TargetSessionAttrs,
+			Username:           "appuser",
+			Password:           "secret",
+		})
+		if err != nil {
+			t.Fatalf("GenerateMCPConfig error: %v", err)
+		}
+
+		cfg := parseYAML(t, data)
+		if cfg.Databases[0].TargetSessionAttrs != database.TargetSessionAttrsPrimary {
+			t.Errorf("target_session_attrs = %q, want %q", cfg.Databases[0].TargetSessionAttrs, database.TargetSessionAttrsPrimary)
+		}
+	})
+
+	t.Run("allow_writes false derives prefer-standby", func(t *testing.T) {
+		nodeInstances := []*database.NodeInstances{
+			{NodeName: "n1", Instances: []*database.InstanceSpec{inst("inst1", "host-1")}},
+		}
+
+		targetSessionAttrs := database.TargetSessionAttrsPreferStandby
+		connInfo, err := database.BuildServiceHostList(&database.BuildServiceHostListParams{
+			ServiceHostID:      "host-1",
+			NodeInstances:      nodeInstances,
+			TargetSessionAttrs: targetSessionAttrs,
+		})
+		if err != nil {
+			t.Fatalf("BuildServiceHostList error: %v", err)
+		}
+
+		data, err := GenerateMCPConfig(&MCPConfigParams{
+			Config:             baseMCPConfig(),
+			DatabaseName:       "mydb",
+			DatabaseHosts:      connInfo.Hosts,
+			TargetSessionAttrs: connInfo.TargetSessionAttrs,
+			Username:           "appuser",
+			Password:           "secret",
+		})
+		if err != nil {
+			t.Fatalf("GenerateMCPConfig error: %v", err)
+		}
+
+		cfg := parseYAML(t, data)
+		if cfg.Databases[0].TargetSessionAttrs != database.TargetSessionAttrsPreferStandby {
+			t.Errorf("target_session_attrs = %q, want %q", cfg.Databases[0].TargetSessionAttrs, database.TargetSessionAttrsPreferStandby)
+		}
+	})
+
+	t.Run("explicit database_connection target_session_attrs overrides derived", func(t *testing.T) {
+		nodeInstances := []*database.NodeInstances{
+			{NodeName: "n1", Instances: []*database.InstanceSpec{inst("inst1", "host-1")}},
+		}
+
+		targetSessionAttrs := database.TargetSessionAttrsReadWrite
+		connInfo, err := database.BuildServiceHostList(&database.BuildServiceHostListParams{
+			ServiceHostID:      "host-1",
+			NodeInstances:      nodeInstances,
+			TargetSessionAttrs: targetSessionAttrs,
+		})
+		if err != nil {
+			t.Fatalf("BuildServiceHostList error: %v", err)
+		}
+
+		data, err := GenerateMCPConfig(&MCPConfigParams{
+			Config:             baseMCPConfig(),
+			DatabaseName:       "mydb",
+			DatabaseHosts:      connInfo.Hosts,
+			TargetSessionAttrs: connInfo.TargetSessionAttrs,
+			Username:           "appuser",
+			Password:           "secret",
+		})
+		if err != nil {
+			t.Fatalf("GenerateMCPConfig error: %v", err)
+		}
+
+		cfg := parseYAML(t, data)
+		// Explicit "read-write" should override the allow_writes→"primary" default.
+		if cfg.Databases[0].TargetSessionAttrs != database.TargetSessionAttrsReadWrite {
+			t.Errorf("target_session_attrs = %q, want %q", cfg.Databases[0].TargetSessionAttrs, database.TargetSessionAttrsReadWrite)
+		}
+	})
+
+	t.Run("single node single host", func(t *testing.T) {
+		nodeInstances := []*database.NodeInstances{
+			{NodeName: "n1", Instances: []*database.InstanceSpec{inst("only-inst", "host-1")}},
+		}
+
+		targetSessionAttrs := database.TargetSessionAttrsPreferStandby
+		connInfo, err := database.BuildServiceHostList(&database.BuildServiceHostListParams{
+			ServiceHostID:      "host-1",
+			NodeInstances:      nodeInstances,
+			TargetSessionAttrs: targetSessionAttrs,
+		})
+		if err != nil {
+			t.Fatalf("BuildServiceHostList error: %v", err)
+		}
+
+		data, err := GenerateMCPConfig(&MCPConfigParams{
+			Config:             baseMCPConfig(),
+			DatabaseName:       "mydb",
+			DatabaseHosts:      connInfo.Hosts,
+			TargetSessionAttrs: connInfo.TargetSessionAttrs,
+			Username:           "appuser",
+			Password:           "secret",
+		})
+		if err != nil {
+			t.Fatalf("GenerateMCPConfig error: %v", err)
+		}
+
+		cfg := parseYAML(t, data)
+		db := cfg.Databases[0]
+
+		// Single host in structured format (not legacy host/port).
+		assertHostEntries(t, []database.ServiceHostEntry{
+			he("only-inst"),
+		}, db.Hosts)
+
+		// No allow_writes set → prefer-standby
+		if db.TargetSessionAttrs != database.TargetSessionAttrsPreferStandby {
+			t.Errorf("target_session_attrs = %q, want %q", db.TargetSessionAttrs, database.TargetSessionAttrsPreferStandby)
+		}
+	})
 }
