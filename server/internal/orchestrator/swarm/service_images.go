@@ -50,16 +50,16 @@ func NewServiceVersions(cfg config.Config) *ServiceVersions {
 	})
 
 	// PostgREST service versions.
-	// PostgREST images are published on Docker Hub under docker.io/postgrest/postgrest.
-	// The docker.io/ prefix ensures serviceImageTag treats the ref as a fully-qualified
-	// registry reference and does not prepend the configured ImageRepositoryHost.
+	// Images are published to the pgEdge registry under ghcr.io/pgedge/postgrest.
+	// The bare ref (no registry prefix) lets serviceImageTag prepend the
+	// configured ImageRepositoryHost (e.g. ghcr.io/pgedge).
 	versions.addServiceImage("postgrest", "latest", &ServiceImage{
-		Tag: "docker.io/postgrest/postgrest:latest",
+		Tag: serviceImageTag(cfg, "postgrest:latest"),
 		// No constraints — PostgREST v14+ requires Postgres >= 13; the CP only
 		// supports Postgres 16+, so no explicit constraint is needed here.
 	})
 	versions.addServiceImage("postgrest", "v14.5", &ServiceImage{
-		Tag: "docker.io/postgrest/postgrest:v14.5",
+		Tag: serviceImageTag(cfg, "postgrest:v14.5"),
 		// No constraints — see above.
 	})
 

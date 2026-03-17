@@ -104,16 +104,17 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 			continue
 		}
 		cfg, parseErrs := database.ParsePostgRESTServiceConfig(svc.Config)
-		if len(parseErrs) == 0 {
-			preflightInput := &activities.ValidatePostgRESTPrereqsInput{
-				DatabaseID:   input.Spec.DatabaseID,
-				DatabaseName: input.Spec.DatabaseName,
-				DBSchemas:    cfg.DBSchemas,
-				DBAnonymRole: cfg.DBAnonRole,
-			}
-			if _, err := w.Activities.ExecuteValidatePostgRESTPrereqs(ctx, preflightInput).Get(ctx); err != nil {
-				return nil, handleError(fmt.Errorf("PostgREST preflight failed: %w", err))
-			}
+		if len(parseErrs) > 0 {
+			return nil, handleError(fmt.Errorf("invalid PostgREST config: %w", errors.Join(parseErrs...)))
+		}
+		preflightInput := &activities.ValidatePostgRESTPrereqsInput{
+			DatabaseID:   input.Spec.DatabaseID,
+			DatabaseName: input.Spec.DatabaseName,
+			DBSchemas:    cfg.DBSchemas,
+			DBAnonymRole: cfg.DBAnonRole,
+		}
+		if _, err := w.Activities.ExecuteValidatePostgRESTPrereqs(ctx, preflightInput).Get(ctx); err != nil {
+			return nil, handleError(fmt.Errorf("PostgREST preflight failed: %w", err))
 		}
 	}
 

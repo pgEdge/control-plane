@@ -133,10 +133,14 @@ func (a *Activities) postgrestConnectToPrimary(
 
 	// Find the current primary via Patroni.
 	var primaryInstanceID string
+	var fallbackInstanceID string
 	for _, inst := range db.Instances {
 		connInfo, err := a.DatabaseService.GetInstanceConnectionInfo(ctx, databaseID, inst.InstanceID)
 		if err != nil {
 			continue
+		}
+		if fallbackInstanceID == "" {
+			fallbackInstanceID = inst.InstanceID
 		}
 		patroniClient := patroni.NewClient(connInfo.PatroniURL(), nil)
 		primaryID, err := database.GetPrimaryInstanceID(ctx, patroniClient, 10*time.Second)
@@ -146,8 +150,11 @@ func (a *Activities) postgrestConnectToPrimary(
 		}
 	}
 	if primaryInstanceID == "" {
-		// Fall back to the first instance if Patroni is not available.
-		primaryInstanceID = db.Instances[0].InstanceID
+		if fallbackInstanceID == "" {
+			return nil, fmt.Errorf("failed to resolve connection info for any instance")
+		}
+		// The prereq queries are read-only, so any reachable instance is sufficient.
+		primaryInstanceID = fallbackInstanceID
 	}
 
 	connInfo, err := a.DatabaseService.GetInstanceConnectionInfo(ctx, databaseID, primaryInstanceID)
