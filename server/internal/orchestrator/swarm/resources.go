@@ -22,4 +22,5 @@ func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*ScaleService](registry, ResourceTypeScaleService)
 	resource.RegisterResourceType[*MCPConfigResource](registry, ResourceTypeMCPConfig)
 	resource.RegisterResourceType[*RAGServiceUserRole](registry, ResourceTypeRAGServiceUserRole)
+	resource.RegisterResourceType[*RAGServiceKeysResource](registry, ResourceTypeRAGServiceKeys)
 }
