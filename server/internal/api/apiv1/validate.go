@@ -249,9 +249,11 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool) []e
 	serviceIDPath := appendPath(path, "service_id")
 	errs = append(errs, validateIdentifier(string(svc.ServiceID), serviceIDPath))
 
-	// Validate service_type (must be "mcp" for now)
-	if svc.ServiceType != "mcp" {
-		err := fmt.Errorf("unsupported service type '%s' (only 'mcp' is currently supported)", svc.ServiceType)
+	// Validate service_type allowlist
+	supportedServiceTypes := []string{"mcp", "postgrest"}
+	if !slices.Contains(supportedServiceTypes, svc.ServiceType) {
+		err := fmt.Errorf("unsupported service type %q (supported: %s)",
+			svc.ServiceType, strings.Join(supportedServiceTypes, ", "))
 		errs = append(errs, newValidationError(err, appendPath(path, "service_type")))
 	}
 
@@ -278,8 +280,11 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool) []e
 	}
 
 	// Validate config based on service_type
-	if svc.ServiceType == "mcp" {
+	switch svc.ServiceType {
+	case "mcp":
 		errs = append(errs, validateMCPServiceConfig(svc.Config, appendPath(path, "config"), isUpdate)...)
+	case "postgrest":
+		errs = append(errs, validatePostgRESTServiceConfig(svc.Config, appendPath(path, "config"))...)
 	}
 
 	// Validate cpus if provided
@@ -300,6 +305,15 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool) []e
 
 func validateMCPServiceConfig(config map[string]any, path []string, isUpdate bool) []error {
 	_, errs := database.ParseMCPServiceConfig(config, isUpdate)
+	var result []error
+	for _, err := range errs {
+		result = append(result, newValidationError(err, path))
+	}
+	return result
+}
+
+func validatePostgRESTServiceConfig(config map[string]any, path []string) []error {
+	_, errs := database.ParsePostgRESTServiceConfig(config)
 	var result []error
 	for _, err := range errs {
 		result = append(result, newValidationError(err, path))

@@ -651,7 +651,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"services[0].service_type: unsupported service type 'unknown'",
+				`services[0].service_type: unsupported service type "unknown"`,
 				"services[0].version: version must be in semver format (e.g., '1.0.0') or 'latest'",
 			},
 		},
@@ -860,7 +860,79 @@ func TestValidateServiceSpec(t *testing.T) {
 				Config:      map[string]any{},
 			},
 			expected: []string{
-				"service_type: unsupported service type 'unknown'",
+				`service_type: unsupported service type "unknown"`,
+			},
+		},
+		{
+			name: "valid postgrest with defaults",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-postgrest",
+				ServiceType: "postgrest",
+				Version:     "latest",
+				HostIds:     []api.Identifier{"host-1"},
+				Config:      map[string]any{},
+			},
+			expected: []string{},
+		},
+		{
+			name: "valid postgrest with all config fields",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-postgrest",
+				ServiceType: "postgrest",
+				Version:     "latest",
+				HostIds:     []api.Identifier{"host-1"},
+				Config: map[string]any{
+					"db_schemas":   "api",
+					"db_anon_role": "web_anon",
+					"db_pool":      float64(5),
+					"max_rows":     float64(500),
+				},
+			},
+			expected: []string{},
+		},
+		{
+			name: "postgrest invalid db_pool range",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-postgrest",
+				ServiceType: "postgrest",
+				Version:     "latest",
+				HostIds:     []api.Identifier{"host-1"},
+				Config: map[string]any{
+					"db_pool": float64(99),
+				},
+			},
+			expected: []string{
+				"config: db_pool must be between 1 and 30",
+			},
+		},
+		{
+			name: "postgrest unknown config key",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-postgrest",
+				ServiceType: "postgrest",
+				Version:     "latest",
+				HostIds:     []api.Identifier{"host-1"},
+				Config: map[string]any{
+					"invalid_key": "value",
+				},
+			},
+			expected: []string{
+				`config: unknown config key "invalid_key"`,
+			},
+		},
+		{
+			name: "postgrest jwt_secret too short",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-postgrest",
+				ServiceType: "postgrest",
+				Version:     "latest",
+				HostIds:     []api.Identifier{"host-1"},
+				Config: map[string]any{
+					"jwt_secret": "tooshort",
+				},
+			},
+			expected: []string{
+				"config: jwt_secret must be at least 32 characters",
 			},
 		},
 		{

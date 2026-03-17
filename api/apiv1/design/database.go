@@ -138,7 +138,7 @@ var ServiceSpec = g.Type("ServiceSpec", func() {
 	})
 	g.Attribute("service_type", g.String, func() {
 		g.Description("The type of service to run.")
-		g.Enum("mcp")
+		g.Enum("mcp", "postgrest")
 		g.Example("mcp")
 		g.Meta("struct:tag:json", "service_type")
 	})
