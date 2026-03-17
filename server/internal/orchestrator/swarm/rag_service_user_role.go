@@ -118,7 +118,7 @@ func (r *RAGServiceUserRole) Create(ctx context.Context, rc *resource.Context) e
 		Logger()
 	logger.Info().Msg("creating RAG service user role")
 
-	r.Username = database.GenerateServiceUsername(r.ServiceInstanceID)
+	r.Username = database.GenerateServiceUsername(r.ServiceInstanceID, "ro")
 	password, err := utils.RandomString(32)
 	if err != nil {
 		return fmt.Errorf("failed to generate password: %w", err)
@@ -143,8 +143,6 @@ func (r *RAGServiceUserRole) createRole(ctx context.Context, rc *resource.Contex
 	statements, err := postgres.CreateUserRole(postgres.UserRoleOptions{
 		Name:       r.Username,
 		Password:   r.Password,
-		DBName:     r.DatabaseName,
-		DBOwner:    false,
 		Attributes: []string{"LOGIN"},
 		Roles:      []string{"pgedge_application_read_only"},
 	})

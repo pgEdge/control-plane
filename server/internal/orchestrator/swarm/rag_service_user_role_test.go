@@ -1,21 +1,92 @@
 package swarm
 
 import (
-	"strings"
+	"context"
 	"testing"
 
-	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
-	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
-// newTestOrchestrator returns an Orchestrator with serviceVersions initialised
-// from a minimal config, suitable for unit tests that call generateRAGInstanceResources.
-func newTestOrchestrator() *Orchestrator {
-	return &Orchestrator{
-		serviceVersions: NewServiceVersions(config.Config{}),
+func TestRAGServiceUserRole_ResourceVersion(t *testing.T) {
+	r := &RAGServiceUserRole{}
+	if got := r.ResourceVersion(); got != "1" {
+		t.Errorf("ResourceVersion() = %q, want %q", got, "1")
+	}
+}
+
+func TestRAGServiceUserRole_Identifier(t *testing.T) {
+	r := &RAGServiceUserRole{ServiceInstanceID: "db1-rag-host1"}
+	id := r.Identifier()
+	if id.ID != "db1-rag-host1" {
+		t.Errorf("Identifier().ID = %q, want %q", id.ID, "db1-rag-host1")
+	}
+	if id.Type != ResourceTypeRAGServiceUserRole {
+		t.Errorf("Identifier().Type = %q, want %q", id.Type, ResourceTypeRAGServiceUserRole)
+	}
+}
+
+func TestRAGServiceUserRole_Executor(t *testing.T) {
+	r := &RAGServiceUserRole{NodeName: "n1"}
+	exec := r.Executor()
+	if exec != resource.PrimaryExecutor("n1") {
+		t.Errorf("Executor() = %v, want PrimaryExecutor(%q)", exec, "n1")
+	}
+}
+
+func TestRAGServiceUserRole_DiffIgnore(t *testing.T) {
+	r := &RAGServiceUserRole{}
+	ignored := r.DiffIgnore()
+	want := map[string]bool{
+		"/node_name": true,
+		"/username":  true,
+		"/password":  true,
+	}
+	if len(ignored) != len(want) {
+		t.Errorf("DiffIgnore() length = %d, want %d", len(ignored), len(want))
+	}
+	for _, path := range ignored {
+		if !want[path] {
+			t.Errorf("unexpected path in DiffIgnore(): %q", path)
+		}
+	}
+}
+
+func TestRAGServiceUserRole_RefreshEmptyCredentials(t *testing.T) {
+	tests := []struct {
+		name     string
+		username string
+		password string
+	}{
+		{"empty username", "", "somepassword"},
+		{"empty password", "svc_inst", ""},
+		{"both empty", "", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &RAGServiceUserRole{
+				ServiceInstanceID: "inst1",
+				Username:          tt.username,
+				Password:          tt.password,
+			}
+			// Refresh with nil rc — the empty-credential guard fires before any
+			// injection call, so no injector is needed.
+			err := r.Refresh(context.Background(), nil)
+			if err != resource.ErrNotFound {
+				t.Errorf("Refresh() = %v, want ErrNotFound", err)
+			}
+		})
+	}
+}
+
+func TestRAGServiceUserRoleIdentifier(t *testing.T) {
+	id := RAGServiceUserRoleIdentifier("my-instance")
+	if id.ID != "my-instance" {
+		t.Errorf("ID = %q, want %q", id.ID, "my-instance")
+	}
+	if id.Type != ResourceTypeRAGServiceUserRole {
+		t.Errorf("Type = %q, want %q", id.Type, ResourceTypeRAGServiceUserRole)
 	}
 }
 
@@ -48,7 +119,7 @@ func minimalRAGConfig() map[string]any {
 }
 
 func TestGenerateRAGInstanceResources_ResourceList(t *testing.T) {
-	o := newTestOrchestrator()
+	o := &Orchestrator{}
 	spec := &database.ServiceInstanceSpec{
 		ServiceInstanceID: "storefront-rag-host1",
 		ServiceSpec: &database.ServiceSpec{
@@ -84,46 +155,30 @@ func TestGenerateRAGInstanceResources_ResourceList(t *testing.T) {
 			result.ServiceInstance.State, database.ServiceInstanceStateCreating)
 	}
 
-	// Single node: Network + canonical RO + DirResource + Keys + Config + InstanceSpec + ServiceInstance = 7.
-	if len(result.Resources) != 7 {
-		t.Fatalf("len(Resources) = %d, want 7", len(result.Resources))
+	// Single node: canonical RO ServiceUserRole + data DirResource + RAGServiceKeysResource.
+	if len(result.Resources) != 3 {
+		t.Fatalf("len(Resources) = %d, want 3", len(result.Resources))
 	}
-	if result.Resources[0].Identifier.Type != ResourceTypeNetwork {
+	if result.Resources[0].Identifier.Type != ResourceTypeServiceUserRole {
 		t.Errorf("Resources[0].Identifier.Type = %q, want %q",
-			result.Resources[0].Identifier.Type, ResourceTypeNetwork)
-	}
-	if result.Resources[1].Identifier.Type != ResourceTypeServiceUserRole {
-		t.Errorf("Resources[1].Identifier.Type = %q, want %q",
-			result.Resources[1].Identifier.Type, ResourceTypeServiceUserRole)
+			result.Resources[0].Identifier.Type, ResourceTypeServiceUserRole)
 	}
 	wantID := ServiceUserRoleIdentifier("rag", ServiceUserRoleRO)
-	if result.Resources[1].Identifier != wantID {
-		t.Errorf("Resources[1].Identifier = %v, want %v", result.Resources[1].Identifier, wantID)
+	if result.Resources[0].Identifier != wantID {
+		t.Errorf("Resources[0].Identifier = %v, want %v", result.Resources[0].Identifier, wantID)
 	}
-	if result.Resources[2].Identifier.Type != filesystem.ResourceTypeDir {
+	if result.Resources[1].Identifier.Type != filesystem.ResourceTypeDir {
+		t.Errorf("Resources[1].Identifier.Type = %q, want %q",
+			result.Resources[1].Identifier.Type, filesystem.ResourceTypeDir)
+	}
+	if result.Resources[2].Identifier.Type != ResourceTypeRAGServiceKeys {
 		t.Errorf("Resources[2].Identifier.Type = %q, want %q",
-			result.Resources[2].Identifier.Type, filesystem.ResourceTypeDir)
-	}
-	if result.Resources[3].Identifier.Type != ResourceTypeRAGServiceKeys {
-		t.Errorf("Resources[3].Identifier.Type = %q, want %q",
-			result.Resources[3].Identifier.Type, ResourceTypeRAGServiceKeys)
-	}
-	if result.Resources[4].Identifier.Type != ResourceTypeRAGConfig {
-		t.Errorf("Resources[4].Identifier.Type = %q, want %q",
-			result.Resources[4].Identifier.Type, ResourceTypeRAGConfig)
-	}
-	if result.Resources[5].Identifier.Type != ResourceTypeServiceInstanceSpec {
-		t.Errorf("Resources[5].Identifier.Type = %q, want %q",
-			result.Resources[5].Identifier.Type, ResourceTypeServiceInstanceSpec)
-	}
-	if result.Resources[6].Identifier.Type != ResourceTypeServiceInstance {
-		t.Errorf("Resources[6].Identifier.Type = %q, want %q",
-			result.Resources[6].Identifier.Type, ResourceTypeServiceInstance)
+			result.Resources[2].Identifier.Type, ResourceTypeRAGServiceKeys)
 	}
 }
 
 func TestGenerateRAGInstanceResources_MultiNode(t *testing.T) {
-	o := newTestOrchestrator()
+	o := &Orchestrator{}
 	spec := &database.ServiceInstanceSpec{
 		ServiceInstanceID: "storefront-rag-host1",
 		ServiceSpec: &database.ServiceSpec{
@@ -148,19 +203,19 @@ func TestGenerateRAGInstanceResources_MultiNode(t *testing.T) {
 		t.Fatalf("generateRAGInstanceResources() error = %v", err)
 	}
 
-	// 3 nodes → Network + canonical(n1) + per-node(n2) + per-node(n3) + dir + keys + config + spec + instance = 9.
-	if len(result.Resources) != 9 {
-		t.Fatalf("len(Resources) = %d, want 9", len(result.Resources))
+	// 3 nodes → canonical(n1) + per-node(n2) + per-node(n3) + data dir + keys = 5 resources.
+	if len(result.Resources) != 5 {
+		t.Fatalf("len(Resources) = %d, want 5", len(result.Resources))
 	}
-	// Resources[0] is Network; Resources[1..3] are ServiceUserRole resources.
-	for i := 1; i < 4; i++ {
+	// First three must be ServiceUserRole resources.
+	for i := 0; i < 3; i++ {
 		if result.Resources[i].Identifier.Type != ResourceTypeServiceUserRole {
 			t.Errorf("resource[%d] type = %q, want %q", i, result.Resources[i].Identifier.Type, ResourceTypeServiceUserRole)
 		}
 	}
 
-	// Canonical is index 1 and has no CredentialSource
-	canonical, err := resource.ToResource[*ServiceUserRole](result.Resources[1])
+	// Canonical is first and has no CredentialSource
+	canonical, err := resource.ToResource[*ServiceUserRole](result.Resources[0])
 	if err != nil {
 		t.Fatalf("ToResource canonical: %v", err)
 	}
@@ -173,7 +228,7 @@ func TestGenerateRAGInstanceResources_MultiNode(t *testing.T) {
 
 	// Per-node resources point back to canonical
 	canonicalID := ServiceUserRoleIdentifier("rag", ServiceUserRoleRO)
-	for i, rd := range result.Resources[2:4] {
+	for i, rd := range result.Resources[1:3] {
 		perNode, err := resource.ToResource[*ServiceUserRole](rd)
 		if err != nil {
 			t.Fatalf("ToResource per-node[%d]: %v", i, err)
@@ -186,31 +241,19 @@ func TestGenerateRAGInstanceResources_MultiNode(t *testing.T) {
 		}
 	}
 
-	// Dir, keys, config, spec, and instance are appended last.
-	if result.Resources[4].Identifier.Type != filesystem.ResourceTypeDir {
+	// Data dir and keys resource are appended last.
+	if result.Resources[3].Identifier.Type != filesystem.ResourceTypeDir {
+		t.Errorf("Resources[3].Identifier.Type = %q, want %q",
+			result.Resources[3].Identifier.Type, filesystem.ResourceTypeDir)
+	}
+	if result.Resources[4].Identifier.Type != ResourceTypeRAGServiceKeys {
 		t.Errorf("Resources[4].Identifier.Type = %q, want %q",
-			result.Resources[4].Identifier.Type, filesystem.ResourceTypeDir)
-	}
-	if result.Resources[5].Identifier.Type != ResourceTypeRAGServiceKeys {
-		t.Errorf("Resources[5].Identifier.Type = %q, want %q",
-			result.Resources[5].Identifier.Type, ResourceTypeRAGServiceKeys)
-	}
-	if result.Resources[6].Identifier.Type != ResourceTypeRAGConfig {
-		t.Errorf("Resources[6].Identifier.Type = %q, want %q",
-			result.Resources[6].Identifier.Type, ResourceTypeRAGConfig)
-	}
-	if result.Resources[7].Identifier.Type != ResourceTypeServiceInstanceSpec {
-		t.Errorf("Resources[7].Identifier.Type = %q, want %q",
-			result.Resources[7].Identifier.Type, ResourceTypeServiceInstanceSpec)
-	}
-	if result.Resources[8].Identifier.Type != ResourceTypeServiceInstance {
-		t.Errorf("Resources[8].Identifier.Type = %q, want %q",
-			result.Resources[8].Identifier.Type, ResourceTypeServiceInstance)
+			result.Resources[4].Identifier.Type, ResourceTypeRAGServiceKeys)
 	}
 }
 
 func TestGenerateRAGInstanceResources_MultiNode_CanonicalNotFirst(t *testing.T) {
-	o := newTestOrchestrator()
+	o := &Orchestrator{}
 	spec := &database.ServiceInstanceSpec{
 		ServiceInstanceID: "storefront-rag-host2",
 		ServiceSpec: &database.ServiceSpec{
@@ -235,13 +278,13 @@ func TestGenerateRAGInstanceResources_MultiNode_CanonicalNotFirst(t *testing.T) 
 		t.Fatalf("generateRAGInstanceResources() error = %v", err)
 	}
 
-	// 3 nodes → Network + canonical(n2) + per-node(n1) + per-node(n3) + dir + keys + config + spec + instance = 9.
-	if len(result.Resources) != 9 {
-		t.Fatalf("len(Resources) = %d, want 9", len(result.Resources))
+	// 3 nodes → canonical(n2) + per-node(n1) + per-node(n3) + data dir + keys = 5 resources.
+	if len(result.Resources) != 5 {
+		t.Fatalf("len(Resources) = %d, want 5", len(result.Resources))
 	}
 
-	// Canonical (index 1, after Network) must be n2 with no CredentialSource
-	canonical, err := resource.ToResource[*ServiceUserRole](result.Resources[1])
+	// Canonical (index 0) must be n2 with no CredentialSource
+	canonical, err := resource.ToResource[*ServiceUserRole](result.Resources[0])
 	if err != nil {
 		t.Fatalf("ToResource canonical: %v", err)
 	}
@@ -255,7 +298,7 @@ func TestGenerateRAGInstanceResources_MultiNode_CanonicalNotFirst(t *testing.T) 
 	// Per-node resources must cover n1 and n3, not n2
 	canonicalID := ServiceUserRoleIdentifier("rag", ServiceUserRoleRO)
 	perNodeNames := make(map[string]bool)
-	for i, rd := range result.Resources[2:4] {
+	for i, rd := range result.Resources[1:3] {
 		perNode, err := resource.ToResource[*ServiceUserRole](rd)
 		if err != nil {
 			t.Fatalf("ToResource per-node[%d]: %v", i, err)
@@ -274,7 +317,7 @@ func TestGenerateRAGInstanceResources_MultiNode_CanonicalNotFirst(t *testing.T) 
 }
 
 func TestGenerateServiceInstanceResources_RAGDispatch(t *testing.T) {
-	o := newTestOrchestrator()
+	o := &Orchestrator{}
 	spec := &database.ServiceInstanceSpec{
 		ServiceInstanceID: "db1-rag-host1",
 		ServiceSpec: &database.ServiceSpec{
@@ -299,7 +342,7 @@ func TestGenerateServiceInstanceResources_RAGDispatch(t *testing.T) {
 }
 
 func TestGenerateServiceInstanceResources_UnknownTypeReturnsError(t *testing.T) {
-	o := newTestOrchestrator()
+	o := &Orchestrator{}
 	spec := &database.ServiceInstanceSpec{
 		ServiceInstanceID: "db1-unknown-host1",
 		ServiceSpec: &database.ServiceSpec{
@@ -316,39 +359,5 @@ func TestGenerateServiceInstanceResources_UnknownTypeReturnsError(t *testing.T) 
 	_, err := o.GenerateServiceInstanceResources(spec)
 	if err == nil {
 		t.Fatal("expected error for unknown service type, got nil")
-	}
-}
-
-func TestGenerateRAGInstanceResources_IncompatibleVersion(t *testing.T) {
-	o := newTestOrchestrator()
-	// Override the "rag/latest" image with a constraint requiring PG >= 18.
-	o.serviceVersions.addServiceImage("rag", "latest", &ServiceImage{
-		Tag: "rag-server:latest",
-		PostgresConstraint: &ds.VersionConstraint{
-			Min: ds.MustParseVersion("18"),
-		},
-	})
-
-	spec := &database.ServiceInstanceSpec{
-		ServiceInstanceID: "db1-rag-host1",
-		ServiceSpec: &database.ServiceSpec{
-			ServiceID:   "rag",
-			ServiceType: "rag",
-			Version:     "latest",
-			Config:      minimalRAGConfig(),
-		},
-		DatabaseID:    "db1",
-		DatabaseName:  "db1",
-		HostID:        "host-1",
-		NodeName:      "n1",
-		PgEdgeVersion: ds.MustPgEdgeVersion("17", "5.0.0"),
-	}
-
-	_, err := o.generateRAGInstanceResources(spec)
-	if err == nil {
-		t.Fatal("expected compatibility error, got nil")
-	}
-	if !strings.Contains(err.Error(), "not compatible") {
-		t.Errorf("error = %q, want it to contain %q", err.Error(), "not compatible")
 	}
 }

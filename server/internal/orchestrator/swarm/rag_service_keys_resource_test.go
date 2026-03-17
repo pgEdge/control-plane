@@ -2,61 +2,12 @@ package swarm
 
 import (
 	"context"
-	"errors"
-	"path/filepath"
 	"testing"
-
-	"github.com/samber/do"
-	"github.com/spf13/afero"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
-
-// ragKeysRCAndFs returns a resource.Context backed by an in-memory afero.Fs
-// with the given parent directory pre-created, alongside the Fs itself so
-// callers can inspect written files without touching the real filesystem.
-func ragKeysRCAndFs(t *testing.T, parentID, parentFullPath string) (*resource.Context, afero.Fs) {
-	t.Helper()
-	fs := afero.NewMemMapFs()
-	_ = fs.MkdirAll(parentFullPath, 0o700)
-
-	injector := do.New()
-	do.Provide(injector, func(i *do.Injector) (afero.Fs, error) {
-		return fs, nil
-	})
-
-	parentDir := &filesystem.DirResource{
-		ID:       parentID,
-		HostID:   "host-1",
-		Path:     parentFullPath,
-		FullPath: parentFullPath,
-	}
-	data, err := resource.ToResourceData(parentDir)
-	if err != nil {
-		t.Fatalf("ToResourceData() error = %v", err)
-	}
-	state := resource.NewState()
-	state.Add(data)
-	return &resource.Context{State: state, Injector: injector}, fs
-}
-
-// ragKeysRC returns a resource.Context for tests that only need rc (no file assertions).
-func ragKeysRC(t *testing.T, parentID, parentFullPath string) *resource.Context {
-	t.Helper()
-	rc, _ := ragKeysRCAndFs(t, parentID, parentFullPath)
-	return rc
-}
-
-// ragKeysRCWithTempDir returns a resource.Context, its backing afero.Fs, and
-// a stable parent path for use in tests that create and inspect key files.
-func ragKeysRCWithTempDir(t *testing.T, parentID string) (*resource.Context, afero.Fs, string) {
-	t.Helper()
-	parentPath := "/tmp/rag-test-" + t.Name() + "-" + parentID
-	rc, fs := ragKeysRCAndFs(t, parentID, parentPath)
-	return rc, fs, parentPath
-}
 
 func TestRAGServiceKeysResource_ResourceVersion(t *testing.T) {
 	r := &RAGServiceKeysResource{}
@@ -100,6 +51,33 @@ func TestRAGServiceKeysResource_Dependencies(t *testing.T) {
 	want := filesystem.DirResourceIdentifier("storefront-rag-host1-data")
 	if deps[0] != want {
 		t.Errorf("Dependencies()[0] = %v, want %v", deps[0], want)
+	}
+}
+
+// ragKeysRC returns a resource.Context containing a DirResource with the given full path.
+func ragKeysRC(t *testing.T, parentID, parentFullPath string) *resource.Context {
+	t.Helper()
+	parentDir := &filesystem.DirResource{
+		ID:       parentID,
+		HostID:   "host-1",
+		Path:     parentFullPath,
+		FullPath: parentFullPath,
+	}
+	data, err := resource.ToResourceData(parentDir)
+	if err != nil {
+		t.Fatalf("ToResourceData() error = %v", err)
+	}
+	state := resource.NewState()
+	state.Add(data)
+	return &resource.Context{State: state}
+}
+
+func TestRAGServiceKeysResource_RefreshMissingParentID(t *testing.T) {
+	r := &RAGServiceKeysResource{ServiceInstanceID: "inst1"}
+	// rc with an empty State — parent dir not found → ErrNotFound.
+	err := r.Refresh(context.Background(), &resource.Context{State: resource.NewState()})
+	if err != resource.ErrNotFound {
+		t.Errorf("Refresh() = %v, want ErrNotFound", err)
 	}
 }
 
@@ -234,7 +212,7 @@ func TestExtractRAGAPIKeys_MultiPipeline(t *testing.T) {
 }
 
 func TestGenerateRAGInstanceResources_IncludesKeysResource(t *testing.T) {
-	o := newTestOrchestrator()
+	o := &Orchestrator{}
 	spec := &database.ServiceInstanceSpec{
 		ServiceInstanceID: "storefront-rag-host1",
 		ServiceSpec: &database.ServiceSpec{
@@ -286,202 +264,5 @@ func TestGenerateRAGInstanceResources_IncludesKeysResource(t *testing.T) {
 	}
 	if !foundKeys {
 		t.Errorf("expected ResourceTypeRAGServiceKeys in resources, not found")
-	}
-}
-
-func TestRAGServiceKeysResource_Create(t *testing.T) {
-	parentID := "inst1-data"
-	rc, fs, parentPath := ragKeysRCWithTempDir(t, parentID)
-
-	r := &RAGServiceKeysResource{
-		ServiceInstanceID: "inst1",
-		HostID:            "host-1",
-		ParentID:          parentID,
-		Keys: map[string]string{
-			"default_embedding.key": "sk-embed",
-			"default_rag.key":       "sk-rag",
-		},
-	}
-
-	if err := r.Create(context.Background(), rc); err != nil {
-		t.Fatalf("Create() error = %v", err)
-	}
-
-	keysDir := filepath.Join(parentPath, "keys")
-	for name, want := range r.Keys {
-		got, err := afero.ReadFile(fs, filepath.Join(keysDir, name))
-		if err != nil {
-			t.Errorf("ReadFile(%q) error = %v", name, err)
-			continue
-		}
-		if string(got) != want {
-			t.Errorf("key file %q = %q, want %q", name, string(got), want)
-		}
-		info, err := fs.Stat(filepath.Join(keysDir, name))
-		if err != nil {
-			t.Errorf("Stat(%q) error = %v", name, err)
-			continue
-		}
-		if perm := info.Mode().Perm(); perm != 0o600 {
-			t.Errorf("key file %q perm = %04o, want 0600", name, perm)
-		}
-	}
-
-	// Refresh must succeed now that the directory and files exist.
-	if err := r.Refresh(context.Background(), rc); err != nil {
-		t.Errorf("Refresh() after Create = %v, want nil", err)
-	}
-}
-
-func TestRAGServiceKeysResource_Update_WritesNewKeys(t *testing.T) {
-	parentID := "inst1-data"
-	rc, fs, parentPath := ragKeysRCWithTempDir(t, parentID)
-
-	r := &RAGServiceKeysResource{
-		ServiceInstanceID: "inst1",
-		HostID:            "host-1",
-		ParentID:          parentID,
-		Keys:              map[string]string{"old_rag.key": "sk-old"},
-	}
-	if err := r.Create(context.Background(), rc); err != nil {
-		t.Fatalf("Create() error = %v", err)
-	}
-
-	r.Keys = map[string]string{"new_rag.key": "sk-new"}
-	if err := r.Update(context.Background(), rc); err != nil {
-		t.Fatalf("Update() error = %v", err)
-	}
-
-	keysDir := filepath.Join(parentPath, "keys")
-
-	if _, err := fs.Stat(filepath.Join(keysDir, "old_rag.key")); !errors.Is(err, afero.ErrFileNotFound) {
-		t.Errorf("old_rag.key should be removed after Update, got err = %v", err)
-	}
-
-	got, err := afero.ReadFile(fs, filepath.Join(keysDir, "new_rag.key"))
-	if err != nil {
-		t.Fatalf("ReadFile(new_rag.key) error = %v", err)
-	}
-	if string(got) != "sk-new" {
-		t.Errorf("new_rag.key = %q, want %q", string(got), "sk-new")
-	}
-}
-
-func TestRAGServiceKeysResource_Delete(t *testing.T) {
-	parentID := "inst1-data"
-	rc, fs, parentPath := ragKeysRCWithTempDir(t, parentID)
-
-	r := &RAGServiceKeysResource{
-		ServiceInstanceID: "inst1",
-		HostID:            "host-1",
-		ParentID:          parentID,
-		Keys:              map[string]string{"default_rag.key": "sk-test"},
-	}
-	if err := r.Create(context.Background(), rc); err != nil {
-		t.Fatalf("Create() error = %v", err)
-	}
-
-	if err := r.Delete(context.Background(), rc); err != nil {
-		t.Fatalf("Delete() error = %v", err)
-	}
-
-	keysDir := filepath.Join(parentPath, "keys")
-	if _, err := fs.Stat(keysDir); !errors.Is(err, afero.ErrFileNotFound) {
-		t.Errorf("keys directory should not exist after Delete, got err = %v", err)
-	}
-}
-
-func TestValidateKeyFilename(t *testing.T) {
-	valid := []string{
-		"default_rag.key",
-		"pipeline-a_embedding.key",
-		"foo.key",
-	}
-	for _, name := range valid {
-		if err := validateKeyFilename(name); err != nil {
-			t.Errorf("validateKeyFilename(%q) = %v, want nil", name, err)
-		}
-	}
-
-	invalid := []string{
-		"../escape.key",
-		"/absolute/path.key",
-		"sub/dir.key",
-		`sub\dir.key`,
-		"./relative.key",
-		".",
-		"..",
-	}
-	for _, name := range invalid {
-		if err := validateKeyFilename(name); err == nil {
-			t.Errorf("validateKeyFilename(%q) = nil, want error", name)
-		}
-	}
-}
-
-func TestRAGServiceKeysResource_Create_DirPermissions(t *testing.T) {
-	parentID := "inst1-data"
-	rc, fs, parentPath := ragKeysRCWithTempDir(t, parentID)
-
-	r := &RAGServiceKeysResource{
-		ServiceInstanceID: "inst1",
-		HostID:            "host-1",
-		ParentID:          parentID,
-		Keys:              map[string]string{"default_rag.key": "sk-test"},
-	}
-	if err := r.Create(context.Background(), rc); err != nil {
-		t.Fatalf("Create() error = %v", err)
-	}
-
-	keysDir := filepath.Join(parentPath, "keys")
-	info, err := fs.Stat(keysDir)
-	if err != nil {
-		t.Fatalf("Stat(keysDir) error = %v", err)
-	}
-	if perm := info.Mode().Perm(); perm != 0o700 {
-		t.Errorf("keys dir perm = %04o, want 0700", perm)
-	}
-}
-
-func TestRAGServiceKeysResource_Refresh_InvalidFilenameInState(t *testing.T) {
-	parentID := "inst1-data"
-	rc, _, _ := ragKeysRCWithTempDir(t, parentID)
-
-	r := &RAGServiceKeysResource{
-		ServiceInstanceID: "inst1",
-		HostID:            "host-1",
-		ParentID:          parentID,
-		Keys:              map[string]string{"../escape.key": "sk-bad"},
-	}
-	err := r.Refresh(context.Background(), rc)
-	if err == nil {
-		t.Error("Refresh() = nil, want error for invalid key filename in state")
-	}
-}
-
-func TestRAGServiceKeysResource_Update_InvalidFilenameIsNonDestructive(t *testing.T) {
-	parentID := "inst1-data"
-	rc, fs, parentPath := ragKeysRCWithTempDir(t, parentID)
-
-	r := &RAGServiceKeysResource{
-		ServiceInstanceID: "inst1",
-		HostID:            "host-1",
-		ParentID:          parentID,
-		Keys:              map[string]string{"default_rag.key": "sk-good"},
-	}
-	if err := r.Create(context.Background(), rc); err != nil {
-		t.Fatalf("Create() error = %v", err)
-	}
-
-	// Attempt Update with an invalid filename — must fail before any deletion.
-	r.Keys = map[string]string{"../escape.key": "sk-bad"}
-	if err := r.Update(context.Background(), rc); err == nil {
-		t.Fatal("Update() = nil, want error for invalid key filename")
-	}
-
-	// The original file must still be present — Update must not have deleted it.
-	existing := filepath.Join(parentPath, "keys", "default_rag.key")
-	if _, err := fs.Stat(existing); err != nil {
-		t.Errorf("default_rag.key should still exist after failed Update, got err = %v", err)
 	}
 }

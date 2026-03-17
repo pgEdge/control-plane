@@ -28,7 +28,6 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/config"
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/docker"
-	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/healthcheck"
 	"github.com/pgEdge/control-plane/server/internal/host"
@@ -106,10 +105,6 @@ func NewOrchestrator(
 		swarmNodeID:      info.Swarm.NodeID,
 		controlAvailable: info.Swarm.ControlAvailable,
 	}, nil
-}
-
-func (o *Orchestrator) Start(_ context.Context) error {
-	return nil
 }
 
 func (o *Orchestrator) PopulateHost(ctx context.Context, h *host.Host) error {
@@ -583,42 +578,41 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 	orchestratorResources = append(orchestratorResources, serviceInstanceSpec, serviceInstance)
 
 	// Append per-node ServiceUserRole resources for each additional database node.
-	// The canonical resources (above) cover spec.NodeName; all other nodes get
+	// The canonical resources (above) cover the first node; nodes [1:] each get
 	// their own RO and RW role that sources credentials from the canonical.
-	for _, nodeInst := range spec.DatabaseNodes {
-		if nodeInst.NodeName == spec.NodeName {
-			continue
-		}
-		perNodeRWID := ServiceUserRolePerNodeIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRW, nodeInst.NodeName)
-		orchestratorResources = append(orchestratorResources,
-			&ServiceUserRole{
-				ServiceID:        spec.ServiceSpec.ServiceID,
-				DatabaseID:       spec.DatabaseID,
-				DatabaseName:     spec.DatabaseName,
-				NodeName:         nodeInst.NodeName,
-				Mode:             ServiceUserRoleRO,
-				CredentialSource: &canonicalROID,
-			},
-			&ServiceUserRole{
-				ServiceID:        spec.ServiceSpec.ServiceID,
-				DatabaseID:       spec.DatabaseID,
-				DatabaseName:     spec.DatabaseName,
-				NodeName:         nodeInst.NodeName,
-				Mode:             ServiceUserRoleRW,
-				CredentialSource: &canonicalRWID,
-			},
-		)
-		if spec.ServiceSpec.ServiceType == "postgrest" {
+	if len(spec.DatabaseNodes) > 1 {
+		for _, nodeInst := range spec.DatabaseNodes[1:] {
+			perNodeRWID := ServiceUserRolePerNodeIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRW, nodeInst.NodeName)
 			orchestratorResources = append(orchestratorResources,
-				&PostgRESTAuthenticatorResource{
-					ServiceID:    spec.ServiceSpec.ServiceID,
-					DatabaseID:   spec.DatabaseID,
-					DatabaseName: spec.DatabaseName,
-					NodeName:     nodeInst.NodeName,
-					DBAnonRole:   parsedPostgRESTConfig.DBAnonRole,
-					UserRoleID:   perNodeRWID,
+				&ServiceUserRole{
+					ServiceID:        spec.ServiceSpec.ServiceID,
+					DatabaseID:       spec.DatabaseID,
+					DatabaseName:     spec.DatabaseName,
+					NodeName:         nodeInst.NodeName,
+					Mode:             ServiceUserRoleRO,
+					CredentialSource: &canonicalROID,
+				},
+				&ServiceUserRole{
+					ServiceID:        spec.ServiceSpec.ServiceID,
+					DatabaseID:       spec.DatabaseID,
+					DatabaseName:     spec.DatabaseName,
+					NodeName:         nodeInst.NodeName,
+					Mode:             ServiceUserRoleRW,
+					CredentialSource: &canonicalRWID,
 				},
 			)
+			if spec.ServiceSpec.ServiceType == "postgrest" {
+				orchestratorResources = append(orchestratorResources,
+					&PostgRESTAuthenticatorResource{
+						ServiceID:    spec.ServiceSpec.ServiceID,
+						DatabaseID:   spec.DatabaseID,
+						DatabaseName: spec.DatabaseName,
+						NodeName:     nodeInst.NodeName,
+						DBAnonRole:   parsedPostgRESTConfig.DBAnonRole,
+						UserRoleID:   perNodeRWID,
+					},
+				)
+			}
 		}
 	}
 
@@ -653,35 +647,10 @@ func (o *Orchestrator) buildServiceInstanceResources(spec *database.ServiceInsta
 // instance. RAG only requires read access, so a single ServiceUserRoleRO is
 // created per database node using the same canonical+per-node pattern as MCP.
 func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
-	// Get service image.
-	serviceImage, err := o.serviceVersions.GetServiceImage(spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get service image: %w", err)
-	}
-
-	// Validate compatibility with database version.
-	if spec.PgEdgeVersion != nil {
-		if err := serviceImage.ValidateCompatibility(
-			spec.PgEdgeVersion.PostgresVersion,
-			spec.PgEdgeVersion.SpockVersion,
-		); err != nil {
-			return nil, fmt.Errorf("service %q version %q is not compatible with this database: %w",
-				spec.ServiceSpec.ServiceType, spec.ServiceSpec.Version, err)
-		}
-	}
-
 	// Parse the RAG service config to extract API keys.
 	ragConfig, errs := database.ParseRAGServiceConfig(spec.ServiceSpec.Config, false)
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("failed to parse RAG service config: %w", errors.Join(errs...))
-	}
-
-	// Database network (shared with postgres instances).
-	databaseNetwork := &Network{
-		Scope:     "swarm",
-		Driver:    OverlayDriver,
-		Name:      fmt.Sprintf("%s-database", spec.DatabaseID),
-		Allocator: o.dbNetworkAllocator,
 	}
 
 	canonicalROID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRO)
@@ -695,7 +664,7 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 		Mode:         ServiceUserRoleRO,
 	}
 
-	orchestratorResources := []resource.Resource{databaseNetwork, canonicalRO}
+	orchestratorResources := []resource.Resource{canonicalRO}
 
 	// Per-node RO role for each additional database node so that RAG instances
 	// on other hosts can authenticate against their co-located Postgres.
@@ -716,15 +685,12 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 	// Service data directory resource (host-side bind mount directory).
 	dataDirID := spec.ServiceInstanceID + "-data"
 	dataDir := &filesystem.DirResource{
-		ID:       dataDirID,
-		HostID:   spec.HostID,
-		Path:     filepath.Join(o.cfg.DataDir, "services", spec.ServiceInstanceID),
-		OwnerUID: ragContainerUID,
-		OwnerGID: ragContainerUID,
+		ID:     dataDirID,
+		HostID: spec.HostID,
+		Path:   filepath.Join(o.cfg.DataDir, "services", spec.ServiceInstanceID),
 	}
 
 	// API key files resource — writes provider keys into a "keys" subdirectory.
-	// The keys subdirectory path is resolved at runtime from the parent DirResource.
 	keysResource := &RAGServiceKeysResource{
 		ServiceInstanceID: spec.ServiceInstanceID,
 		HostID:            spec.HostID,
@@ -732,65 +698,12 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 		Keys:              extractRAGAPIKeys(ragConfig),
 	}
 
-	// RAG config resource — generates pgedge-rag-server.yaml in the data directory.
-	var dbHost string
-	var dbPort int
-	if len(spec.DatabaseHosts) > 0 {
-		dbHost = spec.DatabaseHosts[0].Host
-		dbPort = spec.DatabaseHosts[0].Port
-	}
-	ragConfigRes := &RAGConfigResource{
-		ServiceInstanceID: spec.ServiceInstanceID,
-		ServiceID:         spec.ServiceSpec.ServiceID,
-		HostID:            spec.HostID,
-		DirResourceID:     dataDirID,
-		Config:            ragConfig,
-		DatabaseName:      spec.DatabaseName,
-		DatabaseHost:      dbHost,
-		DatabasePort:      dbPort,
-	}
-
-	// Service instance spec resource — holds the computed Docker Swarm service spec.
-	// KeysDirID is the parent data dir; the actual keys subdir path is derived at runtime.
-	serviceName := ServiceInstanceName(spec.ServiceSpec.ServiceType, spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
-	serviceInstanceSpec := &ServiceInstanceSpecResource{
-		ServiceInstanceID: spec.ServiceInstanceID,
-		ServiceSpec:       spec.ServiceSpec,
-		DatabaseID:        spec.DatabaseID,
-		DatabaseName:      spec.DatabaseName,
-		HostID:            spec.HostID,
-		ServiceName:       serviceName,
-		Hostname:          serviceName,
-		CohortMemberID:    o.swarmNodeID,
-		ServiceImage:      serviceImage,
-		Credentials:       spec.Credentials,
-		DatabaseNetworkID: databaseNetwork.Name,
-		DatabaseHosts:     spec.DatabaseHosts,
-		Port:              spec.Port,
-		DataDirID:         dataDirID,
-	}
-
-	// Service instance resource (actual Docker Swarm service).
-	serviceInstance := &ServiceInstanceResource{
-		ServiceInstanceID: spec.ServiceInstanceID,
-		DatabaseID:        spec.DatabaseID,
-		ServiceName:       serviceName,
-		ServiceID:         spec.ServiceSpec.ServiceID,
-		ServiceSpecID:     spec.ServiceSpec.ServiceID,
-		ServiceType:       spec.ServiceSpec.ServiceType,
-		HostID:            spec.HostID,
-	}
-
-	orchestratorResources = append(orchestratorResources, dataDir, keysResource, ragConfigRes, serviceInstanceSpec, serviceInstance)
+	orchestratorResources = append(orchestratorResources, dataDir, keysResource)
 
 	return o.buildServiceInstanceResources(spec, orchestratorResources)
 }
 
-func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context,
-	databaseID, instanceID string,
-	postgresPort, patroniPort *int,
-	pgEdgeVersion *ds.PgEdgeVersion,
-) (*database.ConnectionInfo, error) {
+func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*database.ConnectionInfo, error) {
 	container, err := GetPostgresContainer(ctx, o.docker, instanceID)
 	if err != nil {
 		if errors.Is(err, ErrNoPostgresContainer) {
@@ -911,10 +824,10 @@ func (o *Orchestrator) WorkerQueues() ([]workflow.Queue, error) {
 	return queues, nil
 }
 
-func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, spec *database.InstanceSpec, options *pgbackrest.BackupOptions) error {
+func (o *Orchestrator) CreatePgBackRestBackup(ctx context.Context, w io.Writer, instanceID string, options *pgbackrest.BackupOptions) error {
 	backupCmd := PgBackRestBackupCmd("backup", options.StringSlice()...)
 
-	err := PostgresContainerExec(ctx, w, o.docker, spec.InstanceID, backupCmd.StringSlice())
+	err := PostgresContainerExec(ctx, w, o.docker, instanceID, backupCmd.StringSlice())
 	if err != nil {
 		return fmt.Errorf("failed to exec backup command: %w", err)
 	}
