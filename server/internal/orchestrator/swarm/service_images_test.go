@@ -30,6 +30,20 @@ func TestGetServiceImage(t *testing.T) {
 			wantErr:     false,
 		},
 		{
+			name:        "valid postgrest latest",
+			serviceType: "postgrest",
+			version:     "latest",
+			wantTag:     "docker.io/postgrest/postgrest:latest",
+			wantErr:     false,
+		},
+		{
+			name:        "valid postgrest v14.5",
+			serviceType: "postgrest",
+			version:     "v14.5",
+			wantTag:     "docker.io/postgrest/postgrest:v14.5",
+			wantErr:     false,
+		},
+		{
 			name:        "unsupported service type",
 			serviceType: "unknown",
 			version:     "latest",
@@ -90,6 +104,12 @@ func TestSupportedServiceVersions(t *testing.T) {
 			name:        "mcp service has versions",
 			serviceType: "mcp",
 			wantLen:     1, // "latest"
+			wantErr:     false,
+		},
+		{
+			name:        "postgrest service has versions",
+			serviceType: "postgrest",
+			wantLen:     2, // "latest", "v14.5"
 			wantErr:     false,
 		},
 		{
@@ -180,6 +200,19 @@ func TestGetServiceImage_ConstraintsPopulated(t *testing.T) {
 		}
 		if img.SpockConstraint != nil {
 			t.Error("expected nil SpockConstraint for mcp")
+		}
+	})
+
+	t.Run("postgrest has no constraints", func(t *testing.T) {
+		img, err := sv.GetServiceImage("postgrest", "latest")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if img.PostgresConstraint != nil {
+			t.Error("expected nil PostgresConstraint for postgrest")
+		}
+		if img.SpockConstraint != nil {
+			t.Error("expected nil SpockConstraint for postgrest")
 		}
 	})
 

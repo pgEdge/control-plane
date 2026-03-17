@@ -49,6 +49,20 @@ func NewServiceVersions(cfg config.Config) *ServiceVersions {
 		// No constraints — MCP works with all PG/Spock versions.
 	})
 
+	// PostgREST service versions.
+	// PostgREST images are published on Docker Hub under docker.io/postgrest/postgrest.
+	// The docker.io/ prefix ensures serviceImageTag treats the ref as a fully-qualified
+	// registry reference and does not prepend the configured ImageRepositoryHost.
+	versions.addServiceImage("postgrest", "latest", &ServiceImage{
+		Tag: "docker.io/postgrest/postgrest:latest",
+		// No constraints — PostgREST v14+ requires Postgres >= 13; the CP only
+		// supports Postgres 16+, so no explicit constraint is needed here.
+	})
+	versions.addServiceImage("postgrest", "v14.5", &ServiceImage{
+		Tag: "docker.io/postgrest/postgrest:v14.5",
+		// No constraints — see above.
+	})
+
 	// Example of a service image with version constraints (nil = no restriction):
 	//
 	//   acme-service:1.0.0 requires PG 14-17 and Spock >= 4.0.0
