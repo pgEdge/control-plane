@@ -2082,8 +2082,7 @@ type ServiceSpecRequestBody struct {
 	ServiceID string `json:"service_id"`
 	// The type of service to run.
 	ServiceType string `json:"service_type"`
-	// The version of the service in semver format (e.g., '1.0.0') or the literal
-	// 'latest'.
+	// The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
 	Version string `json:"version"`
 	// The IDs of the hosts that should run this service. One service instance will
 	// be created per host.
@@ -2483,8 +2482,7 @@ type ServiceSpecResponseBody struct {
 	ServiceID *string `json:"service_id"`
 	// The type of service to run.
 	ServiceType *string `json:"service_type"`
-	// The version of the service in semver format (e.g., '1.0.0') or the literal
-	// 'latest'.
+	// The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
 	Version *string `json:"version"`
 	// The IDs of the hosts that should run this service. One service instance will
 	// be created per host.
@@ -2812,8 +2810,7 @@ type ServiceSpecRequestBodyRequestBody struct {
 	ServiceID string `json:"service_id"`
 	// The type of service to run.
 	ServiceType string `json:"service_type"`
-	// The version of the service in semver format (e.g., '1.0.0') or the literal
-	// 'latest'.
+	// The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
 	Version string `json:"version"`
 	// The IDs of the hosts that should run this service. One service instance will
 	// be created per host.
@@ -6256,7 +6253,7 @@ func ValidateServiceSpecRequestBody(body *ServiceSpecRequestBody) (err error) {
 	if !(body.ServiceType == "mcp" || body.ServiceType == "postgrest") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", body.ServiceType, []any{"mcp", "postgrest"}))
 	}
-	err = goa.MergeErrors(err, goa.ValidatePattern("body.version", body.Version, "^(\\d+\\.\\d+\\.\\d+|latest)$"))
+	err = goa.MergeErrors(err, goa.ValidatePattern("body.version", body.Version, "^(\\d+\\.\\d+(\\.\\d+)?|latest)$"))
 	if len(body.HostIds) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
 	}
@@ -7020,7 +7017,7 @@ func ValidateServiceSpecRequestBodyRequestBody(body *ServiceSpecRequestBodyReque
 	if !(body.ServiceType == "mcp" || body.ServiceType == "postgrest") {
 		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", body.ServiceType, []any{"mcp", "postgrest"}))
 	}
-	err = goa.MergeErrors(err, goa.ValidatePattern("body.version", body.Version, "^(\\d+\\.\\d+\\.\\d+|latest)$"))
+	err = goa.MergeErrors(err, goa.ValidatePattern("body.version", body.Version, "^(\\d+\\.\\d+(\\.\\d+)?|latest)$"))
 	if len(body.HostIds) < 1 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.host_ids", body.HostIds, len(body.HostIds), 1, true))
 	}

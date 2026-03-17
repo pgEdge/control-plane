@@ -2,13 +2,18 @@ package swarm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 
+	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/utils"
@@ -238,4 +243,73 @@ func (r *ServiceUserRole) Delete(ctx context.Context, rc *resource.Context) erro
 
 	logger.Info().Msg("service user deleted successfully")
 	return nil
+}
+
+func (r *ServiceUserRole) connectToPrimary(ctx context.Context, rc *resource.Context, logger zerolog.Logger, dbName string) (*pgx.Conn, error) {
+	return connectToPrimaryDB(ctx, rc, r.DatabaseID, dbName, logger)
+}
+
+// connectToPrimaryDB finds the primary Postgres instance for the given database
+// and returns an authenticated connection to it. The caller is responsible for
+// closing the connection.
+func connectToPrimaryDB(ctx context.Context, rc *resource.Context, databaseID, dbName string, logger zerolog.Logger) (*pgx.Conn, error) {
+	dbSvc, err := do.Invoke[*database.Service](rc.Injector)
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := dbSvc.GetDatabase(ctx, databaseID)
+	if err != nil {
+		if errors.Is(err, database.ErrDatabaseNotFound) {
+			return nil, fmt.Errorf("database not found: %w", err)
+		}
+		return nil, fmt.Errorf("failed to get database: %w", err)
+	}
+
+	if len(db.Instances) == 0 {
+		return nil, fmt.Errorf("database has no instances")
+	}
+
+	var primaryInstanceID string
+	for _, inst := range db.Instances {
+		connInfo, err := dbSvc.GetInstanceConnectionInfo(ctx, databaseID, inst.InstanceID)
+		if err != nil {
+			continue
+		}
+		patroniClient := patroni.NewClient(connInfo.PatroniURL(), nil)
+		primaryID, err := database.GetPrimaryInstanceID(ctx, patroniClient, 10*time.Second)
+		if err == nil && primaryID != "" {
+			primaryInstanceID = primaryID
+			break
+		}
+	}
+	if primaryInstanceID == "" {
+		primaryInstanceID = db.Instances[0].InstanceID
+		logger.Warn().Msg("could not determine primary instance, using first available instance")
+	}
+
+	connInfo, err := dbSvc.GetInstanceConnectionInfo(ctx, databaseID, primaryInstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance connection info: %w", err)
+	}
+
+	certSvc, err := do.Invoke[*certificates.Service](rc.Injector)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get certificate service: %w", err)
+	}
+
+	tlsConfig, err := certSvc.PostgresUserTLS(ctx, primaryInstanceID, connInfo.InstanceHostname, "pgedge")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create TLS config: %w", err)
+	}
+
+	conn, err := database.ConnectToInstance(ctx, &database.ConnectionOptions{
+		DSN: connInfo.AdminDSN(dbName),
+		TLS: tlsConfig,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	return conn, nil
 }

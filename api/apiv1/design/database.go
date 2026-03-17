@@ -9,7 +9,7 @@ const (
 	cpuPattern             = `^[0-9]+(\.[0-9]{1,3}|m)?$`
 	postgresVersionPattern = `^\d{2}\.\d{1,2}$`
 	spockVersionPattern    = `^\d{1}$`
-	serviceVersionPattern  = `^(\d+\.\d+\.\d+|latest)$`
+	serviceVersionPattern  = `^(\d+\.\d+(\.\d+)?|latest)$`
 )
 
 var HostIDs = g.ArrayOf(Identifier, func() {
@@ -164,10 +164,10 @@ var ServiceSpec = g.Type("ServiceSpec", func() {
 		g.Meta("struct:tag:json", "service_type")
 	})
 	g.Attribute("version", g.String, func() {
-		g.Description("The version of the service in semver format (e.g., '1.0.0') or the literal 'latest'.")
+		g.Description("The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.")
 		g.Pattern(serviceVersionPattern)
 		g.Example("1.0.0")
-		g.Example("1.2.3")
+		g.Example("14.5")
 		g.Example("latest")
 		g.Meta("struct:tag:json", "version")
 	})
