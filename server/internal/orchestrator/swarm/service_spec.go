@@ -54,6 +54,9 @@ type ServiceContainerSpecOptions struct {
 	Port *int
 	// DataPath is the host-side directory path for the bind mount
 	DataPath string
+	// KeysPath is the host-side directory containing API key files.
+	// When non-empty, it is bind-mounted read-only into the container at /app/keys.
+	KeysPath string
 }
 
 // ServiceContainerSpec builds a Docker Swarm service spec for a service instance.

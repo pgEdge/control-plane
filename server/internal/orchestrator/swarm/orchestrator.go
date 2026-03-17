@@ -647,6 +647,12 @@ func (o *Orchestrator) buildServiceInstanceResources(spec *database.ServiceInsta
 // instance. RAG only requires read access, so a single ServiceUserRoleRO is
 // created per database node using the same canonical+per-node pattern as MCP.
 func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
+	// Parse the RAG service config to extract API keys.
+	ragConfig, errs := database.ParseRAGServiceConfig(spec.ServiceSpec.Config, false)
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("failed to parse RAG service config: %w", errors.Join(errs...))
+	}
+
 	canonicalROID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRO)
 
 	// Canonical read-only role — runs on the node co-located with this instance.
@@ -675,6 +681,24 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 			CredentialSource: &canonicalROID,
 		})
 	}
+
+	// Service data directory resource (host-side bind mount directory).
+	dataDirID := spec.ServiceInstanceID + "-data"
+	dataDir := &filesystem.DirResource{
+		ID:     dataDirID,
+		HostID: spec.HostID,
+		Path:   filepath.Join(o.cfg.DataDir, "services", spec.ServiceInstanceID),
+	}
+
+	// API key files resource — writes provider keys into a "keys" subdirectory.
+	keysResource := &RAGServiceKeysResource{
+		ServiceInstanceID: spec.ServiceInstanceID,
+		HostID:            spec.HostID,
+		ParentID:          dataDirID,
+		Keys:              extractRAGAPIKeys(ragConfig),
+	}
+
+	orchestratorResources = append(orchestratorResources, dataDir, keysResource)
 
 	return o.buildServiceInstanceResources(spec, orchestratorResources)
 }
