@@ -31,6 +31,7 @@ func asJSON(t testing.TB, expected, actual any) string {
 
 func makeMonitorResource(instance *database.InstanceResources) *monitor.InstanceMonitorResource {
 	return &monitor.InstanceMonitorResource{
+		NodeName:     instance.NodeName(),
 		DatabaseID:   instance.DatabaseID(),
 		InstanceID:   instance.InstanceID(),
 		DatabaseName: instance.DatabaseName(),
@@ -77,6 +78,7 @@ func makeInstance(t testing.TB, node string, num int, dependencies ...resource.R
 			OrchestratorDependencies: depIdentifiers,
 		},
 		dependencies,
+		nil,
 	)
 	if err != nil {
 		t.Fatal(err)

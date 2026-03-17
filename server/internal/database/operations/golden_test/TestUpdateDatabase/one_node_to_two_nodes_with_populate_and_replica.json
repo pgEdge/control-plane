@@ -15,14 +15,6 @@
         "reason": "does_not_exist",
         "diff": null
       }
-    ],
-    [
-      {
-        "type": "create",
-        "resource_id": "monitor.instance::n2-instance-1-id",
-        "reason": "does_not_exist",
-        "diff": null
-      }
     ]
   ],
   [
@@ -48,12 +40,6 @@
         "resource_id": "database.node::n2",
         "reason": "does_not_exist",
         "diff": null
-      },
-      {
-        "type": "create",
-        "resource_id": "monitor.instance::n2-instance-2-id",
-        "reason": "does_not_exist",
-        "diff": null
       }
     ]
   ],
@@ -61,7 +47,27 @@
     [
       {
         "type": "create",
+        "resource_id": "database.postgres_database::n2-test",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
         "resource_id": "database.replication_slot::n1n2",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "monitor.instance::n2-instance-1-id",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "monitor.instance::n2-instance-2-id",
         "reason": "does_not_exist",
         "diff": null
       }

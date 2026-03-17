@@ -15,19 +15,25 @@ func EndState(nodes []*NodeResources, services []*ServiceResources) (*resource.S
 	for _, node := range nodes {
 		var resources []resource.Resource
 
-		instanceIDs := make([]string, len(node.InstanceResources))
-		for i, inst := range node.InstanceResources {
-			instanceIDs[i] = inst.InstanceID()
+		for _, inst := range node.InstanceResources {
 			state, err := instanceState(inst)
 			if err != nil {
 				return nil, err
 			}
 			end.Merge(state)
 		}
-		resources = append(resources, &database.NodeResource{
-			Name:        node.NodeName,
-			InstanceIDs: instanceIDs,
-		})
+
+		nodeState, err := node.nodeResourceState()
+		if err != nil {
+			return nil, err
+		}
+		end.Merge(nodeState)
+
+		databaseState, err := node.databaseResourceState()
+		if err != nil {
+			return nil, err
+		}
+		end.Merge(databaseState)
 
 		if len(node.InstanceResources) > 1 {
 			primary := node.primaryInstance()
@@ -50,10 +56,12 @@ func EndState(nodes []*NodeResources, services []*ServiceResources) (*resource.S
 			}
 			resources = append(resources,
 				&database.ReplicationSlotResource{
+					DatabaseName:   node.DatabaseName,
 					ProviderNode:   node.NodeName,
 					SubscriberNode: peer.NodeName,
 				},
 				&database.SubscriptionResource{
+					DatabaseName:   node.DatabaseName,
 					SubscriberNode: peer.NodeName,
 					ProviderNode:   node.NodeName,
 				},

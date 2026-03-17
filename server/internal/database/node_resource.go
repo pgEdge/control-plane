@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 
+	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -93,4 +96,63 @@ func (n *NodeResource) Update(ctx context.Context, rc *resource.Context) error {
 
 func (n *NodeResource) Delete(ctx context.Context, rc *resource.Context) error {
 	return nil
+}
+
+func (n *NodeResource) DSN(
+	ctx context.Context,
+	rc *resource.Context,
+	fromInstance *InstanceResource,
+	dbName string,
+) (*postgres.DSN, error) {
+	// Sort the instances so that our final DSN is deterministic
+	instanceIDs := slices.Clone(n.InstanceIDs)
+	slices.SortFunc(instanceIDs, func(a, b string) int {
+		// Always sort the primary instance to the beginning of the list since
+		// these DSNs are used for subscriptions, so we'll want to try
+		// connecting to the known primary instance first.
+		switch {
+		case a == n.PrimaryInstanceID:
+			return -1
+		case b == n.PrimaryInstanceID:
+			return 1
+		default:
+			return strings.Compare(a, b)
+		}
+	})
+
+	hosts := make([]string, len(instanceIDs))
+	ports := make([]int, len(instanceIDs))
+	for i, instanceID := range instanceIDs {
+		instance, err := resource.FromContext[*InstanceResource](rc, InstanceResourceIdentifier(instanceID))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get instance '%s': %w", instanceID, err)
+		}
+		hosts[i] = instance.ConnectionInfo.PeerHost
+		ports[i] = instance.ConnectionInfo.PeerPort
+	}
+
+	return &postgres.DSN{
+		Hosts:       hosts,
+		Ports:       ports,
+		DBName:      dbName,
+		User:        "pgedge",
+		SSLCert:     fromInstance.ConnectionInfo.PeerSSLCert,
+		SSLKey:      fromInstance.ConnectionInfo.PeerSSLKey,
+		SSLRootCert: fromInstance.ConnectionInfo.PeerSSLRootCert,
+		Extra: map[string]string{
+			"target_session_attrs": "primary",
+		},
+	}, nil
+}
+
+func (n *NodeResource) PrimaryInstance(ctx context.Context, rc *resource.Context) (*InstanceResource, error) {
+	if n.PrimaryInstanceID == "" {
+		return nil, fmt.Errorf("%w: primary instance id not set", resource.ErrNotFound)
+	}
+	instance, err := resource.FromContext[*InstanceResource](rc, InstanceResourceIdentifier(n.PrimaryInstanceID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get primary instance '%s': %w", n.PrimaryInstanceID, err)
+	}
+
+	return instance, nil
 }

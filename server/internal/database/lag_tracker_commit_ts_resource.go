@@ -26,6 +26,7 @@ type LagTrackerCommitTimestampResource struct {
 	// Planner fields
 	OriginNode   string `json:"origin_node"`
 	ReceiverNode string `json:"receiver_node"`
+	DatabaseName string `json:"database_name"`
 
 	// Dependency wiring
 	ExtraDependencies []resource.Identifier `json:"dependent_resources,omitempty"`
@@ -56,7 +57,8 @@ func (r *LagTrackerCommitTimestampResource) Identifier() resource.Identifier {
 
 func (r *LagTrackerCommitTimestampResource) Dependencies() []resource.Identifier {
 	deps := []resource.Identifier{
-		NodeResourceIdentifier(r.ReceiverNode),
+		PostgresDatabaseResourceIdentifier(r.ReceiverNode, r.DatabaseName),
+		PostgresDatabaseResourceIdentifier(r.OriginNode, r.DatabaseName),
 	}
 	deps = append(deps, r.ExtraDependencies...)
 	return deps

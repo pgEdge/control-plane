@@ -3,16 +3,6 @@
     [
       {
         "type": "delete",
-        "resource_id": "database.subscription::n1n2",
-        "diff": null
-      },
-      {
-        "type": "delete",
-        "resource_id": "database.subscription::n2n1",
-        "diff": null
-      },
-      {
-        "type": "delete",
         "resource_id": "database.switchover::n1-instance-1-id",
         "diff": null
       },
@@ -30,12 +20,31 @@
     [
       {
         "type": "delete",
+        "resource_id": "database.subscription::n1n2",
+        "diff": null
+      },
+      {
+        "type": "delete",
+        "resource_id": "database.subscription::n2n1",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
         "resource_id": "database.replication_slot::n1n2",
         "diff": null
       },
       {
         "type": "delete",
         "resource_id": "database.replication_slot::n2n1",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "delete",
+        "resource_id": "database.postgres_database::n1-test",
         "diff": null
       }
     ],
@@ -79,14 +88,6 @@
       {
         "type": "create",
         "resource_id": "database.instance::n1-instance-1-id",
-        "reason": "does_not_exist",
-        "diff": null
-      }
-    ],
-    [
-      {
-        "type": "create",
-        "resource_id": "monitor.instance::n1-instance-1-id",
         "reason": "does_not_exist",
         "diff": null
       }
@@ -126,18 +127,6 @@
         "resource_id": "database.node::n1",
         "reason": "does_not_exist",
         "diff": null
-      },
-      {
-        "type": "update",
-        "resource_id": "monitor.instance::n1-instance-1-id",
-        "reason": "dependency_updated",
-        "diff": null
-      },
-      {
-        "type": "create",
-        "resource_id": "monitor.instance::n1-instance-2-id",
-        "reason": "does_not_exist",
-        "diff": null
       }
     ],
     [
@@ -152,7 +141,7 @@
     [
       {
         "type": "create",
-        "resource_id": "database.switchover::n1-instance-1-id",
+        "resource_id": "database.postgres_database::n1-test",
         "reason": "does_not_exist",
         "diff": null
       }
@@ -169,6 +158,18 @@
         "resource_id": "database.replication_slot::n2n1",
         "reason": "does_not_exist",
         "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "monitor.instance::n1-instance-1-id",
+        "reason": "does_not_exist",
+        "diff": null
+      },
+      {
+        "type": "create",
+        "resource_id": "monitor.instance::n1-instance-2-id",
+        "reason": "does_not_exist",
+        "diff": null
       }
     ],
     [
@@ -181,6 +182,14 @@
       {
         "type": "create",
         "resource_id": "database.subscription::n2n1",
+        "reason": "does_not_exist",
+        "diff": null
+      }
+    ],
+    [
+      {
+        "type": "create",
+        "resource_id": "database.switchover::n1-instance-1-id",
         "reason": "does_not_exist",
         "diff": null
       }

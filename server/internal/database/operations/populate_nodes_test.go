@@ -22,6 +22,7 @@ func TestPopulateNode(t *testing.T) {
 		{
 			name: "populate new node in two node db",
 			node: &operations.NodeResources{
+				DatabaseName:      "test",
 				NodeName:          "n2",
 				SourceNode:        "n1",
 				PrimaryInstanceID: instance1.InstanceID(),
@@ -32,17 +33,25 @@ func TestPopulateNode(t *testing.T) {
 			// source node, this will just have the sync resources.
 			expected: makeState(t,
 				[]resource.Resource{
+					makeMonitorResource(instance1),
+					&database.PostgresDatabaseResource{
+						NodeName:     "n2",
+						DatabaseName: "test",
+					},
 					&database.ReplicationSlotResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n2",
 					},
 					&database.SubscriptionResource{
+						DatabaseName:   "test",
 						SubscriberNode: "n2",
 						ProviderNode:   "n1",
 						SyncStructure:  true,
 						SyncData:       true,
 					},
 					&database.SyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n2",
 						ExtraDependencies: []resource.Identifier{
@@ -50,6 +59,7 @@ func TestPopulateNode(t *testing.T) {
 						},
 					},
 					&database.WaitForSyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n2",
 					},
@@ -60,6 +70,7 @@ func TestPopulateNode(t *testing.T) {
 		{
 			name: "populate new node in three node db",
 			node: &operations.NodeResources{
+				DatabaseName:      "test",
 				NodeName:          "n3",
 				SourceNode:        "n1",
 				PrimaryInstanceID: instance1.InstanceID(),
@@ -68,11 +79,18 @@ func TestPopulateNode(t *testing.T) {
 			existingNodeNames: []string{"n1", "n2"},
 			expected: makeState(t,
 				[]resource.Resource{
+					makeMonitorResource(instance1),
+					&database.PostgresDatabaseResource{
+						NodeName:     "n3",
+						DatabaseName: "test",
+					},
 					&database.ReplicationSlotResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n2",
 						SubscriberNode: "n3",
 					},
 					&database.SubscriptionResource{
+						DatabaseName:   "test",
 						SubscriberNode: "n3",
 						ProviderNode:   "n2",
 						Disabled:       true,
@@ -83,6 +101,7 @@ func TestPopulateNode(t *testing.T) {
 						ProviderNode:   "n2",
 					},
 					&database.SyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n2",
 						SubscriberNode: "n1",
 						ExtraDependencies: []resource.Identifier{
@@ -94,14 +113,17 @@ func TestPopulateNode(t *testing.T) {
 						},
 					},
 					&database.WaitForSyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n2",
 						SubscriberNode: "n1",
 					},
 					&database.ReplicationSlotResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n3",
 					},
 					&database.SubscriptionResource{
+						DatabaseName:   "test",
 						SubscriberNode: "n3",
 						ProviderNode:   "n1",
 						SyncStructure:  true,
@@ -111,6 +133,7 @@ func TestPopulateNode(t *testing.T) {
 						},
 					},
 					&database.SyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n3",
 						ExtraDependencies: []resource.Identifier{
@@ -118,10 +141,12 @@ func TestPopulateNode(t *testing.T) {
 						},
 					},
 					&database.WaitForSyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n3",
 					},
 					&database.LagTrackerCommitTimestampResource{
+						DatabaseName: "test",
 						OriginNode:   "n2",
 						ReceiverNode: "n3",
 						ExtraDependencies: []resource.Identifier{
@@ -129,6 +154,7 @@ func TestPopulateNode(t *testing.T) {
 						},
 					},
 					&database.ReplicationSlotAdvanceFromCTSResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n2",
 						SubscriberNode: "n3",
 					},
@@ -167,6 +193,7 @@ func TestPopulateNodes(t *testing.T) {
 			name: "one new node and one existing node",
 			existing: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					PrimaryInstanceID: n1Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n1Instance1},
@@ -174,6 +201,7 @@ func TestPopulateNodes(t *testing.T) {
 			},
 			new: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n2",
 					SourceNode:        "n1",
 					PrimaryInstanceID: n2Instance1.InstanceID(),
@@ -184,17 +212,25 @@ func TestPopulateNodes(t *testing.T) {
 			// output.
 			expected: makeState(t,
 				[]resource.Resource{
+					makeMonitorResource(n2Instance1),
+					&database.PostgresDatabaseResource{
+						NodeName:     "n2",
+						DatabaseName: "test",
+					},
 					&database.ReplicationSlotResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n2",
 					},
 					&database.SubscriptionResource{
+						DatabaseName:   "test",
 						SubscriberNode: "n2",
 						ProviderNode:   "n1",
 						SyncStructure:  true,
 						SyncData:       true,
 					},
 					&database.SyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n2",
 						ExtraDependencies: []resource.Identifier{
@@ -202,6 +238,7 @@ func TestPopulateNodes(t *testing.T) {
 						},
 					},
 					&database.WaitForSyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n2",
 					},
@@ -213,11 +250,13 @@ func TestPopulateNodes(t *testing.T) {
 			name: "one new node and two existing nodes",
 			existing: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					PrimaryInstanceID: n1Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n1Instance1},
 				},
 				{
+					DatabaseName:      "test",
 					NodeName:          "n2",
 					PrimaryInstanceID: n2Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n2Instance1},
@@ -225,6 +264,7 @@ func TestPopulateNodes(t *testing.T) {
 			},
 			new: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n3",
 					SourceNode:        "n1",
 					PrimaryInstanceID: n3Instance1.InstanceID(),
@@ -235,11 +275,18 @@ func TestPopulateNodes(t *testing.T) {
 			// output.
 			expected: makeState(t,
 				[]resource.Resource{
+					makeMonitorResource(n3Instance1),
+					&database.PostgresDatabaseResource{
+						NodeName:     "n3",
+						DatabaseName: "test",
+					},
 					&database.ReplicationSlotResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n2",
 						SubscriberNode: "n3",
 					},
 					&database.SubscriptionResource{
+						DatabaseName:   "test",
 						SubscriberNode: "n3",
 						ProviderNode:   "n2",
 						Disabled:       true,
@@ -250,6 +297,7 @@ func TestPopulateNodes(t *testing.T) {
 						ProviderNode:   "n2",
 					},
 					&database.SyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n2",
 						SubscriberNode: "n1",
 						ExtraDependencies: []resource.Identifier{
@@ -261,14 +309,17 @@ func TestPopulateNodes(t *testing.T) {
 						},
 					},
 					&database.WaitForSyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n2",
 						SubscriberNode: "n1",
 					},
 					&database.ReplicationSlotResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n3",
 					},
 					&database.SubscriptionResource{
+						DatabaseName:   "test",
 						SubscriberNode: "n3",
 						ProviderNode:   "n1",
 						SyncStructure:  true,
@@ -278,6 +329,7 @@ func TestPopulateNodes(t *testing.T) {
 						},
 					},
 					&database.SyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n3",
 						ExtraDependencies: []resource.Identifier{
@@ -285,10 +337,12 @@ func TestPopulateNodes(t *testing.T) {
 						},
 					},
 					&database.WaitForSyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n3",
 					},
 					&database.LagTrackerCommitTimestampResource{
+						DatabaseName: "test",
 						OriginNode:   "n2",
 						ReceiverNode: "n3",
 						ExtraDependencies: []resource.Identifier{
@@ -296,6 +350,7 @@ func TestPopulateNodes(t *testing.T) {
 						},
 					},
 					&database.ReplicationSlotAdvanceFromCTSResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n2",
 						SubscriberNode: "n3",
 					},
@@ -307,16 +362,19 @@ func TestPopulateNodes(t *testing.T) {
 			name: "one new node and three existing nodes",
 			existing: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					PrimaryInstanceID: n1Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n1Instance1},
 				},
 				{
+					DatabaseName:      "test",
 					NodeName:          "n2",
 					PrimaryInstanceID: n2Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n2Instance1},
 				},
 				{
+					DatabaseName:      "test",
 					NodeName:          "n3",
 					PrimaryInstanceID: n3Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n3Instance1},
@@ -324,6 +382,7 @@ func TestPopulateNodes(t *testing.T) {
 			},
 			new: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n4",
 					SourceNode:        "n1",
 					PrimaryInstanceID: n4Instance1.InstanceID(),
@@ -333,35 +392,45 @@ func TestPopulateNodes(t *testing.T) {
 			// Should have additional sync resources for each peer.
 			expected: makeState(t,
 				[]resource.Resource{
+					makeMonitorResource(n4Instance1),
+					&database.PostgresDatabaseResource{
+						NodeName:     "n4",
+						DatabaseName: "test",
+					},
 					&database.ReplicationSlotResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n2",
 						SubscriberNode: "n4",
 					},
 					&database.SubscriptionResource{
+						DatabaseName:   "test",
 						SubscriberNode: "n4",
 						ProviderNode:   "n2",
 						Disabled:       true,
 					},
 					&database.ReplicationSlotResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n3",
 						SubscriberNode: "n4",
 					},
 					&database.SubscriptionResource{
+						DatabaseName:   "test",
 						SubscriberNode: "n4",
 						ProviderNode:   "n3",
 						Disabled:       true,
 					},
 					&database.ReplicationSlotCreateResource{
-						DatabaseName:   n4Instance1.DatabaseName(),
+						DatabaseName:   "test",
 						SubscriberNode: "n4",
 						ProviderNode:   "n2",
 					},
 					&database.ReplicationSlotCreateResource{
-						DatabaseName:   n4Instance1.DatabaseName(),
+						DatabaseName:   "test",
 						SubscriberNode: "n4",
 						ProviderNode:   "n3",
 					},
 					&database.SyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n2",
 						SubscriberNode: "n1",
 						ExtraDependencies: []resource.Identifier{
@@ -373,6 +442,7 @@ func TestPopulateNodes(t *testing.T) {
 						},
 					},
 					&database.SyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n3",
 						SubscriberNode: "n1",
 						ExtraDependencies: []resource.Identifier{
@@ -384,18 +454,22 @@ func TestPopulateNodes(t *testing.T) {
 						},
 					},
 					&database.WaitForSyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n2",
 						SubscriberNode: "n1",
 					},
 					&database.WaitForSyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n3",
 						SubscriberNode: "n1",
 					},
 					&database.ReplicationSlotResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n4",
 					},
 					&database.SubscriptionResource{
+						DatabaseName:   "test",
 						SubscriberNode: "n4",
 						ProviderNode:   "n1",
 						SyncStructure:  true,
@@ -406,6 +480,7 @@ func TestPopulateNodes(t *testing.T) {
 						},
 					},
 					&database.SyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n4",
 						ExtraDependencies: []resource.Identifier{
@@ -413,10 +488,12 @@ func TestPopulateNodes(t *testing.T) {
 						},
 					},
 					&database.WaitForSyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n4",
 					},
 					&database.LagTrackerCommitTimestampResource{
+						DatabaseName: "test",
 						OriginNode:   "n2",
 						ReceiverNode: "n4",
 						ExtraDependencies: []resource.Identifier{
@@ -424,6 +501,7 @@ func TestPopulateNodes(t *testing.T) {
 						},
 					},
 					&database.LagTrackerCommitTimestampResource{
+						DatabaseName: "test",
 						OriginNode:   "n3",
 						ReceiverNode: "n4",
 						ExtraDependencies: []resource.Identifier{
@@ -431,10 +509,12 @@ func TestPopulateNodes(t *testing.T) {
 						},
 					},
 					&database.ReplicationSlotAdvanceFromCTSResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n2",
 						SubscriberNode: "n4",
 					},
 					&database.ReplicationSlotAdvanceFromCTSResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n3",
 						SubscriberNode: "n4",
 					},
@@ -446,6 +526,7 @@ func TestPopulateNodes(t *testing.T) {
 			name: "two new nodes and one existing node",
 			existing: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n1",
 					PrimaryInstanceID: n1Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n1Instance1},
@@ -453,12 +534,14 @@ func TestPopulateNodes(t *testing.T) {
 			},
 			new: []*operations.NodeResources{
 				{
+					DatabaseName:      "test",
 					NodeName:          "n2",
 					SourceNode:        "n1",
 					PrimaryInstanceID: n2Instance1.InstanceID(),
 					InstanceResources: []*database.InstanceResources{n2Instance1},
 				},
 				{
+					DatabaseName:      "test",
 					NodeName:          "n3",
 					SourceNode:        "n1",
 					PrimaryInstanceID: n3Instance1.InstanceID(),
@@ -468,17 +551,25 @@ func TestPopulateNodes(t *testing.T) {
 			// Should only have sync resources
 			expected: makeState(t,
 				[]resource.Resource{
+					makeMonitorResource(n2Instance1),
+					&database.PostgresDatabaseResource{
+						NodeName:     "n2",
+						DatabaseName: "test",
+					},
 					&database.ReplicationSlotResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n2",
 					},
 					&database.SubscriptionResource{
+						DatabaseName:   "test",
 						SubscriberNode: "n2",
 						ProviderNode:   "n1",
 						SyncStructure:  true,
 						SyncData:       true,
 					},
 					&database.SyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n2",
 						ExtraDependencies: []resource.Identifier{
@@ -486,20 +577,29 @@ func TestPopulateNodes(t *testing.T) {
 						},
 					},
 					&database.WaitForSyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n2",
 					},
+					makeMonitorResource(n3Instance1),
+					&database.PostgresDatabaseResource{
+						NodeName:     "n3",
+						DatabaseName: "test",
+					},
 					&database.ReplicationSlotResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n3",
 					},
 					&database.SubscriptionResource{
+						DatabaseName:   "test",
 						SubscriberNode: "n3",
 						ProviderNode:   "n1",
 						SyncStructure:  true,
 						SyncData:       true,
 					},
 					&database.SyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n3",
 						ExtraDependencies: []resource.Identifier{
@@ -507,6 +607,7 @@ func TestPopulateNodes(t *testing.T) {
 						},
 					},
 					&database.WaitForSyncEventResource{
+						DatabaseName:   "test",
 						ProviderNode:   "n1",
 						SubscriberNode: "n3",
 					},
@@ -534,7 +635,7 @@ func TestPopulateNodes(t *testing.T) {
 			expected: nil,
 		},
 	} {
-		t.Run(t.Name(), func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			out, err := operations.PopulateNodes(tc.existing, tc.new)
 			if tc.expectedErr != "" {
 				assert.Nil(t, out)
