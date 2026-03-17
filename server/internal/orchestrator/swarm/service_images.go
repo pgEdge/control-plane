@@ -53,14 +53,8 @@ func NewServiceVersions(cfg config.Config) *ServiceVersions {
 	// Images are published to the pgEdge registry under ghcr.io/pgedge/postgrest.
 	// The bare ref (no registry prefix) lets serviceImageTag prepend the
 	// configured ImageRepositoryHost (e.g. ghcr.io/pgedge).
-	versions.addServiceImage("postgrest", "latest", &ServiceImage{
-		Tag: serviceImageTag(cfg, "postgrest:latest"),
-		// No constraints — PostgREST v14+ requires Postgres >= 13; the CP only
-		// supports Postgres 16+, so no explicit constraint is needed here.
-	})
-	versions.addServiceImage("postgrest", "v14.5", &ServiceImage{
-		Tag: serviceImageTag(cfg, "postgrest:v14.5"),
-		// No constraints — see above.
+	versions.addServiceImage("postgrest", "14.5", &ServiceImage{
+		Tag: serviceImageTag(cfg, "postgrest:14.5"),
 	})
 
 	// Example of a service image with version constraints (nil = no restriction):

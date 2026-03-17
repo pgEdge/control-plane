@@ -18697,9 +18697,9 @@ components:
             - postgrest
         version:
           type: string
-          description: The version of the service in semver format (e.g., '1.0.0') or the literal 'latest'.
+          description: The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
           example: latest
-          pattern: ^(\d+\.\d+\.\d+|latest)$
+          pattern: ^(\d+\.\d+(\.\d+)?|latest)$
       example:
         config:
           llm_model: gpt-4
@@ -18810,9 +18810,9 @@ components:
             - postgrest
         version:
           type: string
-          description: The version of the service in semver format (e.g., '1.0.0') or the literal 'latest'.
+          description: The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
           example: latest
-          pattern: ^(\d+\.\d+\.\d+|latest)$
+          pattern: ^(\d+\.\d+(\.\d+)?|latest)$
       example:
         config:
           llm_model: gpt-4
@@ -18919,9 +18919,9 @@ components:
             - postgrest
         version:
           type: string
-          description: The version of the service in semver format (e.g., '1.0.0') or the literal 'latest'.
+          description: The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
           example: latest
-          pattern: ^(\d+\.\d+\.\d+|latest)$
+          pattern: ^(\d+\.\d+(\.\d+)?|latest)$
       example:
         config:
           llm_model: gpt-4
@@ -19029,9 +19029,9 @@ components:
             - postgrest
         version:
           type: string
-          description: The version of the service in semver format (e.g., '1.0.0') or the literal 'latest'.
+          description: The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
           example: latest
-          pattern: ^(\d+\.\d+\.\d+|latest)$
+          pattern: ^(\d+\.\d+(\.\d+)?|latest)$
       example:
         config:
           llm_model: gpt-4
@@ -19141,9 +19141,9 @@ components:
             - postgrest
         version:
           type: string
-          description: The version of the service in semver format (e.g., '1.0.0') or the literal 'latest'.
+          description: The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
           example: latest
-          pattern: ^(\d+\.\d+\.\d+|latest)$
+          pattern: ^(\d+\.\d+(\.\d+)?|latest)$
       example:
         config:
           llm_model: gpt-4
@@ -19252,9 +19252,9 @@ components:
             - postgrest
         version:
           type: string
-          description: The version of the service in semver format (e.g., '1.0.0') or the literal 'latest'.
+          description: The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
           example: latest
-          pattern: ^(\d+\.\d+\.\d+|latest)$
+          pattern: ^(\d+\.\d+(\.\d+)?|latest)$
       example:
         config:
           llm_model: gpt-4
@@ -19363,9 +19363,9 @@ components:
             - postgrest
         version:
           type: string
-          description: The version of the service in semver format (e.g., '1.0.0') or the literal 'latest'.
+          description: The version of the service (e.g., '1.0.0', '14.5') or the literal 'latest'.
           example: latest
-          pattern: ^(\d+\.\d+\.\d+|latest)$
+          pattern: ^(\d+\.\d+(\.\d+)?|latest)$
       example:
         config:
           llm_model: gpt-4

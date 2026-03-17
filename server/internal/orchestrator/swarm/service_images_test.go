@@ -31,17 +31,10 @@ func TestGetServiceImage(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name:        "valid postgrest latest",
+			name:        "valid postgrest 14.5",
 			serviceType: "postgrest",
-			version:     "latest",
-			wantTag:     "ghcr.io/pgedge/postgrest:latest",
-			wantErr:     false,
-		},
-		{
-			name:        "valid postgrest v14.5",
-			serviceType: "postgrest",
-			version:     "v14.5",
-			wantTag:     "ghcr.io/pgedge/postgrest:v14.5",
+			version:     "14.5",
+			wantTag:     "ghcr.io/pgedge/postgrest:14.5",
 			wantErr:     false,
 		},
 		{
@@ -98,19 +91,22 @@ func TestSupportedServiceVersions(t *testing.T) {
 	tests := []struct {
 		name           string
 		serviceType    string
-		minPinnedCount int // minimum number of pinned (non-"latest") versions required
+		wantLatest     bool // whether "latest" must be present
+		minPinnedCount int  // minimum number of pinned (non-"latest") versions required
 		wantErr        bool
 	}{
 		{
 			name:           "mcp service has versions",
 			serviceType:    "mcp",
+			wantLatest:     true,
 			minPinnedCount: 0,
 			wantErr:        false,
 		},
 		{
 			name:           "postgrest service has versions",
 			serviceType:    "postgrest",
-			minPinnedCount: 1, // at least one pinned release (e.g. v14.5 or newer)
+			wantLatest:     false,
+			minPinnedCount: 1, // at least one pinned release (e.g. 14.5 or newer)
 			wantErr:        false,
 		},
 		{
@@ -128,11 +124,9 @@ func TestSupportedServiceVersions(t *testing.T) {
 				return
 			}
 			if !tt.wantErr {
-				// Every service type must always support "latest".
-				if !slices.Contains(got, "latest") {
+				if tt.wantLatest && !slices.Contains(got, "latest") {
 					t.Errorf("SupportedServiceVersions() missing required version \"latest\", got %v", got)
 				}
-				// Count pinned (non-"latest") versions.
 				pinned := 0
 				for _, v := range got {
 					if v != "latest" {
@@ -217,12 +211,12 @@ func TestGetServiceImage_ConstraintsPopulated(t *testing.T) {
 	})
 
 	t.Run("postgrest has no constraints", func(t *testing.T) {
-		img, err := sv.GetServiceImage("postgrest", "latest")
+		img, err := sv.GetServiceImage("postgrest", "14.5")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if img.Tag != "ghcr.io/pgedge/postgrest:latest" {
-			t.Errorf("expected ghcr.io/pgedge/postgrest:latest, got %s", img.Tag)
+		if img.Tag != "ghcr.io/pgedge/postgrest:14.5" {
+			t.Errorf("expected ghcr.io/pgedge/postgrest:14.5, got %s", img.Tag)
 		}
 		if img.PostgresConstraint != nil {
 			t.Error("expected nil PostgresConstraint for postgrest")

@@ -98,7 +98,7 @@ func (a *Activities) ValidatePostgRESTPrereqs(
 			errs = append(errs, fmt.Errorf("failed to check role %q: %w", input.DBAnonymRole, err))
 		} else if !exists {
 			errs = append(errs, fmt.Errorf(
-				"role %q does not exist in database %q; create it before deploying PostgREST",
+				"role %q does not exist on the Postgres cluster (checked while connected to database %q); create it before deploying PostgREST",
 				input.DBAnonymRole, input.DatabaseName,
 			))
 		}
@@ -133,33 +133,37 @@ func (a *Activities) postgrestConnectToPrimary(
 
 	// Find the current primary via Patroni.
 	var primaryInstanceID string
-	var fallbackInstanceID string
+	var fallbackConnInfo *database.ConnectionInfo
+	var hasFallback bool
 	for _, inst := range db.Instances {
-		connInfo, err := a.DatabaseService.GetInstanceConnectionInfo(ctx, databaseID, inst.InstanceID)
+		ci, err := a.DatabaseService.GetInstanceConnectionInfo(ctx, databaseID, inst.InstanceID)
 		if err != nil {
 			continue
 		}
-		if fallbackInstanceID == "" {
-			fallbackInstanceID = inst.InstanceID
+		if !hasFallback {
+			fallbackConnInfo = ci
+			hasFallback = true
 		}
-		patroniClient := patroni.NewClient(connInfo.PatroniURL(), nil)
+		patroniClient := patroni.NewClient(ci.PatroniURL(), nil)
 		primaryID, err := database.GetPrimaryInstanceID(ctx, patroniClient, 10*time.Second)
 		if err == nil && primaryID != "" {
 			primaryInstanceID = primaryID
 			break
 		}
 	}
-	if primaryInstanceID == "" {
-		if fallbackInstanceID == "" {
-			return nil, fmt.Errorf("failed to resolve connection info for any instance")
-		}
-		// The prereq queries are read-only, so any reachable instance is sufficient.
-		primaryInstanceID = fallbackInstanceID
+	if !hasFallback {
+		return nil, fmt.Errorf("failed to resolve connection info for any instance")
 	}
 
 	connInfo, err := a.DatabaseService.GetInstanceConnectionInfo(ctx, databaseID, primaryInstanceID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get instance connection info: %w", err)
+		// Primary conn-info lookup failed (e.g. stale Patroni data); fall back to
+		// the first reachable instance — safe because these checks are read-only.
+		activity.Logger(ctx).Warn("failed to get primary connection info, falling back to reachable instance",
+			"primary_instance_id", primaryInstanceID,
+			"error", err,
+		)
+		connInfo = fallbackConnInfo
 	}
 
 	certSvc, err := do.Invoke[*certificates.Service](a.Injector)

@@ -804,6 +804,16 @@ func TestValidateServiceSpec(t *testing.T) {
 			},
 		},
 		{
+			name: "valid PostgREST service with two-part version",
+			svc: &api.ServiceSpec{
+				ServiceID:   "postgrest",
+				ServiceType: "postgrest",
+				Version:     "14.5",
+				HostIds:     []api.Identifier{"host-1"},
+				Config:      map[string]any{},
+			},
+		},
+		{
 			name: "valid MCP service with 'latest' version",
 			svc: &api.ServiceSpec{
 				ServiceID:   "mcp-server",
