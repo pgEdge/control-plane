@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/cschleiden/go-workflows/backend"
@@ -34,6 +35,8 @@ type Backend struct {
 	options          *backend.Options
 	workerID         string
 	workerInstanceID string
+	workflowMu       sync.Mutex
+	activityMu       sync.Mutex
 }
 
 func NewBackend(store *Store, options *backend.Options, workerID string) *Backend {
@@ -43,6 +46,14 @@ func NewBackend(store *Store, options *backend.Options, workerID string) *Backen
 		workerID:         workerID,
 		workerInstanceID: uuid.NewString(),
 	}
+}
+
+func (b *Backend) StartCaches(ctx context.Context) error {
+	return b.store.StartCaches(ctx)
+}
+
+func (b *Backend) StopCaches() {
+	b.store.StopCaches()
 }
 
 func (b *Backend) CreateWorkflowInstance(ctx context.Context, instance *workflow.Instance, event *history.Event) error {
@@ -244,6 +255,11 @@ func (b *Backend) PrepareActivityQueues(ctx context.Context, queues []workflow.Q
 }
 
 func (b *Backend) GetWorkflowTask(ctx context.Context, queues []workflow.Queue) (*backend.WorkflowTask, error) {
+	// This lock reduces unnecessary contention from concurrent calls within the
+	// same worker.
+	b.workflowMu.Lock()
+	defer b.workflowMu.Unlock()
+
 	for _, queue := range queues {
 		items, err := b.store.WorkflowQueueItem.
 			GetByQueue(string(queue)).
@@ -578,6 +594,11 @@ func (b *Backend) CompleteWorkflowTask(
 }
 
 func (b *Backend) GetActivityTask(ctx context.Context, queues []workflow.Queue) (*backend.ActivityTask, error) {
+	// This lock reduces unnecessary contention from concurrent calls within the
+	// same worker.
+	b.activityMu.Lock()
+	defer b.activityMu.Unlock()
+
 	for _, queue := range queues {
 		items, err := b.store.ActivityQueueItem.
 			GetByQueue(string(queue)).
@@ -793,6 +814,10 @@ func (b *Backend) FeatureSupported(feature backend.Feature) bool {
 		return true
 	}
 	return false
+}
+
+func (b *Backend) Error() <-chan error {
+	return b.store.Error()
 }
 
 func sortPendingEvents(events []*pending_event.Value) {
