@@ -59,7 +59,7 @@ func (o *watchOp[V]) load(ctx context.Context, handle func(e *Event[V]) error) e
 	}
 
 	for _, kv := range resp.Kvs {
-		if err := handle(convertKVToEvent[V](kv)); err != nil {
+		if err := handle(convertKVToEvent[V](kv, resp.Header.Revision)); err != nil {
 			return err
 		}
 	}
@@ -134,7 +134,7 @@ func (o *watchOp[V]) Watch(ctx context.Context, handle func(e *Event[V]) error) 
 						break eventLoop
 					}
 					for _, event := range resp.Events {
-						if err := handle(convertEvent[V](event)); err != nil {
+						if err := handle(convertEvent[V](event, resp.Header.Revision)); err != nil {
 							o.reportErr(err)
 							o.Close()
 							return
@@ -196,12 +196,13 @@ func (o *watchOp[V]) PropagateErrors(ctx context.Context, ch chan error) {
 	}()
 }
 
-func convertKVToEvent[V Value](kv *mvccpb.KeyValue) *Event[V] {
+func convertKVToEvent[V Value](kv *mvccpb.KeyValue, revision int64) *Event[V] {
 	v, err := decodeKV[V](kv)
 	if err != nil {
 		return &Event[V]{
-			Type: EventTypeError,
-			Err:  err,
+			Type:     EventTypeError,
+			Err:      err,
+			Revision: revision,
 		}
 	}
 	return &Event[V]{
@@ -209,18 +210,20 @@ func convertKVToEvent[V Value](kv *mvccpb.KeyValue) *Event[V] {
 		Key:      string(kv.Key),
 		Value:    v,
 		IsCreate: kv.CreateRevision == kv.ModRevision,
+		Revision: revision,
 	}
 }
 
-func convertEvent[V Value](in *clientv3.Event) *Event[V] {
+func convertEvent[V Value](in *clientv3.Event, revision int64) *Event[V] {
 	key := string(in.Kv.Key)
 	var val V
 	if len(in.Kv.Value) > 0 {
 		v, err := decodeKV[V](in.Kv)
 		if err != nil {
 			return &Event[V]{
-				Type: EventTypeError,
-				Err:  err,
+				Type:     EventTypeError,
+				Err:      err,
+				Revision: revision,
 			}
 		}
 		val = v
@@ -242,5 +245,6 @@ func convertEvent[V Value](in *clientv3.Event) *Event[V] {
 		Value:    val,
 		IsCreate: in.IsCreate(),
 		IsModify: in.IsModify(),
+		Revision: revision,
 	}
 }

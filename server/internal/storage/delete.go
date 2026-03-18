@@ -8,9 +8,10 @@ import (
 )
 
 type deleteKeyOp struct {
-	client  *clientv3.Client
-	key     string
-	options []clientv3.OpOption
+	client   *clientv3.Client
+	key      string
+	options  []clientv3.OpOption
+	revision int64
 }
 
 // NewDeleteKeyOp returns an operation that deletes a single value by key.
@@ -22,8 +23,8 @@ func NewDeleteKeyOp(client *clientv3.Client, key string, options ...clientv3.OpO
 	}
 }
 
-func (o *deleteKeyOp) Ops(ctx context.Context) ([]clientv3.Op, error) {
-	return []clientv3.Op{clientv3.OpDelete(o.key, o.options...)}, nil
+func (o *deleteKeyOp) ClientOp(ctx context.Context) (clientv3.Op, error) {
+	return clientv3.OpDelete(o.key, o.options...), nil
 }
 
 func (o *deleteKeyOp) Cmps() []clientv3.Cmp {
@@ -36,14 +37,24 @@ func (o *deleteKeyOp) Exec(ctx context.Context) (int64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("failed to delete key %q: %w", o.key, err)
 	}
+	o.revision = resp.Header.Revision
 
 	return resp.Deleted, nil
 }
 
+func (o *deleteKeyOp) Revision() int64 {
+	return o.revision
+}
+
+func (o *deleteKeyOp) UpdateRevision(revision int64) {
+	o.revision = revision
+}
+
 type deletePrefixOp struct {
-	client  *clientv3.Client
-	prefix  string
-	options []clientv3.OpOption
+	client   *clientv3.Client
+	prefix   string
+	options  []clientv3.OpOption
+	revision int64
 }
 
 // NewDeletePrefixOp returns an operation that deletes a multiple values by
@@ -56,10 +67,10 @@ func NewDeletePrefixOp(client *clientv3.Client, prefix string, options ...client
 	}
 }
 
-func (o *deletePrefixOp) Ops(ctx context.Context) ([]clientv3.Op, error) {
+func (o *deletePrefixOp) ClientOp(ctx context.Context) (clientv3.Op, error) {
 	options := []clientv3.OpOption{clientv3.WithPrefix()}
 	options = append(options, o.options...)
-	return []clientv3.Op{clientv3.OpDelete(o.prefix, options...)}, nil
+	return clientv3.OpDelete(o.prefix, options...), nil
 }
 
 func (o *deletePrefixOp) Cmps() []clientv3.Cmp {
@@ -74,15 +85,25 @@ func (o *deletePrefixOp) Exec(ctx context.Context) (int64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("failed to delete prefix %q: %w", o.prefix, err)
 	}
+	o.revision = resp.Header.Revision
 
 	return resp.Deleted, nil
 }
 
+func (o *deletePrefixOp) Revision() int64 {
+	return o.revision
+}
+
+func (o *deletePrefixOp) UpdateRevision(revision int64) {
+	o.revision = revision
+}
+
 type deleteValueOp[V Value] struct {
-	client  *clientv3.Client
-	key     string
-	val     V
-	options []clientv3.OpOption
+	client   *clientv3.Client
+	key      string
+	val      V
+	options  []clientv3.OpOption
+	revision int64
 }
 
 // NewDeleteValueOp deletes a single value if its version matches the given
@@ -97,8 +118,8 @@ func NewDeleteValueOp[V Value](client *clientv3.Client, key string, val V, optio
 	}
 }
 
-func (o *deleteValueOp[V]) Ops(ctx context.Context) ([]clientv3.Op, error) {
-	return []clientv3.Op{clientv3.OpDelete(o.key, o.options...)}, nil
+func (o *deleteValueOp[V]) ClientOp(ctx context.Context) (clientv3.Op, error) {
+	return clientv3.OpDelete(o.key, o.options...), nil
 }
 
 func (o *deleteValueOp[V]) Cmps() []clientv3.Cmp {
@@ -108,17 +129,26 @@ func (o *deleteValueOp[V]) Cmps() []clientv3.Cmp {
 // Exec returns an ErrValueVersionMismatch if the stored value version did not
 // match the given value version.
 func (o *deleteValueOp[V]) Exec(ctx context.Context) error {
-	ops, _ := o.Ops(ctx)
+	op, _ := o.ClientOp(ctx)
 	resp, err := o.client.Txn(ctx).
 		If(o.Cmps()...).
-		Then(ops...).
+		Then(op).
 		Commit()
 	if err != nil {
 		return fmt.Errorf("failed to delete value %q: %w", o.key, err)
 	}
+	o.revision = resp.Header.Revision
 	if !resp.Succeeded {
 		return ErrValueVersionMismatch
 	}
 
 	return nil
+}
+
+func (o *deleteValueOp[V]) Revision() int64 {
+	return o.revision
+}
+
+func (o *deleteValueOp[V]) UpdateRevision(revision int64) {
+	o.revision = revision
 }

@@ -1,7 +1,6 @@
 package storage_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -18,10 +17,12 @@ func TestPutOp(t *testing.T) {
 	client := server.Client(t)
 
 	t.Run("puts a value", func(t *testing.T) {
-		ctx := context.Background()
-		err := storage.NewPutOp(client, "foo", &TestValue{SomeField: "foo"}).Exec(ctx)
+		ctx := t.Context()
+		op := storage.NewPutOp(client, "foo", &TestValue{SomeField: "foo"})
+		err := op.Exec(ctx)
 
 		assert.NoError(t, err)
+		assert.NotZero(t, op.Revision())
 
 		val, err := storage.NewGetOp[*TestValue](client, "foo").Exec(ctx)
 		require.NoError(t, err)
@@ -30,12 +31,17 @@ func TestPutOp(t *testing.T) {
 	})
 
 	t.Run("multiple puts succeed", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
-		err := storage.NewPutOp(client, "bar", &TestValue{SomeField: "bar"}).Exec(ctx)
+		op1 := storage.NewPutOp(client, "bar", &TestValue{SomeField: "bar"})
+		err := op1.Exec(ctx)
 		assert.NoError(t, err)
-		err = storage.NewPutOp(client, "bar", &TestValue{SomeField: "baz"}).Exec(ctx)
+		assert.NotZero(t, op1.Revision())
+
+		op2 := storage.NewPutOp(client, "bar", &TestValue{SomeField: "baz"})
+		err = op2.Exec(ctx)
 		assert.NoError(t, err)
+		assert.Greater(t, op2.Revision(), op1.Revision())
 
 		val, err := storage.NewGetOp[*TestValue](client, "bar").Exec(ctx)
 		require.NoError(t, err)
@@ -44,12 +50,13 @@ func TestPutOp(t *testing.T) {
 	})
 
 	t.Run("with TTL", func(t *testing.T) {
-		ctx := context.Background()
-		err := storage.NewPutOp(client, "expires", &TestValue{SomeField: "qux"}).
-			WithTTL(500 * time.Millisecond).
-			Exec(ctx)
+		ctx := t.Context()
+		op := storage.NewPutOp(client, "expires", &TestValue{SomeField: "qux"}).
+			WithTTL(500 * time.Millisecond)
+		err := op.Exec(ctx)
 
 		assert.NoError(t, err)
+		assert.NotZero(t, op.Revision())
 
 		val, err := storage.NewGetOp[*TestValue](client, "expires").Exec(ctx)
 		require.NoError(t, err)
@@ -84,10 +91,12 @@ func TestCreateOp(t *testing.T) {
 	client := server.Client(t)
 
 	t.Run("key does not exist", func(t *testing.T) {
-		ctx := context.Background()
-		err := storage.NewCreateOp(client, "foo", &TestValue{SomeField: "foo"}).Exec(ctx)
+		ctx := t.Context()
+		op := storage.NewCreateOp(client, "foo", &TestValue{SomeField: "foo"})
+		err := op.Exec(ctx)
 
 		assert.NoError(t, err)
+		assert.NotZero(t, op.Revision())
 
 		val, err := storage.NewGetOp[*TestValue](client, "foo").Exec(ctx)
 		require.NoError(t, err)
@@ -96,14 +105,18 @@ func TestCreateOp(t *testing.T) {
 	})
 
 	t.Run("key exists", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
-		err := storage.NewCreateOp(client, "bar", &TestValue{SomeField: "bar"}).Exec(ctx)
+		op1 := storage.NewCreateOp(client, "bar", &TestValue{SomeField: "bar"})
+		err := op1.Exec(ctx)
 		assert.NoError(t, err)
+		assert.NotZero(t, op1.Revision())
 
 		// The second create should fail because the value already exists
-		err = storage.NewCreateOp(client, "bar", &TestValue{SomeField: "bar"}).Exec(ctx)
+		op2 := storage.NewCreateOp(client, "bar", &TestValue{SomeField: "bar"})
+		err = op2.Exec(ctx)
 		assert.ErrorIs(t, err, storage.ErrAlreadyExists)
+		assert.NotZero(t, op2.Revision())
 	})
 
 	t.Run("with updated version", func(t *testing.T) {
@@ -120,7 +133,7 @@ func TestUpdateOp(t *testing.T) {
 	client := server.Client(t)
 
 	t.Run("valid update", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		err := storage.NewCreateOp(client, "foo", &TestValue{SomeField: "foo"}).Exec(ctx)
 		require.NoError(t, err)
 
@@ -128,9 +141,11 @@ func TestUpdateOp(t *testing.T) {
 		require.NoError(t, err)
 
 		val.SomeField = "bar"
-		err = storage.NewUpdateOp(client, "foo", val).Exec(ctx)
+		op := storage.NewUpdateOp(client, "foo", val)
+		err = op.Exec(ctx)
 
 		assert.NoError(t, err)
+		assert.NotZero(t, op.Revision())
 
 		updated, err := storage.NewGetOp[*TestValue](client, "foo").Exec(ctx)
 		require.NoError(t, err)
@@ -139,7 +154,7 @@ func TestUpdateOp(t *testing.T) {
 	})
 
 	t.Run("version mismatch", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		err := storage.NewCreateOp(client, "bar", &TestValue{SomeField: "bar"}).Exec(ctx)
 		require.NoError(t, err)
 
@@ -149,9 +164,11 @@ func TestUpdateOp(t *testing.T) {
 		err = storage.NewPutOp(client, "bar", &TestValue{SomeField: "qux"}).Exec(ctx)
 		require.NoError(t, err)
 
-		err = storage.NewUpdateOp(client, "bar", val).Exec(ctx)
+		op := storage.NewUpdateOp(client, "bar", val)
+		err = op.Exec(ctx)
 
 		assert.ErrorIs(t, err, storage.ErrValueVersionMismatch)
+		assert.NotZero(t, op.Revision())
 	})
 
 	t.Run("with updated version", func(t *testing.T) {
