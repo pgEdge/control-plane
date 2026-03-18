@@ -56,7 +56,7 @@ func NewService(
 ) *Service {
 	return &Service{
 		cfg:         cfg,
-		logger:      loggerFactory.Logger("ports_service"),
+		logger:      loggerFactory.Logger(logging.ComponentPortsService),
 		store:       store,
 		portChecker: portChecker,
 		hostSvc:     hostSvc,

@@ -48,7 +48,7 @@ func NewRunner(
 		hostID:     hostID,
 		store:      store,
 		injector:   injector,
-		logger:     loggerFactory.Logger("migration_runner"),
+		logger:     loggerFactory.Logger(logging.ComponentMigrationRunner),
 		migrations: migrations,
 		candidate:  candidate,
 		errCh:      make(chan error, 1),

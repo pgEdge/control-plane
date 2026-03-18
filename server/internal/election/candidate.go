@@ -51,7 +51,7 @@ func NewCandidate(
 ) *Candidate {
 	return &Candidate{
 		store: store,
-		logger: loggerFactory.Logger("election_candidate").With().
+		logger: loggerFactory.Logger(logging.ComponentElectionCandidate).With().
 			Stringer("election_name", electionName).
 			Str("candidate_id", candidateID).
 			Logger(),
