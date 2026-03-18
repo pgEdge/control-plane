@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/resource"
@@ -74,8 +75,11 @@ func (r *RAGServiceKeysResource) Refresh(ctx context.Context, rc *resource.Conte
 	}
 
 	for name := range r.Keys {
-		if _, err := os.Stat(filepath.Join(r.KeysDir, name)); os.IsNotExist(err) {
-			return resource.ErrNotFound
+		if _, err := os.Stat(filepath.Join(r.KeysDir, name)); err != nil {
+			if os.IsNotExist(err) {
+				return resource.ErrNotFound
+			}
+			return fmt.Errorf("failed to stat key file %q: %w", name, err)
 		}
 	}
 
@@ -105,10 +109,21 @@ func (r *RAGServiceKeysResource) Delete(ctx context.Context, rc *resource.Contex
 
 func (r *RAGServiceKeysResource) writeKeyFiles() error {
 	for name, key := range r.Keys {
+		if err := validateKeyFilename(name); err != nil {
+			return err
+		}
 		path := filepath.Join(r.KeysDir, name)
 		if err := os.WriteFile(path, []byte(key), 0o600); err != nil {
 			return fmt.Errorf("failed to write key file %q: %w", name, err)
 		}
+	}
+	return nil
+}
+
+// validateKeyFilename rejects filenames that could escape KeysDir via path traversal.
+func validateKeyFilename(name string) error {
+	if filepath.Clean(name) != name || filepath.IsAbs(name) || strings.ContainsAny(name, `/\`) {
+		return fmt.Errorf("invalid key filename %q", name)
 	}
 	return nil
 }
