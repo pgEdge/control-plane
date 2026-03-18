@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
-	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
 type Images struct {
@@ -13,8 +13,8 @@ type Images struct {
 
 type Versions struct {
 	cfg               config.Config
-	supportedVersions []*host.PgEdgeVersion
-	defaultVersion    *host.PgEdgeVersion
+	supportedVersions []*ds.PgEdgeVersion
+	defaultVersion    *ds.PgEdgeVersion
 	images            map[string]map[string]*Images
 }
 
@@ -25,62 +25,62 @@ func NewVersions(cfg config.Config) *Versions {
 	}
 
 	// pg16
-	versions.addImage(host.MustPgEdgeVersion("16.10", "5"), &Images{
+	versions.addImage(ds.MustPgEdgeVersion("16.10", "5"), &Images{
 		PgEdgeImage: imageTag(cfg, "16.10-spock5.0.4-standard-3"),
 	})
-	versions.addImage(host.MustPgEdgeVersion("16.11", "5"), &Images{
+	versions.addImage(ds.MustPgEdgeVersion("16.11", "5"), &Images{
 		PgEdgeImage: imageTag(cfg, "16.11-spock5.0.4-standard-4"),
 	})
-	versions.addImage(host.MustPgEdgeVersion("16.12", "5"), &Images{
+	versions.addImage(ds.MustPgEdgeVersion("16.12", "5"), &Images{
 		PgEdgeImage: imageTag(cfg, "16.12-spock5.0.5-standard-1"),
 	})
 
-	versions.addImage(host.MustPgEdgeVersion("16.13", "5"), &Images{
+	versions.addImage(ds.MustPgEdgeVersion("16.13", "5"), &Images{
 		PgEdgeImage: imageTag(cfg, "16.13-spock5.0.6-standard-1"),
 	})
 
 	// pg17
-	versions.addImage(host.MustPgEdgeVersion("17.6", "5"), &Images{
+	versions.addImage(ds.MustPgEdgeVersion("17.6", "5"), &Images{
 		PgEdgeImage: imageTag(cfg, "17.6-spock5.0.4-standard-3"),
 	})
-	versions.addImage(host.MustPgEdgeVersion("17.7", "5"), &Images{
+	versions.addImage(ds.MustPgEdgeVersion("17.7", "5"), &Images{
 		PgEdgeImage: imageTag(cfg, "17.7-spock5.0.4-standard-4"),
 	})
-	versions.addImage(host.MustPgEdgeVersion("17.8", "5"), &Images{
+	versions.addImage(ds.MustPgEdgeVersion("17.8", "5"), &Images{
 		PgEdgeImage: imageTag(cfg, "17.8-spock5.0.5-standard-1"),
 	})
-	versions.addImage(host.MustPgEdgeVersion("17.9", "5"), &Images{
+	versions.addImage(ds.MustPgEdgeVersion("17.9", "5"), &Images{
 		PgEdgeImage: imageTag(cfg, "17.9-spock5.0.6-standard-1"),
 	})
 
 	// pg18
-	versions.addImage(host.MustPgEdgeVersion("18.0", "5"), &Images{
+	versions.addImage(ds.MustPgEdgeVersion("18.0", "5"), &Images{
 		PgEdgeImage: imageTag(cfg, "18.0-spock5.0.4-standard-3"),
 	})
-	versions.addImage(host.MustPgEdgeVersion("18.1", "5"), &Images{
+	versions.addImage(ds.MustPgEdgeVersion("18.1", "5"), &Images{
 		PgEdgeImage: imageTag(cfg, "18.1-spock5.0.4-standard-4"),
 	})
-	versions.addImage(host.MustPgEdgeVersion("18.2", "5"), &Images{
+	versions.addImage(ds.MustPgEdgeVersion("18.2", "5"), &Images{
 		PgEdgeImage: imageTag(cfg, "18.2-spock5.0.5-standard-1"),
 	})
-	versions.addImage(host.MustPgEdgeVersion("18.3", "5"), &Images{
+	versions.addImage(ds.MustPgEdgeVersion("18.3", "5"), &Images{
 		PgEdgeImage: imageTag(cfg, "18.3-spock5.0.6-standard-1"),
 	})
 
-	versions.defaultVersion = host.MustPgEdgeVersion("18.3", "5")
+	versions.defaultVersion = ds.MustPgEdgeVersion("18.3", "5")
 
 	return versions
 }
 
-func (v *Versions) Supported() []*host.PgEdgeVersion {
+func (v *Versions) Supported() []*ds.PgEdgeVersion {
 	return v.supportedVersions
 }
 
-func (v *Versions) Default() *host.PgEdgeVersion {
+func (v *Versions) Default() *ds.PgEdgeVersion {
 	return v.defaultVersion
 }
 
-func (v *Versions) addImage(version *host.PgEdgeVersion, images *Images) {
+func (v *Versions) addImage(version *ds.PgEdgeVersion, images *Images) {
 	pgv := version.PostgresVersion.String()
 	sv := version.SpockVersion.String()
 
@@ -92,7 +92,7 @@ func (v *Versions) addImage(version *host.PgEdgeVersion, images *Images) {
 	v.supportedVersions = append(v.supportedVersions, version)
 }
 
-func (v *Versions) GetImages(version *host.PgEdgeVersion) (*Images, error) {
+func (v *Versions) GetImages(version *ds.PgEdgeVersion) (*Images, error) {
 	pgv := version.PostgresVersion.String()
 	sv := version.SpockVersion.String()
 

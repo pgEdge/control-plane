@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
-	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
 func TestGetServiceImage(t *testing.T) {
@@ -185,9 +185,9 @@ func TestGetServiceImage_ConstraintsPopulated(t *testing.T) {
 
 }
 
-func mustVersion(t *testing.T, s string) *host.Version {
+func mustVersion(t *testing.T, s string) *ds.Version {
 	t.Helper()
-	v, err := host.ParseVersion(s)
+	v, err := ds.ParseVersion(s)
 	if err != nil {
 		t.Fatalf("failed to parse version %q: %v", s, err)
 	}
@@ -198,8 +198,8 @@ func TestValidateCompatibility(t *testing.T) {
 	tests := []struct {
 		name     string
 		image    *ServiceImage
-		postgres *host.Version
-		spock    *host.Version
+		postgres *ds.Version
+		spock    *ds.Version
 		wantErr  bool
 	}{
 		{
@@ -215,7 +215,7 @@ func TestValidateCompatibility(t *testing.T) {
 			name: "postgres constraint satisfied",
 			image: &ServiceImage{
 				Tag:                "test:latest",
-				PostgresConstraint: &host.VersionConstraint{Min: mustVersion(t, "16")},
+				PostgresConstraint: &ds.VersionConstraint{Min: mustVersion(t, "16")},
 			},
 			postgres: mustVersion(t, "17"),
 			spock:    mustVersion(t, "5.0.0"),
@@ -225,7 +225,7 @@ func TestValidateCompatibility(t *testing.T) {
 			name: "postgres constraint not satisfied",
 			image: &ServiceImage{
 				Tag:                "test:latest",
-				PostgresConstraint: &host.VersionConstraint{Min: mustVersion(t, "18")},
+				PostgresConstraint: &ds.VersionConstraint{Min: mustVersion(t, "18")},
 			},
 			postgres: mustVersion(t, "17"),
 			spock:    mustVersion(t, "5.0.0"),
@@ -235,7 +235,7 @@ func TestValidateCompatibility(t *testing.T) {
 			name: "spock constraint not satisfied",
 			image: &ServiceImage{
 				Tag:             "test:latest",
-				SpockConstraint: &host.VersionConstraint{Max: mustVersion(t, "4.0.0")},
+				SpockConstraint: &ds.VersionConstraint{Max: mustVersion(t, "4.0.0")},
 			},
 			postgres: mustVersion(t, "17"),
 			spock:    mustVersion(t, "5.0.0"),
@@ -245,8 +245,8 @@ func TestValidateCompatibility(t *testing.T) {
 			name: "both constraints satisfied",
 			image: &ServiceImage{
 				Tag:                "test:latest",
-				PostgresConstraint: &host.VersionConstraint{Min: mustVersion(t, "16"), Max: mustVersion(t, "18")},
-				SpockConstraint:    &host.VersionConstraint{Min: mustVersion(t, "4.0.0"), Max: mustVersion(t, "6.0.0")},
+				PostgresConstraint: &ds.VersionConstraint{Min: mustVersion(t, "16"), Max: mustVersion(t, "18")},
+				SpockConstraint:    &ds.VersionConstraint{Min: mustVersion(t, "4.0.0"), Max: mustVersion(t, "6.0.0")},
 			},
 			postgres: mustVersion(t, "17"),
 			spock:    mustVersion(t, "5.0.0"),

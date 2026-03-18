@@ -5,21 +5,21 @@ import (
 	"strings"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
-	"github.com/pgEdge/control-plane/server/internal/host"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 )
 
 // ServiceImage describes a container image for a service type+version, along
 // with optional version constraints that restrict which Postgres and Spock
 // versions the service is compatible with.
 type ServiceImage struct {
-	Tag                string                  `json:"tag"`
-	PostgresConstraint *host.VersionConstraint `json:"postgres_constraint,omitempty"`
-	SpockConstraint    *host.VersionConstraint `json:"spock_constraint,omitempty"`
+	Tag                string                `json:"tag"`
+	PostgresConstraint *ds.VersionConstraint `json:"postgres_constraint,omitempty"`
+	SpockConstraint    *ds.VersionConstraint `json:"spock_constraint,omitempty"`
 }
 
 // ValidateCompatibility checks that the given Postgres and Spock versions
 // satisfy this image's version constraints. Returns nil if compatible.
-func (s *ServiceImage) ValidateCompatibility(postgres, spock *host.Version) error {
+func (s *ServiceImage) ValidateCompatibility(postgres, spock *ds.Version) error {
 	if s.PostgresConstraint != nil && !s.PostgresConstraint.IsSatisfied(postgres) {
 		return fmt.Errorf("postgres version %s does not satisfy constraint %s",
 			postgres, s.PostgresConstraint)
@@ -62,12 +62,12 @@ func NewServiceVersions(cfg config.Config) *ServiceVersions {
 	//
 	//   versions.addServiceImage("acme", "1.0.0", &ServiceImage{
 	//       Tag: serviceImageTag(cfg, "acme-service:1.0.0"),
-	//       PostgresConstraint: &host.VersionConstraint{
-	//           Min: host.MustParseVersion("14"),
-	//           Max: host.MustParseVersion("17"),
+	//       PostgresConstraint: &ds.VersionConstraint{
+	//           Min: ds.MustParseVersion("14"),
+	//           Max: ds.MustParseVersion("17"),
 	//       },
-	//       SpockConstraint: &host.VersionConstraint{
-	//           Min: host.MustParseVersion("4.0.0"),
+	//       SpockConstraint: &ds.VersionConstraint{
+	//           Min: ds.MustParseVersion("4.0.0"),
 	//       },
 	//   })
 

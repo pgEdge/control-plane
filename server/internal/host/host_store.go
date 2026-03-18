@@ -4,6 +4,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/storage"
 )
 
@@ -24,8 +25,8 @@ type StoredHost struct {
 	CPUs                    int                 `json:"cpus"`
 	MemBytes                uint64              `json:"mem_bytes"`
 	EtcdMode                config.EtcdMode     `json:"etcd_mode"`
-	DefaultPgEdgeVersion    *PgEdgeVersion      `json:"default_version"`
-	SupportedPgEdgeVersions []*PgEdgeVersion    `json:"supported_versions"`
+	DefaultPgEdgeVersion    *ds.PgEdgeVersion   `json:"default_version"`
+	SupportedPgEdgeVersions []*ds.PgEdgeVersion `json:"supported_versions"`
 }
 
 type HostStore struct {

@@ -10,7 +10,6 @@ import (
 	"strconv"
 
 	"github.com/pgEdge/control-plane/server/internal/ds"
-	"github.com/pgEdge/control-plane/server/internal/host"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 )
@@ -505,25 +504,25 @@ func InstanceIDFor(hostID, databaseID, nodeName string) string {
 }
 
 type InstanceSpec struct {
-	InstanceID       string              `json:"instance_id"`
-	TenantID         *string             `json:"tenant_id,omitempty"`
-	DatabaseID       string              `json:"database_id"`
-	HostID           string              `json:"host_id"`
-	DatabaseName     string              `json:"database_name"`
-	NodeName         string              `json:"node_name"`
-	NodeOrdinal      int                 `json:"node_ordinal"`
-	PgEdgeVersion    *host.PgEdgeVersion `json:"pg_edge_version"`
-	Port             *int                `json:"port"`
-	PatroniPort      *int                `json:"patroni_port"`
-	CPUs             float64             `json:"cpus"`
-	MemoryBytes      uint64              `json:"memory"`
-	DatabaseUsers    []*User             `json:"database_users"`
-	BackupConfig     *BackupConfig       `json:"backup_config"`
-	RestoreConfig    *RestoreConfig      `json:"restore_config"`
-	PostgreSQLConf   map[string]any      `json:"postgresql_conf"`
-	ClusterSize      int                 `json:"cluster_size"`
-	OrchestratorOpts *OrchestratorOpts   `json:"orchestrator_opts,omitempty"`
-	InPlaceRestore   bool                `json:"in_place_restore,omitempty"`
+	InstanceID       string            `json:"instance_id"`
+	TenantID         *string           `json:"tenant_id,omitempty"`
+	DatabaseID       string            `json:"database_id"`
+	HostID           string            `json:"host_id"`
+	DatabaseName     string            `json:"database_name"`
+	NodeName         string            `json:"node_name"`
+	NodeOrdinal      int               `json:"node_ordinal"`
+	PgEdgeVersion    *ds.PgEdgeVersion `json:"pg_edge_version"`
+	Port             *int              `json:"port"`
+	PatroniPort      *int              `json:"patroni_port"`
+	CPUs             float64           `json:"cpus"`
+	MemoryBytes      uint64            `json:"memory"`
+	DatabaseUsers    []*User           `json:"database_users"`
+	BackupConfig     *BackupConfig     `json:"backup_config"`
+	RestoreConfig    *RestoreConfig    `json:"restore_config"`
+	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
+	ClusterSize      int               `json:"cluster_size"`
+	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
+	InPlaceRestore   bool              `json:"in_place_restore,omitempty"`
 }
 
 func (s *InstanceSpec) CopySettingsFrom(current *InstanceSpec) {
@@ -579,7 +578,7 @@ func (s *InstanceSpec) Clone() *InstanceSpec {
 }
 
 type NodeInstances struct {
-DatabaseOwner string          `json:"database_owner"`
+	DatabaseOwner string          `json:"database_owner"`
 	DatabaseName  string          `json:"database_name"`
 	NodeName      string          `json:"node_name"`
 	SourceNode    string          `json:"source_node"`
@@ -597,7 +596,7 @@ func (n *NodeInstances) InstanceIDs() []string {
 }
 
 func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
-	specVersion, err := host.NewPgEdgeVersion(s.PostgresVersion, s.SpockVersion)
+	specVersion, err := ds.NewPgEdgeVersion(s.PostgresVersion, s.SpockVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse version from spec: %w", err)
 	}
@@ -626,7 +625,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		// Respect node-level overrides
 		nodeVersion := specVersion
 		if node.PostgresVersion != "" {
-			nodeVersion, err = host.NewPgEdgeVersion(node.PostgresVersion, s.SpockVersion)
+			nodeVersion, err = ds.NewPgEdgeVersion(node.PostgresVersion, s.SpockVersion)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse version from node spec: %w", err)
 			}
@@ -665,7 +664,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 		}
 
 		nodes[nodeIdx] = &NodeInstances{
-DatabaseOwner: owner,
+			DatabaseOwner: owner,
 			DatabaseName:  s.DatabaseName,
 			NodeName:      node.Name,
 			SourceNode:    node.SourceNode,
