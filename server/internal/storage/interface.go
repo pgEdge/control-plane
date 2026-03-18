@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -67,7 +68,12 @@ type PutOp[V Value] interface {
 	// WithTTL sets a time-to-live for this value. The value will automatically
 	// be removed after the TTL has expired.
 	WithTTL(ttl time.Duration) PutOp[V]
+	// WithUpdatedVersion will update the version on the value after the put
+	// operation completes.
+	WithUpdatedVersion() PutOp[V]
 	Exec(ctx context.Context) error
+
+	VersionUpdater
 }
 
 // DeleteOp is an operation that deletes one or more values from storage, and
@@ -119,4 +125,16 @@ type WatchOp[V Value] interface {
 	// Close cancels the active watch and enables callers to use Watch or Until
 	// again.
 	Close()
+}
+
+// VersionUpdater are the methods that an operation can implement to support
+// updating the value version after an update. This exists as a separate
+// interface to make it usable for runtime type checking.
+type VersionUpdater interface {
+	// UpdateVersionEnabled should return true if this operation should update
+	// the item's version.
+	UpdateVersionEnabled() bool
+	// UpdateVersion should read the previous KVs that it manages from prevKV
+	// and upate its item's versions.
+	UpdateVersion(prevKVs map[string]*mvccpb.KeyValue)
 }
