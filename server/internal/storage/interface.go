@@ -140,3 +140,51 @@ type VersionUpdater interface {
 	// and upate its item's versions.
 	UpdateVersion(prevKVs map[string]*mvccpb.KeyValue)
 }
+
+// Cache is a write-through cache that uses Watch operations to stay updated. It
+// is most suitable for making range operations on small numbers of small values
+// more efficient. Note that since reads are executed from the in-memory cache,
+// these caches are not suitable for complex Get operations that require
+// OpOptions.
+type Cache[V Value] interface {
+	// Start starts the cache. This must be called before the cache can be used.
+	Start(ctx context.Context) error
+	// Put returns an operation that puts a key-value pair into storage.
+	Put(item V, options ...clientv3.OpOption) PutOp[V]
+	// Create returns an operation that creates a key value pair with an
+	// optional time-to-live. This operation will fail with ErrAlreadyExists if
+	// the given key already exists.
+	Create(item V, options ...clientv3.OpOption) PutOp[V]
+	// Update returns an operation updates an existing key value pair with a new
+	// value and an optional time-to-live. This operation will fail with
+	// ErrValueVersionMismatch if the stored value's version does not match the
+	// given value's version. Note that this operation is equivalent to a create
+	// when the item version is 0.
+	Update(item V, options ...clientv3.OpOption) PutOp[V]
+	// DeleteByKey returns an operation that deletes a single value by key.
+	DeleteByKey(key string, options ...clientv3.OpOption) DeleteOp
+	// DeleteValue returns an operation that deletes a single value if its
+	// version matches the given value's version. Its Exec method will return an
+	// ErrValueVersionMismatch if the stored value version did not match the
+	// given value version.
+	DeleteValue(item V, options ...clientv3.OpOption) DeleteValueOp[V]
+	// DeletePrefix returns an operation that deletes a multiple values by
+	// prefix.
+	DeletePrefix(prefix string, options ...clientv3.OpOption) DeleteOp
+	// Get returns an operation that returns a single value by key.
+	Get(key string) GetOp[V]
+	// GetPrefix returns an operation that returns multiple values by prefix.
+	GetPrefix(prefix string) GetMultipleOp[V]
+	// Stop stops the cache.
+	Stop()
+	// Error reports errors that originate from the cache's watch.
+	Error() <-chan error
+	// PropagateErrors will propagate errors from the cache's Error() channel to
+	// the given error channel in a goroutine until the given context is
+	// complete.
+	PropagateErrors(ctx context.Context, ch chan error)
+}
+
+type CachedTxnOp interface {
+	UpdateCache()
+}
