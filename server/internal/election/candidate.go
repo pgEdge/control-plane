@@ -60,6 +60,7 @@ func NewCandidate(
 		ttl:          ttl,
 		errCh:        make(chan error, 1),
 		onClaim:      onClaim,
+		watchOp:      store.Watch(electionName),
 	}
 }
 
@@ -105,7 +106,9 @@ func (c *Candidate) Start(ctx context.Context) error {
 	c.done = done
 	c.ticker = ticker
 
-	go c.watch(ctx)
+	if err := c.watch(ctx, done); err != nil {
+		return err
+	}
 
 	if c.IsLeader() {
 		c.logger.Debug().Msg("i am the current leader")
@@ -129,12 +132,8 @@ func (c *Candidate) Stop(ctx context.Context) error {
 		return nil
 	}
 
-	if c.watchOp != nil {
-		c.watchOp.Close()
-		c.watchOp = nil
-	}
-
-	c.done <- struct{}{}
+	c.watchOp.Close()
+	close(c.done)
 	c.running = false
 
 	return c.release(ctx)
@@ -221,33 +220,42 @@ func (c *Candidate) attemptClaim(ctx context.Context) error {
 	return nil
 }
 
-func (c *Candidate) watch(ctx context.Context) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
+func (c *Candidate) watch(ctx context.Context, done chan struct{}) error {
 	c.logger.Debug().Msg("starting watch")
 
-	c.watchOp = c.store.Watch(c.electionName)
-	err := c.watchOp.Watch(ctx, func(evt *storage.Event[*StoredElection]) {
+	err := c.watchOp.Watch(ctx, func(evt *storage.Event[*StoredElection]) error {
 		switch evt.Type {
 		case storage.EventTypeDelete:
 			// The delete event will fire simultaneously with the ticker in some
 			// types of outages, so the claim might have already been created
 			// when this handler runs, even though its for a 'delete' event.
 			if err := c.lockAndCheckClaim(ctx); err != nil {
-				c.errCh <- err
+				return err
 			}
 		case storage.EventTypeError:
-			c.logger.Debug().Err(evt.Err).Msg("encountered a watch error")
-			if errors.Is(evt.Err, storage.ErrWatchClosed) && c.running {
-				// Restart the watch if we're still running.
-				c.watch(ctx)
-			}
+			c.logger.Warn().Err(evt.Err).Msg("encountered a watch error")
+		case storage.EventTypeUnknown:
+			c.logger.Debug().Msg("encountered unknown watch event type")
 		}
+		return nil
 	})
 	if err != nil {
-		c.errCh <- fmt.Errorf("failed to start watch: %w", err)
+		return fmt.Errorf("failed to start watch: %w", err)
 	}
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-done:
+				return
+			case err := <-c.watchOp.Error():
+				c.errCh <- err
+			}
+		}
+	}()
+
+	return nil
 }
 
 func (c *Candidate) release(ctx context.Context) error {
