@@ -528,7 +528,7 @@ func resolveTargetSessionAttrs(serviceSpec *database.ServiceSpec) string {
         }
         return "prefer-standby"
     default:
-        return "primary"
+        return "prefer-standby"
     }
 }
 ```
@@ -844,7 +844,7 @@ Use these examples to verify your integration or to hand-test with `curl`.
         "attributes": ["LOGIN", "SUPERUSER"]
       }
     ],
-    "target_nodes": [
+    "nodes": [
       {
         "name": "n1",
         "host_ids": ["host-1"]
