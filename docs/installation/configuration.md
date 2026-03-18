@@ -63,9 +63,10 @@ This is the current list of components that can be configured in the `logging.co
 - `api_server`
 - `election_candidate`
 - `embedded_etcd`
-- `remote_etcd`
 - `migration`
 - `migration_runner`
-- `scheduler_service`
-- `workflows_worker`
 - `ports_service`
+- `remote_etcd`
+- `scheduler_service`
+- `workflows_backend`
+- `workflows_worker`

@@ -3,7 +3,6 @@ package workflows
 import (
 	"github.com/cschleiden/go-workflows/backend"
 	"github.com/cschleiden/go-workflows/client"
-	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
@@ -83,10 +82,11 @@ func provideBackend(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		zl, err := do.Invoke[zerolog.Logger](i)
+		loggerFactory, err := do.Invoke[*logging.Factory](i)
 		if err != nil {
 			return nil, err
 		}
+		zl := loggerFactory.Logger(logging.ComponentWorkflowsBackend)
 		logger := logging.Slog(zl, zl.GetLevel())
 		backendOpts := backend.ApplyOptions(
 			backend.WithLogger(logger),

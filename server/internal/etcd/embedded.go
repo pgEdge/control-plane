@@ -49,7 +49,7 @@ func NewEmbeddedEtcd(cfg *config.Manager, loggerFactory *logging.Factory) *Embed
 	return &EmbeddedEtcd{
 		cfg:           cfg,
 		initialized:   make(chan struct{}),
-		logger:        loggerFactory.Logger("embedded_etcd"),
+		logger:        loggerFactory.Logger(logging.ComponentEmbeddedEtcd),
 		loggerFactory: loggerFactory,
 	}
 }
