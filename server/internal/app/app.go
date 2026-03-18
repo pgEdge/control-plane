@@ -212,6 +212,7 @@ func (a *App) runInitialized(parentCtx context.Context) error {
 	if err := worker.Start(a.serviceCtx); err != nil {
 		return handleError(fmt.Errorf("failed to start worker: %w", err))
 	}
+	a.addErrorProducer(parentCtx, worker)
 
 	if err := a.api.ServePostInit(a.serviceCtx); err != nil {
 		return handleError(fmt.Errorf("failed to serve post-init API: %w", err))

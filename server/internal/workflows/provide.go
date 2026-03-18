@@ -28,7 +28,7 @@ func provideWorker(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		be, err := do.Invoke[backend.Backend](i)
+		be, err := do.Invoke[*etcd.Backend](i)
 		if err != nil {
 			return nil, err
 		}
@@ -64,7 +64,7 @@ func provideWorkflows(i *do.Injector) {
 
 func provideClient(i *do.Injector) {
 	do.Provide(i, func(i *do.Injector) (*client.Client, error) {
-		be, err := do.Invoke[backend.Backend](i)
+		be, err := do.Invoke[*etcd.Backend](i)
 		if err != nil {
 			return nil, err
 		}
@@ -73,7 +73,7 @@ func provideClient(i *do.Injector) {
 }
 
 func provideBackend(i *do.Injector) {
-	do.Provide(i, func(i *do.Injector) (backend.Backend, error) {
+	do.Provide(i, func(i *do.Injector) (*etcd.Backend, error) {
 		cfg, err := do.Invoke[config.Config](i)
 		if err != nil {
 			return nil, err
