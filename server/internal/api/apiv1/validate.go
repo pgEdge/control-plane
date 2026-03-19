@@ -140,7 +140,7 @@ func validateDatabaseSpec(spec *api.DatabaseSpec) error {
 		}
 		seenServiceIDs.Add(string(svc.ServiceID))
 
-		errs = append(errs, validateServiceSpec(svc, svcPath, false)...)
+		errs = append(errs, validateServiceSpec(svc, svcPath, false, seenNodeNames)...)
 	}
 
 	return errors.Join(errs...)
@@ -177,10 +177,16 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 		}
 	}
 
+	// Build the full set of node names from the new spec for cross-validation.
+	newNodeNames := make(ds.Set[string], len(new.Nodes))
+	for _, n := range new.Nodes {
+		newNodeNames.Add(n.Name)
+	}
+
 	// Validate services with isUpdate=true to reject bootstrap-only fields
 	for i, svc := range new.Services {
 		svcPath := []string{"services", arrayIndexPath(i)}
-		errs = append(errs, validateServiceSpec(svc, svcPath, true)...)
+		errs = append(errs, validateServiceSpec(svc, svcPath, true, newNodeNames)...)
 	}
 
 	return errors.Join(errs...)
@@ -242,7 +248,7 @@ func validateNode(node *api.DatabaseNodeSpec, path []string) []error {
 	return errs
 }
 
-func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool) []error {
+func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool, nodeNames ...ds.Set[string]) []error {
 	var errs []error
 
 	// Validate service_id
@@ -287,6 +293,28 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool) []e
 		errs = append(errs, validatePostgRESTServiceConfig(svc.Config, appendPath(path, "config"))...)
 	}
 
+	// Validate database_connection if provided
+	if svc.DatabaseConnection != nil {
+		dcPath := appendPath(path, "database_connection")
+		var nn ds.Set[string]
+		if len(nodeNames) > 0 {
+			nn = nodeNames[0]
+		}
+		errs = append(errs, validateDatabaseConnection(svc.DatabaseConnection, dcPath, nn)...)
+	}
+
+	// MCP-specific cross-validation: allow_writes vs target_session_attrs
+	if svc.ServiceType == "mcp" && svc.DatabaseConnection != nil && svc.DatabaseConnection.TargetSessionAttrs != nil {
+		if allowWrites, ok := svc.Config["allow_writes"].(bool); ok && allowWrites {
+			tsa := *svc.DatabaseConnection.TargetSessionAttrs
+			writeSafe := map[string]bool{database.TargetSessionAttrsPrimary: true, database.TargetSessionAttrsReadWrite: true}
+			if tsa != "" && !writeSafe[tsa] {
+				err := fmt.Errorf("allow_writes requires target_session_attrs 'primary' or 'read-write', got '%s'", tsa)
+				errs = append(errs, newValidationError(err, appendPath(path, "database_connection", "target_session_attrs")))
+			}
+		}
+	}
+
 	// Validate cpus if provided
 	if svc.Cpus != nil {
 		errs = append(errs, validateCPUs(svc.Cpus, appendPath(path, "cpus"))...)
@@ -319,6 +347,44 @@ func validatePostgRESTServiceConfig(config map[string]any, path []string) []erro
 		result = append(result, newValidationError(err, path))
 	}
 	return result
+}
+
+func validateDatabaseConnection(dc *api.DatabaseConnection, path []string, nodeNames ds.Set[string]) []error {
+	var errs []error
+
+	// Validate target_nodes: no duplicates, no empty strings, must exist in spec
+	if dc.TargetNodes != nil {
+		seen := make(ds.Set[string], len(dc.TargetNodes))
+		for i, node := range dc.TargetNodes {
+			nodePath := appendPath(path, "target_nodes", arrayIndexPath(i))
+			if node == "" {
+				errs = append(errs, newValidationError(errors.New("node name must not be empty"), nodePath))
+			} else if nodeNames != nil && !nodeNames.Has(node) {
+				errs = append(errs, newValidationError(fmt.Errorf("node %q does not exist in the database spec", node), nodePath))
+			}
+			if seen.Has(node) {
+				errs = append(errs, newValidationError(fmt.Errorf("duplicate node name %q", node), nodePath))
+			}
+			seen.Add(node)
+		}
+	}
+
+	// Validate target_session_attrs enum (belt-and-suspenders — Goa also validates this)
+	if dc.TargetSessionAttrs != nil && *dc.TargetSessionAttrs != "" {
+		valid := map[string]bool{
+			database.TargetSessionAttrsPrimary:       true,
+			database.TargetSessionAttrsPreferStandby: true,
+			database.TargetSessionAttrsStandby:       true,
+			database.TargetSessionAttrsReadWrite:     true,
+			database.TargetSessionAttrsAny:           true,
+		}
+		if !valid[*dc.TargetSessionAttrs] {
+			err := fmt.Errorf("invalid target_session_attrs %q (must be primary, prefer-standby, standby, read-write, or any)", *dc.TargetSessionAttrs)
+			errs = append(errs, newValidationError(err, appendPath(path, "target_session_attrs")))
+		}
+	}
+
+	return errs
 }
 
 func validateCPUs(value *string, path []string) []error {

@@ -5,12 +5,8 @@ MCP is the reference implementation throughout. All touch points are summarized 
 the [checklist](#checklist-adding-a-new-service-type) at the end.
 
 > [!CAUTION]
-> This document is subject to change. The MCP service is not yet fully
-> implemented, and several areas are still in active design:
+> This document is subject to change. Some areas are still in active design:
 >
-> - **Configuration delivery**: How config reaches service containers (env vars,
->   config files, mounts, etc.) is still being designed and may end up being
->   service-specific.
 > - **Workflow refactoring**: Some of the workflow code (e.g., service
 >   provisioning) needs to be refactored based on PR feedback. This work is
 >   being coordinated with the SystemD migration tasks.
@@ -61,7 +57,8 @@ API Request (spec.services)
       → For each (service, host_id):
           → Resolve service image from registry
           → Validate Postgres/Spock version compatibility
-          → Generate resource objects (network, user role, spec, instance, monitor)
+          → Build multi-host connection info (BuildServiceHostList)
+          → Generate resource objects (network, user role, dir, config, spec, instance, monitor)
       → Merge service resources into EndState
       → Compute plan (diff current state vs. desired state)
     → Apply plan (execute resource Create/Update/Delete)
@@ -87,8 +84,10 @@ The `ServiceSpec` type has these attributes:
 | `host_ids` | `[]Identifier` | Which hosts should run this service (one instance per host) |
 | `port` | `Int` (optional) | Host port to publish; `0` = random; omitted = not published |
 | `config` | `MapOf(String, Any)` | Service-specific configuration |
+| `database_connection` | `DatabaseConnection` (optional) | Controls database connection topology (see [Optional: `database_connection`](#optional-database_connection)) |
 | `cpus` | `String` (optional) | CPU limit; accepts SI suffix `m` (e.g., `"500m"`, `"1"`) |
 | `memory` | `String` (optional) | Memory limit in SI or IEC notation (e.g., `"512M"`, `"1GiB"`) |
+| `orchestrator_opts` | `OrchestratorOpts` (optional) | Orchestrator-specific options (e.g., Swarm extra labels) |
 
 To add a new service type, add its string value to the enum on `service_type`:
 
@@ -235,22 +234,30 @@ constraint >=15"`.
 
 ## Resource Lifecycle
 
-Every service instance is represented by five resources that participate in the
-standard plan/apply reconciliation cycle. These resource types are generic —
-adding a new service type does **not** require new resource types.
+Every service instance is represented by a chain of resources that participate
+in the standard plan/apply reconciliation cycle. The generic resources (Network,
+ServiceUserRole, DirResource, ServiceInstanceSpec, ServiceInstance, Monitor)
+are shared by all service types. Service-type-specific config resources (e.g.,
+MCPConfigResource) slot into the chain between DirResource and
+ServiceInstanceSpec.
 
 ### Dependency chain
 
 ```text
-Phase 1: Network (swarm.network)              — no dependencies
-         ServiceUserRole (swarm.service_user_role) — no dependencies
-Phase 2: ServiceInstanceSpec (swarm.service_instance_spec) — depends on Network + ServiceUserRole
-Phase 3: ServiceInstance (swarm.service_instance) — depends on ServiceUserRole + ServiceInstanceSpec
-Phase 4: ServiceInstanceMonitor (monitor.service_instance) — depends on ServiceInstance
+Phase 1: Network (swarm.network)                    — no dependencies
+         ServiceUserRole (swarm.service_user_role)   — no dependencies
+Phase 2: DirResource (filesystem.dir)                — no dependencies
+Phase 3: MCPConfigResource (swarm.mcp_config)        — depends on DirResource + ServiceUserRole
+Phase 4: ServiceInstanceSpec (swarm.service_instance_spec) — depends on Network + MCPConfigResource
+Phase 5: ServiceInstance (swarm.service_instance)    — depends on ServiceUserRole + ServiceInstanceSpec
+Phase 6: ServiceInstanceMonitor (monitor.service_instance) — depends on ServiceInstance
 ```
 
-On deletion, the order reverses: monitor first, then instance, spec, and
-finally the network and user role.
+On deletion, the order reverses: monitor first, then instance, spec, config,
+directory, and finally the network and user role.
+
+A new service type replaces `MCPConfigResource` (Phase 3) with its own config
+resource. The rest of the chain is unchanged.
 
 ### What each resource does
 
@@ -262,14 +269,35 @@ naturally via identifier matching (both generate the same
 Runs on `ManagerExecutor`.
 
 **ServiceUserRole** (`server/internal/orchestrator/swarm/service_user_role.go`):
-Manages the Postgres user lifecycle for a service instance. On `Create`, it
-generates a deterministic username via `database.GenerateServiceUsername()` (format:
-`svc_{serviceID}_{hostID}`), generates a random 32-byte password, and creates a
-Postgres role with `pgedge_application_read_only` privileges. On `Delete`, it
-drops the role. Runs on `HostExecutor(postgresHostID)` because it needs Docker
-access to the Postgres container for direct database connectivity. See
-`docs/development/service-credentials.md` for full details on credential
-generation.
+Manages the Postgres user lifecycle for a service. This resource is keyed by
+`ServiceID`, so one role is shared across all instances of the same service. On
+`Create`, it generates a deterministic username via
+`database.GenerateServiceUsername()` (format: `svc_{serviceID}`), generates a
+random 32-byte password, creates the Postgres role with `LOGIN` and grants
+read-only access to the `public` schema. Credentials are persisted in the
+resource state and reused on subsequent reconciliation cycles. The role is
+created on the primary instance and Spock replicates it to all other nodes
+automatically. On `Delete`, it drops the role. Runs on
+`PrimaryExecutor(nodeName)`. See `docs/development/service-credentials.md` for
+full details on credential generation.
+
+**DirResource** (`server/internal/filesystem/dir_resource.go`): Creates and
+manages a host-side directory for the service instance's data files. The
+directory is bind-mounted into the container at `/app/data`. Config resources
+(like MCPConfigResource) write files into this directory before the container
+starts. On `Delete`, the directory and its contents are removed. Runs on
+`HostExecutor(hostID)`.
+
+**MCPConfigResource** (`server/internal/orchestrator/swarm/mcp_config_resource.go`):
+Generates and writes MCP server config files to the data directory. Manages
+three files:
+- `config.yaml`: CP-owned, overwritten on every Create/Update
+- `tokens.yaml`: Application-owned, written only on first Create
+- `users.yaml`: Application-owned, written only on first Create
+
+Credentials are populated from the ServiceUserRole resource at runtime. A new
+service type would create an analogous config resource for its own config format.
+Runs on `HostExecutor(hostID)`.
 
 **ServiceInstanceSpec** (`server/internal/orchestrator/swarm/service_instance_spec.go`):
 A virtual resource that generates the Docker Swarm `ServiceSpec`. Its
@@ -299,8 +327,9 @@ in etcd. Runs on `HostExecutor(hostID)`.
 
 1. Resolves the `ServiceImage` via `GetServiceImage(serviceType, version)`
 2. Validates Postgres/Spock version compatibility if constraints exist
-3. Constructs the four orchestrator resources (`Network`, `ServiceUserRole`,
-   `ServiceInstanceSpec`, `ServiceInstance`)
+3. Constructs the resource chain: `Network` → `ServiceUserRole` →
+   `DirResource` → config resource (e.g., `MCPConfigResource`) →
+   `ServiceInstanceSpec` → `ServiceInstance`
 4. Serializes them to `[]*resource.ResourceData` via `resource.ToResourceData()`
 5. Returns a `*database.ServiceInstanceResources` wrapper
 
@@ -328,6 +357,12 @@ The generated spec configures:
 - **Networks**: attaches to both the default bridge network (for control plane
   access and external connectivity) and the database overlay network (for
   Postgres connectivity)
+- **Bind mount**: the host-side data directory (managed by `DirResource`) is
+  mounted into the container at `/app/data`. Config files written by the
+  service-type-specific config resource (e.g., `MCPConfigResource`) are
+  available to the container at startup.
+- **Entrypoint**: overrides the default container entrypoint to pass the config
+  file path as a CLI argument (e.g., `-config /app/data/config.yaml` for MCP)
 - **Port publication**: `buildServicePortConfig()` publishes port 8080 in host
   mode. If the `port` field in the spec is nil, no port is published. If it's
   0, Docker assigns a random port. If it's a specific value, that port is used.
@@ -335,18 +370,36 @@ The generated spec configures:
   with a 30s start period, 10s interval, 5s timeout, and 3 retries
 - **Resource limits**: CPU and memory limits from the spec, if provided
 
-> [!NOTE]
-> How configuration reaches the service container (environment variables, config
-> files, mounts, etc.) is still evolving and will vary per service type. See
-> `buildServiceEnvVars()` in `service_spec.go` for the current MCP
-> implementation, but expect this area to change as new service types are added.
+### Configuration delivery
 
-For a new service type, you may need to:
+Configuration reaches service containers via **bind-mounted config files**, not
+environment variables. The pattern follows Patroni's config delivery:
 
-- Extend `ServiceContainerSpecOptions` with service-specific fields
-- Add branches in `ServiceContainerSpec()` or its helper functions to handle
-  the new service type's requirements (different health check endpoint, different
-  target port, mount points, entrypoint, etc.)
+1. `DirResource` creates a host-side directory for the service instance
+2. A service-type-specific config resource (e.g., `MCPConfigResource`) writes
+   config files into that directory
+3. `ServiceContainerSpec()` bind-mounts the directory into the container
+4. The container entrypoint reads the config file from the mount path
+
+This approach has several advantages over environment variables:
+- Config files can be updated without recreating the container (the config
+  resource's `Update()` method overwrites the file, and the service can reload)
+- Structured formats (YAML, JSON) are easier to validate and debug than
+  flattened env vars
+- Sensitive values (API keys, passwords) are stored in files with restricted
+  permissions (`0600`) rather than being visible in `docker inspect`
+- Application-owned files (like MCP's `tokens.yaml` and `users.yaml`) can be
+  written once and preserved across config updates
+
+For a new service type, you will need to:
+
+- Create a config resource (analogous to `MCPConfigResource`) that generates
+  your service's config files and writes them to the data directory
+- Adjust the entrypoint/args in `ServiceContainerSpec()` if your service reads
+  config from a different path or uses a different CLI flag
+- Extend `ServiceContainerSpecOptions` if your service needs additional
+  container-level settings (different health check endpoint, different target
+  port, additional mount points, etc.)
 
 ## Workflow Integration
 
@@ -359,9 +412,9 @@ that computes the reconciliation plan. It:
 
 1. Computes `NodeInstances` from the spec
 2. Generates node resources (same as before services existed)
-3. Determines a `postgresHostID` for `ServiceUserRole` executor routing —
-   `ServiceUserRole.Create()` needs local Docker access to the Postgres
-   container, so it picks the first available Postgres host
+3. Determines a `nodeName` for `ServiceUserRole` executor routing —
+   `ServiceUserRole` runs on `PrimaryExecutor(nodeName)` so the role is
+   created on the primary instance and Spock replicates it to all nodes
 4. Iterates `spec.Services` and for each `(service, hostID)` pair, calls
    `getServiceResources()`
 5. Passes both node and service resources to `operations.UpdateDatabase()`
@@ -373,13 +426,16 @@ for a single service instance:
 
 1. Generates the `ServiceInstanceID` via
    `database.GenerateServiceInstanceID(databaseID, serviceID, hostID)`
-2. Resolves the Postgres hostname via `findPostgresInstance()`, which prefers a
-   co-located instance (same host as the service) for lower latency but falls
-   back to any instance in the database
-3. Constructs a `database.ServiceInstanceSpec` with all the inputs
-4. Fires the `GenerateServiceInstanceResources` activity (executes on the
+2. Resolves `target_session_attrs` via `resolveTargetSessionAttrs()` (see
+   [Database Connection Topology](#database-connection-topology))
+3. Builds the ordered host list via `database.BuildServiceHostList()`, which
+   produces an ordered `[]ServiceHostEntry` array with co-located and local-node
+   instances prioritized
+4. Constructs a `database.ServiceInstanceSpec` with all the inputs (including
+   `DatabaseHosts` and `TargetSessionAttrs`)
+5. Fires the `GenerateServiceInstanceResources` activity (executes on the
    manager queue)
-5. Wraps the result in `operations.ServiceResources`, adding the
+6. Wraps the result in `operations.ServiceResources`, adding the
    `ServiceInstanceMonitorResource`
 
 ### EndState
@@ -404,6 +460,181 @@ Resources that exist in the current state but are absent from the end state are
 automatically marked `PendingDeletion` by the plan engine, which generates
 delete events in reverse dependency order.
 
+## Database Connection Topology
+
+Services connect to Postgres via the Docker overlay network. Rather than
+connecting to a single instance, each service instance receives an **ordered list
+of hosts** so that libpq (or the service's connection library) can try multiple
+instances in priority order and select one matching the desired role (primary vs
+standby).
+
+The architecture separates **generic host ordering** (reusable by all service
+types) from **service-specific configuration** (how each service type maps its
+own semantics to connection parameters).
+
+### Generic layer: `BuildServiceHostList`
+
+`BuildServiceHostList()` in `server/internal/database/service_connection.go` is
+the shared host list builder. It is **service-type agnostic** — it knows nothing
+about MCP, `allow_writes`, or any service-specific config. It accepts:
+
+```go
+type BuildServiceHostListParams struct {
+    ServiceHostID      string              // Host where the service instance runs
+    NodeInstances      []*NodeInstances    // All database instances, grouped by node
+    TargetNodes        []string            // Optional ordered node filter (from database_connection.target_nodes)
+    TargetSessionAttrs string              // Caller-provided: "primary", "prefer-standby", etc.
+}
+```
+
+And returns:
+
+```go
+type ServiceConnectionInfo struct {
+    Hosts              []ServiceHostEntry  // Ordered host:port pairs
+    TargetSessionAttrs string              // Passed through unchanged
+}
+```
+
+**Ordering algorithm:**
+
+1. **Determine node list:** If `TargetNodes` is set, use only listed nodes in
+   the specified order. Otherwise, use all nodes with the local node (containing
+   the service's host) first, then remaining nodes in iteration order.
+2. **Group by node:** For each node, list instances with the co-located instance
+   (same host as the service) first, then remaining instances.
+3. **Pass through `TargetSessionAttrs`:** The builder does not interpret this
+   value — it comes from the caller.
+
+Hostname format: `postgres-{instanceID}` (matches swarm convention). Port:
+always `5432` (internal container port via overlay network).
+
+### Service-specific layer: `resolveTargetSessionAttrs`
+
+Each service type maps its own config semantics to a `target_session_attrs`
+value. This dispatch lives in `server/internal/workflows/plan_update.go`:
+
+```go
+func resolveTargetSessionAttrs(serviceSpec *database.ServiceSpec) string {
+    // Tier 1: Explicit user setting in database_connection
+    if serviceSpec.DatabaseConnection != nil && serviceSpec.DatabaseConnection.TargetSessionAttrs != "" {
+        return serviceSpec.DatabaseConnection.TargetSessionAttrs
+    }
+    // Tier 2: Per-service-type default
+    switch serviceSpec.ServiceType {
+    case "mcp":
+        if allowWrites, ok := serviceSpec.Config["allow_writes"].(bool); ok && allowWrites {
+            return "primary"
+        }
+        return "prefer-standby"
+    default:
+        return "prefer-standby"
+    }
+}
+```
+
+This is the **only service-type-specific code** in the workflow path. If the
+user explicitly sets `database_connection.target_session_attrs`, that value is
+used directly (already validated at the API layer). Otherwise, the per-service-
+type default applies. The fallback is `"prefer-standby"` for safety — a new
+service type defaults to read-only behavior. `prefer-standby` falls back to
+the primary when no standbys exist, so it works in all topologies.
+
+### Services without multi-host support
+
+`BuildServiceHostList` always produces the full ordered host list regardless of
+whether the service supports multi-host connections. Each service type's config
+generator decides how to consume the list:
+
+- **Multi-host services** (e.g., MCP) use the full `hosts` array and
+  `target_session_attrs` for automatic failover at the connection layer.
+- **Single-host services** take `hosts[0]` — the ordering algorithm ensures
+  this is the optimal choice (co-located instance, local node). This is
+  equivalent to the pre-PLAT-463 `findPostgresInstance` behavior.
+
+Single-host services lose automatic connection-layer failover. After a Patroni
+failover within a node, the service points at the old primary (now a replica)
+until the Control Plane intervenes. This is acceptable for standard multi-active
+deployments (1 host per node) where every host runs a writable primary and
+Swarm self-heals. For HA topologies, Phase 3 (proactive config regeneration on
+failover) narrows the window by detecting role changes and regenerating the
+config with the new primary as `hosts[0]`.
+
+No changes to the shared infrastructure are needed — this is purely a config
+generator concern. When adding a new service type, document whether it supports
+multi-host connections in the service type's config generator.
+
+### Config generation (per service type)
+
+Each service type has its own config generator that maps the generic
+`[]ServiceHostEntry` into whatever format the service expects. For MCP, this
+is `GenerateMCPConfig()` in
+`server/internal/orchestrator/swarm/mcp_config.go`, which produces a YAML
+config with a structured `hosts` array:
+
+```yaml
+databases:
+  - name: mydb
+    hosts:
+      - host: postgres-abc123
+        port: 5432
+      - host: postgres-def456
+        port: 5432
+    target_session_attrs: prefer-standby
+    # ... other fields
+```
+
+A future service type would implement its own config generator, converting
+`[]ServiceHostEntry` into the format that service expects (e.g., a
+comma-separated DSN, a JSON config, environment variables, etc.).
+
+### What a new service type inherits automatically
+
+By using `BuildServiceHostList`, any new service type automatically gets:
+
+- **Co-location preference:** Instances on the same host as the service are
+  tried first for lowest latency
+- **Local-node preference:** Instances on the same database node are tried
+  before remote nodes
+- **`database_connection.target_nodes` filtering:** API users can override the default
+  ordering with an explicit node list in the service spec
+- **Multi-host failover:** The full host list enables the service's connection
+  library to try alternate instances if the preferred one is unavailable
+
+### What a new service type must implement
+
+| Touch point | What to do |
+|-------------|------------|
+| `resolveTargetSessionAttrs` in `plan_update.go` | Add a `case` for the per-service-type default `target_session_attrs` (used when `database_connection.target_session_attrs` is not set) |
+| Config generator | Create a config generator (analogous to `GenerateMCPConfig`) that maps `[]ServiceHostEntry` + `TargetSessionAttrs` into your service's config format |
+| `GenerateServiceInstanceResources` in `orchestrator.go` | Wire the config generator into the resource generation pipeline (analogous to `MCPConfigResource`) |
+| Validation in `validate.go` (if needed) | Cross-validate `database_connection.target_session_attrs` against service-specific config (e.g., MCP rejects `allow_writes: true` with standby-targeting attrs) |
+
+### Optional: `database_connection`
+
+The `ServiceSpec` includes an optional `database_connection` struct:
+
+```go
+type DatabaseConnection struct {
+    TargetNodes        []string `json:"target_nodes,omitempty"`
+    TargetSessionAttrs string   `json:"target_session_attrs,omitempty"`
+}
+```
+
+- **`target_nodes`**: When set, `BuildServiceHostList` uses only the listed nodes in
+  the specified order, ignoring co-location-based ordering. Useful when the API
+  user wants explicit control over which database nodes a service connects to
+  (e.g., pinning a read-heavy service to a specific replica node).
+- **`target_session_attrs`**: When set, overrides the per-service-type default
+  (e.g., MCP's `allow_writes` → `primary`/`prefer-standby` mapping). Valid
+  values: `primary`, `prefer-standby`, `standby`, `read-write`, `any`.
+
+Validation: format, uniqueness, node-name existence (against the database
+spec's node names), and `target_session_attrs` enum are all checked at the API
+layer. MCP cross-validates `allow_writes` vs `target_session_attrs` to reject
+unsafe combinations (e.g., `allow_writes: true` with
+`target_session_attrs: prefer-standby`).
+
 ## Domain Model
 
 ### ServiceSpec
@@ -412,20 +643,23 @@ delete events in reverse dependency order.
 
 ```go
 type ServiceSpec struct {
-    ServiceID   string         `json:"service_id"`
-    ServiceType string         `json:"service_type"`
-    Version     string         `json:"version"`
-    HostIDs     []string       `json:"host_ids"`
-    Config      map[string]any `json:"config"`
-    Port        *int           `json:"port,omitempty"`
-    CPUs        *float64       `json:"cpus,omitempty"`
-    MemoryBytes *uint64        `json:"memory,omitempty"`
+    ServiceID          string              `json:"service_id"`
+    ServiceType        string              `json:"service_type"`
+    Version            string              `json:"version"`
+    HostIDs            []string            `json:"host_ids"`
+    Config             map[string]any      `json:"config"`
+    DatabaseConnection *DatabaseConnection `json:"database_connection,omitempty"`
+    Port               *int                `json:"port,omitempty"`
+    CPUs               *float64            `json:"cpus,omitempty"`
+    MemoryBytes        *uint64             `json:"memory,omitempty"`
+    OrchestratorOpts   *OrchestratorOpts   `json:"orchestrator_opts,omitempty"`
 }
 ```
 
 This is the spec-level declaration that lives inside `Spec.Services`. It's
 service-type-agnostic — no fields are MCP-specific. The `Config` map holds all
-service-specific settings.
+service-specific settings. The optional `DatabaseConnection` controls connection
+topology (see [Optional: `database_connection`](#optional-database_connection)).
 
 ### ServiceInstance
 
@@ -442,7 +676,7 @@ password).
 | Function | Format | Example |
 |----------|--------|---------|
 | `GenerateServiceInstanceID(dbID, svcID, hostID)` | `"{dbID}-{svcID}-{hostID}"` | `"mydb-mcp-host1"` |
-| `GenerateServiceUsername(svcID, hostID)` | `"svc_{svcID}_{hostID}"` | `"svc_mcp_host1"` |
+| `GenerateServiceUsername(svcID)` | `"svc_{svcID}"` | `"svc_mcp_server"` |
 | `GenerateDatabaseNetworkID(dbID)` | `"{dbID}"` | `"mydb"` |
 
 `GenerateDatabaseNetworkID` returns the **resource identifier** used to look up
@@ -451,7 +685,9 @@ name is `"{databaseID}-database"` (set in the `Network.Name` field in
 `orchestrator.go`).
 
 Usernames longer than 63 characters are truncated with a deterministic hash
-suffix. See `docs/development/service-credentials.md` for details.
+suffix. Because the username is now per-service (not per-instance), all
+instances of the same service share one set of credentials. See
+`docs/development/service-credentials.md` for details.
 
 ### ServiceResources
 
@@ -488,7 +724,7 @@ pattern uses per-case check functions:
     checks: []checkFunc{
         checkLabels(expectedLabels),
         checkNetworks("bridge", "my-db-database"),
-        checkEnv("PGHOST=...", "PGPORT=5432", ...),
+        checkContainerSpec(image, mounts, command, args),
         checkPlacement("node.id==swarm-node-1"),
         checkHealthcheck("/health", 8080),
         checkPorts(8080, 5434),
@@ -625,6 +861,10 @@ Use these examples to verify your integration or to hand-test with `curl`.
           "llm_provider": "anthropic",
           "llm_model": "claude-sonnet-4-5",
           "anthropic_api_key": "sk-ant-..."
+        },
+        "database_connection": {
+          "target_nodes": ["n1"],
+          "target_session_attrs": "primary"
         }
       }
     ]
@@ -843,10 +1083,12 @@ Example of a failed service instance in the API response:
 | 2. Regenerate | — | `make -C api generate` |
 | 3. Validation | `server/internal/api/apiv1/validate.go` | Add type to allowlist in `validateServiceSpec()`; add `validateMyServiceConfig()` function |
 | 4. Image registry | `server/internal/orchestrator/swarm/service_images.go` | Call `versions.addServiceImage()` in `NewServiceVersions()` |
-| 5. Container spec | `server/internal/orchestrator/swarm/service_spec.go` | Service-specific configuration delivery, health check, mounts, entrypoint |
-| 6. Unit tests | `swarm/service_spec_test.go`, `swarm/service_images_test.go` | Add cases for new type |
-| 7. Golden plan tests | `operations/update_database_test.go` | Already covered generically; regenerate with `-update` if resource shape changes |
-| 8. E2E tests | `e2e/service_provisioning_test.go` | Add provision, lifecycle, stability, and failure/recovery tests |
+| 5. Connection topology | `server/internal/workflows/plan_update.go` | Add `case` to `resolveTargetSessionAttrs()` for your service type |
+| 6. Config generator | `server/internal/orchestrator/swarm/` | Create config generator mapping `[]ServiceHostEntry` to your service's config format; document whether the service supports multi-host connections (see [Services without multi-host support](#services-without-multi-host-support)) |
+| 7. Container spec | `server/internal/orchestrator/swarm/service_spec.go` | Service-specific configuration delivery, health check, mounts, entrypoint |
+| 8. Unit tests | `swarm/service_spec_test.go`, `swarm/service_images_test.go` | Add cases for new type |
+| 9. Golden plan tests | `operations/update_database_test.go` | Already covered generically; regenerate with `-update` if resource shape changes |
+| 10. E2E tests | `e2e/service_provisioning_test.go` | Add provision, lifecycle, stability, and failure/recovery tests |
 
 ## What Doesn't Change
 
@@ -854,11 +1096,13 @@ The following are service-type-agnostic and require no modification:
 
 - `ServiceSpec` struct — `server/internal/database/spec.go`
 - `ServiceInstance` domain model — `server/internal/database/service_instance.go`
-- Workflow code — `server/internal/workflows/plan_update.go`
-- Resource types — `server/internal/orchestrator/swarm/` (all five resource
-  types are generic)
-- `GenerateServiceInstanceResources()` —
-  `server/internal/orchestrator/swarm/orchestrator.go`
+- Workflow code — `server/internal/workflows/plan_update.go` (except adding a
+  `case` to `resolveTargetSessionAttrs` for your service type's
+  `target_session_attrs` mapping)
+- Generic resource types — `Network`, `ServiceUserRole`, `DirResource`,
+  `ServiceInstanceSpec`, `ServiceInstance`, `ServiceInstanceMonitor` are
+  service-type-agnostic (you add a service-type-specific config resource
+  alongside them)
 - Operations layer — `server/internal/database/operations/` (`UpdateDatabase`,
   `EndState`)
 - Store/etcd layer
@@ -870,19 +1114,20 @@ The following are service-type-agnostic and require no modification:
   write access (`INSERT`, `UPDATE`, `DELETE`, DDL). This will require a
   mechanism for the service spec to declare the required access level and for
   `ServiceUserRole` to provision the appropriate role accordingly.
-- **Primary-aware database connection routing**: Services currently connect to a
-  Postgres instance resolved at provisioning time by `findPostgresInstance()`,
-  which prefers a co-located instance but does not distinguish between primary
-  and replica. Services that require read/write access will need their database
-  connection routed to the current primary, and that routing will need to
-  survive failovers and switchovers.
-- **Persistent bind mounts**: Service containers currently have no persistent
-  storage (`Mounts: []mount.Mount{}`). Some services need configuration or
-  application state that survives container restarts (e.g., token stores, local
-  databases, generated config files). This will require adding bind mount
-  support to `ServiceContainerSpec()`, along with corresponding filesystem
-  directory resources to manage the host-side paths — following the same pattern
-  used by Patroni and pgBackRest config resources.
+- **Primary-aware database connection routing** *(in progress — PLAT-463)*:
+  `BuildServiceHostList` and `resolveTargetSessionAttrs` provide multi-host
+  connection topology with `target_session_attrs` support. Services receive an
+  ordered host list and the connection library selects the appropriate instance
+  (primary or standby) at connect time. See [Database Connection
+  Topology](#database-connection-topology) for details. Future phases will add
+  proactive config regeneration on failover/switchover events.
+- **Persistent bind mounts** *(implemented)*: Service containers now use a
+  `DirResource` to create a host-side data directory, which is bind-mounted
+  into the container at `/app/data`. Config files are written to this directory
+  by service-type-specific config resources (e.g., `MCPConfigResource`).
+  Application-owned files (like token and user stores) are preserved across
+  config updates. See [Configuration delivery](#configuration-delivery) for
+  details.
 
 ## Appendix: MCP Reference Implementation for AI-Assisted Development
 
@@ -1128,29 +1373,26 @@ func serviceImageTag(cfg config.Config, imageRef string) string {
 **`ServiceContainerSpecOptions`** — the input struct:
 
 ```go
-// lines 15–32
 type ServiceContainerSpecOptions struct {
-    ServiceSpec       *database.ServiceSpec
-    ServiceInstanceID string
-    DatabaseID        string
-    DatabaseName      string
-    HostID            string
-    ServiceName       string
-    Hostname          string
-    CohortMemberID    string
-    ServiceImage      *ServiceImage
-    Credentials       *database.ServiceUser
-    DatabaseNetworkID string
-    DatabaseHost      string
-    DatabasePort      int
-    Port              *int
+    ServiceSpec        *database.ServiceSpec
+    ServiceInstanceID  string
+    DatabaseID         string
+    DatabaseName       string
+    HostID             string
+    ServiceName        string
+    Hostname           string
+    CohortMemberID     string
+    ServiceImage       *ServiceImage
+    Credentials        *database.ServiceUser
+    DatabaseNetworkID  string
+    Port               *int
+    DataPath           string                        // Host-side directory for bind mount
 }
 ```
 
 **`ServiceContainerSpec()`** — builds the Docker Swarm `ServiceSpec`:
 
 ```go
-// lines 35–117
 func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec, error) {
     labels := map[string]string{
         "pgedge.component":           "service",
@@ -1160,27 +1402,27 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
         "pgedge.host.id":             opts.HostID,
     }
 
+    // Merge user-provided extra labels
+    if opts.ServiceSpec.OrchestratorOpts != nil && opts.ServiceSpec.OrchestratorOpts.Swarm != nil {
+        for k, v := range opts.ServiceSpec.OrchestratorOpts.Swarm.ExtraLabels {
+            labels[k] = v
+        }
+    }
+
     networks := []swarm.NetworkAttachmentConfig{
         {Target: "bridge"},
         {Target: opts.DatabaseNetworkID},
     }
 
-    env := buildServiceEnvVars(opts)
     image := opts.ServiceImage.Tag
     ports := buildServicePortConfig(opts.Port)
 
-    var resources *swarm.ResourceRequirements
-    if opts.ServiceSpec.CPUs != nil || opts.ServiceSpec.MemoryBytes != nil {
-        resources = &swarm.ResourceRequirements{
-            Limits: &swarm.Limit{},
-        }
-        if opts.ServiceSpec.CPUs != nil {
-            resources.Limits.NanoCPUs = int64(*opts.ServiceSpec.CPUs * 1e9)
-        }
-        if opts.ServiceSpec.MemoryBytes != nil {
-            resources.Limits.MemoryBytes = int64(*opts.ServiceSpec.MemoryBytes)
-        }
+    // Bind mount for config/auth files
+    mounts := []mount.Mount{
+        docker.BuildMount(opts.DataPath, "/app/data", false),
     }
+
+    // ... resource limits omitted for brevity ...
 
     return swarm.ServiceSpec{
         TaskTemplate: swarm.TaskSpec{
@@ -1188,7 +1430,9 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
                 Image:    image,
                 Labels:   labels,
                 Hostname: opts.Hostname,
-                Env:      env,
+                User:     fmt.Sprintf("%d", mcpContainerUID),
+                Command:  []string{"/app/pgedge-postgres-mcp"},
+                Args:     []string{"-config", "/app/data/config.yaml"},
                 Healthcheck: &container.HealthConfig{
                     Test:        []string{"CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"},
                     StartPeriod: time.Second * 30,
@@ -1196,7 +1440,7 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
                     Timeout:     time.Second * 5,
                     Retries:     3,
                 },
-                Mounts: []mount.Mount{},
+                Mounts: mounts,
             },
             Networks: networks,
             Placement: &swarm.Placement{
@@ -1218,56 +1462,32 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 }
 ```
 
-**`buildServiceEnvVars()`** — MCP-specific env var injection (this is expected to
-change; see the caution at the top of this document):
+**Configuration delivery** — Config is delivered via bind-mounted YAML files,
+not environment variables. The container spec sets up the bind mount and
+overrides the entrypoint to pass the config path:
 
 ```go
-// lines 120–168
-func buildServiceEnvVars(opts *ServiceContainerSpecOptions) []string {
-    env := []string{
-        fmt.Sprintf("PGHOST=%s", opts.DatabaseHost),
-        fmt.Sprintf("PGPORT=%d", opts.DatabasePort),
-        fmt.Sprintf("PGDATABASE=%s", opts.DatabaseName),
-        "PGSSLMODE=prefer",
-        fmt.Sprintf("PGEDGE_SERVICE_ID=%s", opts.ServiceSpec.ServiceID),
-        fmt.Sprintf("PGEDGE_DATABASE_ID=%s", opts.DatabaseID),
-    }
-
-    if opts.Credentials != nil {
-        env = append(env,
-            fmt.Sprintf("PGUSER=%s", opts.Credentials.Username),
-            fmt.Sprintf("PGPASSWORD=%s", opts.Credentials.Password),
-        )
-    }
-
-    // MCP-specific config → env var mapping
-    if provider, ok := opts.ServiceSpec.Config["llm_provider"].(string); ok {
-        env = append(env, fmt.Sprintf("PGEDGE_LLM_PROVIDER=%s", provider))
-    }
-    if model, ok := opts.ServiceSpec.Config["llm_model"].(string); ok {
-        env = append(env, fmt.Sprintf("PGEDGE_LLM_MODEL=%s", model))
-    }
-
-    if provider, ok := opts.ServiceSpec.Config["llm_provider"].(string); ok {
-        switch provider {
-        case "anthropic":
-            if key, ok := opts.ServiceSpec.Config["anthropic_api_key"].(string); ok {
-                env = append(env, fmt.Sprintf("PGEDGE_ANTHROPIC_API_KEY=%s", key))
-            }
-        case "openai":
-            if key, ok := opts.ServiceSpec.Config["openai_api_key"].(string); ok {
-                env = append(env, fmt.Sprintf("PGEDGE_OPENAI_API_KEY=%s", key))
-            }
-        case "ollama":
-            if url, ok := opts.ServiceSpec.Config["ollama_url"].(string); ok {
-                env = append(env, fmt.Sprintf("PGEDGE_OLLAMA_URL=%s", url))
-            }
-        }
-    }
-
-    return env
+// Bind mount for config/auth files
+mounts := []mount.Mount{
+    docker.BuildMount(opts.DataPath, "/app/data", false),
 }
+
+// Container entrypoint passes config file path
+Command: []string{"/app/pgedge-postgres-mcp"},
+Args:    []string{"-config", "/app/data/config.yaml"},
 ```
+
+The config files themselves are generated by `MCPConfigResource` (see
+`server/internal/orchestrator/swarm/mcp_config_resource.go`), which writes
+three files to the data directory:
+
+- `config.yaml` — CP-owned, regenerated on every Create/Update
+- `tokens.yaml` — application-owned, written only on first Create
+- `users.yaml` — application-owned, written only on first Create
+
+For a new service type, create an analogous config resource that writes your
+service's config files to the data directory. The `DirResource` and bind mount
+are generic and reusable.
 
 **`buildServicePortConfig()`** — port publication:
 
@@ -1431,23 +1651,39 @@ follow these steps in order:
    `versions.addServiceImage("my-service", ...)` call in `NewServiceVersions()`
    (see [A.3](#a3-image-registry-serverinternalorchestratorswarmservice_imagesgo)).
 
-4. **`server/internal/orchestrator/swarm/service_spec.go`**: If your service
-   needs different environment variables, a different health check endpoint,
-   different port, or bind mounts, modify `ServiceContainerSpec()` and/or its
-   helpers to branch on `ServiceType` (see
+4. **Config resource**: Create a config resource (analogous to
+   `MCPConfigResource` in `mcp_config_resource.go`) that generates your
+   service's config files and writes them to the data directory. The
+   `DirResource` creates the host-side directory; your config resource writes
+   files into it.
+
+5. **`server/internal/workflows/plan_update.go`**: Add a `case` to
+   `resolveTargetSessionAttrs()` mapping your service's config to the
+   appropriate `target_session_attrs` value (see [Database Connection
+   Topology](#database-connection-topology)).
+
+6. **`server/internal/orchestrator/swarm/orchestrator.go`**: Wire your config
+   resource into the resource chain in `GenerateServiceInstanceResources()`,
+   in the same position as `MCPConfigResource` (between `DirResource` and
+   `ServiceInstanceSpec`).
+
+7. **`server/internal/orchestrator/swarm/service_spec.go`**: If your service
+   needs a different health check endpoint, different port, entrypoint, or
+   additional mounts, modify `ServiceContainerSpec()` to branch on
+   `ServiceType` (see
    [A.4](#a4-container-spec-serverinternalorchestratorswarmservice_specgo)).
 
-5. **`server/internal/orchestrator/swarm/service_spec_test.go`**: Add table-driven
-   test cases for the new service type's container spec, env vars, and port config.
+8. **`server/internal/orchestrator/swarm/service_spec_test.go`**: Add
+   table-driven test cases for the new service type's container spec, bind
+   mounts, and port config.
 
-6. **`server/internal/orchestrator/swarm/service_images_test.go`**: Add test
+9. **`server/internal/orchestrator/swarm/service_images_test.go`**: Add test
    cases for `GetServiceImage()` with the new type and version(s).
 
-7. **`e2e/service_provisioning_test.go`**: Add E2E tests following the patterns
-   in [A.6](#a6-e2e-test-pattern-e2eservice_provisioning_testgo): single-host
-   provision, multi-host, add/remove from existing database, stability (unrelated
-   update doesn't recreate), bad version failure + recovery.
+10. **`e2e/service_provisioning_test.go`**: Add E2E tests following the patterns
+    in [A.6](#a6-e2e-test-pattern-e2eservice_provisioning_testgo): single-host
+    provision, multi-host, add/remove from existing database, stability
+    (unrelated update doesn't recreate), bad version failure + recovery.
 
 **Files that do NOT need changes**: `spec.go`, `service_instance.go`,
-`plan_update.go`, `orchestrator.go`, `resources.go`, `end.go`, any store/etcd
-code.
+`resources.go`, `end.go`, any store/etcd code.

@@ -467,14 +467,14 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 
 	// MCP config resource (generates config.yaml, tokens.yaml, users.yaml)
 	mcpConfigResource := &MCPConfigResource{
-		ServiceInstanceID: spec.ServiceInstanceID,
-		ServiceID:         spec.ServiceSpec.ServiceID,
-		HostID:            spec.HostID,
-		DirResourceID:     dataDirID,
-		Config:            mcpConfig,
-		DatabaseName:      spec.DatabaseName,
-		DatabaseHost:      spec.DatabaseHost,
-		DatabasePort:      spec.DatabasePort,
+		ServiceInstanceID:  spec.ServiceInstanceID,
+		ServiceID:          spec.ServiceSpec.ServiceID,
+		HostID:             spec.HostID,
+		DirResourceID:      dataDirID,
+		Config:             mcpConfig,
+		DatabaseName:       spec.DatabaseName,
+		DatabaseHosts:      spec.DatabaseHosts,
+		TargetSessionAttrs: spec.TargetSessionAttrs,
 	}
 	if spec.Credentials != nil {
 		mcpConfigResource.Username = spec.Credentials.Username
@@ -484,21 +484,21 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 	// Service instance spec resource
 	serviceName := ServiceInstanceName(spec.ServiceSpec.ServiceType, spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
 	serviceInstanceSpec := &ServiceInstanceSpecResource{
-		ServiceInstanceID: spec.ServiceInstanceID,
-		ServiceSpec:       spec.ServiceSpec,
-		DatabaseID:        spec.DatabaseID,
-		DatabaseName:      spec.DatabaseName,
-		HostID:            spec.HostID,
-		ServiceName:       serviceName,
-		Hostname:          serviceName,
-		CohortMemberID:    o.swarmNodeID,
-		ServiceImage:      serviceImage,
-		Credentials:       spec.Credentials,
-		DatabaseNetworkID: databaseNetwork.Name,
-		DatabaseHost:      spec.DatabaseHost,
-		DatabasePort:      spec.DatabasePort,
-		Port:              spec.Port,
-		DataDirID:         dataDirID,
+		ServiceInstanceID:  spec.ServiceInstanceID,
+		ServiceSpec:        spec.ServiceSpec,
+		DatabaseID:         spec.DatabaseID,
+		DatabaseName:       spec.DatabaseName,
+		HostID:             spec.HostID,
+		ServiceName:        serviceName,
+		Hostname:           serviceName,
+		CohortMemberID:     o.swarmNodeID,
+		ServiceImage:       serviceImage,
+		Credentials:        spec.Credentials,
+		DatabaseNetworkID:  databaseNetwork.Name,
+		DatabaseHosts:      spec.DatabaseHosts,
+		TargetSessionAttrs: spec.TargetSessionAttrs,
+		Port:               spec.Port,
+		DataDirID:          dataDirID,
 	}
 
 	// Service instance resource (actual Docker service)

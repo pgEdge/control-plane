@@ -169,7 +169,7 @@ func (s *SubscriptionResource) providerDSN(ctx context.Context, rc *resource.Con
 		SSLKey:      providers[0].ConnectionInfo.PeerSSLKey,
 		SSLRootCert: providers[0].ConnectionInfo.PeerSSLRootCert,
 		Extra: map[string]string{
-			"target_session_attrs": "primary",
+			"target_session_attrs": TargetSessionAttrsPrimary,
 		},
 	}, nil
 }

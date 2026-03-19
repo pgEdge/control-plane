@@ -29,16 +29,21 @@ type mcpAuthConfig struct {
 	UserFile  string `yaml:"user_file"`
 }
 
+type mcpHostEntry struct {
+	Host string `yaml:"host"`
+	Port int    `yaml:"port"`
+}
+
 type mcpDatabaseConfig struct {
-	Name        string        `yaml:"name"`
-	Host        string        `yaml:"host"`
-	Port        int           `yaml:"port"`
-	Database    string        `yaml:"database"`
-	User        string        `yaml:"user"`
-	Password    string        `yaml:"password"`
-	SSLMode     string        `yaml:"sslmode"`
-	AllowWrites bool          `yaml:"allow_writes"`
-	Pool        mcpPoolConfig `yaml:"pool"`
+	Name               string         `yaml:"name"`
+	Hosts              []mcpHostEntry `yaml:"hosts"`
+	TargetSessionAttrs string         `yaml:"target_session_attrs,omitempty"`
+	Database           string         `yaml:"database"`
+	User               string         `yaml:"user"`
+	Password           string         `yaml:"password"`
+	SSLMode            string         `yaml:"sslmode"`
+	AllowWrites        bool           `yaml:"allow_writes"`
+	Pool               mcpPoolConfig  `yaml:"pool"`
 }
 
 type mcpPoolConfig struct {
@@ -83,12 +88,12 @@ type mcpToolsConfig struct {
 
 // MCPConfigParams holds all inputs needed to generate a config.yaml for the MCP server.
 type MCPConfigParams struct {
-	Config       *database.MCPServiceConfig
-	DatabaseName string
-	DatabaseHost string
-	DatabasePort int
-	Username     string
-	Password     string
+	Config             *database.MCPServiceConfig
+	DatabaseName       string
+	DatabaseHosts      []database.ServiceHostEntry
+	TargetSessionAttrs string
+	Username           string
+	Password           string
 }
 
 // GenerateMCPConfig generates the YAML config file content for the MCP server.
@@ -187,6 +192,12 @@ func GenerateMCPConfig(params *MCPConfigParams) ([]byte, error) {
 		tools.CountRows = boolPtr(false)
 	}
 
+	// Map database hosts to MCP config format
+	hosts := make([]mcpHostEntry, len(params.DatabaseHosts))
+	for i, h := range params.DatabaseHosts {
+		hosts[i] = mcpHostEntry{Host: h.Host, Port: h.Port}
+	}
+
 	yamlCfg := &mcpYAMLConfig{
 		HTTP: mcpHTTPConfig{
 			Enabled: true,
@@ -199,14 +210,14 @@ func GenerateMCPConfig(params *MCPConfigParams) ([]byte, error) {
 		},
 		Databases: []mcpDatabaseConfig{
 			{
-				Name:        params.DatabaseName,
-				Host:        params.DatabaseHost,
-				Port:        params.DatabasePort,
-				Database:    params.DatabaseName,
-				User:        params.Username,
-				Password:    params.Password,
-				SSLMode:     "prefer",
-				AllowWrites: allowWrites,
+				Name:               params.DatabaseName,
+				Hosts:              hosts,
+				TargetSessionAttrs: params.TargetSessionAttrs,
+				Database:           params.DatabaseName,
+				User:               params.Username,
+				Password:           params.Password,
+				SSLMode:            "prefer",
+				AllowWrites:        allowWrites,
 				Pool: mcpPoolConfig{
 					MaxConns: poolMaxConns,
 				},

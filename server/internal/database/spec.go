@@ -115,16 +115,33 @@ func (u *User) DefaultOptionalFieldsFrom(other *User) {
 	}
 }
 
+// DatabaseConnection controls how a service connects to the database.
+type DatabaseConnection struct {
+	TargetNodes        []string `json:"target_nodes,omitempty"`
+	TargetSessionAttrs string   `json:"target_session_attrs,omitempty"`
+}
+
+func (r *DatabaseConnection) Clone() *DatabaseConnection {
+	if r == nil {
+		return nil
+	}
+	return &DatabaseConnection{
+		TargetNodes:        slices.Clone(r.TargetNodes),
+		TargetSessionAttrs: r.TargetSessionAttrs,
+	}
+}
+
 type ServiceSpec struct {
-	ServiceID        string            `json:"service_id"`
-	ServiceType      string            `json:"service_type"`
-	Version          string            `json:"version"`
-	HostIDs          []string          `json:"host_ids"`
-	Config           map[string]any    `json:"config"`
-	Port             *int              `json:"port,omitempty"`
-	CPUs             *float64          `json:"cpus,omitempty"`
-	MemoryBytes      *uint64           `json:"memory,omitempty"`
-	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
+	ServiceID          string              `json:"service_id"`
+	ServiceType        string              `json:"service_type"`
+	Version            string              `json:"version"`
+	HostIDs            []string            `json:"host_ids"`
+	Config             map[string]any      `json:"config"`
+	Port               *int                `json:"port,omitempty"`
+	CPUs               *float64            `json:"cpus,omitempty"`
+	MemoryBytes        *uint64             `json:"memory,omitempty"`
+	OrchestratorOpts   *OrchestratorOpts   `json:"orchestrator_opts,omitempty"`
+	DatabaseConnection *DatabaseConnection `json:"database_connection,omitempty"`
 }
 
 func (s *ServiceSpec) Clone() *ServiceSpec {
@@ -132,15 +149,16 @@ func (s *ServiceSpec) Clone() *ServiceSpec {
 		return nil
 	}
 	return &ServiceSpec{
-		ServiceID:        s.ServiceID,
-		ServiceType:      s.ServiceType,
-		Version:          s.Version,
-		HostIDs:          slices.Clone(s.HostIDs),
-		Config:           maps.Clone(s.Config),
-		Port:             utils.ClonePointer(s.Port),
-		CPUs:             utils.ClonePointer(s.CPUs),
-		MemoryBytes:      utils.ClonePointer(s.MemoryBytes),
-		OrchestratorOpts: s.OrchestratorOpts.Clone(),
+		ServiceID:          s.ServiceID,
+		ServiceType:        s.ServiceType,
+		Version:            s.Version,
+		HostIDs:            slices.Clone(s.HostIDs),
+		Config:             maps.Clone(s.Config),
+		Port:               utils.ClonePointer(s.Port),
+		CPUs:               utils.ClonePointer(s.CPUs),
+		MemoryBytes:        utils.ClonePointer(s.MemoryBytes),
+		OrchestratorOpts:   s.OrchestratorOpts.Clone(),
+		DatabaseConnection: s.DatabaseConnection.Clone(),
 	}
 }
 

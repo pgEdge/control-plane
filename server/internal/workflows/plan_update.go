@@ -101,25 +101,36 @@ func (w *Workflows) getServiceResources(
 		return nil, fmt.Errorf("failed to parse pgedge version: %w", err)
 	}
 
-	// Resolve Postgres connection info for the service container.
-	// Services connect to Postgres via the overlay network using the instance hostname.
-	databaseHost, databasePort, err := findPostgresInstance(nodeInstances, hostID)
+	// Build ordered host list for multi-host database connections.
+	targetSessionAttrs := resolveTargetSessionAttrs(serviceSpec)
+
+	var targetNodes []string
+	if serviceSpec.DatabaseConnection != nil {
+		targetNodes = serviceSpec.DatabaseConnection.TargetNodes
+	}
+
+	connInfo, err := database.BuildServiceHostList(&database.BuildServiceHostListParams{
+		ServiceHostID:      hostID,
+		NodeInstances:      nodeInstances,
+		TargetNodes:        targetNodes,
+		TargetSessionAttrs: targetSessionAttrs,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve postgres instance for service: %w", err)
+		return nil, fmt.Errorf("failed to build service host list: %w", err)
 	}
 
 	serviceInstanceSpec := &database.ServiceInstanceSpec{
-		ServiceInstanceID: serviceInstanceID,
-		ServiceSpec:       serviceSpec,
-		PgEdgeVersion:     pgEdgeVersion,
-		DatabaseID:        spec.DatabaseID,
-		DatabaseName:      spec.DatabaseName,
-		HostID:            hostID,
-		NodeName:          nodeName,
-		DatabaseNetworkID: database.GenerateDatabaseNetworkID(spec.DatabaseID),
-		DatabaseHost:      databaseHost,
-		DatabasePort:      databasePort,
-		Port:              serviceSpec.Port,
+		ServiceInstanceID:  serviceInstanceID,
+		ServiceSpec:        serviceSpec,
+		PgEdgeVersion:      pgEdgeVersion,
+		DatabaseID:         spec.DatabaseID,
+		DatabaseName:       spec.DatabaseName,
+		HostID:             hostID,
+		NodeName:           nodeName,
+		DatabaseNetworkID:  database.GenerateDatabaseNetworkID(spec.DatabaseID),
+		DatabaseHosts:      connInfo.Hosts,
+		TargetSessionAttrs: connInfo.TargetSessionAttrs,
+		Port:               serviceSpec.Port,
 		// Credentials: nil — ServiceUserRole.Create() will generate them
 	}
 
@@ -140,30 +151,26 @@ func (w *Workflows) getServiceResources(
 	}, nil
 }
 
-// findPostgresInstance resolves the Postgres hostname and port for a service
-// container from the database spec. It prefers a co-located instance (same host
-// as the service) for lower latency, falling back to any instance in the database.
-// The hostname follows the swarm orchestrator convention: "postgres-{instanceID}".
-// The returned port is always the internal container port (5432), not the published
-// host port, because service containers connect via the overlay network.
-func findPostgresInstance(nodeInstances []*database.NodeInstances, serviceHostID string) (string, int, error) {
-	const internalPort = 5432
-
-	var fallback *database.InstanceSpec
-	for _, node := range nodeInstances {
-		for _, inst := range node.Instances {
-			if fallback == nil {
-				fallback = inst
-			}
-			if inst.HostID == serviceHostID {
-				return fmt.Sprintf("postgres-%s", inst.InstanceID), internalPort, nil
-			}
+// resolveTargetSessionAttrs determines the target_session_attrs value for a
+// service. Explicit user setting wins; otherwise each service type maps its
+// own config semantics to the appropriate libpq value.
+func resolveTargetSessionAttrs(serviceSpec *database.ServiceSpec) string {
+	// Tier 1: Explicit user setting in database_connection
+	if serviceSpec.DatabaseConnection != nil && serviceSpec.DatabaseConnection.TargetSessionAttrs != "" {
+		return serviceSpec.DatabaseConnection.TargetSessionAttrs
+	}
+	// Tier 2: Per-service-type default
+	switch serviceSpec.ServiceType {
+	case "mcp":
+		// MCP maps allow_writes → primary/prefer-standby
+		if allowWrites, ok := serviceSpec.Config["allow_writes"].(bool); ok && allowWrites {
+			return database.TargetSessionAttrsPrimary
 		}
+		return database.TargetSessionAttrsPreferStandby
+	// Future service types add cases here.
+	default:
+		// Default to "prefer-standby" for safety — read-only unless the
+		// service explicitly opts in to writes.
+		return database.TargetSessionAttrsPreferStandby
 	}
-
-	if fallback != nil {
-		return fmt.Sprintf("postgres-%s", fallback.InstanceID), internalPort, nil
-	}
-
-	return "", 0, fmt.Errorf("no postgres instances found for service host %s", serviceHostID)
 }

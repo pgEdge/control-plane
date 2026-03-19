@@ -161,19 +161,19 @@ func GenerateDatabaseNetworkID(databaseID string) string {
 
 // ServiceInstanceSpec contains the specification for generating service instance resources.
 type ServiceInstanceSpec struct {
-	ServiceInstanceID string
-	ServiceSpec       *ServiceSpec
-	PgEdgeVersion     *host.PgEdgeVersion // Database version, used for compatibility validation
-	DatabaseID        string
-	DatabaseName      string
-	HostID            string
-	CohortMemberID    string
-	Credentials       *ServiceUser
-	DatabaseNetworkID string
-	NodeName          string // Database node name (for ServiceUserRole PrimaryExecutor routing)
-	DatabaseHost      string // Postgres instance hostname to connect to
-	DatabasePort      int    // Postgres instance port
-	Port              *int   // Service instance published port (optional, 0 = random)
+	ServiceInstanceID  string
+	ServiceSpec        *ServiceSpec
+	PgEdgeVersion      *host.PgEdgeVersion // Database version, used for compatibility validation
+	DatabaseID         string
+	DatabaseName       string
+	HostID             string
+	CohortMemberID     string
+	Credentials        *ServiceUser
+	DatabaseNetworkID  string
+	NodeName           string             // Database node name (for ServiceUserRole PrimaryExecutor routing)
+	DatabaseHosts      []ServiceHostEntry // Ordered list of Postgres host:port entries
+	TargetSessionAttrs string             // libpq target_session_attrs value
+	Port               *int               // Service instance published port (optional, 0 = random)
 }
 
 // storedToServiceInstance converts stored service instance and status to ServiceInstance.

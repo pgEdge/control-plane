@@ -28,9 +28,6 @@ type ServiceContainerSpecOptions struct {
 	ServiceImage      *ServiceImage
 	Credentials       *database.ServiceUser
 	DatabaseNetworkID string
-	// Database connection info
-	DatabaseHost string
-	DatabasePort int
 	// Service port configuration
 	Port *int
 	// DataPath is the host-side directory path for the bind mount
