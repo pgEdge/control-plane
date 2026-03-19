@@ -15,6 +15,24 @@ import (
 // mcpContainerUID is the UID of the MCP container user.
 const mcpContainerUID = 1001
 
+func buildPostgRESTEnvVars(opts *ServiceContainerSpecOptions) []string {
+	env := []string{
+		"PGRST_DB_URI=postgresql://",
+		"PGRST_SERVER_PORT=8080",
+		"PGRST_ADMIN_SERVER_PORT=3001",
+		fmt.Sprintf("PGHOST=%s", opts.DatabaseHost),
+		fmt.Sprintf("PGPORT=%d", opts.DatabasePort),
+		fmt.Sprintf("PGDATABASE=%s", opts.DatabaseName),
+	}
+	if opts.Credentials != nil {
+		env = append(env,
+			fmt.Sprintf("PGUSER=%s", opts.Credentials.Username),
+			fmt.Sprintf("PGPASSWORD=%s", opts.Credentials.Password),
+		)
+	}
+	return env
+}
+
 // ServiceContainerSpecOptions contains all parameters needed to build a service container spec.
 type ServiceContainerSpecOptions struct {
 	ServiceSpec       *database.ServiceSpec
@@ -91,29 +109,61 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		}
 	}
 
-	// Build bind mount for config/auth files
-	mounts := []mount.Mount{
-		docker.BuildMount(opts.DataPath, "/app/data", false),
+	// Build the container-spec fields that vary by service type.
+	var (
+		command     []string
+		args        []string
+		env         []string
+		user        string
+		healthcheck *container.HealthConfig
+		mounts      []mount.Mount
+	)
+
+	switch opts.ServiceSpec.ServiceType {
+	case "postgrest":
+		command = []string{"postgrest"}
+		args = []string{"/app/data/postgrest.conf"}
+		env = buildPostgRESTEnvVars(opts)
+		// postgrest --ready exits 0/1; no curl in the static binary image.
+		healthcheck = &container.HealthConfig{
+			Test:        []string{"CMD", "postgrest", "--ready"},
+			StartPeriod: time.Second * 30,
+			Interval:    time.Second * 10,
+			Timeout:     time.Second * 5,
+			Retries:     3,
+		}
+		mounts = []mount.Mount{
+			docker.BuildMount(opts.DataPath, "/app/data", true),
+		}
+	default: // "mcp"
+		user = fmt.Sprintf("%d", mcpContainerUID)
+		// Override the default container entrypoint to specify config path on bind mount.
+		command = []string{"/app/pgedge-postgres-mcp"}
+		args = []string{"-config", "/app/data/config.yaml"}
+		healthcheck = &container.HealthConfig{
+			Test:        []string{"CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"},
+			StartPeriod: time.Second * 30,
+			Interval:    time.Second * 10,
+			Timeout:     time.Second * 5,
+			Retries:     3,
+		}
+		mounts = []mount.Mount{
+			docker.BuildMount(opts.DataPath, "/app/data", false),
+		}
 	}
 
 	return swarm.ServiceSpec{
 		TaskTemplate: swarm.TaskSpec{
 			ContainerSpec: &swarm.ContainerSpec{
-				Image:    image,
-				Labels:   labels,
-				Hostname: opts.Hostname,
-				User:     fmt.Sprintf("%d", mcpContainerUID),
-				// override the default container entrypoint so we can specify path to config on bind mount
-				Command: []string{"/app/pgedge-postgres-mcp"},
-				Args:    []string{"-config", "/app/data/config.yaml"},
-				Healthcheck: &container.HealthConfig{
-					Test:        []string{"CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"},
-					StartPeriod: time.Second * 30,
-					Interval:    time.Second * 10,
-					Timeout:     time.Second * 5,
-					Retries:     3,
-				},
-				Mounts: mounts,
+				Image:       image,
+				Labels:      labels,
+				Hostname:    opts.Hostname,
+				User:        user,
+				Command:     command,
+				Args:        args,
+				Env:         env,
+				Healthcheck: healthcheck,
+				Mounts:      mounts,
 			},
 			Networks: networks,
 			Placement: &swarm.Placement{
