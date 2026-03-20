@@ -16,11 +16,12 @@ import (
 func TestCandidate(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
 	client := server.Client(t)
-	loggerFactory := testutils.LoggerFactory(t)
 	store := election.NewElectionStore(client, uuid.NewString())
-	electionSvc := election.NewService(store, loggerFactory)
 
 	t.Run("basic functionality", func(t *testing.T) {
+		loggerFactory := testutils.LoggerFactory(t)
+		electionSvc := election.NewService(store, loggerFactory)
+
 		ctx := t.Context()
 		name := election.Name(uuid.NewString())
 		candidate := electionSvc.NewCandidate(name, "host-1", time.Second)
@@ -62,6 +63,9 @@ func TestCandidate(t *testing.T) {
 	})
 
 	t.Run("multiple candidates", func(t *testing.T) {
+		loggerFactory := testutils.LoggerFactory(t)
+		electionSvc := election.NewService(store, loggerFactory)
+
 		bElected := make(chan struct{}, 1)
 
 		ctx := t.Context()

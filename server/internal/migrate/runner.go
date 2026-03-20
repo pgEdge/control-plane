@@ -74,7 +74,10 @@ func (r *Runner) Run(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, migrationTimeout)
 	defer cancel()
 
-	r.watch(ctx)
+	r.watchOp = r.store.Revision.Watch()
+	if err := r.watch(ctx); err != nil {
+		return err
+	}
 	defer r.watchOp.Close()
 
 	r.candidate.AddHandlers(func(_ context.Context) {
@@ -99,25 +102,15 @@ func (r *Runner) Run(ctx context.Context) error {
 	}
 }
 
-func (r *Runner) watch(ctx context.Context) {
+func (r *Runner) watch(ctx context.Context) error {
 	r.logger.Debug().Msg("starting watch")
 
 	if len(r.migrations) == 0 {
-		r.errCh <- errors.New("watch called with empty migrations list")
-		return
+		return errors.New("watch called with empty migrations list")
 	}
 	targetRevision := r.migrations[len(r.migrations)-1].Identifier()
 
-	// Ensure that any previous watches were closed. Close thread-safe and
-	// idempotent.
-	if r.watchOp != nil {
-		r.watchOp.Close()
-	}
-
-	// Since we're not specifying a start version on the watch, this will always
-	// fire for the current revision.
-	r.watchOp = r.store.Revision.Watch()
-	err := r.watchOp.Watch(ctx, func(evt *storage.Event[*StoredRevision]) {
+	err := r.watchOp.Watch(ctx, func(evt *storage.Event[*StoredRevision]) error {
 		switch evt.Type {
 		case storage.EventTypePut:
 			if evt.Value.Identifier == targetRevision {
@@ -126,15 +119,18 @@ func (r *Runner) watch(ctx context.Context) {
 				})
 			}
 		case storage.EventTypeError:
-			r.logger.Debug().Err(evt.Err).Msg("encountered a watch error")
-			if errors.Is(evt.Err, storage.ErrWatchClosed) {
-				r.watch(ctx)
-			}
+			r.logger.Warn().Err(evt.Err).Msg("encountered error in watch")
+		case storage.EventTypeUnknown:
+			r.logger.Debug().Msg("encountered unknown watch event type")
 		}
+		return nil
 	})
 	if err != nil {
-		r.errCh <- fmt.Errorf("failed to start watch: %w", err)
+		return fmt.Errorf("failed to start watch: %w", err)
 	}
+	r.watchOp.PropagateErrors(ctx, r.errCh)
+
+	return nil
 }
 
 func (r *Runner) runMigrations(ctx context.Context) error {

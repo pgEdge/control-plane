@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path"
 	"sync"
@@ -68,17 +67,9 @@ func (s *Service) Start(ctx context.Context) error {
 	scheduler.WithDistributedElector(s.elector)
 	s.scheduler = scheduler
 
-	jobs, err := s.store.GetAll().Exec(ctx)
-	if err != nil {
-		s.logger.Debug().Err(err).Msg("failed to retrieve scheduled jobs from store")
+	if err := s.watchJobChanges(ctx); err != nil {
+		return err
 	}
-	for _, job := range jobs {
-		if err := s.registerJob(ctx, job); err != nil {
-			return fmt.Errorf("failed to register scheduled job: %w", err)
-		}
-	}
-
-	go s.watchJobChanges(ctx)
 	s.scheduler.StartAsync()
 
 	return nil
@@ -163,36 +154,34 @@ func (s *Service) ListScheduledJobs() []string {
 	}
 	return ids
 }
-func (s *Service) watchJobChanges(ctx context.Context) {
+func (s *Service) watchJobChanges(ctx context.Context) error {
 	s.logger.Debug().Msg("watching for scheduled job changes")
 
 	s.watchOp = s.store.WatchJobs()
-	err := s.watchOp.Watch(ctx, func(e *storage.Event[*StoredScheduledJob]) {
+	err := s.watchOp.Watch(ctx, func(e *storage.Event[*StoredScheduledJob]) error {
 		switch e.Type {
 		case storage.EventTypePut:
 			s.logger.Debug().Str("job_id", e.Value.ID).Msg("detected job creation or update")
 			if err := s.registerJob(ctx, e.Value); err != nil {
-				s.errCh <- fmt.Errorf("failed to register job from watch: %w", err)
+				return fmt.Errorf("failed to register job from watch: %w", err)
 			}
 		case storage.EventTypeDelete:
 			jobID := path.Base(e.Key)
 			s.logger.Debug().Str("job_id", jobID).Msg("detected job deletion")
 			s.UnregisterJob(jobID)
 		case storage.EventTypeError:
-			s.logger.Debug().Err(e.Err).Msg("encountered a watch error")
-			if errors.Is(e.Err, storage.ErrWatchClosed) {
-				defer s.watchJobChanges(ctx)
-			}
-		default:
-			s.logger.Warn().
-				Err(e.Err).
-				Str("event_type", string(e.Type)).
-				Msg("unhandled event type in scheduled job watch")
+			s.logger.Warn().Err(e.Err).Msg("encountered error in watch")
+		case storage.EventTypeUnknown:
+			s.logger.Debug().Msg("encountered unknown watch event type")
 		}
+		return nil
 	})
 	if err != nil {
-		s.logger.Debug().Err(err).Msg("job watch exited with error")
+		return fmt.Errorf("failed to initialize job watch: %w", err)
 	}
+	s.watchOp.PropagateErrors(ctx, s.errCh)
+
+	return nil
 }
 
 func (s *Service) Error() <-chan error {

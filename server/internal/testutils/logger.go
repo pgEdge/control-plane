@@ -12,7 +12,9 @@ func Logger(t testing.TB) zerolog.Logger {
 	t.Helper()
 
 	if testing.Verbose() {
-		return zerolog.New(zerolog.NewTestWriter(t))
+		return zerolog.New(zerolog.NewTestWriter(t)).With().
+			Str("test_name", t.Name()).
+			Logger()
 	}
 
 	return zerolog.Nop()
