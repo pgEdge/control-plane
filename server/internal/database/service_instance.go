@@ -58,60 +58,50 @@ type HealthCheckResult struct {
 
 // ServiceUser represents database credentials for a service instance.
 //
-// Each service instance receives dedicated database credentials with read-only access.
-// This provides security isolation between service instances and prevents services from
-// modifying database data. This may be relaxed or configurable in the future depending
-// on use-case requirements.
+// Each service instance receives two dedicated database users: one read-only (RO) and
+// one read-write (RW). The active user is selected based on the service's allow_writes
+// setting. This provides security isolation between service instances.
 //
 // # Credential Generation
 //
 // Credentials are generated during service instance provisioning by the CreateServiceUser
-// workflow activity. The username is deterministic (based on service instance ID), while
-// the password is cryptographically random.
+// workflow activity. The username is deterministic (based on service instance ID and
+// mode), while the password is cryptographically random.
 //
 // # Security Properties
 //
 // - Unique per service instance (not shared between instances)
-// - Read-only database access (SELECT + EXECUTE only, no DML/DDL)
 // - 32-character random passwords
 // - Storage in etcd alongside service instance metadata
-// - Injected as environment variables into service containers
-//
-// # Usage
-//
-// Service containers receive credentials via environment variables:
-//   - PGUSER: Username (e.g., "svc_db1mcp")
-//   - PGPASSWORD: Password (32-character random string)
-//
-// The service connects to the database using these credentials, which are restricted
-// to read-only operations via the "pgedge_application_read_only" role.
+// - Injected into service containers via config.yaml
 type ServiceUser struct {
-	Username string `json:"username"` // Format: "svc_{first-8-chars-of-instance-id}"
+	Username string `json:"username"` // Format: "svc_{service_id}_{mode}"
 	Password string `json:"password"` // 32-character cryptographically random string
-	Role     string `json:"role"`     // Database role, e.g., "pgedge_application_read_only"
+	Role     string `json:"role"`     // Database role, e.g., "pgedge_application_read_only" or "pgedge_application"
 }
 
 // GenerateServiceUsername creates a deterministic username for a service.
 //
 // # Username Format
 //
-// The username follows the pattern: "svc_{service_id}"
+// The username follows the pattern: "svc_{service_id}_{mode}"
 //
 // Example:
 //
-//	service_id: "mcp-server"
-//	Generated username: "svc_mcp_server"
+//	service_id: "mcp-server", mode: "ro"
+//	Generated username: "svc_mcp_server_ro"
 //
 // # Rationale
 //
 // - "svc_" prefix: Clearly identifies service accounts vs. application users
 // - service_id: Uniquely identifies the service within the database
-// - Deterministic: Same service_id always generates the same username
-// - Shared: One database user role per service, shared across all instances
+// - mode: Distinguishes RO ("ro") from RW ("rw") users for the same service
+// - Deterministic: Same service_id + mode always generates the same username
+// - Shared: One database user role per service per mode, shared across all instances
 //
 // # Uniqueness
 //
-// Service IDs are unique within a database. By using the service_id, we
+// Service IDs are unique within a database. By using the service_id and mode, we
 // guarantee uniqueness even when multiple services exist on the same database.
 //
 // # PostgreSQL Compatibility
@@ -122,13 +112,13 @@ type ServiceUser struct {
 // name) to a truncated prefix. This guarantees uniqueness even when two inputs
 // share a long common prefix.
 //
-// Short name format: svc_{service_id}
-// Long name format:  svc_{first 50 chars of service_id}_{8-hex-hash}
-func GenerateServiceUsername(serviceID string) string {
+// Short name format: svc_{service_id}_{mode}
+// Long name format:  svc_{truncated service_id}_{8-hex-hash}_{mode}
+func GenerateServiceUsername(serviceID string, mode string) string {
 	// Sanitize hyphens to underscores for PostgreSQL compatibility.
 	// Hyphens in identifiers require double-quoting in SQL.
 	serviceID = strings.ReplaceAll(serviceID, "-", "_")
-	username := fmt.Sprintf("svc_%s", serviceID)
+	username := fmt.Sprintf("svc_%s_%s", serviceID, mode)
 
 	if len(username) <= 63 {
 		return username
@@ -136,15 +126,17 @@ func GenerateServiceUsername(serviceID string) string {
 
 	// Hash the full untruncated username for uniqueness
 	h := sha256.Sum256([]byte(username))
-	suffix := hex.EncodeToString(h[:4]) // 8 hex chars
+	hashSuffix := hex.EncodeToString(h[:4]) // 8 hex chars
 
-	// svc_ (4) + prefix (50) + _ (1) + hash (8) = 63
+	// svc_ (4) + prefix + _ (1) + hash (8) + _ (1) + mode (len) = 14 + len(mode) + prefix
+	// Max prefix = 63 - 14 - len(mode)
+	maxPrefix := 63 - 14 - len(mode)
 	raw := serviceID
-	if len(raw) > 50 {
-		raw = raw[:50]
+	if len(raw) > maxPrefix {
+		raw = raw[:maxPrefix]
 	}
 
-	return fmt.Sprintf("svc_%s_%s", raw, suffix)
+	return fmt.Sprintf("svc_%s_%s_%s", raw, hashSuffix, mode)
 }
 
 // GenerateServiceInstanceID creates a unique ID for a service instance.

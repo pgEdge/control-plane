@@ -41,19 +41,23 @@ type MCPConfigResource struct {
 	DatabaseName       string                      `json:"database_name"`
 	DatabaseHosts      []database.ServiceHostEntry `json:"database_hosts"`
 	TargetSessionAttrs string                      `json:"target_session_attrs"`
-	Username           string                      `json:"username"`
-	Password           string                      `json:"password"`
+	ROUsername         string                      `json:"ro_username"`
+	ROPassword         string                      `json:"ro_password"`
+	RWUsername         string                      `json:"rw_username"`
+	RWPassword         string                      `json:"rw_password"`
 }
 
 func (r *MCPConfigResource) ResourceVersion() string {
-	return "1"
+	return "2"
 }
 
 func (r *MCPConfigResource) DiffIgnore() []string {
 	return []string{
-		// Credentials are populated from ServiceUserRole during refresh.
-		"/username",
-		"/password",
+		// Credentials are populated from ServiceUserRole resources during refresh.
+		"/ro_username",
+		"/ro_password",
+		"/rw_username",
+		"/rw_password",
 	}
 }
 
@@ -68,7 +72,8 @@ func (r *MCPConfigResource) Executor() resource.Executor {
 func (r *MCPConfigResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
 		filesystem.DirResourceIdentifier(r.DirResourceID),
-		ServiceUserRoleIdentifier(r.ServiceID),
+		ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRO),
+		ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRW),
 	}
 }
 
@@ -168,15 +173,25 @@ func (r *MCPConfigResource) Delete(ctx context.Context, rc *resource.Context) er
 	return nil
 }
 
+// activeCredentials returns the username and password for the active service
+// user based on the AllowWrites config setting.
+func (r *MCPConfigResource) activeCredentials() (username, password string) {
+	if r.Config.AllowWrites != nil && *r.Config.AllowWrites {
+		return r.RWUsername, r.RWPassword
+	}
+	return r.ROUsername, r.ROPassword
+}
+
 // writeConfigFile generates and writes the config.yaml file.
 func (r *MCPConfigResource) writeConfigFile(fs afero.Fs, dirPath string) error {
+	username, password := r.activeCredentials()
 	content, err := GenerateMCPConfig(&MCPConfigParams{
 		Config:             r.Config,
 		DatabaseName:       r.DatabaseName,
 		DatabaseHosts:      r.DatabaseHosts,
 		TargetSessionAttrs: r.TargetSessionAttrs,
-		Username:           r.Username,
-		Password:           r.Password,
+		Username:           username,
+		Password:           password,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate MCP config: %w", err)
@@ -257,13 +272,22 @@ func (r *MCPConfigResource) writeUserFileIfNeeded(fs afero.Fs, usersPath string)
 	return nil
 }
 
-// populateCredentials fetches the username/password from the ServiceUserRole resource.
+// populateCredentials fetches credentials from both ServiceUserRole resources
+// (RO and RW). Credential selection happens at usage time based on AllowWrites.
 func (r *MCPConfigResource) populateCredentials(rc *resource.Context) error {
-	userRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(r.ServiceID))
+	roRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRO))
 	if err != nil {
-		return fmt.Errorf("failed to get service user role from state: %w", err)
+		return fmt.Errorf("failed to get RO service user role from state: %w", err)
 	}
-	r.Username = userRole.Username
-	r.Password = userRole.Password
+	r.ROUsername = roRole.Username
+	r.ROPassword = roRole.Password
+
+	rwRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRW))
+	if err != nil {
+		return fmt.Errorf("failed to get RW service user role from state: %w", err)
+	}
+	r.RWUsername = rwRole.Username
+	r.RWPassword = rwRole.Password
+
 	return nil
 }

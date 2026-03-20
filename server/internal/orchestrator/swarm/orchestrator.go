@@ -440,19 +440,21 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		Allocator: o.dbNetworkAllocator,
 	}
 
-	// Service user role resource (manages database user lifecycle)
-	serviceUserRole := &ServiceUserRole{
+	// Service user role resources (manages database user lifecycle).
+	// Two roles are created per service: read-only and read-write.
+	serviceUserRoleRO := &ServiceUserRole{
 		ServiceID:    spec.ServiceSpec.ServiceID,
 		DatabaseID:   spec.DatabaseID,
 		DatabaseName: spec.DatabaseName,
 		NodeName:     spec.NodeName,
+		Mode:         ServiceUserRoleRO,
 	}
-	// Username and Password are populated from existing state during Refresh,
-	// or generated during Create. Only set if credentials exist (backward
-	// compatibility with existing state).
-	if spec.Credentials != nil {
-		serviceUserRole.Username = spec.Credentials.Username
-		serviceUserRole.Password = spec.Credentials.Password
+	serviceUserRoleRW := &ServiceUserRole{
+		ServiceID:    spec.ServiceSpec.ServiceID,
+		DatabaseID:   spec.DatabaseID,
+		DatabaseName: spec.DatabaseName,
+		NodeName:     spec.NodeName,
+		Mode:         ServiceUserRoleRW,
 	}
 
 	// Service data directory resource (host-side bind mount directory)
@@ -466,6 +468,7 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 	}
 
 	// MCP config resource (generates config.yaml, tokens.yaml, users.yaml)
+	// Credentials are populated from ServiceUserRole resources during refresh.
 	mcpConfigResource := &MCPConfigResource{
 		ServiceInstanceID:  spec.ServiceInstanceID,
 		ServiceID:          spec.ServiceSpec.ServiceID,
@@ -475,10 +478,6 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		DatabaseName:       spec.DatabaseName,
 		DatabaseHosts:      spec.DatabaseHosts,
 		TargetSessionAttrs: spec.TargetSessionAttrs,
-	}
-	if spec.Credentials != nil {
-		mcpConfigResource.Username = spec.Credentials.Username
-		mcpConfigResource.Password = spec.Credentials.Password
 	}
 
 	// Service instance spec resource
@@ -511,10 +510,11 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		HostID:            spec.HostID,
 	}
 
-	// Resource chain: Network → ServiceUserRole → DirResource → MCPConfigResource → ServiceInstanceSpec → ServiceInstance
+	// Resource chain: Network → ServiceUserRole(RO,RW) → DirResource → MCPConfigResource → ServiceInstanceSpec → ServiceInstance
 	orchestratorResources := []resource.Resource{
 		databaseNetwork,
-		serviceUserRole,
+		serviceUserRoleRO,
+		serviceUserRoleRW,
 		dataDir,
 		mcpConfigResource,
 		serviceInstanceSpec,
