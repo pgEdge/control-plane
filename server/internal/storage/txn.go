@@ -71,6 +71,14 @@ func (t *txn) Commit(ctx context.Context) error {
 		return ErrOperationConstraintViolated
 	}
 
+	// Update the item version on any operations that support it
+	prevKVs := extractPrevKVs(resp)
+	for _, o := range t.ops {
+		if up, ok := o.(VersionUpdater); ok && up.UpdateVersionEnabled() {
+			up.UpdateVersion(prevKVs)
+		}
+	}
+
 	return nil
 }
 

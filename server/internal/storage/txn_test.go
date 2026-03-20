@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -13,9 +14,7 @@ import (
 
 func TestTxn(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	// defer server.Close()
 	client := server.Client(t)
-	// defer client.Close()
 
 	t.Run("all conditions met", func(t *testing.T) {
 		ctx := context.Background()
@@ -83,5 +82,43 @@ func TestTxn(t *testing.T) {
 
 		assert.ErrorContains(t, err, "put a")
 		assert.ErrorContains(t, err, "delete a")
+	})
+
+	t.Run("updates versions", func(t *testing.T) {
+		item1 := &TestValue{SomeField: "foo"}
+		item2 := &TestValue{SomeField: "foo"}
+		item3 := &TestValue{SomeField: "foo"}
+		item4 := &TestValue{SomeField: "foo"}
+		key1 := uuid.NewString()
+		key2 := uuid.NewString()
+		key3 := uuid.NewString()
+		key4 := uuid.NewString()
+
+		err := storage.NewTxn(client,
+			storage.NewCreateOp(client, key1, item1).WithUpdatedVersion(),
+			// Updates are logically equivalent to create when the version is 0.
+			storage.NewUpdateOp(client, key2, item2).WithUpdatedVersion(),
+			storage.NewPutOp(client, key3, item3).WithUpdatedVersion(),
+			storage.NewPutOp(client, key4, item4),
+		).Commit(t.Context())
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), item1.Version())
+		assert.Equal(t, int64(1), item2.Version())
+		assert.Equal(t, int64(1), item3.Version())
+		assert.Equal(t, int64(0), item4.Version()) // This op didn't have WithUpdatedVersion
+
+		// Reinitialize items 1-3 to zero out their versions
+		item1 = &TestValue{SomeField: "foo"}
+		item2 = &TestValue{SomeField: "foo"}
+		item3 = &TestValue{SomeField: "foo"}
+		err = storage.NewTxn(client,
+			storage.NewPutOp(client, key1, item1).WithUpdatedVersion(),
+			storage.NewPutOp(client, key2, item2).WithUpdatedVersion(),
+			storage.NewPutOp(client, key3, item3).WithUpdatedVersion(),
+		).Commit(t.Context())
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), item1.Version())
+		assert.Equal(t, int64(2), item2.Version())
+		assert.Equal(t, int64(2), item3.Version())
 	})
 }

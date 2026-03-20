@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -14,9 +15,7 @@ import (
 
 func TestPutOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	// defer server.Close()
 	client := server.Client(t)
-	// defer client.Close()
 
 	t.Run("puts a value", func(t *testing.T) {
 		ctx := context.Background()
@@ -65,13 +64,24 @@ func TestPutOp(t *testing.T) {
 		assert.ErrorIs(t, err, storage.ErrNotFound)
 		assert.Nil(t, val)
 	})
+
+	t.Run("with updated version", func(t *testing.T) {
+		ctx := t.Context()
+
+		item := &TestValue{SomeField: "bar"}
+		key := uuid.NewString()
+		assert.NoError(t, storage.NewPutOp(client, key, item).WithUpdatedVersion().Exec(ctx))
+		assert.Equal(t, int64(1), item.Version())
+
+		item.SomeField = "baz"
+		assert.NoError(t, storage.NewPutOp(client, key, item).WithUpdatedVersion().Exec(ctx))
+		assert.Equal(t, int64(2), item.Version())
+	})
 }
 
 func TestCreateOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	// defer server.Close()
 	client := server.Client(t)
-	// defer client.Close()
 
 	t.Run("key does not exist", func(t *testing.T) {
 		ctx := context.Background()
@@ -95,13 +105,19 @@ func TestCreateOp(t *testing.T) {
 		err = storage.NewCreateOp(client, "bar", &TestValue{SomeField: "bar"}).Exec(ctx)
 		assert.ErrorIs(t, err, storage.ErrAlreadyExists)
 	})
+
+	t.Run("with updated version", func(t *testing.T) {
+		item := &TestValue{SomeField: "foo"}
+		ctx := t.Context()
+		err := storage.NewCreateOp(client, uuid.NewString(), item).WithUpdatedVersion().Exec(ctx)
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), item.Version())
+	})
 }
 
 func TestUpdateOp(t *testing.T) {
 	server := storagetest.NewEtcdTestServer(t)
-	// defer server.Close()
 	client := server.Client(t)
-	// defer client.Close()
 
 	t.Run("valid update", func(t *testing.T) {
 		ctx := context.Background()
@@ -136,5 +152,18 @@ func TestUpdateOp(t *testing.T) {
 		err = storage.NewUpdateOp(client, "bar", val).Exec(ctx)
 
 		assert.ErrorIs(t, err, storage.ErrValueVersionMismatch)
+	})
+
+	t.Run("with updated version", func(t *testing.T) {
+		ctx := t.Context()
+
+		item := &TestValue{SomeField: "bar"}
+		key := uuid.NewString()
+		assert.NoError(t, storage.NewCreateOp(client, key, item).WithUpdatedVersion().Exec(ctx))
+		assert.Equal(t, int64(1), item.Version())
+
+		item.SomeField = "baz"
+		assert.NoError(t, storage.NewUpdateOp(client, key, item).WithUpdatedVersion().Exec(ctx))
+		assert.Equal(t, int64(2), item.Version())
 	})
 }
