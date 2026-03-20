@@ -27,6 +27,7 @@ func (t *txn) AddOps(ops ...TxnOperation) {
 func (t *txn) Commit(ctx context.Context) error {
 	var allOps []clientv3.Op
 	var allCmps []clientv3.Cmp
+	var cachedOps []CachedTxnOp
 
 	opsByKey := map[string][]clientv3.Op{}
 	for _, op := range t.ops {
@@ -40,6 +41,9 @@ func (t *txn) Commit(ctx context.Context) error {
 		}
 		allOps = append(allOps, ops...)
 		allCmps = append(allCmps, op.Cmps()...)
+		if c, ok := op.(CachedTxnOp); ok {
+			cachedOps = append(cachedOps, c)
+		}
 	}
 
 	// Etcd will reject the transaction if there are duplicate keys, and it
@@ -77,6 +81,10 @@ func (t *txn) Commit(ctx context.Context) error {
 		if up, ok := o.(VersionUpdater); ok && up.UpdateVersionEnabled() {
 			up.UpdateVersion(prevKVs)
 		}
+	}
+	// Update the cache for all cached operations
+	for _, c := range cachedOps {
+		c.UpdateCache()
 	}
 
 	return nil
