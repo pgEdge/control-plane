@@ -2,18 +2,13 @@ package swarm
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
-	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 
-	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/database"
-	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/utils"
@@ -103,10 +98,11 @@ func (r *ServiceUserRole) Executor() resource.Executor {
 }
 
 func (r *ServiceUserRole) Dependencies() []resource.Identifier {
+	nodeID := database.NodeResourceIdentifier(r.NodeName)
 	if r.CredentialSource != nil {
-		return []resource.Identifier{*r.CredentialSource}
+		return []resource.Identifier{nodeID, *r.CredentialSource}
 	}
-	return nil
+	return []resource.Identifier{nodeID}
 }
 
 func (r *ServiceUserRole) TypeDependencies() []resource.Type {
@@ -160,9 +156,13 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 }
 
 func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Context, logger zerolog.Logger) error {
-	conn, err := r.connectToPrimary(ctx, rc, logger, "postgres")
+	primary, err := database.GetPrimaryInstance(ctx, rc, r.NodeName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get primary instance: %w", err)
+	}
+	conn, err := primary.Connection(ctx, rc, "postgres")
+	if err != nil {
+		return fmt.Errorf("failed to connect to database postgres on node %s: %w", r.NodeName, err)
 	}
 	defer conn.Close(ctx)
 
@@ -212,10 +212,15 @@ func (r *ServiceUserRole) Delete(ctx context.Context, rc *resource.Context) erro
 		Logger()
 	logger.Info().Msg("deleting service user from database")
 
-	conn, err := r.connectToPrimary(ctx, rc, logger, "postgres")
+	primary, err := database.GetPrimaryInstance(ctx, rc, r.NodeName)
 	if err != nil {
 		// During deletion, connection failures are non-fatal — the database
 		// may already be gone or unreachable.
+		logger.Warn().Err(err).Msg("failed to get primary instance, skipping user deletion")
+		return nil
+	}
+	conn, err := primary.Connection(ctx, rc, "postgres")
+	if err != nil {
 		logger.Warn().Err(err).Msg("failed to connect to primary instance, skipping user deletion")
 		return nil
 	}
@@ -233,72 +238,4 @@ func (r *ServiceUserRole) Delete(ctx context.Context, rc *resource.Context) erro
 
 	logger.Info().Msg("service user deleted successfully")
 	return nil
-}
-
-// connectToPrimary finds the primary Postgres instance and returns an
-// authenticated connection to it. The caller is responsible for closing
-// the connection.
-func (r *ServiceUserRole) connectToPrimary(ctx context.Context, rc *resource.Context, logger zerolog.Logger, dbName string) (*pgx.Conn, error) {
-	dbSvc, err := do.Invoke[*database.Service](rc.Injector)
-	if err != nil {
-		return nil, err
-	}
-
-	db, err := dbSvc.GetDatabase(ctx, r.DatabaseID)
-	if err != nil {
-		if errors.Is(err, database.ErrDatabaseNotFound) {
-			return nil, fmt.Errorf("database not found: %w", err)
-		}
-		return nil, fmt.Errorf("failed to get database: %w", err)
-	}
-
-	if len(db.Instances) == 0 {
-		return nil, fmt.Errorf("database has no instances")
-	}
-
-	// Find primary instance via Patroni
-	var primaryInstanceID string
-	for _, inst := range db.Instances {
-		if inst.NodeName != r.NodeName {
-			continue
-		}
-		connInfo, err := dbSvc.GetInstanceConnectionInfo(ctx, r.DatabaseID, inst.InstanceID)
-		if err != nil {
-			continue
-		}
-		patroniClient := patroni.NewClient(connInfo.PatroniURL(), nil)
-		primaryID, err := database.GetPrimaryInstanceID(ctx, patroniClient, 10*time.Second)
-		if err == nil && primaryID != "" {
-			primaryInstanceID = primaryID
-			break
-		}
-	}
-	if primaryInstanceID == "" {
-		return nil, fmt.Errorf("could not determine primary instance for node %s", r.NodeName)
-	}
-
-	connInfo, err := dbSvc.GetInstanceConnectionInfo(ctx, r.DatabaseID, primaryInstanceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get instance connection info: %w", err)
-	}
-
-	certSvc, err := do.Invoke[*certificates.Service](rc.Injector)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get certificate service: %w", err)
-	}
-
-	tlsConfig, err := certSvc.PostgresUserTLS(ctx, primaryInstanceID, connInfo.InstanceHostname, "pgedge")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create TLS config: %w", err)
-	}
-
-	conn, err := database.ConnectToInstance(ctx, &database.ConnectionOptions{
-		DSN: connInfo.AdminDSN(dbName),
-		TLS: tlsConfig,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
-	}
-
-	return conn, nil
 }

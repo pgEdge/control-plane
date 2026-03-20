@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
@@ -66,18 +67,23 @@ func TestServiceUserRolePerNodeIdentifier(t *testing.T) {
 }
 
 func TestServiceUserRoleDependencies(t *testing.T) {
-	t.Run("canonical resource has no dependencies", func(t *testing.T) {
+	t.Run("canonical resource depends only on its node", func(t *testing.T) {
 		r := &ServiceUserRole{
 			ServiceID: "svc-abc",
+			NodeName:  "n1",
 			Mode:      ServiceUserRoleRO,
 		}
 		deps := r.Dependencies()
-		if len(deps) != 0 {
-			t.Errorf("canonical resource Dependencies() = %v, want empty", deps)
+		nodeID := database.NodeResourceIdentifier("n1")
+		if len(deps) != 1 {
+			t.Fatalf("canonical resource Dependencies() = %v, want 1 dependency", deps)
+		}
+		if deps[0] != nodeID {
+			t.Errorf("canonical resource dependency = %v, want %v", deps[0], nodeID)
 		}
 	})
 
-	t.Run("per-node resource depends on canonical", func(t *testing.T) {
+	t.Run("per-node resource depends on node and canonical", func(t *testing.T) {
 		canonicalID := ServiceUserRoleIdentifier("svc-abc", ServiceUserRoleRO)
 		r := &ServiceUserRole{
 			ServiceID:        "svc-abc",
@@ -86,11 +92,15 @@ func TestServiceUserRoleDependencies(t *testing.T) {
 			CredentialSource: &canonicalID,
 		}
 		deps := r.Dependencies()
-		if len(deps) != 1 {
-			t.Fatalf("per-node resource Dependencies() = %v, want 1 dependency", deps)
+		if len(deps) != 2 {
+			t.Fatalf("per-node resource Dependencies() = %v, want 2 dependencies", deps)
 		}
-		if deps[0] != canonicalID {
-			t.Errorf("per-node resource dependency = %v, want %v", deps[0], canonicalID)
+		nodeID := database.NodeResourceIdentifier("n2")
+		if deps[0] != nodeID {
+			t.Errorf("per-node resource deps[0] = %v, want node %v", deps[0], nodeID)
+		}
+		if deps[1] != canonicalID {
+			t.Errorf("per-node resource deps[1] = %v, want canonical %v", deps[1], canonicalID)
 		}
 	})
 }
@@ -116,11 +126,11 @@ func buildServiceUserRoles(serviceID, databaseID, databaseName, firstNodeName st
 
 func TestServiceUserRolePerNodeProvisioning(t *testing.T) {
 	tests := []struct {
-		name           string
-		extraNodes     []string
-		wantTotal      int
-		wantCanonical  int
-		wantPerNode    int
+		name          string
+		extraNodes    []string
+		wantTotal     int
+		wantCanonical int
+		wantPerNode   int
 	}{
 		{"single node", nil, 2, 2, 0},
 		{"two nodes", []string{"n2"}, 4, 2, 2},
