@@ -23,27 +23,37 @@ var _ resource.Resource = (*ServiceUserRole)(nil)
 
 const ResourceTypeServiceUserRole resource.Type = "swarm.service_user_role"
 
+const (
+	ServiceUserRoleRO = "ro"
+	ServiceUserRoleRW = "rw"
+)
+
 // sanitizeIdentifier quotes a string for use as a PostgreSQL identifier.
 // It doubles any internal double-quotes and wraps the result in double-quotes.
 func sanitizeIdentifier(name string) string {
 	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }
 
-func ServiceUserRoleIdentifier(serviceID string) resource.Identifier {
+func ServiceUserRoleIdentifier(serviceInstanceID string, mode string) resource.Identifier {
 	return resource.Identifier{
-		ID:   serviceID,
+		ID:   serviceInstanceID + "-" + mode,
 		Type: ResourceTypeServiceUserRole,
 	}
 }
 
 // ServiceUserRole manages the lifecycle of a database user for a service.
 //
-// This resource is keyed by ServiceID, so one role is shared across all
-// instances of the same service. It handles creation, verification, and
-// cleanup of database users. On Create, it generates a deterministic username
-// and random password, creates the Postgres role, and stores the credentials
-// in the resource state. On subsequent reconciliation cycles, the credentials
-// are reused from the persisted state (no password regeneration).
+// Two ServiceUserRole resources are created per service: one with Mode set to
+// ServiceUserRoleRO (read-only) and one with Mode set to ServiceUserRoleRW
+// (read-write). Mode determines which group role the user is granted membership
+// in: pgedge_application_read_only for RO, or pgedge_application for RW. All
+// permissions are inherited via the group role — no custom grants are applied.
+//
+// On Create, a deterministic username (incorporating the mode) and a random
+// password are generated, the Postgres role is created with the appropriate
+// group role membership, and the credentials are stored in the resource state.
+// On subsequent reconciliation cycles, credentials are reused from the persisted
+// state (no password regeneration).
 //
 // The role is created on the primary instance and Spock replicates it to all
 // other nodes automatically.
@@ -52,24 +62,26 @@ type ServiceUserRole struct {
 	DatabaseID   string `json:"database_id"`
 	DatabaseName string `json:"database_name"`
 	NodeName     string `json:"node_name"` // Database node name for PrimaryExecutor routing
+	Mode         string `json:"mode"`      // ServiceUserRoleRO or ServiceUserRoleRW
 	Username     string `json:"username"`
 	Password     string `json:"password"` // Generated on Create, persisted in state
 }
 
 func (r *ServiceUserRole) ResourceVersion() string {
-	return "3"
+	return "4"
 }
 
 func (r *ServiceUserRole) DiffIgnore() []string {
 	return []string{
 		"/node_name",
+		"/mode",
 		"/username",
 		"/password",
 	}
 }
 
 func (r *ServiceUserRole) Identifier() resource.Identifier {
-	return ServiceUserRoleIdentifier(r.ServiceID)
+	return ServiceUserRoleIdentifier(r.ServiceID, r.Mode)
 }
 
 func (r *ServiceUserRole) Executor() resource.Executor {
@@ -106,7 +118,7 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 	logger.Info().Msg("creating service user role")
 
 	// Generate deterministic username and random password
-	r.Username = database.GenerateServiceUsername(r.ServiceID)
+	r.Username = database.GenerateServiceUsername(r.ServiceID, r.Mode)
 	password, err := utils.RandomString(32)
 	if err != nil {
 		return fmt.Errorf("failed to generate password: %w", err)
@@ -130,17 +142,24 @@ func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Conte
 	}
 	defer conn.Close(ctx)
 
-	// Create the role with LOGIN but no inherited roles. We grant permissions
-	// directly rather than using pgedge_application_read_only because that role
-	// includes read access to the spock schema (replication internals) which the
-	// MCP service should not expose.
-	// https://github.com/pgEdge/pgedge-postgres-mcp/blob/main/docs/guide/security_mgmt.md
+	// Determine group role based on mode
+	var groupRole string
+	switch r.Mode {
+	case ServiceUserRoleRO:
+		groupRole = "pgedge_application_read_only"
+	case ServiceUserRoleRW:
+		groupRole = "pgedge_application"
+	default:
+		return fmt.Errorf("unknown service user role mode: %q", r.Mode)
+	}
+
 	statements, err := postgres.CreateUserRole(postgres.UserRoleOptions{
 		Name:       r.Username,
 		Password:   r.Password,
 		DBName:     r.DatabaseName,
 		DBOwner:    false,
 		Attributes: []string{"LOGIN"},
+		Roles:      []string{groupRole},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate create user role statements: %w", err)
@@ -148,21 +167,6 @@ func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Conte
 
 	if err := statements.Exec(ctx, conn); err != nil {
 		return fmt.Errorf("failed to create service user: %w", err)
-	}
-
-	// grants based on MCP doc guidelines, but open to change as needed
-	grants := postgres.Statements{
-		// Database-level connect permission
-		postgres.Statement{SQL: fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s;", sanitizeIdentifier(r.DatabaseName), sanitizeIdentifier(r.Username))},
-		// Read-only access to the public schema (application tables)
-		postgres.Statement{SQL: fmt.Sprintf("GRANT USAGE ON SCHEMA public TO %s;", sanitizeIdentifier(r.Username))},
-		postgres.Statement{SQL: fmt.Sprintf("GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s;", sanitizeIdentifier(r.Username))},
-		postgres.Statement{SQL: fmt.Sprintf("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO %s;", sanitizeIdentifier(r.Username))},
-		// Allow viewing PostgreSQL configuration via diagnostic tools
-		postgres.Statement{SQL: fmt.Sprintf("GRANT pg_read_all_settings TO %s;", sanitizeIdentifier(r.Username))},
-	}
-	if err := grants.Exec(ctx, conn); err != nil {
-		return fmt.Errorf("failed to grant service user permissions: %w", err)
 	}
 
 	return nil
