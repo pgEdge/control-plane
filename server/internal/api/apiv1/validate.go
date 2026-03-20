@@ -183,10 +183,25 @@ func validateDatabaseUpdate(old *database.Spec, new *api.DatabaseSpec) error {
 		newNodeNames.Add(n.Name)
 	}
 
-	// Validate services with isUpdate=true to reject bootstrap-only fields
+	// Build a set of service IDs that already exist in the deployment. This is used
+	// below to distinguish newly added services from existing ones. Currently this
+	// distinction only affects MCP services, which have bootstrap-only fields
+	// (init_token, init_users) that may only be set during initial provisioning of
+	// the service. Because a service can be added to an existing database via
+	// update-database, "initial provisioning" means "first time this service_id
+	// appears in the spec" — not "the create-database call was used".
+	existingServiceIDs := make(ds.Set[string], len(old.Services))
+	for _, svc := range old.Services {
+		existingServiceIDs.Add(svc.ServiceID)
+	}
+
+	// Validate each service. Pass isUpdate=false for services being added for the
+	// first time so that bootstrap-only fields are accepted. For service types that
+	// have no bootstrap fields (e.g. postgrest) the flag has no effect.
 	for i, svc := range new.Services {
 		svcPath := []string{"services", arrayIndexPath(i)}
-		errs = append(errs, validateServiceSpec(svc, svcPath, true, newNodeNames)...)
+		isExistingService := existingServiceIDs.Has(string(svc.ServiceID))
+		errs = append(errs, validateServiceSpec(svc, svcPath, isExistingService, newNodeNames)...)
 	}
 
 	return errors.Join(errs...)
