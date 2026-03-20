@@ -92,11 +92,6 @@ func (r *MCPConfigResource) Refresh(ctx context.Context, rc *resource.Context) e
 		return fmt.Errorf("failed to get service data dir path: %w", err)
 	}
 
-	// Populate credentials from ServiceUserRole
-	if err := r.populateCredentials(rc); err != nil {
-		return err
-	}
-
 	// Check if config.yaml exists
 	_, err = readResourceFile(fs, filepath.Join(dirPath, "config.yaml"))
 	if err != nil {
