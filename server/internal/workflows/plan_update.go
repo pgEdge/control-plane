@@ -57,7 +57,7 @@ func (w *Workflows) PlanUpdate(ctx workflow.Context, input *PlanUpdateInput) (*P
 	}
 
 	// Generate service instance resources.
-	// Pick any node name for ServiceUserRole PrimaryExecutor routing.
+	// Use first node as canonical node for ServiceUserRole credential generation.
 	var nodeName string
 	if len(nodeInstances) > 0 {
 		nodeName = nodeInstances[0].NodeName
@@ -131,6 +131,7 @@ func (w *Workflows) getServiceResources(
 		DatabaseHosts:      connInfo.Hosts,
 		TargetSessionAttrs: connInfo.TargetSessionAttrs,
 		Port:               serviceSpec.Port,
+		DatabaseNodes:      nodeInstances,
 		// Credentials: nil — ServiceUserRole.Create() will generate them
 	}
 

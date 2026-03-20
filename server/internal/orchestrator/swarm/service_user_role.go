@@ -41,6 +41,13 @@ func ServiceUserRoleIdentifier(serviceInstanceID string, mode string) resource.I
 	}
 }
 
+func ServiceUserRolePerNodeIdentifier(serviceID, mode, nodeName string) resource.Identifier {
+	return resource.Identifier{
+		ID:   serviceID + "-" + mode + "-" + nodeName,
+		Type: ResourceTypeServiceUserRole,
+	}
+}
+
 // ServiceUserRole manages the lifecycle of a database user for a service.
 //
 // Two ServiceUserRole resources are created per service: one with Mode set to
@@ -55,16 +62,19 @@ func ServiceUserRoleIdentifier(serviceInstanceID string, mode string) resource.I
 // On subsequent reconciliation cycles, credentials are reused from the persisted
 // state (no password regeneration).
 //
-// The role is created on the primary instance and Spock replicates it to all
-// other nodes automatically.
+// When CredentialSource is nil, this is the canonical resource: it generates
+// credentials and runs on the first node. When CredentialSource is non-nil,
+// this is a per-node resource: it reads credentials from the canonical resource
+// and runs on its own node's primary.
 type ServiceUserRole struct {
-	ServiceID    string `json:"service_id"`
-	DatabaseID   string `json:"database_id"`
-	DatabaseName string `json:"database_name"`
-	NodeName     string `json:"node_name"` // Database node name for PrimaryExecutor routing
-	Mode         string `json:"mode"`      // ServiceUserRoleRO or ServiceUserRoleRW
-	Username     string `json:"username"`
-	Password     string `json:"password"` // Generated on Create, persisted in state
+	ServiceID        string               `json:"service_id"`
+	DatabaseID       string               `json:"database_id"`
+	DatabaseName     string               `json:"database_name"`
+	NodeName         string               `json:"node_name"` // Database node name for PrimaryExecutor routing
+	Mode             string               `json:"mode"`      // ServiceUserRoleRO or ServiceUserRoleRW
+	Username         string               `json:"username"`
+	Password         string               `json:"password"` // Generated on Create, persisted in state
+	CredentialSource *resource.Identifier `json:"credential_source,omitempty"`
 }
 
 func (r *ServiceUserRole) ResourceVersion() string {
@@ -77,10 +87,14 @@ func (r *ServiceUserRole) DiffIgnore() []string {
 		"/mode",
 		"/username",
 		"/password",
+		"/credential_source",
 	}
 }
 
 func (r *ServiceUserRole) Identifier() resource.Identifier {
+	if r.CredentialSource != nil {
+		return ServiceUserRolePerNodeIdentifier(r.ServiceID, r.Mode, r.NodeName)
+	}
 	return ServiceUserRoleIdentifier(r.ServiceID, r.Mode)
 }
 
@@ -89,7 +103,9 @@ func (r *ServiceUserRole) Executor() resource.Executor {
 }
 
 func (r *ServiceUserRole) Dependencies() []resource.Identifier {
-	// No dependencies - this resource can be created/deleted independently
+	if r.CredentialSource != nil {
+		return []resource.Identifier{*r.CredentialSource}
+	}
 	return nil
 }
 
@@ -117,13 +133,23 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 		Logger()
 	logger.Info().Msg("creating service user role")
 
-	// Generate deterministic username and random password
-	r.Username = database.GenerateServiceUsername(r.ServiceID, r.Mode)
-	password, err := utils.RandomString(32)
-	if err != nil {
-		return fmt.Errorf("failed to generate password: %w", err)
+	if r.CredentialSource != nil {
+		// Per-node resource: read credentials from the canonical resource in state.
+		canonical, err := resource.FromContext[*ServiceUserRole](rc, *r.CredentialSource)
+		if err != nil {
+			return fmt.Errorf("canonical service user role %s must be created before per-node role: %w", r.CredentialSource, err)
+		}
+		r.Username = canonical.Username
+		r.Password = canonical.Password
+	} else {
+		// Canonical resource: generate credentials.
+		r.Username = database.GenerateServiceUsername(r.ServiceID, r.Mode)
+		password, err := utils.RandomString(32)
+		if err != nil {
+			return fmt.Errorf("failed to generate password: %w", err)
+		}
+		r.Password = password
 	}
-	r.Password = password
 
 	if err := r.createUserRole(ctx, rc, logger); err != nil {
 		return fmt.Errorf("failed to create service user role: %w", err)
@@ -134,9 +160,7 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 }
 
 func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Context, logger zerolog.Logger) error {
-	// Connect to the application database so schema-level grants resolve correctly.
-	// The role is created on the primary and Spock replicates it to other nodes.
-	conn, err := r.connectToPrimary(ctx, rc, logger, r.DatabaseName)
+	conn, err := r.connectToPrimary(ctx, rc, logger, "postgres")
 	if err != nil {
 		return err
 	}
@@ -156,7 +180,6 @@ func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Conte
 	statements, err := postgres.CreateUserRole(postgres.UserRoleOptions{
 		Name:       r.Username,
 		Password:   r.Password,
-		DBName:     r.DatabaseName,
 		DBOwner:    false,
 		Attributes: []string{"LOGIN"},
 		Roles:      []string{groupRole},
@@ -236,6 +259,9 @@ func (r *ServiceUserRole) connectToPrimary(ctx context.Context, rc *resource.Con
 	// Find primary instance via Patroni
 	var primaryInstanceID string
 	for _, inst := range db.Instances {
+		if inst.NodeName != r.NodeName {
+			continue
+		}
 		connInfo, err := dbSvc.GetInstanceConnectionInfo(ctx, r.DatabaseID, inst.InstanceID)
 		if err != nil {
 			continue
@@ -248,8 +274,7 @@ func (r *ServiceUserRole) connectToPrimary(ctx context.Context, rc *resource.Con
 		}
 	}
 	if primaryInstanceID == "" {
-		primaryInstanceID = db.Instances[0].InstanceID
-		logger.Warn().Msg("could not determine primary instance, using first available instance")
+		return nil, fmt.Errorf("could not determine primary instance for node %s", r.NodeName)
 	}
 
 	connInfo, err := dbSvc.GetInstanceConnectionInfo(ctx, r.DatabaseID, primaryInstanceID)
