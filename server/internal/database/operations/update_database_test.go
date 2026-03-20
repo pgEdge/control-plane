@@ -172,6 +172,31 @@ func TestUpdateDatabase(t *testing.T) {
 		),
 	)
 
+	twoNodeWithServiceState := makeState(t,
+		[]resource.Resource{
+			n1Instance1.Instance,
+			makeMonitorResource(n1Instance1),
+			&database.NodeResource{
+				Name:              "n1",
+				PrimaryInstanceID: n1Instance1.InstanceID(),
+				InstanceIDs:       []string{n1Instance1.InstanceID()},
+			},
+			n2Instance1.Instance,
+			makeMonitorResource(n2Instance1),
+			&database.NodeResource{
+				Name:              "n2",
+				PrimaryInstanceID: n2Instance1.InstanceID(),
+				InstanceIDs:       []string{n2Instance1.InstanceID()},
+			},
+			&database.ReplicationSlotResource{ProviderNode: "n2", SubscriberNode: "n1"},
+			&database.SubscriptionResource{SubscriberNode: "n1", ProviderNode: "n2"},
+			&database.ReplicationSlotResource{ProviderNode: "n1", SubscriberNode: "n2"},
+			&database.SubscriptionResource{SubscriberNode: "n2", ProviderNode: "n1"},
+			svcRes.MonitorResource,
+		},
+		slices.Concat(n1Instance1.Resources, n2Instance1.Resources, svcRes.Resources),
+	)
+
 	for _, tc := range []struct {
 		name        string
 		options     operations.UpdateDatabaseOptions
@@ -525,6 +550,21 @@ func TestUpdateDatabase(t *testing.T) {
 					NodeName:          "n1",
 					InstanceResources: []*database.InstanceResources{n1Instance1WithNewDependency},
 				},
+			},
+			services: []*operations.ServiceResources{svcRes},
+		},
+		{
+			// Regression test: adding a 3rd node to a 2-node database that already
+			// has a running service must not delete/recreate the service instance.
+			// The intermediate NodeEndState step must preserve existing service
+			// resources so they are not cycled through delete+recreate.
+			name:    "add third node to two-node database with service",
+			options: operations.UpdateDatabaseOptions{},
+			start:   twoNodeWithServiceState,
+			nodes: []*operations.NodeResources{
+				{NodeName: "n1", InstanceResources: []*database.InstanceResources{n1Instance1}},
+				{NodeName: "n2", InstanceResources: []*database.InstanceResources{n2Instance1}},
+				{NodeName: "n3", SourceNode: "n1", InstanceResources: []*database.InstanceResources{n3Instance1}},
 			},
 			services: []*operations.ServiceResources{svcRes},
 		},

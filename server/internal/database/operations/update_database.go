@@ -133,7 +133,27 @@ func UpdateDatabase(
 		states[i] = curr
 		prev = curr
 	}
-	states = append(states, end)
+	if len(adds) > 0 && len(services) > 0 {
+		// Emit a node-only intermediate state before the full end state. This
+		// ensures all database nodes are fully provisioned before new service
+		// resources (e.g. per-node service user roles) are created.
+		//
+		// We build the intermediate state by cloning the last cumulative state
+		// (prev) — which carries any already-provisioned service resources —
+		// and then merging in the node-only end state. This overwrites node
+		// resources with their final desired values while leaving existing
+		// service resources untouched, preventing spurious delete/recreate
+		// cycles for services that were already running.
+		nodeEnd, err := nodeEndState(nodes)
+		if err != nil {
+			return nil, err
+		}
+		nodeEndWithServices := prev.Clone()
+		nodeEndWithServices.Merge(nodeEnd)
+		states = append(states, nodeEndWithServices, end)
+	} else {
+		states = append(states, end)
+	}
 
 	plans, err := start.PlanAll(options.PlanOptions, states...)
 	if err != nil {
