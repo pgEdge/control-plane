@@ -1,6 +1,7 @@
 package activity_queue_item
 
 import (
+	"context"
 	"time"
 
 	"github.com/cschleiden/go-workflows/backend/history"
@@ -23,9 +24,12 @@ func (v *Value) UpdateLastLocked() {
 	v.LastLocked = &now
 }
 
+// Store is a storage implementation for activity queue items. StartCache must
+// be called before the store can be used.
 type Store struct {
 	client *clientv3.Client
 	root   string
+	cache  storage.Cache[*Value]
 }
 
 func NewStore(client *clientv3.Client, root string) *Store {
@@ -47,36 +51,53 @@ func (s *Store) Key(queue, instanceID, eventID string) string {
 	return storage.Key(s.QueuePrefix(queue), instanceID, eventID)
 }
 
+func (s *Store) StartCache(ctx context.Context) error {
+	if s.cache != nil {
+		return nil
+	}
+	s.cache = storage.NewCache(s.client, s.AllQueuesPrefix(), func(item *Value) string {
+		return s.Key(item.Queue, item.WorkflowInstanceID, item.Event.ID)
+	})
+	return s.cache.Start(ctx)
+}
+
+func (s *Store) StopCache() {
+	if s.cache != nil {
+		s.cache.Stop()
+	}
+}
+
+func (s *Store) PropagateErrors(ctx context.Context, ch chan error) {
+	s.cache.PropagateErrors(ctx, ch)
+}
+
 func (s *Store) GetAll() storage.GetMultipleOp[*Value] {
-	return storage.NewGetPrefixOp[*Value](s.client, s.AllQueuesPrefix())
+	return s.cache.GetPrefix(s.AllQueuesPrefix())
 }
 
 func (s *Store) GetByKey(queue, instanceID, eventID string) storage.GetOp[*Value] {
 	key := s.Key(queue, instanceID, eventID)
-	return storage.NewGetOp[*Value](s.client, key)
+	return s.cache.Get(key)
 }
 
 func (s *Store) GetByQueue(queue string) storage.GetMultipleOp[*Value] {
 	prefix := s.QueuePrefix(queue)
-	return storage.NewGetPrefixOp[*Value](s.client, prefix)
+	return s.cache.GetPrefix(prefix)
 }
 
 func (s *Store) Create(item *Value) storage.PutOp[*Value] {
-	key := s.Key(item.Queue, item.WorkflowInstanceID, item.Event.ID)
-	return storage.NewCreateOp(s.client, key, item)
+	return s.cache.Create(item)
 }
 
 func (s *Store) Update(item *Value) storage.PutOp[*Value] {
-	key := s.Key(item.Queue, item.WorkflowInstanceID, item.Event.ID)
-	return storage.NewUpdateOp(s.client, key, item)
+	return s.cache.Update(item)
 }
 
 func (s *Store) DeleteByKey(queue, instanceID, eventID string) storage.DeleteOp {
 	key := s.Key(queue, instanceID, eventID)
-	return storage.NewDeleteKeyOp(s.client, key)
+	return s.cache.DeleteByKey(key)
 }
 
 func (s *Store) DeleteItem(item *Value) storage.DeleteValueOp[*Value] {
-	key := s.Key(item.Queue, item.WorkflowInstanceID, item.Event.ID)
-	return storage.NewDeleteValueOp(s.client, key, item)
+	return s.cache.DeleteValue(item)
 }

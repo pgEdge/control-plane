@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 
 	"github.com/cschleiden/go-workflows/backend"
 	"github.com/cschleiden/go-workflows/backend/history"
@@ -23,7 +24,10 @@ func Test_EtcdBackend(t *testing.T) {
 
 	test.BackendTest(t, func(options ...backend.BackendOption) test.TestBackend {
 		opts := backend.ApplyOptions(options...)
-		return NewBackend(NewStore(client, uuid.NewString()), opts, uuid.NewString())
+		backend := NewBackend(NewStore(client, uuid.NewString()), opts, uuid.NewString())
+		require.NoError(t, backend.StartCaches(t.Context()))
+		t.Cleanup(backend.StopCaches)
+		return backend
 	}, nil)
 }
 
@@ -33,7 +37,10 @@ func Test_EtcdBackendE2E(t *testing.T) {
 
 	test.EndToEndBackendTest(t, func(options ...backend.BackendOption) test.TestBackend {
 		opts := backend.ApplyOptions(options...)
-		return NewBackend(NewStore(client, uuid.NewString()), opts, uuid.NewString())
+		backend := NewBackend(NewStore(client, uuid.NewString()), opts, uuid.NewString())
+		require.NoError(t, backend.StartCaches(t.Context()))
+		t.Cleanup(backend.StopCaches)
+		return backend
 	}, nil)
 }
 

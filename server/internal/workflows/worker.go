@@ -3,15 +3,14 @@ package workflows
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/cschleiden/go-workflows/backend"
 	"github.com/cschleiden/go-workflows/worker"
 	"github.com/cschleiden/go-workflows/workflow"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 
 	"github.com/pgEdge/control-plane/server/internal/logging"
+	"github.com/pgEdge/control-plane/server/internal/workflows/backend/etcd"
 )
 
 var _ do.Shutdownable = (*Worker)(nil)
@@ -26,19 +25,20 @@ type Worker struct {
 	workflows *Workflows
 	ctx       context.Context
 	cancel    context.CancelFunc
+	be        *etcd.Backend
 }
 
-func NewWorker(loggerFactory *logging.Factory, be backend.Backend, workflows *Workflows, orch Orchestrator) (*Worker, error) {
+func NewWorker(loggerFactory *logging.Factory, be *etcd.Backend, workflows *Workflows, orch Orchestrator) (*Worker, error) {
 	queues, err := orch.WorkerQueues()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get worker queues: %w", err)
 	}
 
+	// We're using the default activity and workflow polling intervals here,
+	// which are both 200ms.
 	opts := worker.DefaultOptions
 	opts.WorkflowQueues = queues
 	opts.ActivityQueues = queues
-	opts.ActivityPollingInterval = 500 * time.Millisecond
-	opts.WorkflowPollingInterval = 500 * time.Millisecond
 	w := worker.New(be, &opts)
 
 	if err := workflows.Register(w); err != nil {
@@ -49,12 +49,16 @@ func NewWorker(loggerFactory *logging.Factory, be backend.Backend, workflows *Wo
 		logger:    loggerFactory.Logger(logging.ComponentWorkflowsWorker),
 		worker:    w,
 		workflows: workflows,
+		be:        be,
 	}, nil
 }
 
 func (w *Worker) Start(ctx context.Context) error {
 	if w.cancel != nil {
 		return fmt.Errorf("workflows worker already started")
+	}
+	if err := w.be.StartCaches(ctx); err != nil {
+		return err
 	}
 
 	w.logger.Debug().Msg("starting workflows worker")
@@ -79,8 +83,14 @@ func (w *Worker) Shutdown() error {
 		w.cancel()
 	}
 
+	w.be.StopCaches()
+
 	if err := w.worker.WaitForCompletion(); err != nil {
 		return fmt.Errorf("failed to wait for active tasks to complete: %w", err)
 	}
 	return nil
+}
+
+func (w *Worker) Error() <-chan error {
+	return w.be.Error()
 }

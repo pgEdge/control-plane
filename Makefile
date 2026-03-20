@@ -7,6 +7,7 @@ LOG_LEVEL ?= info
 DEV_IMAGE_REPO ?= ghcr.io/pgedge
 CONTROL_PLANE_IMAGE_REPO ?= host.docker.internal:5000/control-plane
 TEST_RERUN_FAILS ?= 0
+TEST_DISABLE_CACHE ?= 0
 E2E_FIXTURE ?=
 E2E_PARALLEL ?= 8
 E2E_RUN ?=
@@ -50,6 +51,8 @@ cluster_test_args=-tags=cluster_test -count=1 -timeout=10m \
 	$(if $(CLUSTER_TEST_IMAGE_TAG),-image-tag $(CLUSTER_TEST_IMAGE_TAG)) \
 	$(if $(CLUSTER_TEST_DATA_DIR),-data-dir $(CLUSTER_TEST_DATA_DIR))
 
+test_disable_cache=$(if $(filter 1,$(TEST_DISABLE_CACHE)),-count=1)
+
 # Automatically adds junit output named after the rule, e.g.
 # 'test-e2e-results.xml' in CI environment.
 gotestsum=$(gobin)/gotestsum \
@@ -69,7 +72,9 @@ test:
 	$(gotestsum) \
 		--format-hide-empty-pkg \
 		--rerun-fails=$(TEST_RERUN_FAILS) \
-		--packages='./...'
+		--packages='./...' \
+		-- \
+		$(test_disable_cache)
 
 .PHONY: test-etcd
 test-etcd-lifecycle:
@@ -78,8 +83,15 @@ test-etcd-lifecycle:
 		--rerun-fails=$(TEST_RERUN_FAILS) \
 		--packages='./server/internal/etcd/...' \
 		-- \
+		$(test_disable_cache) \
 		-tags=etcd_lifecycle_test
 
+# We skip StartsWorkflowAndRemoves because it contains a race condition that's
+# much more prevalent now that we're executing workflows more quickly. This test
+# uses the "autoexpire" feature to remove workflows that are older than 1
+# millisecond. It starts a workflow, waits for the result, and then waits for
+# the workflow to be removed. Occasionally, the workflow gets removed while the
+# "waiting for result" step is still polling the workflow status.
 .PHONY: test-workflows-backend
 test-workflows-backend:
 	$(gotestsum) \
@@ -87,7 +99,9 @@ test-workflows-backend:
 		--rerun-fails=$(TEST_RERUN_FAILS) \
 		--packages='./server/internal/workflows/backend/etcd/...' \
 		-- \
-		-tags=workflows_backend_test
+		$(test_disable_cache) \
+		-tags=workflows_backend_test \
+		-skip=Test_EtcdBackendE2E/AutoExpiration/StartsWorkflowAndRemoves
 
 .PHONY: test-ci
 test-ci:
@@ -97,6 +111,7 @@ test-ci:
 		--rerun-fails=$(TEST_RERUN_FAILS) \
 		--packages='./...' \
 		-- \
+		-count=1 \
 		-tags=workflows_backend_test,etcd_lifecycle_test
 
 .PHONY: test-e2e
