@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
+	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -1406,6 +1407,100 @@ func TestValidateOrchestratorOpts(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := errors.Join(validateOrchestratorOpts(tc.opts, []string{"orchestrator_opts"})...)
+			if len(tc.expected) < 1 {
+				assert.NoError(t, err)
+			} else {
+				for _, expected := range tc.expected {
+					assert.ErrorContains(t, err, expected)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateDatabaseUpdate_ServiceBootstrapFields(t *testing.T) {
+	// A minimal valid MCP config shared across test cases.
+	validMCPConfig := map[string]any{
+		"llm_provider":      "anthropic",
+		"llm_model":         "claude-sonnet-4-5",
+		"anthropic_api_key": "sk-ant-...",
+	}
+
+	mcpWithBootstrap := func() map[string]any {
+		cfg := make(map[string]any, len(validMCPConfig)+2)
+		for k, v := range validMCPConfig {
+			cfg[k] = v
+		}
+		cfg["init_token"] = "my-token"
+		cfg["init_users"] = []any{map[string]any{"username": "alice", "password": "pw"}}
+		return cfg
+	}
+
+	newMCPService := func(id string, config map[string]any) *api.ServiceSpec {
+		return &api.ServiceSpec{
+			ServiceID:   api.Identifier(id),
+			ServiceType: "mcp",
+			Version:     "latest",
+			HostIds:     []api.Identifier{"host-1"},
+			Config:      config,
+		}
+	}
+
+	oldSpecWithMCP := &database.Spec{
+		Services: []*database.ServiceSpec{
+			{ServiceID: "appmcp"},
+		},
+	}
+
+	for _, tc := range []struct {
+		name     string
+		old      *database.Spec
+		new      *api.DatabaseSpec
+		expected []string // empty means no error expected
+	}{
+		{
+			name: "new service added via update-database - bootstrap fields allowed",
+			old:  &database.Spec{},
+			new: &api.DatabaseSpec{
+				Services: []*api.ServiceSpec{
+					newMCPService("appmcp", mcpWithBootstrap()),
+				},
+			},
+		},
+		{
+			name: "no existing services - bootstrap fields allowed",
+			old:  &database.Spec{Services: nil},
+			new: &api.DatabaseSpec{
+				Services: []*api.ServiceSpec{
+					newMCPService("appmcp", mcpWithBootstrap()),
+				},
+			},
+		},
+		{
+			name: "existing service updated - bootstrap fields rejected",
+			old:  oldSpecWithMCP,
+			new: &api.DatabaseSpec{
+				Services: []*api.ServiceSpec{
+					newMCPService("appmcp", mcpWithBootstrap()),
+				},
+			},
+			expected: []string{
+				"init_token can only be set during initial provisioning",
+				"init_users can only be set during initial provisioning",
+			},
+		},
+		{
+			name: "existing service updated without bootstrap fields - no error",
+			old:  oldSpecWithMCP,
+			new: &api.DatabaseSpec{
+				Services: []*api.ServiceSpec{
+					newMCPService("appmcp", validMCPConfig),
+				},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateDatabaseUpdate(tc.old, tc.new)
 			if len(tc.expected) < 1 {
 				assert.NoError(t, err)
 			} else {
