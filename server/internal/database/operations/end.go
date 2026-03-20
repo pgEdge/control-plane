@@ -8,9 +8,11 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
-// EndState computes the end state for the database, containing only the given
-// nodes.
-func EndState(nodes []*NodeResources, services []*ServiceResources) (*resource.State, error) {
+// nodeEndState computes the end state containing only database node resources
+// (instances, subscriptions, replication slots, etc.) without service resources.
+// Used as an intermediate plan step to ensure all nodes are healthy before
+// service resources (such as service user roles) are created.
+func nodeEndState(nodes []*NodeResources) (*resource.State, error) {
 	end := resource.NewState()
 	for _, node := range nodes {
 		var resources []resource.Resource
@@ -63,6 +65,17 @@ func EndState(nodes []*NodeResources, services []*ServiceResources) (*resource.S
 		if err := end.AddResource(resources...); err != nil {
 			return nil, fmt.Errorf("failed to add end state resource: %w", err)
 		}
+	}
+
+	return end, nil
+}
+
+// EndState computes the end state for the database, containing only the given
+// nodes.
+func EndState(nodes []*NodeResources, services []*ServiceResources) (*resource.State, error) {
+	end, err := nodeEndState(nodes)
+	if err != nil {
+		return nil, err
 	}
 
 	for _, svc := range services {
