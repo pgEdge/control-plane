@@ -537,12 +537,10 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 
 	// RAG service user role (per-host, not replicated by Spock)
 	ragUserRole := &RAGServiceUserRole{
-		ServiceInstanceID: spec.ServiceInstanceID,
-		ServiceID:         spec.ServiceSpec.ServiceID,
-		DatabaseID:        spec.DatabaseID,
-		DatabaseName:      spec.DatabaseName,
-		HostID:            spec.HostID,
-		NodeName:          spec.NodeName,
+		ServiceID:    spec.ServiceSpec.ServiceID,
+		DatabaseID:   spec.DatabaseID,
+		DatabaseName: spec.DatabaseName,
+		NodeName:     spec.NodeName,
 	}
 	if spec.Credentials != nil {
 		ragUserRole.Username = spec.Credentials.Username

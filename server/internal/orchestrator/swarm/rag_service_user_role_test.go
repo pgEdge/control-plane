@@ -16,10 +16,10 @@ func TestRAGServiceUserRole_ResourceVersion(t *testing.T) {
 }
 
 func TestRAGServiceUserRole_Identifier(t *testing.T) {
-	r := &RAGServiceUserRole{ServiceInstanceID: "db1-rag-host1"}
+	r := &RAGServiceUserRole{ServiceID: "rag"}
 	id := r.Identifier()
-	if id.ID != "db1-rag-host1" {
-		t.Errorf("Identifier().ID = %q, want %q", id.ID, "db1-rag-host1")
+	if id.ID != "rag" {
+		t.Errorf("Identifier().ID = %q, want %q", id.ID, "rag")
 	}
 	if id.Type != ResourceTypeRAGServiceUserRole {
 		t.Errorf("Identifier().Type = %q, want %q", id.Type, ResourceTypeRAGServiceUserRole)
@@ -65,9 +65,9 @@ func TestRAGServiceUserRole_RefreshEmptyCredentials(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &RAGServiceUserRole{
-				ServiceInstanceID: "inst1",
-				Username:          tt.username,
-				Password:          tt.password,
+				ServiceID: "rag",
+				Username:  tt.username,
+				Password:  tt.password,
 			}
 			// Refresh with nil rc — the empty-credential guard fires before any
 			// injection call, so no injector is needed.
