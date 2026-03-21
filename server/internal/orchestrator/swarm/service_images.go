@@ -49,6 +49,14 @@ func NewServiceVersions(cfg config.Config) *ServiceVersions {
 		// No constraints — MCP works with all PG/Spock versions.
 	})
 
+	// PostgREST service versions.
+	// Images are published to the pgEdge registry under ghcr.io/pgedge/postgrest.
+	// The bare ref (no registry prefix) lets serviceImageTag prepend the
+	// configured ImageRepositoryHost (e.g. ghcr.io/pgedge).
+	versions.addServiceImage("postgrest", "14.5", &ServiceImage{
+		Tag: serviceImageTag(cfg, "postgrest:14.5"),
+	})
+
 	// Example of a service image with version constraints (nil = no restriction):
 	//
 	//   acme-service:1.0.0 requires PG 14-17 and Spock >= 4.0.0

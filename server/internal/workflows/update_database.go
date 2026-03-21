@@ -95,6 +95,29 @@ func (w *Workflows) UpdateDatabase(ctx workflow.Context, input *UpdateDatabaseIn
 	}
 	current := refreshCurrentOutput.State
 
+	// Run PostgREST preflight checks before provisioning.
+	// Validates that all configured schemas and the anonymous role exist in the
+	// database, so we fail early with a clear error instead of deploying a
+	// service that silently returns 404 for every request.
+	for _, svc := range input.Spec.Services {
+		if svc.ServiceType != "postgrest" {
+			continue
+		}
+		cfg, parseErrs := database.ParsePostgRESTServiceConfig(svc.Config)
+		if len(parseErrs) > 0 {
+			return nil, handleError(fmt.Errorf("invalid PostgREST config: %w", errors.Join(parseErrs...)))
+		}
+		preflightInput := &activities.ValidatePostgRESTPrereqsInput{
+			DatabaseID:   input.Spec.DatabaseID,
+			DatabaseName: input.Spec.DatabaseName,
+			DBSchemas:    cfg.DBSchemas,
+			DBAnonymRole: cfg.DBAnonRole,
+		}
+		if _, err := w.Activities.ExecuteValidatePostgRESTPrereqs(ctx, preflightInput).Get(ctx); err != nil {
+			return nil, handleError(fmt.Errorf("PostgREST preflight failed: %w", err))
+		}
+	}
+
 	planInput := &PlanUpdateInput{
 		Spec:    input.Spec,
 		Current: current,
