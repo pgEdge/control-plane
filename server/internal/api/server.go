@@ -46,7 +46,7 @@ func NewServer(
 	// Mount all the v1 handlers
 	v1Svc.Mount(mux)
 
-	logger := loggerFactory.Logger("api_server")
+	logger := loggerFactory.Logger(logging.ComponentAPIServer)
 	handler := addMiddleware(logger, mux)
 
 	var (

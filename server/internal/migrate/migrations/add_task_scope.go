@@ -40,7 +40,7 @@ func (a *AddTaskScope) Run(ctx context.Context, i *do.Injector) error {
 		return fmt.Errorf("failed to initialize task store: %w", err)
 	}
 
-	logger := loggerFactory.Logger("migration").With().
+	logger := loggerFactory.Logger(logging.ComponentMigration).With().
 		Str("identifier", a.Identifier()).
 		Logger()
 

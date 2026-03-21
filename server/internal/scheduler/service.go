@@ -38,7 +38,7 @@ func NewService(
 	elector *Elector,
 ) *Service {
 	return &Service{
-		logger:     loggerFactory.Logger("scheduler_service"),
+		logger:     loggerFactory.Logger(logging.ComponentSchedulerService),
 		store:      store,
 		executor:   executor,
 		etcdClient: etcdClient,
