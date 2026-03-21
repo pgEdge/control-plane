@@ -529,6 +529,12 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 }
 
 func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
+	// Parse the RAG service config to extract API keys
+	ragConfig, errs := database.ParseRAGServiceConfig(spec.ServiceSpec.Config, false)
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("failed to parse RAG service config: %w", errors.Join(errs...))
+	}
+
 	// RAG service user role (per-host, not replicated by Spock)
 	ragUserRole := &RAGServiceUserRole{
 		ServiceID:    spec.ServiceSpec.ServiceID,
@@ -541,9 +547,18 @@ func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstan
 		ragUserRole.Password = spec.Credentials.Password
 	}
 
-	// Resource chain: RAGServiceUserRole (container deployment in future PRs)
+	// RAG API keys resource (writes provider key files to the host filesystem)
+	ragKeys := &RAGServiceKeysResource{
+		ServiceInstanceID: spec.ServiceInstanceID,
+		HostID:            spec.HostID,
+		KeysDir:           filepath.Join(o.cfg.DataDir, "services", spec.ServiceInstanceID, "keys"),
+		Keys:              extractRAGAPIKeys(ragConfig),
+	}
+
+	// Resource chain: RAGServiceUserRole → RAGServiceKeysResource (container deployment in future PRs)
 	orchestratorResources := []resource.Resource{
 		ragUserRole,
+		ragKeys,
 	}
 
 	return o.buildServiceInstanceResources(spec, orchestratorResources)

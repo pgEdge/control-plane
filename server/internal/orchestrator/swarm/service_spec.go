@@ -35,6 +35,9 @@ type ServiceContainerSpecOptions struct {
 	Port *int
 	// DataPath is the host-side directory path for the bind mount
 	DataPath string
+	// KeysPath is the host-side directory containing API key files.
+	// When non-empty, it is bind-mounted read-only into the container at /app/keys.
+	KeysPath string
 }
 
 // ServiceContainerSpec builds a Docker Swarm service spec for a service instance.
@@ -91,9 +94,12 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		}
 	}
 
-	// Build bind mount for config/auth files
+	// Build bind mounts: data directory (read-write) and optional keys directory (read-only)
 	mounts := []mount.Mount{
 		docker.BuildMount(opts.DataPath, "/app/data", false),
+	}
+	if opts.KeysPath != "" {
+		mounts = append(mounts, docker.BuildMount(opts.KeysPath, "/app/keys", true))
 	}
 
 	return swarm.ServiceSpec{

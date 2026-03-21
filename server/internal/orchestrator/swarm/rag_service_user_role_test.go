@@ -89,6 +89,34 @@ func TestRAGServiceUserRoleIdentifier(t *testing.T) {
 	}
 }
 
+// minimalRAGConfig returns a minimal valid RAG service config suitable for unit tests.
+func minimalRAGConfig() map[string]any {
+	return map[string]any{
+		"pipelines": []any{
+			map[string]any{
+				"name": "default",
+				"tables": []any{
+					map[string]any{
+						"table":         "docs",
+						"text_column":   "content",
+						"vector_column": "embedding",
+					},
+				},
+				"embedding_llm": map[string]any{
+					"provider": "openai",
+					"model":    "text-embedding-3-small",
+					"api_key":  "sk-embed",
+				},
+				"rag_llm": map[string]any{
+					"provider": "anthropic",
+					"model":    "claude-sonnet-4-5",
+					"api_key":  "sk-ant",
+				},
+			},
+		},
+	}
+}
+
 func TestGenerateRAGInstanceResources_ResourceList(t *testing.T) {
 	o := &Orchestrator{}
 	spec := &database.ServiceInstanceSpec{
@@ -97,6 +125,7 @@ func TestGenerateRAGInstanceResources_ResourceList(t *testing.T) {
 			ServiceID:   "rag",
 			ServiceType: "rag",
 			Version:     "latest",
+			Config:      minimalRAGConfig(),
 		},
 		DatabaseID:   "storefront",
 		DatabaseName: "storefront",
@@ -125,12 +154,16 @@ func TestGenerateRAGInstanceResources_ResourceList(t *testing.T) {
 			result.ServiceInstance.State, database.ServiceInstanceStateCreating)
 	}
 
-	if len(result.Resources) != 1 {
-		t.Fatalf("len(Resources) = %d, want 1", len(result.Resources))
+	if len(result.Resources) != 2 {
+		t.Fatalf("len(Resources) = %d, want 2", len(result.Resources))
 	}
 	if result.Resources[0].Identifier.Type != ResourceTypeRAGServiceUserRole {
 		t.Errorf("Resources[0].Identifier.Type = %q, want %q",
 			result.Resources[0].Identifier.Type, ResourceTypeRAGServiceUserRole)
+	}
+	if result.Resources[1].Identifier.Type != ResourceTypeRAGServiceKeys {
+		t.Errorf("Resources[1].Identifier.Type = %q, want %q",
+			result.Resources[1].Identifier.Type, ResourceTypeRAGServiceKeys)
 	}
 }
 
@@ -142,6 +175,7 @@ func TestGenerateRAGInstanceResources_WithCredentials(t *testing.T) {
 			ServiceID:   "rag",
 			ServiceType: "rag",
 			Version:     "latest",
+			Config:      minimalRAGConfig(),
 		},
 		DatabaseID:   "storefront",
 		DatabaseName: "storefront",
@@ -179,6 +213,7 @@ func TestGenerateServiceInstanceResources_RAGDispatch(t *testing.T) {
 			ServiceID:   "rag",
 			ServiceType: "rag",
 			Version:     "latest",
+			Config:      minimalRAGConfig(),
 		},
 		DatabaseID:   "db1",
 		DatabaseName: "db1",
