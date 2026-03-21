@@ -115,6 +115,31 @@ func (r *ServiceUserRole) Refresh(ctx context.Context, rc *resource.Context) err
 	if r.Username == "" || r.Password == "" {
 		return resource.ErrNotFound
 	}
+
+	// Verify the role actually exists in pg_roles. This guards against the role
+	// being dropped externally, or a failed Create that left the state persisted
+	// but the role absent from Postgres.
+	primary, err := database.GetPrimaryInstance(ctx, rc, r.NodeName)
+	if err != nil {
+		return fmt.Errorf("failed to get primary instance: %w", err)
+	}
+	conn, err := primary.Connection(ctx, rc, "postgres")
+	if err != nil {
+		return fmt.Errorf("failed to connect to postgres on node %s: %w", r.NodeName, err)
+	}
+	defer conn.Close(ctx)
+
+	needsCreate, err := postgres.UserRoleNeedsCreate(r.Username).Scalar(ctx, conn)
+	if err != nil {
+		logger, logErr := do.Invoke[zerolog.Logger](rc.Injector)
+		if logErr == nil {
+			logger.Warn().Err(err).Str("username", r.Username).Msg("pg_roles query failed during service user role refresh")
+		}
+		return fmt.Errorf("pg_roles query failed: %w", err)
+	}
+	if needsCreate {
+		return resource.ErrNotFound
+	}
 	return nil
 }
 

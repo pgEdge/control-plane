@@ -451,10 +451,6 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 		Allocator: o.dbNetworkAllocator,
 	}
 
-	// Canonical identifiers for the RO and RW service user roles.
-	canonicalROID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRO)
-	canonicalRWID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRW)
-
 	// Service user role resources (manages database user lifecycle).
 	// Two roles are created per service: read-only and read-write.
 	serviceUserRoleRO := &ServiceUserRole{
@@ -538,29 +534,6 @@ func (o *Orchestrator) generateMCPInstanceResources(spec *database.ServiceInstan
 	return o.buildServiceInstanceResources(spec, orchestratorResources)
 }
 
-func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
-	// RAG service user role (per-host, not replicated by Spock)
-	ragUserRole := &RAGServiceUserRole{
-		ServiceInstanceID: spec.ServiceInstanceID,
-		ServiceID:         spec.ServiceSpec.ServiceID,
-		DatabaseID:        spec.DatabaseID,
-		DatabaseName:      spec.DatabaseName,
-		HostID:            spec.HostID,
-		NodeName:          spec.NodeName,
-	}
-	if spec.Credentials != nil {
-		ragUserRole.Username = spec.Credentials.Username
-		ragUserRole.Password = spec.Credentials.Password
-	}
-
-	// Resource chain: RAGServiceUserRole (container deployment in future PRs)
-	orchestratorResources := []resource.Resource{
-		ragUserRole,
-	}
-
-	return o.buildServiceInstanceResources(spec, orchestratorResources)
-}
-
 // buildServiceInstanceResources converts a slice of resources into a
 // ServiceInstanceResources, shared by all service type generators.
 func (o *Orchestrator) buildServiceInstanceResources(spec *database.ServiceInstanceSpec, orchestratorResources []resource.Resource) (*database.ServiceInstanceResources, error) {
@@ -583,6 +556,42 @@ func (o *Orchestrator) buildServiceInstanceResources(spec *database.ServiceInsta
 		},
 		Resources: data,
 	}, nil
+}
+
+// generateRAGInstanceResources returns the resources needed for one RAG service
+// instance. RAG only requires read access, so a single ServiceUserRoleRO is
+// created per database node using the same canonical+per-node pattern as MCP.
+func (o *Orchestrator) generateRAGInstanceResources(spec *database.ServiceInstanceSpec) (*database.ServiceInstanceResources, error) {
+	canonicalROID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRO)
+
+	// Canonical read-only role — runs on the node co-located with this instance.
+	canonicalRO := &ServiceUserRole{
+		ServiceID:    spec.ServiceSpec.ServiceID,
+		DatabaseID:   spec.DatabaseID,
+		DatabaseName: spec.DatabaseName,
+		NodeName:     spec.NodeName,
+		Mode:         ServiceUserRoleRO,
+	}
+
+	orchestratorResources := []resource.Resource{canonicalRO}
+
+	// Per-node RO role for each additional database node so that RAG instances
+	// on other hosts can authenticate against their co-located Postgres.
+	for _, nodeInst := range spec.DatabaseNodes {
+		if nodeInst.NodeName == spec.NodeName {
+			continue
+		}
+		orchestratorResources = append(orchestratorResources, &ServiceUserRole{
+			ServiceID:        spec.ServiceSpec.ServiceID,
+			DatabaseID:       spec.DatabaseID,
+			DatabaseName:     spec.DatabaseName,
+			NodeName:         nodeInst.NodeName,
+			Mode:             ServiceUserRoleRO,
+			CredentialSource: &canonicalROID,
+		})
+	}
+
+	return o.buildServiceInstanceResources(spec, orchestratorResources)
 }
 
 func (o *Orchestrator) GetInstanceConnectionInfo(ctx context.Context, databaseID, instanceID string) (*database.ConnectionInfo, error) {
