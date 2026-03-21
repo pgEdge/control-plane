@@ -11,6 +11,17 @@ import (
 var defaultSchemas = []string{"public", "spock", "pg_catalog", "information_schema"}
 var builtinRoles = []string{"pgedge_application", "pgedge_application_read_only", "pgedge_superuser"}
 
+// UserRoleNeedsCreate returns a query that evaluates to true when the named
+// role does not yet exist in pg_catalog.pg_roles.
+func UserRoleNeedsCreate(name string) Query[bool] {
+	return Query[bool]{
+		SQL: "SELECT NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = @name);",
+		Args: pgx.NamedArgs{
+			"name": name,
+		},
+	}
+}
+
 type UserRoleOptions struct {
 	Name       string
 	Password   string
