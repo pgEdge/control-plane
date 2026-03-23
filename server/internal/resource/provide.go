@@ -5,6 +5,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 
 	"github.com/pgEdge/control-plane/server/internal/config"
+	"github.com/pgEdge/control-plane/server/internal/logging"
 )
 
 func Provide(i *do.Injector) {
@@ -19,7 +20,15 @@ func provideService(i *do.Injector) {
 		if err != nil {
 			return nil, err
 		}
-		return NewService(store), nil
+		migrations, err := do.Invoke[*StateMigrations](i)
+		if err != nil {
+			return nil, err
+		}
+		loggerFactory, err := do.Invoke[*logging.Factory](i)
+		if err != nil {
+			return nil, err
+		}
+		return NewService(store, migrations, loggerFactory), nil
 	})
 }
 

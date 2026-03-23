@@ -1,0 +1,110 @@
+{
+  "version": "1.0.0",
+  "resources": {
+    "database.instance": {
+      "instance-1": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "host",
+          "id": "host-1"
+        },
+        "identifier": {
+          "id": "instance-1",
+          "type": "database.instance"
+        },
+        "attributes": {
+          "spec": {
+            "database_id": "database-1",
+            "database_name": "test",
+            "database_users": [
+              {
+                "db_owner": true,
+                "username": "admin"
+              }
+            ],
+            "host_id": "host-1",
+            "instance_id": "instance-1",
+            "node_name": "n1",
+            "restore_config": {
+              "source_database_id": "database-0",
+              "source_database_name": "prod",
+              "source_node_name": "n3"
+            }
+          }
+        },
+        "dependencies": null,
+        "type_dependencies": null,
+        "diff_ignore": [
+          "/primary_instance_id",
+          "/connection_info"
+        ],
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "database.node": {
+      "n1": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "any",
+          "id": ""
+        },
+        "identifier": {
+          "id": "n1",
+          "type": "database.node"
+        },
+        "attributes": {
+          "name": "n1",
+          "instance_ids": [
+            "instance-1"
+          ],
+          "primary_instance_id": "instance-1"
+        },
+        "dependencies": [
+          {
+            "id": "instance-1",
+            "type": "database.instance"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "database.postgres_database": {
+      "n1:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n1"
+        },
+        "identifier": {
+          "id": "n1:test",
+          "type": "database.postgres_database"
+        },
+        "attributes": {
+          "node_name": "n1",
+          "database_name": "test",
+          "owner": "admin",
+          "rename_from": "prod",
+          "has_restore_config": true,
+          "extra_dependencies": null
+        },
+        "dependencies": [
+          {
+            "id": "n1",
+            "type": "database.node"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    }
+  }
+}

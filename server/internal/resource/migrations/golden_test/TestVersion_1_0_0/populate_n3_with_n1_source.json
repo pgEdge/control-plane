@@ -1,0 +1,808 @@
+{
+  "version": "1.0.0",
+  "resources": {
+    "database.instance": {
+      "instance-1": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "host",
+          "id": "host-1"
+        },
+        "identifier": {
+          "id": "instance-1",
+          "type": "database.instance"
+        },
+        "attributes": {
+          "spec": {
+            "database_id": "database-1",
+            "database_name": "test",
+            "database_users": [
+              {
+                "db_owner": true,
+                "username": "admin"
+              }
+            ],
+            "host_id": "host-1",
+            "instance_id": "instance-1",
+            "node_name": "n1"
+          }
+        },
+        "dependencies": null,
+        "type_dependencies": null,
+        "diff_ignore": [
+          "/primary_instance_id",
+          "/connection_info"
+        ],
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      },
+      "instance-2": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "host",
+          "id": "host-2"
+        },
+        "identifier": {
+          "id": "instance-2",
+          "type": "database.instance"
+        },
+        "attributes": {
+          "spec": {
+            "database_id": "database-1",
+            "database_name": "test",
+            "database_users": [
+              {
+                "db_owner": true,
+                "username": "admin"
+              }
+            ],
+            "host_id": "host-2",
+            "instance_id": "instance-2",
+            "node_name": "n2"
+          }
+        },
+        "dependencies": null,
+        "type_dependencies": null,
+        "diff_ignore": [
+          "/primary_instance_id",
+          "/connection_info"
+        ],
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      },
+      "instance-3": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "host",
+          "id": "host-3"
+        },
+        "identifier": {
+          "id": "instance-3",
+          "type": "database.instance"
+        },
+        "attributes": {
+          "spec": {
+            "database_id": "database-1",
+            "database_name": "test",
+            "database_users": [
+              {
+                "db_owner": true,
+                "username": "admin"
+              }
+            ],
+            "host_id": "host-3",
+            "instance_id": "instance-3",
+            "node_name": "n3"
+          }
+        },
+        "dependencies": null,
+        "type_dependencies": null,
+        "diff_ignore": [
+          "/primary_instance_id",
+          "/connection_info"
+        ],
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "database.lag_tracker_commit_ts": {
+      "n2:n3:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n3"
+        },
+        "identifier": {
+          "id": "n2:n3:test",
+          "type": "database.lag_tracker_commit_ts"
+        },
+        "attributes": {
+          "origin_node": "n2",
+          "receiver_node": "n3",
+          "database_name": "test",
+          "dependent_resources": [
+            {
+              "id": "n1:n3:test",
+              "type": "database.wait_for_sync_event"
+            }
+          ]
+        },
+        "dependencies": [
+          {
+            "id": "n3:test",
+            "type": "database.postgres_database"
+          },
+          {
+            "id": "n2:test",
+            "type": "database.postgres_database"
+          },
+          {
+            "id": "n1:n3:test",
+            "type": "database.wait_for_sync_event"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "database.node": {
+      "n1": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "any",
+          "id": ""
+        },
+        "identifier": {
+          "id": "n1",
+          "type": "database.node"
+        },
+        "attributes": {
+          "name": "n1",
+          "instance_ids": [
+            "instance-1"
+          ],
+          "primary_instance_id": "instance-1"
+        },
+        "dependencies": [
+          {
+            "id": "instance-1",
+            "type": "database.instance"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      },
+      "n2": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "any",
+          "id": ""
+        },
+        "identifier": {
+          "id": "n2",
+          "type": "database.node"
+        },
+        "attributes": {
+          "name": "n2",
+          "instance_ids": [
+            "instance-2"
+          ],
+          "primary_instance_id": "instance-2"
+        },
+        "dependencies": [
+          {
+            "id": "instance-2",
+            "type": "database.instance"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      },
+      "n3": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "any",
+          "id": ""
+        },
+        "identifier": {
+          "id": "n3",
+          "type": "database.node"
+        },
+        "attributes": {
+          "name": "n3",
+          "instance_ids": [
+            "instance-3"
+          ],
+          "primary_instance_id": "instance-3"
+        },
+        "dependencies": [
+          {
+            "id": "instance-3",
+            "type": "database.instance"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "database.postgres_database": {
+      "n1:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n1"
+        },
+        "identifier": {
+          "id": "n1:test",
+          "type": "database.postgres_database"
+        },
+        "attributes": {
+          "node_name": "n1",
+          "database_name": "test",
+          "owner": "admin",
+          "rename_from": "",
+          "has_restore_config": false,
+          "extra_dependencies": null
+        },
+        "dependencies": [
+          {
+            "id": "n1",
+            "type": "database.node"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      },
+      "n2:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n2"
+        },
+        "identifier": {
+          "id": "n2:test",
+          "type": "database.postgres_database"
+        },
+        "attributes": {
+          "node_name": "n2",
+          "database_name": "test",
+          "owner": "admin",
+          "rename_from": "",
+          "has_restore_config": false,
+          "extra_dependencies": null
+        },
+        "dependencies": [
+          {
+            "id": "n2",
+            "type": "database.node"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      },
+      "n3:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n3"
+        },
+        "identifier": {
+          "id": "n3:test",
+          "type": "database.postgres_database"
+        },
+        "attributes": {
+          "node_name": "n3",
+          "database_name": "test",
+          "owner": "admin",
+          "rename_from": "",
+          "has_restore_config": false,
+          "extra_dependencies": null
+        },
+        "dependencies": [
+          {
+            "id": "n3",
+            "type": "database.node"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "database.replication_slot": {
+      "n1:n2:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n1"
+        },
+        "identifier": {
+          "id": "n1:n2:test",
+          "type": "database.replication_slot"
+        },
+        "attributes": {
+          "database_name": "test",
+          "provider_node": "n1",
+          "subscriber_node": "n2"
+        },
+        "dependencies": [
+          {
+            "id": "n1:test",
+            "type": "database.postgres_database"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      },
+      "n1:n3:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n1"
+        },
+        "identifier": {
+          "id": "n1:n3:test",
+          "type": "database.replication_slot"
+        },
+        "attributes": {
+          "database_name": "test",
+          "provider_node": "n1",
+          "subscriber_node": "n3"
+        },
+        "dependencies": [
+          {
+            "id": "n1:test",
+            "type": "database.postgres_database"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      },
+      "n2:n1:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n2"
+        },
+        "identifier": {
+          "id": "n2:n1:test",
+          "type": "database.replication_slot"
+        },
+        "attributes": {
+          "database_name": "test",
+          "provider_node": "n2",
+          "subscriber_node": "n1"
+        },
+        "dependencies": [
+          {
+            "id": "n2:test",
+            "type": "database.postgres_database"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      },
+      "n2:n3:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n2"
+        },
+        "identifier": {
+          "id": "n2:n3:test",
+          "type": "database.replication_slot"
+        },
+        "attributes": {
+          "database_name": "test",
+          "provider_node": "n2",
+          "subscriber_node": "n3"
+        },
+        "dependencies": [
+          {
+            "id": "n2:test",
+            "type": "database.postgres_database"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "database.replication_slot_advance_from_cts": {
+      "n2:n3:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n2"
+        },
+        "identifier": {
+          "id": "n2:n3:test",
+          "type": "database.replication_slot_advance_from_cts"
+        },
+        "attributes": {
+          "database_name": "test",
+          "provider_node": "n2",
+          "subscriber_node": "n3"
+        },
+        "dependencies": [
+          {
+            "id": "n2:test",
+            "type": "database.postgres_database"
+          },
+          {
+            "id": "n3:test",
+            "type": "database.postgres_database"
+          },
+          {
+            "id": "n2:n3:test",
+            "type": "database.lag_tracker_commit_ts"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "database.replication_slot_create": {
+      "spk_test_n2_sub_n2_n3": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n2"
+        },
+        "identifier": {
+          "id": "spk_test_n2_sub_n2_n3",
+          "type": "database.replication_slot_create"
+        },
+        "attributes": {
+          "database_name": "test",
+          "provider_node": "n2",
+          "subscriber_node": "n3"
+        },
+        "dependencies": [
+          {
+            "id": "n2:test",
+            "type": "database.postgres_database"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "database.subscription": {
+      "n1:n2:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n2"
+        },
+        "identifier": {
+          "id": "n1:n2:test",
+          "type": "database.subscription"
+        },
+        "attributes": {
+          "database_name": "test",
+          "subscriber_node": "n2",
+          "provider_node": "n1",
+          "disabled": false,
+          "sync_structure": false,
+          "sync_data": false,
+          "extra_dependencies": null,
+          "needs_update": false
+        },
+        "dependencies": [
+          {
+            "id": "n2:test",
+            "type": "database.postgres_database"
+          },
+          {
+            "id": "n1:test",
+            "type": "database.postgres_database"
+          },
+          {
+            "id": "n1:n2:test",
+            "type": "database.replication_slot"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      },
+      "n1:n3:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n3"
+        },
+        "identifier": {
+          "id": "n1:n3:test",
+          "type": "database.subscription"
+        },
+        "attributes": {
+          "database_name": "test",
+          "subscriber_node": "n3",
+          "provider_node": "n1",
+          "disabled": false,
+          "sync_structure": true,
+          "sync_data": true,
+          "extra_dependencies": [
+            {
+              "id": "n2:n1:test",
+              "type": "database.wait_for_sync_event"
+            }
+          ],
+          "needs_update": false
+        },
+        "dependencies": [
+          {
+            "id": "n3:test",
+            "type": "database.postgres_database"
+          },
+          {
+            "id": "n1:test",
+            "type": "database.postgres_database"
+          },
+          {
+            "id": "n1:n3:test",
+            "type": "database.replication_slot"
+          },
+          {
+            "id": "n2:n1:test",
+            "type": "database.wait_for_sync_event"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      },
+      "n2:n1:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n1"
+        },
+        "identifier": {
+          "id": "n2:n1:test",
+          "type": "database.subscription"
+        },
+        "attributes": {
+          "database_name": "test",
+          "subscriber_node": "n1",
+          "provider_node": "n2",
+          "disabled": false,
+          "sync_structure": false,
+          "sync_data": false,
+          "extra_dependencies": null,
+          "needs_update": false
+        },
+        "dependencies": [
+          {
+            "id": "n1:test",
+            "type": "database.postgres_database"
+          },
+          {
+            "id": "n2:test",
+            "type": "database.postgres_database"
+          },
+          {
+            "id": "n2:n1:test",
+            "type": "database.replication_slot"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      },
+      "n2:n3:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n3"
+        },
+        "identifier": {
+          "id": "n2:n3:test",
+          "type": "database.subscription"
+        },
+        "attributes": {
+          "database_name": "test",
+          "subscriber_node": "n3",
+          "provider_node": "n2",
+          "disabled": true,
+          "sync_structure": false,
+          "sync_data": false,
+          "extra_dependencies": null,
+          "needs_update": false
+        },
+        "dependencies": [
+          {
+            "id": "n3:test",
+            "type": "database.postgres_database"
+          },
+          {
+            "id": "n2:test",
+            "type": "database.postgres_database"
+          },
+          {
+            "id": "n2:n3:test",
+            "type": "database.replication_slot"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "database.sync_event": {
+      "n1:n3:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n1"
+        },
+        "identifier": {
+          "id": "n1:n3:test",
+          "type": "database.sync_event"
+        },
+        "attributes": {
+          "database_name": "test",
+          "provider_node": "n1",
+          "subscriber_node": "n3",
+          "sync_event_lsn": "",
+          "extra_dependencies": null
+        },
+        "dependencies": [
+          {
+            "id": "n1:n3:test",
+            "type": "database.subscription"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      },
+      "n2:n1:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n2"
+        },
+        "identifier": {
+          "id": "n2:n1:test",
+          "type": "database.sync_event"
+        },
+        "attributes": {
+          "database_name": "test",
+          "provider_node": "n2",
+          "subscriber_node": "n1",
+          "sync_event_lsn": "",
+          "extra_dependencies": [
+            {
+              "id": "spk_test_n2_sub_n2_n3",
+              "type": "database.replication_slot_create"
+            }
+          ]
+        },
+        "dependencies": [
+          {
+            "id": "n2:n1:test",
+            "type": "database.subscription"
+          },
+          {
+            "id": "spk_test_n2_sub_n2_n3",
+            "type": "database.replication_slot_create"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    },
+    "database.wait_for_sync_event": {
+      "n1:n3:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n3"
+        },
+        "identifier": {
+          "id": "n1:n3:test",
+          "type": "database.wait_for_sync_event"
+        },
+        "attributes": {
+          "database_name": "test",
+          "subscriber_node": "n3",
+          "provider_node": "n1"
+        },
+        "dependencies": [
+          {
+            "id": "n1:n3:test",
+            "type": "database.sync_event"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      },
+      "n2:n1:test": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "primary",
+          "id": "n1"
+        },
+        "identifier": {
+          "id": "n2:n1:test",
+          "type": "database.wait_for_sync_event"
+        },
+        "attributes": {
+          "database_name": "test",
+          "subscriber_node": "n1",
+          "provider_node": "n2"
+        },
+        "dependencies": [
+          {
+            "id": "n2:n1:test",
+            "type": "database.sync_event"
+          }
+        ],
+        "type_dependencies": null,
+        "diff_ignore": null,
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    }
+  }
+}

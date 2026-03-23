@@ -41,6 +41,10 @@ func (w *Workflows) PlanUpdate(ctx workflow.Context, input *PlanUpdateInput) (*P
 	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID)
 	logger.Info("getting desired state")
 
+	if err := input.Current.ValidateVersion(); err != nil {
+		return nil, err
+	}
+
 	nodeInstances, err := input.Spec.NodeInstances()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node instances: %w", err)

@@ -1,0 +1,42 @@
+{
+  "version": "1.0.0",
+  "resources": {
+    "database.instance": {
+      "instance-1": {
+        "needs_recreate": false,
+        "executor": {
+          "type": "host",
+          "id": "host-1"
+        },
+        "identifier": {
+          "id": "instance-1",
+          "type": "database.instance"
+        },
+        "attributes": {
+          "spec": {
+            "database_id": "database-1",
+            "database_name": "test",
+            "database_users": [
+              {
+                "db_owner": true,
+                "username": "admin"
+              }
+            ],
+            "host_id": "host-1",
+            "instance_id": "instance-1",
+            "node_name": "n1"
+          }
+        },
+        "dependencies": null,
+        "type_dependencies": null,
+        "diff_ignore": [
+          "/primary_instance_id",
+          "/connection_info"
+        ],
+        "resource_version": "1",
+        "pending_deletion": false,
+        "error": ""
+      }
+    }
+  }
+}

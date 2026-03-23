@@ -42,6 +42,10 @@ func (w *Workflows) PlanRestore(ctx workflow.Context, input *PlanRestoreInput) (
 	logger := workflow.Logger(ctx).With("database_id", input.Spec.DatabaseID)
 	logger.Info("getting desired state")
 
+	if err := input.Current.ValidateVersion(); err != nil {
+		return nil, err
+	}
+
 	nodeInstances, err := input.Spec.NodeInstances()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node instances: %w", err)

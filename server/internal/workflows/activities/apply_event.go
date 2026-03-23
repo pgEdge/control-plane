@@ -60,6 +60,9 @@ func (a *Activities) ApplyEvent(ctx context.Context, input *ApplyEventInput) (*A
 		"event_resource_type", input.Event.Resource.Identifier.Type,
 		"event_resource_id", input.Event.Resource.Identifier.ID,
 	)
+	if err := input.State.ValidateVersion(); err != nil {
+		return nil, err
+	}
 
 	if input.Event.Type == resource.EventTypeRefresh {
 		// Refresh messages are less helpful during normal operation
