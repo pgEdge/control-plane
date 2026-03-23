@@ -2,6 +2,8 @@ module schematool
 
 go 1.25.0
 
+toolchain go1.25.8
+
 require github.com/go-git/go-git/v5 v5.17.2
 
 require (
