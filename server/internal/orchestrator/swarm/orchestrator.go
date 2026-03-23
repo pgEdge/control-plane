@@ -440,6 +440,10 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		Allocator: o.dbNetworkAllocator,
 	}
 
+	// Canonical identifiers for the RO and RW service user roles.
+	canonicalROID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRO)
+	canonicalRWID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRW)
+
 	// Service user role resources (manages database user lifecycle).
 	// Two roles are created per service: read-only and read-write.
 	serviceUserRoleRO := &ServiceUserRole{
@@ -519,6 +523,32 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		mcpConfigResource,
 		serviceInstanceSpec,
 		serviceInstance,
+	}
+
+	// Append per-node ServiceUserRole resources for each additional database node.
+	// The canonical resources (above) cover the first node; nodes [1:] each get
+	// their own RO and RW role that sources credentials from the canonical.
+	if len(spec.DatabaseNodes) > 1 {
+		for _, nodeInst := range spec.DatabaseNodes[1:] {
+			orchestratorResources = append(orchestratorResources,
+				&ServiceUserRole{
+					ServiceID:        spec.ServiceSpec.ServiceID,
+					DatabaseID:       spec.DatabaseID,
+					DatabaseName:     spec.DatabaseName,
+					NodeName:         nodeInst.NodeName,
+					Mode:             ServiceUserRoleRO,
+					CredentialSource: &canonicalROID,
+				},
+				&ServiceUserRole{
+					ServiceID:        spec.ServiceSpec.ServiceID,
+					DatabaseID:       spec.DatabaseID,
+					DatabaseName:     spec.DatabaseName,
+					NodeName:         nodeInst.NodeName,
+					Mode:             ServiceUserRoleRW,
+					CredentialSource: &canonicalRWID,
+				},
+			)
+		}
 	}
 
 	// Convert to resource data

@@ -166,6 +166,7 @@ type ServiceInstanceSpec struct {
 	DatabaseHosts      []ServiceHostEntry // Ordered list of Postgres host:port entries
 	TargetSessionAttrs string             // libpq target_session_attrs value
 	Port               *int               // Service instance published port (optional, 0 = random)
+	DatabaseNodes      []*NodeInstances   // All database nodes; used to create per-node ServiceUserRole resources
 }
 
 // storedToServiceInstance converts stored service instance and status to ServiceInstance.
