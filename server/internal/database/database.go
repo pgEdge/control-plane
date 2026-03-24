@@ -28,6 +28,13 @@ func DatabaseStateModifiable(state DatabaseState) bool {
 	}
 }
 
+type CloneOrigin struct {
+	SourceDatabaseID   string    `json:"source_database_id"`
+	SourceDatabaseName string    `json:"source_database_name"`
+	SourceNodeName     string    `json:"source_node_name"`
+	ClonedAt           time.Time `json:"cloned_at"`
+}
+
 type Database struct {
 	DatabaseID       string
 	TenantID         *string
@@ -37,15 +44,17 @@ type Database struct {
 	Spec             *Spec
 	Instances        []*Instance
 	ServiceInstances []*ServiceInstance
+	CloneOrigin      *CloneOrigin
 }
 
 func databaseToStored(d *Database) *StoredDatabase {
 	return &StoredDatabase{
-		DatabaseID: d.DatabaseID,
-		TenantID:   d.TenantID,
-		CreatedAt:  d.CreatedAt,
-		UpdatedAt:  d.UpdatedAt,
-		State:      d.State,
+		DatabaseID:  d.DatabaseID,
+		TenantID:    d.TenantID,
+		CreatedAt:   d.CreatedAt,
+		UpdatedAt:   d.UpdatedAt,
+		State:       d.State,
+		CloneOrigin: d.CloneOrigin,
 	}
 }
 
@@ -59,6 +68,7 @@ func storedToDatabase(d *StoredDatabase, storedSpec *StoredSpec, instances []*In
 		Spec:             storedSpec.Spec,
 		Instances:        instances,
 		ServiceInstances: serviceInstances,
+		CloneOrigin:      d.CloneOrigin,
 	}
 }
 

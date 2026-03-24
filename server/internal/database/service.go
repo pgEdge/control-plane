@@ -132,6 +132,21 @@ func (s *Service) UpdateDatabase(ctx context.Context, state DatabaseState, spec 
 }
 
 func (s *Service) DeleteDatabase(ctx context.Context, databaseID string) error {
+	// Check for dependent clones before allowing deletion
+	allDbs, err := s.store.Database.GetAll().Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to check for dependent clones: %w", err)
+	}
+	var dependentClones []string
+	for _, db := range allDbs {
+		if db.CloneOrigin != nil && db.CloneOrigin.SourceDatabaseID == databaseID {
+			dependentClones = append(dependentClones, db.DatabaseID)
+		}
+	}
+	if len(dependentClones) > 0 {
+		return fmt.Errorf("cannot delete database: %d dependent clone(s) exist (clone IDs: %v)", len(dependentClones), dependentClones)
+	}
+
 	specs, err := s.store.InstanceSpec.
 		GetByDatabaseID(databaseID).
 		Exec(ctx)
@@ -266,6 +281,21 @@ func (s *Service) UpdateDatabaseState(ctx context.Context, databaseID string, fr
 		return fmt.Errorf("failed to update database state: %w", err)
 	}
 
+	return nil
+}
+
+func (s *Service) SetCloneOrigin(ctx context.Context, databaseID string, origin *CloneOrigin) error {
+	storedDb, err := s.store.Database.GetByKey(databaseID).Exec(ctx)
+	if errors.Is(err, storage.ErrNotFound) {
+		return ErrDatabaseNotFound
+	} else if err != nil {
+		return fmt.Errorf("failed to get database: %w", err)
+	}
+
+	storedDb.CloneOrigin = origin
+	if err := s.store.Database.Update(storedDb).Exec(ctx); err != nil {
+		return fmt.Errorf("failed to set clone origin: %w", err)
+	}
 	return nil
 }
 
@@ -513,6 +543,55 @@ func (s *Service) PopulateSpecDefaults(ctx context.Context, spec *Spec) error {
 		}
 	}
 
+	return nil
+}
+
+func (s *Service) ValidateCloneConfig(ctx context.Context, spec *Spec) error {
+	for _, node := range spec.Nodes {
+		if node.CloneConfig == nil {
+			continue
+		}
+
+		// Clone databases must be single-node
+		if len(spec.Nodes) > 1 {
+			return fmt.Errorf("clone databases must be single-node, got %d nodes", len(spec.Nodes))
+		}
+
+		// Source database must exist
+		sourceDB, err := s.GetDatabase(ctx, node.CloneConfig.SourceDatabaseID)
+		if err != nil {
+			return fmt.Errorf("source database %s not found: %w", node.CloneConfig.SourceDatabaseID, err)
+		}
+
+		// Source database must be available
+		if sourceDB.State != DatabaseStateAvailable {
+			return fmt.Errorf("source database %s is not available (state: %s)", node.CloneConfig.SourceDatabaseID, sourceDB.State)
+		}
+
+		// Source node must exist in source database
+		sourceNode, err := sourceDB.Spec.Node(node.CloneConfig.SourceNodeName)
+		if err != nil {
+			return fmt.Errorf("source node %s not found in database %s", node.CloneConfig.SourceNodeName, node.CloneConfig.SourceDatabaseID)
+		}
+
+		// Source instance must be on the same host as the clone target
+		// Clone target host is node.HostIDs[0] (single-node clone)
+		if len(node.HostIDs) == 0 {
+			return fmt.Errorf("clone node must have at least one host_id")
+		}
+		cloneHostID := node.HostIDs[0]
+
+		// Find which host the source node is on
+		sourceHostID := sourceNode.HostIDs[0] // Primary host
+		if cloneHostID != sourceHostID {
+			return fmt.Errorf("clone must be on the same host as source (clone host: %s, source host: %s)", cloneHostID, sourceHostID)
+		}
+
+		// Host must have ZFS enabled
+		if !s.cfg.ZFS.Enabled {
+			return fmt.Errorf("ZFS must be enabled for database cloning")
+		}
+	}
 	return nil
 }
 

@@ -22,6 +22,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/postgres/hba"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/utils"
+	"github.com/pgEdge/control-plane/server/internal/zfs"
 )
 
 var _ resource.Resource = (*PatroniConfig)(nil)
@@ -76,6 +77,9 @@ func (c *PatroniConfig) Dependencies() []resource.Identifier {
 	}
 	if c.Spec.BackupConfig != nil {
 		deps = append(deps, PgBackRestConfigIdentifier(c.Spec.InstanceID, PgBackRestConfigTypeBackup))
+	}
+	if c.Spec.CloneConfig != nil {
+		deps = append(deps, zfs.CloneIdentifier(c.Spec.InstanceID))
 	}
 	return deps
 }

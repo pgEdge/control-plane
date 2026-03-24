@@ -11,6 +11,29 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
 
+// DataDirPathResolver returns the full path to the data directory for a
+// Postgres instance. It is called during Refresh/Create to resolve the mount
+// path for the Docker service spec. Different backing stores (filesystem
+// DirResource vs ZFS Dataset/Clone) provide different resolvers.
+type DataDirPathResolver func(rc *resource.Context) (string, error)
+
+// DirResourceDataDirPathResolver returns a DataDirPathResolver that resolves
+// via the filesystem.DirResource path mechanism.
+func DirResourceDataDirPathResolver(dirResourceID string) DataDirPathResolver {
+	return func(rc *resource.Context) (string, error) {
+		return filesystem.DirResourceFullPath(rc, dirResourceID)
+	}
+}
+
+// StaticDataDirPathResolver returns a DataDirPathResolver that always returns
+// the given path. This is used for ZFS-backed data directories where the mount
+// point is known at construction time.
+func StaticDataDirPathResolver(path string) DataDirPathResolver {
+	return func(_ *resource.Context) (string, error) {
+		return path, nil
+	}
+}
+
 var _ resource.Resource = (*PostgresServiceSpecResource)(nil)
 
 const ResourceTypePostgresServiceSpec resource.Type = "swarm.postgres_service_spec"
@@ -31,8 +54,15 @@ type PostgresServiceSpecResource struct {
 	Spec                swarm.ServiceSpec      `json:"spec"`
 	DatabaseNetworkName string                 `json:"database_network_name"`
 	DataDirID           string                 `json:"data_dir_id"`
+	DataDirPath         string                 `json:"data_dir_path,omitempty"`
+	DataDirDep          resource.Identifier    `json:"data_dir_dep"`
 	ConfigsDirID        string                 `json:"configs_dir_id"`
 	CertificatesDirID   string                 `json:"certificates_dir_id"`
+
+	// ResolveDataDirPath resolves the full path to the data directory.
+	// This is injected at construction time to abstract the backing store
+	// (DirResource vs ZFS Dataset/Clone).
+	ResolveDataDirPath DataDirPathResolver `json:"-"`
 }
 
 func (s *PostgresServiceSpecResource) ResourceVersion() string {
@@ -55,7 +85,7 @@ func (s *PostgresServiceSpecResource) Executor() resource.Executor {
 
 func (s *PostgresServiceSpecResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
-		filesystem.DirResourceIdentifier(s.DataDirID),
+		s.DataDirDep,
 		filesystem.DirResourceIdentifier(s.ConfigsDirID),
 		filesystem.DirResourceIdentifier(s.CertificatesDirID),
 		NetworkResourceIdentifier(s.DatabaseNetworkName),
@@ -74,7 +104,7 @@ func (s *PostgresServiceSpecResource) Refresh(ctx context.Context, rc *resource.
 	if err != nil {
 		return fmt.Errorf("failed to get database network from state: %w", err)
 	}
-	dataPath, err := filesystem.DirResourceFullPath(rc, s.DataDirID)
+	dataPath, err := s.resolveDataDirPath(rc)
 	if err != nil {
 		return fmt.Errorf("failed to get data dir full path: %w", err)
 	}
@@ -105,6 +135,19 @@ func (s *PostgresServiceSpecResource) Refresh(ctx context.Context, rc *resource.
 	s.Spec = spec
 
 	return nil
+}
+
+// resolveDataDirPath returns the full path to the data directory. If a custom
+// resolver is set, it is used; otherwise, the path is resolved via the
+// DirResource mechanism for backwards compatibility.
+func (s *PostgresServiceSpecResource) resolveDataDirPath(rc *resource.Context) (string, error) {
+	if s.ResolveDataDirPath != nil {
+		return s.ResolveDataDirPath(rc)
+	}
+	if s.DataDirPath != "" {
+		return s.DataDirPath, nil
+	}
+	return filesystem.DirResourceFullPath(rc, s.DataDirID)
 }
 
 func (s *PostgresServiceSpecResource) Create(ctx context.Context, rc *resource.Context) error {

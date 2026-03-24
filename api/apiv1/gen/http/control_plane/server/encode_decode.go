@@ -3788,6 +3788,9 @@ func unmarshalDatabaseNodeSpecRequestBodyToControlplaneDatabaseNodeSpec(v *Datab
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = unmarshalRestoreConfigSpecRequestBodyToControlplaneRestoreConfigSpec(v.RestoreConfig)
 	}
+	if v.CloneConfig != nil {
+		res.CloneConfig = unmarshalCloneConfigSpecRequestBodyToControlplaneCloneConfigSpec(v.CloneConfig)
+	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = unmarshalOrchestratorOptsRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
 	}
@@ -3935,6 +3938,21 @@ func unmarshalRestoreRepositorySpecRequestBodyToControlplaneRestoreRepositorySpe
 			tv := val
 			res.CustomOptions[tk] = tv
 		}
+	}
+
+	return res
+}
+
+// unmarshalCloneConfigSpecRequestBodyToControlplaneCloneConfigSpec builds a
+// value of type *controlplane.CloneConfigSpec from a value of type
+// *CloneConfigSpecRequestBody.
+func unmarshalCloneConfigSpecRequestBodyToControlplaneCloneConfigSpec(v *CloneConfigSpecRequestBody) *controlplane.CloneConfigSpec {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.CloneConfigSpec{
+		SourceDatabaseID: controlplane.Identifier(*v.SourceDatabaseID),
+		SourceNodeName:   v.SourceNodeName,
 	}
 
 	return res
@@ -4354,6 +4372,9 @@ func marshalControlplaneDatabaseNodeSpecToDatabaseNodeSpecResponseBody(v *contro
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = marshalControlplaneRestoreConfigSpecToRestoreConfigSpecResponseBody(v.RestoreConfig)
 	}
+	if v.CloneConfig != nil {
+		res.CloneConfig = marshalControlplaneCloneConfigSpecToCloneConfigSpecResponseBody(v.CloneConfig)
+	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = marshalControlplaneOrchestratorOptsToOrchestratorOptsResponseBody(v.OrchestratorOpts)
 	}
@@ -4507,6 +4528,21 @@ func marshalControlplaneRestoreRepositorySpecToRestoreRepositorySpecResponseBody
 			tv := val
 			res.CustomOptions[tk] = tv
 		}
+	}
+
+	return res
+}
+
+// marshalControlplaneCloneConfigSpecToCloneConfigSpecResponseBody builds a
+// value of type *CloneConfigSpecResponseBody from a value of type
+// *controlplane.CloneConfigSpec.
+func marshalControlplaneCloneConfigSpecToCloneConfigSpecResponseBody(v *controlplane.CloneConfigSpec) *CloneConfigSpecResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &CloneConfigSpecResponseBody{
+		SourceDatabaseID: string(v.SourceDatabaseID),
+		SourceNodeName:   v.SourceNodeName,
 	}
 
 	return res
@@ -4790,6 +4826,9 @@ func unmarshalDatabaseNodeSpecRequestBodyRequestBodyToControlplaneDatabaseNodeSp
 	if v.RestoreConfig != nil {
 		res.RestoreConfig = unmarshalRestoreConfigSpecRequestBodyRequestBodyToControlplaneRestoreConfigSpec(v.RestoreConfig)
 	}
+	if v.CloneConfig != nil {
+		res.CloneConfig = unmarshalCloneConfigSpecRequestBodyRequestBodyToControlplaneCloneConfigSpec(v.CloneConfig)
+	}
 	if v.OrchestratorOpts != nil {
 		res.OrchestratorOpts = unmarshalOrchestratorOptsRequestBodyRequestBodyToControlplaneOrchestratorOpts(v.OrchestratorOpts)
 	}
@@ -4937,6 +4976,21 @@ func unmarshalRestoreRepositorySpecRequestBodyRequestBodyToControlplaneRestoreRe
 			tv := val
 			res.CustomOptions[tk] = tv
 		}
+	}
+
+	return res
+}
+
+// unmarshalCloneConfigSpecRequestBodyRequestBodyToControlplaneCloneConfigSpec
+// builds a value of type *controlplane.CloneConfigSpec from a value of type
+// *CloneConfigSpecRequestBodyRequestBody.
+func unmarshalCloneConfigSpecRequestBodyRequestBodyToControlplaneCloneConfigSpec(v *CloneConfigSpecRequestBodyRequestBody) *controlplane.CloneConfigSpec {
+	if v == nil {
+		return nil
+	}
+	res := &controlplane.CloneConfigSpec{
+		SourceDatabaseID: controlplane.Identifier(*v.SourceDatabaseID),
+		SourceNodeName:   v.SourceNodeName,
 	}
 
 	return res

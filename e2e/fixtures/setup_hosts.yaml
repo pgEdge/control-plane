@@ -20,6 +20,33 @@
   roles:
     - role: install_prerequisites
 
+- name: Setup ZFS pool
+  hosts: all
+  become: true
+  tasks:
+    - name: Create ZFS backing file
+      command: truncate -s 10G /var/lib/zfs-pool.img
+      args:
+        creates: /var/lib/zfs-pool.img
+    - name: Check if ZFS pool exists
+      command: zpool list tank
+      register: zpool_check
+      ignore_errors: true
+      changed_when: false
+    - name: Create ZFS pool
+      command: zpool create tank /var/lib/zfs-pool.img
+      when: zpool_check.rc != 0
+    - name: Create pgedge dataset
+      command: zfs create tank/pgedge
+      register: zfs_create
+      failed_when: zfs_create.rc != 0 and 'dataset already exists' not in zfs_create.stderr
+      changed_when: zfs_create.rc == 0
+    - name: Create pgedge/instances dataset
+      command: zfs create tank/pgedge/instances
+      register: zfs_instances
+      failed_when: zfs_instances.rc != 0 and 'dataset already exists' not in zfs_instances.stderr
+      changed_when: zfs_instances.rc == 0
+
 - name: Initialize swarm
   hosts: "{{ hostvars['localhost'].first_manager_host }}"
   roles:

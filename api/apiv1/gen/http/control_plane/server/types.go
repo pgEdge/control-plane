@@ -1964,6 +1964,9 @@ type DatabaseNodeSpecResponseBody struct {
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
 	RestoreConfig *RestoreConfigSpecResponseBody `json:"restore_config,omitempty"`
+	// The clone configuration for this node. Creates the database as a ZFS clone
+	// of the source database.
+	CloneConfig *CloneConfigSpecResponseBody `json:"clone_config,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsResponseBody `json:"orchestrator_opts,omitempty"`
 	// The name of the source node to use for sync. This is typically the node
@@ -2106,6 +2109,14 @@ type RestoreRepositorySpecResponseBody struct {
 	BasePath *string `json:"base_path,omitempty"`
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string `json:"custom_options,omitempty"`
+}
+
+// CloneConfigSpecResponseBody is used to define fields on response body types.
+type CloneConfigSpecResponseBody struct {
+	// The ID of the source database to clone.
+	SourceDatabaseID string `json:"source_database_id"`
+	// The name of the source node to clone from. If omitted, defaults to 'n1'.
+	SourceNodeName *string `json:"source_node_name,omitempty"`
 }
 
 // OrchestratorOptsResponseBody is used to define fields on response body types.
@@ -2294,6 +2305,9 @@ type DatabaseNodeSpecRequestBody struct {
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
 	RestoreConfig *RestoreConfigSpecRequestBody `json:"restore_config,omitempty"`
+	// The clone configuration for this node. Creates the database as a ZFS clone
+	// of the source database.
+	CloneConfig *CloneConfigSpecRequestBody `json:"clone_config,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsRequestBody `json:"orchestrator_opts,omitempty"`
 	// The name of the source node to use for sync. This is typically the node
@@ -2434,6 +2448,14 @@ type RestoreRepositorySpecRequestBody struct {
 	BasePath *string `json:"base_path,omitempty"`
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string `json:"custom_options,omitempty"`
+}
+
+// CloneConfigSpecRequestBody is used to define fields on request body types.
+type CloneConfigSpecRequestBody struct {
+	// The ID of the source database to clone.
+	SourceDatabaseID *string `json:"source_database_id"`
+	// The name of the source node to clone from. If omitted, defaults to 'n1'.
+	SourceNodeName *string `json:"source_node_name,omitempty"`
 }
 
 // OrchestratorOptsRequestBody is used to define fields on request body types.
@@ -2613,6 +2635,9 @@ type DatabaseNodeSpecRequestBodyRequestBody struct {
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
 	RestoreConfig *RestoreConfigSpecRequestBodyRequestBody `json:"restore_config,omitempty"`
+	// The clone configuration for this node. Creates the database as a ZFS clone
+	// of the source database.
+	CloneConfig *CloneConfigSpecRequestBodyRequestBody `json:"clone_config,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOptsRequestBodyRequestBody `json:"orchestrator_opts,omitempty"`
 	// The name of the source node to use for sync. This is typically the node
@@ -2756,6 +2781,15 @@ type RestoreRepositorySpecRequestBodyRequestBody struct {
 	BasePath *string `json:"base_path,omitempty"`
 	// Additional options to apply to this repository.
 	CustomOptions map[string]string `json:"custom_options,omitempty"`
+}
+
+// CloneConfigSpecRequestBodyRequestBody is used to define fields on request
+// body types.
+type CloneConfigSpecRequestBodyRequestBody struct {
+	// The ID of the source database to clone.
+	SourceDatabaseID *string `json:"source_database_id"`
+	// The name of the source node to clone from. If omitted, defaults to 'n1'.
+	SourceNodeName *string `json:"source_node_name,omitempty"`
 }
 
 // OrchestratorOptsRequestBodyRequestBody is used to define fields on request
@@ -5247,6 +5281,11 @@ func ValidateDatabaseNodeSpecRequestBody(body *DatabaseNodeSpecRequestBody) (err
 			err = goa.MergeErrors(err, err2)
 		}
 	}
+	if body.CloneConfig != nil {
+		if err2 := ValidateCloneConfigSpecRequestBody(body.CloneConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
 	if body.OrchestratorOpts != nil {
 		if err2 := ValidateOrchestratorOptsRequestBody(body.OrchestratorOpts); err2 != nil {
 			err = goa.MergeErrors(err, err2)
@@ -5636,6 +5675,28 @@ func ValidateRestoreRepositorySpecRequestBody(body *RestoreRepositorySpecRequest
 	return
 }
 
+// ValidateCloneConfigSpecRequestBody runs the validations defined on
+// CloneConfigSpecRequestBody
+func ValidateCloneConfigSpecRequestBody(body *CloneConfigSpecRequestBody) (err error) {
+	if body.SourceDatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("source_database_id", "body"))
+	}
+	if body.SourceDatabaseID != nil {
+		if utf8.RuneCountInString(*body.SourceDatabaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", *body.SourceDatabaseID, utf8.RuneCountInString(*body.SourceDatabaseID), 1, true))
+		}
+	}
+	if body.SourceDatabaseID != nil {
+		if utf8.RuneCountInString(*body.SourceDatabaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", *body.SourceDatabaseID, utf8.RuneCountInString(*body.SourceDatabaseID), 63, false))
+		}
+	}
+	if body.SourceNodeName != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", *body.SourceNodeName, "n[0-9]+"))
+	}
+	return
+}
+
 // ValidateOrchestratorOptsRequestBody runs the validations defined on
 // OrchestratorOptsRequestBody
 func ValidateOrchestratorOptsRequestBody(body *OrchestratorOptsRequestBody) (err error) {
@@ -5986,6 +6047,11 @@ func ValidateDatabaseNodeSpecRequestBodyRequestBody(body *DatabaseNodeSpecReques
 	}
 	if body.RestoreConfig != nil {
 		if err2 := ValidateRestoreConfigSpecRequestBodyRequestBody(body.RestoreConfig); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.CloneConfig != nil {
+		if err2 := ValidateCloneConfigSpecRequestBodyRequestBody(body.CloneConfig); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
@@ -6374,6 +6440,28 @@ func ValidateRestoreRepositorySpecRequestBodyRequestBody(body *RestoreRepository
 		if utf8.RuneCountInString(*body.BasePath) > 256 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.base_path", *body.BasePath, utf8.RuneCountInString(*body.BasePath), 256, false))
 		}
+	}
+	return
+}
+
+// ValidateCloneConfigSpecRequestBodyRequestBody runs the validations defined
+// on CloneConfigSpecRequestBodyRequestBody
+func ValidateCloneConfigSpecRequestBodyRequestBody(body *CloneConfigSpecRequestBodyRequestBody) (err error) {
+	if body.SourceDatabaseID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("source_database_id", "body"))
+	}
+	if body.SourceDatabaseID != nil {
+		if utf8.RuneCountInString(*body.SourceDatabaseID) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", *body.SourceDatabaseID, utf8.RuneCountInString(*body.SourceDatabaseID), 1, true))
+		}
+	}
+	if body.SourceDatabaseID != nil {
+		if utf8.RuneCountInString(*body.SourceDatabaseID) > 63 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.source_database_id", *body.SourceDatabaseID, utf8.RuneCountInString(*body.SourceDatabaseID), 63, false))
+		}
+	}
+	if body.SourceNodeName != nil {
+		err = goa.MergeErrors(err, goa.ValidatePattern("body.source_node_name", *body.SourceNodeName, "n[0-9]+"))
 	}
 	return
 }

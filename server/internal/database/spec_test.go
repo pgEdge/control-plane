@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
 	"github.com/pgEdge/control-plane/server/internal/pgbackrest"
@@ -508,4 +509,69 @@ func TestSpec(t *testing.T) {
 			assert.Equal(t, expected, new)
 		})
 	})
+}
+
+func TestNodeInstances_CloneConfig(t *testing.T) {
+	port := 5432
+	spec := &database.Spec{
+		PostgresVersion: "17.6",
+		SpockVersion:    "5",
+		Nodes: []*database.Node{
+			{
+				Name:    "n1",
+				HostIDs: []string{"host-1"},
+				Port:    &port,
+				CloneConfig: &database.CloneConfig{
+					SourceDatabaseID: "db-source",
+					SourceNodeName:   "n1",
+				},
+			},
+		},
+		DatabaseUsers: []*database.User{{Username: "app"}},
+	}
+	nodeInstances, err := spec.NodeInstances()
+	require.NoError(t, err)
+	require.Len(t, nodeInstances, 1)
+	require.Len(t, nodeInstances[0].Instances, 1)
+	assert.Equal(t, "db-source", nodeInstances[0].Instances[0].CloneConfig.SourceDatabaseID)
+	assert.Equal(t, "n1", nodeInstances[0].Instances[0].CloneConfig.SourceNodeName)
+}
+
+func TestNodeInstances_CloneConfigNilWhenSourceNode(t *testing.T) {
+	port := 5432
+	spec := &database.Spec{
+		PostgresVersion: "17.6",
+		SpockVersion:    "5",
+		Nodes: []*database.Node{
+			{Name: "n1", HostIDs: []string{"host-1"}, Port: &port},
+			{
+				Name: "n2", HostIDs: []string{"host-2"}, Port: &port,
+				SourceNode: "n1",
+				CloneConfig: &database.CloneConfig{
+					SourceDatabaseID: "db-source",
+					SourceNodeName:   "n1",
+				},
+			},
+		},
+		DatabaseUsers: []*database.User{{Username: "app"}},
+	}
+	nodeInstances, err := spec.NodeInstances()
+	require.NoError(t, err)
+	n2 := nodeInstances[1]
+	require.Len(t, n2.Instances, 1)
+	assert.Nil(t, n2.Instances[0].CloneConfig, "CloneConfig should be nil when SourceNode is set")
+}
+
+func TestNodeClone_CloneConfig(t *testing.T) {
+	node := &database.Node{
+		Name: "n1", HostIDs: []string{"host-1"},
+		CloneConfig: &database.CloneConfig{
+			SourceDatabaseID: "db-source",
+			SourceNodeName:   "n1",
+		},
+	}
+	cloned := node.Clone()
+	assert.Equal(t, node.CloneConfig.SourceDatabaseID, cloned.CloneConfig.SourceDatabaseID)
+	cloned.CloneConfig.SourceDatabaseID = "changed"
+	assert.NotEqual(t, node.CloneConfig.SourceDatabaseID, cloned.CloneConfig.SourceDatabaseID)
 }

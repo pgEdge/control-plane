@@ -33,3 +33,8 @@
   community.docker.docker_network:
     name: "{{ item }}"
     state: absent
+
+- name: Destroy ZFS instance datasets
+  shell: "zfs list -H -o name -r tank/pgedge/instances 2>/dev/null | sort -r | xargs -r -n1 zfs destroy -f"
+  ignore_errors: true
+  changed_when: true

@@ -6034,6 +6034,31 @@
           "task_id"
         ]
       },
+      "CloneConfigSpec": {
+        "type": "object",
+        "properties": {
+          "source_database_id": {
+            "type": "string",
+            "description": "A user-specified identifier. Must be 1-63 characters, contain only lower-cased letters and hyphens, start and end with a letter or number, and not contain consecutive hyphens.",
+            "example": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+            "minLength": 1,
+            "maxLength": 63
+          },
+          "source_node_name": {
+            "type": "string",
+            "description": "The name of the source node to clone from. If omitted, defaults to 'n1'.",
+            "example": "n1",
+            "pattern": "n[0-9]+"
+          }
+        },
+        "example": {
+          "source_database_id": "production",
+          "source_node_name": "n1"
+        },
+        "required": [
+          "source_database_id"
+        ]
+      },
       "Cluster": {
         "type": "object",
         "properties": {
@@ -9368,6 +9393,9 @@
           "backup_config": {
             "$ref": "#/components/schemas/BackupConfigSpec"
           },
+          "clone_config": {
+            "$ref": "#/components/schemas/CloneConfigSpec"
+          },
           "cpus": {
             "type": "string",
             "description": "The number of CPUs to allocate for the database on this node and to use for tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Cannot allocate units smaller than 1m. Defaults to the number of available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs than are available on the host. Whether this limit is enforced depends on the orchestrator.",
@@ -9488,6 +9516,10 @@
               }
             ]
           },
+          "clone_config": {
+            "source_database_id": "production",
+            "source_node_name": "n1"
+          },
           "cpus": "500m",
           "host_ids": [
             "de3b1388-1f0c-42f1-a86c-59ab72f255ec",
@@ -9598,6 +9630,9 @@
           "backup_config": {
             "$ref": "#/components/schemas/BackupConfigSpec"
           },
+          "clone_config": {
+            "$ref": "#/components/schemas/CloneConfigSpec"
+          },
           "cpus": {
             "type": "string",
             "description": "The number of CPUs to allocate for the database on this node and to use for tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Cannot allocate units smaller than 1m. Defaults to the number of available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs than are available on the host. Whether this limit is enforced depends on the orchestrator.",
@@ -9764,6 +9799,10 @@
                 "type": "full"
               }
             ]
+          },
+          "clone_config": {
+            "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+            "source_node_name": "n1"
           },
           "cpus": "500m",
           "host_ids": [
@@ -9874,6 +9913,9 @@
           "backup_config": {
             "$ref": "#/components/schemas/BackupConfigSpec"
           },
+          "clone_config": {
+            "$ref": "#/components/schemas/CloneConfigSpec"
+          },
           "cpus": {
             "type": "string",
             "description": "The number of CPUs to allocate for the database on this node and to use for tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Cannot allocate units smaller than 1m. Defaults to the number of available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs than are available on the host. Whether this limit is enforced depends on the orchestrator.",
@@ -10040,6 +10082,10 @@
                 "type": "full"
               }
             ]
+          },
+          "clone_config": {
+            "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+            "source_node_name": "n1"
           },
           "cpus": "500m",
           "host_ids": [
@@ -10151,6 +10197,9 @@
           "backup_config": {
             "$ref": "#/components/schemas/BackupConfigSpec"
           },
+          "clone_config": {
+            "$ref": "#/components/schemas/CloneConfigSpec"
+          },
           "cpus": {
             "type": "string",
             "description": "The number of CPUs to allocate for the database on this node and to use for tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Cannot allocate units smaller than 1m. Defaults to the number of available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs than are available on the host. Whether this limit is enforced depends on the orchestrator.",
@@ -10316,6 +10365,10 @@
                 "type": "full"
               }
             ]
+          },
+          "clone_config": {
+            "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+            "source_node_name": "n1"
           },
           "cpus": "500m",
           "host_ids": [
@@ -10428,6 +10481,9 @@
           "backup_config": {
             "$ref": "#/components/schemas/BackupConfigSpec"
           },
+          "clone_config": {
+            "$ref": "#/components/schemas/CloneConfigSpec"
+          },
           "cpus": {
             "type": "string",
             "description": "The number of CPUs to allocate for the database on this node and to use for tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Cannot allocate units smaller than 1m. Defaults to the number of available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs than are available on the host. Whether this limit is enforced depends on the orchestrator.",
@@ -10592,6 +10648,10 @@
                 "type": "full"
               }
             ]
+          },
+          "clone_config": {
+            "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+            "source_node_name": "n1"
           },
           "cpus": "500m",
           "host_ids": [
@@ -10704,6 +10764,9 @@
           "backup_config": {
             "$ref": "#/components/schemas/BackupConfigSpec"
           },
+          "clone_config": {
+            "$ref": "#/components/schemas/CloneConfigSpec"
+          },
           "cpus": {
             "type": "string",
             "description": "The number of CPUs to allocate for the database on this node and to use for tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Cannot allocate units smaller than 1m. Defaults to the number of available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs than are available on the host. Whether this limit is enforced depends on the orchestrator.",
@@ -10869,6 +10932,10 @@
                 "type": "full"
               }
             ]
+          },
+          "clone_config": {
+            "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+            "source_node_name": "n1"
           },
           "cpus": "500m",
           "host_ids": [
@@ -10981,6 +11048,9 @@
           "backup_config": {
             "$ref": "#/components/schemas/BackupConfigSpec"
           },
+          "clone_config": {
+            "$ref": "#/components/schemas/CloneConfigSpec"
+          },
           "cpus": {
             "type": "string",
             "description": "The number of CPUs to allocate for the database on this node and to use for tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Cannot allocate units smaller than 1m. Defaults to the number of available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs than are available on the host. Whether this limit is enforced depends on the orchestrator.",
@@ -11146,6 +11216,10 @@
                 "type": "full"
               }
             ]
+          },
+          "clone_config": {
+            "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+            "source_node_name": "n1"
           },
           "cpus": "500m",
           "host_ids": [
@@ -11378,6 +11452,10 @@
                     }
                   ]
                 },
+                "clone_config": {
+                  "source_database_id": "production",
+                  "source_node_name": "n1"
+                },
                 "cpus": "500m",
                 "host_ids": [
                   "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
@@ -11521,6 +11599,10 @@
                     }
                   ]
                 },
+                "clone_config": {
+                  "source_database_id": "production",
+                  "source_node_name": "n1"
+                },
                 "cpus": "500m",
                 "host_ids": [
                   "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
@@ -11663,6 +11745,10 @@
                       "type": "full"
                     }
                   ]
+                },
+                "clone_config": {
+                  "source_database_id": "production",
+                  "source_node_name": "n1"
                 },
                 "cpus": "500m",
                 "host_ids": [
@@ -12112,6 +12198,10 @@
                   }
                 ]
               },
+              "clone_config": {
+                "source_database_id": "production",
+                "source_node_name": "n1"
+              },
               "cpus": "500m",
               "host_ids": [
                 "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
@@ -12255,6 +12345,10 @@
                   }
                 ]
               },
+              "clone_config": {
+                "source_database_id": "production",
+                "source_node_name": "n1"
+              },
               "cpus": "500m",
               "host_ids": [
                 "de3b1388-1f0c-42f1-a86c-59ab72f255ec"
@@ -12397,6 +12491,10 @@
                     "type": "full"
                   }
                 ]
+              },
+              "clone_config": {
+                "source_database_id": "production",
+                "source_node_name": "n1"
               },
               "cpus": "500m",
               "host_ids": [
@@ -13084,6 +13182,10 @@
                     }
                   ]
                 },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
+                },
                 "cpus": "500m",
                 "host_ids": [
                   "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -13275,6 +13377,10 @@
                     }
                   ]
                 },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
+                },
                 "cpus": "500m",
                 "host_ids": [
                   "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -13465,6 +13571,10 @@
                       "type": "full"
                     }
                   ]
+                },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
                 },
                 "cpus": "500m",
                 "host_ids": [
@@ -14084,6 +14194,10 @@
                   }
                 ]
               },
+              "clone_config": {
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_node_name": "n1"
+              },
               "cpus": "500m",
               "host_ids": [
                 "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -14275,6 +14389,10 @@
                   }
                 ]
               },
+              "clone_config": {
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_node_name": "n1"
+              },
               "cpus": "500m",
               "host_ids": [
                 "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -14465,6 +14583,10 @@
                     "type": "full"
                   }
                 ]
+              },
+              "clone_config": {
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_node_name": "n1"
               },
               "cpus": "500m",
               "host_ids": [
@@ -15150,6 +15272,10 @@
                     }
                   ]
                 },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
+                },
                 "cpus": "500m",
                 "host_ids": [
                   "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -15340,6 +15466,10 @@
                     }
                   ]
                 },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
+                },
                 "cpus": "500m",
                 "host_ids": [
                   "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -15529,6 +15659,10 @@
                       "type": "full"
                     }
                   ]
+                },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
                 },
                 "cpus": "500m",
                 "host_ids": [
@@ -16147,6 +16281,10 @@
                   }
                 ]
               },
+              "clone_config": {
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_node_name": "n1"
+              },
               "cpus": "500m",
               "host_ids": [
                 "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -16337,6 +16475,10 @@
                   }
                 ]
               },
+              "clone_config": {
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_node_name": "n1"
+              },
               "cpus": "500m",
               "host_ids": [
                 "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -16526,6 +16668,10 @@
                     "type": "full"
                   }
                 ]
+              },
+              "clone_config": {
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_node_name": "n1"
               },
               "cpus": "500m",
               "host_ids": [
@@ -17210,6 +17356,10 @@
                     }
                   ]
                 },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
+                },
                 "cpus": "500m",
                 "host_ids": [
                   "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -17400,6 +17550,10 @@
                     }
                   ]
                 },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
+                },
                 "cpus": "500m",
                 "host_ids": [
                   "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -17589,6 +17743,10 @@
                       "type": "full"
                     }
                   ]
+                },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
                 },
                 "cpus": "500m",
                 "host_ids": [
@@ -18285,6 +18443,10 @@
                   }
                 ]
               },
+              "clone_config": {
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_node_name": "n1"
+              },
               "cpus": "500m",
               "host_ids": [
                 "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -18475,6 +18637,10 @@
                   }
                 ]
               },
+              "clone_config": {
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_node_name": "n1"
+              },
               "cpus": "500m",
               "host_ids": [
                 "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -18664,6 +18830,10 @@
                     "type": "full"
                   }
                 ]
+              },
+              "clone_config": {
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_node_name": "n1"
               },
               "cpus": "500m",
               "host_ids": [
@@ -19348,6 +19518,10 @@
                     }
                   ]
                 },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
+                },
                 "cpus": "500m",
                 "host_ids": [
                   "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -19537,6 +19711,10 @@
                       "type": "full"
                     }
                   ]
+                },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
                 },
                 "cpus": "500m",
                 "host_ids": [
@@ -20075,6 +20253,10 @@
                   }
                 ]
               },
+              "clone_config": {
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_node_name": "n1"
+              },
               "cpus": "500m",
               "host_ids": [
                 "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -20264,6 +20446,10 @@
                     "type": "full"
                   }
                 ]
+              },
+              "clone_config": {
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_node_name": "n1"
               },
               "cpus": "500m",
               "host_ids": [
@@ -20944,6 +21130,10 @@
                     }
                   ]
                 },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
+                },
                 "cpus": "500m",
                 "host_ids": [
                   "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -21134,6 +21324,10 @@
                     }
                   ]
                 },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
+                },
                 "cpus": "500m",
                 "host_ids": [
                   "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -21323,6 +21517,10 @@
                       "type": "full"
                     }
                   ]
+                },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
                 },
                 "cpus": "500m",
                 "host_ids": [
@@ -22019,6 +22217,10 @@
                   }
                 ]
               },
+              "clone_config": {
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_node_name": "n1"
+              },
               "cpus": "500m",
               "host_ids": [
                 "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -22208,6 +22410,10 @@
                     "type": "full"
                   }
                 ]
+              },
+              "clone_config": {
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_node_name": "n1"
               },
               "cpus": "500m",
               "host_ids": [
@@ -22814,6 +23020,10 @@
                     }
                   ]
                 },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
+                },
                 "cpus": "500m",
                 "host_ids": [
                   "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -23004,6 +23214,10 @@
                     }
                   ]
                 },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
+                },
                 "cpus": "500m",
                 "host_ids": [
                   "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -23193,6 +23407,10 @@
                       "type": "full"
                     }
                   ]
+                },
+                "clone_config": {
+                  "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                  "source_node_name": "n1"
                 },
                 "cpus": "500m",
                 "host_ids": [
@@ -23733,6 +23951,10 @@
                   }
                 ]
               },
+              "clone_config": {
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_node_name": "n1"
+              },
               "cpus": "500m",
               "host_ids": [
                 "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -23923,6 +24145,10 @@
                   }
                 ]
               },
+              "clone_config": {
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_node_name": "n1"
+              },
               "cpus": "500m",
               "host_ids": [
                 "76f9b8c0-4958-11f0-a489-3bb29577c696",
@@ -24112,6 +24338,10 @@
                     "type": "full"
                   }
                 ]
+              },
+              "clone_config": {
+                "source_database_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
+                "source_node_name": "n1"
               },
               "cpus": "500m",
               "host_ids": [

@@ -551,3 +551,84 @@ func TestUpdateDatabase(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateDatabase_CloneConfigRestoreConfigMutualExclusivity(t *testing.T) {
+	n1Instance1 := makeInstance(t, "n1", 1)
+
+	_, err := operations.UpdateDatabase(
+		operations.UpdateDatabaseOptions{},
+		resource.NewState(),
+		[]*operations.NodeResources{
+			{
+				NodeName:          "n1",
+				InstanceResources: []*database.InstanceResources{n1Instance1},
+				CloneConfig: &database.CloneConfig{
+					SourceDatabaseID: "source-db-id",
+					SourceNodeName:   "source-n1",
+				},
+				RestoreConfig: &database.RestoreConfig{
+					SourceDatabaseID: "source-db-id",
+					SourceNodeName:   "source-n1",
+				},
+			},
+		},
+		nil,
+	)
+
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, database.ErrInvalidSourceNode)
+	assert.ErrorContains(t, err, "clone_config and restore_config are mutually exclusive")
+}
+
+func TestUpdateDatabase_CloneConfigSourceNodeMutualExclusivity(t *testing.T) {
+	n1Instance1 := makeInstance(t, "n1", 1)
+
+	_, err := operations.UpdateDatabase(
+		operations.UpdateDatabaseOptions{},
+		resource.NewState(),
+		[]*operations.NodeResources{
+			{
+				NodeName:          "n1",
+				SourceNode:        "some-source",
+				InstanceResources: []*database.InstanceResources{n1Instance1},
+				CloneConfig: &database.CloneConfig{
+					SourceDatabaseID: "source-db-id",
+					SourceNodeName:   "source-n1",
+				},
+			},
+		},
+		nil,
+	)
+
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, database.ErrInvalidSourceNode)
+	assert.ErrorContains(t, err, "clone_config and source_node are mutually exclusive")
+}
+
+func TestUpdateDatabase_CloneConfigAloneIsValid(t *testing.T) {
+	n1Instance1 := makeInstance(t, "n1", 1)
+
+	// When CloneConfig is set without RestoreConfig or SourceNode,
+	// the mutual exclusivity checks should not trigger errors.
+	// Note: We start from an empty state so the node is treated as a new
+	// addition. Since there are no existing nodes, auto-select of source
+	// node is skipped, and clone_config alone should pass validation.
+	plans, err := operations.UpdateDatabase(
+		operations.UpdateDatabaseOptions{},
+		resource.NewState(),
+		[]*operations.NodeResources{
+			{
+				NodeName:          "n1",
+				InstanceResources: []*database.InstanceResources{n1Instance1},
+				CloneConfig: &database.CloneConfig{
+					SourceDatabaseID: "source-db-id",
+					SourceNodeName:   "source-n1",
+				},
+			},
+		},
+		nil,
+	)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, plans)
+}

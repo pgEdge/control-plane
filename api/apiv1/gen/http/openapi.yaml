@@ -2036,6 +2036,26 @@ definitions:
       - id
       - type
       - cron_expression
+  CloneConfigSpec:
+    title: CloneConfigSpec
+    type: object
+    properties:
+      source_database_id:
+        type: string
+        description: The ID of the source database to clone.
+        example: 76f9b8c0-4958-11f0-a489-3bb29577c696
+        minLength: 1
+        maxLength: 63
+      source_node_name:
+        type: string
+        description: The name of the source node to clone from. If omitted, defaults to 'n1'.
+        example: n1
+        pattern: n[0-9]+
+    example:
+      source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+      source_node_name: n1
+    required:
+      - source_database_id
   Cluster:
     title: Cluster
     type: object
@@ -2747,6 +2767,8 @@ definitions:
     properties:
       backup_config:
         $ref: '#/definitions/BackupConfigSpec'
+      clone_config:
+        $ref: '#/definitions/CloneConfigSpec'
       cpus:
         type: string
         description: The number of CPUs to allocate for the database on this node and to use for tuning Postgres. It can include the SI suffix 'm', e.g. '500m' for 500 millicpus. Cannot allocate units smaller than 1m. Defaults to the number of available CPUs on the host if 0 or unspecified. Cannot allocate more CPUs than are available on the host. Whether this limit is enforced depends on the orchestrator.
@@ -2881,6 +2903,9 @@ definitions:
           - cron_expression: 0 6 * * ?
             id: daily-full-backup
             type: full
+      clone_config:
+        source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+        source_node_name: n1
       cpus: 500m
       host_ids:
         - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -3088,6 +3113,9 @@ definitions:
                 - cron_expression: 0 6 * * ?
                   id: daily-full-backup
                   type: full
+            clone_config:
+              source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+              source_node_name: n1
             cpus: 500m
             host_ids:
               - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -3229,6 +3257,9 @@ definitions:
                 - cron_expression: 0 6 * * ?
                   id: daily-full-backup
                   type: full
+            clone_config:
+              source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+              source_node_name: n1
             cpus: 500m
             host_ids:
               - 76f9b8c0-4958-11f0-a489-3bb29577c696
@@ -3616,6 +3647,9 @@ definitions:
               - cron_expression: 0 6 * * ?
                 id: daily-full-backup
                 type: full
+          clone_config:
+            source_database_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
+            source_node_name: n1
           cpus: 500m
           host_ids:
             - 76f9b8c0-4958-11f0-a489-3bb29577c696

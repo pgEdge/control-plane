@@ -112,6 +112,20 @@ var defaultDockerSwarm = DockerSwarm{
 	DatabaseNetworksSubnetBits: 26,
 }
 
+type ZFS struct {
+	Enabled      bool   `koanf:"enabled" json:"enabled,omitempty"`
+	Pool         string `koanf:"pool" json:"pool,omitempty"`
+	CommandImage string `koanf:"command_image" json:"command_image,omitempty"`
+}
+
+func (z ZFS) validate() []error {
+	var errs []error
+	if z.Enabled && z.Pool == "" {
+		errs = append(errs, fmt.Errorf("zfs.pool is required when zfs.enabled is true"))
+	}
+	return errs
+}
+
 type HTTP struct {
 	Enabled    bool   `koanf:"enabled" json:"enabled,omitempty"`
 	BindAddr   string `koanf:"bind_addr" json:"bind_addr,omitempty"`
@@ -243,6 +257,7 @@ type Config struct {
 	DatabaseOwnerUID       int          `koanf:"database_owner_uid" json:"database_owner_uid,omitempty"`
 	ProfilingEnabled       bool         `koanf:"profiling_enabled" json:"profiling_enabled,omitempty"`
 	RandomPorts            RandomPorts  `koanf:"random_ports" json:"random_ports,omitzero"`
+	ZFS                    ZFS          `koanf:"zfs" json:"zfs,omitzero"`
 }
 
 // ClientAddress is a convenience function to return the first client address.
@@ -339,6 +354,9 @@ func (c Config) Validate() error {
 	}
 	for _, err := range c.RandomPorts.validate() {
 		errs = append(errs, fmt.Errorf("random_ports.%w", err))
+	}
+	for _, err := range c.ZFS.validate() {
+		errs = append(errs, fmt.Errorf("zfs.%w", err))
 	}
 	if c.Orchestrator != OrchestratorSwarm {
 		errs = append(errs, fmt.Errorf("orchestrator: unsupported orchestrator %q", c.Orchestrator))

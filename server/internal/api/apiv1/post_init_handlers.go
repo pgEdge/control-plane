@@ -308,6 +308,10 @@ func (s *PostInitHandlers) CreateDatabase(ctx context.Context, req *api.CreateDa
 		return nil, makeInvalidInputErr(fmt.Errorf("failed to validate database spec: %w", err))
 	}
 
+	if err := s.dbSvc.ValidateCloneConfig(ctx, spec); err != nil {
+		return nil, makeInvalidInputErr(err)
+	}
+
 	// Full validation on create (no PreviousSpec, not delta mode).
 	input := &workflows.ValidateSpecInput{
 		DatabaseID:   spec.DatabaseID,

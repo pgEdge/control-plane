@@ -10,11 +10,12 @@ import (
 
 type StoredDatabase struct {
 	storage.StoredValue
-	DatabaseID string        `json:"database_id"`
-	TenantID   *string       `json:"tenant_id,omitempty"`
-	CreatedAt  time.Time     `json:"created_at"`
-	UpdatedAt  time.Time     `json:"updated_at"`
-	State      DatabaseState `json:"state"`
+	DatabaseID  string        `json:"database_id"`
+	TenantID    *string       `json:"tenant_id,omitempty"`
+	CreatedAt   time.Time     `json:"created_at"`
+	UpdatedAt   time.Time     `json:"updated_at"`
+	State       DatabaseState `json:"state"`
+	CloneOrigin *CloneOrigin  `json:"clone_origin,omitempty"`
 }
 
 type DatabaseStore struct {

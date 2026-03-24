@@ -80,6 +80,10 @@ var DatabaseNodeSpec = g.Type("DatabaseNodeSpec", func() {
 		g.Description("The restore configuration for this node. Overrides the restore configuration set in the DatabaseSpec.")
 		g.Meta("struct:tag:json", "restore_config,omitempty")
 	})
+	g.Attribute("clone_config", CloneConfigSpec, func() {
+		g.Description("The clone configuration for this node. Creates the database as a ZFS clone of the source database.")
+		g.Meta("struct:tag:json", "clone_config,omitempty")
+	})
 	g.Attribute("orchestrator_opts", OrchestratorOpts, func() {
 		g.Description("Orchestrator-specific configuration options.")
 		g.Meta("struct:tag:json", "orchestrator_opts,omitempty")
@@ -543,6 +547,22 @@ var RestoreConfigSpec = g.Type("RestoreConfigSpec", func() {
 	})
 
 	g.Required("source_database_id", "source_node_name", "source_database_name", "repository")
+})
+
+var CloneConfigSpec = g.Type("CloneConfigSpec", func() {
+	g.Attribute("source_database_id", Identifier, func() {
+		g.Description("The ID of the source database to clone.")
+		g.Example("production")
+		g.Meta("struct:tag:json", "source_database_id")
+	})
+	g.Attribute("source_node_name", g.String, func() {
+		g.Description("The name of the source node to clone from. If omitted, defaults to 'n1'.")
+		g.Pattern(nodeNamePattern)
+		g.Example("n1")
+		g.Meta("struct:tag:json", "source_node_name,omitempty")
+	})
+
+	g.Required("source_database_id")
 })
 
 var DatabaseSpec = g.Type("DatabaseSpec", func() {

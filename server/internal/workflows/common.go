@@ -268,5 +268,6 @@ func (w *Workflows) getNodeResources(
 		SourceNode:        node.SourceNode,
 		InstanceResources: resources,
 		RestoreConfig:     node.RestoreConfig,
+		CloneConfig:       node.CloneConfig,
 	}, nil
 }

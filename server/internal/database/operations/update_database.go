@@ -52,6 +52,12 @@ func UpdateDatabase(
 		if n.RestoreConfig != nil && n.SourceNode != "" {
 			return nil, database.ErrInvalidSourceNode
 		}
+		if n.CloneConfig != nil && n.RestoreConfig != nil {
+			return nil, fmt.Errorf("%w: clone_config and restore_config are mutually exclusive on node %s", database.ErrInvalidSourceNode, n.NodeName)
+		}
+		if n.CloneConfig != nil && n.SourceNode != "" {
+			return nil, fmt.Errorf("%w: clone_config and source_node are mutually exclusive on node %s", database.ErrInvalidSourceNode, n.NodeName)
+		}
 	}
 
 	// Updates are always performed first to guarantee that any existing node

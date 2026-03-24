@@ -47,6 +47,7 @@ type Node struct {
 	PostgreSQLConf   map[string]any    `json:"postgresql_conf"`
 	BackupConfig     *BackupConfig     `json:"backup_config"`
 	RestoreConfig    *RestoreConfig    `json:"restore_config"`
+	CloneConfig      *CloneConfig      `json:"clone_config,omitempty"`
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 	SourceNode       string            `json:"source_node,omitempty"`
 }
@@ -66,6 +67,7 @@ func (n *Node) Clone() *Node {
 		PostgreSQLConf:   maps.Clone(n.PostgreSQLConf),
 		BackupConfig:     n.BackupConfig.Clone(),
 		RestoreConfig:    n.RestoreConfig.Clone(),
+		CloneConfig:      n.CloneConfig.Clone(),
 		OrchestratorOpts: n.OrchestratorOpts.Clone(),
 		SourceNode:       n.SourceNode,
 	}
@@ -264,6 +266,19 @@ func (r *RestoreConfig) Clone() *RestoreConfig {
 		Repository:         r.Repository.Clone(),
 		RestoreOptions:     maps.Clone(r.RestoreOptions),
 	}
+}
+
+type CloneConfig struct {
+	SourceDatabaseID string `json:"source_database_id"`
+	SourceNodeName   string `json:"source_node_name"`
+}
+
+func (c *CloneConfig) Clone() *CloneConfig {
+	if c == nil {
+		return nil
+	}
+	clone := *c
+	return &clone
 }
 
 func (o *OrchestratorOpts) Clone() *OrchestratorOpts {
@@ -520,6 +535,7 @@ type InstanceSpec struct {
 	DatabaseUsers    []*User             `json:"database_users"`
 	BackupConfig     *BackupConfig       `json:"backup_config"`
 	RestoreConfig    *RestoreConfig      `json:"restore_config"`
+	CloneConfig      *CloneConfig        `json:"clone_config,omitempty"`
 	PostgreSQLConf   map[string]any      `json:"postgresql_conf"`
 	ClusterSize      int                 `json:"cluster_size"`
 	OrchestratorOpts *OrchestratorOpts   `json:"orchestrator_opts,omitempty"`
@@ -572,6 +588,7 @@ func (s *InstanceSpec) Clone() *InstanceSpec {
 		DatabaseUsers:    users,
 		BackupConfig:     s.BackupConfig.Clone(),
 		RestoreConfig:    s.RestoreConfig.Clone(),
+		CloneConfig:      s.CloneConfig.Clone(),
 		PostgreSQLConf:   maps.Clone(s.PostgreSQLConf),
 		ClusterSize:      s.ClusterSize,
 		OrchestratorOpts: s.OrchestratorOpts.Clone(),
@@ -583,6 +600,7 @@ type NodeInstances struct {
 	SourceNode    string          `json:"source_node"`
 	Instances     []*InstanceSpec `json:"instances"`
 	RestoreConfig *RestoreConfig  `json:"restore_config"`
+	CloneConfig   *CloneConfig    `json:"clone_config,omitempty"`
 }
 
 func (n *NodeInstances) InstanceIDs() []string {
@@ -625,6 +643,13 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 			effectiveRestore = nil
 		}
 
+		var effectiveClone *CloneConfig
+		if node.SourceNode == "" {
+			effectiveClone = node.CloneConfig
+		} else {
+			effectiveClone = nil
+		}
+
 		instances := make([]*InstanceSpec, len(node.HostIDs))
 		for hostIdx, hostID := range node.HostIDs {
 			instances[hostIdx] = &InstanceSpec{
@@ -643,6 +668,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 				DatabaseUsers:    s.DatabaseUsers,
 				BackupConfig:     overridableValue(s.BackupConfig, node.BackupConfig),
 				RestoreConfig:    effectiveRestore,
+				CloneConfig:      effectiveClone,
 				PostgreSQLConf:   overridableMapValue(s.PostgreSQLConf, node.PostgreSQLConf),
 				ClusterSize:      clusterSize,
 				OrchestratorOpts: overridableValue(s.OrchestratorOpts, node.OrchestratorOpts),
@@ -654,6 +680,7 @@ func (s *Spec) NodeInstances() ([]*NodeInstances, error) {
 			SourceNode:    node.SourceNode,
 			Instances:     instances,
 			RestoreConfig: effectiveRestore,
+			CloneConfig:   effectiveClone,
 		}
 	}
 	return nodes, nil

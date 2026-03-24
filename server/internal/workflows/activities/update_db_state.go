@@ -96,6 +96,12 @@ func (a *Activities) handleDatabaseSucceeded(ctx context.Context, databaseID str
 	if err != nil {
 		return fmt.Errorf("failed to get database: %w", err)
 	}
+
+	// Populate CloneOrigin if this database was created from a clone
+	if err := a.populateCloneOrigin(ctx, db); err != nil {
+		return fmt.Errorf("failed to populate clone origin: %w", err)
+	}
+
 	nodes, err := db.Spec.NodeInstances()
 	if err != nil {
 		return fmt.Errorf("failed to compute instances: %w", err)
@@ -116,4 +122,36 @@ func (a *Activities) handleDatabaseSucceeded(ctx context.Context, databaseID str
 	}
 
 	return nil
+}
+
+func (a *Activities) populateCloneOrigin(ctx context.Context, db *database.Database) error {
+	if db.CloneOrigin != nil {
+		return nil // already populated
+	}
+	// Find a node with CloneConfig
+	var cloneConfig *database.CloneConfig
+	for _, node := range db.Spec.Nodes {
+		if node.CloneConfig != nil {
+			cloneConfig = node.CloneConfig
+			break
+		}
+	}
+	if cloneConfig == nil {
+		return nil // not a clone
+	}
+
+	// Look up source database name
+	var sourceName string
+	sourceDB, err := a.DatabaseService.GetDatabase(ctx, cloneConfig.SourceDatabaseID)
+	if err == nil {
+		sourceName = sourceDB.Spec.DatabaseName
+	}
+	// If source is deleted, we still record the origin with an empty name
+
+	return a.DatabaseService.SetCloneOrigin(ctx, db.DatabaseID, &database.CloneOrigin{
+		SourceDatabaseID:   cloneConfig.SourceDatabaseID,
+		SourceDatabaseName: sourceName,
+		SourceNodeName:     cloneConfig.SourceNodeName,
+		ClonedAt:           time.Now(),
+	})
 }

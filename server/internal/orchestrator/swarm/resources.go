@@ -1,6 +1,9 @@
 package swarm
 
-import "github.com/pgEdge/control-plane/server/internal/resource"
+import (
+	"github.com/pgEdge/control-plane/server/internal/resource"
+	"github.com/pgEdge/control-plane/server/internal/zfs"
+)
 
 func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*PostgresServiceSpecResource](registry, ResourceTypePostgresServiceSpec)
@@ -21,4 +24,7 @@ func RegisterResourceTypes(registry *resource.Registry) {
 	resource.RegisterResourceType[*Switchover](registry, ResourceTypeSwitchover)
 	resource.RegisterResourceType[*ScaleService](registry, ResourceTypeScaleService)
 	resource.RegisterResourceType[*MCPConfigResource](registry, ResourceTypeMCPConfig)
+
+	// ZFS resource types
+	zfs.RegisterResourceTypes(registry)
 }

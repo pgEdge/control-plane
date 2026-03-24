@@ -103,6 +103,7 @@ func databaseNodesToAPI(nodes []*database.Node) []*api.DatabaseNodeSpec {
 			PostgresqlConf:   node.PostgreSQLConf,
 			BackupConfig:     backupConfigToAPI(node.BackupConfig),
 			RestoreConfig:    restoreConfigToAPI(node.RestoreConfig),
+			CloneConfig:      cloneConfigToAPI(node.CloneConfig),
 			OrchestratorOpts: orchestratorOptsToAPI(node.OrchestratorOpts),
 			SourceNode:       utils.NillablePointerTo(node.SourceNode),
 		}
@@ -199,6 +200,16 @@ func restoreConfigToAPI(config *database.RestoreConfig) *api.RestoreConfigSpec {
 		}
 	}
 	return out
+}
+
+func cloneConfigToAPI(config *database.CloneConfig) *api.CloneConfigSpec {
+	if config == nil {
+		return nil
+	}
+	return &api.CloneConfigSpec{
+		SourceDatabaseID: api.Identifier(config.SourceDatabaseID),
+		SourceNodeName:   utils.NillablePointerTo(config.SourceNodeName),
+	}
 }
 
 func serviceSpecToAPI(svc *database.ServiceSpec) *api.ServiceSpec {
@@ -516,6 +527,7 @@ func apiToDatabaseNodes(apiNodes []*api.DatabaseNodeSpec) ([]*database.Node, err
 			PostgreSQLConf:   apiNode.PostgresqlConf,
 			BackupConfig:     backupConfig,
 			RestoreConfig:    restoreConfig,
+			CloneConfig:      apiToCloneConfig(apiNode.CloneConfig),
 			OrchestratorOpts: orchestratorOptsToDatabase(apiNode.OrchestratorOpts),
 			SourceNode:       utils.FromPointer(apiNode.SourceNode),
 		}
@@ -620,6 +632,16 @@ func apiToRestoreConfig(apiConfig *api.RestoreConfigSpec) (*database.RestoreConf
 		RestoreOptions:     apiConfig.RestoreOptions,
 		Repository:         repo,
 	}, nil
+}
+
+func apiToCloneConfig(apiConfig *api.CloneConfigSpec) *database.CloneConfig {
+	if apiConfig == nil {
+		return nil
+	}
+	return &database.CloneConfig{
+		SourceDatabaseID: string(apiConfig.SourceDatabaseID),
+		SourceNodeName:   utils.FromPointer(apiConfig.SourceNodeName),
+	}
 }
 
 func apiToServiceSpec(apiSvc *api.ServiceSpec) (*database.ServiceSpec, error) {

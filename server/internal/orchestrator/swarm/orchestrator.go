@@ -36,6 +36,7 @@ import (
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/scheduler"
 	"github.com/pgEdge/control-plane/server/internal/utils"
+	"github.com/pgEdge/control-plane/server/internal/zfs"
 )
 
 const (
@@ -189,14 +190,6 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec) (*database
 		HostID: spec.HostID,
 		Path:   filepath.Join(o.cfg.DataDir, "instances", spec.InstanceID),
 	}
-	dataDir := &filesystem.DirResource{
-		ID:       spec.InstanceID + "-data",
-		HostID:   spec.HostID,
-		ParentID: instanceDir.ID,
-		Path:     "data",
-		OwnerUID: o.cfg.DatabaseOwnerUID,
-		OwnerGID: o.cfg.DatabaseOwnerUID,
-	}
 	configsDir := &filesystem.DirResource{
 		ID:       spec.InstanceID + "-configs",
 		HostID:   spec.HostID,
@@ -212,6 +205,74 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec) (*database
 		Path:     "certificates",
 		OwnerUID: o.cfg.DatabaseOwnerUID,
 		OwnerGID: o.cfg.DatabaseOwnerUID,
+	}
+
+	// Data directory resources — the backing store depends on the ZFS config
+	// and whether this is a clone operation.
+	var dataDirResources []resource.Resource
+	var dataDirDep resource.Identifier
+	var resolveDataDirPath DataDirPathResolver
+	var dataDirPath string
+
+	instanceDataPath := filepath.Join(instanceDir.Path, "data")
+
+	if o.cfg.ZFS.Enabled && spec.CloneConfig != nil {
+		// Clone path: ZFS snapshot → clone
+		sourceInstanceID := database.InstanceIDFor(spec.HostID, spec.CloneConfig.SourceDatabaseID, spec.CloneConfig.SourceNodeName)
+		cloneMountPoint := instanceDataPath
+
+		snapshot := &zfs.Snapshot{
+			SourceInstanceID: sourceInstanceID,
+			CloneInstanceID:  spec.InstanceID,
+			HostID:           spec.HostID,
+			Pool:             o.cfg.ZFS.Pool,
+		}
+		clone := &zfs.Clone{
+			SourceInstanceID: sourceInstanceID,
+			CloneInstanceID:  spec.InstanceID,
+			HostID:           spec.HostID,
+			Pool:             o.cfg.ZFS.Pool,
+			MountPoint:       cloneMountPoint,
+			OwnerUID:         o.cfg.DatabaseOwnerUID,
+			OwnerGID:         o.cfg.DatabaseOwnerUID,
+		}
+
+		dataDirResources = []resource.Resource{snapshot, clone}
+		dataDirDep = zfs.CloneIdentifier(spec.InstanceID)
+		dataDirPath = cloneMountPoint
+		resolveDataDirPath = StaticDataDirPathResolver(cloneMountPoint)
+	} else if o.cfg.ZFS.Enabled {
+		// Normal ZFS database: a standalone ZFS dataset
+		datasetMountPoint := instanceDataPath
+
+		dataset := &zfs.Dataset{
+			ID:         spec.InstanceID,
+			ParentID:   instanceDir.ID,
+			HostID:     spec.HostID,
+			Pool:       o.cfg.ZFS.Pool,
+			MountPoint: datasetMountPoint,
+			OwnerUID:   o.cfg.DatabaseOwnerUID,
+			OwnerGID:   o.cfg.DatabaseOwnerUID,
+		}
+
+		dataDirResources = []resource.Resource{dataset}
+		dataDirDep = zfs.DatasetIdentifier(spec.InstanceID)
+		dataDirPath = datasetMountPoint
+		resolveDataDirPath = StaticDataDirPathResolver(datasetMountPoint)
+	} else {
+		// Non-ZFS path: standard filesystem directory
+		dataDir := &filesystem.DirResource{
+			ID:       spec.InstanceID + "-data",
+			HostID:   spec.HostID,
+			ParentID: instanceDir.ID,
+			Path:     "data",
+			OwnerUID: o.cfg.DatabaseOwnerUID,
+			OwnerGID: o.cfg.DatabaseOwnerUID,
+		}
+
+		dataDirResources = []resource.Resource{dataDir}
+		dataDirDep = filesystem.DirResourceIdentifier(dataDir.ID)
+		resolveDataDirPath = DirResourceDataDirPathResolver(dataDir.ID)
 	}
 
 	// patroni resources - used to clean up etcd on deletion
@@ -269,9 +330,11 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec) (*database
 		ServiceName:         instanceHostname,
 		InstanceHostname:    instanceHostname,
 		DatabaseNetworkName: databaseNetwork.Name,
-		DataDirID:           dataDir.ID,
+		DataDirDep:          dataDirDep,
+		DataDirPath:         dataDirPath,
 		ConfigsDirID:        configsDir.ID,
 		CertificatesDirID:   certificatesDir.ID,
+		ResolveDataDirPath:  resolveDataDirPath,
 	}
 	checkWillRestart := &CheckWillRestart{
 		InstanceID: spec.InstanceID,
@@ -298,7 +361,9 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec) (*database
 		patroniCluster,
 		patroniMember,
 		instanceDir,
-		dataDir,
+	}
+	orchestratorResources = append(orchestratorResources, dataDirResources...)
+	orchestratorResources = append(orchestratorResources,
 		configsDir,
 		certificatesDir,
 		etcdCreds,
@@ -308,7 +373,7 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec) (*database
 		checkWillRestart,
 		switchover,
 		service,
-	}
+	)
 
 	if spec.BackupConfig != nil {
 		orchestratorResources = append(orchestratorResources,
@@ -354,6 +419,21 @@ func (o *Orchestrator) instanceResources(spec *database.InstanceSpec) (*database
 			OwnerUID:     o.cfg.DatabaseOwnerUID,
 			OwnerGID:     o.cfg.DatabaseOwnerUID,
 		})
+	}
+
+	if spec.CloneConfig != nil {
+		cleanup := &zfs.SpockCleanup{
+			CloneInstanceID: spec.InstanceID,
+			HostID:          spec.HostID,
+			ServiceID:       spec.InstanceID,
+			Port:            portOrDefault(spec.Port),
+			DatabaseNames:   []string{spec.DatabaseName},
+		}
+		orchestratorResources = append(orchestratorResources, cleanup)
+		instance.OrchestratorDependencies = append(
+			instance.OrchestratorDependencies,
+			zfs.CleanupIdentifier(spec.InstanceID),
+		)
 	}
 
 	return instance, orchestratorResources, nil
@@ -1071,6 +1151,14 @@ func ensureNetworks(
 	}
 
 	return endpointConfigs, nil
+}
+
+// portOrDefault returns the port value from the pointer, or 5432 as a fallback.
+func portOrDefault(port *int) int {
+	if port != nil && *port > 0 {
+		return *port
+	}
+	return 5432
 }
 
 type updatedInstanceFields struct {

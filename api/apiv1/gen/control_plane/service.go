@@ -208,6 +208,13 @@ type CancelDatabaseTaskPayload struct {
 	TaskID Identifier
 }
 
+type CloneConfigSpec struct {
+	// The ID of the source database to clone.
+	SourceDatabaseID Identifier `json:"source_database_id"`
+	// The name of the source node to clone from. If omitted, defaults to 'n1'.
+	SourceNodeName *string `json:"source_node_name,omitempty"`
+}
+
 // Cluster is the result type of the control-plane service get-cluster method.
 type Cluster struct {
 	// Unique identifier for the cluster.
@@ -371,6 +378,9 @@ type DatabaseNodeSpec struct {
 	// The restore configuration for this node. Overrides the restore configuration
 	// set in the DatabaseSpec.
 	RestoreConfig *RestoreConfigSpec `json:"restore_config,omitempty"`
+	// The clone configuration for this node. Creates the database as a ZFS clone
+	// of the source database.
+	CloneConfig *CloneConfigSpec `json:"clone_config,omitempty"`
 	// Orchestrator-specific configuration options.
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
 	// The name of the source node to use for sync. This is typically the node

@@ -1,4 +1,11 @@
 ---
+- name: Remove stale ZFS repo files
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/yum.repos.d/zfs.repo
+    - /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:cyqsimon:zfs-epel9-aarch64.repo
 - name: Add Docker repository
   yum_repository:
     name: docker-ce-stable
@@ -25,6 +32,62 @@
       - docker
       - jsondiff
       - tcconfig
+- name: Install EPEL release
+  package:
+    name: epel-release
+    state: present
+# ZFS installation - x86_64 uses official kmod packages, aarch64 uses COPR DKMS
+# (OpenZFS does not publish official aarch64 packages for EL9)
+- name: Install ZFS release RPM (x86_64)
+  dnf:
+    name: https://zfsonlinux.org/epel/zfs-release-3-0.el9.noarch.rpm
+    state: present
+    disable_gpg_check: true
+  when: ansible_architecture == 'x86_64'
+- name: Disable default ZFS repo (x86_64)
+  command: dnf config-manager --disable zfs
+  when: ansible_architecture == 'x86_64'
+  changed_when: true
+- name: Enable ZFS kmod repo (x86_64)
+  command: dnf config-manager --enable zfs-kmod
+  when: ansible_architecture == 'x86_64'
+  changed_when: true
+- name: Install ZFS kmod packages (x86_64)
+  dnf:
+    name: zfs
+    state: present
+  when: ansible_architecture == 'x86_64'
+- name: Enable COPR repo for ZFS (aarch64)
+  command: dnf copr enable -y cyqsimon/zfs-epel9-aarch64
+  when: ansible_architecture == 'aarch64'
+  changed_when: true
+- name: Update kernel and install matching headers (aarch64)
+  dnf:
+    name:
+      - kernel
+      - kernel-devel
+    state: latest
+  register: kernel_update
+  when: ansible_architecture == 'aarch64'
+- name: Reboot after kernel update (aarch64)
+  reboot:
+  when: ansible_architecture == 'aarch64' and kernel_update.changed
+- name: Install ZFS build dependencies (aarch64)
+  dnf:
+    name:
+      - dkms
+      - elfutils-libelf-devel
+    state: present
+  when: ansible_architecture == 'aarch64'
+- name: Install ZFS DKMS packages (aarch64)
+  dnf:
+    name: zfs
+    state: present
+  when: ansible_architecture == 'aarch64'
+- name: Load ZFS kernel module
+  modprobe:
+    name: zfs
+    state: present
 - name: Create the docker.socket.d directory if it does not exist
   file:
     path: /etc/systemd/system/docker.socket.d
