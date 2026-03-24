@@ -53,6 +53,7 @@ func TestProvisionMCPService(t *testing.T) {
 					Version: "latest",
 					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
 					Config: map[string]any{
+						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
 						"llm_model":         "claude-sonnet-4-5",
 						"anthropic_api_key": "sk-ant-test-key-12345",
@@ -184,6 +185,7 @@ func TestProvisionMultiHostMCPService(t *testing.T) {
 						controlplane.Identifier(host3),
 					},
 					Config: map[string]any{
+						"llm_enabled":    true,
 						"llm_provider":   "openai",
 						"llm_model":      "gpt-4",
 						"openai_api_key": "sk-test-key-67890",
@@ -285,6 +287,7 @@ func TestUpdateDatabaseAddService(t *testing.T) {
 					Version: "latest",
 					HostIds: []controlplane.Identifier{controlplane.Identifier(host2)},
 					Config: map[string]any{
+						"llm_enabled":  true,
 						"llm_provider": "ollama",
 						"llm_model":    "llama2",
 						"ollama_url":   "http://localhost:11434",
@@ -350,6 +353,7 @@ func TestProvisionMCPServiceUnsupportedVersion(t *testing.T) {
 					Version:     "99.99.99", // Valid semver but not registered in ServiceVersions
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Config: map[string]any{
+						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
 						"llm_model":         "claude-sonnet-4-5",
 						"anthropic_api_key": "sk-ant-test-key-12345",
@@ -454,6 +458,7 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 					Version:     "99.99.99", // Unsupported version - workflow will fail
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Config: map[string]any{
+						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
 						"llm_model":         "claude-sonnet-4-5",
 						"anthropic_api_key": "sk-ant-test-key-12345",
@@ -541,6 +546,7 @@ func TestProvisionMCPServiceRecovery(t *testing.T) {
 						Version:     "latest", // Corrected version
 						HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 						Config: map[string]any{
+							"llm_enabled":       true,
 							"llm_provider":      "anthropic",
 							"llm_model":         "claude-sonnet-4-5",
 							"anthropic_api_key": "sk-ant-test-key-12345",
@@ -650,6 +656,7 @@ func TestUpdateDatabaseServiceStable(t *testing.T) {
 					Version:     "latest",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Config: map[string]any{
+						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
 						"llm_model":         "claude-sonnet-4-5",
 						"anthropic_api_key": "sk-ant-test-key-stable",
@@ -718,6 +725,7 @@ func TestUpdateDatabaseServiceStable(t *testing.T) {
 					Version:     "latest",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Config: map[string]any{
+						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
 						"llm_model":         "claude-sonnet-4-5",
 						"anthropic_api_key": "sk-ant-test-key-stable",
@@ -788,6 +796,7 @@ func TestUpdateMCPServiceConfig(t *testing.T) {
 					Version:     "latest",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Config: map[string]any{
+						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
 						"llm_model":         "claude-sonnet-4-5",
 						"anthropic_api_key": "sk-ant-test-key-config",
@@ -850,6 +859,7 @@ func TestUpdateMCPServiceConfig(t *testing.T) {
 					Version:     "latest",
 					HostIds:     []controlplane.Identifier{controlplane.Identifier(host1)},
 					Config: map[string]any{
+						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
 						"llm_model":         "claude-haiku-4-5",
 						"anthropic_api_key": "sk-ant-test-key-config",
@@ -929,6 +939,7 @@ func TestUpdateDatabaseRemoveService(t *testing.T) {
 					Version: "latest",
 					HostIds: []controlplane.Identifier{controlplane.Identifier(host1)},
 					Config: map[string]any{
+						"llm_enabled":       true,
 						"llm_provider":      "anthropic",
 						"llm_model":         "claude-sonnet-4-5",
 						"anthropic_api_key": "sk-ant-test",

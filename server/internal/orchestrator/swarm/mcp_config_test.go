@@ -6,6 +6,7 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 func strPtr(s string) *string { return &s }
@@ -21,12 +22,9 @@ func parseYAML(t *testing.T, data []byte) *mcpYAMLConfig {
 }
 
 func TestGenerateMCPConfig_MinimalConfig(t *testing.T) {
+	// Minimal config: no LLM, no embedding — just database.
 	params := &MCPConfigParams{
-		Config: &database.MCPServiceConfig{
-			LLMProvider:     "anthropic",
-			LLMModel:        "claude-sonnet-4-5",
-			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
-		},
+		Config:        &database.MCPServiceConfig{},
 		DatabaseName:  "mydb",
 		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
 		Username:      "appuser",
@@ -62,12 +60,9 @@ func TestGenerateMCPConfig_MinimalConfig(t *testing.T) {
 		t.Fatalf("databases len = %d, want 1", len(cfg.Databases))
 	}
 
-	// llm section
-	if !cfg.LLM.Enabled {
-		t.Error("llm.enabled should be true")
-	}
-	if cfg.LLM.Provider != "anthropic" {
-		t.Errorf("llm.provider = %q, want %q", cfg.LLM.Provider, "anthropic")
+	// llm section should be absent
+	if cfg.LLM != nil {
+		t.Errorf("llm section should be absent when llm_enabled is not set, got %+v", cfg.LLM)
 	}
 
 	// builtins.tools.llm_connection_selection must be false
@@ -79,14 +74,33 @@ func TestGenerateMCPConfig_MinimalConfig(t *testing.T) {
 	}
 }
 
-func TestGenerateMCPConfig_DefaultValues(t *testing.T) {
-	// No optional fields set — defaults should apply.
+func TestGenerateMCPConfig_LLMDisabled_SectionOmitted(t *testing.T) {
+	params := &MCPConfigParams{
+		Config:        &database.MCPServiceConfig{LLMEnabled: utils.PointerTo(false)},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+
+	cfg := parseYAML(t, data)
+	if cfg.LLM != nil {
+		t.Errorf("llm section should be absent when llm_enabled is false, got %+v", cfg.LLM)
+	}
+}
+
+func TestGenerateMCPConfig_LLMEnabled_SectionPresent(t *testing.T) {
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
+			LLMEnabled:      utils.PointerTo(true),
 			LLMProvider:     "anthropic",
 			LLMModel:        "claude-sonnet-4-5",
 			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
-			// LLMTemperature, LLMMaxTokens, PoolMaxConns, AllowWrites all nil
 		},
 		DatabaseName:  "mydb",
 		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
@@ -100,12 +114,71 @@ func TestGenerateMCPConfig_DefaultValues(t *testing.T) {
 	}
 
 	cfg := parseYAML(t, data)
+	if cfg.LLM == nil {
+		t.Fatal("llm section should be present when llm_enabled is true")
+	}
+	if !cfg.LLM.Enabled {
+		t.Error("llm.enabled should be true")
+	}
+	if cfg.LLM.Provider != "anthropic" {
+		t.Errorf("llm.provider = %q, want %q", cfg.LLM.Provider, "anthropic")
+	}
+	if cfg.LLM.Model != "claude-sonnet-4-5" {
+		t.Errorf("llm.model = %q, want %q", cfg.LLM.Model, "claude-sonnet-4-5")
+	}
+}
 
+func TestGenerateMCPConfig_LLMEnabled_DefaultTuning(t *testing.T) {
+	params := &MCPConfigParams{
+		Config: &database.MCPServiceConfig{
+			LLMEnabled:      utils.PointerTo(true),
+			LLMProvider:     "anthropic",
+			LLMModel:        "claude-sonnet-4-5",
+			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
+		},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+
+	cfg := parseYAML(t, data)
+	if cfg.LLM == nil {
+		t.Fatal("llm section should be present")
+	}
 	if cfg.LLM.Temperature != 0.7 {
 		t.Errorf("llm.temperature = %v, want 0.7", cfg.LLM.Temperature)
 	}
 	if cfg.LLM.MaxTokens != 4096 {
 		t.Errorf("llm.max_tokens = %d, want 4096", cfg.LLM.MaxTokens)
+	}
+}
+
+func TestGenerateMCPConfig_DefaultValues(t *testing.T) {
+	// No LLM, no optional fields — defaults should apply for database fields.
+	params := &MCPConfigParams{
+		Config:        &database.MCPServiceConfig{},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+
+	cfg := parseYAML(t, data)
+
+	// LLM section absent
+	if cfg.LLM != nil {
+		t.Errorf("llm section should be absent, got %+v", cfg.LLM)
 	}
 	if len(cfg.Databases) != 1 {
 		t.Fatalf("databases len = %d, want 1", len(cfg.Databases))
@@ -126,6 +199,7 @@ func TestGenerateMCPConfig_CustomValues(t *testing.T) {
 
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
+			LLMEnabled:      utils.PointerTo(true),
 			LLMProvider:     "anthropic",
 			LLMModel:        "claude-opus-4-6",
 			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
@@ -147,6 +221,9 @@ func TestGenerateMCPConfig_CustomValues(t *testing.T) {
 
 	cfg := parseYAML(t, data)
 
+	if cfg.LLM == nil {
+		t.Fatal("llm section should be present")
+	}
 	if cfg.LLM.Temperature != 1.2 {
 		t.Errorf("llm.temperature = %v, want 1.2", cfg.LLM.Temperature)
 	}
@@ -168,6 +245,7 @@ func TestGenerateMCPConfig_ProviderKeys_Anthropic(t *testing.T) {
 	apiKey := "sk-ant-api03-test"
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
+			LLMEnabled:      utils.PointerTo(true),
 			LLMProvider:     "anthropic",
 			LLMModel:        "claude-sonnet-4-5",
 			AnthropicAPIKey: &apiKey,
@@ -185,6 +263,9 @@ func TestGenerateMCPConfig_ProviderKeys_Anthropic(t *testing.T) {
 
 	cfg := parseYAML(t, data)
 
+	if cfg.LLM == nil {
+		t.Fatal("llm section should be present")
+	}
 	if cfg.LLM.AnthropicAPIKey != apiKey {
 		t.Errorf("llm.anthropic_api_key = %q, want %q", cfg.LLM.AnthropicAPIKey, apiKey)
 	}
@@ -200,6 +281,7 @@ func TestGenerateMCPConfig_ProviderKeys_OpenAI(t *testing.T) {
 	apiKey := "sk-openai-test"
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
+			LLMEnabled:   utils.PointerTo(true),
 			LLMProvider:  "openai",
 			LLMModel:     "gpt-4",
 			OpenAIAPIKey: &apiKey,
@@ -217,6 +299,9 @@ func TestGenerateMCPConfig_ProviderKeys_OpenAI(t *testing.T) {
 
 	cfg := parseYAML(t, data)
 
+	if cfg.LLM == nil {
+		t.Fatal("llm section should be present")
+	}
 	if cfg.LLM.OpenAIAPIKey != apiKey {
 		t.Errorf("llm.openai_api_key = %q, want %q", cfg.LLM.OpenAIAPIKey, apiKey)
 	}
@@ -232,6 +317,7 @@ func TestGenerateMCPConfig_ProviderKeys_Ollama(t *testing.T) {
 	ollamaURL := "http://localhost:11434"
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
+			LLMEnabled:  utils.PointerTo(true),
 			LLMProvider: "ollama",
 			LLMModel:    "llama3",
 			OllamaURL:   &ollamaURL,
@@ -249,6 +335,9 @@ func TestGenerateMCPConfig_ProviderKeys_Ollama(t *testing.T) {
 
 	cfg := parseYAML(t, data)
 
+	if cfg.LLM == nil {
+		t.Fatal("llm section should be present")
+	}
 	if cfg.LLM.OllamaURL != ollamaURL {
 		t.Errorf("llm.ollama_url = %q, want %q", cfg.LLM.OllamaURL, ollamaURL)
 	}
@@ -267,6 +356,7 @@ func TestGenerateMCPConfig_EmbeddingPresent(t *testing.T) {
 
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
+			LLMEnabled:        utils.PointerTo(true),
 			LLMProvider:       "anthropic",
 			LLMModel:          "claude-sonnet-4-5",
 			AnthropicAPIKey:   strPtr("sk-ant-api03-test"),
@@ -304,14 +394,49 @@ func TestGenerateMCPConfig_EmbeddingPresent(t *testing.T) {
 	}
 }
 
+func TestGenerateMCPConfig_EmbeddingWithoutLLM(t *testing.T) {
+	// Embedding enabled without LLM — LLM section absent, embedding present.
+	embProvider := "voyage"
+	embModel := "voyage-3"
+	embAPIKey := "pa-voyage-key"
+
+	params := &MCPConfigParams{
+		Config: &database.MCPServiceConfig{
+			EmbeddingProvider: &embProvider,
+			EmbeddingModel:    &embModel,
+			EmbeddingAPIKey:   &embAPIKey,
+		},
+		DatabaseName:  "mydb",
+		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
+		Username:      "appuser",
+		Password:      "secret",
+	}
+
+	data, err := GenerateMCPConfig(params)
+	if err != nil {
+		t.Fatalf("GenerateMCPConfig() error = %v", err)
+	}
+
+	cfg := parseYAML(t, data)
+
+	if cfg.LLM != nil {
+		t.Errorf("llm section should be absent when llm_enabled is not set, got %+v", cfg.LLM)
+	}
+	if cfg.Embedding == nil {
+		t.Fatal("embedding section should be present")
+	}
+	if !cfg.Embedding.Enabled {
+		t.Error("embedding.enabled should be true")
+	}
+	if cfg.Embedding.Provider != "voyage" {
+		t.Errorf("embedding.provider = %q, want %q", cfg.Embedding.Provider, "voyage")
+	}
+}
+
 func TestGenerateMCPConfig_EmbeddingAbsent(t *testing.T) {
 	// No embedding_provider set — embedding section must be omitted.
 	params := &MCPConfigParams{
-		Config: &database.MCPServiceConfig{
-			LLMProvider:     "anthropic",
-			LLMModel:        "claude-sonnet-4-5",
-			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
-		},
+		Config:        &database.MCPServiceConfig{},
 		DatabaseName:  "mydb",
 		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
 		Username:      "appuser",
@@ -337,6 +462,7 @@ func TestGenerateMCPConfig_EmbeddingOpenAI(t *testing.T) {
 
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
+			LLMEnabled:        utils.PointerTo(true),
 			LLMProvider:       "openai",
 			LLMModel:          "gpt-4",
 			OpenAIAPIKey:      strPtr("sk-openai-llm"),
@@ -375,6 +501,7 @@ func TestGenerateMCPConfig_EmbeddingOllama(t *testing.T) {
 
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
+			LLMEnabled:        utils.PointerTo(true),
 			LLMProvider:       "ollama",
 			LLMModel:          "llama3",
 			OllamaURL:         &ollamaURL,
@@ -406,9 +533,6 @@ func TestGenerateMCPConfig_ToolToggles_AllDisabled(t *testing.T) {
 	trueVal := true
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
-			LLMProvider:                "anthropic",
-			LLMModel:                   "claude-sonnet-4-5",
-			AnthropicAPIKey:            strPtr("sk-ant-api03-test"),
 			DisableQueryDatabase:       &trueVal,
 			DisableGetSchemaInfo:       &trueVal,
 			DisableSimilaritySearch:    &trueVal,
@@ -458,11 +582,7 @@ func TestGenerateMCPConfig_ToolToggles_NoneDisabled(t *testing.T) {
 	// No disable_* flags set — all tool fields should be omitted (nil), except
 	// llm_connection_selection which is always explicitly false.
 	params := &MCPConfigParams{
-		Config: &database.MCPServiceConfig{
-			LLMProvider:     "anthropic",
-			LLMModel:        "claude-sonnet-4-5",
-			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
-		},
+		Config:        &database.MCPServiceConfig{},
 		DatabaseName:  "mydb",
 		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
 		Username:      "appuser",
@@ -506,9 +626,6 @@ func TestGenerateMCPConfig_ToolToggles_DisableFalseIsNoop(t *testing.T) {
 	falseVal := false
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
-			LLMProvider:          "anthropic",
-			LLMModel:             "claude-sonnet-4-5",
-			AnthropicAPIKey:      strPtr("sk-ant-api03-test"),
 			DisableQueryDatabase: &falseVal,
 		},
 		DatabaseName:  "mydb",
@@ -532,11 +649,7 @@ func TestGenerateMCPConfig_ToolToggles_DisableFalseIsNoop(t *testing.T) {
 
 func TestGenerateMCPConfig_DatabaseConfig(t *testing.T) {
 	params := &MCPConfigParams{
-		Config: &database.MCPServiceConfig{
-			LLMProvider:     "anthropic",
-			LLMModel:        "claude-sonnet-4-5",
-			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
-		},
+		Config:        &database.MCPServiceConfig{},
 		DatabaseName:  "myspecialdb",
 		DatabaseHosts: []database.ServiceHostEntry{{Host: "pg-primary.internal", Port: 5433}},
 		Username:      "svc_myspecialdb",
@@ -594,14 +707,9 @@ func TestGenerateMCPConfig_MultiHostTopology(t *testing.T) {
 		}
 	}
 
-	// baseMCPConfig returns a minimal MCPServiceConfig to avoid nil-pointer
-	// issues in GenerateMCPConfig.
+	// baseMCPConfig returns a minimal MCPServiceConfig (no LLM).
 	baseMCPConfig := func() *database.MCPServiceConfig {
-		return &database.MCPServiceConfig{
-			LLMProvider:     "anthropic",
-			LLMModel:        "claude-sonnet-4-5",
-			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
-		}
+		return &database.MCPServiceConfig{}
 	}
 
 	// assertHostEntries verifies the YAML hosts array matches the expected
