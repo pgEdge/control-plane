@@ -15,6 +15,12 @@ type PostgRESTConfigParams struct {
 // GeneratePostgRESTConfig generates the postgrest.conf file content.
 // Credentials are not written here; they are injected as libpq env vars at the container level.
 func GeneratePostgRESTConfig(params *PostgRESTConfigParams) ([]byte, error) {
+	if params == nil {
+		return nil, fmt.Errorf("GeneratePostgRESTConfig: params must not be nil")
+	}
+	if params.Config == nil {
+		return nil, fmt.Errorf("GeneratePostgRESTConfig: params.Config must not be nil")
+	}
 	cfg := params.Config
 
 	var buf bytes.Buffer

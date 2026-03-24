@@ -238,7 +238,7 @@ func (r *ServiceUserRole) roleAttributesAndGrants() ([]string, postgres.Statemen
 	default: // "mcp" and future service types
 		// MCP role: direct grants rather than role membership to avoid exposing
 		// replication internals via pgedge_application_read_only.
-		// https://github.com/pgEdge/pgedge-postgres-mcp/blob/main/docs/guide/security_mgmt.go
+		// https://github.com/pgEdge/pgedge-postgres-mcp/blob/main/docs/guide/security_mgmt.md
 		attributes := []string{"LOGIN"}
 		grants := postgres.Statements{
 			postgres.Statement{SQL: fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s;", sanitizeIdentifier(r.DatabaseName), sanitizeIdentifier(r.Username))},

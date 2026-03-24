@@ -215,10 +215,12 @@ func TestServiceUserRolePerNodeIdentifierUniqueness(t *testing.T) {
 // statementsSQL extracts the raw SQL from a postgres.Statements slice.
 func statementsSQL(stmts postgres.Statements) []string {
 	out := make([]string, 0, len(stmts))
-	for _, s := range stmts {
+	for i, s := range stmts {
 		if stmt, ok := s.(postgres.Statement); ok {
 			out = append(out, stmt.SQL)
+			continue
 		}
+		panic(fmt.Sprintf("statementsSQL: unexpected statement type %T at index %d", s, i))
 	}
 	return out
 }
@@ -231,7 +233,7 @@ func TestRoleAttributesAndGrants_MCP(t *testing.T) {
 	r := &ServiceUserRole{
 		ServiceType:  "mcp",
 		DatabaseName: "mydb",
-		Username:     `"svc_mcp"`,
+		Username:     "svc_mcp",
 	}
 	attrs, grants := r.roleAttributesAndGrants()
 
