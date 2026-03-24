@@ -245,10 +245,6 @@ func (r *ServiceUserRole) Delete(ctx context.Context, rc *resource.Context) erro
 	return nil
 }
 
-func (r *ServiceUserRole) connectToPrimary(ctx context.Context, rc *resource.Context, logger zerolog.Logger, dbName string) (*pgx.Conn, error) {
-	return connectToPrimaryDB(ctx, rc, r.DatabaseID, dbName, logger)
-}
-
 // connectToPrimaryDB finds the primary Postgres instance for the given database
 // and returns an authenticated connection to it. The caller is responsible for
 // closing the connection.
