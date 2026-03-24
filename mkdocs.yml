@@ -78,6 +78,12 @@ nav:
       - Managing Database Instances: using/database-instances.md
       - Deleting a Database: using/delete-db.md
       - Migrating a Database: using/migrate-db.md
+  - Services:
+      - Services Overview: services/index.md
+      - Managing Services: services/managing.md
+      - MCP (Model Context Protocol): services/mcp.md
+      - PostgREST: services/postgrest.md
+      - RAG: services/rag.md
   - Troubleshooting:
       - Recovering a Control Plane Cluster: disaster-recovery/disaster-recovery.md
   - API:
