@@ -46,8 +46,17 @@ func TestRAGConfigResource_Executor(t *testing.T) {
 func TestRAGConfigResource_DiffIgnore(t *testing.T) {
 	r := &RAGConfigResource{}
 	ignored := r.DiffIgnore()
-	if len(ignored) != 0 {
-		t.Errorf("DiffIgnore() = %v, want empty", ignored)
+	want := map[string]bool{
+		"/username": true,
+		"/password": true,
+	}
+	if len(ignored) != len(want) {
+		t.Errorf("DiffIgnore() length = %d, want %d", len(ignored), len(want))
+	}
+	for _, path := range ignored {
+		if !want[path] {
+			t.Errorf("unexpected path in DiffIgnore(): %q", path)
+		}
 	}
 }
 

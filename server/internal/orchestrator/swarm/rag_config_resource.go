@@ -44,6 +44,8 @@ type RAGConfigResource struct {
 	DatabaseName      string                     `json:"database_name"`
 	DatabaseHost      string                     `json:"database_host"`
 	DatabasePort      int                        `json:"database_port"`
+	Username          string                     `json:"username"`
+	Password          string                     `json:"password"`
 }
 
 func (r *RAGConfigResource) ResourceVersion() string {
@@ -51,7 +53,11 @@ func (r *RAGConfigResource) ResourceVersion() string {
 }
 
 func (r *RAGConfigResource) DiffIgnore() []string {
-	return nil
+	return []string{
+		// Credentials are populated at runtime from ServiceUserRole.
+		"/username",
+		"/password",
+	}
 }
 
 func (r *RAGConfigResource) Identifier() resource.Identifier {
@@ -85,6 +91,10 @@ func (r *RAGConfigResource) Refresh(ctx context.Context, rc *resource.Context) e
 		return fmt.Errorf("failed to get service data dir path: %w", err)
 	}
 
+	if err := r.populateCredentials(rc); err != nil {
+		return err
+	}
+
 	_, err = readResourceFile(fs, filepath.Join(dirPath, ragConfigFilename))
 	if err != nil {
 		return fmt.Errorf("failed to read RAG config: %w", err)
@@ -104,7 +114,11 @@ func (r *RAGConfigResource) Create(ctx context.Context, rc *resource.Context) er
 		return fmt.Errorf("failed to get service data dir path: %w", err)
 	}
 
-	return r.writeConfigFile(fs, dirPath, rc)
+	if err := r.populateCredentials(rc); err != nil {
+		return err
+	}
+
+	return r.writeConfigFile(fs, dirPath)
 }
 
 func (r *RAGConfigResource) Update(ctx context.Context, rc *resource.Context) error {
@@ -118,7 +132,11 @@ func (r *RAGConfigResource) Update(ctx context.Context, rc *resource.Context) er
 		return fmt.Errorf("failed to get service data dir path: %w", err)
 	}
 
-	return r.writeConfigFile(fs, dirPath, rc)
+	if err := r.populateCredentials(rc); err != nil {
+		return err
+	}
+
+	return r.writeConfigFile(fs, dirPath)
 }
 
 func (r *RAGConfigResource) Delete(ctx context.Context, rc *resource.Context) error {
@@ -126,19 +144,14 @@ func (r *RAGConfigResource) Delete(ctx context.Context, rc *resource.Context) er
 	return nil
 }
 
-func (r *RAGConfigResource) writeConfigFile(fs afero.Fs, dirPath string, rc *resource.Context) error {
-	userRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRO))
-	if err != nil {
-		return fmt.Errorf("failed to get RAG service user role from state: %w", err)
-	}
-
+func (r *RAGConfigResource) writeConfigFile(fs afero.Fs, dirPath string) error {
 	content, err := GenerateRAGConfig(&RAGConfigParams{
 		Config:       r.Config,
 		DatabaseName: r.DatabaseName,
 		DatabaseHost: r.DatabaseHost,
 		DatabasePort: r.DatabasePort,
-		Username:     userRole.Username,
-		Password:     userRole.Password,
+		Username:     r.Username,
+		Password:     r.Password,
 		KeysDir:      ragKeysContainerDir,
 	})
 	if err != nil {
@@ -153,5 +166,17 @@ func (r *RAGConfigResource) writeConfigFile(fs afero.Fs, dirPath string, rc *res
 		return fmt.Errorf("failed to change ownership for %s: %w", configPath, err)
 	}
 
+	return nil
+}
+
+// populateCredentials fetches username and password from the ServiceUserRole
+// resource in the current reconciliation context.
+func (r *RAGConfigResource) populateCredentials(rc *resource.Context) error {
+	userRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRO))
+	if err != nil {
+		return fmt.Errorf("failed to get RAG service user role from state: %w", err)
+	}
+	r.Username = userRole.Username
+	r.Password = userRole.Password
 	return nil
 }
