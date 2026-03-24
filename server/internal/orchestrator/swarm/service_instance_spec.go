@@ -104,19 +104,21 @@ func (s *ServiceInstanceSpecResource) Refresh(ctx context.Context, rc *resource.
 	}
 
 	spec, err := ServiceContainerSpec(&ServiceContainerSpecOptions{
-		ServiceSpec:       s.ServiceSpec,
-		ServiceInstanceID: s.ServiceInstanceID,
-		DatabaseID:        s.DatabaseID,
-		DatabaseName:      s.DatabaseName,
-		HostID:            s.HostID,
-		ServiceName:       s.ServiceName,
-		Hostname:          s.Hostname,
-		CohortMemberID:    s.CohortMemberID,
-		ServiceImage:      s.ServiceImage,
-		Credentials:       s.Credentials,
-		DatabaseNetworkID: network.NetworkID,
-		Port:              s.Port,
-		DataPath:          dataPath,
+		ServiceSpec:        s.ServiceSpec,
+		ServiceInstanceID:  s.ServiceInstanceID,
+		DatabaseID:         s.DatabaseID,
+		DatabaseName:       s.DatabaseName,
+		HostID:             s.HostID,
+		ServiceName:        s.ServiceName,
+		Hostname:           s.Hostname,
+		CohortMemberID:     s.CohortMemberID,
+		ServiceImage:       s.ServiceImage,
+		Credentials:        s.Credentials,
+		DatabaseNetworkID:  network.NetworkID,
+		DatabaseHosts:      s.DatabaseHosts,
+		TargetSessionAttrs: s.TargetSessionAttrs,
+		Port:               s.Port,
+		DataPath:           dataPath,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate service container spec: %w", err)
