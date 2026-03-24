@@ -16,31 +16,39 @@ func boolPtr(b bool) *bool          { return &b }
 func intPtr(i int) *int             { return &i }
 func float64Ptr(f float64) *float64 { return &f }
 
-// anthropicBase returns a minimal valid config for the anthropic provider.
+// anthropicBase returns a minimal valid config for the anthropic provider with LLM enabled.
 func anthropicBase() map[string]any {
 	return map[string]any{
+		"llm_enabled":       true,
 		"llm_provider":      "anthropic",
 		"llm_model":         "claude-3-5-sonnet-20241022",
 		"anthropic_api_key": "sk-ant-key",
 	}
 }
 
-// openaiBase returns a minimal valid config for the openai provider.
+// openaiBase returns a minimal valid config for the openai provider with LLM enabled.
 func openaiBase() map[string]any {
 	return map[string]any{
+		"llm_enabled":    true,
 		"llm_provider":   "openai",
 		"llm_model":      "gpt-4o",
 		"openai_api_key": "sk-openai-key",
 	}
 }
 
-// ollamaBase returns a minimal valid config for the ollama provider.
+// ollamaBase returns a minimal valid config for the ollama provider with LLM enabled.
 func ollamaBase() map[string]any {
 	return map[string]any{
+		"llm_enabled":  true,
 		"llm_provider": "ollama",
 		"llm_model":    "llama3.2",
 		"ollama_url":   "http://localhost:11434",
 	}
+}
+
+// noLLMBase returns a minimal valid config with no LLM (the new default).
+func noLLMBase() map[string]any {
+	return map[string]any{}
 }
 
 // joinedErr joins a []error into a single error for assertion convenience.
@@ -83,8 +91,25 @@ func TestParseMCPServiceConfig(t *testing.T) {
 			assert.Nil(t, cfg.OpenAIAPIKey)
 		})
 
+		t.Run("minimal no-LLM config", func(t *testing.T) {
+			cfg, errs := database.ParseMCPServiceConfig(noLLMBase(), false)
+			require.Empty(t, errs)
+			assert.Nil(t, cfg.LLMEnabled)
+			assert.Empty(t, cfg.LLMProvider)
+			assert.Empty(t, cfg.LLMModel)
+		})
+
+		t.Run("explicit llm_enabled false", func(t *testing.T) {
+			config := map[string]any{"llm_enabled": false}
+			cfg, errs := database.ParseMCPServiceConfig(config, false)
+			require.Empty(t, errs)
+			require.NotNil(t, cfg.LLMEnabled)
+			assert.False(t, *cfg.LLMEnabled)
+		})
+
 		t.Run("all optional fields populated", func(t *testing.T) {
 			config := map[string]any{
+				"llm_enabled":                  true,
 				"llm_provider":                 "anthropic",
 				"llm_model":                    "claude-3-5-sonnet-20241022",
 				"anthropic_api_key":            "sk-ant-key",
@@ -146,9 +171,10 @@ func TestParseMCPServiceConfig(t *testing.T) {
 		})
 	})
 
-	t.Run("required fields", func(t *testing.T) {
+	t.Run("required fields when llm_enabled is true", func(t *testing.T) {
 		t.Run("missing llm_provider", func(t *testing.T) {
 			config := map[string]any{
+				"llm_enabled":       true,
 				"llm_model":         "claude-3-5-sonnet-20241022",
 				"anthropic_api_key": "sk-ant-key",
 			}
@@ -159,6 +185,7 @@ func TestParseMCPServiceConfig(t *testing.T) {
 
 		t.Run("missing llm_model", func(t *testing.T) {
 			config := map[string]any{
+				"llm_enabled":       true,
 				"llm_provider":      "anthropic",
 				"anthropic_api_key": "sk-ant-key",
 			}
@@ -169,6 +196,7 @@ func TestParseMCPServiceConfig(t *testing.T) {
 
 		t.Run("empty llm_provider", func(t *testing.T) {
 			config := map[string]any{
+				"llm_enabled":       true,
 				"llm_provider":      "",
 				"llm_model":         "claude-3-5-sonnet-20241022",
 				"anthropic_api_key": "sk-ant-key",
@@ -180,6 +208,7 @@ func TestParseMCPServiceConfig(t *testing.T) {
 
 		t.Run("empty llm_model", func(t *testing.T) {
 			config := map[string]any{
+				"llm_enabled":       true,
 				"llm_provider":      "anthropic",
 				"llm_model":         "",
 				"anthropic_api_key": "sk-ant-key",
@@ -188,11 +217,21 @@ func TestParseMCPServiceConfig(t *testing.T) {
 			require.NotEmpty(t, errs)
 			assert.Contains(t, joinedErr(errs).Error(), "llm_model must not be empty")
 		})
+
+		t.Run("llm_enabled true with no other fields", func(t *testing.T) {
+			config := map[string]any{
+				"llm_enabled": true,
+			}
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "llm_provider is required")
+		})
 	})
 
 	t.Run("provider cross-validation", func(t *testing.T) {
 		t.Run("anthropic without anthropic_api_key", func(t *testing.T) {
 			config := map[string]any{
+				"llm_enabled":  true,
 				"llm_provider": "anthropic",
 				"llm_model":    "claude-3-5-sonnet-20241022",
 			}
@@ -203,6 +242,7 @@ func TestParseMCPServiceConfig(t *testing.T) {
 
 		t.Run("anthropic with empty anthropic_api_key", func(t *testing.T) {
 			config := map[string]any{
+				"llm_enabled":       true,
 				"llm_provider":      "anthropic",
 				"llm_model":         "claude-3-5-sonnet-20241022",
 				"anthropic_api_key": "",
@@ -214,6 +254,7 @@ func TestParseMCPServiceConfig(t *testing.T) {
 
 		t.Run("openai without openai_api_key", func(t *testing.T) {
 			config := map[string]any{
+				"llm_enabled":  true,
 				"llm_provider": "openai",
 				"llm_model":    "gpt-4o",
 			}
@@ -224,6 +265,7 @@ func TestParseMCPServiceConfig(t *testing.T) {
 
 		t.Run("openai with empty openai_api_key", func(t *testing.T) {
 			config := map[string]any{
+				"llm_enabled":    true,
 				"llm_provider":   "openai",
 				"llm_model":      "gpt-4o",
 				"openai_api_key": "",
@@ -235,6 +277,7 @@ func TestParseMCPServiceConfig(t *testing.T) {
 
 		t.Run("ollama without ollama_url", func(t *testing.T) {
 			config := map[string]any{
+				"llm_enabled":  true,
 				"llm_provider": "ollama",
 				"llm_model":    "llama3.2",
 			}
@@ -245,6 +288,7 @@ func TestParseMCPServiceConfig(t *testing.T) {
 
 		t.Run("ollama with empty ollama_url", func(t *testing.T) {
 			config := map[string]any{
+				"llm_enabled":  true,
 				"llm_provider": "ollama",
 				"llm_model":    "llama3.2",
 				"ollama_url":   "",
@@ -258,6 +302,7 @@ func TestParseMCPServiceConfig(t *testing.T) {
 	t.Run("invalid provider", func(t *testing.T) {
 		t.Run("unknown llm_provider value", func(t *testing.T) {
 			config := map[string]any{
+				"llm_enabled":  true,
 				"llm_provider": "bedrock",
 				"llm_model":    "some-model",
 			}
@@ -274,6 +319,7 @@ func TestParseMCPServiceConfig(t *testing.T) {
 	t.Run("type errors", func(t *testing.T) {
 		t.Run("llm_provider wrong type", func(t *testing.T) {
 			config := map[string]any{
+				"llm_enabled":  true,
 				"llm_provider": 42,
 				"llm_model":    "some-model",
 			}
@@ -284,6 +330,7 @@ func TestParseMCPServiceConfig(t *testing.T) {
 
 		t.Run("llm_model wrong type", func(t *testing.T) {
 			config := map[string]any{
+				"llm_enabled":       true,
 				"llm_provider":      "anthropic",
 				"llm_model":         true,
 				"anthropic_api_key": "sk-ant-key",
@@ -295,6 +342,7 @@ func TestParseMCPServiceConfig(t *testing.T) {
 
 		t.Run("anthropic_api_key wrong type", func(t *testing.T) {
 			config := map[string]any{
+				"llm_enabled":       true,
 				"llm_provider":      "anthropic",
 				"llm_model":         "claude-3-5-sonnet-20241022",
 				"anthropic_api_key": 12345,
@@ -462,8 +510,8 @@ func TestParseMCPServiceConfig(t *testing.T) {
 			assert.Equal(t, "openai", *cfg.EmbeddingProvider)
 		})
 
-		t.Run("valid ollama embedding config (no api key required)", func(t *testing.T) {
-			config := anthropicBase()
+		t.Run("valid ollama embedding config with LLM enabled (ollama_url from LLM)", func(t *testing.T) {
+			config := ollamaBase()
 			config["embedding_provider"] = "ollama"
 			config["embedding_model"] = "nomic-embed-text"
 			cfg, errs := database.ParseMCPServiceConfig(config, false)
@@ -471,6 +519,30 @@ func TestParseMCPServiceConfig(t *testing.T) {
 			require.NotNil(t, cfg.EmbeddingProvider)
 			assert.Equal(t, "ollama", *cfg.EmbeddingProvider)
 			assert.Nil(t, cfg.EmbeddingAPIKey)
+		})
+
+		t.Run("valid ollama embedding config without LLM (ollama_url explicit)", func(t *testing.T) {
+			config := map[string]any{
+				"embedding_provider": "ollama",
+				"embedding_model":    "nomic-embed-text",
+				"ollama_url":         "http://localhost:11434",
+			}
+			cfg, errs := database.ParseMCPServiceConfig(config, false)
+			require.Empty(t, errs)
+			require.NotNil(t, cfg.EmbeddingProvider)
+			assert.Equal(t, "ollama", *cfg.EmbeddingProvider)
+			require.NotNil(t, cfg.OllamaURL)
+			assert.Equal(t, "http://localhost:11434", *cfg.OllamaURL)
+		})
+
+		t.Run("ollama embedding without ollama_url", func(t *testing.T) {
+			config := map[string]any{
+				"embedding_provider": "ollama",
+				"embedding_model":    "nomic-embed-text",
+			}
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), `ollama_url is required when embedding_provider is "ollama"`)
 		})
 
 		t.Run("embedding_provider without embedding_model", func(t *testing.T) {
@@ -686,8 +758,8 @@ func TestParseMCPServiceConfig(t *testing.T) {
 	})
 
 	t.Run("multiple errors", func(t *testing.T) {
-		t.Run("missing both required fields returns multiple errors", func(t *testing.T) {
-			config := map[string]any{}
+		t.Run("llm_enabled true missing both required fields returns multiple errors", func(t *testing.T) {
+			config := map[string]any{"llm_enabled": true}
 			_, errs := database.ParseMCPServiceConfig(config, false)
 			require.NotEmpty(t, errs)
 			// Both errors are separate entries in the slice
@@ -699,6 +771,7 @@ func TestParseMCPServiceConfig(t *testing.T) {
 
 		t.Run("unknown key plus missing required field accumulates errors", func(t *testing.T) {
 			config := map[string]any{
+				"llm_enabled":   true,
 				"llm_provider":  "anthropic",
 				"mystery_field": "oops",
 				// llm_model missing, anthropic_api_key missing
@@ -792,6 +865,87 @@ func TestParseMCPServiceConfig(t *testing.T) {
 			assert.Nil(t, cfg.DisableGenerateEmbedding)
 			assert.Nil(t, cfg.DisableSearchKnowledgebase)
 			assert.Nil(t, cfg.DisableCountRows)
+		})
+	})
+
+	t.Run("llm_enabled false rejects LLM fields", func(t *testing.T) {
+		t.Run("llm_provider rejected", func(t *testing.T) {
+			config := map[string]any{"llm_provider": "anthropic"}
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "llm_provider must not be set unless llm_enabled is true")
+		})
+
+		t.Run("llm_model rejected", func(t *testing.T) {
+			config := map[string]any{"llm_model": "claude-sonnet-4-5"}
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "llm_model must not be set unless llm_enabled is true")
+		})
+
+		t.Run("anthropic_api_key rejected", func(t *testing.T) {
+			config := map[string]any{"anthropic_api_key": "sk-ant-key"}
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "anthropic_api_key must not be set unless llm_enabled is true")
+		})
+
+		t.Run("openai_api_key rejected", func(t *testing.T) {
+			config := map[string]any{"openai_api_key": "sk-openai-key"}
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "openai_api_key must not be set unless llm_enabled is true")
+		})
+
+		t.Run("ollama_url rejected when no ollama embedding", func(t *testing.T) {
+			config := map[string]any{"ollama_url": "http://localhost:11434"}
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "ollama_url must not be set unless llm_enabled is true")
+		})
+
+		t.Run("ollama_url allowed for ollama embedding without LLM", func(t *testing.T) {
+			config := map[string]any{
+				"embedding_provider": "ollama",
+				"embedding_model":    "nomic-embed-text",
+				"ollama_url":         "http://localhost:11434",
+			}
+			cfg, errs := database.ParseMCPServiceConfig(config, false)
+			require.Empty(t, errs)
+			require.NotNil(t, cfg.OllamaURL)
+			assert.Equal(t, "http://localhost:11434", *cfg.OllamaURL)
+		})
+
+		t.Run("llm_temperature rejected", func(t *testing.T) {
+			config := map[string]any{"llm_temperature": 0.5}
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "llm_temperature must not be set unless llm_enabled is true")
+		})
+
+		t.Run("llm_max_tokens rejected", func(t *testing.T) {
+			config := map[string]any{"llm_max_tokens": float64(1024)}
+			_, errs := database.ParseMCPServiceConfig(config, false)
+			require.NotEmpty(t, errs)
+			assert.Contains(t, joinedErr(errs).Error(), "llm_max_tokens must not be set unless llm_enabled is true")
+		})
+	})
+
+	t.Run("llm_enabled updatable", func(t *testing.T) {
+		t.Run("disable LLM on update", func(t *testing.T) {
+			config := map[string]any{"llm_enabled": false}
+			cfg, errs := database.ParseMCPServiceConfig(config, true)
+			require.Empty(t, errs)
+			require.NotNil(t, cfg.LLMEnabled)
+			assert.False(t, *cfg.LLMEnabled)
+		})
+
+		t.Run("enable LLM on update", func(t *testing.T) {
+			cfg, errs := database.ParseMCPServiceConfig(anthropicBase(), true)
+			require.Empty(t, errs)
+			require.NotNil(t, cfg.LLMEnabled)
+			assert.True(t, *cfg.LLMEnabled)
+			assert.Equal(t, "anthropic", cfg.LLMProvider)
 		})
 	})
 

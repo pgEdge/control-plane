@@ -12,7 +12,7 @@ import (
 type mcpYAMLConfig struct {
 	HTTP      mcpHTTPConfig       `yaml:"http"`
 	Databases []mcpDatabaseConfig `yaml:"databases"`
-	LLM       mcpLLMConfig        `yaml:"llm"`
+	LLM       *mcpLLMConfig       `yaml:"llm,omitempty"`
 	Embedding *mcpEmbeddingConfig `yaml:"embedding,omitempty"`
 	Builtins  mcpBuiltinsConfig   `yaml:"builtins"`
 }
@@ -101,14 +101,6 @@ func GenerateMCPConfig(params *MCPConfigParams) ([]byte, error) {
 	cfg := params.Config
 
 	// Apply defaults for overridable fields
-	temperature := 0.7
-	if cfg.LLMTemperature != nil {
-		temperature = *cfg.LLMTemperature
-	}
-	maxTokens := 4096
-	if cfg.LLMMaxTokens != nil {
-		maxTokens = *cfg.LLMMaxTokens
-	}
 	poolMaxConns := 4
 	if cfg.PoolMaxConns != nil {
 		poolMaxConns = *cfg.PoolMaxConns
@@ -118,27 +110,39 @@ func GenerateMCPConfig(params *MCPConfigParams) ([]byte, error) {
 		allowWrites = *cfg.AllowWrites
 	}
 
-	// Build LLM config
-	llm := mcpLLMConfig{
-		Enabled:     true,
-		Provider:    cfg.LLMProvider,
-		Model:       cfg.LLMModel,
-		Temperature: temperature,
-		MaxTokens:   maxTokens,
-	}
-	switch cfg.LLMProvider {
-	case "anthropic":
-		if cfg.AnthropicAPIKey != nil {
-			llm.AnthropicAPIKey = *cfg.AnthropicAPIKey
+	// Build LLM config (only when llm_enabled is true)
+	var llm *mcpLLMConfig
+	if cfg.LLMEnabled != nil && *cfg.LLMEnabled {
+		temperature := 0.7
+		if cfg.LLMTemperature != nil {
+			temperature = *cfg.LLMTemperature
 		}
-	case "openai":
-		if cfg.OpenAIAPIKey != nil {
-			llm.OpenAIAPIKey = *cfg.OpenAIAPIKey
+		maxTokens := 4096
+		if cfg.LLMMaxTokens != nil {
+			maxTokens = *cfg.LLMMaxTokens
 		}
-	case "ollama":
-		if cfg.OllamaURL != nil {
-			llm.OllamaURL = *cfg.OllamaURL
+		l := &mcpLLMConfig{
+			Enabled:     true,
+			Provider:    cfg.LLMProvider,
+			Model:       cfg.LLMModel,
+			Temperature: temperature,
+			MaxTokens:   maxTokens,
 		}
+		switch cfg.LLMProvider {
+		case "anthropic":
+			if cfg.AnthropicAPIKey != nil {
+				l.AnthropicAPIKey = *cfg.AnthropicAPIKey
+			}
+		case "openai":
+			if cfg.OpenAIAPIKey != nil {
+				l.OpenAIAPIKey = *cfg.OpenAIAPIKey
+			}
+		case "ollama":
+			if cfg.OllamaURL != nil {
+				l.OllamaURL = *cfg.OllamaURL
+			}
+		}
+		llm = l
 	}
 
 	// Build embedding config (only if provider is set)
