@@ -1,6 +1,7 @@
 package swarm
 
 import (
+	"fmt"
 	"path"
 
 	"github.com/goccy/go-yaml"
@@ -22,15 +23,15 @@ type ragServerYAML struct {
 }
 
 type ragPipelineYAML struct {
-	Name         string         `yaml:"name"`
-	Description  string         `yaml:"description,omitempty"`
+	Name         string          `yaml:"name"`
+	Description  string          `yaml:"description,omitempty"`
 	Database     ragDatabaseYAML `yaml:"database"`
 	Tables       []ragTableYAML  `yaml:"tables"`
 	EmbeddingLLM ragLLMYAML      `yaml:"embedding_llm"`
 	RAGLLM       ragLLMYAML      `yaml:"rag_llm"`
 	APIKeys      *ragAPIKeysYAML `yaml:"api_keys,omitempty"`
-	TokenBudget  int             `yaml:"token_budget,omitempty"`
-	TopN         int             `yaml:"top_n,omitempty"`
+	TokenBudget  *int            `yaml:"token_budget,omitempty"`
+	TopN         *int            `yaml:"top_n,omitempty"`
 	SystemPrompt string          `yaml:"system_prompt,omitempty"`
 	Search       *ragSearchYAML  `yaml:"search,omitempty"`
 }
@@ -70,8 +71,8 @@ type ragSearchYAML struct {
 }
 
 type ragDefaultsYAML struct {
-	TokenBudget int `yaml:"token_budget,omitempty"`
-	TopN        int `yaml:"top_n,omitempty"`
+	TokenBudget *int `yaml:"token_budget,omitempty"`
+	TopN        *int `yaml:"top_n,omitempty"`
 }
 
 // RAGConfigParams holds all inputs needed to generate pgedge-rag-server.yaml.
@@ -94,20 +95,21 @@ type RAGConfigParams struct {
 func GenerateRAGConfig(params *RAGConfigParams) ([]byte, error) {
 	pipelines := make([]ragPipelineYAML, 0, len(params.Config.Pipelines))
 	for _, p := range params.Config.Pipelines {
-		pipelines = append(pipelines, buildRAGPipelineYAML(p, params))
+		pl, err := buildRAGPipelineYAML(p, params)
+		if err != nil {
+			return nil, err
+		}
+		pipelines = append(pipelines, pl)
 	}
 
 	var defaults *ragDefaultsYAML
 	if params.Config.Defaults != nil {
-		d := &ragDefaultsYAML{}
-		if params.Config.Defaults.TokenBudget != nil {
-			d.TokenBudget = *params.Config.Defaults.TokenBudget
-		}
-		if params.Config.Defaults.TopN != nil {
-			d.TopN = *params.Config.Defaults.TopN
-		}
-		if d.TokenBudget != 0 || d.TopN != 0 {
-			defaults = d
+		src := params.Config.Defaults
+		if src.TokenBudget != nil || src.TopN != nil {
+			defaults = &ragDefaultsYAML{
+				TokenBudget: src.TokenBudget,
+				TopN:        src.TopN,
+			}
 		}
 	}
 
@@ -127,7 +129,7 @@ func GenerateRAGConfig(params *RAGConfigParams) ([]byte, error) {
 	return data, nil
 }
 
-func buildRAGPipelineYAML(p database.RAGPipeline, params *RAGConfigParams) ragPipelineYAML {
+func buildRAGPipelineYAML(p database.RAGPipeline, params *RAGConfigParams) (ragPipelineYAML, error) {
 	tables := make([]ragTableYAML, 0, len(p.Tables))
 	for _, t := range p.Tables {
 		tbl := ragTableYAML{
@@ -157,10 +159,13 @@ func buildRAGPipelineYAML(p database.RAGPipeline, params *RAGConfigParams) ragPi
 		ragLLM.BaseURL = *p.RAGLLM.BaseURL
 	}
 
-	apiKeys := buildRAGAPIKeysYAML(p, params.KeysDir)
+	apiKeys, err := buildRAGAPIKeysYAML(p, params.KeysDir)
+	if err != nil {
+		return ragPipelineYAML{}, err
+	}
 
 	pipeline := ragPipelineYAML{
-		Name:         p.Name,
+		Name: p.Name,
 		Database: ragDatabaseYAML{
 			Host:     params.DatabaseHost,
 			Port:     params.DatabasePort,
@@ -178,12 +183,8 @@ func buildRAGPipelineYAML(p database.RAGPipeline, params *RAGConfigParams) ragPi
 	if p.Description != nil {
 		pipeline.Description = *p.Description
 	}
-	if p.TokenBudget != nil {
-		pipeline.TokenBudget = *p.TokenBudget
-	}
-	if p.TopN != nil {
-		pipeline.TopN = *p.TopN
-	}
+	pipeline.TokenBudget = p.TokenBudget
+	pipeline.TopN = p.TopN
 	if p.SystemPrompt != nil {
 		pipeline.SystemPrompt = *p.SystemPrompt
 	}
@@ -194,7 +195,7 @@ func buildRAGPipelineYAML(p database.RAGPipeline, params *RAGConfigParams) ragPi
 		}
 	}
 
-	return pipeline
+	return pipeline, nil
 }
 
 // buildRAGAPIKeysYAML maps each LLM provider that requires a key to the
@@ -202,8 +203,19 @@ func buildRAGPipelineYAML(p database.RAGPipeline, params *RAGConfigParams) ragPi
 // Embedding key: {keysDir}/{pipeline}_embedding.key
 // RAG key:       {keysDir}/{pipeline}_rag.key
 // If embedding and RAG use the same provider, the RAG key path takes precedence
-// (both files contain the same value).
-func buildRAGAPIKeysYAML(p database.RAGPipeline, keysDir string) *ragAPIKeysYAML {
+// (both files contain the same value). Returns an error if both LLMs share a
+// provider but were configured with different API keys.
+func buildRAGAPIKeysYAML(p database.RAGPipeline, keysDir string) (*ragAPIKeysYAML, error) {
+	// Reject mismatched keys for the same provider — the RAG server has a
+	// single key slot per provider and cannot reconcile two different values.
+	if p.EmbeddingLLM.Provider == p.RAGLLM.Provider &&
+		p.EmbeddingLLM.APIKey != nil && *p.EmbeddingLLM.APIKey != "" &&
+		p.RAGLLM.APIKey != nil && *p.RAGLLM.APIKey != "" &&
+		*p.EmbeddingLLM.APIKey != *p.RAGLLM.APIKey {
+		return nil, fmt.Errorf("pipeline %q: embedding_llm and rag_llm share provider %q but have different API keys",
+			p.Name, p.EmbeddingLLM.Provider)
+	}
+
 	keys := &ragAPIKeysYAML{}
 
 	// Embedding provider key
@@ -231,7 +243,7 @@ func buildRAGAPIKeysYAML(p database.RAGPipeline, keysDir string) *ragAPIKeysYAML
 	}
 
 	if keys.Anthropic == "" && keys.OpenAI == "" && keys.Voyage == "" {
-		return nil
+		return nil, nil
 	}
-	return keys
+	return keys, nil
 }

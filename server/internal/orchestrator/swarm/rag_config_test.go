@@ -383,11 +383,11 @@ func TestGenerateRAGConfig_OptionalPipelineFields(t *testing.T) {
 	if p.Description != desc {
 		t.Errorf("description = %q, want %q", p.Description, desc)
 	}
-	if p.TokenBudget != 500 {
-		t.Errorf("token_budget = %d, want 500", p.TokenBudget)
+	if p.TokenBudget == nil || *p.TokenBudget != 500 {
+		t.Errorf("token_budget = %v, want 500", p.TokenBudget)
 	}
-	if p.TopN != 5 {
-		t.Errorf("top_n = %d, want 5", p.TopN)
+	if p.TopN == nil || *p.TopN != 5 {
+		t.Errorf("top_n = %v, want 5", p.TopN)
 	}
 	if p.SystemPrompt != prompt {
 		t.Errorf("system_prompt = %q, want %q", p.SystemPrompt, prompt)
@@ -416,11 +416,11 @@ func TestGenerateRAGConfig_OptionalPipelineFieldsOmitted(t *testing.T) {
 	if p.Description != "" {
 		t.Errorf("description should be empty (omitted), got %q", p.Description)
 	}
-	if p.TokenBudget != 0 {
-		t.Errorf("token_budget should be 0 (omitted), got %d", p.TokenBudget)
+	if p.TokenBudget != nil {
+		t.Errorf("token_budget should be nil (omitted), got %v", *p.TokenBudget)
 	}
-	if p.TopN != 0 {
-		t.Errorf("top_n should be 0 (omitted), got %d", p.TopN)
+	if p.TopN != nil {
+		t.Errorf("top_n should be nil (omitted), got %v", *p.TopN)
 	}
 	if p.SystemPrompt != "" {
 		t.Errorf("system_prompt should be empty (omitted), got %q", p.SystemPrompt)
@@ -500,11 +500,11 @@ func TestGenerateRAGConfig_DefaultsSection(t *testing.T) {
 	if cfg.Defaults == nil {
 		t.Fatal("defaults section should be present when configured")
 	}
-	if cfg.Defaults.TokenBudget != 2000 {
-		t.Errorf("defaults.token_budget = %d, want 2000", cfg.Defaults.TokenBudget)
+	if cfg.Defaults.TokenBudget == nil || *cfg.Defaults.TokenBudget != 2000 {
+		t.Errorf("defaults.token_budget = %v, want 2000", cfg.Defaults.TokenBudget)
 	}
-	if cfg.Defaults.TopN != 20 {
-		t.Errorf("defaults.top_n = %d, want 20", cfg.Defaults.TopN)
+	if cfg.Defaults.TopN == nil || *cfg.Defaults.TopN != 20 {
+		t.Errorf("defaults.top_n = %v, want 20", cfg.Defaults.TopN)
 	}
 }
 
@@ -519,5 +519,33 @@ func TestGenerateRAGConfig_DefaultsAbsent(t *testing.T) {
 
 	if cfg.Defaults != nil {
 		t.Errorf("defaults section should be absent when not configured, got %+v", cfg.Defaults)
+	}
+}
+
+func TestGenerateRAGConfig_SameProviderDifferentKeys_ReturnsError(t *testing.T) {
+	key1 := "sk-openai-embed"
+	key2 := "sk-openai-rag-different"
+	params := &RAGConfigParams{
+		Config: &database.RAGServiceConfig{
+			Pipelines: []database.RAGPipeline{
+				{
+					Name:   "default",
+					Tables: []database.RAGPipelineTable{{Table: "t", TextColumn: "c", VectorColumn: "v"}},
+					EmbeddingLLM: database.RAGPipelineLLMConfig{
+						Provider: "openai", Model: "text-embedding-3-small", APIKey: &key1,
+					},
+					RAGLLM: database.RAGPipelineLLMConfig{
+						Provider: "openai", Model: "gpt-4o", APIKey: &key2,
+					},
+				},
+			},
+		},
+		DatabaseName: "mydb", DatabaseHost: "host", DatabasePort: 5432,
+		Username: "u", Password: "p", KeysDir: "/app/keys",
+	}
+
+	_, err := GenerateRAGConfig(params)
+	if err == nil {
+		t.Fatal("expected error for same-provider mismatched API keys, got nil")
 	}
 }
