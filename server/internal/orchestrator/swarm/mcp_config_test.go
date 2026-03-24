@@ -6,10 +6,10 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/utils"
 )
 
 func strPtr(s string) *string { return &s }
-func mcpBoolPtr(b bool) *bool { return &b }
 
 // parseYAML unmarshals GenerateMCPConfig output into mcpYAMLConfig for assertion.
 func parseYAML(t *testing.T, data []byte) *mcpYAMLConfig {
@@ -76,7 +76,7 @@ func TestGenerateMCPConfig_MinimalConfig(t *testing.T) {
 
 func TestGenerateMCPConfig_LLMDisabled_SectionOmitted(t *testing.T) {
 	params := &MCPConfigParams{
-		Config:        &database.MCPServiceConfig{LLMEnabled: mcpBoolPtr(false)},
+		Config:        &database.MCPServiceConfig{LLMEnabled: utils.PointerTo(false)},
 		DatabaseName:  "mydb",
 		DatabaseHosts: []database.ServiceHostEntry{{Host: "db-host", Port: 5432}},
 		Username:      "appuser",
@@ -97,7 +97,7 @@ func TestGenerateMCPConfig_LLMDisabled_SectionOmitted(t *testing.T) {
 func TestGenerateMCPConfig_LLMEnabled_SectionPresent(t *testing.T) {
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
-			LLMEnabled:      mcpBoolPtr(true),
+			LLMEnabled:      utils.PointerTo(true),
 			LLMProvider:     "anthropic",
 			LLMModel:        "claude-sonnet-4-5",
 			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
@@ -131,7 +131,7 @@ func TestGenerateMCPConfig_LLMEnabled_SectionPresent(t *testing.T) {
 func TestGenerateMCPConfig_LLMEnabled_DefaultTuning(t *testing.T) {
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
-			LLMEnabled:      mcpBoolPtr(true),
+			LLMEnabled:      utils.PointerTo(true),
 			LLMProvider:     "anthropic",
 			LLMModel:        "claude-sonnet-4-5",
 			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
@@ -199,7 +199,7 @@ func TestGenerateMCPConfig_CustomValues(t *testing.T) {
 
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
-			LLMEnabled:      mcpBoolPtr(true),
+			LLMEnabled:      utils.PointerTo(true),
 			LLMProvider:     "anthropic",
 			LLMModel:        "claude-opus-4-6",
 			AnthropicAPIKey: strPtr("sk-ant-api03-test"),
@@ -245,7 +245,7 @@ func TestGenerateMCPConfig_ProviderKeys_Anthropic(t *testing.T) {
 	apiKey := "sk-ant-api03-test"
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
-			LLMEnabled:      mcpBoolPtr(true),
+			LLMEnabled:      utils.PointerTo(true),
 			LLMProvider:     "anthropic",
 			LLMModel:        "claude-sonnet-4-5",
 			AnthropicAPIKey: &apiKey,
@@ -281,7 +281,7 @@ func TestGenerateMCPConfig_ProviderKeys_OpenAI(t *testing.T) {
 	apiKey := "sk-openai-test"
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
-			LLMEnabled:   mcpBoolPtr(true),
+			LLMEnabled:   utils.PointerTo(true),
 			LLMProvider:  "openai",
 			LLMModel:     "gpt-4",
 			OpenAIAPIKey: &apiKey,
@@ -317,7 +317,7 @@ func TestGenerateMCPConfig_ProviderKeys_Ollama(t *testing.T) {
 	ollamaURL := "http://localhost:11434"
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
-			LLMEnabled:  mcpBoolPtr(true),
+			LLMEnabled:  utils.PointerTo(true),
 			LLMProvider: "ollama",
 			LLMModel:    "llama3",
 			OllamaURL:   &ollamaURL,
@@ -356,7 +356,7 @@ func TestGenerateMCPConfig_EmbeddingPresent(t *testing.T) {
 
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
-			LLMEnabled:        mcpBoolPtr(true),
+			LLMEnabled:        utils.PointerTo(true),
 			LLMProvider:       "anthropic",
 			LLMModel:          "claude-sonnet-4-5",
 			AnthropicAPIKey:   strPtr("sk-ant-api03-test"),
@@ -462,7 +462,7 @@ func TestGenerateMCPConfig_EmbeddingOpenAI(t *testing.T) {
 
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
-			LLMEnabled:        mcpBoolPtr(true),
+			LLMEnabled:        utils.PointerTo(true),
 			LLMProvider:       "openai",
 			LLMModel:          "gpt-4",
 			OpenAIAPIKey:      strPtr("sk-openai-llm"),
@@ -501,7 +501,7 @@ func TestGenerateMCPConfig_EmbeddingOllama(t *testing.T) {
 
 	params := &MCPConfigParams{
 		Config: &database.MCPServiceConfig{
-			LLMEnabled:        mcpBoolPtr(true),
+			LLMEnabled:        utils.PointerTo(true),
 			LLMProvider:       "ollama",
 			LLMModel:          "llama3",
 			OllamaURL:         &ollamaURL,
