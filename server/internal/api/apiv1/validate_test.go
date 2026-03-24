@@ -577,6 +577,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
 						Config: map[string]any{
+							"llm_enabled":       true,
 							"llm_provider":      "anthropic",
 							"llm_model":         "claude-sonnet-4-5",
 							"anthropic_api_key": "sk-ant-...",
@@ -605,6 +606,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
 						Config: map[string]any{
+							"llm_enabled":       true,
 							"llm_provider":      "anthropic",
 							"llm_model":         "claude-sonnet-4-5",
 							"anthropic_api_key": "sk-ant-...",
@@ -616,6 +618,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-2"},
 						Config: map[string]any{
+							"llm_enabled":       true,
 							"llm_provider":      "anthropic",
 							"llm_model":         "claude-sonnet-4-5",
 							"anthropic_api_key": "sk-ant-...",
@@ -647,6 +650,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						Version:     "v1.0",
 						HostIds:     []api.Identifier{"host-1"},
 						Config: map[string]any{
+							"llm_enabled":  true,
 							"llm_provider": "unknown",
 						},
 					},
@@ -677,6 +681,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
 						Config: map[string]any{
+							"llm_enabled":  true,
 							"llm_provider": "unknown",
 						},
 					},
@@ -771,6 +776,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1", "host-2"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -785,6 +791,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "2.1.3",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":    true,
 					"llm_provider":   "openai",
 					"llm_model":      "gpt-4",
 					"openai_api_key": "sk-...",
@@ -799,6 +806,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.5.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":  true,
 					"llm_provider": "ollama",
 					"llm_model":    "llama2",
 					"ollama_url":   "http://localhost:11434",
@@ -813,6 +821,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "latest",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -827,6 +836,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -843,6 +853,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -945,6 +956,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "v1.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -962,6 +974,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1", "host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -979,6 +992,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host 1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -996,7 +1010,8 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
-					"llm_model": "claude-sonnet-4-5",
+					"llm_enabled": true,
+					"llm_model":   "claude-sonnet-4-5",
 				},
 			},
 			expected: []string{
@@ -1011,6 +1026,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":  true,
 					"llm_provider": "anthropic",
 				},
 			},
@@ -1026,6 +1042,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":  true,
 					"llm_provider": "unknown",
 					"llm_model":    "some-model",
 				},
@@ -1042,6 +1059,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":  true,
 					"llm_provider": "anthropic",
 					"llm_model":    "claude-sonnet-4-5",
 				},
@@ -1058,6 +1076,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":  true,
 					"llm_provider": "openai",
 					"llm_model":    "gpt-4",
 				},
@@ -1074,6 +1093,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":  true,
 					"llm_provider": "ollama",
 					"llm_model":    "llama2",
 				},
@@ -1090,6 +1110,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -1108,6 +1129,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -1126,6 +1148,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -1148,6 +1171,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -1288,6 +1312,7 @@ func TestValidateServiceSpec_DatabaseConnectionCrossValidation(t *testing.T) {
 			Version:     "1.0.0",
 			HostIds:     []api.Identifier{"host-1"},
 			Config: map[string]any{
+				"llm_enabled":       true,
 				"llm_provider":      "anthropic",
 				"llm_model":         "claude-sonnet-4-5",
 				"anthropic_api_key": "sk-ant-...",
@@ -1308,6 +1333,7 @@ func TestValidateServiceSpec_DatabaseConnectionCrossValidation(t *testing.T) {
 			Version:     "1.0.0",
 			HostIds:     []api.Identifier{"host-1"},
 			Config: map[string]any{
+				"llm_enabled":       true,
 				"llm_provider":      "anthropic",
 				"llm_model":         "claude-sonnet-4-5",
 				"anthropic_api_key": "sk-ant-...",
@@ -1328,6 +1354,7 @@ func TestValidateServiceSpec_DatabaseConnectionCrossValidation(t *testing.T) {
 			Version:     "1.0.0",
 			HostIds:     []api.Identifier{"host-1"},
 			Config: map[string]any{
+				"llm_enabled":       true,
 				"llm_provider":      "anthropic",
 				"llm_model":         "claude-sonnet-4-5",
 				"anthropic_api_key": "sk-ant-...",
@@ -1421,6 +1448,7 @@ func TestValidateOrchestratorOpts(t *testing.T) {
 func TestValidateDatabaseUpdate_ServiceBootstrapFields(t *testing.T) {
 	// A minimal valid MCP config shared across test cases.
 	validMCPConfig := map[string]any{
+		"llm_enabled":       true,
 		"llm_provider":      "anthropic",
 		"llm_model":         "claude-sonnet-4-5",
 		"anthropic_api_key": "sk-ant-...",
