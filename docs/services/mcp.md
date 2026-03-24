@@ -1,47 +1,36 @@
-# MCP (Model Context Protocol)
+# pgEdge Postgres MCP Server
 
-The MCP service runs a [Model Context Protocol](https://modelcontextprotocol.io) server alongside your database. AI agents and LLM-powered applications use the MCP server to query and interact with your data. For more information, see the [pgEdge Postgres MCP](https://github.com/pgEdge/pgedge-postgres-mcp) project.
+The MCP service runs a [Model Context Protocol](https://modelcontextprotocol.io)
+server alongside your database. AI agents and LLM-powered applications
+use the MCP server to query and interact with your data. For more
+information, see the
+[pgEdge Postgres MCP](https://github.com/pgEdge/pgedge-postgres-mcp)
+project.
 
 ## Overview
 
-The Control Plane provisions an MCP server container on each specified host. The server connects to the database using automatically-managed credentials. AI agents call the server's tools to query data, inspect schemas, run EXPLAIN plans, and perform vector similarity searches.
+The Control Plane provisions an MCP server container on each specified
+host. The server connects to the database using automatically-managed
+credentials. AI agents call the server's tools to query data, inspect
+schemas, run EXPLAIN plans, and perform vector similarity searches.
 
-See [Managing Services](managing.md) for instructions on adding, updating, and removing services. The sections below cover MCP-specific configuration.
-
-## Deployment Topologies
-
-The MCP service is independent of your database node topology. You can place MCP instances on any host in the cluster. The following patterns are common:
-
-- Co-located: the MCP server runs on the same host as a database instance. This setup minimizes network latency between the MCP server and Postgres.
-
-```json
-"nodes":    [ { "name": "n1", "host_ids": ["host-1"] } ],
-"services": [ { ..., "host_ids": ["host-1"] } ]
-```
-
-- Separate host: the MCP server runs on a dedicated host with no database instance. This pattern isolates the MCP workload from the database.
-
-```json
-"nodes":    [ { "name": "n1", "host_ids": ["host-1"] },
-              { "name": "n2", "host_ids": ["host-2"] } ],
-"services": [ { ..., "host_ids": ["host-3"] } ]
-```
-
-- Multiple instances: one MCP instance runs per host for redundancy or regional proximity. Each instance receives its own credentials and connects to the database independently.
-
-```json
-"nodes":    [ { "name": "n1", "host_ids": ["host-1"] },
-              { "name": "n2", "host_ids": ["host-2"] } ],
-"services": [ { ..., "host_ids": ["host-1", "host-2"] } ]
-```
+See [Managing Services](managing.md) for instructions on adding,
+updating, and removing services. The sections below cover MCP-specific
+configuration.
 
 ## Configuration Reference
 
-All configuration fields are provided in the `config` object of the service spec.
+All configuration fields are provided in the `config` object of the
+service spec.
 
 ### LLM Proxy
 
-The MCP server can optionally act as an LLM proxy for the built-in web client and direct HTTP chat. When the LLM proxy is disabled (the default), the MCP server still exposes all tools over HTTP. AI clients such as Claude Desktop or Cursor connect via the MCP protocol and supply their own LLM.
+The MCP server can optionally act as an LLM proxy for the built-in web
+client and direct HTTP chat. When the LLM proxy is disabled (the
+default), the MCP server still exposes all tools over HTTP. AI clients
+such as Claude Desktop or Cursor connect via the MCP protocol and
+supply their own LLM. The following table describes the LLM proxy
+configuration fields:
 
 | Field                  | Type    | Default | Description |
 |------------------------|---------|---------|-------------|
@@ -54,6 +43,10 @@ The MCP server can optionally act as an LLM proxy for the built-in web client an
 
 ### Security
 
+The security fields control database access level and initial
+authentication for the MCP server. The following table describes the
+security configuration fields:
+
 | Field            | Type    | Default | Description |
 |------------------|---------|---------|-------------|
 | `allow_writes`   | boolean | `false` | When `true`, the service connects using the read-write database user (`svc_{service_id}_rw`) and the `query_database` tool can execute write statements. When `false`, the read-only user (`svc_{service_id}_ro`) is used and write statements are rejected at the database level. |
@@ -62,7 +55,10 @@ The MCP server can optionally act as an LLM proxy for the built-in web client an
 
 ### Tools
 
-The MCP server exposes the following tools to AI agents. All tools are enabled by default. Set the corresponding `disable_*` field to `true` to turn off a specific tool.
+The MCP server exposes tools to AI agents that enable querying, schema
+inspection, vector search, and other operations. All tools are enabled
+by default; set the corresponding `disable_*` field to `true` to turn
+off a specific tool. The following table describes the available tools:
 
 | Tool                    | Disable Flag                    | Description |
 |-------------------------|---------------------------------|-------------|
@@ -76,7 +72,10 @@ The MCP server exposes the following tools to AI agents. All tools are enabled b
 
 ### Embeddings
 
-Embedding support enables the `similarity_search` and `generate_embedding` tools. All embedding fields are optional, but `embedding_model` is required when `embedding_provider` is set.
+Embedding support enables the `similarity_search` and
+`generate_embedding` tools. All embedding fields are optional, but
+`embedding_model` is required when `embedding_provider` is set. The
+following table describes the embedding configuration fields:
 
 | Field                  | Type   | Description |
 |------------------------|--------|-------------|
@@ -86,7 +85,9 @@ Embedding support enables the `similarity_search` and `generate_embedding` tools
 
 ### LLM Tuning
 
-These fields are only valid when `llm_enabled` is `true`.
+The LLM tuning fields control the behavior of the LLM proxy and are
+only valid when `llm_enabled` is `true`. The following table describes
+the LLM tuning fields:
 
 | Field              | Type    | Range            | Description |
 |--------------------|---------|------------------|-------------|
@@ -95,17 +96,26 @@ These fields are only valid when `llm_enabled` is `true`.
 
 ### Connection Pool
 
+The connection pool fields control how many database connections the
+MCP server maintains. The following table describes the connection pool
+configuration fields:
+
 | Field              | Type    | Description |
 |--------------------|---------|-------------|
 | `pool_max_conns`   | integer | Maximum number of database connections the service maintains in its pool. Must be a positive integer. |
 
 ## Bootstrapping
 
-You can use `init_token` and `init_users` to establish initial access when provisioning an MCP service for the first time.
+You can use `init_token` and `init_users` to establish initial access
+when provisioning an MCP service for the first time.
 
-The `init_token` field sets a bootstrap token for authenticating with the MCP server. This token is useful for automating initial setup or connecting a client immediately after provisioning.
+The `init_token` field sets a bootstrap token for authenticating with
+the MCP server. The bootstrap token is useful for automating initial
+setup or connecting a client immediately after provisioning.
 
-The `init_users` field creates one or more user accounts during provisioning. Each entry requires a `username` and `password`:
+The `init_users` field creates one or more user accounts during
+provisioning. In the following example, the `init_users` field defines
+two user accounts:
 
 ```json
 "init_users": [
@@ -114,17 +124,30 @@ The `init_users` field creates one or more user accounts during provisioning. Ea
 ]
 ```
 
-The Control Plane hashes tokens (SHA-256) and passwords (bcrypt) before writing them to disk. The MCP server stores these files on a persistent bind-mount volume that survives container restarts. After bootstrap, the MCP server owns these files; you manage additional tokens and users through the MCP server's native CLI or API.
+The Control Plane hashes tokens (SHA-256) and passwords (bcrypt) before
+writing them to disk. The MCP server stores these files on a persistent
+bind-mount volume that survives container restarts. After bootstrap, the
+MCP server owns these files; you manage additional tokens and users
+through the MCP server's native CLI or API.
 
 !!! warning
 
-    `init_token` and `init_users` can only be set when the service is first created. Providing either field in a subsequent update request will be rejected. Store your bootstrap credentials before provisioning — they cannot be retrieved or modified through the Control Plane after the service is created.
+    `init_token` and `init_users` can only be set when the service is
+    first created. Providing either field in a subsequent update request
+    will be rejected. Store your bootstrap credentials before
+    provisioning; they cannot be retrieved or modified through the
+    Control Plane after the service is created.
 
 ## Examples
 
+The following examples show how to configure the MCP service for common
+use cases.
+
 ### Minimal (No LLM)
 
-This example provisions an MCP service without the LLM proxy. The MCP server exposes all tools over HTTP. You connect via an MCP client that supplies its own LLM.
+In the following example, a `curl` command provisions an MCP service
+without the LLM proxy. The MCP server exposes all tools over HTTP, and
+you connect via an MCP client that supplies its own LLM:
 
 === "curl"
 
@@ -159,7 +182,8 @@ This example provisions an MCP service without the LLM proxy. The MCP server exp
 
 ### Anthropic (Claude) with LLM Proxy
 
-This example enables the LLM proxy with Anthropic as the provider.
+In the following example, a `curl` command enables the LLM proxy with
+Anthropic as the provider:
 
 === "curl"
 
@@ -198,7 +222,8 @@ This example enables the LLM proxy with Anthropic as the provider.
 
 ### OpenAI with Embeddings
 
-This example enables the LLM proxy with OpenAI and configures embedding support.
+In the following example, a `curl` command enables the LLM proxy with
+OpenAI and configures embedding support:
 
 === "curl"
 
@@ -236,7 +261,8 @@ This example enables the LLM proxy with OpenAI and configures embedding support.
 
 ### Ollama (Self-Hosted)
 
-This example uses a self-hosted Ollama server for both the LLM proxy and embeddings.
+In the following example, a `curl` command configures the MCP service
+to use a self-hosted Ollama server for both the LLM and embeddings:
 
 === "curl"
 
@@ -273,17 +299,22 @@ This example uses a self-hosted Ollama server for both the LLM proxy and embeddi
 
 ## Connecting to the MCP Server
 
-The MCP server accepts JSON-RPC 2.0 requests once the service instance reaches the `running` state. Send requests to the following endpoint:
+The MCP server accepts JSON-RPC 2.0 requests once the service instance
+reaches the `running` state. Send requests to the following endpoint:
 
 ```text
 POST http://{host}:{port}/mcp/v1
 ```
 
-Replace `{host}` with the hostname of the host running the instance. Replace `{port}` with the value from the `port` field of the service spec.
+Replace `{host}` with the hostname of the host running the instance.
+Replace `{port}` with the value from the `port` field of the service
+spec.
 
 ### Authenticating with an Init Token
 
-If you provisioned the service with an `init_token`, you can use it immediately as a Bearer token:
+If you provisioned the service with an `init_token`, you can use the
+token immediately as a Bearer token. In the following example, a `curl`
+command calls the `get_schema_info` tool using the bootstrap token:
 
 === "curl"
 
@@ -304,7 +335,9 @@ If you provisioned the service with an `init_token`, you can use it immediately 
 
 ### Authenticating with a User Account
 
-If you provisioned the service with `init_users`, authenticate using the `authenticate_user` tool to obtain a session token:
+If you provisioned the service with `init_users`, authenticate using
+the `authenticate_user` tool to obtain a session token. In the
+following example, a `curl` command authenticates as user `alice`:
 
 === "curl"
 
@@ -325,7 +358,8 @@ If you provisioned the service with `init_users`, authenticate using the `authen
         }' | jq .
     ```
 
-A successful response returns a `session_token` you can then use as a Bearer token for subsequent requests:
+A successful response returns a `session_token` you can use as a Bearer
+token for subsequent requests:
 
 ```json
 {
@@ -344,9 +378,12 @@ A successful response returns a `session_token` you can then use as a Bearer tok
 
 ### Connecting with Claude Desktop
 
-You can connect Claude Desktop to the MCP server using `mcp-remote`. Claude provides its own LLM; the MCP server only serves tools. This works regardless of the `llm_enabled` setting.
+You can connect Claude Desktop to the MCP server using `mcp-remote`.
+Claude provides its own LLM; the MCP server only serves tools. This
+works regardless of the `llm_enabled` setting.
 
-Add the following to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+Add the following to your Claude Desktop config
+(`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
 
 ```json
 {
@@ -364,6 +401,9 @@ Add the following to your Claude Desktop config (`~/Library/Application Support/
 }
 ```
 
-Replace `{host}` and `{port}` with the host and port of your MCP service instance. Replace `{token}` with your `init_token` or a session token from `authenticate_user`.
+Replace `{host}` and `{port}` with the host and port of your MCP
+service instance. Replace `{token}` with your `init_token` or a
+session token from `authenticate_user`.
 
-Restart Claude Desktop to apply the configuration. The pgEdge MCP tools will then appear in your conversations.
+Restart Claude Desktop to apply the configuration. The pgEdge MCP
+tools will then appear in your conversations.

@@ -1,10 +1,14 @@
 # Managing Services
 
-Services are declared as part of your database spec. You add, update, and remove services by modifying the `services` array in a `create_database` or `update_database` request. See the [Services Overview](index.md) for a conceptual introduction.
+Services are declared as part of your database spec. You add, update,
+and remove services by modifying the `services` array in a
+`create_database` or `update_database` request. See the
+[Services Overview](index.md) for a conceptual introduction.
 
 ## Service Spec Fields
 
-Each entry in the `services` array is a service spec with the following fields:
+Each service in the `services` array is declared using a service spec.
+The following table describes the fields in a service spec:
 
 | Field | Type | Required | Description                                                                                                                                                     |
 |-------|------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -20,7 +24,9 @@ Each entry in the `services` array is a service spec with the following fields:
 
 ## Adding a Service
 
-Include a `services` array in your database spec when creating or updating a database. This example creates a single-node database with one MCP service instance:
+Include a `services` array in your database spec when creating or
+updating a database. In the following example, a `curl` command creates
+a single-node database with one MCP service instance:
 
 === "curl"
 
@@ -53,17 +59,24 @@ Include a `services` array in your database spec when creating or updating a dat
         }'
     ```
 
-The response includes a task ID you can use to track progress. See [Tasks & Logs](../using/tasks-logs.md) for details.
+The response includes a task ID you can use to track progress. See
+[Tasks & Logs](../using/tasks-logs.md) for details.
 
 ## Updating a Service
 
-To update a service's configuration, submit a `POST` request to `/v1/databases/{database_id}` with the modified service spec in the `services` array.
+To update a service's configuration, submit a `POST` request to
+`/v1/databases/{database_id}` with the modified service spec in the
+`services` array.
 
 !!! important
 
-    The `services` array in an update request is declarative — it replaces the complete list of services for the database. To keep an existing service running unchanged, include its current spec alongside any new or modified entries.
+    The `services` array in an update request is declarative; it
+    replaces the complete list of services for the database. To keep an
+    existing service running unchanged, include its current spec
+    alongside any new or modified entries.
 
-This example updates the MCP service to use a different model:
+In the following example, a `curl` command updates the MCP service to
+use a different model:
 
 === "curl"
 
@@ -97,15 +110,22 @@ This example updates the MCP service to use a different model:
 
 ## Removing a Service
 
-To remove a service, submit an update request that omits it from the `services` array. The Control Plane will stop and delete all service instances for that service and revoke its database credentials.
+To remove a service, submit an update request that omits the service
+from the `services` array. The Control Plane stops and deletes all
+service instances for that service and revokes its database credentials.
 
 !!! warning
 
-    Removing a service is irreversible. Any clients connected to the service will lose access immediately.
+    Removing a service is irreversible. The Control Plane deletes all
+    service instances, their configuration, and their data directories.
+    Database credentials for the service are revoked. Any clients
+    connected to the service lose access immediately.
 
 ## Checking Service Status
 
-To check the current state of your service instances, retrieve the database and inspect the `service_instances` field in the response:
+To check the current state of your service instances, retrieve the
+database and inspect the `service_instances` field in the response. In
+the following example, a `curl` command retrieves the database:
 
 === "curl"
 
@@ -113,18 +133,24 @@ To check the current state of your service instances, retrieve the database and 
     curl http://host-1:3000/v1/databases/example
     ```
 
-Each service instance in the response includes a `state` field. See the [Services Overview](index.md#service-instances) for a description of each state.
+Each service instance in the response includes a `state` field. See the
+[Services Overview](index.md#service-instances) for a description of
+each state.
 
 ## Database Connection Routing
 
-By default, the Control Plane builds a connection string that includes all database nodes, with the local node listed first. You can override this behavior using the `database_connection` field in the service spec:
+By default, the Control Plane builds a connection string that includes
+all database nodes, with the local node listed first. You can override
+this behavior using the `database_connection` field in the service spec.
+The following table describes the `database_connection` fields:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `target_nodes` | array of strings | An ordered list of node names to include in the connection string. Nodes are tried in the order listed. |
 | `target_session_attrs` | string | Overrides the libpq `target_session_attrs` parameter. Valid values: `primary`, `prefer-standby`, `standby`, `read-write`, `any`. |
 
-This example routes the service to the `n1` node only:
+In the following example, the `database_connection` field routes the
+service to the `n1` node only:
 
 === "curl"
 
@@ -137,4 +163,5 @@ This example routes the service to the `n1` node only:
 
 !!! tip
 
-    Use `database_connection` when your service needs to read from a specific node or enforce write routing to the primary.
+    Use `database_connection` when your service needs to read from a
+    specific node or enforce write routing to the primary.
