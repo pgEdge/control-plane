@@ -251,7 +251,11 @@ OpenAI and configures embedding support:
                             "openai_api_key": "sk-...",
                             "embedding_provider": "openai",
                             "embedding_model": "text-embedding-3-small",
-                            "embedding_api_key": "sk-..."
+                            "embedding_api_key": "sk-...",
+                            "init_token": "my-bootstrap-token",
+                            "init_users": [
+                                { "username": "alice", "password": "s3cr3t" }
+                            ]
                         }
                     }
                 ]
