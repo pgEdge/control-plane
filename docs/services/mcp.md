@@ -275,7 +275,7 @@ This example uses a self-hosted Ollama server for both the LLM proxy and embeddi
 
 The MCP server accepts JSON-RPC 2.0 requests once the service instance reaches the `running` state. Send requests to the following endpoint:
 
-```
+```text
 POST http://{host}:{port}/mcp/v1
 ```
 

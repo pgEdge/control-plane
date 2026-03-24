@@ -14,8 +14,8 @@ Each entry in the `services` array is a service spec with the following fields:
 | `host_ids` | array | Yes | The IDs of the hosts to run this service on. One instance is created per host.                                                                                  |
 | `config` | object | Yes | Service-type-specific configuration. See the page for your service type for valid fields.                                                                       |
 | `port` | integer | No | Host port to publish the service on. Set to `0` to let Docker assign a random port. When omitted, the service is not reachable from outside the Docker network. |
-| `cpus` | number | No | CPU limit for the service container (e.g., `0.5` for half a core).                                                                                              |
-| `memory` | integer | No | Memory limit in bytes.                                                                                                                                          |
+| `cpus` | string | No | CPU limit for the service container. Accepts a decimal (e.g., `"0.5"`) or millicpu suffix (e.g., `"500m"`). Defaults to container defaults if unspecified.      |
+| `memory` | string | No | Memory limit for the service container in SI or IEC notation (e.g., `"512M"`, `"1GiB"`). Defaults to container defaults if unspecified.                        |
 | `database_connection` | object | No | Optional routing configuration for how the service connects to the database. See [Database Connection Routing](#database-connection-routing).                   |
 
 ## Adding a Service
