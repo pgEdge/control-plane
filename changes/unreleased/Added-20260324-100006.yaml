@@ -1,0 +1,3 @@
+kind: Added
+body: "Etcd mode reconfiguration — Hosts can now switch between etcd server and client modes at runtime, with support for host identity changes via peer URL updates."
+time: 2026-03-24T10:00:06.000000-05:00

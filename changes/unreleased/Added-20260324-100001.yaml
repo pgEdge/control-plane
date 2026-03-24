@@ -1,0 +1,3 @@
+kind: Added
+body: "Supporting services (beta) — Deploy supporting services alongside databases. This release includes the pgEdge Postgres MCP Server, with automatic database credential provisioning, high-availability connection routing, and declarative configuration."
+time: 2026-01-01T00:00:01.000000-05:00
