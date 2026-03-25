@@ -533,6 +533,14 @@ func (d *Docker) HealthCheck() healthcheck.ComponentStatus {
 	}
 }
 
+// ContainerSignal sends a signal to a running container using the Docker
+// Engine API (POST /containers/{id}/kill?signal={signal}).
+// This is useful for sending non-destructive signals like SIGHUP for config
+// reload without stopping the container.
+func (d *Docker) ContainerSignal(ctx context.Context, containerID string, signal string) error {
+	return d.client.ContainerKill(ctx, containerID, signal)
+}
+
 func (d *Docker) ContainerList(ctx context.Context, opts container.ListOptions) ([]types.Container, error) {
 	containers, err := d.client.ContainerList(ctx, opts)
 	if err != nil {

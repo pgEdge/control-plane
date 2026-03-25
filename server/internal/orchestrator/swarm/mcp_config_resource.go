@@ -2,13 +2,16 @@ package swarm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
+	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	"github.com/spf13/afero"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/docker"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
@@ -160,6 +163,15 @@ func (r *MCPConfigResource) Update(ctx context.Context, rc *resource.Context) er
 
 	// Do NOT touch tokens.yaml or users.yaml — they are application-owned
 
+	// Signal the running MCP container to reload config.
+	// This is a best-effort operation — if the container isn't running yet
+	// (e.g., initial creation) or is restarting, we log and move on.
+	// The config file is already correct on disk; the container will pick
+	// it up on its next start.
+	if err := r.signalConfigReload(ctx, rc); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -264,6 +276,46 @@ func (r *MCPConfigResource) writeUserFileIfNeeded(fs afero.Fs, usersPath string)
 	if err := fs.Chown(usersPath, mcpContainerUID, mcpContainerUID); err != nil {
 		return fmt.Errorf("failed to change ownership for %s: %w", usersPath, err)
 	}
+	return nil
+}
+
+// signalConfigReload sends SIGHUP to the running MCP container to trigger
+// a config reload. Signal delivery failures are logged as warnings and
+// return nil — the config file is already correct on disk and will be
+// picked up on the next container restart. Injector failures are returned
+// as errors since they indicate a systemic problem.
+func (r *MCPConfigResource) signalConfigReload(ctx context.Context, rc *resource.Context) error {
+	dockerClient, err := do.Invoke[*docker.Docker](rc.Injector)
+	if err != nil {
+		return fmt.Errorf("failed to get docker client: %w", err)
+	}
+
+	logger, err := do.Invoke[zerolog.Logger](rc.Injector)
+	if err != nil {
+		return fmt.Errorf("failed to get logger: %w", err)
+	}
+
+	container, err := GetServiceContainer(ctx, dockerClient, r.ServiceInstanceID)
+	if err != nil {
+		if errors.Is(err, ErrNoServiceContainer) {
+			logger.Debug().Msg("no running MCP container found, skipping config reload signal")
+			return nil
+		}
+		logger.Warn().Err(err).Msg("failed to find service container for config reload signal")
+		return nil
+	}
+
+	if err := dockerClient.ContainerSignal(ctx, container.ID, "SIGHUP"); err != nil {
+		logger.Warn().Err(err).
+			Str("container_id", container.ID).
+			Msg("failed to send SIGHUP to MCP container")
+		return nil
+	}
+
+	logger.Info().
+		Str("container_id", container.ID).
+		Msg("sent SIGHUP to MCP container for config reload")
+
 	return nil
 }
 
