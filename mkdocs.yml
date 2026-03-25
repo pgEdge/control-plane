@@ -78,6 +78,10 @@ nav:
       - Managing Database Instances: using/database-instances.md
       - Deleting a Database: using/delete-db.md
       - Migrating a Database: using/migrate-db.md
+  - Supporting Services (Beta):
+      - Overview: services/index.md
+      - Managing Services: services/managing.md
+      - pgEdge Postgres MCP Server: services/mcp.md
   - Troubleshooting:
       - Recovering a Control Plane Cluster: disaster-recovery/disaster-recovery.md
   - API:
