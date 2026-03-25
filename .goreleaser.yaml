@@ -26,6 +26,24 @@ sboms:
     documents:
       - '${artifact}.spdx.json'
 
+nfpms:
+  - package_name: pgedge-control-plane
+    vendor: pgEdge
+    homepage: https://www.pgedge.com
+    maintainer: pgEdge Support <support@pgedge.com>
+    description: pgEdge Control Plane
+    license: PostgreSQL License
+    formats:
+      - rpm
+    bindir: /usr/sbin
+    contents:
+      - src: packaging/pgedge-control-plane.service
+        dst: /usr/lib/systemd/system/pgedge-control-plane.service
+        type: config
+      - src: packaging/config.json
+        dst: /etc/pgedge-control-plane/config.json
+        type: config|noreplace
+
 release:
   github:
     owner: pgEdge

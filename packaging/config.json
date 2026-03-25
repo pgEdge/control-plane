@@ -1,0 +1,4 @@
+{
+  "orchestrator": "systemd",
+  "data_dir": "/var/lib/pgedge-control-plane"
+}
