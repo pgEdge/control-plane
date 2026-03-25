@@ -142,6 +142,14 @@ func (m *ServiceInstanceMonitor) handleStatusError(
 			fmt.Sprintf("status check failed: %v", statusErr))
 	}
 
+	if serviceInstance.State == database.ServiceInstanceStateFailed {
+		m.logger.Debug().
+			Str("service_instance_id", m.serviceInstanceID).
+			Str("database_id", m.databaseID).
+			Err(statusErr).
+			Msg("service instance is failed and status check errored")
+	}
+
 	return statusErr
 }
 
@@ -198,8 +206,20 @@ func (m *ServiceInstanceMonitor) handleStateTransition(
 		// Update status to keep it fresh
 		return m.updateStatus(ctx, status)
 
+	case database.ServiceInstanceStateFailed:
+		// If the container has recovered, transition back to running
+		if isHealthy {
+			m.logger.Info().
+				Str("service_instance_id", m.serviceInstanceID).
+				Str("database_id", m.databaseID).
+				Msg("service instance has recovered - transitioning to running")
+			return m.updateState(ctx, database.ServiceInstanceStateRunning, status, "")
+		}
+		// Still unhealthy, just update status
+		return m.updateStatus(ctx, status)
+
 	default:
-		// For other states (failed, deleting), just update status
+		// For other states (deleting), just update status
 		return m.updateStatus(ctx, status)
 	}
 }
@@ -248,8 +268,15 @@ func (m *ServiceInstanceMonitor) handleNilStatus(
 		return m.updateState(ctx, database.ServiceInstanceStateFailed, nil,
 			"container status not available")
 
+	case database.ServiceInstanceStateFailed:
+		m.logger.Debug().
+			Str("service_instance_id", m.serviceInstanceID).
+			Str("database_id", m.databaseID).
+			Msg("service instance is failed and container is not available")
+		return nil
+
 	default:
-		// For other states, nil status is acceptable
+		// For other states (deleting), nil status is acceptable
 		return nil
 	}
 }
