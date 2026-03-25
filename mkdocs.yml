@@ -63,6 +63,7 @@ nav:
       - Configuration Options: installation/configuration.md
       - Upgrading a Control Plane Installation: installation/upgrading.md
       - Configuring mTLS: installation/mtls.md
+      - Installing the pgEdge Control Plane via System Packages: installation/systemd.md
   - Managing a High-Availability Environment:
       - Best Practices for Deploying a High-Availability Cluster: using-ha/index.md
       - Connecting to a High-Availability Cluster: using-ha/ha-connections.md
