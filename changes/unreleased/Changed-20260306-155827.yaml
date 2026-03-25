@@ -1,3 +1,0 @@
-kind: Changed
-body: Replaced `hostname` and `ipv4_address` configuration settings with `client_addresses` and `peer_addresses`.
-time: 2026-03-06T15:58:27.682662-05:00

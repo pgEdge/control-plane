@@ -1,3 +1,0 @@
-kind: Changed
-body: Replaced `hostname` and `ipv4_address` fields in the API with `peer_addresses` and `client_addresses` for host endpoints and `addresses` for instance and service instance endpoints.
-time: 2026-03-06T16:00:15.330534-05:00

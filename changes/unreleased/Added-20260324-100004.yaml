@@ -1,0 +1,3 @@
+kind: Added
+body: "Added support for Postgres 16.13, 17.9, and 18.3. Default version is now 18.3."
+time: 2026-03-24T10:00:04.000000-05:00

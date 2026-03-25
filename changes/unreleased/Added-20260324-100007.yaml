@@ -1,0 +1,3 @@
+kind: Added
+body: "Scoped tasks and new task endpoints — Tasks are now scoped to databases and hosts, with new list/get endpoints for better observability. The `remove-host` API now returns a task for tracking removal progress."
+time: 2026-03-24T10:00:07.000000-05:00
