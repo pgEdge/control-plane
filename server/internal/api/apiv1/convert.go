@@ -23,8 +23,14 @@ import (
 // contains a secret value that should not be returned in API responses.
 func isSensitiveConfigKey(key string) bool {
 	k := strings.ToLower(key)
+	// Use suffix matching for "token" to avoid stripping non-secret keys like
+	// "token_budget". Keys named exactly "token" or ending with "_token" (e.g.
+	// "init_token", "auth_token") are still treated as sensitive.
+	if k == "token" || strings.HasSuffix(k, "_token") {
+		return true
+	}
 	patterns := []string{
-		"password", "secret", "token",
+		"password", "secret",
 		"api_key", "apikey", "api-key",
 		"credential", "private_key", "private-key",
 		"access_key", "access-key",
