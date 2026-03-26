@@ -2104,6 +2104,19 @@ type ServiceSpecRequestBody struct {
 	Memory *string `json:"memory,omitempty"`
 	// Orchestrator-specific options for this service.
 	OrchestratorOpts *OrchestratorOptsRequestBody `json:"orchestrator_opts,omitempty"`
+	// Optional database connection routing configuration.
+	DatabaseConnection *DatabaseConnectionRequestBody `json:"database_connection,omitempty"`
+}
+
+// DatabaseConnectionRequestBody is used to define fields on request body types.
+type DatabaseConnectionRequestBody struct {
+	// Optional ordered list of database node names. When set, the service's
+	// database connection includes only the listed nodes in the specified order.
+	TargetNodes []string `json:"target_nodes,omitempty"`
+	// Optional libpq target_session_attrs value. When set, overrides the default
+	// derived from the service config. Valid values: primary, prefer-standby,
+	// standby, read-write, any.
+	TargetSessionAttrs *string `json:"target_session_attrs,omitempty"`
 }
 
 // DatabaseResponseBody is used to define fields on response body types.
@@ -2492,6 +2505,20 @@ type ServiceSpecResponseBody struct {
 	Memory *string `json:"memory,omitempty"`
 	// Orchestrator-specific options for this service.
 	OrchestratorOpts *OrchestratorOptsResponseBody `json:"orchestrator_opts,omitempty"`
+	// Optional database connection routing configuration.
+	DatabaseConnection *DatabaseConnectionResponseBody `json:"database_connection,omitempty"`
+}
+
+// DatabaseConnectionResponseBody is used to define fields on response body
+// types.
+type DatabaseConnectionResponseBody struct {
+	// Optional ordered list of database node names. When set, the service's
+	// database connection includes only the listed nodes in the specified order.
+	TargetNodes []string `json:"target_nodes,omitempty"`
+	// Optional libpq target_session_attrs value. When set, overrides the default
+	// derived from the service config. Valid values: primary, prefer-standby,
+	// standby, read-write, any.
+	TargetSessionAttrs *string `json:"target_session_attrs,omitempty"`
 }
 
 // DatabaseSpecRequestBodyRequestBody is used to define fields on request body
@@ -2807,6 +2834,20 @@ type ServiceSpecRequestBodyRequestBody struct {
 	Memory *string `json:"memory,omitempty"`
 	// Orchestrator-specific options for this service.
 	OrchestratorOpts *OrchestratorOptsRequestBodyRequestBody `json:"orchestrator_opts,omitempty"`
+	// Optional database connection routing configuration.
+	DatabaseConnection *DatabaseConnectionRequestBodyRequestBody `json:"database_connection,omitempty"`
+}
+
+// DatabaseConnectionRequestBodyRequestBody is used to define fields on request
+// body types.
+type DatabaseConnectionRequestBodyRequestBody struct {
+	// Optional ordered list of database node names. When set, the service's
+	// database connection includes only the listed nodes in the specified order.
+	TargetNodes []string `json:"target_nodes,omitempty"`
+	// Optional libpq target_session_attrs value. When set, overrides the default
+	// derived from the service config. Valid values: primary, prefer-standby,
+	// standby, read-write, any.
+	TargetSessionAttrs *string `json:"target_session_attrs,omitempty"`
 }
 
 // TaskLogEntryResponseBody is used to define fields on response body types.
@@ -6212,8 +6253,8 @@ func ValidateServiceSpecRequestBody(body *ServiceSpecRequestBody) (err error) {
 	if utf8.RuneCountInString(body.ServiceID) > 63 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", body.ServiceID, utf8.RuneCountInString(body.ServiceID), 63, false))
 	}
-	if !(body.ServiceType == "mcp" || body.ServiceType == "rag") {
-		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", body.ServiceType, []any{"mcp", "rag"}))
+	if !(body.ServiceType == "mcp" || body.ServiceType == "postgrest" || body.ServiceType == "rag") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", body.ServiceType, []any{"mcp", "postgrest", "rag"}))
 	}
 	err = goa.MergeErrors(err, goa.ValidatePattern("body.version", body.Version, "^(\\d+\\.\\d+\\.\\d+|latest)$"))
 	if len(body.HostIds) < 1 {
@@ -6248,6 +6289,22 @@ func ValidateServiceSpecRequestBody(body *ServiceSpecRequestBody) (err error) {
 	if body.OrchestratorOpts != nil {
 		if err2 := ValidateOrchestratorOptsRequestBody(body.OrchestratorOpts); err2 != nil {
 			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.DatabaseConnection != nil {
+		if err2 := ValidateDatabaseConnectionRequestBody(body.DatabaseConnection); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateDatabaseConnectionRequestBody runs the validations defined on
+// DatabaseConnectionRequestBody
+func ValidateDatabaseConnectionRequestBody(body *DatabaseConnectionRequestBody) (err error) {
+	if body.TargetSessionAttrs != nil {
+		if !(*body.TargetSessionAttrs == "primary" || *body.TargetSessionAttrs == "prefer-standby" || *body.TargetSessionAttrs == "standby" || *body.TargetSessionAttrs == "read-write" || *body.TargetSessionAttrs == "any") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.target_session_attrs", *body.TargetSessionAttrs, []any{"primary", "prefer-standby", "standby", "read-write", "any"}))
 		}
 	}
 	return
@@ -6357,6 +6414,12 @@ func ValidateDatabaseUserSpecResponseBody(body *DatabaseUserSpecResponseBody) (e
 // ValidateServiceSpecResponseBody runs a no-op validation on
 // ServiceSpecResponseBody
 func ValidateServiceSpecResponseBody(body *ServiceSpecResponseBody) (err error) {
+	return
+}
+
+// ValidateDatabaseConnectionResponseBody runs a no-op validation on
+// DatabaseConnectionResponseBody
+func ValidateDatabaseConnectionResponseBody(body *DatabaseConnectionResponseBody) (err error) {
 	return
 }
 
@@ -6954,8 +7017,8 @@ func ValidateServiceSpecRequestBodyRequestBody(body *ServiceSpecRequestBodyReque
 	if utf8.RuneCountInString(body.ServiceID) > 63 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", body.ServiceID, utf8.RuneCountInString(body.ServiceID), 63, false))
 	}
-	if !(body.ServiceType == "mcp" || body.ServiceType == "rag") {
-		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", body.ServiceType, []any{"mcp", "rag"}))
+	if !(body.ServiceType == "mcp" || body.ServiceType == "postgrest" || body.ServiceType == "rag") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", body.ServiceType, []any{"mcp", "postgrest", "rag"}))
 	}
 	err = goa.MergeErrors(err, goa.ValidatePattern("body.version", body.Version, "^(\\d+\\.\\d+\\.\\d+|latest)$"))
 	if len(body.HostIds) < 1 {
@@ -6990,6 +7053,22 @@ func ValidateServiceSpecRequestBodyRequestBody(body *ServiceSpecRequestBodyReque
 	if body.OrchestratorOpts != nil {
 		if err2 := ValidateOrchestratorOptsRequestBodyRequestBody(body.OrchestratorOpts); err2 != nil {
 			err = goa.MergeErrors(err, err2)
+		}
+	}
+	if body.DatabaseConnection != nil {
+		if err2 := ValidateDatabaseConnectionRequestBodyRequestBody(body.DatabaseConnection); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
+// ValidateDatabaseConnectionRequestBodyRequestBody runs the validations
+// defined on DatabaseConnectionRequestBodyRequestBody
+func ValidateDatabaseConnectionRequestBodyRequestBody(body *DatabaseConnectionRequestBodyRequestBody) (err error) {
+	if body.TargetSessionAttrs != nil {
+		if !(*body.TargetSessionAttrs == "primary" || *body.TargetSessionAttrs == "prefer-standby" || *body.TargetSessionAttrs == "standby" || *body.TargetSessionAttrs == "read-write" || *body.TargetSessionAttrs == "any") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.target_session_attrs", *body.TargetSessionAttrs, []any{"primary", "prefer-standby", "standby", "read-write", "any"}))
 		}
 	}
 	return

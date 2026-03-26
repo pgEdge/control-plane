@@ -17,7 +17,10 @@ type MCPServiceUser struct {
 // MCPServiceConfig is the typed internal representation of MCP service configuration.
 // It is parsed from the ServiceSpec.Config map[string]any and validated.
 type MCPServiceConfig struct {
-	// Required
+	// Optional - LLM proxy for web client (default: false)
+	LLMEnabled *bool `json:"llm_enabled,omitempty"`
+
+	// Required when llm_enabled is true
 	LLMProvider     string  `json:"llm_provider"`
 	LLMModel        string  `json:"llm_model"`
 	AnthropicAPIKey *string `json:"anthropic_api_key,omitempty"`
@@ -53,6 +56,7 @@ type MCPServiceConfig struct {
 
 // mcpKnownKeys is the set of all valid config keys for MCP service configuration.
 var mcpKnownKeys = map[string]bool{
+	"llm_enabled":                  true,
 	"llm_provider":                 true,
 	"llm_model":                    true,
 	"anthropic_api_key":            true,
@@ -97,39 +101,105 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 		}
 	}
 
-	// Parse required string fields
-	llmProvider, providerErrs := requireString(config, "llm_provider")
-	errs = append(errs, providerErrs...)
+	// Parse llm_enabled (optional bool, default false)
+	llmEnabled, leErrs := optionalBool(config, "llm_enabled")
+	errs = append(errs, leErrs...)
 
-	llmModel, modelErrs := requireString(config, "llm_model")
-	errs = append(errs, modelErrs...)
+	isLLMEnabled := llmEnabled != nil && *llmEnabled
 
-	// Validate llm_provider enum
-	if llmProvider != "" && !slices.Contains(validLLMProviders, llmProvider) {
-		errs = append(errs, fmt.Errorf("llm_provider must be one of: %s", strings.Join(validLLMProviders, ", ")))
-	}
+	// Parse embedding config early — needed for ollama_url shared field logic
+	embeddingProvider, epErrs := optionalString(config, "embedding_provider")
+	errs = append(errs, epErrs...)
 
-	// Provider-specific API key cross-validation
+	embeddingModel, emErrs := optionalString(config, "embedding_model")
+	errs = append(errs, emErrs...)
+
+	embeddingAPIKey, eakErrs := optionalString(config, "embedding_api_key")
+	errs = append(errs, eakErrs...)
+
+	// LLM fields: conditionally required when llm_enabled is true,
+	// rejected when llm_enabled is false.
+	var llmProvider string
+	var llmModel string
 	var anthropicKey, openaiKey, ollamaURL *string
-	if llmProvider != "" && slices.Contains(validLLMProviders, llmProvider) {
-		switch llmProvider {
-		case "anthropic":
-			key, keyErrs := requireStringForProvider(config, "anthropic_api_key", "anthropic")
-			errs = append(errs, keyErrs...)
-			if key != "" {
-				anthropicKey = &key
+	var llmTemperature *float64
+	var llmMaxTokens *int
+
+	if isLLMEnabled {
+		// llm_provider and llm_model are required
+		var providerErrs, modelErrs []error
+		llmProvider, providerErrs = requireString(config, "llm_provider")
+		errs = append(errs, providerErrs...)
+
+		llmModel, modelErrs = requireString(config, "llm_model")
+		errs = append(errs, modelErrs...)
+
+		// Validate llm_provider enum
+		if llmProvider != "" && !slices.Contains(validLLMProviders, llmProvider) {
+			errs = append(errs, fmt.Errorf("llm_provider must be one of: %s", strings.Join(validLLMProviders, ", ")))
+		}
+
+		// Provider-specific API key cross-validation
+		if llmProvider != "" && slices.Contains(validLLMProviders, llmProvider) {
+			switch llmProvider {
+			case "anthropic":
+				key, keyErrs := requireStringForProvider(config, "anthropic_api_key", "anthropic")
+				errs = append(errs, keyErrs...)
+				if key != "" {
+					anthropicKey = &key
+				}
+			case "openai":
+				key, keyErrs := requireStringForProvider(config, "openai_api_key", "openai")
+				errs = append(errs, keyErrs...)
+				if key != "" {
+					openaiKey = &key
+				}
+			case "ollama":
+				url, urlErrs := requireStringForProvider(config, "ollama_url", "ollama")
+				errs = append(errs, urlErrs...)
+				if url != "" {
+					ollamaURL = &url
+				}
 			}
-		case "openai":
-			key, keyErrs := requireStringForProvider(config, "openai_api_key", "openai")
-			errs = append(errs, keyErrs...)
-			if key != "" {
-				openaiKey = &key
+		}
+
+		// LLM tuning fields (optional)
+		var ltErrs, lmtErrs []error
+		llmTemperature, ltErrs = optionalFloat64(config, "llm_temperature")
+		errs = append(errs, ltErrs...)
+		llmMaxTokens, lmtErrs = optionalInt(config, "llm_max_tokens")
+		errs = append(errs, lmtErrs...)
+
+		// Range validations
+		if llmTemperature != nil {
+			if *llmTemperature < 0.0 || *llmTemperature > 2.0 {
+				errs = append(errs, fmt.Errorf("llm_temperature must be between 0.0 and 2.0"))
 			}
-		case "ollama":
-			url, urlErrs := requireStringForProvider(config, "ollama_url", "ollama")
-			errs = append(errs, urlErrs...)
-			if url != "" {
-				ollamaURL = &url
+		}
+		if llmMaxTokens != nil {
+			if *llmMaxTokens <= 0 {
+				errs = append(errs, fmt.Errorf("llm_max_tokens must be a positive integer"))
+			}
+		}
+	} else {
+		// LLM is disabled — reject LLM-specific fields if present
+		llmOnlyFields := []string{"llm_provider", "llm_model", "anthropic_api_key", "openai_api_key", "llm_temperature", "llm_max_tokens"}
+		for _, key := range llmOnlyFields {
+			if _, ok := config[key]; ok {
+				errs = append(errs, fmt.Errorf("%s must not be set unless llm_enabled is true", key))
+			}
+		}
+		// ollama_url is shared with embedding — only reject if not needed for embedding
+		if _, ok := config["ollama_url"]; ok {
+			embIsOllama := embeddingProvider != nil && *embeddingProvider == "ollama"
+			if !embIsOllama {
+				errs = append(errs, fmt.Errorf("ollama_url must not be set unless llm_enabled is true"))
+			} else {
+				// Parse ollama_url for embedding use — it's optional here because
+				// the embedding cross-validation block below enforces it when required.
+				url, urlErrs := optionalString(config, "ollama_url")
+				errs = append(errs, urlErrs...)
+				ollamaURL = url
 			}
 		}
 	}
@@ -143,21 +213,6 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 
 	initUsers, iuErrs := parseInitUsers(config)
 	errs = append(errs, iuErrs...)
-
-	embeddingProvider, epErrs := optionalString(config, "embedding_provider")
-	errs = append(errs, epErrs...)
-
-	embeddingModel, emErrs := optionalString(config, "embedding_model")
-	errs = append(errs, emErrs...)
-
-	embeddingAPIKey, eakErrs := optionalString(config, "embedding_api_key")
-	errs = append(errs, eakErrs...)
-
-	llmTemperature, ltErrs := optionalFloat64(config, "llm_temperature")
-	errs = append(errs, ltErrs...)
-
-	llmMaxTokens, lmtErrs := optionalInt(config, "llm_max_tokens")
-	errs = append(errs, lmtErrs...)
 
 	poolMaxConns, pmcErrs := optionalInt(config, "pool_max_conns")
 	errs = append(errs, pmcErrs...)
@@ -178,17 +233,6 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 	disableCountRows, dcrErrs := optionalBool(config, "disable_count_rows")
 	errs = append(errs, dcrErrs...)
 
-	// Range validations
-	if llmTemperature != nil {
-		if *llmTemperature < 0.0 || *llmTemperature > 2.0 {
-			errs = append(errs, fmt.Errorf("llm_temperature must be between 0.0 and 2.0"))
-		}
-	}
-	if llmMaxTokens != nil {
-		if *llmMaxTokens <= 0 {
-			errs = append(errs, fmt.Errorf("llm_max_tokens must be a positive integer"))
-		}
-	}
 	if poolMaxConns != nil {
 		if *poolMaxConns <= 0 {
 			errs = append(errs, fmt.Errorf("pool_max_conns must be a positive integer"))
@@ -211,11 +255,15 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 			if embeddingModel == nil {
 				errs = append(errs, fmt.Errorf("embedding_model is required when embedding_provider is set"))
 			}
-			// Providers that require an API key
+			// Provider-specific credential requirements
 			switch *embeddingProvider {
 			case "voyage", "openai":
 				if embeddingAPIKey == nil {
 					errs = append(errs, fmt.Errorf("embedding_api_key is required when embedding_provider is %q", *embeddingProvider))
+				}
+			case "ollama":
+				if ollamaURL == nil {
+					errs = append(errs, fmt.Errorf("ollama_url is required when embedding_provider is %q", *embeddingProvider))
 				}
 			}
 		}
@@ -226,6 +274,7 @@ func ParseMCPServiceConfig(config map[string]any, isUpdate bool) (*MCPServiceCon
 	}
 
 	return &MCPServiceConfig{
+		LLMEnabled:                 llmEnabled,
 		LLMProvider:                llmProvider,
 		LLMModel:                   llmModel,
 		AnthropicAPIKey:            anthropicKey,

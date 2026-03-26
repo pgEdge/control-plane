@@ -320,6 +320,19 @@ type Database struct {
 	Spec *DatabaseSpec `json:"spec,omitempty"`
 }
 
+// Controls how the service connects to the database. When omitted, all nodes
+// are included with the local node first and target_session_attrs is derived
+// from the service config.
+type DatabaseConnection struct {
+	// Optional ordered list of database node names. When set, the service's
+	// database connection includes only the listed nodes in the specified order.
+	TargetNodes []string `json:"target_nodes,omitempty"`
+	// Optional libpq target_session_attrs value. When set, overrides the default
+	// derived from the service config. Valid values: primary, prefer-standby,
+	// standby, read-write, any.
+	TargetSessionAttrs *string `json:"target_session_attrs,omitempty"`
+}
+
 type DatabaseNodeSpec struct {
 	// The name of the database node.
 	Name string `json:"name"`
@@ -978,6 +991,8 @@ type ServiceSpec struct {
 	Memory *string `json:"memory,omitempty"`
 	// Orchestrator-specific options for this service.
 	OrchestratorOpts *OrchestratorOpts `json:"orchestrator_opts,omitempty"`
+	// Optional database connection routing configuration.
+	DatabaseConnection *DatabaseConnection `json:"database_connection,omitempty"`
 }
 
 // StartInstancePayload is the payload type of the control-plane service

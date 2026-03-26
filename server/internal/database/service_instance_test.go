@@ -8,53 +8,74 @@ func TestGenerateServiceUsername(t *testing.T) {
 	tests := []struct {
 		name      string
 		serviceID string
+		mode      string
 		want      string
 	}{
 		{
-			name:      "standard service instance",
+			name:      "standard service instance ro",
 			serviceID: "mcp-server",
-			want:      "svc_mcp_server",
+			mode:      "ro",
+			want:      "svc_mcp_server_ro",
+		},
+		{
+			name:      "standard service instance rw",
+			serviceID: "mcp-server",
+			mode:      "rw",
+			want:      "svc_mcp_server_rw",
 		},
 		{
 			name:      "multiple services on same database - service 1",
 			serviceID: "appmcp-1",
-			want:      "svc_appmcp_1",
+			mode:      "ro",
+			want:      "svc_appmcp_1_ro",
 		},
 		{
 			name:      "multiple services on same database - service 2",
 			serviceID: "appmcp-2",
-			want:      "svc_appmcp_2",
+			mode:      "ro",
+			want:      "svc_appmcp_2_ro",
 		},
 		{
 			name:      "service with multi-part service ID",
 			serviceID: "my-mcp-service",
-			want:      "svc_my_mcp_service",
+			mode:      "ro",
+			want:      "svc_my_mcp_service_ro",
 		},
 		{
 			name:      "simple service ID",
 			serviceID: "mcp",
-			want:      "svc_mcp",
+			mode:      "ro",
+			want:      "svc_mcp_ro",
 		},
 		{
 			name:      "long service ID uses hash suffix",
 			serviceID: "very-long-service-name-that-exceeds-postgres-limit-significantly",
+			mode:      "ro",
 			want:      "", // computed below
 		},
 		{
 			name:      "long names with shared prefix produce different usernames (case A)",
 			serviceID: "very-long-service-name-that-exceeds-postgres-limit-AAA",
+			mode:      "ro",
 			want:      "", // computed below
 		},
 		{
 			name:      "long names with shared prefix produce different usernames (case B)",
 			serviceID: "very-long-service-name-that-exceeds-postgres-limit-BBB",
+			mode:      "ro",
 			want:      "", // computed below
+		},
+		{
+			name:      "long service ID with rw mode still fits",
+			serviceID: "very-long-service-name-that-exceeds-postgres-limit-significantly",
+			mode:      "rw",
+			want:      "", // computed below, just check length
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := GenerateServiceUsername(tt.serviceID)
+			got := GenerateServiceUsername(tt.serviceID, tt.mode)
 			if tt.want != "" {
 				if got != tt.want {
 					t.Errorf("GenerateServiceUsername() = %v, want %v", got, tt.want)
@@ -70,10 +91,17 @@ func TestGenerateServiceUsername(t *testing.T) {
 	}
 
 	// Verify long names with shared prefix produce different usernames
-	a := GenerateServiceUsername("very-long-service-name-that-exceeds-postgres-limit-AAA")
-	b := GenerateServiceUsername("very-long-service-name-that-exceeds-postgres-limit-BBB")
+	a := GenerateServiceUsername("very-long-service-name-that-exceeds-postgres-limit-AAA", "ro")
+	b := GenerateServiceUsername("very-long-service-name-that-exceeds-postgres-limit-BBB", "ro")
 	if a == b {
 		t.Errorf("long names with shared prefix should produce different usernames, both got %v", a)
+	}
+
+	// Verify different modes produce different usernames for the same serviceID
+	roUser := GenerateServiceUsername("mcp-server", "ro")
+	rwUser := GenerateServiceUsername("mcp-server", "rw")
+	if roUser == rwUser {
+		t.Errorf("different modes should produce different usernames, both got %v", roUser)
 	}
 }
 

@@ -247,15 +247,16 @@ func serviceSpecToAPI(svc *database.ServiceSpec) *api.ServiceSpec {
 	}
 
 	return &api.ServiceSpec{
-		ServiceID:        api.Identifier(svc.ServiceID),
-		ServiceType:      svc.ServiceType,
-		Version:          svc.Version,
-		HostIds:          hostIDs,
-		Port:             svc.Port,
-		Config:           filteredConfig,
-		Cpus:             utils.NillablePointerTo(humanizeCPUs(utils.FromPointer(svc.CPUs))),
-		Memory:           utils.NillablePointerTo(humanizeBytes(utils.FromPointer(svc.MemoryBytes))),
-		OrchestratorOpts: orchestratorOptsToAPI(svc.OrchestratorOpts),
+		ServiceID:          api.Identifier(svc.ServiceID),
+		ServiceType:        svc.ServiceType,
+		Version:            svc.Version,
+		HostIds:            hostIDs,
+		Port:               svc.Port,
+		Config:             filteredConfig,
+		Cpus:               utils.NillablePointerTo(humanizeCPUs(utils.FromPointer(svc.CPUs))),
+		Memory:             utils.NillablePointerTo(humanizeBytes(utils.FromPointer(svc.MemoryBytes))),
+		OrchestratorOpts:   orchestratorOptsToAPI(svc.OrchestratorOpts),
+		DatabaseConnection: databaseConnectionToAPI(svc.DatabaseConnection),
 	}
 }
 
@@ -673,15 +674,16 @@ func apiToServiceSpec(apiSvc *api.ServiceSpec) (*database.ServiceSpec, error) {
 	}
 
 	return &database.ServiceSpec{
-		ServiceID:        string(apiSvc.ServiceID),
-		ServiceType:      apiSvc.ServiceType,
-		Version:          apiSvc.Version,
-		HostIDs:          hostIDs,
-		Port:             apiSvc.Port,
-		Config:           apiSvc.Config,
-		CPUs:             cpus,
-		MemoryBytes:      memory,
-		OrchestratorOpts: orchestratorOptsToDatabase(apiSvc.OrchestratorOpts),
+		ServiceID:          string(apiSvc.ServiceID),
+		ServiceType:        apiSvc.ServiceType,
+		Version:            apiSvc.Version,
+		HostIDs:            hostIDs,
+		Port:               apiSvc.Port,
+		Config:             apiSvc.Config,
+		CPUs:               cpus,
+		MemoryBytes:        memory,
+		OrchestratorOpts:   orchestratorOptsToDatabase(apiSvc.OrchestratorOpts),
+		DatabaseConnection: apiToDatabaseConnection(apiSvc.DatabaseConnection),
 	}, nil
 }
 
@@ -989,6 +991,26 @@ func identToString(id api.Identifier, path []string) (string, error) {
 		return "", err
 	}
 	return out, nil
+}
+
+func apiToDatabaseConnection(conn *api.DatabaseConnection) *database.DatabaseConnection {
+	if conn == nil {
+		return nil
+	}
+	return &database.DatabaseConnection{
+		TargetNodes:        conn.TargetNodes,
+		TargetSessionAttrs: utils.FromPointer(conn.TargetSessionAttrs),
+	}
+}
+
+func databaseConnectionToAPI(conn *database.DatabaseConnection) *api.DatabaseConnection {
+	if conn == nil {
+		return nil
+	}
+	return &api.DatabaseConnection{
+		TargetNodes:        conn.TargetNodes,
+		TargetSessionAttrs: utils.NillablePointerTo(conn.TargetSessionAttrs),
+	}
 }
 
 func orchestratorOptsToDatabase(opts *api.OrchestratorOpts) *database.OrchestratorOpts {

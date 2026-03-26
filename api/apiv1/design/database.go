@@ -129,6 +129,27 @@ var DatabaseUserSpec = g.Type("DatabaseUserSpec", func() {
 	g.Required("username")
 })
 
+var DatabaseConnection = g.Type("DatabaseConnection", func() {
+	g.Description("Controls how the service connects to the database. " +
+		"When omitted, all nodes are included with the local node first " +
+		"and target_session_attrs is derived from the service config.")
+	g.Attribute("target_nodes", g.ArrayOf(g.String), func() {
+		g.Description("Optional ordered list of database node names. When set, " +
+			"the service's database connection includes only the listed nodes " +
+			"in the specified order.")
+		g.Example([]string{"n1", "n2"})
+		g.Meta("struct:tag:json", "target_nodes,omitempty")
+	})
+	g.Attribute("target_session_attrs", g.String, func() {
+		g.Description("Optional libpq target_session_attrs value. When set, " +
+			"overrides the default derived from the service config. " +
+			"Valid values: primary, prefer-standby, standby, read-write, any.")
+		g.Enum("primary", "prefer-standby", "standby", "read-write", "any")
+		g.Example("primary")
+		g.Meta("struct:tag:json", "target_session_attrs,omitempty")
+	})
+})
+
 var ServiceSpec = g.Type("ServiceSpec", func() {
 	g.Attribute("service_id", Identifier, func() {
 		g.Description("The unique identifier for this service.")
@@ -138,8 +159,9 @@ var ServiceSpec = g.Type("ServiceSpec", func() {
 	})
 	g.Attribute("service_type", g.String, func() {
 		g.Description("The type of service to run.")
-		g.Enum("mcp", "rag")
+		g.Enum("mcp", "postgrest", "rag")
 		g.Example("mcp")
+		g.Example("postgrest")
 		g.Example("rag")
 		g.Meta("struct:tag:json", "service_type")
 	})
@@ -197,6 +219,10 @@ var ServiceSpec = g.Type("ServiceSpec", func() {
 	g.Attribute("orchestrator_opts", OrchestratorOpts, func() {
 		g.Description("Orchestrator-specific options for this service.")
 		g.Meta("struct:tag:json", "orchestrator_opts,omitempty")
+	})
+	g.Attribute("database_connection", DatabaseConnection, func() {
+		g.Description("Optional database connection routing configuration.")
+		g.Meta("struct:tag:json", "database_connection,omitempty")
 	})
 
 	g.Required("service_id", "service_type", "version", "host_ids", "config")

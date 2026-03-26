@@ -2,18 +2,13 @@ package swarm
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
-	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog"
 	"github.com/samber/do"
 
-	"github.com/pgEdge/control-plane/server/internal/certificates"
 	"github.com/pgEdge/control-plane/server/internal/database"
-	"github.com/pgEdge/control-plane/server/internal/patroni"
 	"github.com/pgEdge/control-plane/server/internal/postgres"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 	"github.com/pgEdge/control-plane/server/internal/utils"
@@ -23,53 +18,79 @@ var _ resource.Resource = (*ServiceUserRole)(nil)
 
 const ResourceTypeServiceUserRole resource.Type = "swarm.service_user_role"
 
+const (
+	ServiceUserRoleRO = "ro"
+	ServiceUserRoleRW = "rw"
+)
+
 // sanitizeIdentifier quotes a string for use as a PostgreSQL identifier.
 // It doubles any internal double-quotes and wraps the result in double-quotes.
 func sanitizeIdentifier(name string) string {
 	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }
 
-func ServiceUserRoleIdentifier(serviceID string) resource.Identifier {
+func ServiceUserRoleIdentifier(serviceInstanceID string, mode string) resource.Identifier {
 	return resource.Identifier{
-		ID:   serviceID,
+		ID:   serviceInstanceID + "-" + mode,
+		Type: ResourceTypeServiceUserRole,
+	}
+}
+
+func ServiceUserRolePerNodeIdentifier(serviceID, mode, nodeName string) resource.Identifier {
+	return resource.Identifier{
+		ID:   serviceID + "-" + mode + "-" + nodeName,
 		Type: ResourceTypeServiceUserRole,
 	}
 }
 
 // ServiceUserRole manages the lifecycle of a database user for a service.
 //
-// This resource is keyed by ServiceID, so one role is shared across all
-// instances of the same service. It handles creation, verification, and
-// cleanup of database users. On Create, it generates a deterministic username
-// and random password, creates the Postgres role, and stores the credentials
-// in the resource state. On subsequent reconciliation cycles, the credentials
-// are reused from the persisted state (no password regeneration).
+// Two ServiceUserRole resources are created per service: one with Mode set to
+// ServiceUserRoleRO (read-only) and one with Mode set to ServiceUserRoleRW
+// (read-write). Mode determines which group role the user is granted membership
+// in: pgedge_application_read_only for RO, or pgedge_application for RW. All
+// permissions are inherited via the group role — no custom grants are applied.
 //
-// The role is created on the primary instance and Spock replicates it to all
-// other nodes automatically.
+// On Create, a deterministic username (incorporating the mode) and a random
+// password are generated, the Postgres role is created with the appropriate
+// group role membership, and the credentials are stored in the resource state.
+// On subsequent reconciliation cycles, credentials are reused from the persisted
+// state (no password regeneration).
+//
+// When CredentialSource is nil, this is the canonical resource: it generates
+// credentials and runs on the first node. When CredentialSource is non-nil,
+// this is a per-node resource: it reads credentials from the canonical resource
+// and runs on its own node's primary.
 type ServiceUserRole struct {
-	ServiceID    string `json:"service_id"`
-	DatabaseID   string `json:"database_id"`
-	DatabaseName string `json:"database_name"`
-	NodeName     string `json:"node_name"` // Database node name for PrimaryExecutor routing
-	Username     string `json:"username"`
-	Password     string `json:"password"` // Generated on Create, persisted in state
+	ServiceID        string               `json:"service_id"`
+	DatabaseID       string               `json:"database_id"`
+	DatabaseName     string               `json:"database_name"`
+	NodeName         string               `json:"node_name"` // Database node name for PrimaryExecutor routing
+	Mode             string               `json:"mode"`      // ServiceUserRoleRO or ServiceUserRoleRW
+	Username         string               `json:"username"`
+	Password         string               `json:"password"` // Generated on Create, persisted in state
+	CredentialSource *resource.Identifier `json:"credential_source,omitempty"`
 }
 
 func (r *ServiceUserRole) ResourceVersion() string {
-	return "3"
+	return "4"
 }
 
 func (r *ServiceUserRole) DiffIgnore() []string {
 	return []string{
 		"/node_name",
+		"/mode",
 		"/username",
 		"/password",
+		"/credential_source",
 	}
 }
 
 func (r *ServiceUserRole) Identifier() resource.Identifier {
-	return ServiceUserRoleIdentifier(r.ServiceID)
+	if r.CredentialSource != nil {
+		return ServiceUserRolePerNodeIdentifier(r.ServiceID, r.Mode, r.NodeName)
+	}
+	return ServiceUserRoleIdentifier(r.ServiceID, r.Mode)
 }
 
 func (r *ServiceUserRole) Executor() resource.Executor {
@@ -77,8 +98,11 @@ func (r *ServiceUserRole) Executor() resource.Executor {
 }
 
 func (r *ServiceUserRole) Dependencies() []resource.Identifier {
-	// No dependencies - this resource can be created/deleted independently
-	return nil
+	nodeID := database.NodeResourceIdentifier(r.NodeName)
+	if r.CredentialSource != nil {
+		return []resource.Identifier{nodeID, *r.CredentialSource}
+	}
+	return []resource.Identifier{nodeID}
 }
 
 func (r *ServiceUserRole) TypeDependencies() []resource.Type {
@@ -105,13 +129,23 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 		Logger()
 	logger.Info().Msg("creating service user role")
 
-	// Generate deterministic username and random password
-	r.Username = database.GenerateServiceUsername(r.ServiceID)
-	password, err := utils.RandomString(32)
-	if err != nil {
-		return fmt.Errorf("failed to generate password: %w", err)
+	if r.CredentialSource != nil {
+		// Per-node resource: read credentials from the canonical resource in state.
+		canonical, err := resource.FromContext[*ServiceUserRole](rc, *r.CredentialSource)
+		if err != nil {
+			return fmt.Errorf("canonical service user role %s must be created before per-node role: %w", r.CredentialSource, err)
+		}
+		r.Username = canonical.Username
+		r.Password = canonical.Password
+	} else {
+		// Canonical resource: generate credentials.
+		r.Username = database.GenerateServiceUsername(r.ServiceID, r.Mode)
+		password, err := utils.RandomString(32)
+		if err != nil {
+			return fmt.Errorf("failed to generate password: %w", err)
+		}
+		r.Password = password
 	}
-	r.Password = password
 
 	if err := r.createUserRole(ctx, rc, logger); err != nil {
 		return fmt.Errorf("failed to create service user role: %w", err)
@@ -122,25 +156,33 @@ func (r *ServiceUserRole) Create(ctx context.Context, rc *resource.Context) erro
 }
 
 func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Context, logger zerolog.Logger) error {
-	// Connect to the application database so schema-level grants resolve correctly.
-	// The role is created on the primary and Spock replicates it to other nodes.
-	conn, err := r.connectToPrimary(ctx, rc, logger, r.DatabaseName)
+	primary, err := database.GetPrimaryInstance(ctx, rc, r.NodeName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get primary instance: %w", err)
+	}
+	conn, err := primary.Connection(ctx, rc, "postgres")
+	if err != nil {
+		return fmt.Errorf("failed to connect to database postgres on node %s: %w", r.NodeName, err)
 	}
 	defer conn.Close(ctx)
 
-	// Create the role with LOGIN but no inherited roles. We grant permissions
-	// directly rather than using pgedge_application_read_only because that role
-	// includes read access to the spock schema (replication internals) which the
-	// MCP service should not expose.
-	// https://github.com/pgEdge/pgedge-postgres-mcp/blob/main/docs/guide/security_mgmt.md
+	// Determine group role based on mode
+	var groupRole string
+	switch r.Mode {
+	case ServiceUserRoleRO:
+		groupRole = "pgedge_application_read_only"
+	case ServiceUserRoleRW:
+		groupRole = "pgedge_application"
+	default:
+		return fmt.Errorf("unknown service user role mode: %q", r.Mode)
+	}
+
 	statements, err := postgres.CreateUserRole(postgres.UserRoleOptions{
 		Name:       r.Username,
 		Password:   r.Password,
-		DBName:     r.DatabaseName,
 		DBOwner:    false,
 		Attributes: []string{"LOGIN"},
+		Roles:      []string{groupRole},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate create user role statements: %w", err)
@@ -148,21 +190,6 @@ func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Conte
 
 	if err := statements.Exec(ctx, conn); err != nil {
 		return fmt.Errorf("failed to create service user: %w", err)
-	}
-
-	// grants based on MCP doc guidelines, but open to change as needed
-	grants := postgres.Statements{
-		// Database-level connect permission
-		postgres.Statement{SQL: fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s;", sanitizeIdentifier(r.DatabaseName), sanitizeIdentifier(r.Username))},
-		// Read-only access to the public schema (application tables)
-		postgres.Statement{SQL: fmt.Sprintf("GRANT USAGE ON SCHEMA public TO %s;", sanitizeIdentifier(r.Username))},
-		postgres.Statement{SQL: fmt.Sprintf("GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s;", sanitizeIdentifier(r.Username))},
-		postgres.Statement{SQL: fmt.Sprintf("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO %s;", sanitizeIdentifier(r.Username))},
-		// Allow viewing PostgreSQL configuration via diagnostic tools
-		postgres.Statement{SQL: fmt.Sprintf("GRANT pg_read_all_settings TO %s;", sanitizeIdentifier(r.Username))},
-	}
-	if err := grants.Exec(ctx, conn); err != nil {
-		return fmt.Errorf("failed to grant service user permissions: %w", err)
 	}
 
 	return nil
@@ -185,10 +212,15 @@ func (r *ServiceUserRole) Delete(ctx context.Context, rc *resource.Context) erro
 		Logger()
 	logger.Info().Msg("deleting service user from database")
 
-	conn, err := r.connectToPrimary(ctx, rc, logger, "postgres")
+	primary, err := database.GetPrimaryInstance(ctx, rc, r.NodeName)
 	if err != nil {
 		// During deletion, connection failures are non-fatal — the database
 		// may already be gone or unreachable.
+		logger.Warn().Err(err).Msg("failed to get primary instance, skipping user deletion")
+		return nil
+	}
+	conn, err := primary.Connection(ctx, rc, "postgres")
+	if err != nil {
 		logger.Warn().Err(err).Msg("failed to connect to primary instance, skipping user deletion")
 		return nil
 	}
@@ -206,70 +238,4 @@ func (r *ServiceUserRole) Delete(ctx context.Context, rc *resource.Context) erro
 
 	logger.Info().Msg("service user deleted successfully")
 	return nil
-}
-
-// connectToPrimary finds the primary Postgres instance and returns an
-// authenticated connection to it. The caller is responsible for closing
-// the connection.
-func (r *ServiceUserRole) connectToPrimary(ctx context.Context, rc *resource.Context, logger zerolog.Logger, dbName string) (*pgx.Conn, error) {
-	dbSvc, err := do.Invoke[*database.Service](rc.Injector)
-	if err != nil {
-		return nil, err
-	}
-
-	db, err := dbSvc.GetDatabase(ctx, r.DatabaseID)
-	if err != nil {
-		if errors.Is(err, database.ErrDatabaseNotFound) {
-			return nil, fmt.Errorf("database not found: %w", err)
-		}
-		return nil, fmt.Errorf("failed to get database: %w", err)
-	}
-
-	if len(db.Instances) == 0 {
-		return nil, fmt.Errorf("database has no instances")
-	}
-
-	// Find primary instance via Patroni
-	var primaryInstanceID string
-	for _, inst := range db.Instances {
-		connInfo, err := dbSvc.GetInstanceConnectionInfo(ctx, r.DatabaseID, inst.InstanceID)
-		if err != nil {
-			continue
-		}
-		patroniClient := patroni.NewClient(connInfo.PatroniURL(), nil)
-		primaryID, err := database.GetPrimaryInstanceID(ctx, patroniClient, 10*time.Second)
-		if err == nil && primaryID != "" {
-			primaryInstanceID = primaryID
-			break
-		}
-	}
-	if primaryInstanceID == "" {
-		primaryInstanceID = db.Instances[0].InstanceID
-		logger.Warn().Msg("could not determine primary instance, using first available instance")
-	}
-
-	connInfo, err := dbSvc.GetInstanceConnectionInfo(ctx, r.DatabaseID, primaryInstanceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get instance connection info: %w", err)
-	}
-
-	certSvc, err := do.Invoke[*certificates.Service](rc.Injector)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get certificate service: %w", err)
-	}
-
-	tlsConfig, err := certSvc.PostgresUserTLS(ctx, primaryInstanceID, connInfo.InstanceHostname, "pgedge")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create TLS config: %w", err)
-	}
-
-	conn, err := database.ConnectToInstance(ctx, &database.ConnectionOptions{
-		DSN: connInfo.AdminDSN(dbName),
-		TLS: tlsConfig,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
-	}
-
-	return conn, nil
 }

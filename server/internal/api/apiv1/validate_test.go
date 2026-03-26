@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	api "github.com/pgEdge/control-plane/api/apiv1/gen/control_plane"
+	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/ds"
 	"github.com/pgEdge/control-plane/server/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -575,6 +577,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
 						Config: map[string]any{
+							"llm_enabled":       true,
 							"llm_provider":      "anthropic",
 							"llm_model":         "claude-sonnet-4-5",
 							"anthropic_api_key": "sk-ant-...",
@@ -603,6 +606,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
 						Config: map[string]any{
+							"llm_enabled":       true,
 							"llm_provider":      "anthropic",
 							"llm_model":         "claude-sonnet-4-5",
 							"anthropic_api_key": "sk-ant-...",
@@ -614,6 +618,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-2"},
 						Config: map[string]any{
+							"llm_enabled":       true,
 							"llm_provider":      "anthropic",
 							"llm_model":         "claude-sonnet-4-5",
 							"anthropic_api_key": "sk-ant-...",
@@ -645,13 +650,14 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						Version:     "v1.0",
 						HostIds:     []api.Identifier{"host-1"},
 						Config: map[string]any{
+							"llm_enabled":  true,
 							"llm_provider": "unknown",
 						},
 					},
 				},
 			},
 			expected: []string{
-				"services[0].service_type: unsupported service type 'unknown'",
+				`services[0].service_type: unsupported service type "unknown"`,
 				"services[0].version: version must be in semver format (e.g., '1.0.0') or 'latest'",
 			},
 		},
@@ -675,6 +681,7 @@ func TestValidateDatabaseSpec(t *testing.T) {
 						Version:     "1.0.0",
 						HostIds:     []api.Identifier{"host-1"},
 						Config: map[string]any{
+							"llm_enabled":  true,
 							"llm_provider": "unknown",
 						},
 					},
@@ -769,6 +776,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1", "host-2"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -783,6 +791,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "2.1.3",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":    true,
 					"llm_provider":   "openai",
 					"llm_model":      "gpt-4",
 					"openai_api_key": "sk-...",
@@ -797,6 +806,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.5.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":  true,
 					"llm_provider": "ollama",
 					"llm_model":    "llama2",
 					"ollama_url":   "http://localhost:11434",
@@ -811,6 +821,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "latest",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -825,6 +836,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -841,6 +853,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -860,7 +873,79 @@ func TestValidateServiceSpec(t *testing.T) {
 				Config:      map[string]any{},
 			},
 			expected: []string{
-				"service_type: unsupported service type 'unknown'",
+				`service_type: unsupported service type "unknown"`,
+			},
+		},
+		{
+			name: "valid postgrest with defaults",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-postgrest",
+				ServiceType: "postgrest",
+				Version:     "latest",
+				HostIds:     []api.Identifier{"host-1"},
+				Config:      map[string]any{},
+			},
+			expected: []string{},
+		},
+		{
+			name: "valid postgrest with all config fields",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-postgrest",
+				ServiceType: "postgrest",
+				Version:     "latest",
+				HostIds:     []api.Identifier{"host-1"},
+				Config: map[string]any{
+					"db_schemas":   "api",
+					"db_anon_role": "web_anon",
+					"db_pool":      float64(5),
+					"max_rows":     float64(500),
+				},
+			},
+			expected: []string{},
+		},
+		{
+			name: "postgrest invalid db_pool range",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-postgrest",
+				ServiceType: "postgrest",
+				Version:     "latest",
+				HostIds:     []api.Identifier{"host-1"},
+				Config: map[string]any{
+					"db_pool": float64(99),
+				},
+			},
+			expected: []string{
+				"config: db_pool must be between 1 and 30",
+			},
+		},
+		{
+			name: "postgrest unknown config key",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-postgrest",
+				ServiceType: "postgrest",
+				Version:     "latest",
+				HostIds:     []api.Identifier{"host-1"},
+				Config: map[string]any{
+					"invalid_key": "value",
+				},
+			},
+			expected: []string{
+				`config: unknown config key "invalid_key"`,
+			},
+		},
+		{
+			name: "postgrest jwt_secret too short",
+			svc: &api.ServiceSpec{
+				ServiceID:   "my-postgrest",
+				ServiceType: "postgrest",
+				Version:     "latest",
+				HostIds:     []api.Identifier{"host-1"},
+				Config: map[string]any{
+					"jwt_secret": "tooshort",
+				},
+			},
+			expected: []string{
+				"config: jwt_secret must be at least 32 characters",
 			},
 		},
 		{
@@ -871,6 +956,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "v1.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -888,6 +974,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1", "host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -905,6 +992,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host 1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -922,7 +1010,8 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
-					"llm_model": "claude-sonnet-4-5",
+					"llm_enabled": true,
+					"llm_model":   "claude-sonnet-4-5",
 				},
 			},
 			expected: []string{
@@ -937,6 +1026,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":  true,
 					"llm_provider": "anthropic",
 				},
 			},
@@ -952,6 +1042,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":  true,
 					"llm_provider": "unknown",
 					"llm_model":    "some-model",
 				},
@@ -968,6 +1059,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":  true,
 					"llm_provider": "anthropic",
 					"llm_model":    "claude-sonnet-4-5",
 				},
@@ -984,6 +1076,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":  true,
 					"llm_provider": "openai",
 					"llm_model":    "gpt-4",
 				},
@@ -1000,6 +1093,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":  true,
 					"llm_provider": "ollama",
 					"llm_model":    "llama2",
 				},
@@ -1016,6 +1110,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -1034,6 +1129,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -1052,6 +1148,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -1074,6 +1171,7 @@ func TestValidateServiceSpec(t *testing.T) {
 				Version:     "1.0.0",
 				HostIds:     []api.Identifier{"host-1"},
 				Config: map[string]any{
+					"llm_enabled":       true,
 					"llm_provider":      "anthropic",
 					"llm_model":         "claude-sonnet-4-5",
 					"anthropic_api_key": "sk-ant-...",
@@ -1121,6 +1219,153 @@ func TestValidateServiceSpec(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateDatabaseConnection(t *testing.T) {
+	nodeNames := ds.Set[string]{"n1": true, "n2": true, "n3": true}
+
+	for _, tc := range []struct {
+		name      string
+		dc        *api.DatabaseConnection
+		nodeNames ds.Set[string]
+		expected  []string
+	}{
+		{
+			name:      "valid target_nodes subset",
+			dc:        &api.DatabaseConnection{TargetNodes: []string{"n1", "n2"}},
+			nodeNames: nodeNames,
+		},
+		{
+			name:      "valid target_session_attrs",
+			dc:        &api.DatabaseConnection{TargetSessionAttrs: utils.PointerTo("primary")},
+			nodeNames: nodeNames,
+		},
+		{
+			name:      "valid both fields",
+			dc:        &api.DatabaseConnection{TargetNodes: []string{"n1"}, TargetSessionAttrs: utils.PointerTo("prefer-standby")},
+			nodeNames: nodeNames,
+		},
+		{
+			name:      "empty target_nodes is valid",
+			dc:        &api.DatabaseConnection{},
+			nodeNames: nodeNames,
+		},
+		{
+			name:      "nil node names skips existence check",
+			dc:        &api.DatabaseConnection{TargetNodes: []string{"unknown"}},
+			nodeNames: nil,
+		},
+		{
+			name:      "duplicate target_nodes",
+			dc:        &api.DatabaseConnection{TargetNodes: []string{"n1", "n2", "n1"}},
+			nodeNames: nodeNames,
+			expected:  []string{`target_nodes[2]: duplicate node name "n1"`},
+		},
+		{
+			name:      "empty node name",
+			dc:        &api.DatabaseConnection{TargetNodes: []string{"n1", ""}},
+			nodeNames: nodeNames,
+			expected:  []string{"target_nodes[1]: node name must not be empty"},
+		},
+		{
+			name:      "nonexistent target_node",
+			dc:        &api.DatabaseConnection{TargetNodes: []string{"n1", "n99"}},
+			nodeNames: nodeNames,
+			expected:  []string{`target_nodes[1]: node "n99" does not exist in the database spec`},
+		},
+		{
+			name:      "multiple nonexistent target_nodes",
+			dc:        &api.DatabaseConnection{TargetNodes: []string{"n1", "n99", "n100"}},
+			nodeNames: nodeNames,
+			expected: []string{
+				`target_nodes[1]: node "n99" does not exist in the database spec`,
+				`target_nodes[2]: node "n100" does not exist in the database spec`,
+			},
+		},
+		{
+			name:      "invalid target_session_attrs",
+			dc:        &api.DatabaseConnection{TargetSessionAttrs: utils.PointerTo("invalid")},
+			nodeNames: nodeNames,
+			expected:  []string{`target_session_attrs: invalid target_session_attrs "invalid"`},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := errors.Join(validateDatabaseConnection(tc.dc, nil, tc.nodeNames)...)
+			if len(tc.expected) < 1 {
+				assert.NoError(t, err)
+			} else {
+				for _, expected := range tc.expected {
+					assert.ErrorContains(t, err, expected)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateServiceSpec_DatabaseConnectionCrossValidation(t *testing.T) {
+	nodeNames := ds.Set[string]{"n1": true, "n2": true}
+
+	t.Run("allow_writes with unsafe target_session_attrs", func(t *testing.T) {
+		svc := &api.ServiceSpec{
+			ServiceID:   "mcp-server",
+			ServiceType: "mcp",
+			Version:     "1.0.0",
+			HostIds:     []api.Identifier{"host-1"},
+			Config: map[string]any{
+				"llm_enabled":       true,
+				"llm_provider":      "anthropic",
+				"llm_model":         "claude-sonnet-4-5",
+				"anthropic_api_key": "sk-ant-...",
+				"allow_writes":      true,
+			},
+			DatabaseConnection: &api.DatabaseConnection{
+				TargetSessionAttrs: utils.PointerTo("prefer-standby"),
+			},
+		}
+		err := errors.Join(validateServiceSpec(svc, nil, false, nodeNames)...)
+		assert.ErrorContains(t, err, "allow_writes requires target_session_attrs 'primary' or 'read-write'")
+	})
+
+	t.Run("allow_writes with safe target_session_attrs", func(t *testing.T) {
+		svc := &api.ServiceSpec{
+			ServiceID:   "mcp-server",
+			ServiceType: "mcp",
+			Version:     "1.0.0",
+			HostIds:     []api.Identifier{"host-1"},
+			Config: map[string]any{
+				"llm_enabled":       true,
+				"llm_provider":      "anthropic",
+				"llm_model":         "claude-sonnet-4-5",
+				"anthropic_api_key": "sk-ant-...",
+				"allow_writes":      true,
+			},
+			DatabaseConnection: &api.DatabaseConnection{
+				TargetSessionAttrs: utils.PointerTo("primary"),
+			},
+		}
+		err := errors.Join(validateServiceSpec(svc, nil, false, nodeNames)...)
+		assert.NoError(t, err)
+	})
+
+	t.Run("nonexistent target_node via service spec", func(t *testing.T) {
+		svc := &api.ServiceSpec{
+			ServiceID:   "mcp-server",
+			ServiceType: "mcp",
+			Version:     "1.0.0",
+			HostIds:     []api.Identifier{"host-1"},
+			Config: map[string]any{
+				"llm_enabled":       true,
+				"llm_provider":      "anthropic",
+				"llm_model":         "claude-sonnet-4-5",
+				"anthropic_api_key": "sk-ant-...",
+			},
+			DatabaseConnection: &api.DatabaseConnection{
+				TargetNodes: []string{"n1", "nonexistent"},
+			},
+		}
+		err := errors.Join(validateServiceSpec(svc, nil, false, nodeNames)...)
+		assert.ErrorContains(t, err, `node "nonexistent" does not exist in the database spec`)
+	})
 }
 
 func TestValidateOrchestratorOpts(t *testing.T) {
@@ -1189,6 +1434,101 @@ func TestValidateOrchestratorOpts(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := errors.Join(validateOrchestratorOpts(tc.opts, []string{"orchestrator_opts"})...)
+			if len(tc.expected) < 1 {
+				assert.NoError(t, err)
+			} else {
+				for _, expected := range tc.expected {
+					assert.ErrorContains(t, err, expected)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateDatabaseUpdate_ServiceBootstrapFields(t *testing.T) {
+	// A minimal valid MCP config shared across test cases.
+	validMCPConfig := map[string]any{
+		"llm_enabled":       true,
+		"llm_provider":      "anthropic",
+		"llm_model":         "claude-sonnet-4-5",
+		"anthropic_api_key": "sk-ant-...",
+	}
+
+	mcpWithBootstrap := func() map[string]any {
+		cfg := make(map[string]any, len(validMCPConfig)+2)
+		for k, v := range validMCPConfig {
+			cfg[k] = v
+		}
+		cfg["init_token"] = "my-token"
+		cfg["init_users"] = []any{map[string]any{"username": "alice", "password": "pw"}}
+		return cfg
+	}
+
+	newMCPService := func(id string, config map[string]any) *api.ServiceSpec {
+		return &api.ServiceSpec{
+			ServiceID:   api.Identifier(id),
+			ServiceType: "mcp",
+			Version:     "latest",
+			HostIds:     []api.Identifier{"host-1"},
+			Config:      config,
+		}
+	}
+
+	oldSpecWithMCP := &database.Spec{
+		Services: []*database.ServiceSpec{
+			{ServiceID: "appmcp"},
+		},
+	}
+
+	for _, tc := range []struct {
+		name     string
+		old      *database.Spec
+		new      *api.DatabaseSpec
+		expected []string // empty means no error expected
+	}{
+		{
+			name: "new service added via update-database - bootstrap fields allowed",
+			old:  &database.Spec{},
+			new: &api.DatabaseSpec{
+				Services: []*api.ServiceSpec{
+					newMCPService("appmcp", mcpWithBootstrap()),
+				},
+			},
+		},
+		{
+			name: "no existing services - bootstrap fields allowed",
+			old:  &database.Spec{Services: nil},
+			new: &api.DatabaseSpec{
+				Services: []*api.ServiceSpec{
+					newMCPService("appmcp", mcpWithBootstrap()),
+				},
+			},
+		},
+		{
+			name: "existing service updated - bootstrap fields rejected",
+			old:  oldSpecWithMCP,
+			new: &api.DatabaseSpec{
+				Services: []*api.ServiceSpec{
+					newMCPService("appmcp", mcpWithBootstrap()),
+				},
+			},
+			expected: []string{
+				"init_token can only be set during initial provisioning",
+				"init_users can only be set during initial provisioning",
+			},
+		},
+		{
+			name: "existing service updated without bootstrap fields - no error",
+			old:  oldSpecWithMCP,
+			new: &api.DatabaseSpec{
+				Services: []*api.ServiceSpec{
+					newMCPService("appmcp", validMCPConfig),
+				},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateDatabaseUpdate(tc.old, tc.new)
 			if len(tc.expected) < 1 {
 				assert.NoError(t, err)
 			} else {

@@ -424,6 +424,13 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		}
 	}
 
+	// Only MCP is fully implemented in the orchestrator for now.
+	// PostgREST provisioning (container spec, config delivery, service user) is
+	// implemented in follow-up tickets.
+	if spec.ServiceSpec.ServiceType != "mcp" {
+		return nil, fmt.Errorf("service type %q is not yet supported for provisioning", spec.ServiceSpec.ServiceType)
+	}
+
 	// Parse the MCP service config from the untyped config map
 	mcpConfig, errs := database.ParseMCPServiceConfig(spec.ServiceSpec.Config, false)
 	if len(errs) > 0 {
@@ -438,19 +445,25 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		Allocator: o.dbNetworkAllocator,
 	}
 
-	// Service user role resource (manages database user lifecycle)
-	serviceUserRole := &ServiceUserRole{
+	// Canonical identifiers for the RO and RW service user roles.
+	canonicalROID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRO)
+	canonicalRWID := ServiceUserRoleIdentifier(spec.ServiceSpec.ServiceID, ServiceUserRoleRW)
+
+	// Service user role resources (manages database user lifecycle).
+	// Two roles are created per service: read-only and read-write.
+	serviceUserRoleRO := &ServiceUserRole{
 		ServiceID:    spec.ServiceSpec.ServiceID,
 		DatabaseID:   spec.DatabaseID,
 		DatabaseName: spec.DatabaseName,
 		NodeName:     spec.NodeName,
+		Mode:         ServiceUserRoleRO,
 	}
-	// Username and Password are populated from existing state during Refresh,
-	// or generated during Create. Only set if credentials exist (backward
-	// compatibility with existing state).
-	if spec.Credentials != nil {
-		serviceUserRole.Username = spec.Credentials.Username
-		serviceUserRole.Password = spec.Credentials.Password
+	serviceUserRoleRW := &ServiceUserRole{
+		ServiceID:    spec.ServiceSpec.ServiceID,
+		DatabaseID:   spec.DatabaseID,
+		DatabaseName: spec.DatabaseName,
+		NodeName:     spec.NodeName,
+		Mode:         ServiceUserRoleRW,
 	}
 
 	// Service data directory resource (host-side bind mount directory)
@@ -464,39 +477,36 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 	}
 
 	// MCP config resource (generates config.yaml, tokens.yaml, users.yaml)
+	// Credentials are populated from ServiceUserRole resources during refresh.
 	mcpConfigResource := &MCPConfigResource{
-		ServiceInstanceID: spec.ServiceInstanceID,
-		ServiceID:         spec.ServiceSpec.ServiceID,
-		HostID:            spec.HostID,
-		DirResourceID:     dataDirID,
-		Config:            mcpConfig,
-		DatabaseName:      spec.DatabaseName,
-		DatabaseHost:      spec.DatabaseHost,
-		DatabasePort:      spec.DatabasePort,
-	}
-	if spec.Credentials != nil {
-		mcpConfigResource.Username = spec.Credentials.Username
-		mcpConfigResource.Password = spec.Credentials.Password
+		ServiceInstanceID:  spec.ServiceInstanceID,
+		ServiceID:          spec.ServiceSpec.ServiceID,
+		HostID:             spec.HostID,
+		DirResourceID:      dataDirID,
+		Config:             mcpConfig,
+		DatabaseName:       spec.DatabaseName,
+		DatabaseHosts:      spec.DatabaseHosts,
+		TargetSessionAttrs: spec.TargetSessionAttrs,
 	}
 
 	// Service instance spec resource
 	serviceName := ServiceInstanceName(spec.ServiceSpec.ServiceType, spec.DatabaseID, spec.ServiceSpec.ServiceID, spec.HostID)
 	serviceInstanceSpec := &ServiceInstanceSpecResource{
-		ServiceInstanceID: spec.ServiceInstanceID,
-		ServiceSpec:       spec.ServiceSpec,
-		DatabaseID:        spec.DatabaseID,
-		DatabaseName:      spec.DatabaseName,
-		HostID:            spec.HostID,
-		ServiceName:       serviceName,
-		Hostname:          serviceName,
-		CohortMemberID:    o.swarmNodeID,
-		ServiceImage:      serviceImage,
-		Credentials:       spec.Credentials,
-		DatabaseNetworkID: databaseNetwork.Name,
-		DatabaseHost:      spec.DatabaseHost,
-		DatabasePort:      spec.DatabasePort,
-		Port:              spec.Port,
-		DataDirID:         dataDirID,
+		ServiceInstanceID:  spec.ServiceInstanceID,
+		ServiceSpec:        spec.ServiceSpec,
+		DatabaseID:         spec.DatabaseID,
+		DatabaseName:       spec.DatabaseName,
+		HostID:             spec.HostID,
+		ServiceName:        serviceName,
+		Hostname:           serviceName,
+		CohortMemberID:     o.swarmNodeID,
+		ServiceImage:       serviceImage,
+		Credentials:        spec.Credentials,
+		DatabaseNetworkID:  databaseNetwork.Name,
+		DatabaseHosts:      spec.DatabaseHosts,
+		TargetSessionAttrs: spec.TargetSessionAttrs,
+		Port:               spec.Port,
+		DataDirID:          dataDirID,
 	}
 
 	// Service instance resource (actual Docker service)
@@ -509,14 +519,41 @@ func (o *Orchestrator) GenerateServiceInstanceResources(spec *database.ServiceIn
 		HostID:            spec.HostID,
 	}
 
-	// Resource chain: Network → ServiceUserRole → DirResource → MCPConfigResource → ServiceInstanceSpec → ServiceInstance
+	// Resource chain: Network → ServiceUserRole(RO,RW) → DirResource → MCPConfigResource → ServiceInstanceSpec → ServiceInstance
 	orchestratorResources := []resource.Resource{
 		databaseNetwork,
-		serviceUserRole,
+		serviceUserRoleRO,
+		serviceUserRoleRW,
 		dataDir,
 		mcpConfigResource,
 		serviceInstanceSpec,
 		serviceInstance,
+	}
+
+	// Append per-node ServiceUserRole resources for each additional database node.
+	// The canonical resources (above) cover the first node; nodes [1:] each get
+	// their own RO and RW role that sources credentials from the canonical.
+	if len(spec.DatabaseNodes) > 1 {
+		for _, nodeInst := range spec.DatabaseNodes[1:] {
+			orchestratorResources = append(orchestratorResources,
+				&ServiceUserRole{
+					ServiceID:        spec.ServiceSpec.ServiceID,
+					DatabaseID:       spec.DatabaseID,
+					DatabaseName:     spec.DatabaseName,
+					NodeName:         nodeInst.NodeName,
+					Mode:             ServiceUserRoleRO,
+					CredentialSource: &canonicalROID,
+				},
+				&ServiceUserRole{
+					ServiceID:        spec.ServiceSpec.ServiceID,
+					DatabaseID:       spec.DatabaseID,
+					DatabaseName:     spec.DatabaseName,
+					NodeName:         nodeInst.NodeName,
+					Mode:             ServiceUserRoleRW,
+					CredentialSource: &canonicalRWID,
+				},
+			)
+		}
 	}
 
 	// Convert to resource data

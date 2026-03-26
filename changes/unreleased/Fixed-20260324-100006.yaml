@@ -1,0 +1,3 @@
+kind: Fixed
+body: Fixed IPAM subnet exhaustion after repeated database create/delete cycles by releasing subnets on network deletion.
+time: 2026-03-24T10:00:06.000000-05:00

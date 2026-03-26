@@ -2,13 +2,16 @@ package swarm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
+	"github.com/rs/zerolog"
 	"github.com/samber/do"
 	"github.com/spf13/afero"
 
 	"github.com/pgEdge/control-plane/server/internal/database"
+	"github.com/pgEdge/control-plane/server/internal/docker"
 	"github.com/pgEdge/control-plane/server/internal/filesystem"
 	"github.com/pgEdge/control-plane/server/internal/resource"
 )
@@ -33,27 +36,31 @@ func MCPConfigResourceIdentifier(serviceInstanceID string) resource.Identifier {
 //   - tokens.yaml: Application-owned, written only on first Create if init_token is set
 //   - users.yaml: Application-owned, written only on first Create if init_users is set
 type MCPConfigResource struct {
-	ServiceInstanceID string                     `json:"service_instance_id"`
-	ServiceID         string                     `json:"service_id"`
-	HostID            string                     `json:"host_id"`
-	DirResourceID     string                     `json:"dir_resource_id"`
-	Config            *database.MCPServiceConfig `json:"config"`
-	DatabaseName      string                     `json:"database_name"`
-	DatabaseHost      string                     `json:"database_host"`
-	DatabasePort      int                        `json:"database_port"`
-	Username          string                     `json:"username"`
-	Password          string                     `json:"password"`
+	ServiceInstanceID  string                      `json:"service_instance_id"`
+	ServiceID          string                      `json:"service_id"`
+	HostID             string                      `json:"host_id"`
+	DirResourceID      string                      `json:"dir_resource_id"`
+	Config             *database.MCPServiceConfig  `json:"config"`
+	DatabaseName       string                      `json:"database_name"`
+	DatabaseHosts      []database.ServiceHostEntry `json:"database_hosts"`
+	TargetSessionAttrs string                      `json:"target_session_attrs"`
+	ROUsername         string                      `json:"ro_username"`
+	ROPassword         string                      `json:"ro_password"`
+	RWUsername         string                      `json:"rw_username"`
+	RWPassword         string                      `json:"rw_password"`
 }
 
 func (r *MCPConfigResource) ResourceVersion() string {
-	return "1"
+	return "2"
 }
 
 func (r *MCPConfigResource) DiffIgnore() []string {
 	return []string{
-		// Credentials are populated from ServiceUserRole during refresh.
-		"/username",
-		"/password",
+		// Credentials are populated from ServiceUserRole resources during refresh.
+		"/ro_username",
+		"/ro_password",
+		"/rw_username",
+		"/rw_password",
 	}
 }
 
@@ -68,7 +75,8 @@ func (r *MCPConfigResource) Executor() resource.Executor {
 func (r *MCPConfigResource) Dependencies() []resource.Identifier {
 	return []resource.Identifier{
 		filesystem.DirResourceIdentifier(r.DirResourceID),
-		ServiceUserRoleIdentifier(r.ServiceID),
+		ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRO),
+		ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRW),
 	}
 }
 
@@ -85,11 +93,6 @@ func (r *MCPConfigResource) Refresh(ctx context.Context, rc *resource.Context) e
 	dirPath, err := filesystem.DirResourceFullPath(rc, r.DirResourceID)
 	if err != nil {
 		return fmt.Errorf("failed to get service data dir path: %w", err)
-	}
-
-	// Populate credentials from ServiceUserRole
-	if err := r.populateCredentials(rc); err != nil {
-		return err
 	}
 
 	// Check if config.yaml exists
@@ -160,6 +163,15 @@ func (r *MCPConfigResource) Update(ctx context.Context, rc *resource.Context) er
 
 	// Do NOT touch tokens.yaml or users.yaml — they are application-owned
 
+	// Signal the running MCP container to reload config.
+	// This is a best-effort operation — if the container isn't running yet
+	// (e.g., initial creation) or is restarting, we log and move on.
+	// The config file is already correct on disk; the container will pick
+	// it up on its next start.
+	if err := r.signalConfigReload(ctx, rc); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -168,15 +180,25 @@ func (r *MCPConfigResource) Delete(ctx context.Context, rc *resource.Context) er
 	return nil
 }
 
+// activeCredentials returns the username and password for the active service
+// user based on the AllowWrites config setting.
+func (r *MCPConfigResource) activeCredentials() (username, password string) {
+	if r.Config.AllowWrites != nil && *r.Config.AllowWrites {
+		return r.RWUsername, r.RWPassword
+	}
+	return r.ROUsername, r.ROPassword
+}
+
 // writeConfigFile generates and writes the config.yaml file.
 func (r *MCPConfigResource) writeConfigFile(fs afero.Fs, dirPath string) error {
+	username, password := r.activeCredentials()
 	content, err := GenerateMCPConfig(&MCPConfigParams{
-		Config:       r.Config,
-		DatabaseName: r.DatabaseName,
-		DatabaseHost: r.DatabaseHost,
-		DatabasePort: r.DatabasePort,
-		Username:     r.Username,
-		Password:     r.Password,
+		Config:             r.Config,
+		DatabaseName:       r.DatabaseName,
+		DatabaseHosts:      r.DatabaseHosts,
+		TargetSessionAttrs: r.TargetSessionAttrs,
+		Username:           username,
+		Password:           password,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate MCP config: %w", err)
@@ -257,13 +279,62 @@ func (r *MCPConfigResource) writeUserFileIfNeeded(fs afero.Fs, usersPath string)
 	return nil
 }
 
-// populateCredentials fetches the username/password from the ServiceUserRole resource.
-func (r *MCPConfigResource) populateCredentials(rc *resource.Context) error {
-	userRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(r.ServiceID))
+// signalConfigReload sends SIGHUP to the running MCP container to trigger
+// a config reload. Signal delivery failures are logged as warnings and
+// return nil — the config file is already correct on disk and will be
+// picked up on the next container restart. Injector failures are returned
+// as errors since they indicate a systemic problem.
+func (r *MCPConfigResource) signalConfigReload(ctx context.Context, rc *resource.Context) error {
+	dockerClient, err := do.Invoke[*docker.Docker](rc.Injector)
 	if err != nil {
-		return fmt.Errorf("failed to get service user role from state: %w", err)
+		return fmt.Errorf("failed to get docker client: %w", err)
 	}
-	r.Username = userRole.Username
-	r.Password = userRole.Password
+
+	logger, err := do.Invoke[zerolog.Logger](rc.Injector)
+	if err != nil {
+		return fmt.Errorf("failed to get logger: %w", err)
+	}
+
+	container, err := GetServiceContainer(ctx, dockerClient, r.ServiceInstanceID)
+	if err != nil {
+		if errors.Is(err, ErrNoServiceContainer) {
+			logger.Debug().Msg("no running MCP container found, skipping config reload signal")
+			return nil
+		}
+		logger.Warn().Err(err).Msg("failed to find service container for config reload signal")
+		return nil
+	}
+
+	if err := dockerClient.ContainerSignal(ctx, container.ID, "SIGHUP"); err != nil {
+		logger.Warn().Err(err).
+			Str("container_id", container.ID).
+			Msg("failed to send SIGHUP to MCP container")
+		return nil
+	}
+
+	logger.Info().
+		Str("container_id", container.ID).
+		Msg("sent SIGHUP to MCP container for config reload")
+
+	return nil
+}
+
+// populateCredentials fetches credentials from both ServiceUserRole resources
+// (RO and RW). Credential selection happens at usage time based on AllowWrites.
+func (r *MCPConfigResource) populateCredentials(rc *resource.Context) error {
+	roRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRO))
+	if err != nil {
+		return fmt.Errorf("failed to get RO service user role from state: %w", err)
+	}
+	r.ROUsername = roRole.Username
+	r.ROPassword = roRole.Password
+
+	rwRole, err := resource.FromContext[*ServiceUserRole](rc, ServiceUserRoleIdentifier(r.ServiceID, ServiceUserRoleRW))
+	if err != nil {
+		return fmt.Errorf("failed to get RW service user role from state: %w", err)
+	}
+	r.RWUsername = rwRole.Username
+	r.RWPassword = rwRole.Password
+
 	return nil
 }
