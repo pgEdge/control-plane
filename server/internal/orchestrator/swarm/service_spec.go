@@ -145,7 +145,7 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		mounts = []mount.Mount{
 			docker.BuildMount(opts.DataPath, "/app/data", true),
 		}
-	default: // "mcp"
+	case "mcp":
 		user = fmt.Sprintf("%d", mcpContainerUID)
 		// Override the default container entrypoint to specify config path on bind mount.
 		command = []string{"/app/pgedge-postgres-mcp"}
@@ -160,6 +160,8 @@ func ServiceContainerSpec(opts *ServiceContainerSpecOptions) (swarm.ServiceSpec,
 		mounts = []mount.Mount{
 			docker.BuildMount(opts.DataPath, "/app/data", false),
 		}
+	default:
+		return swarm.ServiceSpec{}, fmt.Errorf("unsupported service type: %q", opts.ServiceSpec.ServiceType)
 	}
 
 	return swarm.ServiceSpec{

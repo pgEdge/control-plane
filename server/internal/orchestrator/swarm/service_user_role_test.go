@@ -229,33 +229,6 @@ func joinSQL(stmts postgres.Statements) string {
 	return strings.Join(statementsSQL(stmts), "\n")
 }
 
-func TestRoleAttributesAndGrants_MCP(t *testing.T) {
-	r := &ServiceUserRole{
-		ServiceType:  "mcp",
-		DatabaseName: "mydb",
-		Username:     "svc_mcp",
-	}
-	attrs, grants := r.roleAttributesAndGrants()
-
-	// LOGIN only, no NOINHERIT
-	if len(attrs) != 1 || attrs[0] != "LOGIN" {
-		t.Errorf("attributes = %v, want [LOGIN]", attrs)
-	}
-
-	sql := joinSQL(grants)
-	for _, want := range []string{
-		"GRANT CONNECT",
-		"GRANT USAGE",
-		"GRANT SELECT",
-		"ALTER DEFAULT PRIVILEGES",
-		"pg_read_all_settings",
-	} {
-		if !strings.Contains(sql, want) {
-			t.Errorf("MCP grants missing %q\nGot:\n%s", want, sql)
-		}
-	}
-}
-
 func TestRoleAttributesAndGrants_PostgREST_Attributes(t *testing.T) {
 	r := &ServiceUserRole{
 		ServiceType:  "postgrest",
@@ -334,18 +307,3 @@ func TestRoleAttributesAndGrants_PostgREST_NoDirectTableGrants(t *testing.T) {
 	}
 }
 
-func TestRoleAttributesAndGrants_EmptyServiceTypeIsMCP(t *testing.T) {
-	// Regression: empty ServiceType falls through to the MCP default.
-	rEmpty := &ServiceUserRole{ServiceType: "", DatabaseName: "mydb", Username: "u"}
-	rMCP := &ServiceUserRole{ServiceType: "mcp", DatabaseName: "mydb", Username: "u"}
-
-	attrsEmpty, grantsEmpty := rEmpty.roleAttributesAndGrants()
-	attrsMCP, grantsMCP := rMCP.roleAttributesAndGrants()
-
-	if strings.Join(attrsEmpty, ",") != strings.Join(attrsMCP, ",") {
-		t.Errorf("empty ServiceType attrs %v != mcp attrs %v", attrsEmpty, attrsMCP)
-	}
-	if joinSQL(grantsEmpty) != joinSQL(grantsMCP) {
-		t.Errorf("empty ServiceType grants differ from mcp grants")
-	}
-}

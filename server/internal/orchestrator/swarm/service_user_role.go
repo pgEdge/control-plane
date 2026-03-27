@@ -218,37 +218,21 @@ func (r *ServiceUserRole) createUserRole(ctx context.Context, rc *resource.Conte
 	return nil
 }
 
-// roleAttributesAndGrants returns the role attributes and SQL grant statements
-// appropriate for the service type.
+// roleAttributesAndGrants returns the PostgREST-specific role attributes and
+// SQL grant statements. Only called when ServiceType == "postgrest";
+// MCP uses the group-role path in createUserRole() directly.
 func (r *ServiceUserRole) roleAttributesAndGrants() ([]string, postgres.Statements) {
-	switch r.ServiceType {
-	case "postgrest":
-		// NOINHERIT + GRANT <anon_role> enables PostgREST's SET ROLE mechanism.
-		attributes := []string{"LOGIN", "NOINHERIT"}
-		anonRole := r.DBAnonRole
-		if anonRole == "" {
-			anonRole = "pgedge_application_read_only"
-		}
-		grants := postgres.Statements{
-			postgres.Statement{SQL: fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s;", sanitizeIdentifier(r.DatabaseName), sanitizeIdentifier(r.Username))},
-			postgres.Statement{SQL: fmt.Sprintf("GRANT %s TO %s;", sanitizeIdentifier(anonRole), sanitizeIdentifier(r.Username))},
-		}
-		return attributes, grants
-
-	default: // "mcp" and future service types
-		// MCP role: direct grants rather than role membership to avoid exposing
-		// replication internals via pgedge_application_read_only.
-		// https://github.com/pgEdge/pgedge-postgres-mcp/blob/main/docs/guide/security_mgmt.md
-		attributes := []string{"LOGIN"}
-		grants := postgres.Statements{
-			postgres.Statement{SQL: fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s;", sanitizeIdentifier(r.DatabaseName), sanitizeIdentifier(r.Username))},
-			postgres.Statement{SQL: fmt.Sprintf("GRANT USAGE ON SCHEMA public TO %s;", sanitizeIdentifier(r.Username))},
-			postgres.Statement{SQL: fmt.Sprintf("GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s;", sanitizeIdentifier(r.Username))},
-			postgres.Statement{SQL: fmt.Sprintf("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO %s;", sanitizeIdentifier(r.Username))},
-			postgres.Statement{SQL: fmt.Sprintf("GRANT pg_read_all_settings TO %s;", sanitizeIdentifier(r.Username))},
-		}
-		return attributes, grants
+	// NOINHERIT + GRANT <anon_role> enables PostgREST's SET ROLE mechanism.
+	attributes := []string{"LOGIN", "NOINHERIT"}
+	anonRole := r.DBAnonRole
+	if anonRole == "" {
+		anonRole = "pgedge_application_read_only"
 	}
+	grants := postgres.Statements{
+		postgres.Statement{SQL: fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s;", sanitizeIdentifier(r.DatabaseName), sanitizeIdentifier(r.Username))},
+		postgres.Statement{SQL: fmt.Sprintf("GRANT %s TO %s;", sanitizeIdentifier(anonRole), sanitizeIdentifier(r.Username))},
+	}
+	return attributes, grants
 }
 
 func (r *ServiceUserRole) Update(ctx context.Context, rc *resource.Context) error {
