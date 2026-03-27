@@ -1,3 +1,0 @@
-kind: Fixed
-body: Replaced fixed 100-second sync wait when adding a node with configurable health-based polling.
-time: 2026-02-18T23:03:20.105537+05:30

@@ -1,3 +1,0 @@
-kind: Changed
-body: "Improved disaster recovery — Better quorum loss handling, host removal resilience, and crash recovery."
-time: 2026-03-24T10:00:03.000000-05:00

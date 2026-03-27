@@ -395,7 +395,7 @@ specifying `FIXTURE_CONTROL_PLANE_IMAGE` with the
 `{deploy,update,reset}-{lima,ec2}-fixture` targets. For example:
 
 ```sh
-make update-lima-fixture FIXTURE_CONTROL_PLANE_IMAGE='ghcr.io/pgedge/control-plane:v0.6.2-rc.1'
+make update-lima-fixture FIXTURE_CONTROL_PLANE_IMAGE='ghcr.io/pgedge/control-plane:v0.7.0-rc.1'
 ```
 
 ### Fixture variants
