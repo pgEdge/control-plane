@@ -277,7 +277,7 @@ the example from above, the initialization steps would be:
     ```json
     {
       "token": "PGEDGE-0c470f2eac35bb25135654a8dd9c812fc4aca4be8c8e34483c0e279ab79a7d30-907336deda459ebc79079babf08036fc",
-      "server_url": "http://198.19.249.2:3000"
+      "server_urls": ["http://198.19.249.2:3000"]
     }
     ```
 
@@ -292,7 +292,7 @@ the example from above, the initialization steps would be:
             -H 'Content-Type:application/json' \
             --data '{
                 "token":"PGEDGE-0c470f2eac35bb25135654a8dd9c812fc4aca4be8c8e34483c0e279ab79a7d30-907336deda459ebc79079babf08036fc",
-                "server_url":"http://198.19.249.2:3000"
+                "server_urls":["http://198.19.249.2:3000"]
             }'
         ```
 
@@ -307,7 +307,7 @@ the example from above, the initialization steps would be:
             -H 'Content-Type:application/json' \
             --data '{
                 "token":"PGEDGE-0c470f2eac35bb25135654a8dd9c812fc4aca4be8c8e34483c0e279ab79a7d30-907336deda459ebc79079babf08036fc",
-                "server_url":"http://198.19.249.2:3000"
+                "server_urls":["http://198.19.249.2:3000"]
             }'
         ```
 
