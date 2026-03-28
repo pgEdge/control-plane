@@ -38,6 +38,9 @@ func resolveVersion() string {
 
 func TestMain(m *testing.M) {
 	version := resolveVersion()
+	if version == "" {
+		log.Fatal("CONTROL_PLANE_VERSION is not set and could not be resolved from git; set the env var or ensure git tags are available")
+	}
 	defaultImageTag := "127.0.0.1:5000/control-plane:" + version
 
 	flag.BoolVar(&testConfig.skipCleanup, "skip-cleanup", false, "skip cleaning up resources created by the tests")
