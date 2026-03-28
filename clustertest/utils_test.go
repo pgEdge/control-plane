@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -21,14 +22,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func buildImage() {
+func buildImage(version string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 	defer cancel()
 
 	log.Println("building control-plane image")
 
+	// Build the child process environment, ensuring CONTROL_PLANE_VERSION is
+	// set to the resolved value. The env var may be empty (or absent) when the
+	// common.mk lazy-evaluation of CHANGIE_LATEST fails in CI; an empty value
+	// in the environment blocks make's ?= default from triggering, which causes
+	// docker buildx bake to fail with an invalid image tag.
+	env := make([]string, 0, len(os.Environ())+1)
+	for _, e := range os.Environ() {
+		if !strings.HasPrefix(e, "CONTROL_PLANE_VERSION=") {
+			env = append(env, e)
+		}
+	}
+	env = append(env, "CONTROL_PLANE_VERSION="+version)
+
 	cmd := exec.CommandContext(ctx, "make", "-C", "..", "goreleaser-build", "control-plane-images")
-	cmd.Env = append(cmd.Env, os.Environ()...)
+	cmd.Env = env
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
