@@ -26,7 +26,7 @@ var testConfig = struct {
 // back to `git describe` when the env var is unset or empty (which can happen
 // when the common.mk lazy-evaluation fails in CI).
 func resolveVersion() string {
-	if v := os.Getenv("CONTROL_PLANE_VERSION"); v != "" {
+	if v := strings.TrimSpace(os.Getenv("CONTROL_PLANE_VERSION")); v != "" {
 		return v
 	}
 	out, err := exec.Command("git", "-C", "..", "describe", "--tags", "--abbrev=0", "--match", "v*").Output()
@@ -38,20 +38,27 @@ func resolveVersion() string {
 
 func TestMain(m *testing.M) {
 	version := resolveVersion()
-	if version == "" {
-		log.Fatal("CONTROL_PLANE_VERSION is not set and could not be resolved from git; set the env var or ensure git tags are available")
-	}
-	defaultImageTag := "127.0.0.1:5000/control-plane:" + version
 
 	flag.BoolVar(&testConfig.skipCleanup, "skip-cleanup", false, "skip cleaning up resources created by the tests")
 	flag.BoolVar(&testConfig.skipImageBuild, "skip-image-build", false, "skip building the control plane image. this setting is implied true when a non-default image-tag is specified.")
-	flag.StringVar(&testConfig.imageTag, "image-tag", defaultImageTag, "the control plane image to test")
+	flag.StringVar(&testConfig.imageTag, "image-tag", "", "the control plane image to test")
 	flag.StringVar(&testConfig.dataDirPrefix, "data-dir", "", "the directory to store test data. defaults to clustertest/data")
 
 	flag.Parse()
 
-	if !testConfig.skipImageBuild && testConfig.imageTag == defaultImageTag {
-		buildImage(version)
+	if testConfig.imageTag == "" {
+		// No explicit image tag: use the version-derived default and build the image.
+		// Fatal here (after flag parsing) so that runs supplying -image-tag or
+		// -skip-image-build are never blocked by a missing version.
+		if version == "" {
+			log.Fatal("CONTROL_PLANE_VERSION is not set and could not be resolved from git; set the env var or ensure git tags are available")
+		}
+		testConfig.imageTag = "127.0.0.1:5000/control-plane:" + version
+		if !testConfig.skipImageBuild {
+			buildImage(version)
+		} else {
+			log.Println("skipping image build")
+		}
 	} else {
 		log.Println("skipping image build")
 	}
