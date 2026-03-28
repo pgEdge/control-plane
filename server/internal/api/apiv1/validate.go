@@ -271,7 +271,7 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool, nod
 	errs = append(errs, validateIdentifier(string(svc.ServiceID), serviceIDPath))
 
 	// Validate service_type allowlist
-	supportedServiceTypes := []string{"mcp", "postgrest"}
+	supportedServiceTypes := []string{"mcp", "postgrest", "rag"}
 	if !slices.Contains(supportedServiceTypes, svc.ServiceType) {
 		err := fmt.Errorf("unsupported service type %q (supported: %s)",
 			svc.ServiceType, strings.Join(supportedServiceTypes, ", "))
@@ -306,6 +306,8 @@ func validateServiceSpec(svc *api.ServiceSpec, path []string, isUpdate bool, nod
 		errs = append(errs, validateMCPServiceConfig(svc.Config, appendPath(path, "config"), isUpdate)...)
 	case "postgrest":
 		errs = append(errs, validatePostgRESTServiceConfig(svc.Config, appendPath(path, "config"))...)
+	case "rag":
+		errs = append(errs, validateRAGServiceConfig(svc.Config, appendPath(path, "config"), isUpdate)...)
 	}
 
 	// Validate database_connection if provided
@@ -400,6 +402,15 @@ func validateDatabaseConnection(dc *api.DatabaseConnection, path []string, nodeN
 	}
 
 	return errs
+}
+
+func validateRAGServiceConfig(config map[string]any, path []string, isUpdate bool) []error {
+	_, errs := database.ParseRAGServiceConfig(config, isUpdate)
+	var result []error
+	for _, err := range errs {
+		result = append(result, newValidationError(err, path))
+	}
+	return result
 }
 
 func validateCPUs(value *string, path []string) []error {
