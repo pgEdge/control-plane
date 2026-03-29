@@ -6,8 +6,6 @@ import (
 	"flag"
 	"log"
 	"os"
-	"os/exec"
-	"strings"
 	"testing"
 
 	"github.com/docker/docker/pkg/ioutils"
@@ -22,23 +20,7 @@ var testConfig = struct {
 	dataDir        string
 }{}
 
-// resolveVersion returns the CONTROL_PLANE_VERSION from the environment, falling
-// back to `git describe` when the env var is unset or empty (which can happen
-// when the common.mk lazy-evaluation fails in CI).
-func resolveVersion() string {
-	if v := strings.TrimSpace(os.Getenv("CONTROL_PLANE_VERSION")); v != "" {
-		return v
-	}
-	out, err := exec.Command("git", "-C", "..", "describe", "--tags", "--abbrev=0", "--match", "v*").Output()
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(out))
-}
-
 func TestMain(m *testing.M) {
-	version := resolveVersion()
-
 	flag.BoolVar(&testConfig.skipCleanup, "skip-cleanup", false, "skip cleaning up resources created by the tests")
 	flag.BoolVar(&testConfig.skipImageBuild, "skip-image-build", false, "skip building the control plane image. this setting is implied true when a non-default image-tag is specified.")
 	flag.StringVar(&testConfig.imageTag, "image-tag", "", "the control plane image to test")
@@ -47,15 +29,16 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	if testConfig.imageTag == "" {
-		// No explicit image tag: use the version-derived default and build the image.
-		// Fatal here (after flag parsing) so that runs supplying -image-tag or
-		// -skip-image-build are never blocked by a missing version.
+		// No explicit image tag: derive the default from CONTROL_PLANE_VERSION.
+		// Fatal here (after flag parsing) so runs that supply -image-tag are
+		// never blocked by a missing version.
+		version := os.Getenv("CONTROL_PLANE_VERSION")
 		if version == "" {
-			log.Fatal("CONTROL_PLANE_VERSION is not set and could not be resolved from git; set the env var or ensure git tags are available")
+			log.Fatal("CONTROL_PLANE_VERSION is not set; ensure common.mk version resolution succeeded or pass -image-tag explicitly")
 		}
 		testConfig.imageTag = "127.0.0.1:5000/control-plane:" + version
 		if !testConfig.skipImageBuild {
-			buildImage(version)
+			buildImage()
 		} else {
 			log.Println("skipping image build")
 		}
