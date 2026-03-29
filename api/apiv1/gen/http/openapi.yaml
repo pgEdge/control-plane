@@ -2,7 +2,7 @@ swagger: "2.0"
 info:
   title: pgEdge Control Plane v1 API
   description: A distributed application that provides a declarative API to deploy and manage Postgres databases.
-  version: v0.6.2
+  version: v0.7.0
 host: localhost:3000
 consumes:
   - application/json
@@ -3383,7 +3383,7 @@ definitions:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: mcp
+            service_type: rag
             version: latest
           - config:
               llm_model: gpt-4
@@ -3432,7 +3432,7 @@ definitions:
                     host_path: /Users/user/backups/host
             port: 0
             service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-            service_type: mcp
+            service_type: rag
             version: latest
       spock_version:
         type: string
@@ -3795,7 +3795,7 @@ definitions:
                   host_path: /Users/user/backups/host
           port: 0
           service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-          service_type: mcp
+          service_type: rag
           version: latest
         - config:
             llm_model: gpt-4
@@ -3844,7 +3844,7 @@ definitions:
                   host_path: /Users/user/backups/host
           port: 0
           service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-          service_type: mcp
+          service_type: rag
           version: latest
         - config:
             llm_model: gpt-4
@@ -3893,7 +3893,7 @@ definitions:
                   host_path: /Users/user/backups/host
           port: 0
           service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-          service_type: mcp
+          service_type: rag
           version: latest
       spock_version: "5"
     required:
@@ -6320,10 +6320,11 @@ definitions:
       service_type:
         type: string
         description: The type of service to run.
-        example: mcp
+        example: rag
         enum:
           - mcp
           - postgrest
+          - rag
       version:
         type: string
         description: The version of the service in semver format (e.g., '1.0.0') or the literal 'latest'.
@@ -6376,7 +6377,7 @@ definitions:
               host_path: /Users/user/backups/host
       port: 0
       service_id: 76f9b8c0-4958-11f0-a489-3bb29577c696
-      service_type: mcp
+      service_type: rag
       version: latest
     required:
       - service_id

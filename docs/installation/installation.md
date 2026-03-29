@@ -98,7 +98,7 @@ Given that output, the following stack definition file will deploy a single Cont
 ```yaml
 services:
   host-1:
-    image: ghcr.io/pgedge/control-plane:v0.6.2
+    image: ghcr.io/pgedge/control-plane:v0.7.0
     command: run
     environment:
       - PGEDGE_HOST_ID=host-1
@@ -113,7 +113,7 @@ services:
         constraints:
           - node.id==vzou89zyd4n3xz6p6jvoohqxx
   host-2:
-    image: ghcr.io/pgedge/control-plane:v0.6.2
+    image: ghcr.io/pgedge/control-plane:v0.7.0
     command: run
     environment:
       - PGEDGE_HOST_ID=host-2
@@ -128,7 +128,7 @@ services:
         constraints:
           - node.id==5sa7m11ub62t1n22feuhg0mbp
   host-3:
-    image: ghcr.io/pgedge/control-plane:v0.6.2
+    image: ghcr.io/pgedge/control-plane:v0.7.0
     command: run
     environment:
       - PGEDGE_HOST_ID=host-3
@@ -191,7 +191,7 @@ For example:
 
 ```yaml
   host-4:
-    image: ghcr.io/pgedge/control-plane:v0.6.2
+    image: ghcr.io/pgedge/control-plane:v0.7.0
     command: run
     environment:
       - PGEDGE_HOST_ID=host-4
@@ -227,7 +227,7 @@ Paste the output below and click "Generate Stack." This generator is fully local
 
 <textarea id="nodes" rows="8" style="width:100%; font-family:monospace;"></textarea>
 
-<button id="generateBtn" data-input="nodes" data-output="global-output" data-version="v0.6.2" class="md-button yaml-generate">Generate Stack Definition</button>
+<button id="generateBtn" data-input="nodes" data-output="global-output" data-version="v0.7.0" class="md-button yaml-generate">Generate Stack Definition</button>
 
 ``` yaml {#global-output}
 # Once submitted, the generated stack will appear here.
@@ -277,7 +277,7 @@ the example from above, the initialization steps would be:
     ```json
     {
       "token": "PGEDGE-0c470f2eac35bb25135654a8dd9c812fc4aca4be8c8e34483c0e279ab79a7d30-907336deda459ebc79079babf08036fc",
-      "server_url": "http://198.19.249.2:3000"
+      "server_urls": ["http://198.19.249.2:3000"]
     }
     ```
 
@@ -292,7 +292,7 @@ the example from above, the initialization steps would be:
             -H 'Content-Type:application/json' \
             --data '{
                 "token":"PGEDGE-0c470f2eac35bb25135654a8dd9c812fc4aca4be8c8e34483c0e279ab79a7d30-907336deda459ebc79079babf08036fc",
-                "server_url":"http://198.19.249.2:3000"
+                "server_urls":["http://198.19.249.2:3000"]
             }'
         ```
 
@@ -307,7 +307,7 @@ the example from above, the initialization steps would be:
             -H 'Content-Type:application/json' \
             --data '{
                 "token":"PGEDGE-0c470f2eac35bb25135654a8dd9c812fc4aca4be8c8e34483c0e279ab79a7d30-907336deda459ebc79079babf08036fc",
-                "server_url":"http://198.19.249.2:3000"
+                "server_urls":["http://198.19.249.2:3000"]
             }'
         ```
 

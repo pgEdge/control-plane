@@ -23,8 +23,14 @@ import (
 // contains a secret value that should not be returned in API responses.
 func isSensitiveConfigKey(key string) bool {
 	k := strings.ToLower(key)
+	// Use suffix matching for "token" to avoid stripping non-secret keys like
+	// "token_budget". Keys named exactly "token" or ending with "_token" (e.g.
+	// "init_token", "auth_token") are still treated as sensitive.
+	if k == "token" || strings.HasSuffix(k, "_token") {
+		return true
+	}
 	patterns := []string{
-		"password", "secret", "token",
+		"password", "secret",
 		"api_key", "apikey", "api-key",
 		"credential", "private_key", "private-key",
 		"access_key", "access-key",
@@ -36,6 +42,34 @@ func isSensitiveConfigKey(key string) bool {
 		}
 	}
 	return false
+}
+
+// scrubSensitiveConfig returns a copy of config with sensitive keys removed,
+// recursively descending into nested maps and slices.
+func scrubSensitiveConfig(config map[string]any) map[string]any {
+	out := make(map[string]any, len(config))
+	for k, v := range config {
+		if isSensitiveConfigKey(k) {
+			continue
+		}
+		out[k] = scrubSensitiveValue(v)
+	}
+	return out
+}
+
+func scrubSensitiveValue(v any) any {
+	switch val := v.(type) {
+	case map[string]any:
+		return scrubSensitiveConfig(val)
+	case []any:
+		out := make([]any, len(val))
+		for i, elem := range val {
+			out[i] = scrubSensitiveValue(elem)
+		}
+		return out
+	default:
+		return v
+	}
 }
 
 func hostToAPI(h *host.Host) *api.Host {
@@ -211,16 +245,11 @@ func serviceSpecToAPI(svc *database.ServiceSpec) *api.ServiceSpec {
 		hostIDs[i] = api.Identifier(hostID)
 	}
 
-	// Strip sensitive keys from config before returning to API
+	// Strip sensitive keys from config before returning to API (recursively,
+	// to handle nested structures such as the RAG service pipelines array).
 	var filteredConfig map[string]any
 	if svc.Config != nil {
-		filteredConfig = make(map[string]any, len(svc.Config))
-		for k, v := range svc.Config {
-			if isSensitiveConfigKey(k) {
-				continue
-			}
-			filteredConfig[k] = v
-		}
+		filteredConfig = scrubSensitiveConfig(svc.Config)
 	}
 
 	return &api.ServiceSpec{

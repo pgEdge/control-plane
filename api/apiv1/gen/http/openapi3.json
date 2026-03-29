@@ -3,7 +3,7 @@
   "info": {
     "title": "pgEdge Control Plane v1 API",
     "description": "A distributed application that provides a declarative API to deploy and manage Postgres databases.",
-    "version": "v0.6.2"
+    "version": "v0.7.0"
   },
   "servers": [
     {
@@ -11886,7 +11886,7 @@
                 },
                 "port": 0,
                 "service_id": "analytics-service",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -11965,7 +11965,7 @@
                 },
                 "port": 0,
                 "service_id": "analytics-service",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               }
             ]
@@ -12664,7 +12664,7 @@
               },
               "port": 0,
               "service_id": "analytics-service",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -12743,7 +12743,7 @@
               },
               "port": 0,
               "service_id": "analytics-service",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -12822,7 +12822,7 @@
               },
               "port": 0,
               "service_id": "analytics-service",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -12901,7 +12901,7 @@
               },
               "port": 0,
               "service_id": "analytics-service",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             }
           ],
@@ -13689,7 +13689,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -13767,7 +13767,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -13845,7 +13845,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               }
             ]
@@ -14733,7 +14733,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -14811,7 +14811,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -14889,7 +14889,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -14967,7 +14967,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             }
           ],
@@ -15752,7 +15752,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -15830,7 +15830,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -15908,7 +15908,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               }
             ]
@@ -16793,7 +16793,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -16871,7 +16871,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -16949,7 +16949,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -17027,7 +17027,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             }
           ],
@@ -17812,7 +17812,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -17890,7 +17890,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -17968,7 +17968,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -18046,7 +18046,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               }
             ]
@@ -18931,7 +18931,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -19009,7 +19009,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -19087,7 +19087,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -19165,7 +19165,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             }
           ],
@@ -19759,7 +19759,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -19836,7 +19836,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               }
             ]
@@ -20530,7 +20530,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -20607,7 +20607,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -20684,7 +20684,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -20761,7 +20761,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             }
           ],
@@ -21546,7 +21546,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -21624,7 +21624,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -21702,7 +21702,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -21780,7 +21780,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               }
             ]
@@ -22475,7 +22475,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -22553,7 +22553,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -22631,7 +22631,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             }
           ],
@@ -23416,7 +23416,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               },
               {
@@ -23494,7 +23494,7 @@
                 },
                 "port": 0,
                 "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-                "service_type": "mcp",
+                "service_type": "rag",
                 "version": "latest"
               }
             ]
@@ -24379,7 +24379,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             },
             {
@@ -24457,7 +24457,7 @@
               },
               "port": 0,
               "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-              "service_type": "mcp",
+              "service_type": "rag",
               "version": "latest"
             }
           ],
@@ -28068,10 +28068,11 @@
           "service_type": {
             "type": "string",
             "description": "The type of service to run.",
-            "example": "mcp",
+            "example": "rag",
             "enum": [
               "mcp",
-              "postgrest"
+              "postgrest",
+              "rag"
             ]
           },
           "version": {
@@ -28155,7 +28156,7 @@
           },
           "port": 0,
           "service_id": "analytics-service",
-          "service_type": "mcp",
+          "service_type": "rag",
           "version": "latest"
         },
         "required": [
@@ -28230,10 +28231,11 @@
           "service_type": {
             "type": "string",
             "description": "The type of service to run.",
-            "example": "mcp",
+            "example": "rag",
             "enum": [
               "mcp",
-              "postgrest"
+              "postgrest",
+              "rag"
             ]
           },
           "version": {
@@ -28319,7 +28321,7 @@
           },
           "port": 0,
           "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-          "service_type": "mcp",
+          "service_type": "rag",
           "version": "latest"
         },
         "required": [
@@ -28395,10 +28397,11 @@
           "service_type": {
             "type": "string",
             "description": "The type of service to run.",
-            "example": "mcp",
+            "example": "rag",
             "enum": [
               "mcp",
-              "postgrest"
+              "postgrest",
+              "rag"
             ]
           },
           "version": {
@@ -28483,7 +28486,7 @@
           },
           "port": 0,
           "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-          "service_type": "mcp",
+          "service_type": "rag",
           "version": "latest"
         },
         "required": [
@@ -28558,10 +28561,11 @@
           "service_type": {
             "type": "string",
             "description": "The type of service to run.",
-            "example": "mcp",
+            "example": "rag",
             "enum": [
               "mcp",
-              "postgrest"
+              "postgrest",
+              "rag"
             ]
           },
           "version": {
@@ -28647,7 +28651,7 @@
           },
           "port": 0,
           "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-          "service_type": "mcp",
+          "service_type": "rag",
           "version": "latest"
         },
         "required": [
@@ -28723,10 +28727,11 @@
           "service_type": {
             "type": "string",
             "description": "The type of service to run.",
-            "example": "mcp",
+            "example": "rag",
             "enum": [
               "mcp",
-              "postgrest"
+              "postgrest",
+              "rag"
             ]
           },
           "version": {
@@ -28811,7 +28816,7 @@
           },
           "port": 0,
           "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-          "service_type": "mcp",
+          "service_type": "rag",
           "version": "latest"
         },
         "required": [
@@ -28887,10 +28892,11 @@
           "service_type": {
             "type": "string",
             "description": "The type of service to run.",
-            "example": "mcp",
+            "example": "rag",
             "enum": [
               "mcp",
-              "postgrest"
+              "postgrest",
+              "rag"
             ]
           },
           "version": {
@@ -28976,7 +28982,7 @@
           },
           "port": 0,
           "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-          "service_type": "mcp",
+          "service_type": "rag",
           "version": "latest"
         },
         "required": [
@@ -29051,10 +29057,11 @@
           "service_type": {
             "type": "string",
             "description": "The type of service to run.",
-            "example": "mcp",
+            "example": "rag",
             "enum": [
               "mcp",
-              "postgrest"
+              "postgrest",
+              "rag"
             ]
           },
           "version": {
@@ -29138,7 +29145,7 @@
           },
           "port": 0,
           "service_id": "76f9b8c0-4958-11f0-a489-3bb29577c696",
-          "service_type": "mcp",
+          "service_type": "rag",
           "version": "latest"
         },
         "required": [

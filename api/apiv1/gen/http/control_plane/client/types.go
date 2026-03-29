@@ -6253,8 +6253,8 @@ func ValidateServiceSpecRequestBody(body *ServiceSpecRequestBody) (err error) {
 	if utf8.RuneCountInString(body.ServiceID) > 63 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", body.ServiceID, utf8.RuneCountInString(body.ServiceID), 63, false))
 	}
-	if !(body.ServiceType == "mcp" || body.ServiceType == "postgrest") {
-		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", body.ServiceType, []any{"mcp", "postgrest"}))
+	if !(body.ServiceType == "mcp" || body.ServiceType == "postgrest" || body.ServiceType == "rag") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", body.ServiceType, []any{"mcp", "postgrest", "rag"}))
 	}
 	err = goa.MergeErrors(err, goa.ValidatePattern("body.version", body.Version, "^(\\d+\\.\\d+\\.\\d+|latest)$"))
 	if len(body.HostIds) < 1 {
@@ -7017,8 +7017,8 @@ func ValidateServiceSpecRequestBodyRequestBody(body *ServiceSpecRequestBodyReque
 	if utf8.RuneCountInString(body.ServiceID) > 63 {
 		err = goa.MergeErrors(err, goa.InvalidLengthError("body.service_id", body.ServiceID, utf8.RuneCountInString(body.ServiceID), 63, false))
 	}
-	if !(body.ServiceType == "mcp" || body.ServiceType == "postgrest") {
-		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", body.ServiceType, []any{"mcp", "postgrest"}))
+	if !(body.ServiceType == "mcp" || body.ServiceType == "postgrest" || body.ServiceType == "rag") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.service_type", body.ServiceType, []any{"mcp", "postgrest", "rag"}))
 	}
 	err = goa.MergeErrors(err, goa.ValidatePattern("body.version", body.Version, "^(\\d+\\.\\d+\\.\\d+|latest)$"))
 	if len(body.HostIds) < 1 {
