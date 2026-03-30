@@ -417,12 +417,13 @@ func TestServiceContainerSpec_PostgREST_MountReadOnly(t *testing.T) {
 	}
 }
 
-func TestServiceContainerSpec_PostgREST_NoUser(t *testing.T) {
+func TestServiceContainerSpec_PostgREST_User(t *testing.T) {
 	spec, err := ServiceContainerSpec(makePostgRESTSpecOpts())
 	if err != nil {
 		t.Fatalf("ServiceContainerSpec() error = %v", err)
 	}
-	if spec.TaskTemplate.ContainerSpec.User != "" {
-		t.Errorf("User = %q, want empty (PostgREST uses image default user)", spec.TaskTemplate.ContainerSpec.User)
+	want := fmt.Sprintf("%d", postgrestContainerUID)
+	if spec.TaskTemplate.ContainerSpec.User != want {
+		t.Errorf("User = %q, want %q (PostgREST runs as UID 1000 per official Dockerfile)", spec.TaskTemplate.ContainerSpec.User, want)
 	}
 }
